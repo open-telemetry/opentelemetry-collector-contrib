@@ -53,8 +53,8 @@ Since the timestamp is a part of the log's body, it needs to be extracted from t
 
 ```yaml
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 receivers:
   filelog:
     include:
@@ -72,7 +72,7 @@ service:
       receivers:
       - filelog
       exporters:
-      - logging
+      - debug
 ```
 
 Note that this configuration has a side effect of creating a `timestamp_field` attribute for each log record.
@@ -80,8 +80,8 @@ To get rid of the attribute, use the `remove` operator:
 
 ```yaml
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 receivers:
   filelog:
     include:
@@ -101,7 +101,7 @@ service:
       receivers:
       - filelog
       exporters:
-      - logging
+      - debug
 ```
 
 #### Parse timestamps from JSON logs
@@ -118,8 +118,8 @@ Use [json_parser](../operators/json_parser.md) to parse the log body into JSON a
 
 ```yaml
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 receivers:
   filelog:
     include:
@@ -137,7 +137,7 @@ service:
       receivers:
       - filelog
       exporters:
-      - logging
+      - debug
 ```
 
 The above example uses a standalone [time_parser](../operators/time_parser.md) operator to parse the timestamp,

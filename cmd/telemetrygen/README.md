@@ -38,7 +38,7 @@ receivers:
 processors:
 
 exporters:
-  logging:
+  debug:
 
 service:
   pipelines:
@@ -47,7 +47,7 @@ service:
       - otlp
       processors: []
       exporters:
-      - logging
+      - debug
 ```
 
 Once the OpenTelemetry Collector instance is up and running, run `telemetrygen` for your desired telemetry:

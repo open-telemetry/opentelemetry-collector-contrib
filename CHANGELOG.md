@@ -7,6 +7,67 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.86.0
+
+### 🛑 Breaking changes 🛑
+
+- `jaegerexporter, jaegerthrifthttpexporter`: Removing deprecated jaeger and jaegerthrifthttp exporters (#26546)
+  This follows the deprecation plan to remove the component. The original removal date was July 2023, it is now past that.
+- `receiver/nginx`: Bump 'nginx.connections_current' gate to stable (#27024)
+
+### 💡 Enhancements 💡
+
+- `processor/tailsampling`: Allow sub-second decision wait time (#26354)
+- `processor/resourcedetection`: Added support for host's cpuinfo attributes. (#26532)
+  In Linux and Darwin all fields are populated. In Windows only family, vendor.id and model.name are populated.
+- `pkg/stanza`: Add 'omit_pattern' setting to `split.Config`. (#26381)
+  This can be used omit the start or end pattern from a log entry.
+- `skywaklingreceiver`: implement receiver for JVM metrics in Skywalking and adapted it to the OpenTelemetry protocol. (#20315)
+- `statsdreceiver`: Add TCP support to statsdreceiver (#23327)
+- `azuredataexplorerexporter`: Added an optional column in the exported trace data to store the status code and message as a dynamic field. (#26496)
+- `statsdreceiver`: Allow for empty tag sets (#27011)
+- `pkg/ottl`: Update contexts to set and get time.Time (#22010)
+- `pkg/ottl`: Add a Now() function to ottl that returns the current system time (#27038, #26507)
+- `filelogreceiver`: Log the globbing IO errors (#23768)
+- `exporter/loadbalancing`: Allow metrics routing (#25858)
+- `pkg/ottl`: Allow named arguments in function invocations (#20879)
+  Arguments can now be specified by a snake-cased version of their name in the function's
+  `Arguments` struct. Named arguments can be specified in any order, but must be specified
+  after arguments without a name.
+  
+- `pkg/ottl`: Add new `TruncateTime` function to help with manipulation of timestamps (#26696)
+- `pkg/stanza`: Add 'overwrite_text' option to severity parser. (#26671)
+  Allows the user to overwrite the text of the severity parser with the official string representation of the severity level.
+  
+- `prometheusreceiver`: add a new flag, enable_protobuf_negotiation, which enables protobuf negotiation when scraping prometheus clients (#27027)
+- `redisreceiver`: Added `redis.cmd.latency` metric. (#6942)
+- `processor/resourcedetectionprocessor`: add k8snode detector to provide node metadata; currently the detector provides `k8d.node.uid` (#26538)
+- `routingconnector`: Change routingconnector stability to alpha (#26495)
+- `supported platforms`: Add `linux/s390x` architecture to cross build tests in CI (#25138)
+- `telemetrygen`: Move the telemetrygen tool to use gRPC logging at warn level, in line with otlpgrpc. (#26659)
+- `splunkentreceiver`: adding component logic to splunkenterprise receiver (#12667)
+- `splunkhecreceiver`: Update splunk hec receiver to extract time query parameter if it is provided (#27006)
+- `cmd/telemetrygen`: Add CLI option for selecting different metric types (#26667)
+- `cloudflarereceiver`: Make TLS config optional for cloudflarereceiver (#26562)
+- `receiver/awscontainerinsightsreceiver`: Remove the need to set an env var in the receiver to get CPU and memory info (#24777)
+- `awsxrayexporter`: Change `exporter.awsxray.skiptimestampvalidation` feature gate from Alpha to Beta (#26553)
+- `processor/k8sattributes`: allow metadata extractions to be set to empty list (#14452)
+
+### 🧰 Bug fixes 🧰
+
+- `processor/tailsampling`: Prevent the tail-sampling processor from accepting duplicate policy names (#27016)
+- `awsemfexporter`: AWS EMF Exporter will not drop any metrics that contain NaN values to avoid JSON marshal errors. (#26267)
+- `k8sclusterreceiver`: Change k8s.deployment.available and k8s.deployment.desired metric units to {pod} (#10553)
+- `awsxrayexporter`: Restore the AWS X-Ray metadata structure when exporting. (#23610)
+- `telemetrygen`: remove need for JSON unmarshalling of trace status codes and unsupport mixed case input (#25906)
+- `haproxyreceiver`: Remove unused resource attributes. (#24920)
+- `k8sclusterreceiver`: Change k8scluster receiver metric units to follow otel semantic conventions (#10553)
+- `pkg/stanza`: Fix bug where force_flush_period not applied (#26691)
+- `filelogreceiver`: Fix issue where truncated file could be read incorrectly. (#27037)
+- `receiver/hostmetricsreceiver`: Make sure the process scraper uses the gopsutil context, respecting the `root_path` configuration. (#24777)
+  This regression was introduced by #24777
+- `k8sclusterreceiver`: change k8s.container.restarts unit from 1 to {restart} (#10553)
+
 ## v0.85.0
 
 ### 🛑 Breaking changes 🛑
@@ -3587,7 +3648,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - [`cumulativetodelta` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/cumulativetodeltaprocessor) to convert cumulative sum metrics to cumulative delta
 
 - [`file` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/fileexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
-- [`jaeger` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/jaegerexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
+- [`jaeger` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.85.0/exporter/jaegerexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`kafka` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/kafkaexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`opencensus` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/opencensusexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))
 - [`prometheus` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusexporter) from core repository ([#3474](https://github.com/open-telemetry/opentelemetry-collector/issues/3474))

@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
+	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -74,6 +76,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS description: %w", err)
 	}
 
+	cpuInfo, err := cpu.Info()
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting host cpuinfo: %w", err)
+	}
+
 	for _, source := range d.cfg.HostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
@@ -89,6 +96,12 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			}
 			d.rb.SetHostArch(hostArch)
 			d.rb.SetOsDescription(osDescription)
+			if len(cpuInfo) > 0 {
+				err = setHostCPUInfo(d, cpuInfo[0])
+				if err != nil {
+					d.logger.Warn("failed to get host cpuinfo", zap.Error(err))
+				}
+			}
 			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.logger.Debug(err.Error())
@@ -129,4 +142,25 @@ func reverseLookupHost(d *Detector) (string, error) {
 		return "", fmt.Errorf("reverseLookupHost failed to lookup host: %w", err)
 	}
 	return hostname, nil
+}
+
+func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
+	d.logger.Debug("getting host's cpuinfo", zap.String("coreID", cpuInfo.CoreID))
+	d.rb.SetHostCPUVendorID(cpuInfo.VendorID)
+	family, err := strconv.ParseInt(cpuInfo.Family, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to convert cpuinfo family to integer: %w", err)
+	}
+	d.rb.SetHostCPUFamily(family)
+
+	model, err := strconv.ParseInt(cpuInfo.Model, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to convert cpuinfo model to integer: %w", err)
+	}
+	d.rb.SetHostCPUModelID(model)
+
+	d.rb.SetHostCPUModelName(cpuInfo.ModelName)
+	d.rb.SetHostCPUStepping(int64(cpuInfo.Stepping))
+	d.rb.SetHostCPUCacheL2Size(int64(cpuInfo.CacheSize))
+	return nil
 }

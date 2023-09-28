@@ -12,10 +12,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -37,7 +37,7 @@ type logsReceiver struct {
 
 	id            component.ID
 	storageClient storage.Client
-	obsrecv       *obsreport.Receiver
+	obsrecv       *receiverhelper.ObsReport
 }
 
 func newLogsReceiver(
@@ -48,7 +48,7 @@ func newLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (*logsReceiver, error) {
 
-	obsr, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsr, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		ReceiverCreateSettings: settings,
 	})

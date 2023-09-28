@@ -12,7 +12,7 @@ var (
 	lokiExporterFailedToSendLogRecordsDueToMissingLabels = stats.Int64("lokiexporter_send_failed_due_to_missing_labels", "Number of log records failed to send because labels were missing", stats.UnitDimensionless)
 )
 
-func MetricViews() []*view.View {
+func metricViews() []*view.View {
 	return []*view.View{
 		{
 			Name:        "lokiexporter_send_failed_due_to_missing_labels",
