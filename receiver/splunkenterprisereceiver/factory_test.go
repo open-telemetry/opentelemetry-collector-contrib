@@ -24,17 +24,17 @@ func TestFactoryCreate(t *testing.T) {
 }
 
 func TestDefaultConfig(t *testing.T) {
-    cfg := confighttp.NewDefaultHTTPClientSettings()
-    cfg.Headers = map[string]configopaque.String{
+	cfg := confighttp.NewDefaultHTTPClientSettings()
+	cfg.Headers = map[string]configopaque.String{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
 
 	expectedConf := &Config{
-		HTTPClientSettings:        cfg,
+		HTTPClientSettings: cfg,
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval:    10 * time.Minute,
-			InitialDelay:          1 * time.Second,
-			Timeout:               60 * time.Second,
+			CollectionInterval: 10 * time.Minute,
+			InitialDelay:       1 * time.Second,
+			Timeout:            60 * time.Second,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
