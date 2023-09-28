@@ -31,6 +31,7 @@ import (
 
 const certPath = "./testdata/testcert.crt"
 const keyFile = "./testdata/testkey.key"
+const errSignedByUnknownCA = "tls: failed to verify certificate: x509: certificate signed by unknown authority"
 
 func TestClient(t *testing.T) {
 	tr := &fakeRoundTripper{}
@@ -109,23 +110,47 @@ func TestSvcAcctClient(t *testing.T) {
 		_, err := rw.Write([]byte(`OK`))
 		require.NoError(t, err)
 	}))
-	cert, err := tls.LoadX509KeyPair("./testdata/testcert.crt", "./testdata/testkey.key")
+	cert, err := tls.LoadX509KeyPair(certPath, keyFile)
 	require.NoError(t, err)
 	server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
 	server.StartTLS()
 	defer server.Close()
 
 	p := &saClientProvider{
-		endpoint:   server.Listener.Addr().String(),
-		caCertPath: "./testdata/testcert.crt",
-		tokenPath:  "./testdata/token",
-		logger:     zap.NewNop(),
+		endpoint:           server.Listener.Addr().String(),
+		caCertPath:         certPath,
+		tokenPath:          "./testdata/token",
+		insecureSkipVerify: false,
+		logger:             zap.NewNop(),
 	}
 	client, err := p.BuildClient()
 	require.NoError(t, err)
 	resp, err := client.Get("/")
 	require.NoError(t, err)
 	require.Equal(t, []byte(`OK`), resp)
+}
+
+func TestSAClientBadTLS(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		_, _ = rw.Write([]byte(`OK`))
+	}))
+	cert, err := tls.LoadX509KeyPair(certPath, keyFile)
+	require.NoError(t, err)
+	server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	server.StartTLS()
+	defer server.Close()
+
+	p := &saClientProvider{
+		endpoint:           server.Listener.Addr().String(),
+		caCertPath:         "./testdata/mismatch.crt",
+		tokenPath:          "./testdata/token",
+		insecureSkipVerify: false,
+		logger:             zap.NewNop(),
+	}
+	client, err := p.BuildClient()
+	require.NoError(t, err)
+	_, err = client.Get("/")
+	require.ErrorContains(t, err, errSignedByUnknownCA)
 }
 
 func TestNewKubeConfigClient(t *testing.T) {
