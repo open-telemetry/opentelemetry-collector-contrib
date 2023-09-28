@@ -21,6 +21,8 @@ import (
 
 	"github.com/oklog/ulid/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opamp-go/client"
@@ -119,8 +121,18 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func newOpampAgent(cfg *Config, logger *zap.Logger) (*opampAgent, error) {
-	uid := ulid.Make() // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6599
+func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, res pcommon.Resource) (*opampAgent, error) {
+	uid := ulid.Make()
+
+	sid, ok := res.Attributes().Get(semconv.AttributeServiceInstanceID)
+
+	if ok {
+		puid, err := ulid.Parse(sid.AsString())
+		if err != nil {
+			return nil, err
+		}
+		uid = puid
+	}
 
 	if cfg.InstanceUID != "" {
 		puid, err := ulid.Parse(cfg.InstanceUID)
@@ -133,8 +145,8 @@ func newOpampAgent(cfg *Config, logger *zap.Logger) (*opampAgent, error) {
 	agent := &opampAgent{
 		cfg:             cfg,
 		logger:          logger,
-		agentType:       "io.opentelemetry.collector",
-		agentVersion:    "1.0.0", // TODO: Replace with actual collector version info.
+		agentType:       build.Command,
+		agentVersion:    build.Version,
 		instanceId:      uid,
 		effectiveConfig: localConfig, // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6596
 	}

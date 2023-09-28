@@ -27,7 +27,7 @@ import (
 func TestNewOpampAgent(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, o.instanceId.String())
 	assert.NotEmpty(t, o.effectiveConfig)
@@ -37,7 +37,7 @@ func TestNewOpampAgent(t *testing.T) {
 func TestCreateAgentDescription(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
 
 	assert.Nil(t, o.agentDescription)
@@ -48,7 +48,7 @@ func TestCreateAgentDescription(t *testing.T) {
 func TestUpdateAgentIdentity(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
 
 	olduid := o.instanceId
@@ -64,7 +64,7 @@ func TestUpdateAgentIdentity(t *testing.T) {
 func TestComposeEffectiveConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, o.effectiveConfig)
 
@@ -75,7 +75,7 @@ func TestComposeEffectiveConfig(t *testing.T) {
 func TestShutdown(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
 
 	// Shutdown with no OpAMP client
@@ -85,7 +85,7 @@ func TestShutdown(t *testing.T) {
 func TestStart(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
 
 	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
