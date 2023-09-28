@@ -65,7 +65,7 @@ type opampAgent struct {
 }
 
 func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
-	o.opampClient = client.NewWebSocket(&Logger{Logger: o.logger.Sugar()})
+	o.opampClient = client.NewWebSocket(o.logger.Sugar())
 
 	settings := types.StartSettings{
 		OpAMPServerURL: o.cfg.Endpoint,
