@@ -31,7 +31,7 @@ metrics:
 
   system.linux.memory.available:
     enabled: false
-    description: Linux-specific more accurate alternative to system.memory.usage with state=free
+    description: An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)
     unit: By
     sum:
       value_type: int
