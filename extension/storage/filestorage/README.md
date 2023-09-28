@@ -102,16 +102,23 @@ See the [Collector feature gates](https://github.com/open-telemetry/opentelemetr
 
 ### `extension.filestorage.replaceUnsafeCharacters`
 
-When enabled, characters that are not safe in file paths are replaced in component name using the extension before creating the file name to store data by the extension.
+When enabled, characters that are not safe in file names are replaced in component name using the extension before creating the file name to store data by the extension.
 
-This may change the file path that the extension is writing component's data to.
-For example, for component `filelog/logs/json`, the data is stored:
+For example, for a Filelog receiver named `filelog/logs/json`, the data is stored:
 
-- in path `receiver_filelog_logs/json` with the feature flag disabled (note that this is file named `json` inside directory named `receiver_filelog_logs`).
-- in file `receiver_filelog_logs~json` with the feature flag enabled.
+- in path `receiver_filelog_logs/json` with the feature flag disabled (note that this is a file named `json` inside directory named `receiver_filelog_logs`).
+- in file `receiver_filelog_logs~007Ejson` with the feature flag enabled.
 
-The feature replaces all characters other than `A-Z`, `a-z`, `0-9`, dot `.`, hyphen `-`, underscore `_`, with a tilde `~`.
-This replacement is done to prevent surprising behavior or errors in the file storage extension.
+This replacement is done to prevent surprising behavior or errors in the File Storage extension.
+
+The feature replaces all usafe characters with a tilde `~` and the character's [Unicode number][unicode_chars] in hex.
+The only safe characters are: uppercase and lowercase ASCII letters `A-Z` and `a-z`, digits `0-9`, dot `.`, hyphen `-`, underscore `_`.
+
+Changing the state of this feature gate may change the path to the file that the extension is writing component's data to. This may lead to loss of the data stored in the original path.
+
+Before enabling this feature gate, ideally make sure that all component names that use the File Storage extension have names that only contain safe characters.
+In case you want to keep using unsafe characters in your component names, you may want to rename the files used for storage before enabling this feature gate.
+For example, `mv ./receiver_filelog_logs/json ./receiver_filelog_logs~007Ejson`.
 
 For more details, see the following issues:
 
@@ -120,7 +127,9 @@ For more details, see the following issues:
 
 The schedule for this feature gate is:
 
-- Introduced in v0.81.0 (July 2023) as `alpha` - disabled by default.
-- Moved to `beta` in October 2023 - enabled by default.
-- Moved to `stable` in January 2024 - cannot be disabled.
+- Introduced in v0.87.0 (October 2023) as `alpha` - disabled by default.
+- Moved to `beta` in January 2024 - enabled by default.
+- Moved to `stable` in April 2024 - cannot be disabled.
 - Removed three releases after `stable`.
+
+[unicode_chars]: https://en.wikipedia.org/wiki/List_of_Unicode_characters

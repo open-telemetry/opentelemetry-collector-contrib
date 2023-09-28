@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"regexp"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -19,9 +19,9 @@ import (
 var replaceUnsafeCharactersFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.filestorage.replaceUnsafeCharacters",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, characters that are not safe in file paths are replaced in component name using the extension. For example, the data for component `filelog/logs/json` will be stored in file `receiver_filelog_logs~json` and not in `receiver_filelog_logs/json`."),
+	featuregate.WithRegisterDescription("When enabled, characters that are not safe in file paths are replaced in component name using the extension. For example, the data for component `filelog/logs/json` will be stored in file `receiver_filelog_logs~007Ejson` and not in `receiver_filelog_logs/json`."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3148"),
-	featuregate.WithRegisterFromVersion("v0.81.0"),
+	featuregate.WithRegisterFromVersion("v0.87.0"),
 )
 
 type localFileStorage struct {
@@ -100,15 +100,37 @@ func kindString(k component.Kind) string {
 
 // sanitize replaces characters in name that are not safe in a file path
 func sanitize(name string) string {
-	// Specify unsafe characters by a negation of allowed characters:
+	// Replace all unsafe characters with a tilde followed by the unsafe character's Unicode hex number.
+	// https://en.wikipedia.org/wiki/List_of_Unicode_characters
+	// For example, the slash is replaced with "~002F", and the tilde itself is replaced with "~007E".
+	// We perform replacement on the tilde even though it is a safe character to make sure that the sanitized component name
+	// never overlaps with a component name that does not reqire sanitization.
+	var sanitized strings.Builder
+	for _, character := range name {
+		if isSafe(character) {
+			sanitized.WriteString(string(character))
+		} else {
+			sanitized.WriteString(fmt.Sprintf("~%04X", character))
+		}
+	}
+	return sanitized.String()
+}
+
+func isSafe(character rune) bool {
+	// Safe characters are the following:
 	// - uppercase and lowercase letters A-Z, a-z
 	// - digits 0-9
 	// - dot `.`
 	// - hyphen `-`
 	// - underscore `_`
-	// - tilde `~`
-	unsafeCharactersRegex := regexp.MustCompile(`[^A-Za-z0-9.\-_~]`)
-
-	// Replace all characters other than the above with the tilde `~`
-	return unsafeCharactersRegex.ReplaceAllString(name, "~")
+	switch {
+	case character >= 'a' && character <= 'z',
+		character >= 'A' && character <= 'Z',
+		character >= '0' && character <= '9',
+		character == '.',
+		character == '-',
+		character == '_':
+		return true
+	}
+	return false
 }

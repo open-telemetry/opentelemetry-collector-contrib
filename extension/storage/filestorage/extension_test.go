@@ -195,13 +195,23 @@ func TestSanitize(t *testing.T) {
 	}{
 		{
 			name:          "safe characters",
-			componentName: `.UPPERCASE-lowercase_1234567890~`,
-			sanitizedName: `.UPPERCASE-lowercase_1234567890~`,
+			componentName: `.UPPERCASE-lowercase_1234567890`,
+			sanitizedName: `.UPPERCASE-lowercase_1234567890`,
 		},
 		{
-			name:          "unsafe characters",
-			componentName: `slash/backslash\colon:asterisk*questionmark?quote'doublequote"angle<>pipe|exclamationmark!percent%space `,
-			sanitizedName: `slash~backslash~colon~asterisk~questionmark~quote~doublequote~angle~~pipe~exclamationmark~percent~space~`,
+			name:          "name with a slash",
+			componentName: `logs/json`,
+			sanitizedName: `logs~002Fjson`,
+		},
+		{
+			name:          "name with a tilde",
+			componentName: `logs~json`,
+			sanitizedName: `logs~007Ejson`,
+		},
+		{
+			name:          "popular unsafe characters",
+			componentName: `tilde~slash/backslash\colon:asterisk*questionmark?quote'doublequote"angle<>pipe|exclamationmark!percent%space `,
+			sanitizedName: `tilde~007Eslash~002Fbackslash~005Ccolon~003Aasterisk~002Aquestionmark~003Fquote~0027doublequote~0022angle~003C~003Epipe~007Cexclamationmark~0021percent~0025space~0020`,
 		},
 	}
 
