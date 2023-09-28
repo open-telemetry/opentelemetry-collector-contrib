@@ -61,12 +61,7 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 	}
 	r.carbonReceiver = carbonReceiver
 
-	err = r.carbonReceiver.Start(ctx, host)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.carbonReceiver.Start(ctx, host)
 }
 
 func (r *metricsReceiver) Shutdown(ctx context.Context) error {
