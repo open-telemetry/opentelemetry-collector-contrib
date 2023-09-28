@@ -1,4 +1,4 @@
-package wavefrontreceiver
+package wavefrontreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 
 import (
 	"context"
