@@ -42,8 +42,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
@@ -93,22 +91,6 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
 				cfg.Path = filepath.Join(t.TempDir(), "random.file")
-				return cfg
-			},
-		},
-		{
-			exporter: "jaeger",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["jaeger"].CreateDefaultConfig().(*jaegerexporter.Config)
-				cfg.Endpoint = endpoint
-				return cfg
-			},
-		},
-		{
-			exporter: "jaeger_thrift",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["jaeger_thrift"].CreateDefaultConfig().(*jaegerthrifthttpexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},

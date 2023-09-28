@@ -14,8 +14,8 @@ import (
 )
 
 type convertSummaryCountValToSumArguments struct {
-	StringAggTemp string `ottlarg:"0"`
-	Monotonic     bool   `ottlarg:"1"`
+	StringAggTemp string
+	Monotonic     bool
 }
 
 func newConvertSummaryCountValToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {

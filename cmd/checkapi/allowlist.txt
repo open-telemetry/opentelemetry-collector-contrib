@@ -1,12 +1,11 @@
 connector/servicegraphconnector
-exporter/awscloudwatchlogsexporter
 exporter/awskinesisexporter
 exporter/azuremonitorexporter
 exporter/coralogixexporter
 exporter/dynatraceexporter
-exporter/elasticsearchexporter
 exporter/f5cloudexporter
 exporter/kafkaexporter
+exporter/kineticaexporter
 exporter/loadbalancingexporter
 exporter/logzioexporter
 exporter/lokiexporter
@@ -15,7 +14,6 @@ exporter/sentryexporter
 exporter/sumologicexporter
 extension/observer/ecsobserver
 extension/observer
-extension/observer/k8sobserver
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/probabilisticsamplerprocessor
@@ -24,14 +22,11 @@ processor/tailsamplingprocessor
 receiver/carbonreceiver
 receiver/collectdreceiver
 receiver/dockerstatsreceiver
-receiver/fluentforwardreceiver
 receiver/jaegerreceiver
 receiver/journaldreceiver
 receiver/kafkareceiver
 receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
-receiver/mysqlreceiver
-receiver/nsxtreceiver
 receiver/podmanreceiver
 receiver/pulsarreceiver
 receiver/windowseventlogreceiver

@@ -48,6 +48,12 @@ Queries the host machine to retrieve the following resource attributes:
     * host.arch
     * host.name
     * host.id
+    * host.cpu.vendor.id
+    * host.cpu.family
+    * host.cpu.model.id
+    * host.cpu.model.name
+    * host.cpu.stepping
+    * host.cpu.cache.l2.size
     * os.description
     * os.type
 

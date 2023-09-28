@@ -30,6 +30,7 @@ type MetricsConfig struct {
 	RedisClientsMaxInputBuffer             MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
 	RedisClientsMaxOutputBuffer            MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
 	RedisCmdCalls                          MetricConfig `mapstructure:"redis.cmd.calls"`
+	RedisCmdLatency                        MetricConfig `mapstructure:"redis.cmd.latency"`
 	RedisCmdUsec                           MetricConfig `mapstructure:"redis.cmd.usec"`
 	RedisCommands                          MetricConfig `mapstructure:"redis.commands"`
 	RedisCommandsProcessed                 MetricConfig `mapstructure:"redis.commands.processed"`
@@ -75,6 +76,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisCmdCalls: MetricConfig{
+			Enabled: false,
+		},
+		RedisCmdLatency: MetricConfig{
 			Enabled: false,
 		},
 		RedisCmdUsec: MetricConfig{

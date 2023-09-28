@@ -70,8 +70,8 @@ func dropFn[K any]() (ottl.ExprFunc[K], error) {
 }
 
 type hasAttributeOnDatapointArguments struct {
-	Key         string `ottlarg:"0"`
-	ExpectedVal string `ottlarg:"1"`
+	Key         string
+	ExpectedVal string
 }
 
 func newHasAttributeOnDatapointFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -95,7 +95,7 @@ func hasAttributeOnDatapoint(key string, expectedVal string) (ottl.ExprFunc[ottl
 }
 
 type hasAttributeKeyOnDatapointArguments struct {
-	Key string `ottlarg:"0"`
+	Key string
 }
 
 func newHasAttributeKeyOnDatapointFactory() ottl.Factory[ottlmetric.TransformContext] {

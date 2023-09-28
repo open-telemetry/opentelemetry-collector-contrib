@@ -7,6 +7,40 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.85.0
+
+### 🛑 Breaking changes 🛑
+
+- `alibabacloudlogserviceexporter`: Do not export the function `NewLogServiceClient` (#26304)
+- `awss3exporter`: Do not export the function `NewMarshaler` (#26304)
+- `statsdreceiver`: rename and do not export function `New` to `newReceiver` to pass checkapi (#26304)
+- `chronyreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26113)
+- `dockerstatsreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26114)
+- `elasticsearchexporter`: Do not export the function `DurationAsMicroseconds` (#26304)
+- `jaegerexporter`: Do not export the function `MetricViews` (#26304)
+- `k8sobjectsreceiver`: Do not export the function `NewTicker` (#26304)
+- `pkg/stanza`: Rename 'pkg/stanza/decoder' to 'pkg/stanza/decode' (#26340)
+- `pkg/stanza`: Move tokenize.SplitterConfig.Encoding to fileconsumer.Config.Encoding (#26511)
+- `pkg/stanza`: Remove Flusher from tokenize.SplitterConfig (#26517)
+  Removes the following in favor of flush.WithPeriod - tokenize.DefaultFlushPeriod - tokenize.FlusherConfig - tokenize.NewFlusherConfig
+- `pkg/stanza`: Remove tokenize.SplitterConfig (#26537)
+- `pkg/stanza`: Rename "tokenize" package to "split" (#26540)
+  - Remove 'Multiline' struct
+  - Remove 'NewMultilineConfig' struct
+  - Rename 'MultilineConfig' to 'split.Config'
+  
+- `pkg/stanza`: Extract whitespace trim configuration into trim.Config (#26511)
+  - PreserveLeading and PreserveTrailing removed from tokenize.SplitterConfig.
+  - PreserveLeadingWhitespaces and PreserveTrailingWhitespaces removed from tcp.BaseConfig and udp.BaseConfig.
+  
+
+### 💡 Enhancements 💡
+
+- `oauth2clientauthextension`: Enable dynamically reading ClientID and ClientSecret from files (#26117)
+  - Read the client ID and/or secret from a file by specifying the file path to the ClientIDFile (`client_id_file`) and ClientSecretFile (`client_secret_file`) fields respectively.
+  - The file is read every time the client issues a new token. This means that the corresponding value can change dynamically during the execution by modifying the file contents.
+  
+
 ## v0.84.0
 
 ### 🛑 Breaking changes 🛑

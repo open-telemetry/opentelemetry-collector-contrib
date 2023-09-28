@@ -322,7 +322,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 	metric.SetDescription(mf.metadata.Help)
 	metric.SetUnit(prometheus.UnitWordToUCUM(mf.metadata.Unit))
 
-	pointCount := 0
+	var pointCount int
 
 	switch mf.mtype {
 	case pmetric.MetricTypeHistogram:

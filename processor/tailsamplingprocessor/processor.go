@@ -6,6 +6,7 @@ package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"math"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -71,8 +72,8 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		return nil, component.ErrNilNextConsumer
 	}
 
-	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())
-	inBatcher, err := idbatcher.New(numDecisionBatches, cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+	numDecisionBatches := math.Max(1, cfg.DecisionWait.Seconds())
+	inBatcher, err := idbatcher.New(uint64(numDecisionBatches), cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
 	if err != nil {
 		return nil, err
 	}
