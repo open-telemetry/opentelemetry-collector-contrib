@@ -88,6 +88,14 @@ func assertMetricEqual(t *testing.T, m pmetric.Metric, dt pmetric.MetricType, pt
 		assertPoints(t, m.Gauge().DataPoints(), pts)
 	case pmetric.MetricTypeSum:
 		assertPoints(t, m.Sum().DataPoints(), pts)
+	case pmetric.MetricTypeEmpty:
+		t.Errorf("unexpected data type: %s", dt)
+	case pmetric.MetricTypeHistogram:
+		t.Errorf("unexpected data type: %s", dt)
+	case pmetric.MetricTypeExponentialHistogram:
+		t.Errorf("unexpected data type: %s", dt)
+	case pmetric.MetricTypeSummary:
+		t.Errorf("unexpected data type: %s", dt)
 	default:
 		t.Errorf("unexpected data type: %s", dt)
 	}

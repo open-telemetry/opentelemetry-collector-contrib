@@ -71,7 +71,7 @@ func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer 
 			conf := &clientConfig{
 				host:                  ashost,
 				username:              cfg.Username,
-				password:              cfg.Password,
+				password:              string(cfg.Password),
 				timeout:               cfg.Timeout,
 				logger:                sugaredLogger,
 				collectClusterMetrics: cfg.CollectClusterMetrics,
@@ -166,7 +166,9 @@ func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timesta
 		}
 	}
 
-	r.mb.EmitForResource(metadata.WithAerospikeNodeName(info["node"]))
+	rb := r.mb.NewResourceBuilder()
+	rb.SetAerospikeNodeName(info["node"])
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	r.logger.Debug("finished emitNode")
 }
 
@@ -385,7 +387,10 @@ func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Ti
 		}
 	}
 
-	r.mb.EmitForResource(metadata.WithAerospikeNamespace(info["name"]), metadata.WithAerospikeNodeName(info["node"]))
+	rb := r.mb.NewResourceBuilder()
+	rb.SetAerospikeNamespace(info["name"])
+	rb.SetAerospikeNodeName(info["node"])
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	r.logger.Debug("finished emitNamespace")
 }
 

@@ -5,3 +5,5 @@ status:
   stability:
     alpha: [metrics, logs]
   distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [atoulme, djaglowski]

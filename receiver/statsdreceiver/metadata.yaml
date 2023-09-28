@@ -5,3 +5,5 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, splunk, sumo, aws]
+  codeowners:
+    active: [jmacd, dmitryax]

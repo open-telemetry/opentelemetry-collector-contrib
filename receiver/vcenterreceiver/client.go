@@ -59,7 +59,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if tlsCfg != nil {
 		client.DefaultTransport().TLSClientConfig = tlsCfg
 	}
-	user := url.UserPassword(vc.cfg.Username, vc.cfg.Password)
+	user := url.UserPassword(vc.cfg.Username, string(vc.cfg.Password))
 	err = client.Login(ctx, user)
 	if err != nil {
 		return fmt.Errorf("unable to login to vcenter sdk: %w", err)

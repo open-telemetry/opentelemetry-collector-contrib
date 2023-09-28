@@ -19,6 +19,7 @@ import (
 type worker struct {
 	running        *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
 	numLogs        int             // how many logs the worker has to generate (only when duration==0)
+	body           string          // the body of the log
 	totalDuration  time.Duration   // how long to run the test for (overrides `numLogs`)
 	limitPerSecond rate.Limit      // how many logs per second to generate
 	wg             *sync.WaitGroup // notify when done
@@ -38,6 +39,7 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter) {
 			nRes.Attributes().PutStr(string(attr.Key), attr.Value.AsString())
 		}
 		log := logs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		log.Body().SetStr(w.body)
 		log.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		log.SetDroppedAttributesCount(1)
 		log.SetSeverityNumber(plog.SeverityNumberInfo)

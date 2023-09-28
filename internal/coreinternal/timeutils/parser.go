@@ -8,8 +8,12 @@ import (
 	"strings"
 	"time"
 
-	strptime "github.com/observiq/ctimefmt"
+	strptime "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt"
 )
+
+func StrptimeToGotime(layout string) (string, error) {
+	return strptime.ToNative(layout)
+}
 
 func ParseStrptime(layout string, value any, location *time.Location) (time.Time, error) {
 	goLayout, err := strptime.ToNative(layout)

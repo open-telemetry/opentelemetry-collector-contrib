@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, cpheps]
 
 resource_attributes:
   rabbitmq.queue.name:
@@ -34,7 +36,7 @@ metrics:
     unit: "{consumers}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   rabbitmq.message.delivered:
@@ -42,7 +44,7 @@ metrics:
     unit: "{messages}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   rabbitmq.message.published:
@@ -50,7 +52,7 @@ metrics:
     unit: "{messages}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   rabbitmq.message.acknowledged:
@@ -58,7 +60,7 @@ metrics:
     unit: "{messages}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   rabbitmq.message.dropped:
@@ -66,7 +68,7 @@ metrics:
     unit: "{messages}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   rabbitmq.message.current:
@@ -74,7 +76,7 @@ metrics:
     unit: "{messages}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [message.state]
     enabled: true

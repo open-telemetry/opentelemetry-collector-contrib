@@ -4,18 +4,19 @@ The `udp_input` operator listens for logs from UDP packets.
 
 ### Configuration Fields
 
-| Field                           | Default          | Description |
-| ---                             | ---              | ---         |
-| `id`                            | `udp_input`      | A unique identifier for the operator. |
-| `output`                        | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
-| `listen_address`                | required         | A listen address of the form `<ip>:<port>`. |
-| `attributes`                    | {}               | A map of `key: value` pairs to add to the entry's attributes. |
-| `resource`                      | {}               | A map of `key: value` pairs to add to the entry's resource. |
-| `add_attributes`                | false            | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes]. |
+| Field                                   | Default              | Description |
+| ---                                     | ---                  | ---         |
+| `id`                                    | `udp_input`          | A unique identifier for the operator. |
+| `output`                                | Next in pipeline     | The connected operator(s) that will receive all outbound entries. |
+| `listen_address`                        | required             | A listen address of the form `<ip>:<port>`. |
+| `attributes`                            | {}                   | A map of `key: value` pairs to add to the entry's attributes. |
+| `one_log_per_packet`                    | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance. |
+| `resource`                              | {}                   | A map of `key: value` pairs to add to the entry's resource. |
+| `add_attributes`                        | false                | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes]. |
 | `multiline`                     |                  | A `multiline` configuration block. See below for details. |
-| `preserve_leading_whitespaces`  | false            | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
-| `preserve_trailing_whitespaces` | false            | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                            |
-| `encoding`                      | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options. |
+| `preserve_leading_whitespaces`          | false            | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
+| `preserve_trailing_whitespaces`             | false            | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                            |
+| `encoding`                              | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options. |
 
 #### `multiline` configuration
 
@@ -26,6 +27,8 @@ If set, the `multiline` configuration block instructs the `udp_input` operator t
 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
+
+The `omit_pattern` setting can be used to omit the start/end pattern from each entry.
 
 #### Supported encodings
 

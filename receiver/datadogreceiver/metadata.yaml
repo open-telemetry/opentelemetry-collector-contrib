@@ -5,4 +5,5 @@ status:
   stability:
     alpha: [traces]
   distributions: [contrib, sumo]
-  
+  codeowners:
+    active: [boostchicken, gouthamve, jpkrohling, MovieStoreGuy]

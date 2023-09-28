@@ -11,6 +11,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -25,7 +26,7 @@ type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	Hosts                         []confignet.NetAddr `mapstructure:"hosts"`
 	Username                      string              `mapstructure:"username"`
-	Password                      string              `mapstructure:"password"`
+	Password                      configopaque.String `mapstructure:"password"`
 	ReplicaSet                    string              `mapstructure:"replica_set,omitempty"`
 	Timeout                       time.Duration       `mapstructure:"timeout"`
 }
@@ -76,7 +77,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 	if c.Username != "" && c.Password != "" {
 		clientOptions.SetAuth(options.Credential{
 			Username: c.Username,
-			Password: c.Password,
+			Password: string(c.Password),
 		})
 	}
 

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 )
@@ -25,67 +26,76 @@ func TestValidate(t *testing.T) {
 		{
 			name: "blank endpoint",
 			config: &Config{
-				Endpoint: "",
+				Endpoint:                  "",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errEmptyEndpoint,
 		},
 		{
 			name: "missing port",
 			config: &Config{
-				Endpoint: "localhost",
+				Endpoint:                  "localhost",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "bad endpoint",
 			config: &Config{
-				Endpoint: "x;;ef;s;d:::ss:23423423423423423",
+				Endpoint:                  "x;;ef;s;d:::ss:23423423423423423",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "missing host",
 			config: &Config{
-				Endpoint: ":3001",
+				Endpoint:                  ":3001",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "negative port",
 			config: &Config{
-				Endpoint: "localhost:-2",
+				Endpoint:                  "localhost:-2",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "bad port",
 			config: &Config{
-				Endpoint: "localhost:9999999999999999999",
+				Endpoint:                  "localhost:9999999999999999999",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "negative timeout",
 			config: &Config{
-				Endpoint: "localhost:3000",
-				Timeout:  -1 * time.Second,
+				Endpoint:                  "localhost:3000",
+				Timeout:                   -1 * time.Second,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errNegativeTimeout,
 		},
 		{
 			name: "password but no username",
 			config: &Config{
-				Endpoint: "localhost:3000",
-				Username: "",
-				Password: "secret",
+				Endpoint:                  "localhost:3000",
+				Username:                  "",
+				Password:                  "secret",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errEmptyUsername,
 		},
 		{
 			name: "username but no password",
 			config: &Config{
-				Endpoint: "localhost:3000",
-				Username: "ro_user",
+				Endpoint:                  "localhost:3000",
+				Username:                  "ro_user",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errEmptyPassword,
 		},
@@ -100,6 +110,7 @@ func TestValidate(t *testing.T) {
 						CAFile: "BADCAFILE",
 					},
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errFailedTLSLoad,
 		},
@@ -112,6 +123,7 @@ func TestValidate(t *testing.T) {
 					Insecure:   false,
 					TLSSetting: configtls.TLSSetting{},
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errEmptyEndpointTLSName,
 		},

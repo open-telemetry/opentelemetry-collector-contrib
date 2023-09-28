@@ -40,7 +40,7 @@ func (e *gRPCClientExporter) export(logs plog.Logs) error {
 
 // Start starts the log telemetry generator
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
@@ -97,6 +97,7 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 		w := worker{
 			numLogs:        c.NumLogs,
 			limitPerSecond: limit,
+			body:           c.Body,
 			totalDuration:  c.TotalDuration,
 			running:        running,
 			wg:             &wg,

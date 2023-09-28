@@ -3,5 +3,7 @@ type: tanzuobservability
 status:
   class: exporter
   stability:
-    beta: [traces, metrics]
+    deprecated: [traces, metrics]
   distributions: [contrib]
+  codeowners:
+    active: [oppegard, thepeterstone, keep94]

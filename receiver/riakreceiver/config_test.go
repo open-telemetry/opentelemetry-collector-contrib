@@ -9,7 +9,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -24,6 +27,7 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -38,6 +42,7 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				errMissingPassword,
@@ -51,6 +56,7 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -65,6 +71,7 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
@@ -78,6 +85,7 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: defaultEndpoint,
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: nil,
 		},

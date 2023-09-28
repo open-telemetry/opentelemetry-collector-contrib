@@ -11,6 +11,8 @@ all_set:
       enabled: true
     redis.cmd.calls:
       enabled: true
+    redis.cmd.latency:
+      enabled: true
     redis.cmd.usec:
       enabled: true
     redis.commands:
@@ -81,6 +83,8 @@ none_set:
     redis.clients.max_output_buffer:
       enabled: false
     redis.cmd.calls:
+      enabled: false
+    redis.cmd.latency:
       enabled: false
     redis.cmd.usec:
       enabled: false

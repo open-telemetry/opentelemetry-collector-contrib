@@ -3,10 +3,19 @@
 # otherwise in the example command pipe, only the exit code of `tee` is recorded instead of `go test` which can cause
 # test to pass in CI when they should not.
 SHELL = /bin/bash
-ifeq ($(shell uname -s),Windows)
-	.SHELLFLAGS = /o pipefile /c
+.SHELLFLAGS = -o pipefail -c
+
+SHELL_CASE_EXP = case "$$(uname -s)" in CYGWIN*|MINGW*|MSYS*) echo "true";; esac;
+UNIX_SHELL_ON_WINDOWS := $(shell $(SHELL_CASE_EXP))
+
+ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
+	# The "sed" transformation below is needed on Windows, since commands like `go list -f '{{ .Dir }}'`
+	# return Windows paths and such paths are incompatible with other *nix tools, like `find`,
+	# used by the Makefile shell.
+	# The backslash needs to be doubled so its passed correctly to the shell. 
+	NORMALIZE_DIRS = sed -e 's/^/\\//' -e 's/://' -e 's/\\\\/\\//g' | sort
 else
-	.SHELLFLAGS = -o pipefail -c
+	NORMALIZE_DIRS = sort
 endif
 
 # SRC_ROOT is the top of the source tree.
@@ -34,6 +43,7 @@ TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
 TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
 TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
 TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
+CHLOGGEN_CONFIG  := .chloggen/config.yaml
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
@@ -53,7 +63,7 @@ MULITMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
 GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
-CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
+CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
@@ -62,7 +72,7 @@ GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
-ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sort)
+ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | $(NORMALIZE_DIRS))
 
 ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/third_party/*' \
@@ -164,7 +174,7 @@ fmt: $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners --verbose --build-tags integration --path-prefix $(shell basename "$(CURDIR)")
+	$(LINT) run --allow-parallel-runners --verbose --build-tags integration --timeout=30m --path-prefix $(shell basename "$(CURDIR)")
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
@@ -173,7 +183,7 @@ govulncheck: $(GOVULNCHECK)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.19
+	$(GOCMD) mod tidy -compat=1.20
 
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell

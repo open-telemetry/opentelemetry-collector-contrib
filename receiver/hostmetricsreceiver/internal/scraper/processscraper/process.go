@@ -4,12 +4,14 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"context"
 	"runtime"
 	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
@@ -39,28 +41,25 @@ type commandMetadata struct {
 	commandLineSlice []string
 }
 
-func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
-	opts := make([]metadata.ResourceMetricsOption, 0, 6)
-	opts = append(opts,
-		metadata.WithProcessPid(int64(m.pid)),
-		metadata.WithProcessParentPid(int64(m.parentPid)),
-		metadata.WithProcessExecutableName(m.executable.name),
-		metadata.WithProcessExecutablePath(m.executable.path),
-	)
+func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Resource {
+	rb.SetProcessPid(int64(m.pid))
+	rb.SetProcessParentPid(int64(m.parentPid))
+	rb.SetProcessExecutableName(m.executable.name)
+	rb.SetProcessExecutablePath(m.executable.path)
 	if m.command != nil {
-		opts = append(opts, metadata.WithProcessCommand(m.command.command))
+		rb.SetProcessCommand(m.command.command)
 		if m.command.commandLineSlice != nil {
 			// TODO insert slice here once this is supported by the data model
 			// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
-			opts = append(opts, metadata.WithProcessCommandLine(strings.Join(m.command.commandLineSlice, " ")))
+			rb.SetProcessCommandLine(strings.Join(m.command.commandLineSlice, " "))
 		} else {
-			opts = append(opts, metadata.WithProcessCommandLine(m.command.commandLine))
+			rb.SetProcessCommandLine(m.command.commandLine)
 		}
 	}
 	if m.username != "" {
-		opts = append(opts, metadata.WithProcessOwner(m.username))
+		rb.SetProcessOwner(m.username)
 	}
-	return opts
+	return rb.Emit()
 }
 
 // processHandles provides a wrapper around []*process.Process
@@ -73,25 +72,25 @@ type processHandles interface {
 }
 
 type processHandle interface {
-	Name() (string, error)
-	Exe() (string, error)
-	Username() (string, error)
-	Cmdline() (string, error)
-	CmdlineSlice() ([]string, error)
-	Times() (*cpu.TimesStat, error)
-	Percent(time.Duration) (float64, error)
-	MemoryInfo() (*process.MemoryInfoStat, error)
-	MemoryPercent() (float32, error)
-	IOCounters() (*process.IOCountersStat, error)
-	NumThreads() (int32, error)
-	CreateTime() (int64, error)
-	Parent() (*process.Process, error)
-	Ppid() (int32, error)
-	PageFaults() (*process.PageFaultsStat, error)
-	NumCtxSwitches() (*process.NumCtxSwitchesStat, error)
-	NumFDs() (int32, error)
+	NameWithContext(context.Context) (string, error)
+	ExeWithContext(context.Context) (string, error)
+	UsernameWithContext(context.Context) (string, error)
+	CmdlineWithContext(context.Context) (string, error)
+	CmdlineSliceWithContext(context.Context) ([]string, error)
+	TimesWithContext(context.Context) (*cpu.TimesStat, error)
+	PercentWithContext(context.Context, time.Duration) (float64, error)
+	MemoryInfoWithContext(context.Context) (*process.MemoryInfoStat, error)
+	MemoryPercentWithContext(context.Context) (float32, error)
+	IOCountersWithContext(context.Context) (*process.IOCountersStat, error)
+	NumThreadsWithContext(context.Context) (int32, error)
+	CreateTimeWithContext(context.Context) (int64, error)
+	ParentWithContext(context.Context) (*process.Process, error)
+	PpidWithContext(context.Context) (int32, error)
+	PageFaultsWithContext(context.Context) (*process.PageFaultsStat, error)
+	NumCtxSwitchesWithContext(context.Context) (*process.NumCtxSwitchesStat, error)
+	NumFDsWithContext(context.Context) (int32, error)
 	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
-	RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error)
+	RlimitUsageWithContext(ctx context.Context, gatherUsed bool) ([]process.RlimitStat, error)
 }
 
 type gopsProcessHandles struct {
@@ -110,8 +109,8 @@ func (p *gopsProcessHandles) Len() int {
 	return len(p.handles)
 }
 
-func getProcessHandlesInternal() (processHandles, error) {
-	processes, err := process.Processes()
+func getProcessHandlesInternal(ctx context.Context) (processHandles, error) {
+	processes, err := process.ProcessesWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -119,11 +118,11 @@ func getProcessHandlesInternal() (processHandles, error) {
 	return &gopsProcessHandles{handles: processes}, nil
 }
 
-func parentPid(handle processHandle, pid int32) (int32, error) {
+func parentPid(ctx context.Context, handle processHandle, pid int32) (int32, error) {
 	// special case for pid 0 and pid 1 in darwin
 	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin") {
 		return 0, nil
 	}
 
-	return handle.Ppid()
+	return handle.PpidWithContext(ctx)
 }

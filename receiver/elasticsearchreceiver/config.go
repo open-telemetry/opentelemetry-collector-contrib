@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -46,13 +47,13 @@ type Config struct {
 	// Username is the username used when making REST calls to elasticsearch. Must be specified if Password is. Not required.
 	Username string `mapstructure:"username"`
 	// Password is the password used when making REST calls to elasticsearch. Must be specified if Username is. Not required.
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 }
 
 // Validate validates the given config, returning an error specifying any issues with the config.
 func (cfg *Config) Validate() error {
 	var combinedErr error
-	if err := invalidCredentials(cfg.Username, cfg.Password); err != nil {
+	if err := invalidCredentials(cfg.Username, string(cfg.Password)); err != nil {
 		combinedErr = multierr.Append(combinedErr, err)
 	}
 

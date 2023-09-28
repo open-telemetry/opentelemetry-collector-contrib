@@ -74,6 +74,10 @@ func spanToEnvelopes(
 
 	data := contracts.NewData()
 
+	if userID, exists := attributeMap.Get(conventions.AttributeEnduserID); exists {
+		envelope.Tags[contracts.UserId] = userID.Str()
+	}
+
 	if spanKind == ptrace.SpanKindServer || spanKind == ptrace.SpanKindConsumer {
 		requestData := spanToRequestData(span, incomingSpanType)
 		dataProperties = requestData.Properties

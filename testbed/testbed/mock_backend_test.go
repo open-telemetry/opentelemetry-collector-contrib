@@ -27,7 +27,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 		{
 			name:     "OTLP/HTTP-OTLP/HTTP",
 			receiver: NewOTLPHTTPDataReceiver(port),
-			sender:   NewOTLPHTTPTraceDataSender(DefaultHost, port),
+			sender:   NewOTLPHTTPTraceDataSender(DefaultHost, port, ""),
 		},
 	}
 

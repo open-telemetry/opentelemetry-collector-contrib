@@ -48,7 +48,7 @@ func TestTypeToPackagePath_Local(t *testing.T) {
 
 func TestTypeToPackagePath_External(t *testing.T) {
 	packageDir := testTypeToPackagePath(t, otlpreceiver.Config{})
-	assert.Contains(t, packageDir, "pkg/mod/go.opentelemetry.io/collector@")
+	assert.Contains(t, packageDir, "pkg/mod/go.opentelemetry.io/collector/receiver@")
 }
 
 func TestTypeToPackagePath_Error(t *testing.T) {

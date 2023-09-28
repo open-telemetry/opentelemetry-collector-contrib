@@ -6,6 +6,8 @@
 | Stability     | [alpha]: logs   |
 |               | [beta]: traces, metrics   |
 | Distributions | [contrib], [observiq] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fcoralogix%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fcoralogix) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fcoralogix%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fcoralogix) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@povilasv](https://www.github.com/povilasv), [@matej-g](https://www.github.com/matej-g) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
@@ -101,7 +103,7 @@ Learn more about [AWS PrivateLink in the documentation page](https://coralogix.c
 ### Application and SubSystem attributes
 
 v0.62.0 release of OpenTelemetry Collector allows you to map Application name and Subsystem name to Resource attributes. 
-You need to set `application_name_attributes` and `subsystem_name_attributes` fields with a list of potential Resource attributes for the AppName and Subsystem values. The first not-empty Resource attribute is going to be used.
+You need to set `application_name_attributes` and `subsystem_name_attributes` fields with a list of potential Resource attributes for the AppName and Subsystem values. The first not-empty Resource attribute is going to be used. If multiple resource attributes are available, **the order of the attributes in the list determines their priority.**
 
 ### Kubernetes attributes
 
@@ -112,16 +114,17 @@ exporters:
   coralogix:
     domain: "coralogix.com"
     application_name_attributes:
-      - "service.namespace"
       - "k8s.namespace.name" 
+      - "service.namespace"
     subsystem_name_attributes:
-      - "service.name"
+      - "k8s.job.name"
       - "k8s.deployment.name"
       - "k8s.statefulset.name"
       - "k8s.daemonset.name"
       - "k8s.cronjob.name"
-      - "k8s.job.name"
-      - "k8s.container.name"
+      - "k8s.pod.name"
+      - "k8s.node.name"
+      - "service.name"
 ```
 ### Host Attributes
 

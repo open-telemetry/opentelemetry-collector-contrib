@@ -1,0 +1,13 @@
+connector/servicegraphconnector
+exporter/kafkaexporter
+exporter/pulsarexporter
+extension/observer
+processor/servicegraphprocessor
+receiver/carbonreceiver
+receiver/collectdreceiver
+receiver/dockerstatsreceiver
+receiver/journaldreceiver
+receiver/kafkareceiver
+receiver/podmanreceiver
+receiver/pulsarreceiver
+receiver/windowseventlogreceiver

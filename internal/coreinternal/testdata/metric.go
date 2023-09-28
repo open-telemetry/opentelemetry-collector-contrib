@@ -268,6 +268,7 @@ func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType) {
 	m.SetName(name)
 	m.SetDescription("")
 	m.SetUnit("1")
+	//exhaustive:enforce
 	switch ty {
 	case pmetric.MetricTypeGauge:
 		m.SetEmptyGauge()

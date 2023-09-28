@@ -7,6 +7,7 @@ import (
 	"context"
 	"strings"
 
+	"go.opentelemetry.io/collector/client"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
@@ -32,14 +33,12 @@ func (e extractor) extractFromContext(ctx context.Context) string {
 	// right now, we only support looking up attributes from requests that have
 	// gone through the gRPC server in that case, it will add the HTTP headers
 	// as context metadata
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return ""
-	}
+	values, ok := e.extractFromGRPCContext(ctx)
 
-	// we have gRPC metadata in the context but does it have our key?
-	values, ok := md[strings.ToLower(e.fromAttr)]
 	if !ok {
+		values = e.extractFromHTTPContext(ctx)
+	}
+	if len(values) == 0 {
 		return ""
 	}
 
@@ -51,4 +50,26 @@ func (e extractor) extractFromContext(ctx context.Context) string {
 	}
 
 	return values[0]
+}
+
+func (e extractor) extractFromGRPCContext(ctx context.Context) ([]string, bool) {
+
+	md, ok := metadata.FromIncomingContext(ctx)
+
+	if !ok {
+		return nil, false
+	}
+
+	values, ok := md[strings.ToLower(e.fromAttr)]
+	if !ok {
+		return nil, false
+	}
+	return values, true
+}
+
+func (e extractor) extractFromHTTPContext(ctx context.Context) []string {
+	info := client.FromContext(ctx)
+	md := info.Metadata
+	values := md.Get(e.fromAttr)
+	return values
 }

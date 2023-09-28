@@ -5,15 +5,19 @@
 
 package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 
-import "fmt"
+import (
+	"fmt"
 
-func validateRootPath(rootPath string, _ environment) error {
+	"github.com/shirou/gopsutil/v3/common"
+)
+
+func validateRootPath(rootPath string) error {
 	if rootPath == "" {
 		return nil
 	}
 	return fmt.Errorf("root_path is supported on linux only")
 }
 
-func setGoPsutilEnvVars(_ string, _ environment) error {
-	return nil
+func setGoPsutilEnvVars(_ string, _ environment) common.EnvMap {
+	return common.EnvMap{}
 }

@@ -133,7 +133,7 @@ resourceMetrics:
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
-          - description: Whether this node is Ready (1), not Ready (0) or in an unknown state (-1)
+          - description: Ready condition status of the node (true=1, false=0, unknown=-1)
             gauge:
               dataPoints:
                 - asInt: "1"
@@ -157,6 +157,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod
@@ -165,29 +166,31 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.current_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.desired_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod
             gauge:
               dataPoints:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.misscheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.ready_nodes
-            unit: "1"
-        scope: {}
+            unit: "{node}"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.daemonset.name
@@ -202,6 +205,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod
@@ -210,29 +214,31 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.current_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.desired_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod
             gauge:
               dataPoints:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.misscheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.ready_nodes
-            unit: "1"
-        scope: {}
+            unit: "{node}"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.deployment.name
@@ -256,14 +262,14 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.deployment.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
             gauge:
               dataPoints:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.deployment.available
-            unit: "1"
+            unit: "{pod}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -290,14 +296,14 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.deployment.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.deployment.available
-            unit: "1"
+            unit: "{pod}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -324,14 +330,14 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.deployment.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.deployment.available
-            unit: "1"
+            unit: "{pod}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -349,6 +355,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this replicaset
@@ -357,15 +364,17 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.available
-            unit: "1"
-        scope: {}
+            unit: "{pod}"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -380,6 +389,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this replicaset
@@ -388,15 +398,17 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
             gauge:
               dataPoints:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.available
-            unit: "1"
-        scope: {}
+            unit: "{pod}"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -411,6 +423,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this replicaset
@@ -419,15 +432,17 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.available
-            unit: "1"
-        scope: {}
+            unit: "{pod}"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -766,7 +781,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -829,7 +844,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -906,7 +921,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -962,7 +977,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1018,7 +1033,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1074,7 +1089,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1123,7 +1138,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1193,7 +1208,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1270,7 +1285,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1319,7 +1334,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:

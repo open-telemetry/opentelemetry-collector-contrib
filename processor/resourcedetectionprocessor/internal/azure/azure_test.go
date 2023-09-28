@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/internal/metadata"
 )
 
 func TestNewDetector(t *testing.T) {
@@ -37,8 +38,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		VMScaleSetName:    "myScaleset",
 	}, nil)
 
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	detector := &Detector{provider: mp, resourceAttributes: resourceAttributes}
+	detector := &Detector{provider: mp, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -63,8 +63,11 @@ func TestDetectAzureAvailable(t *testing.T) {
 func TestDetectError(t *testing.T) {
 	mp := &azure.MockProvider{}
 	mp.On("Metadata").Return(&azure.ComputeMetadata{}, fmt.Errorf("mock error"))
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	detector := &Detector{provider: mp, logger: zap.NewNop(), resourceAttributes: resourceAttributes}
+	detector := &Detector{
+		provider: mp,
+		logger:   zap.NewNop(),
+		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+	}
 	res, _, err := detector.Detect(context.Background())
 	assert.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))

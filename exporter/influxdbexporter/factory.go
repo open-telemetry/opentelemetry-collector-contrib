@@ -40,10 +40,15 @@ func createDefaultConfig() component.Config {
 				"User-Agent": "OpenTelemetry -> Influx",
 			},
 		},
-		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
-		MetricsSchema:  common.MetricsSchemaTelegrafPrometheusV1.String(),
-		SpanDimensions: otel2influx.DefaultOtelTracesToLineProtocolConfig().SpanDimensions,
+		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
+		MetricsSchema:       common.MetricsSchemaTelegrafPrometheusV1.String(),
+		SpanDimensions:      otel2influx.DefaultOtelTracesToLineProtocolConfig().SpanDimensions,
+		LogRecordDimensions: otel2influx.DefaultOtelLogsToLineProtocolConfig().LogRecordDimensions,
+		// defaults per suggested:
+		// https://docs.influxdata.com/influxdb/cloud-serverless/write-data/best-practices/optimize-writes/#batch-writes
+		PayloadMaxLines: 10_000,
+		PayloadMaxBytes: 10_000_000,
 	}
 }
 
@@ -129,6 +134,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	expConfig := otel2influx.DefaultOtelLogsToLineProtocolConfig()
 	expConfig.Logger = logger
 	expConfig.Writer = writer
+	expConfig.LogRecordDimensions = cfg.LogRecordDimensions
 	exp, err := otel2influx.NewOtelLogsToLineProtocol(expConfig)
 	if err != nil {
 		return nil, err

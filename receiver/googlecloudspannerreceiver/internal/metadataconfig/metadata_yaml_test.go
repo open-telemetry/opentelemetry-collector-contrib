@@ -12,9 +12,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadataparser"
 )
 
-// Kind of sanity check test of metadata.yaml used for production usage
+// Kind of sanity check test of metrics.yaml used for production usage
 func TestParsingMetadataYaml(t *testing.T) {
-	content, err := os.ReadFile("metadata.yaml")
+	content, err := os.ReadFile("metrics.yaml")
 
 	require.NoError(t, err)
 

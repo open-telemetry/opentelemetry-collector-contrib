@@ -40,10 +40,10 @@ type eksDetectorUtils struct {
 
 // detector for EKS
 type detector struct {
-	utils              detectorUtils
-	logger             *zap.Logger
-	err                error
-	resourceAttributes metadata.ResourceAttributesConfig
+	utils  detectorUtils
+	logger *zap.Logger
+	err    error
+	rb     *metadata.ResourceBuilder
 }
 
 var _ internal.Detector = (*detector)(nil)
@@ -54,29 +54,27 @@ var _ detectorUtils = (*eksDetectorUtils)(nil)
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	utils, err := newK8sDetectorUtils()
-	return &detector{utils: utils, logger: set.Logger, err: err, resourceAttributes: cfg.ResourceAttributes}, nil
+	return &detector{
+		utils:  utils,
+		logger: set.Logger,
+		err:    err,
+		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+	}, nil
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
-func (detector *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-
+func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// Check if running on EKS.
-	isEKS, err := isEKS(ctx, detector.utils)
+	isEKS, err := isEKS(ctx, d.utils)
 	if !isEKS {
-		detector.logger.Debug("Unable to identify EKS environment", zap.Error(err))
-		return res, "", err
+		d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
+		return pcommon.NewResource(), "", err
 	}
 
-	attr := res.Attributes()
-	if detector.resourceAttributes.CloudProvider.Enabled {
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	}
-	if detector.resourceAttributes.CloudPlatform.Enabled {
-		attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
-	}
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
 
-	return res, conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
 func isEKS(ctx context.Context, utils detectorUtils) (bool, error) {

@@ -15,6 +15,7 @@ const (
 	extension = "extension"
 	processor = "processor"
 	exporter  = "exporter"
+	connector = "connector"
 )
 
 // CfgInfo contains a component config instance, as well as its group name and
@@ -31,34 +32,47 @@ type CfgInfo struct {
 // GetAllCfgInfos accepts a Factories struct, then creates and returns a CfgInfo
 // for each of its components.
 func GetAllCfgInfos(components otelcol.Factories) []CfgInfo {
-	var out []CfgInfo
+	out := make([]CfgInfo, len(components.Receivers)+len(components.Extensions)+len(components.Processors)+len(components.Exporters)+len(components.Connectors))
+	i := 0
 	for _, f := range components.Receivers {
-		out = append(out, CfgInfo{
+		out[i] = CfgInfo{
 			Type:        f.Type(),
 			Group:       receiver,
 			CfgInstance: f.CreateDefaultConfig(),
-		})
+		}
+		i++
 	}
 	for _, f := range components.Extensions {
-		out = append(out, CfgInfo{
+		out[i] = CfgInfo{
 			Type:        f.Type(),
 			Group:       extension,
 			CfgInstance: f.CreateDefaultConfig(),
-		})
+		}
+		i++
 	}
 	for _, f := range components.Processors {
-		out = append(out, CfgInfo{
+		out[i] = CfgInfo{
 			Type:        f.Type(),
 			Group:       processor,
 			CfgInstance: f.CreateDefaultConfig(),
-		})
+		}
+		i++
 	}
 	for _, f := range components.Exporters {
-		out = append(out, CfgInfo{
+		out[i] = CfgInfo{
 			Type:        f.Type(),
 			Group:       exporter,
 			CfgInstance: f.CreateDefaultConfig(),
-		})
+		}
+		i++
+	}
+	for _, f := range components.Connectors {
+		out[i] = CfgInfo{
+			Type:        f.Type(),
+			Group:       connector,
+			CfgInstance: f.CreateDefaultConfig(),
+		}
+		i++
 	}
 	return out
 }

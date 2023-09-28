@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -27,12 +28,17 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 	}
 
 	contexts := make([]consumer.Logs, len(contextStatements))
+	var errors error
 	for i, cs := range contextStatements {
 		context, err := pc.ParseContextStatements(cs)
 		if err != nil {
-			return nil, err
+			errors = multierr.Append(errors, err)
 		}
 		contexts[i] = context
+	}
+
+	if errors != nil {
+		return nil, errors
 	}
 
 	return &Processor{

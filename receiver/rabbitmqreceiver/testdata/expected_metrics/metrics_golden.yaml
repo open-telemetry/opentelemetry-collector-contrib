@@ -18,8 +18,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{consumers}'
           - description: The total number of messages currently in the queue.
             name: rabbitmq.message.current
@@ -31,15 +31,15 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: ready
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
                         stringValue: unacknowledged
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{messages}'
         scope:
           name: otelcol/rabbitmqreceiver
@@ -63,8 +63,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{consumers}'
           - description: The number of messages acknowledged by consumers.
             name: rabbitmq.message.acknowledged
@@ -72,8 +72,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7827"
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{messages}'
           - description: The total number of messages currently in the queue.
@@ -86,15 +86,15 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: ready
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: state
                       value:
                         stringValue: unacknowledged
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{messages}'
           - description: The number of messages delivered to consumers.
             name: rabbitmq.message.delivered
@@ -102,8 +102,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7828"
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{messages}'
           - description: The number of messages dropped as unroutable.
@@ -112,8 +112,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{messages}'
           - description: The number of messages published to a queue.
@@ -122,8 +122,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7830"
-                  startTimeUnixNano: "1656512143898318000"
-                  timeUnixNano: "1656512143899572000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{messages}'
         scope:

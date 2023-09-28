@@ -16,15 +16,15 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: clean
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "228"
                   attributes:
                     - key: status
                       value:
                         stringValue: dirty
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The configured size of the InnoDB buffer pool.
             name: mysql.buffer_pool.limit
@@ -32,8 +32,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "134217728"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The number of operations on the InnoDB buffer pool.
             name: mysql.buffer_pool.operations
@@ -45,50 +45,50 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: read_ahead
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "238"
                   attributes:
                     - key: operation
                       value:
                         stringValue: read_ahead_evicted
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "236"
                   attributes:
                     - key: operation
                       value:
                         stringValue: read_ahead_rnd
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "239"
                   attributes:
                     - key: operation
                       value:
                         stringValue: read_requests
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "240"
                   attributes:
                     - key: operation
                       value:
                         stringValue: reads
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "241"
                   attributes:
                     - key: operation
                       value:
                         stringValue: wait_free
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "242"
                   attributes:
                     - key: operation
                       value:
                         stringValue: write_requests
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of requests to flush pages from the InnoDB buffer pool.
@@ -97,8 +97,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "232"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of pages in the InnoDB buffer pool.
@@ -111,22 +111,22 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: data
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "233"
                   attributes:
                     - key: kind
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "234"
                   attributes:
                     - key: kind
                       value:
                         stringValue: misc
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of bytes in the InnoDB buffer pool.
             name: mysql.buffer_pool.usage
@@ -138,15 +138,15 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: clean
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "229"
                   attributes:
                     - key: status
                       value:
                         stringValue: dirty
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The number of transmitted bytes between server and clients.
             name: mysql.client.network.io
@@ -158,15 +158,15 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "9"
                   attributes:
                     - key: kind
                       value:
                         stringValue: sent
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
           - description: The number of times each type of command has been executed.
@@ -179,29 +179,29 @@ resourceMetrics:
                     - key: command
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "78"
                   attributes:
                     - key: command
                       value:
                         stringValue: insert
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "106"
                   attributes:
                     - key: command
                       value:
                         stringValue: select
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "173"
                   attributes:
                     - key: command
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of connection attempts (successful or not) to the MySQL server.
@@ -210,8 +210,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "188"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: Errors that occur during the client connection process.
@@ -219,69 +219,69 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "182"
-                  attributes:
-                    - key: error
-                      value:
-                        stringValue: accept
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "183"
-                  attributes:
-                    - key: error
-                      value:
-                        stringValue: internal
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "184"
-                  attributes:
-                    - key: error
-                      value:
-                        stringValue: max_connections
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "185"
-                  attributes:
-                    - key: error
-                      value:
-                        stringValue: peer_address
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "186"
-                  attributes:
-                    - key: error
-                      value:
-                        stringValue: select
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "187"
-                  attributes:
-                    - key: error
-                      value:
-                        stringValue: tcpwrap
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "2"
                   attributes:
                     - key: error
                       value:
                         stringValue: aborted
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: error
                       value:
                         stringValue: aborted_clients
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "182"
+                  attributes:
+                    - key: error
+                      value:
+                        stringValue: accept
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "183"
+                  attributes:
+                    - key: error
+                      value:
+                        stringValue: internal
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "293"
                   attributes:
                     - key: error
                       value:
                         stringValue: locked
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "184"
+                  attributes:
+                    - key: error
+                      value:
+                        stringValue: max_connections
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "185"
+                  attributes:
+                    - key: error
+                      value:
+                        stringValue: peer_address
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "186"
+                  attributes:
+                    - key: error
+                      value:
+                        stringValue: select
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "187"
+                  attributes:
+                    - key: error
+                      value:
+                        stringValue: tcpwrap
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of writes to the InnoDB doublewrite buffer.
@@ -294,15 +294,15 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: pages_written
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "252"
                   attributes:
                     - key: kind
                       value:
                         stringValue: writes
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of requests to various MySQL handlers.
@@ -315,127 +315,127 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: commit
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "211"
                   attributes:
                     - key: kind
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "212"
                   attributes:
                     - key: kind
                       value:
                         stringValue: discover
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "213"
                   attributes:
                     - key: kind
                       value:
                         stringValue: external_lock
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "214"
                   attributes:
                     - key: kind
                       value:
                         stringValue: mrr_init
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "215"
                   attributes:
                     - key: kind
                       value:
                         stringValue: prepare
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "216"
                   attributes:
                     - key: kind
                       value:
                         stringValue: read_first
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "217"
                   attributes:
                     - key: kind
                       value:
                         stringValue: read_key
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "218"
                   attributes:
                     - key: kind
                       value:
                         stringValue: read_last
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "219"
                   attributes:
                     - key: kind
                       value:
                         stringValue: read_next
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "220"
                   attributes:
                     - key: kind
                       value:
                         stringValue: read_prev
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "221"
                   attributes:
                     - key: kind
                       value:
                         stringValue: read_rnd
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "222"
                   attributes:
                     - key: kind
                       value:
                         stringValue: read_rnd_next
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "223"
                   attributes:
                     - key: kind
                       value:
                         stringValue: rollback
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "224"
                   attributes:
                     - key: kind
                       value:
                         stringValue: savepoint
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "225"
                   attributes:
                     - key: kind
                       value:
                         stringValue: savepoint_rollback
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "226"
                   attributes:
                     - key: kind
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "227"
                   attributes:
                     - key: kind
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The total count of I/O wait events for an index.
@@ -457,8 +457,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "10"
                   attributes:
                     - key: index
@@ -473,8 +473,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "11"
                   attributes:
                     - key: index
@@ -489,8 +489,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12"
                   attributes:
                     - key: index
@@ -505,8 +505,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The total time of I/O wait events for an index.
@@ -528,8 +528,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "14"
                   attributes:
                     - key: index
@@ -544,8 +544,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "15"
                   attributes:
                     - key: index
@@ -560,8 +560,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "16"
                   attributes:
                     - key: index
@@ -576,8 +576,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
           - description: The number of joins that perform table scans.
@@ -590,46 +590,36 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: full
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "409"
                   attributes:
                     - key: kind
                       value:
                         stringValue: full_range
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "410"
                   attributes:
                     - key: kind
                       value:
                         stringValue: range
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "411"
                   attributes:
                     - key: kind
                       value:
                         stringValue: range_check
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "412"
                   attributes:
                     - key: kind
                       value:
                         stringValue: scan
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-              isMonotonic: true
-            unit: "1"
-          - description: "[DEPRECATED] The number of attempts to connect to locked user accounts."
-            name: mysql.locked_connects
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "293"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of MySQL locks.
@@ -642,15 +632,15 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: immediate
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "441"
                   attributes:
                     - key: kind
                       value:
                         stringValue: waited
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of InnoDB log operations.
@@ -663,22 +653,22 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: waits
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "254"
                   attributes:
                     - key: operation
                       value:
                         stringValue: write_requests
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "255"
                   attributes:
                     - key: operation
                       value:
                         stringValue: writes
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of mysqlx connections.
@@ -691,22 +681,22 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: accepted
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "308"
                   attributes:
                     - key: status
                       value:
                         stringValue: closed
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "309"
                   attributes:
                     - key: status
                       value:
                         stringValue: rejected
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of worker threads available.
@@ -719,15 +709,15 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "363"
                   attributes:
                     - key: kind
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of opened resources.
             name: mysql.opened_resources
@@ -739,22 +729,22 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: file
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "373"
                   attributes:
                     - key: kind
                       value:
                         stringValue: table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "372"
                   attributes:
                     - key: kind
                       value:
                         stringValue: table_definition
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of InnoDB operations.
@@ -767,22 +757,22 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fsyncs
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "248"
                   attributes:
                     - key: operation
                       value:
                         stringValue: reads
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "249"
                   attributes:
                     - key: operation
                       value:
                         stringValue: writes
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of InnoDB page operations.
@@ -795,22 +785,22 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: created
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "262"
                   attributes:
                     - key: operation
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "263"
                   attributes:
                     - key: operation
                       value:
                         stringValue: written
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of times each type of prepared statement command has been issued.
@@ -823,43 +813,43 @@ resourceMetrics:
                     - key: command
                       value:
                         stringValue: close
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "162"
                   attributes:
                     - key: command
                       value:
                         stringValue: execute
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "164"
                   attributes:
                     - key: command
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "165"
                   attributes:
                     - key: command
                       value:
                         stringValue: prepare
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "166"
                   attributes:
                     - key: command
                       value:
                         stringValue: reset
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "167"
                   attributes:
                     - key: command
                       value:
                         stringValue: send_long_data
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of statements executed by the server. This includes only statements sent to the server by clients.
@@ -868,8 +858,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "407"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of statements executed by the server.
@@ -878,8 +868,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "406"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of slow queries.
@@ -888,8 +878,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "415"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of seconds that the replica must lag the source.
@@ -898,8 +888,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "8"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: s
           - description: This field is an indication of how “late” the replica is.
             name: mysql.replica.time_behind_source
@@ -907,8 +897,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: s
           - description: The number of InnoDB row locks.
             name: mysql.row_locks
@@ -920,15 +910,15 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: time
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "269"
                   attributes:
                     - key: kind
                       value:
                         stringValue: waits
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of InnoDB row operations.
@@ -941,29 +931,29 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: deleted
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "271"
                   attributes:
                     - key: operation
                       value:
                         stringValue: inserted
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "272"
                   attributes:
                     - key: operation
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "273"
                   attributes:
                     - key: operation
                       value:
                         stringValue: updated
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of MySQL sorts.
@@ -976,29 +966,29 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: merge_passes
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "417"
                   attributes:
                     - key: kind
                       value:
                         stringValue: range
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "418"
                   attributes:
                     - key: kind
                       value:
                         stringValue: rows
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "419"
                   attributes:
                     - key: kind
                       value:
                         stringValue: scan
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: Summary of current and recent statement events.
@@ -1020,8 +1010,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "9"
                   attributes:
                     - key: digest
@@ -1036,8 +1026,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: digest
@@ -1052,8 +1042,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12"
                   attributes:
                     - key: digest
@@ -1068,8 +1058,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "5"
                   attributes:
                     - key: digest
@@ -1084,8 +1074,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "7"
                   attributes:
                     - key: digest
@@ -1100,8 +1090,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "6"
                   attributes:
                     - key: digest
@@ -1116,8 +1106,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "10"
                   attributes:
                     - key: digest
@@ -1132,8 +1122,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "11"
                   attributes:
                     - key: digest
@@ -1148,8 +1138,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: digest
@@ -1164,8 +1154,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The total wait time of the summarized timed events.
             name: mysql.statement_event.wait.time
@@ -1183,8 +1173,8 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: ns
           - description: The total count of I/O wait events for a table.
             name: mysql.table.io.wait.count
@@ -1202,8 +1192,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
                     - key: operation
@@ -1215,8 +1205,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: operation
@@ -1228,8 +1218,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: operation
@@ -1241,8 +1231,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The total time of I/O wait events for a table.
@@ -1261,8 +1251,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "6"
                   attributes:
                     - key: operation
@@ -1274,8 +1264,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "7"
                   attributes:
                     - key: operation
@@ -1287,8 +1277,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "8"
                   attributes:
                     - key: operation
@@ -1300,8 +1290,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: a_table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
           - description: The total table lock wait read events.
@@ -1320,8 +1310,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
                     - key: kind
@@ -1333,8 +1323,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: kind
@@ -1346,8 +1336,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: kind
@@ -1359,8 +1349,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: kind
@@ -1372,8 +1362,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The total table lock wait read events times.
             name: mysql.table.lock_wait.read.time
@@ -1391,8 +1381,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12"
                   attributes:
                     - key: kind
@@ -1404,8 +1394,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "13"
                   attributes:
                     - key: kind
@@ -1417,8 +1407,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "10"
                   attributes:
                     - key: kind
@@ -1430,8 +1420,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "11"
                   attributes:
                     - key: kind
@@ -1443,8 +1433,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: ns
           - description: The total table lock wait write events.
             name: mysql.table.lock_wait.write.count
@@ -1462,8 +1452,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "6"
                   attributes:
                     - key: kind
@@ -1475,8 +1465,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "9"
                   attributes:
                     - key: kind
@@ -1488,8 +1478,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "7"
                   attributes:
                     - key: kind
@@ -1501,8 +1491,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "8"
                   attributes:
                     - key: kind
@@ -1514,8 +1504,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The total table lock wait write events times.
             name: mysql.table.lock_wait.write.time
@@ -1533,8 +1523,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "16"
                   attributes:
                     - key: kind
@@ -1546,8 +1536,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "19"
                   attributes:
                     - key: kind
@@ -1559,8 +1549,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "17"
                   attributes:
                     - key: kind
@@ -1572,8 +1562,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "18"
                   attributes:
                     - key: kind
@@ -1585,8 +1575,8 @@ resourceMetrics:
                     - key: table
                       value:
                         stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: ns
           - description: The number of hits, misses or overflows for open tables cache lookups.
             name: mysql.table_open_cache
@@ -1598,22 +1588,22 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: hit
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "443"
                   attributes:
                     - key: status
                       value:
                         stringValue: miss
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "444"
                   attributes:
                     - key: status
                       value:
                         stringValue: overflow
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The state of MySQL threads.
@@ -1626,29 +1616,29 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: cached
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "449"
                   attributes:
                     - key: kind
                       value:
                         stringValue: connected
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "450"
                   attributes:
                     - key: kind
                       value:
                         stringValue: created
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "451"
                   attributes:
                     - key: kind
                       value:
                         stringValue: running
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of created temporary resources.
             name: mysql.tmp_resources
@@ -1660,22 +1650,22 @@ resourceMetrics:
                     - key: resource
                       value:
                         stringValue: disk_tables
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "190"
                   attributes:
                     - key: resource
                       value:
                         stringValue: files
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "191"
                   attributes:
                     - key: resource
                       value:
                         stringValue: tables
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of seconds that the server has been up.
@@ -1684,8 +1674,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "452"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
         scope:

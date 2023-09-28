@@ -87,6 +87,7 @@ func newMetricPacker(logger *zap.Logger) *metricPacker {
 }
 
 func (packer metricPacker) getMetricTimedData(metric pmetric.Metric) metricTimedData {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return newScalarMetric(metric.Name(), metric.Gauge().DataPoints())

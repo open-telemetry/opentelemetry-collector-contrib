@@ -76,10 +76,6 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	if err = setGoPsutilEnvVars(oCfg.RootPath, &osEnv{}); err != nil {
-		return nil, err
-	}
-
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
 		set,

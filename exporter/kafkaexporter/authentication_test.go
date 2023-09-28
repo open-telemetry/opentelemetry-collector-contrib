@@ -6,7 +6,7 @@ package kafkaexporter
 import (
 	"testing"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -29,6 +29,13 @@ func TestAuthentication(t *testing.T) {
 	saramaSASLSCRAM512Config.Net.SASL.User = "jdoe"
 	saramaSASLSCRAM512Config.Net.SASL.Password = "pass"
 	saramaSASLSCRAM512Config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
+
+	saramaSASLHandshakeV1Config := &sarama.Config{}
+	saramaSASLHandshakeV1Config.Net.SASL.Enable = true
+	saramaSASLHandshakeV1Config.Net.SASL.User = "jdoe"
+	saramaSASLHandshakeV1Config.Net.SASL.Password = "pass"
+	saramaSASLHandshakeV1Config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
+	saramaSASLHandshakeV1Config.Net.SASL.Version = sarama.SASLHandshakeV1
 
 	saramaSASLPLAINConfig := &sarama.Config{}
 	saramaSASLPLAINConfig.Net.SASL.Enable = true
@@ -92,7 +99,10 @@ func TestAuthentication(t *testing.T) {
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512"}},
 			saramaConfig: saramaSASLSCRAM512Config,
 		},
-
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512", Version: 1}},
+			saramaConfig: saramaSASLHandshakeV1Config,
+		},
 		{
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "PLAIN"}},
 			saramaConfig: saramaSASLPLAINConfig,
@@ -111,6 +121,11 @@ func TestAuthentication(t *testing.T) {
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "", Mechanism: "SCRAM-SHA-512"}},
 			saramaConfig: saramaSASLSCRAM512Config,
 			err:          "password have to be provided",
+		},
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512", Version: 2}},
+			saramaConfig: saramaSASLSCRAM512Config,
+			err:          "invalid SASL Protocol Version",
 		},
 	}
 	for _, test := range tests {

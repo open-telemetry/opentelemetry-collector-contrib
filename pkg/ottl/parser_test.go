@@ -9,9 +9,11 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -33,9 +35,11 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							String: ottltest.Strp("foo"),
+							Value: value{
+								String: ottltest.Strp("foo"),
+							},
 						},
 					},
 				},
@@ -48,10 +52,12 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "met",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Float: ottltest.Floatp(1.2),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Float: ottltest.Floatp(1.2),
+								},
 							},
 						},
 					},
@@ -65,10 +71,12 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "fff",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Int: ottltest.Intp(12),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(12),
+								},
 							},
 						},
 					},
@@ -82,24 +90,30 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							String: ottltest.Strp("foo"),
+							Value: value{
+								String: ottltest.Strp("foo"),
+							},
 						},
 						{
-							Literal: &mathExprLiteral{
-								Converter: &converter{
-									Function: "GetSomething",
-									Arguments: []value{
-										{
-											Literal: &mathExprLiteral{
-												Path: &Path{
-													Fields: []Field{
-														{
-															Name: "bear",
-														},
-														{
-															Name: "honey",
+							Value: value{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "GetSomething",
+										Arguments: []argument{
+											{
+												Value: value{
+													Literal: &mathExprLiteral{
+														Path: &Path{
+															Fields: []Field{
+																{
+																	Name: "bear",
+																},
+																{
+																	Name: "honey",
+																},
+															},
 														},
 													},
 												},
@@ -120,31 +134,163 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "foo",
-										},
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("bar"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "foo",
+											},
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("bar"),
+													},
 												},
 											},
-										},
-										{
-											Name: "cat",
+											{
+												Name: "cat",
+											},
 										},
 									},
 								},
 							},
 						},
 						{
-							String: ottltest.Strp("dog"),
+							Value: value{
+								String: ottltest.Strp("dog"),
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Converter parameters (All Uppercase)",
+			statement: `replace_pattern(attributes["message"], "device=*", attributes["device_name"], SHA256)`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "replace_pattern",
+					Arguments: []argument{
+						{
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("message"),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Value: value{
+								String: ottltest.Strp("device=*"),
+							},
+						},
+						{
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("device_name"),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Value: value{
+								Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Converter parameters",
+			statement: `replace_pattern(attributes["message"], Sha256)`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "replace_pattern",
+					Arguments: []argument{
+						{
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("message"),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Value: value{
+								FunctionName: (ottltest.Strp("Sha256")),
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Converter parameters (One Uppercase symbol)",
+			statement: `replace_pattern(attributes["message"], S)`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "replace_pattern",
+					Arguments: []argument{
+						{
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("message"),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Value: value{
+								Enum: (*EnumSymbol)(ottltest.Strp("S")),
+							},
 						},
 					},
 				},
@@ -157,42 +303,46 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "foo",
-										},
-										{
-											Name: "bar",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("x"),
-												},
-												{
-													String: ottltest.Strp("y"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "foo",
+											},
+											{
+												Name: "bar",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("x"),
+													},
+													{
+														String: ottltest.Strp("y"),
+													},
 												},
 											},
-										},
-										{
-											Name: "z",
+											{
+												Name: "z",
+											},
 										},
 									},
 								},
 							},
 						},
 						{
-							Literal: &mathExprLiteral{
-								Converter: &converter{
-									Function: "Test",
-									Keys: []Key{
-										{
-											Int: ottltest.Intp(0),
-										},
-										{
-											String: ottltest.Strp("pass"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Test",
+										Keys: []Key{
+											{
+												Int: ottltest.Intp(0),
+											},
+											{
+												String: ottltest.Strp("pass"),
+											},
 										},
 									},
 								},
@@ -209,31 +359,35 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "foo",
-										},
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("bar"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "foo",
+											},
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("bar"),
+													},
 												},
 											},
-										},
-										{
-											Name: "cat",
+											{
+												Name: "cat",
+											},
 										},
 									},
 								},
 							},
 						},
 						{
-							String: ottltest.Strp("dog"),
+							Value: value{
+								String: ottltest.Strp("dog"),
+							},
 						},
 					},
 				},
@@ -268,31 +422,35 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "foo",
-										},
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("bar"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "foo",
+											},
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("bar"),
+													},
 												},
 											},
-										},
-										{
-											Name: "cat",
+											{
+												Name: "cat",
+											},
 										},
 									},
 								},
 							},
 						},
 						{
-							String: ottltest.Strp("dog"),
+							Value: value{
+								String: ottltest.Strp("dog"),
+							},
 						},
 					},
 				},
@@ -327,31 +485,35 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "foo",
-										},
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("bar"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "foo",
+											},
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("bar"),
+													},
 												},
 											},
-										},
-										{
-											Name: "cat",
+											{
+												Name: "cat",
+											},
 										},
 									},
 								},
 							},
 						},
 						{
-							String: ottltest.Strp("dog"),
+							Value: value{
+								String: ottltest.Strp("dog"),
+							},
 						},
 					},
 				},
@@ -386,9 +548,11 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							String: ottltest.Strp("fo\"o"),
+							Value: value{
+								String: ottltest.Strp("fo\"o"),
+							},
 						},
 					},
 				},
@@ -401,12 +565,16 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "convert_gauge_to_sum",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							String: ottltest.Strp("cumulative"),
+							Value: value{
+								String: ottltest.Strp("cumulative"),
+							},
 						},
 						{
-							Bool: (*boolean)(ottltest.Boolp(false)),
+							Value: value{
+								Bool: (*boolean)(ottltest.Boolp(false)),
+							},
 						},
 					},
 				},
@@ -419,12 +587,16 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "convert_gauge_to_sum",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							String: ottltest.Strp("cumulative"),
+							Value: value{
+								String: ottltest.Strp("cumulative"),
+							},
 						},
 						{
-							Bool: (*boolean)(ottltest.Boolp(true)),
+							Value: value{
+								Bool: (*boolean)(ottltest.Boolp(true)),
+							},
 						},
 					},
 				},
@@ -437,16 +609,18 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("bytes"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("bytes"),
+													},
 												},
 											},
 										},
@@ -455,7 +629,9 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+							Value: value{
+								Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+							},
 						},
 					},
 				},
@@ -468,16 +644,18 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("test"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("test"),
+													},
 												},
 											},
 										},
@@ -486,7 +664,9 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							IsNil: (*isNil)(ottltest.Boolp(true)),
+							Value: value{
+								IsNil: (*isNil)(ottltest.Boolp(true)),
+							},
 						},
 					},
 				},
@@ -499,16 +679,18 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("test"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("test"),
+													},
 												},
 											},
 										},
@@ -517,7 +699,9 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+							Value: value{
+								Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+							},
 						},
 					},
 				},
@@ -530,16 +714,18 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("test"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("test"),
+													},
 												},
 											},
 										},
@@ -548,8 +734,10 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							List: &list{
-								Values: nil,
+							Value: value{
+								List: &list{
+									Values: nil,
+								},
 							},
 						},
 					},
@@ -563,16 +751,18 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("test"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("test"),
+													},
 												},
 											},
 										},
@@ -581,10 +771,12 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							List: &list{
-								Values: []value{
-									{
-										String: ottltest.Strp("value0"),
+							Value: value{
+								List: &list{
+									Values: []value{
+										{
+											String: ottltest.Strp("value0"),
+										},
 									},
 								},
 							},
@@ -600,16 +792,18 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("test"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("test"),
+													},
 												},
 											},
 										},
@@ -618,13 +812,15 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							List: &list{
-								Values: []value{
-									{
-										String: ottltest.Strp("value1"),
-									},
-									{
-										String: ottltest.Strp("value2"),
+							Value: value{
+								List: &list{
+									Values: []value{
+										{
+											String: ottltest.Strp("value1"),
+										},
+										{
+											String: ottltest.Strp("value2"),
+										},
 									},
 								},
 							},
@@ -640,16 +836,18 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("test"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("test"),
+													},
 												},
 											},
 										},
@@ -658,63 +856,69 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							List: &list{
-								Values: []value{
-									{
-										Literal: &mathExprLiteral{
-											Converter: &converter{
-												Function: "Concat",
-												Arguments: []value{
-													{
-														List: &list{
-															Values: []value{
-																{
-																	String: ottltest.Strp("a"),
-																},
-																{
-																	String: ottltest.Strp("b"),
+							Value: value{
+								List: &list{
+									Values: []value{
+										{
+											Literal: &mathExprLiteral{
+												Converter: &converter{
+													Function: "Concat",
+													Arguments: []argument{
+														{
+															Value: value{
+																List: &list{
+																	Values: []value{
+																		{
+																			String: ottltest.Strp("a"),
+																		},
+																		{
+																			String: ottltest.Strp("b"),
+																		},
+																	},
 																},
 															},
 														},
-													},
-													{
-														String: ottltest.Strp("+"),
-													},
-												},
-											},
-										},
-									},
-									{
-										List: &list{
-											Values: []value{
-												{
-													String: ottltest.Strp("1"),
-												},
-												{
-													Literal: &mathExprLiteral{
-														Int: ottltest.Intp(2),
-													},
-												},
-												{
-													Literal: &mathExprLiteral{
-														Float: ottltest.Floatp(3.0),
+														{
+															Value: value{
+																String: ottltest.Strp("+"),
+															},
+														},
 													},
 												},
 											},
 										},
-									},
-									{
-										IsNil: (*isNil)(ottltest.Boolp(true)),
-									},
-									{
-										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+										{
+											List: &list{
+												Values: []value{
 													{
-														Name: "attributes",
-														Keys: []Key{
-															{
-																String: ottltest.Strp("test"),
+														String: ottltest.Strp("1"),
+													},
+													{
+														Literal: &mathExprLiteral{
+															Int: ottltest.Intp(2),
+														},
+													},
+													{
+														Literal: &mathExprLiteral{
+															Float: ottltest.Floatp(3.0),
+														},
+													},
+												},
+											},
+										},
+										{
+											IsNil: (*isNil)(ottltest.Boolp(true)),
+										},
+										{
+											Literal: &mathExprLiteral{
+												Path: &Path{
+													Fields: []Field{
+														{
+															Name: "attributes",
+															Keys: []Key{
+																{
+																	String: ottltest.Strp("test"),
+																},
 															},
 														},
 													},
@@ -736,16 +940,18 @@ func Test_parse(t *testing.T) {
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "set",
-					Arguments: []value{
+					Arguments: []argument{
 						{
-							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "attributes",
-											Keys: []Key{
-												{
-													String: ottltest.Strp("test"),
+							Value: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "attributes",
+												Keys: []Key{
+													{
+														String: ottltest.Strp("test"),
+													},
 												},
 											},
 										},
@@ -754,21 +960,23 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							MathExpression: &mathExpression{
-								Left: &addSubTerm{
-									Left: &mathValue{
-										Literal: &mathExprLiteral{
-											Int: ottltest.Intp(1000),
+							Value: value{
+								MathExpression: &mathExpression{
+									Left: &addSubTerm{
+										Left: &mathValue{
+											Literal: &mathExprLiteral{
+												Int: ottltest.Intp(1000),
+											},
 										},
 									},
-								},
-								Right: []*opAddSubTerm{
-									{
-										Operator: SUB,
-										Term: &addSubTerm{
-											Left: &mathValue{
-												Literal: &mathExprLiteral{
-													Int: ottltest.Intp(600),
+									Right: []*opAddSubTerm{
+										{
+											Operator: SUB,
+											Term: &addSubTerm{
+												Left: &mathValue{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(600),
+													},
 												},
 											},
 										},
@@ -874,6 +1082,36 @@ func testParsePath(val *Path) (GetSetter[interface{}], error) {
 			},
 		}, nil
 	}
+	if val.Fields[0].Name == "dur1" || val.Fields[0].Name == "dur2" {
+		return &StandardGetSetter[interface{}]{
+			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				m, ok := tCtx.(map[string]time.Duration)
+				if !ok {
+					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
+				}
+				return m[val.Fields[0].Name], nil
+			},
+			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+				reflect.DeepEqual(tCtx, val)
+				return nil
+			},
+		}, nil
+	}
+	if val.Fields[0].Name == "time1" || val.Fields[0].Name == "time2" {
+		return &StandardGetSetter[interface{}]{
+			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				m, ok := tCtx.(map[string]time.Time)
+				if !ok {
+					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
+				}
+				return m[val.Fields[0].Name], nil
+			},
+			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+				reflect.DeepEqual(tCtx, val)
+				return nil
+			},
+		}, nil
+	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
@@ -883,20 +1121,24 @@ func setNameTest(b *booleanExpression) *parsedStatement {
 	return &parsedStatement{
 		Editor: editor{
 			Function: "set",
-			Arguments: []value{
+			Arguments: []argument{
 				{
-					Literal: &mathExprLiteral{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+					Value: value{
+						Literal: &mathExprLiteral{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name: "name",
+									},
 								},
 							},
 						},
 					},
 				},
 				{
-					String: ottltest.Strp("test"),
+					Value: value{
+						String: ottltest.Strp("test"),
+					},
 				},
 			},
 		},
@@ -1365,6 +1607,33 @@ func testParseEnum(val *EnumSymbol) (*Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
+func Test_ParseStatements_Error(t *testing.T) {
+	statements := []string{
+		`set(`,
+		`set("foo)`,
+		`set(name.)`,
+	}
+
+	p, _ := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath,
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	_, err := p.ParseStatements(statements)
+
+	assert.Error(t, err)
+
+	multiErrs := multierr.Errors(err)
+
+	assert.Len(t, multiErrs, len(statements), "ParseStatements didn't return an error per statement")
+
+	for i, statementErr := range multiErrs {
+		assert.ErrorContains(t, statementErr, fmt.Sprintf("unable to parse OTTL statement %q", statements[i]))
+	}
+}
+
 // This test doesn't validate parser results, simply checks whether the parse succeeds or not.
 // It's a fast way to check a large range of possible syntaxes.
 func Test_parseStatement(t *testing.T) {
@@ -1403,7 +1672,7 @@ func Test_parseStatement(t *testing.T) {
 		{`set() where true and 1 == int() `, true},
 		{`set() where false or 1 == int() `, true},
 		{`set(foo.attributes["bar"].cat, "dog")`, false},
-		{`set(foo.attributes["animal"], "dog") where animal == "cat"`, false},
+		{`set(set = foo.attributes["animal"], val = "dog") where animal == "cat"`, false},
 		{`test() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
 		{`test() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
 		{`test() where animal > "cat"`, false},
@@ -1427,9 +1696,10 @@ func Test_parseStatement(t *testing.T) {
 	for _, tt := range tests {
 		name := pat.ReplaceAllString(tt.statement, "_")
 		t.Run(name, func(t *testing.T) {
-			_, err := parseStatement(tt.statement)
+			ast, err := parseStatement(tt.statement)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseStatement(%s) error = %v, wantErr %v", tt.statement, err, tt.wantErr)
+				t.Errorf("AST: %+v", ast)
 				return
 			}
 		})

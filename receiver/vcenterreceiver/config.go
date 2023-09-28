@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -20,9 +21,9 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Endpoint                                string `mapstructure:"endpoint"`
-	Username                                string `mapstructure:"username"`
-	Password                                string `mapstructure:"password"`
+	Endpoint                                string              `mapstructure:"endpoint"`
+	Username                                string              `mapstructure:"username"`
+	Password                                configopaque.String `mapstructure:"password"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver

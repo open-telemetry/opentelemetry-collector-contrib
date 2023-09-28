@@ -47,8 +47,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
-	// TODO: Apply encoding and field mapping settings.
-	model := &encodeModel{dedup: true, dedot: false}
+	model := &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
 
 	return &elasticsearchTracesExporter{
 		logger:      logger,

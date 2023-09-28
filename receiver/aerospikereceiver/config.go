@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -34,7 +35,7 @@ type Config struct {
 	Endpoint                                string                        `mapstructure:"endpoint"`
 	TLSName                                 string                        `mapstructure:"tlsname"`
 	Username                                string                        `mapstructure:"username"`
-	Password                                string                        `mapstructure:"password"`
+	Password                                configopaque.String           `mapstructure:"password"`
 	CollectClusterMetrics                   bool                          `mapstructure:"collect_cluster_metrics"`
 	Timeout                                 time.Duration                 `mapstructure:"timeout"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`

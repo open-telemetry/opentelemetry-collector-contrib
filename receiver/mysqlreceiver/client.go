@@ -166,7 +166,7 @@ var _ client = (*mySQLClient)(nil)
 func newMySQLClient(conf *Config) client {
 	driverConf := mysql.Config{
 		User:                 conf.Username,
-		Passwd:               conf.Password,
+		Passwd:               string(conf.Password),
 		Net:                  conf.Transport,
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
@@ -205,14 +205,14 @@ func (c *mySQLClient) getVersion() (string, error) {
 
 // getGlobalStats queries the db for global status metrics.
 func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
-	query := "SHOW GLOBAL STATUS;"
-	return Query(*c, query)
+	q := "SHOW GLOBAL STATUS;"
+	return query(*c, q)
 }
 
 // getInnodbStats queries the db for innodb metrics.
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
-	query := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
-	return Query(*c, query)
+	q := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
+	return query(*c, q)
 }
 
 // getTableIoWaitsStats queries the db for table_io_waits metrics.
@@ -505,7 +505,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	return stats, nil
 }
 
-func Query(c mySQLClient, query string) (map[string]string, error) {
+func query(c mySQLClient, query string) (map[string]string, error) {
 	rows, err := c.client.Query(query)
 	if err != nil {
 		return nil, err

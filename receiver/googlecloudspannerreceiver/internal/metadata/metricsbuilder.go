@@ -59,6 +59,7 @@ func (b *metricsFromDataPointBuilder) Build(dataPoints []*MetricsDataPoint) (pme
 			metric.SetEmptySum().SetAggregationTemporality(key.MetricType.AggregationTemporality())
 			metric.Sum().SetIsMonotonic(key.MetricType.IsMonotonic())
 			dataPointSlice = metric.Sum().DataPoints()
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
 		}
 
 		for _, point := range points {

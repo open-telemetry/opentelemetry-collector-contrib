@@ -23,7 +23,7 @@ resourceMetrics:
                   startTimeUnixNano: "1686869619745174000"
                   timeUnixNano: "1686869619745178000"
             name: k8s.deployment.available
-            unit: "1"
+            unit: "{pod}"
           - description: Number of desired pods in this deployment
             gauge:
               dataPoints:
@@ -31,7 +31,7 @@ resourceMetrics:
                   startTimeUnixNano: "1686869619745174000"
                   timeUnixNano: "1686869619745178000"
             name: k8s.deployment.desired
-            unit: "1"
+            unit: "{pod}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest

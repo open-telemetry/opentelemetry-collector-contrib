@@ -5,4 +5,5 @@ status:
   stability:
     development: [metrics, traces, logs]
   distributions: [contrib]
-  
+  codeowners:
+    active: [pmcollins, djaglowski]

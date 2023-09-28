@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -83,9 +85,10 @@ func TestValidate(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Username: tc.username,
-				Password: tc.password,
-				Hosts:    hosts,
+				Username:                  tc.username,
+				Password:                  configopaque.String(tc.password),
+				Hosts:                     hosts,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {
@@ -136,7 +139,8 @@ func TestBadTLSConfigs(t *testing.T) {
 						Endpoint: "localhost:27017",
 					},
 				},
-				TLSClientSetting: tc.tlsConfig,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				TLSClientSetting:          tc.tlsConfig,
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expectError {

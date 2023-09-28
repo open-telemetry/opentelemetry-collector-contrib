@@ -22,6 +22,6 @@ func stopSampling(_ context.Context) error {
 	return nil
 }
 
-func getSampledLoadAverages() (*load.AvgStat, error) {
-	return load.Avg()
+func getSampledLoadAverages(ctx context.Context) (*load.AvgStat, error) {
+	return load.AvgWithContext(ctx)
 }

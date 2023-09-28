@@ -7,8 +7,10 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -37,6 +39,26 @@ func valueFor(x any) value {
 		case strings.Contains(v, "ENUM"):
 			// if the string contains ENUM construct an EnumSymbol from it.
 			val.Enum = (*EnumSymbol)(ottltest.Strp(v))
+		case v == "dur1" || v == "dur2":
+			val.Literal = &mathExprLiteral{
+				Path: &Path{
+					Fields: []Field{
+						{
+							Name: v,
+						},
+					},
+				},
+			}
+		case v == "time1" || v == "time2":
+			val.Literal = &mathExprLiteral{
+				Path: &Path{
+					Fields: []Field{
+						{
+							Name: v,
+						},
+					},
+				},
+			}
 		default:
 			val.String = ottltest.Strp(v)
 		}
@@ -76,12 +98,29 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		WithEnumParser[any](testParseEnum),
 	)
 
+	twelveNanoseconds, err := time.ParseDuration("12ns")
+	require.NoError(t, err)
+
+	oneMillisecond, err := time.ParseDuration("1ms")
+	require.NoError(t, err)
+
+	threeSeconds, err := time.ParseDuration("3s")
+	require.NoError(t, err)
+
+	twentyTwoMinutes, err := time.ParseDuration("22m")
+	require.NoError(t, err)
+
+	oneHundredThirtyFiveHours, err := time.ParseDuration("135h")
+	require.NoError(t, err)
+
+	JanFirst2023 := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
+
 	var tests = []struct {
 		name string
 		l    any
 		r    any
 		op   string
-		item string
+		item any
 		want bool
 	}{
 		{name: "literals match", l: "hello", r: "hello", op: "==", want: true},
@@ -106,6 +145,30 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		{name: "[]byte('a') < []byte('b')", l: []byte("a"), r: []byte("b"), op: "<", want: true},
 		{name: "nil == nil", op: "==", want: true},
 		{name: "nil == []byte(nil)", r: []byte(nil), op: "==", want: true},
+		{name: "compare equal durations", l: "dur1", r: "dur2", op: "==", want: true, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": oneMillisecond}},
+		{name: "compare unequal durations", l: "dur1", r: "dur2", op: "==", want: false, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": threeSeconds}},
+		{name: "compare not equal durations", l: "dur1", r: "dur2", op: "!=", want: true, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": threeSeconds}},
+		{name: "compare not equal durations", l: "dur1", r: "dur2", op: "!=", want: false, item: map[string]time.Duration{"dur1": threeSeconds, "dur2": threeSeconds}},
+		{name: "compare less than durations", l: "dur1", r: "dur2", op: "<", want: true, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": twentyTwoMinutes}},
+		{name: "compare not less than durations", l: "dur1", r: "dur2", op: "<", want: false, item: map[string]time.Duration{"dur1": twentyTwoMinutes, "dur2": twentyTwoMinutes}},
+		{name: "compare less than equal to durations", l: "dur1", r: "dur2", op: "<=", want: true, item: map[string]time.Duration{"dur1": threeSeconds, "dur2": threeSeconds}},
+		{name: "compare not less than equal to durations", l: "dur1", r: "dur2", op: "<=", want: false, item: map[string]time.Duration{"dur1": oneHundredThirtyFiveHours, "dur2": threeSeconds}},
+		{name: "compare greater than durations", l: "dur1", r: "dur2", op: ">", want: true, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": twelveNanoseconds}},
+		{name: "compare not greater than durations", l: "dur1", r: "dur2", op: ">", want: false, item: map[string]time.Duration{"dur1": twelveNanoseconds, "dur2": twentyTwoMinutes}},
+		{name: "compare greater than equal to durations", l: "dur1", r: "dur2", op: ">=", want: true, item: map[string]time.Duration{"dur1": oneHundredThirtyFiveHours, "dur2": threeSeconds}},
+		{name: "compare not greater than equal to durations", l: "dur1", r: "dur2", op: ">=", want: false, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": threeSeconds}},
+		{name: "compare equal times", l: "time1", r: "time2", op: "==", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": JanFirst2023}},
+		{name: "compare unequal times", l: "time1", r: "time2", op: "==", want: false, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2023, 1, 2, 0, 0, 0, 0, time.Local)}},
+		{name: "compare for not equal times", l: "time1", r: "time2", op: "!=", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2002, 11, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare for equal times using not equal", l: "time1", r: "time2", op: "!=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 11, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2002, 11, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare less than times", l: "time1", r: "time2", op: "<", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2023, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare not less than times", l: "time1", r: "time2", op: "<", want: false, item: map[string]time.Time{"time1": time.Date(2023, 6, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2023, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare less than equal to times", l: "time1", r: "time2", op: "<=", want: true, item: map[string]time.Time{"time1": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare not less than equal to times", l: "time1", r: "time2", op: "<=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(1999, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare not greater than equal to w/ times", l: "time1", r: "time2", op: ">=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare greater than equal to w/ times", l: "time1", r: "time2", op: ">=", want: true, item: map[string]time.Time{"time1": time.Date(2022, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare greater than w/ times", l: "time1", r: "time2", op: ">", want: true, item: map[string]time.Time{"time1": time.Date(2022, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare not greater than w/ times", l: "time1", r: "time2", op: ">", want: false, item: map[string]time.Time{"time1": time.Date(2002, 3, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

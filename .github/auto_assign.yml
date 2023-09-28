@@ -12,10 +12,11 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - Aneurysm9
+    - astencel-sumo
     - atoulme
-    # - dashpole is out on leave
+    - dashpole
+    - songy23
     - fatsheep9146
-    - kovrus
     # Maintainers
     - bogdandrutu
     - codeboten

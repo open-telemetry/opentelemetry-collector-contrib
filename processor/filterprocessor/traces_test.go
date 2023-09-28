@@ -177,11 +177,11 @@ func generateTraces(traces []testTrace) ptrace.Traces {
 }
 
 var (
-	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestSpanStartTimestamp = pcommon.NewTimestampFromTime(TestSpanStartTime)
+	testSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
+	testSpanStartTimestamp = pcommon.NewTimestampFromTime(testSpanStartTime)
 
-	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestSpanEndTimestamp = pcommon.NewTimestampFromTime(TestSpanEndTime)
+	testSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
+	testSpanEndTimestamp = pcommon.NewTimestampFromTime(testSpanEndTime)
 
 	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
@@ -301,8 +301,8 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(spanID2)
 	span.SetTraceID(traceID)
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.SetStartTimestamp(testSpanStartTimestamp)
+	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	span.SetDroppedLinksCount(1)
 	span.SetDroppedEventsCount(1)
@@ -319,8 +319,8 @@ func fillSpanOne(span ptrace.Span) {
 
 func fillSpanTwo(span ptrace.Span) {
 	span.SetName("operationB")
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.SetStartTimestamp(testSpanStartTimestamp)
+	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.Attributes().PutStr("http.method", "get")
 	span.Attributes().PutStr("http.path", "/health")
 	span.Attributes().PutStr("http.url", "http://localhost/health")

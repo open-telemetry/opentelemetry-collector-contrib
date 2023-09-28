@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
@@ -222,6 +223,48 @@ func Test_NewBoolExprForLog(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, logBoolExpr)
 			result, err := logBoolExpr.Eval(context.Background(), ottllog.TransformContext{})
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_NewBoolExprForResource(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []string
+		expectedResult bool
+	}{
+		{
+			name: "basic",
+			conditions: []string{
+				"true == true",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "multiple",
+			conditions: []string{
+				"false == true",
+				"true == true",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "With Converter",
+			conditions: []string{
+				`IsMatch("test", "pass")`,
+			},
+			expectedResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resBoolExpr, err := NewBoolExprForResource(tt.conditions, StandardResourceFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+			assert.NotNil(t, resBoolExpr)
+			result, err := resBoolExpr.Eval(context.Background(), ottlresource.TransformContext{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})

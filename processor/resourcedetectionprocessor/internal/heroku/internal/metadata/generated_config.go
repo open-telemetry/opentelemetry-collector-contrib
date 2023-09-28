@@ -11,12 +11,12 @@ type ResourceAttributeConfig struct {
 type ResourceAttributesConfig struct {
 	CloudProvider                  ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	HerokuAppID                    ResourceAttributeConfig `mapstructure:"heroku.app.id"`
-	HerokuAppName                  ResourceAttributeConfig `mapstructure:"heroku.app.name"`
 	HerokuDynoID                   ResourceAttributeConfig `mapstructure:"heroku.dyno.id"`
 	HerokuReleaseCommit            ResourceAttributeConfig `mapstructure:"heroku.release.commit"`
 	HerokuReleaseCreationTimestamp ResourceAttributeConfig `mapstructure:"heroku.release.creation_timestamp"`
-	HerokuReleaseVersion           ResourceAttributeConfig `mapstructure:"heroku.release.version"`
 	ServiceInstanceID              ResourceAttributeConfig `mapstructure:"service.instance.id"`
+	ServiceName                    ResourceAttributeConfig `mapstructure:"service.name"`
+	ServiceVersion                 ResourceAttributeConfig `mapstructure:"service.version"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -25,9 +25,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		HerokuAppID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		HerokuAppName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		HerokuDynoID: ResourceAttributeConfig{
@@ -39,10 +36,13 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		HerokuReleaseCreationTimestamp: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HerokuReleaseVersion: ResourceAttributeConfig{
+		ServiceInstanceID: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		ServiceInstanceID: ResourceAttributeConfig{
+		ServiceName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServiceVersion: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

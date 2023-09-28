@@ -19,70 +19,60 @@ import (
 const (
 	// TypeStr is type of detector.
 	TypeStr = "heroku"
-
-	// The time and date the release was created.
-	herokuReleaseCreationTimestamp = "heroku.release.creation_timestamp"
-	// The commit hash for the current release
-	herokuReleaseCommit = "heroku.release.commit"
-	// The unique identifier for the application
-	herokuAppID = "heroku.app.id"
 )
 
 // NewDetector returns a detector which can detect resource attributes on Heroku
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	return &detector{
-		logger:             set.Logger,
-		resourceAttributes: cfg.ResourceAttributes,
+		logger: set.Logger,
+		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil
 }
 
 type detector struct {
-	logger             *zap.Logger
-	resourceAttributes metadata.ResourceAttributesConfig
+	logger *zap.Logger
+	rb     *metadata.ResourceBuilder
 }
 
 // Detect detects heroku metadata and returns a resource with the available ones
 func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-	dynoID, ok := os.LookupEnv("HEROKU_DYNO_ID")
-	if !ok {
-		d.logger.Debug("heroku metadata unavailable", zap.Error(err))
-		return res, "", nil
+	dynoIDMissing := false
+	if dynoID, ok := os.LookupEnv("HEROKU_DYNO_ID"); ok {
+		d.rb.SetServiceInstanceID(dynoID)
+	} else {
+		dynoIDMissing = true
 	}
 
-	attrs := res.Attributes()
-	if d.resourceAttributes.CloudProvider.Enabled {
-		attrs.PutStr(conventions.AttributeCloudProvider, "heroku")
+	herokuAppIDMissing := false
+	if v, ok := os.LookupEnv("HEROKU_APP_ID"); ok {
+		d.rb.SetHerokuAppID(v)
+	} else {
+		herokuAppIDMissing = true
 	}
-	if d.resourceAttributes.ServiceInstanceID.Enabled {
-		attrs.PutStr(conventions.AttributeServiceInstanceID, dynoID)
-	}
-	if d.resourceAttributes.HerokuAppID.Enabled {
-		if v, ok := os.LookupEnv("HEROKU_APP_ID"); ok {
-			attrs.PutStr(herokuAppID, v)
+	if dynoIDMissing {
+		if herokuAppIDMissing {
+			d.logger.Debug("Heroku metadata is missing. Please check metadata is enabled.")
+		} else {
+			// some heroku deployments will enable some of the metadata.
+			d.logger.Debug("Partial Heroku metadata is missing. Please check metadata is supported.")
 		}
 	}
-	if d.resourceAttributes.HerokuAppName.Enabled {
-		if v, ok := os.LookupEnv("HEROKU_APP_NAME"); ok {
-			attrs.PutStr(conventions.AttributeServiceName, v)
-		}
+	if !herokuAppIDMissing {
+		d.rb.SetCloudProvider("heroku")
 	}
-	if d.resourceAttributes.HerokuReleaseCreationTimestamp.Enabled {
-		if v, ok := os.LookupEnv("HEROKU_RELEASE_CREATED_AT"); ok {
-			attrs.PutStr(herokuReleaseCreationTimestamp, v)
-		}
+	if v, ok := os.LookupEnv("HEROKU_APP_NAME"); ok {
+		d.rb.SetServiceName(v)
 	}
-	if d.resourceAttributes.HerokuReleaseVersion.Enabled {
-		if v, ok := os.LookupEnv("HEROKU_RELEASE_VERSION"); ok {
-			attrs.PutStr(conventions.AttributeServiceVersion, v)
-		}
+	if v, ok := os.LookupEnv("HEROKU_RELEASE_CREATED_AT"); ok {
+		d.rb.SetHerokuReleaseCreationTimestamp(v)
 	}
-	if d.resourceAttributes.HerokuReleaseCommit.Enabled {
-		if v, ok := os.LookupEnv("HEROKU_SLUG_COMMIT"); ok {
-			attrs.PutStr(herokuReleaseCommit, v)
-		}
+	if v, ok := os.LookupEnv("HEROKU_RELEASE_VERSION"); ok {
+		d.rb.SetServiceVersion(v)
+	}
+	if v, ok := os.LookupEnv("HEROKU_SLUG_COMMIT"); ok {
+		d.rb.SetHerokuReleaseCommit(v)
 	}
 
-	return res, conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }

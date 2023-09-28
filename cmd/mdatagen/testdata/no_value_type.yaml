@@ -18,5 +18,5 @@ metrics:
     unit: s
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:

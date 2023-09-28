@@ -191,7 +191,7 @@ func toAMQPAuthentication(config *Config) (amqp.SASLType, error) {
 		if plaintext.Password == "" || plaintext.Username == "" {
 			return nil, errMissingPlainTextParams
 		}
-		return connSASLPlain(plaintext.Username, plaintext.Password), nil
+		return connSASLPlain(plaintext.Username, string(plaintext.Password)), nil
 	}
 	if config.Auth.XAuth2 != nil {
 		xauth := config.Auth.XAuth2

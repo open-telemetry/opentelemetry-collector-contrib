@@ -5,3 +5,5 @@ status:
   stability:
     beta: [traces]
   distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [atoulme]

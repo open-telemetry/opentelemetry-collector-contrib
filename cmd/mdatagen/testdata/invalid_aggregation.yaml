@@ -19,4 +19,4 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: invalidaggregation
+      aggregation_temporality: invalidaggregation

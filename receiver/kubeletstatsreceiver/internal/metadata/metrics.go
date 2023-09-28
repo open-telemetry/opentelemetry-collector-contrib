@@ -128,3 +128,19 @@ var K8sVolumeMetrics = VolumeMetrics{
 	InodesFree: (*MetricsBuilder).RecordK8sVolumeInodesFreeDataPoint,
 	InodesUsed: (*MetricsBuilder).RecordK8sVolumeInodesUsedDataPoint,
 }
+
+type UptimeMetrics struct {
+	Uptime RecordIntDataPointFunc
+}
+
+var NodeUptimeMetrics = UptimeMetrics{
+	Uptime: (*MetricsBuilder).RecordK8sNodeUptimeDataPoint,
+}
+
+var PodUptimeMetrics = UptimeMetrics{
+	Uptime: (*MetricsBuilder).RecordK8sPodUptimeDataPoint,
+}
+
+var ContainerUptimeMetrics = UptimeMetrics{
+	Uptime: (*MetricsBuilder).RecordContainerUptimeDataPoint,
+}

@@ -93,6 +93,7 @@ func getFirstTimestamp(metrics pmetric.Metrics) pcommon.Timestamp {
 }
 
 func getFirstTimestampFromMetric(metric pmetric.Metric) pcommon.Timestamp {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := metric.Gauge().DataPoints()
@@ -124,6 +125,8 @@ func getFirstTimestampFromMetric(metric pmetric.Metric) pcommon.Timestamp {
 			return 0
 		}
 		return dps.At(0).Timestamp()
+	case pmetric.MetricTypeEmpty:
+		return 0
 	}
 	return 0
 }

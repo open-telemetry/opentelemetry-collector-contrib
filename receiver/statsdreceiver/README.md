@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [aws], [splunk], [sumo] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fstatsd%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fstatsd) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fstatsd%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fstatsd) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jmacd](https://www.github.com/jmacd), [@dmitryax](https://www.github.com/dmitryax) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -36,7 +38,7 @@ The Following settings are optional:
 - `timer_histogram_mapping:`(default value is below): Specify what OTLP type to convert received timing/histogram data to.
 
 
-`"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"` and `"histogram"`.
+`"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"`, `"histogram"` and `"distribution"`.
 
 `"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, and `"histogram"`. For `"gauge"`, it does not perform any aggregation.
 For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description (the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below.
@@ -59,6 +61,10 @@ receivers:
         observer_type: "histogram"
         histogram: 
           max_size: 100
+      - statsd_type: "distribution"
+        observer_type: "histogram"
+        histogram: 
+          max_size: 50    
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -136,6 +142,10 @@ receivers:
         observer_type: "histogram"
         histogram:
           max_size: 50
+      - statsd_type: "distribution"
+        observer_type: "histogram"
+        histogram: 
+          max_size: 50    
       - statsd_type: "timing"
         observer_type: "summary"
 

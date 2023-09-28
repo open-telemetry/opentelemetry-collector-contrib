@@ -15,4 +15,4 @@ metrics:
     sum:
       value_type: unknown
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative

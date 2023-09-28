@@ -9,6 +9,11 @@ resourcedetection/openshift:
     tls:
       insecure: true
 
+resourcedetection/aks:
+  detectors: [ env, aks ]
+  timeout: 2s
+  override: false
+
 resourcedetection/gcp:
   detectors: [env, gcp]
   timeout: 2s

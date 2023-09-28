@@ -16,6 +16,8 @@ type Config struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+
+	DefaultLabelsEnabled map[string]bool `mapstructure:"default_labels_enabled"`
 }
 
 func (c *Config) Validate() error {

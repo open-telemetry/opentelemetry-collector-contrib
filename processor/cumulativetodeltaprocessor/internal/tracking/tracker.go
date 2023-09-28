@@ -123,6 +123,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		case pmetric.MetricTypeSum:
 			out.IntValue = metricPoint.IntValue
 			out.FloatValue = metricPoint.FloatValue
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
 		}
 		switch t.initialValue {
 		case InitialValueAuto:
@@ -133,6 +134,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			valid = true
 		case InitialValueKeep:
 			valid = true
+		case InitialValueDrop:
 		}
 		return
 	}
@@ -193,6 +195,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 			out.IntValue = delta
 		}
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
 	}
 
 	state.PrevPoint = metricPoint

@@ -49,7 +49,7 @@ func newClient(cfg *Config, host component.Host, settings component.TelemetrySet
 		hostEndpoint: cfg.Endpoint,
 		creds: rabbitmqCredentials{
 			username: cfg.Username,
-			password: cfg.Password,
+			password: string(cfg.Password),
 		},
 		logger: logger,
 	}, nil

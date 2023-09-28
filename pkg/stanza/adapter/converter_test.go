@@ -622,6 +622,10 @@ func TestConvertArrayBody(t *testing.T) {
 	require.True(t, v.Bool())
 }
 
+func TestConvertNilBody(t *testing.T) {
+	require.Equal(t, plog.NewLogRecord().Body(), anyToBody(nil))
+}
+
 func TestConvertUnknownBody(t *testing.T) {
 	unknownType := map[string]int{"0": 0, "1": 1}
 	require.Equal(t, fmt.Sprintf("%v", unknownType), anyToBody(unknownType).Str())
@@ -657,11 +661,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 func anyToBody(body interface{}) pcommon.Value {
 	entry := entry.New()
 	entry.Body = body
-	return convertAndDrill(entry).Body()
-}
-
-func convertAndDrill(entry *entry.Entry) plog.LogRecord {
-	return convert(entry)
+	return convert(entry).Body()
 }
 
 func TestConvertSeverity(t *testing.T) {
@@ -755,7 +755,7 @@ func TestConvertSeverity(t *testing.T) {
 			entry := entry.New()
 			entry.Severity = tc.severity
 			entry.SeverityText = tc.severityText
-			log := convertAndDrill(entry)
+			log := convert(entry)
 			require.Equal(t, tc.expectedNumber, log.SeverityNumber())
 			require.Equal(t, tc.expectedText, log.SeverityText())
 		})
@@ -763,7 +763,7 @@ func TestConvertSeverity(t *testing.T) {
 }
 
 func TestConvertTrace(t *testing.T) {
-	record := convertAndDrill(&entry.Entry{
+	record := convert(&entry.Entry{
 		TraceID: []byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		},
@@ -786,7 +786,7 @@ func TestConvertTrace(t *testing.T) {
 }
 
 func TestConvertTraceEmptyFlags(t *testing.T) {
-	record := convertAndDrill(&entry.Entry{
+	record := convert(&entry.Entry{
 		TraceID: []byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		},

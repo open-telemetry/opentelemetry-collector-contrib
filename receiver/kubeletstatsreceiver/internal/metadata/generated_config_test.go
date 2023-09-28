@@ -37,6 +37,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryRss:             MetricConfig{Enabled: true},
 					ContainerMemoryUsage:           MetricConfig{Enabled: true},
 					ContainerMemoryWorkingSet:      MetricConfig{Enabled: true},
+					ContainerUptime:                MetricConfig{Enabled: true},
 					K8sNodeCPUTime:                 MetricConfig{Enabled: true},
 					K8sNodeCPUUtilization:          MetricConfig{Enabled: true},
 					K8sNodeFilesystemAvailable:     MetricConfig{Enabled: true},
@@ -50,6 +51,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeMemoryWorkingSet:        MetricConfig{Enabled: true},
 					K8sNodeNetworkErrors:           MetricConfig{Enabled: true},
 					K8sNodeNetworkIo:               MetricConfig{Enabled: true},
+					K8sNodeUptime:                  MetricConfig{Enabled: true},
 					K8sPodCPUTime:                  MetricConfig{Enabled: true},
 					K8sPodCPUUtilization:           MetricConfig{Enabled: true},
 					K8sPodFilesystemAvailable:      MetricConfig{Enabled: true},
@@ -63,6 +65,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodMemoryWorkingSet:         MetricConfig{Enabled: true},
 					K8sPodNetworkErrors:            MetricConfig{Enabled: true},
 					K8sPodNetworkIo:                MetricConfig{Enabled: true},
+					K8sPodUptime:                   MetricConfig{Enabled: true},
 					K8sVolumeAvailable:             MetricConfig{Enabled: true},
 					K8sVolumeCapacity:              MetricConfig{Enabled: true},
 					K8sVolumeInodes:                MetricConfig{Enabled: true},
@@ -103,6 +106,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryRss:             MetricConfig{Enabled: false},
 					ContainerMemoryUsage:           MetricConfig{Enabled: false},
 					ContainerMemoryWorkingSet:      MetricConfig{Enabled: false},
+					ContainerUptime:                MetricConfig{Enabled: false},
 					K8sNodeCPUTime:                 MetricConfig{Enabled: false},
 					K8sNodeCPUUtilization:          MetricConfig{Enabled: false},
 					K8sNodeFilesystemAvailable:     MetricConfig{Enabled: false},
@@ -116,6 +120,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeMemoryWorkingSet:        MetricConfig{Enabled: false},
 					K8sNodeNetworkErrors:           MetricConfig{Enabled: false},
 					K8sNodeNetworkIo:               MetricConfig{Enabled: false},
+					K8sNodeUptime:                  MetricConfig{Enabled: false},
 					K8sPodCPUTime:                  MetricConfig{Enabled: false},
 					K8sPodCPUUtilization:           MetricConfig{Enabled: false},
 					K8sPodFilesystemAvailable:      MetricConfig{Enabled: false},
@@ -129,6 +134,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodMemoryWorkingSet:         MetricConfig{Enabled: false},
 					K8sPodNetworkErrors:            MetricConfig{Enabled: false},
 					K8sPodNetworkIo:                MetricConfig{Enabled: false},
+					K8sPodUptime:                   MetricConfig{Enabled: false},
 					K8sVolumeAvailable:             MetricConfig{Enabled: false},
 					K8sVolumeCapacity:              MetricConfig{Enabled: false},
 					K8sVolumeInodes:                MetricConfig{Enabled: false},
@@ -171,6 +177,78 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
+}
+
+func TestResourceAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want ResourceAttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultResourceAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: ResourceAttributesConfig{
+				AwsVolumeID:                  ResourceAttributeConfig{Enabled: true},
+				ContainerID:                  ResourceAttributeConfig{Enabled: true},
+				FsType:                       ResourceAttributeConfig{Enabled: true},
+				GcePdName:                    ResourceAttributeConfig{Enabled: true},
+				GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: true},
+				GlusterfsPath:                ResourceAttributeConfig{Enabled: true},
+				K8sContainerName:             ResourceAttributeConfig{Enabled: true},
+				K8sNamespaceName:             ResourceAttributeConfig{Enabled: true},
+				K8sNodeName:                  ResourceAttributeConfig{Enabled: true},
+				K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: true},
+				K8sPodName:                   ResourceAttributeConfig{Enabled: true},
+				K8sPodUID:                    ResourceAttributeConfig{Enabled: true},
+				K8sVolumeName:                ResourceAttributeConfig{Enabled: true},
+				K8sVolumeType:                ResourceAttributeConfig{Enabled: true},
+				Partition:                    ResourceAttributeConfig{Enabled: true},
+			},
+		},
+		{
+			name: "none_set",
+			want: ResourceAttributesConfig{
+				AwsVolumeID:                  ResourceAttributeConfig{Enabled: false},
+				ContainerID:                  ResourceAttributeConfig{Enabled: false},
+				FsType:                       ResourceAttributeConfig{Enabled: false},
+				GcePdName:                    ResourceAttributeConfig{Enabled: false},
+				GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: false},
+				GlusterfsPath:                ResourceAttributeConfig{Enabled: false},
+				K8sContainerName:             ResourceAttributeConfig{Enabled: false},
+				K8sNamespaceName:             ResourceAttributeConfig{Enabled: false},
+				K8sNodeName:                  ResourceAttributeConfig{Enabled: false},
+				K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: false},
+				K8sPodName:                   ResourceAttributeConfig{Enabled: false},
+				K8sPodUID:                    ResourceAttributeConfig{Enabled: false},
+				K8sVolumeName:                ResourceAttributeConfig{Enabled: false},
+				K8sVolumeType:                ResourceAttributeConfig{Enabled: false},
+				Partition:                    ResourceAttributeConfig{Enabled: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt.name)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
+		})
+	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }

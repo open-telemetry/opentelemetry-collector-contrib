@@ -87,26 +87,6 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		assert.NoError(t, int64PtWithLabels.Attributes().FromRaw(labelMap))
 	}
 
-	initHistDP := func(histDP pmetric.HistogramDataPoint) {
-		histDP.SetTimestamp(ts)
-		histDP.SetCount(16)
-		histDP.SetSum(100.0)
-		histDP.ExplicitBounds().FromRaw([]float64{1, 2, 4})
-		histDP.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
-		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
-	}
-	histDP := pmetric.NewHistogramDataPoint()
-	initHistDP(histDP)
-
-	initHistDPNoBuckets := func(histDP pmetric.HistogramDataPoint) {
-		histDP.SetCount(2)
-		histDP.SetSum(10)
-		histDP.SetTimestamp(ts)
-		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
-	}
-	histDPNoBuckets := pmetric.NewHistogramDataPoint()
-	initHistDPNoBuckets(histDPNoBuckets)
-
 	tests := []struct {
 		name              string
 		metricsFn         func() pmetric.Metrics
@@ -170,7 +150,6 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m.SetEmptySum().SetIsMonotonic(false)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
-
 				return out
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
@@ -624,10 +603,390 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "")
+			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", true)
 			require.NoError(t, err)
 			md := tt.metricsFn()
 			gotSfxDataPoints := c.MetricsToSignalFxV2(md)
+			// Sort SFx dimensions since they are built from maps and the order
+			// of those is not deterministic.
+			sortDimensions(tt.wantSfxDataPoints)
+			sortDimensions(gotSfxDataPoints)
+			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
+		})
+	}
+}
+
+func Test_MetricDataToSignalFxV2WithHistogramBuckets(t *testing.T) {
+	logger := zap.NewNop()
+
+	labelMap := map[string]interface{}{
+		"k0": "v0",
+		"k1": "v1",
+	}
+
+	labelMapBucket1 := map[string]interface{}{
+		"k0": "v0",
+		"k1": "v1",
+		"le": "1",
+	}
+	labelMapBucket2 := map[string]interface{}{
+		"k0": "v0",
+		"k1": "v1",
+		"le": "2",
+	}
+	labelMapBucket3 := map[string]interface{}{
+		"k0": "v0",
+		"k1": "v1",
+		"le": "4",
+	}
+	labelMapBucket4 := map[string]interface{}{
+		"k0": "v0",
+		"k1": "v1",
+		"le": "+Inf",
+	}
+
+	ts := pcommon.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
+
+	initDoublePt := func(doublePt pmetric.NumberDataPoint) {
+		doublePt.SetTimestamp(ts)
+		doublePt.SetDoubleValue(doubleVal)
+	}
+
+	initDoublePtWithLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
+		initDoublePt(doublePtWithLabels)
+		assert.NoError(t, doublePtWithLabels.Attributes().FromRaw(labelMap))
+	}
+	initInt64Pt := func(int64Pt pmetric.NumberDataPoint) {
+		int64Pt.SetTimestamp(ts)
+		int64Pt.SetIntValue(int64Val)
+	}
+
+	initInt64PtWithLabels := func(int64PtWithLabels pmetric.NumberDataPoint) {
+		initInt64Pt(int64PtWithLabels)
+		assert.NoError(t, int64PtWithLabels.Attributes().FromRaw(labelMap))
+	}
+
+	initHistDP := func(histDP pmetric.HistogramDataPoint) {
+		histDP.SetTimestamp(ts)
+		histDP.SetCount(uint64(int64Val))
+		histDP.SetSum(doubleVal)
+		histDP.ExplicitBounds().FromRaw([]float64{1, 2, 4})
+		histDP.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
+		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
+	}
+	histDP := pmetric.NewHistogramDataPoint()
+	initHistDP(histDP)
+
+	initHistDPNoBuckets := func(histDP pmetric.HistogramDataPoint) {
+		histDP.SetCount(uint64(int64Val))
+		histDP.SetSum(doubleVal)
+		histDP.SetTimestamp(ts)
+		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
+	}
+	histDPNoBuckets := pmetric.NewHistogramDataPoint()
+	initHistDPNoBuckets(histDPNoBuckets)
+
+	initHistPt := func(histDP pmetric.HistogramDataPoint) {
+		histDP.SetCount(uint64(int64Val))
+		histDP.SetTimestamp(ts)
+	}
+
+	tests := []struct {
+		name              string
+		metricsFn         func() pmetric.Metrics
+		excludeMetrics    []dpfilters.MetricFilter
+		includeMetrics    []dpfilters.MetricFilter
+		wantSfxDataPoints []*sfxpb.DataPoint
+	}{
+		{
+			name: "nil_node_nil_resources_no_dims",
+			metricsFn: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_double_with_dims")
+					initDoublePt(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_int_with_dims")
+					initInt64Pt(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					initDoublePt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_int_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("delta_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+					initDoublePt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("delta_int_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_sum_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(false)
+					initDoublePt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_sum_int_with_dims")
+					m.SetEmptySum().SetIsMonotonic(false)
+					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_empty_metric")
+					initHistPt(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+				return out
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint("gauge_double_with_dims", &sfxMetricTypeGauge, nil),
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, nil),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, nil),
+				int64SFxDataPoint("cumulative_int_with_dims", &sfxMetricTypeCumulativeCounter, nil),
+				doubleSFxDataPoint("delta_double_with_dims", &sfxMetricTypeCounter, nil),
+				int64SFxDataPoint("delta_int_with_dims", &sfxMetricTypeCounter, nil),
+				doubleSFxDataPoint("gauge_sum_double_with_dims", &sfxMetricTypeGauge, nil),
+				int64SFxDataPoint("gauge_sum_int_with_dims", &sfxMetricTypeGauge, nil),
+				int64SFxDataPoint("histo_empty_metric_count", &sfxMetricTypeCumulativeCounter, nil),
+			},
+		},
+		{
+			name: "nil_node_and_resources_with_dims",
+			metricsFn: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_double_with_dims")
+					initDoublePtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_int_with_dims")
+					initInt64PtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					initDoublePtWithLabels(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_int_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					initInt64PtWithLabels(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_no_buckets_dims")
+					initHistDPNoBuckets(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_buckets_dims")
+					initHistDP(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+
+				return out
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint("gauge_double_with_dims", &sfxMetricTypeGauge, labelMap),
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, labelMap),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
+				int64SFxDataPoint("cumulative_int_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
+				int64SFxDataPoint("histo_with_no_buckets_dims_count", &sfxMetricTypeCumulativeCounter, labelMap),
+				doubleSFxDataPoint("histo_with_no_buckets_dims_sum", &sfxMetricTypeCumulativeCounter, labelMap),
+				int64SFxDataPoint("histo_with_buckets_dims_count", &sfxMetricTypeCumulativeCounter, labelMap),
+				doubleSFxDataPoint("histo_with_buckets_dims_sum", &sfxMetricTypeCumulativeCounter, labelMap),
+				histoValue(int64SFxDataPoint("histo_with_buckets_dims_bucket", &sfxMetricTypeCumulativeCounter, labelMapBucket1), 4),
+				histoValue(int64SFxDataPoint("histo_with_buckets_dims_bucket", &sfxMetricTypeCumulativeCounter, labelMapBucket2), 6),
+				histoValue(int64SFxDataPoint("histo_with_buckets_dims_bucket", &sfxMetricTypeCumulativeCounter, labelMapBucket3), 9),
+				histoValue(int64SFxDataPoint("histo_with_buckets_dims_bucket", &sfxMetricTypeCumulativeCounter, labelMapBucket4), 16),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", false)
+			require.NoError(t, err)
+			md := tt.metricsFn()
+			gotSfxDataPoints := c.MetricsToSignalFxV2(md)
+			// Sort SFx dimensions since they are built from maps and the order
+			// of those is not deterministic.
+			sortDimensions(tt.wantSfxDataPoints)
+			sortDimensions(gotSfxDataPoints)
+			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
+		})
+	}
+
+	testsWithDropHistogramBuckets := []struct {
+		name              string
+		metricsFn         func() pmetric.Metrics
+		excludeMetrics    []dpfilters.MetricFilter
+		includeMetrics    []dpfilters.MetricFilter
+		wantSfxDataPoints []*sfxpb.DataPoint
+	}{
+		{
+			name: "nil_node_nil_resources_no_dims",
+			metricsFn: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_double_with_dims")
+					initDoublePt(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_int_with_dims")
+					initInt64Pt(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					initDoublePt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_int_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("delta_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+					initDoublePt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("delta_int_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_sum_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(false)
+					initDoublePt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_sum_int_with_dims")
+					m.SetEmptySum().SetIsMonotonic(false)
+					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_empty_metric")
+					initHistPt(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+				return out
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint("gauge_double_with_dims", &sfxMetricTypeGauge, nil),
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, nil),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, nil),
+				int64SFxDataPoint("cumulative_int_with_dims", &sfxMetricTypeCumulativeCounter, nil),
+				doubleSFxDataPoint("delta_double_with_dims", &sfxMetricTypeCounter, nil),
+				int64SFxDataPoint("delta_int_with_dims", &sfxMetricTypeCounter, nil),
+				doubleSFxDataPoint("gauge_sum_double_with_dims", &sfxMetricTypeGauge, nil),
+				int64SFxDataPoint("gauge_sum_int_with_dims", &sfxMetricTypeGauge, nil),
+				int64SFxDataPoint("histo_empty_metric_count", &sfxMetricTypeCumulativeCounter, nil),
+			},
+		},
+		{
+			name: "nil_node_and_resources_with_dims",
+			metricsFn: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_double_with_dims")
+					initDoublePtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_int_with_dims")
+					initInt64PtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					initDoublePtWithLabels(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_int_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					initInt64PtWithLabels(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_no_buckets_dims")
+					initHistDPNoBuckets(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_buckets_dims")
+					initHistDP(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+
+				return out
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint("gauge_double_with_dims", &sfxMetricTypeGauge, labelMap),
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, labelMap),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
+				int64SFxDataPoint("cumulative_int_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
+				int64SFxDataPoint("histo_with_no_buckets_dims_count", &sfxMetricTypeCumulativeCounter, labelMap),
+				doubleSFxDataPoint("histo_with_no_buckets_dims_sum", &sfxMetricTypeCumulativeCounter, labelMap),
+				int64SFxDataPoint("histo_with_buckets_dims_count", &sfxMetricTypeCumulativeCounter, labelMap),
+				doubleSFxDataPoint("histo_with_buckets_dims_sum", &sfxMetricTypeCumulativeCounter, labelMap),
+			},
+		},
+	}
+
+	for _, tt := range testsWithDropHistogramBuckets {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", true)
+			require.NoError(t, err)
+			md := tt.metricsFn()
+			gotSfxDataPoints := c.MetricsToSignalFxV2(md)
+
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
 			sortDimensions(tt.wantSfxDataPoints)
@@ -671,7 +1030,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 			},
 		},
 	}
-	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "")
+	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "", false)
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
 }
@@ -710,7 +1069,7 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 			},
 		},
 	}
-	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.")
+	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.", false)
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
 
@@ -728,7 +1087,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		dp.Attributes().PutStr(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
 	}
-	c, err := NewMetricsConverter(logger, nil, nil, nil, "_-.")
+	c, err := NewMetricsConverter(logger, nil, nil, nil, "_-.", false)
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, len(c.MetricsToSignalFxV2(md)))
 	// No log message should be printed
@@ -802,6 +1161,11 @@ func int64SFxDataPoint(
 	}
 }
 
+func histoValue(dps *sfxpb.DataPoint, val int64) *sfxpb.DataPoint {
+	dps.Value = sfxpb.Datum{IntValue: &val}
+	return dps
+}
+
 func sfxDimensions(m map[string]interface{}) []*sfxpb.Dimension {
 	sfxDims := make([]*sfxpb.Dimension, 0, len(m))
 	for k, v := range m {
@@ -829,7 +1193,7 @@ func TestNewMetricsConverter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil, "")
+			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil, "", false)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -889,7 +1253,7 @@ func TestMetricsConverter_ConvertDimension(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewMetricsConverter(zap.NewNop(), tt.fields.metricTranslator, nil, nil, tt.fields.nonAlphanumericDimChars)
+			c, err := NewMetricsConverter(zap.NewNop(), tt.fields.metricTranslator, nil, nil, tt.fields.nonAlphanumericDimChars, false)
 			require.NoError(t, err)
 			if got := c.ConvertDimension(tt.args.dim); got != tt.want {
 				t.Errorf("ConvertDimension() = %v, want %v", got, tt.want)

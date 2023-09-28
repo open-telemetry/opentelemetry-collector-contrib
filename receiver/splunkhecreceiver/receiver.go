@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,9 +20,9 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -31,7 +32,7 @@ import (
 const (
 	defaultServerTimeout = 20 * time.Second
 
-	responseOK                        = "OK"
+	responseOK                        = `{"text": "Success", "code": 0}`
 	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
 	responseInvalidMethod             = `Only "POST" method is supported`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
@@ -79,7 +80,7 @@ type splunkReceiver struct {
 	metricsConsumer consumer.Metrics
 	server          *http.Server
 	shutdownWG      sync.WaitGroup
-	obsrecv         *obsreport.Receiver
+	obsrecv         *receiverhelper.ObsReport
 	gzipReaderPool  *sync.Pool
 }
 
@@ -104,7 +105,7 @@ func newMetricsReceiver(
 		transport = "https"
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -148,7 +149,7 @@ func newLogsReceiver(
 		transport = "https"
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -265,7 +266,21 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 
 	resourceCustomizer := r.createResourceCustomizer(req)
-	ld, slLen, err := splunkHecRawToLogData(bodyReader, req.URL.Query(), resourceCustomizer, r.config)
+	query := req.URL.Query()
+	var timestamp pcommon.Timestamp
+	if query.Has(queryTime) {
+		t, err := strconv.ParseInt(query.Get(queryTime), 10, 64)
+		if t < 0 {
+			err = errors.New("time cannot be less than 0")
+		}
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, 0, err)
+			return
+		}
+		timestamp = pcommon.NewTimestampFromTime(time.Unix(t, 0))
+	}
+
+	ld, slLen, err := splunkHecRawToLogData(bodyReader, query, resourceCustomizer, r.config, timestamp)
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, err)
 		return
@@ -376,8 +391,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
 		resp.WriteHeader(http.StatusOK)
-		_, err := resp.Write(okRespBody)
-		if err != nil {
+		if _, err := resp.Write(okRespBody); err != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
 		}
 	}
