@@ -9,16 +9,40 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/system resource attributes.
 type ResourceAttributesConfig struct {
-	HostArch      ResourceAttributeConfig `mapstructure:"host.arch"`
-	HostID        ResourceAttributeConfig `mapstructure:"host.id"`
-	HostName      ResourceAttributeConfig `mapstructure:"host.name"`
-	OsDescription ResourceAttributeConfig `mapstructure:"os.description"`
-	OsType        ResourceAttributeConfig `mapstructure:"os.type"`
+	HostArch           ResourceAttributeConfig `mapstructure:"host.arch"`
+	HostCPUCacheL2Size ResourceAttributeConfig `mapstructure:"host.cpu.cache.l2.size"`
+	HostCPUFamily      ResourceAttributeConfig `mapstructure:"host.cpu.family"`
+	HostCPUModelID     ResourceAttributeConfig `mapstructure:"host.cpu.model.id"`
+	HostCPUModelName   ResourceAttributeConfig `mapstructure:"host.cpu.model.name"`
+	HostCPUStepping    ResourceAttributeConfig `mapstructure:"host.cpu.stepping"`
+	HostCPUVendorID    ResourceAttributeConfig `mapstructure:"host.cpu.vendor.id"`
+	HostID             ResourceAttributeConfig `mapstructure:"host.id"`
+	HostName           ResourceAttributeConfig `mapstructure:"host.name"`
+	OsDescription      ResourceAttributeConfig `mapstructure:"os.description"`
+	OsType             ResourceAttributeConfig `mapstructure:"os.type"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		HostArch: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostCPUCacheL2Size: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostCPUFamily: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostCPUModelID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostCPUModelName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostCPUStepping: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostCPUVendorID: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		HostID: ResourceAttributeConfig{

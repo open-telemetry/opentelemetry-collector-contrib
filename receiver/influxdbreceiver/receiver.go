@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
@@ -34,7 +34,7 @@ type metricsReceiver struct {
 
 	logger common.Logger
 
-	obsrecv *obsreport.Receiver
+	obsrecv *receiverhelper.ObsReport
 
 	settings component.TelemetrySettings
 }
@@ -45,7 +45,7 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 	if err != nil {
 		return nil, err
 	}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "http",
 		ReceiverCreateSettings: settings,
@@ -106,10 +106,14 @@ const (
 )
 
 var precisions = map[string]lineprotocol.Precision{
-	lineprotocol.Nanosecond.String():  lineprotocol.Nanosecond,
-	lineprotocol.Microsecond.String(): lineprotocol.Microsecond,
-	lineprotocol.Millisecond.String(): lineprotocol.Millisecond,
-	lineprotocol.Second.String():      lineprotocol.Second,
+	"ns": lineprotocol.Nanosecond,
+	"n":  lineprotocol.Nanosecond,
+	"µs": lineprotocol.Microsecond,
+	"µ":  lineprotocol.Microsecond,
+	"us": lineprotocol.Microsecond,
+	"u":  lineprotocol.Microsecond,
+	"ms": lineprotocol.Millisecond,
+	"s":  lineprotocol.Second,
 }
 
 func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) {

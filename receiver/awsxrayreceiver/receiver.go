@@ -5,13 +5,13 @@ package awsxrayreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
@@ -34,7 +34,7 @@ type xrayReceiver struct {
 	server   proxy.Server
 	settings receiver.CreateSettings
 	consumer consumer.Traces
-	obsrecv  *obsreport.Receiver
+	obsrecv  *receiverhelper.ObsReport
 	registry telemetry.Registry
 }
 
@@ -65,7 +65,7 @@ func newReceiver(config *Config,
 		return nil, err
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              udppoller.Transport,
 		ReceiverCreateSettings: set,
@@ -102,7 +102,7 @@ func (x *xrayReceiver) Shutdown(ctx context.Context) error {
 	}
 
 	if proxyErr := x.server.Shutdown(ctx); proxyErr != nil {
-		err = multierr.Append(err, fmt.Errorf("failed to close proxy: %w", proxyErr))
+		err = errors.Join(err, fmt.Errorf("failed to close proxy: %w", proxyErr))
 	}
 	return err
 }

@@ -91,6 +91,10 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 	}, nil
 }
 
+func ExprCompile(input string) (*vm.Program, error) {
+	return expr.Compile(input, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}))
+}
+
 func ExprCompileBool(input string) (*vm.Program, error) {
 	return expr.Compile(input, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}), expr.AsBool())
 }

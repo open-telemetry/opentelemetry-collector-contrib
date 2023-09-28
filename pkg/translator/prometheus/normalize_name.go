@@ -67,15 +67,10 @@ var perUnitMap = map[string]string{
 
 var normalizeNameGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.prometheus.NormalizeName",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Controls whether metrics names are automatically normalized to follow Prometheus naming convention"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 )
-
-// Deprecated: use BuildCompliantName instead.
-func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
-	return BuildCompliantName(metric, namespace, true)
-}
 
 // BuildCompliantName builds a Prometheus-compliant metric name for the specified metric
 //

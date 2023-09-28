@@ -114,7 +114,15 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	}
 
 	if newNamespaceInformer == nil {
-		newNamespaceInformer = newNamespaceSharedInformer
+		// if rules to extract metadata from namespace is configured use namespace shared informer containing
+		// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
+		if c.extractNamespaceLabelsAnnotations() {
+			newNamespaceInformer = newNamespaceSharedInformer
+		} else {
+			// use kube-system shared informer to only watch kube-system namespace
+			// reducing overhead of watching all the namespaces
+			newNamespaceInformer = newKubeSystemSharedInformer
+		}
 	}
 
 	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
@@ -132,11 +140,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		return nil, err
 	}
 
-	if c.extractNamespaceLabelsAnnotations() {
-		c.namespaceInformer = newNamespaceInformer(c.kc)
-	} else {
-		c.namespaceInformer = NewNoOpInformer(c.kc)
-	}
+	c.namespaceInformer = newNamespaceInformer(c.kc)
 
 	if rules.DeploymentName || rules.DeploymentUID {
 		if newReplicaSetInformer == nil {
@@ -431,6 +435,14 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.Node {
 		tags[tagNodeName] = pod.Spec.NodeName
+	}
+
+	if c.Rules.ClusterUID {
+		if val, ok := c.Namespaces["kube-system"]; ok {
+			tags[tagClusterUID] = val.NamespaceUID
+		} else {
+			c.logger.Debug("unable to find kube-system namespace, cluster uid will not be available")
+		}
 	}
 
 	for _, r := range c.Rules.Labels {

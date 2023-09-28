@@ -261,7 +261,7 @@ var trace1Id = [16]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
 var trace2Id = [16]byte{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}
 var trace3Id = [16]byte{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}
 
-func GenerateTracesTreesAndOrphans() ptrace.Traces {
+func generateTracesTreesAndOrphans() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
 	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
@@ -434,7 +434,7 @@ func generateSimpleEvent(
 }
 
 func TestBuildEventsFromTracesTrees(t *testing.T) {
-	traces := GenerateTracesTreesAndOrphans()
+	traces := generateTracesTreesAndOrphans()
 	was := buildEventsFromTraces(traces, testServerHost)
 
 	statusUnset := ptrace.NewStatus()

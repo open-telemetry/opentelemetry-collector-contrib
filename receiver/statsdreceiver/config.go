@@ -39,7 +39,7 @@ func (c *Config) Validate() error {
 		}
 
 		switch eachMap.StatsdType {
-		case protocol.TimingTypeName, protocol.TimingAltTypeName, protocol.HistogramTypeName:
+		case protocol.TimingTypeName, protocol.TimingAltTypeName, protocol.HistogramTypeName, protocol.DistributionTypeName:
 			// do nothing
 		case protocol.CounterTypeName, protocol.GaugeTypeName:
 			fallthrough

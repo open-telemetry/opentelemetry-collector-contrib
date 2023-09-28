@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -63,7 +64,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
 		tcpInputCfg.BaseConfig = *c.TCP
 		if syslogParserCfg.EnableOctetCounting {
-			tcpInputCfg.MultiLineBuilder = OctetMultiLineBuilder
+			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
 		}
 
 		tcpInput, err := tcpInputCfg.Build(logger)
@@ -143,7 +144,7 @@ func (t *Input) SetOutputs(operators []operator.Operator) error {
 	return t.parser.SetOutputs(operators)
 }
 
-func OctetMultiLineBuilder(_ helper.Encoding) (bufio.SplitFunc, error) {
+func OctetSplitFuncBuilder(_ encoding.Encoding) (bufio.SplitFunc, error) {
 	return newOctetFrameSplitFunc(true), nil
 }
 

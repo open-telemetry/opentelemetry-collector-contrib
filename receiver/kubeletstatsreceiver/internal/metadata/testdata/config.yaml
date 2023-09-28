@@ -23,6 +23,8 @@ all_set:
       enabled: true
     container.memory.working_set:
       enabled: true
+    container.uptime:
+      enabled: true
     k8s.node.cpu.time:
       enabled: true
     k8s.node.cpu.utilization:
@@ -49,6 +51,8 @@ all_set:
       enabled: true
     k8s.node.network.io:
       enabled: true
+    k8s.node.uptime:
+      enabled: true
     k8s.pod.cpu.time:
       enabled: true
     k8s.pod.cpu.utilization:
@@ -74,6 +78,8 @@ all_set:
     k8s.pod.network.errors:
       enabled: true
     k8s.pod.network.io:
+      enabled: true
+    k8s.pod.uptime:
       enabled: true
     k8s.volume.available:
       enabled: true
@@ -140,6 +146,8 @@ none_set:
       enabled: false
     container.memory.working_set:
       enabled: false
+    container.uptime:
+      enabled: false
     k8s.node.cpu.time:
       enabled: false
     k8s.node.cpu.utilization:
@@ -166,6 +174,8 @@ none_set:
       enabled: false
     k8s.node.network.io:
       enabled: false
+    k8s.node.uptime:
+      enabled: false
     k8s.pod.cpu.time:
       enabled: false
     k8s.pod.cpu.utilization:
@@ -191,6 +201,8 @@ none_set:
     k8s.pod.network.errors:
       enabled: false
     k8s.pod.network.io:
+      enabled: false
+    k8s.pod.uptime:
       enabled: false
     k8s.volume.available:
       enabled: false

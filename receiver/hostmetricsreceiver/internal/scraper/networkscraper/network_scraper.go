@@ -157,6 +157,10 @@ func (s *scraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCountersSlice [
 }
 
 func (s *scraper) recordNetworkConnectionsMetrics() error {
+	if !s.config.Metrics.SystemNetworkConnections.Enabled {
+		return nil
+	}
+
 	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 

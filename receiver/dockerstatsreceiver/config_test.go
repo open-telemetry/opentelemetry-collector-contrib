@@ -40,7 +40,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Endpoint:         "http://example.com/",
-				Timeout:          20 * time.Second,
 				DockerAPIVersion: 1.24,
 
 				ExcludedImages: []string{

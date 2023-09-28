@@ -13,7 +13,7 @@ resourceMetrics:
                     - key: attr2NewName
                       value:
                         stringValue: val2
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: metric1
             unit: By
         scope:

@@ -5,12 +5,14 @@ package traces
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -120,6 +122,61 @@ func TestSpanKind(t *testing.T) {
 	// verify that the default Span Kind is being overridden
 	for _, span := range syncer.spans {
 		assert.NotEqual(t, span.SpanKind(), trace.SpanKindInternal)
+	}
+}
+
+func TestSpanStatuses(t *testing.T) {
+	tests := []struct {
+		inputStatus string
+		spanStatus  codes.Code
+		validInput  bool
+	}{
+		{inputStatus: `Unset`, spanStatus: codes.Unset, validInput: true},
+		{inputStatus: `Error`, spanStatus: codes.Error, validInput: true},
+		{inputStatus: `Ok`, spanStatus: codes.Ok, validInput: true},
+		{inputStatus: `unset`, spanStatus: codes.Unset, validInput: true},
+		{inputStatus: `error`, spanStatus: codes.Error, validInput: true},
+		{inputStatus: `ok`, spanStatus: codes.Ok, validInput: true},
+		{inputStatus: `UNSET`, spanStatus: codes.Unset, validInput: true},
+		{inputStatus: `ERROR`, spanStatus: codes.Error, validInput: true},
+		{inputStatus: `OK`, spanStatus: codes.Ok, validInput: true},
+		{inputStatus: `0`, spanStatus: codes.Unset, validInput: true},
+		{inputStatus: `1`, spanStatus: codes.Error, validInput: true},
+		{inputStatus: `2`, spanStatus: codes.Ok, validInput: true},
+		{inputStatus: `Foo`, spanStatus: codes.Unset, validInput: false},
+		{inputStatus: `-1`, spanStatus: codes.Unset, validInput: false},
+		{inputStatus: `3`, spanStatus: codes.Unset, validInput: false},
+		{inputStatus: `Err`, spanStatus: codes.Unset, validInput: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("inputStatus=%s", tt.inputStatus), func(t *testing.T) {
+			syncer := &mockSyncer{}
+
+			tracerProvider := sdktrace.NewTracerProvider()
+			sp := sdktrace.NewSimpleSpanProcessor(syncer)
+			tracerProvider.RegisterSpanProcessor(sp)
+			otel.SetTracerProvider(tracerProvider)
+
+			cfg := &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumTraces:  1,
+				StatusCode: tt.inputStatus,
+			}
+
+			// test the program given input, including erroneous inputs
+			if tt.validInput {
+				require.NoError(t, Run(cfg, zap.NewNop()))
+				// verify that the default the span status is set as expected
+				for _, span := range syncer.spans {
+					assert.Equal(t, span.Status().Code, tt.spanStatus, fmt.Sprintf("span status: %v and expected status %v", span.Status().Code, tt.spanStatus))
+				}
+			} else {
+				require.Error(t, Run(cfg, zap.NewNop()))
+			}
+		})
 	}
 }
 

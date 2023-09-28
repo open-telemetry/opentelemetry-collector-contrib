@@ -78,7 +78,7 @@ func carbon2NumberRecord(record metricPair, dataPoint pmetric.NumberDataPoint) s
 // carbon2metric2String converts metric to Carbon2 formatted string.
 func carbon2Metric2String(record metricPair) string {
 	var nextLines []string
-
+	//exhaustive:enforce
 	switch record.metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := record.metric.Gauge().DataPoints()

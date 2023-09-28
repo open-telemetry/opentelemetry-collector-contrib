@@ -17,7 +17,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -38,6 +37,10 @@ func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCre
 	return &azidentity.ClientSecretCredential{}, nil
 }
 
+func azIDWorkloadFuncMock(*azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error) {
+	return &azidentity.WorkloadIdentityCredential{}, nil
+}
+
 func armClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error) {
 	return &armresources.Client{}, nil
 }
@@ -51,49 +54,92 @@ func armMonitorMetricsClientFuncMock(azcore.TokenCredential, *arm.ClientOptions)
 }
 
 func TestAzureScraperStart(t *testing.T) {
-	type fields struct {
-		cfg *Config
-	}
-	type args struct {
-		ctx  context.Context
-		host component.Host
-	}
 
 	cfg := createDefaultConfig().(*Config)
 
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name     string
+		testFunc func(*testing.T)
 	}{
 		// TODO: Add test cases.
 		{
-			name: "1st",
-			fields: fields{
-				cfg: cfg,
+			name: "default",
+			testFunc: func(t *testing.T) {
+				s := &azureScraper{
+					cfg:                             cfg,
+					azIDCredentialsFunc:             azIDCredentialsFuncMock,
+					azIDWorkloadFunc:                azIDWorkloadFuncMock,
+					armClientFunc:                   armClientFuncMock,
+					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
+					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+				}
+
+				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+					t.Errorf("azureScraper.start() error = %v", err)
+				}
+				require.NotNil(t, s.cred)
+				require.IsType(t, &azidentity.ClientSecretCredential{}, s.cred)
 			},
-			args: args{
-				ctx:  context.Background(),
-				host: componenttest.NewNopHost(),
+		},
+		{
+			name: "service_principal",
+			testFunc: func(t *testing.T) {
+				customCfg := &Config{
+					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
+					CacheResources:                24 * 60 * 60,
+					CacheResourcesDefinitions:     24 * 60 * 60,
+					MaximumNumberOfMetricsInACall: 20,
+					Services:                      monitorServices,
+					Authentication:                servicePrincipal,
+				}
+				s := &azureScraper{
+					cfg:                             customCfg,
+					azIDCredentialsFunc:             azIDCredentialsFuncMock,
+					azIDWorkloadFunc:                azIDWorkloadFuncMock,
+					armClientFunc:                   armClientFuncMock,
+					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
+					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+				}
+
+				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+					t.Errorf("azureScraper.start() error = %v", err)
+				}
+				require.NotNil(t, s.cred)
+				require.IsType(t, &azidentity.ClientSecretCredential{}, s.cred)
 			},
-			wantErr: false,
+		},
+		{
+			name: "workload_identity",
+			testFunc: func(t *testing.T) {
+				customCfg := &Config{
+					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
+					CacheResources:                24 * 60 * 60,
+					CacheResourcesDefinitions:     24 * 60 * 60,
+					MaximumNumberOfMetricsInACall: 20,
+					Services:                      monitorServices,
+					Authentication:                workloadIdentity,
+				}
+				s := &azureScraper{
+					cfg:                             customCfg,
+					azIDCredentialsFunc:             azIDCredentialsFuncMock,
+					azIDWorkloadFunc:                azIDWorkloadFuncMock,
+					armClientFunc:                   armClientFuncMock,
+					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
+					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+				}
+
+				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+					t.Errorf("azureScraper.start() error = %v", err)
+				}
+				require.NotNil(t, s.cred)
+				require.IsType(t, &azidentity.WorkloadIdentityCredential{}, s.cred)
+			},
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &azureScraper{
-				cfg:                             tt.fields.cfg,
-				azIDCredentialsFunc:             azIDCredentialsFuncMock,
-				armClientFunc:                   armClientFuncMock,
-				armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
-				armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
-			}
-
-			if err := s.start(tt.args.ctx, tt.args.host); (err != nil) != tt.wantErr {
-				t.Errorf("azureScraper.start() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+		t.Run(tt.name, tt.testFunc)
 	}
 }
 
@@ -233,11 +279,14 @@ func TestAzureScraperScrape(t *testing.T) {
 }
 
 func getResourcesMockData(tags bool) []armresources.ClientListResponse {
-	id1, id2, id3, location1 := "resourceId1", "resourceId2", "resourceId3", "location1"
+	id1, id2, id3, location1, name1, type1 := "/resourceGroups/group1/resourceId1",
+		"/resourceGroups/group1/resourceId2", "/resourceGroups/group1/resourceId3", "location1", "name1", "type1"
 
 	resourceID1 := armresources.GenericResourceExpanded{
 		ID:       &id1,
 		Location: &location1,
+		Name:     &name1,
+		Type:     &type1,
 	}
 	if tags {
 		tagName1, tagValue1 := "tagName1", "tagValue1"
@@ -249,7 +298,10 @@ func getResourcesMockData(tags bool) []armresources.ClientListResponse {
 				Value: []*armresources.GenericResourceExpanded{
 					&resourceID1,
 					{
-						ID: &id2,
+						ID:       &id2,
+						Location: &location1,
+						Name:     &name1,
+						Type:     &type1,
 					},
 				},
 			},
@@ -258,7 +310,10 @@ func getResourcesMockData(tags bool) []armresources.ClientListResponse {
 			ResourceListResult: armresources.ResourceListResult{
 				Value: []*armresources.GenericResourceExpanded{
 					{
-						ID: &id3,
+						ID:       &id3,
+						Location: &location1,
+						Name:     &name1,
+						Type:     &type1,
 					},
 				},
 			},
@@ -271,13 +326,13 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 		"metric2", "metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H", "dimension1", "dimension2"
 
 	counters := map[string]int{
-		"resourceId1": 0,
-		"resourceId2": 0,
-		"resourceId3": 0,
+		"/resourceGroups/group1/resourceId1": 0,
+		"/resourceGroups/group1/resourceId2": 0,
+		"/resourceGroups/group1/resourceId3": 0,
 	}
 
 	pages := map[string][]armmonitor.MetricDefinitionsClientListResponse{
-		"resourceId1": {
+		"/resourceGroups/group1/resourceId1": {
 			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
@@ -315,7 +370,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				},
 			},
 		},
-		"resourceId2": {
+		"/resourceGroups/group1/resourceId2": {
 			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
@@ -366,7 +421,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				},
 			},
 		},
-		"resourceId3": {
+		"/resourceGroups/group1/resourceId3": {
 			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
@@ -400,7 +455,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 	var value1 float64 = 1
 
 	return map[string]map[string]armmonitor.MetricsClientListResponse{
-		"resourceId1": {
+		"/resourceGroups/group1/resourceId1": {
 			strings.Join([]string{name1, name2}, ","): {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
@@ -471,7 +526,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 				},
 			},
 		},
-		"resourceId2": {
+		"/resourceGroups/group1/resourceId2": {
 			name4: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
@@ -570,7 +625,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 				},
 			},
 		},
-		"resourceId3": {
+		"/resourceGroups/group1/resourceId3": {
 			name7: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{

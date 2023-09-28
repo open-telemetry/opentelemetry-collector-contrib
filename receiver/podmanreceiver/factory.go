@@ -34,7 +34,6 @@ func createDefaultConfig() *Config {
 	return &Config{
 		ScraperControllerSettings: cfg,
 		Endpoint:                  "unix:///run/podman/podman.sock",
-		Timeout:                   5 * time.Second,
 		APIVersion:                defaultAPIVersion,
 	}
 }

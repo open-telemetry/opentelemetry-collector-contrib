@@ -19,10 +19,10 @@ const (
 )
 
 type ReplaceAllPatternsArguments[K any] struct {
-	Target       ottl.PMapGetter[K]   `ottlarg:"0"`
-	Mode         string               `ottlarg:"1"`
-	RegexPattern string               `ottlarg:"2"`
-	Replacement  ottl.StringGetter[K] `ottlarg:"3"`
+	Target       ottl.PMapGetter[K]
+	Mode         string
+	RegexPattern string
+	Replacement  ottl.StringGetter[K]
 }
 
 func NewReplaceAllPatternsFactory[K any]() ottl.Factory[K] {

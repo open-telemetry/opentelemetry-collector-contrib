@@ -101,7 +101,7 @@ With above guidelines, you can write code that is more portable and easier to ma
 ## Adding New Components
 
 **Before** any code is written, [open an
-issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=new+component&template=new_component.md&title=New%20component)
+issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
 providing the following information:
 
 * Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of
@@ -191,6 +191,19 @@ When submitting a component to the community, consider breaking it down into sep
   * This PR is usually trivial to review, so the size limit does not apply to
     it.
   * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
+  * Before submitting a PR, run the following commands from the root of the repository to ensure your new component is meeting the repo linting expectations:
+    * `make checkdoc`
+    * `make checkmetadata`
+    * `make checkapi`
+    * `make goporto`
+    * `make crosslink`
+    * `make gotidy`
+    * `make genotelcontribcol`
+    * `make genoteltestbedcol`
+    * `make generate`
+    * `make  gendependabot`
+    * `make multimod-verify`
+    * `make generate-gh-issue-templates`
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
@@ -209,7 +222,6 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@Aneurysm9](https://github.com/Aneurysm9)
@@ -220,6 +232,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@bogdandrutu](https://github.com/bogdandrutu)
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dashpole](https://github.com/dashpole)
+* [@TylerHelmuth](https://github.com/TylerHelmuth)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 

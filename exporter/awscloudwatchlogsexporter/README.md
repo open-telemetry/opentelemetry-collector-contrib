@@ -6,7 +6,7 @@
 | Stability     | [beta]: logs   |
 | Distributions | [contrib], [observiq] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fawscloudwatchlogs%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fawscloudwatchlogs) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fawscloudwatchlogs%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fawscloudwatchlogs) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@boostchicken](https://www.github.com/boostchicken) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@boostchicken](https://www.github.com/boostchicken), [@bryan-aguilar](https://www.github.com/bryan-aguilar), [@rapphil](https://www.github.com/rapphil) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -15,7 +15,6 @@
 
 AWS CloudWatch Logs Exporter sends logs data to AWS [CloudWatch Logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html).
 AWS credentials are retrieved from the [default credential chain](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials).
-Region must be configured in the configuration if not set in the default credential chain.
 
 NOTE: OpenTelemetry Logging support is experimental, hence this exporter is subject to change.
 
@@ -23,17 +22,16 @@ NOTE: OpenTelemetry Logging support is experimental, hence this exporter is subj
 
 The following settings are required:
 
-- `log_group_name`: The group name of the CloudWatch logs.
-- `log_stream_name`: The stream name of the CloudWatch logs.
+- `log_group_name`: The group name of the CloudWatch Logs. If it does not exist it will be created automatically. 
+- `log_stream_name`: The stream name of the CloudWatch Logs. If it does not exist it will be created automatically.
 
 The following settings can be optionally configured:
 
-- `region`: The AWS region where the log stream is in.
+- `region`: The AWS region where the log stream is in. Region must be specified if it is not already set in the default credential chain.
 - `endpoint`: The CloudWatch Logs service endpoint which the requests are forwarded to. [See the CloudWatch Logs endpoints](https://docs.aws.amazon.com/general/latest/gr/cwl_region.html) for a list.
 - `log_retention`: LogRetention is the option to set the log retention policy for only newly created CloudWatch Log Groups. Defaults to Never Expire if not specified or set to 0.  Possible values for retention in days are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653. 
-- `tags`: Tags is the option to set tags for the CloudWatch Log Group.  If specified, please add at most 50 tags.  Input is a string to string map like so: { 'key': 'value' }.  Keys must be between 1-128 characters and follow the regex pattern: `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`(alphanumerics, whitespace, and _.:/=+-!).  Values must be between 1-256 characters and follow the regex pattern: `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`(alphanumerics, whitespace, and _.:/=+-!).  [Link to tagging restrictions](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogGroup.html#:~:text=Required%3A%20Yes-,tags,-The%20key%2Dvalue)
-- `role_arn`: The AWS IAM role to upload segments to a same/different account
-- `raw_log`: Boolean default false. If you want to export only the log message to cw logs. This is required for emf logs. 
+- `tags`: Tags is the option to set tags for the CloudWatch Log Group. If specified, please add at most 50 tags. Input is a string to string map like so: { 'key': 'value' }. Keys must be between 1-128 characters and follow the regex pattern: `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`(alphanumerics, whitespace, and _.:/=+-!). Values must be between 1-256 characters and follow the regex pattern: `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`(alphanumerics, whitespace, and _.:/=+-!).  [Link to tagging restrictions](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogGroup.html#:~:text=Required%3A%20Yes-,tags,-The%20key%2Dvalue)
+- `raw_log`: Boolean default false. If set to true, only the log message will be exported to CloudWatch Logs. This needs to be set to true for [EMF logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html). 
 
 ### Examples
 
@@ -46,21 +44,26 @@ exporters:
     log_stream_name: "testing-integrations-stream"
 ```
 
-All configuration options:
+Example configuration for EMF logs:
 
 ```yaml
 exporters:
   awscloudwatchlogs:
-    log_group_name: "testing-logs"
-    log_stream_name: "testing-integrations-stream"
+    log_group_name: "testing-logs-emf"
+    log_stream_name: "testing-integrations-stream-emf"
+    raw_log: true
     region: "us-east-1"
-    role_arn: "arn:aws:iam::123456789:role/monitoring-application-logs"
     endpoint: "logs.us-east-1.amazonaws.com"
     log_retention: 365
     tags: { 'sampleKey': 'sampleValue'}
-    sending_queue:
-      queue_size: 50
-    retry_on_failure:
-      enabled: true
-      initial_interval: 10ms
 ```
+
+## Additional Notes 
+
+- If the log group and/or log stream are specified in an EMF log, that EMF log will be exported to that log group and/or log stream (i.e. ignores the log group and log stream defined in the configuration)
+  - The log group and log stream will also be created automatically if they do not already exist.
+  - Example of an EMF log with log group and log stream: 
+      ```json
+  {"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo", "LogStreamName": "Bar", "CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}
+  ```
+- Resource ARNs (Amazon Resource Name (ARN) of the AWS resource running the collector) are currently not supported with the CloudWatch Logs Exporter.

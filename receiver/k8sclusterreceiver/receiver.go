@@ -10,8 +10,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
@@ -33,7 +33,7 @@ type kubernetesReceiver struct {
 	settings        receiver.CreateSettings
 	metricsConsumer consumer.Metrics
 	cancel          context.CancelFunc
-	obsrecv         *obsreport.Receiver
+	obsrecv         *receiverhelper.ObsReport
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
@@ -154,8 +154,8 @@ func newLogsReceiver(
 // newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 	rCfg := cfg.(*Config)
-	obsrecv, err := obsreport.NewReceiver(
-		obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(
+		receiverhelper.ObsReportSettings{
 			ReceiverID:             set.ID,
 			Transport:              transport,
 			ReceiverCreateSettings: set,

@@ -227,7 +227,7 @@ type metricSystemCPUUtilization struct {
 // init fills system.cpu.utilization metric with initial data.
 func (m *metricSystemCPUUtilization) init() {
 	m.data.SetName("system.cpu.utilization")
-	m.data.SetDescription("Difference in system.cpu.time since the last measurement, divided by the elapsed time and number of logical CPUs.")
+	m.data.SetDescription("Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

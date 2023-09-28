@@ -42,6 +42,13 @@ func (rb *ResourceBuilder) SetVcenterHostName(val string) {
 	}
 }
 
+// SetVcenterResourcePoolInventoryPath sets provided value as "vcenter.resource_pool.inventory_path" attribute.
+func (rb *ResourceBuilder) SetVcenterResourcePoolInventoryPath(val string) {
+	if rb.config.VcenterResourcePoolInventoryPath.Enabled {
+		rb.res.Attributes().PutStr("vcenter.resource_pool.inventory_path", val)
+	}
+}
+
 // SetVcenterResourcePoolName sets provided value as "vcenter.resource_pool.name" attribute.
 func (rb *ResourceBuilder) SetVcenterResourcePoolName(val string) {
 	if rb.config.VcenterResourcePoolName.Enabled {

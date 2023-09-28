@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -49,16 +50,19 @@ var (
 )
 
 const (
-	tagPrefix      = "tags_"
-	metadataPrefix = "metadata_"
-	location       = "location"
+	attributeLocation      = "location"
+	attributeName          = "name"
+	attributeResourceGroup = "resource_group"
+	attributeResourceType  = "type"
+	metadataPrefix         = "metadata_"
+	tagPrefix              = "tags_"
 )
 
 type azureResource struct {
+	attributes                map[string]*string
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
 	tags                      map[string]*string
-	location                  string
 }
 
 type metricsCompositeKey struct {
@@ -79,6 +83,7 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *azureScraper {
 		settings:                        settings.TelemetrySettings,
 		mb:                              metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 		azIDCredentialsFunc:             azidentity.NewClientSecretCredential,
+		azIDWorkloadFunc:                azidentity.NewWorkloadIdentityCredential,
 		armClientFunc:                   armresources.NewClient,
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
 		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
@@ -99,6 +104,7 @@ type azureScraper struct {
 	resourcesUpdated                time.Time
 	mb                              *metadata.MetricsBuilder
 	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
+	azIDWorkloadFunc                func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
 	armMonitorDefinitionsClientFunc func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	armMonitorMetricsClientFunc     func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
@@ -135,8 +141,7 @@ func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
 }
 
 func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
-	s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil)
-	if err != nil {
+	if err = s.loadCredentials(); err != nil {
 		return err
 	}
 
@@ -147,6 +152,22 @@ func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 	s.resources = map[string]*azureResource{}
 
 	return
+}
+
+func (s *azureScraper) loadCredentials() (err error) {
+	switch s.cfg.Authentication {
+	case servicePrincipal:
+		if s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil); err != nil {
+			return err
+		}
+	case workloadIdentity:
+		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown authentication %v", s.cfg.Authentication)
+	}
+	return nil
 }
 
 func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
@@ -201,11 +222,19 @@ func (s *azureScraper) getResources(ctx context.Context) {
 			return
 		}
 		for _, resource := range nextResult.Value {
-
 			if _, ok := s.resources[*resource.ID]; !ok {
-				s.resources[*resource.ID] = &azureResource{tags: resource.Tags}
+				resourceGroup := getResourceGroupFromID(*resource.ID)
+				attributes := map[string]*string{
+					attributeName:          resource.Name,
+					attributeResourceGroup: &resourceGroup,
+					attributeResourceType:  resource.Type,
+				}
 				if resource.Location != nil {
-					s.resources[*resource.ID].location = *resource.Location
+					attributes[attributeLocation] = resource.Location
+				}
+				s.resources[*resource.ID] = &azureResource{
+					attributes: attributes,
+					tags:       resource.Tags,
 				}
 			}
 			delete(existingResources, *resource.ID)
@@ -218,6 +247,16 @@ func (s *azureScraper) getResources(ctx context.Context) {
 	}
 
 	s.resourcesUpdated = time.Now()
+}
+
+func getResourceGroupFromID(id string) string {
+	var s = regexp.MustCompile(`\/resourcegroups/([^\/]+)\/`)
+	match := s.FindStringSubmatch(strings.ToLower(id))
+
+	if len(match) == 2 {
+		return match[1]
+	}
+	return ""
 }
 
 func (s *azureScraper) getResourcesFilter() string {
@@ -264,11 +303,9 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 					}
 				}
 				sort.Strings(dimensionsSlice)
-				dimensionsCompositeKey := metricsCompositeKey{timeGrain: timeGrain, dimensions: strings.Join(dimensionsSlice, ",")}
-				s.storeMetricsDefinition(resourceID, name, dimensionsCompositeKey)
-			} else {
-				s.storeMetricsDefinition(resourceID, name, compositeKey)
+				compositeKey.dimensions = strings.Join(dimensionsSlice, ",")
 			}
+			s.storeMetricsDefinition(resourceID, name, compositeKey)
 		}
 	}
 	s.resources[resourceID].metricsDefinitionsUpdated = time.Now()
@@ -325,14 +362,15 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 			for _, metric := range result.Value {
 
 				for _, timeseriesElement := range metric.Timeseries {
+
 					if timeseriesElement.Data != nil {
 						attributes := map[string]*string{}
+						for name, value := range res.attributes {
+							attributes[name] = value
+						}
 						for _, value := range timeseriesElement.Metadatavalues {
 							name := metadataPrefix + *value.Name.Value
 							attributes[name] = value.Value
-						}
-						if len(res.location) > 0 {
-							attributes[location] = &res.location
 						}
 						if s.cfg.AppendTagsAsAttributes {
 							for tagName, value := range res.tags {

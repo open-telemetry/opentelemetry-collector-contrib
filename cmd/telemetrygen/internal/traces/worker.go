@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
@@ -23,6 +24,7 @@ type worker struct {
 	running          *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
 	numTraces        int             // how many traces the worker has to generate (only when duration==0)
 	propagateContext bool            // whether the worker needs to propagate the trace context via HTTP headers
+	statusCode       codes.Code      // the status code set for the child and parent spans
 	totalDuration    time.Duration   // how long to run the test for (overrides `numTraces`)
 	limitPerSecond   rate.Limit      // how many spans per second to generate
 	wg               *sync.WaitGroup // notify when done
@@ -75,7 +77,9 @@ func (w worker) simulateTraces() {
 		}
 
 		opt := trace.WithTimestamp(time.Now().Add(fakeSpanDuration))
+		child.SetStatus(w.statusCode, "")
 		child.End(opt)
+		sp.SetStatus(w.statusCode, "")
 		sp.End(opt)
 
 		i++

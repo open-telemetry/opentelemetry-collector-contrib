@@ -13,12 +13,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -183,75 +182,75 @@ func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 }
 
 func TestOctetFramingSplitFunc(t *testing.T) {
-	testCases := []internal.TokenizerTestCase{
+	testCases := []splittest.TestCase{
 		{
-			Name: "OneLogSimple",
-			Raw:  []byte(`17 my log LOGEND 123`),
-			ExpectedTokenized: []string{
+			Name:  "OneLogSimple",
+			Input: []byte(`17 my log LOGEND 123`),
+			ExpectedTokens: []string{
 				`17 my log LOGEND 123`,
 			},
 		},
 		{
-			Name: "TwoLogsSimple",
-			Raw:  []byte(`17 my log LOGEND 12317 my log LOGEND 123`),
-			ExpectedTokenized: []string{
+			Name:  "TwoLogsSimple",
+			Input: []byte(`17 my log LOGEND 12317 my log LOGEND 123`),
+			ExpectedTokens: []string{
 				`17 my log LOGEND 123`,
 				`17 my log LOGEND 123`,
 			},
 		},
 		{
-			Name: "NoMatches",
-			Raw:  []byte(`no matches in it`),
-			ExpectedTokenized: []string{
+			Name:  "NoMatches",
+			Input: []byte(`no matches in it`),
+			ExpectedTokens: []string{
 				`no matches in it`,
 			},
 		},
 		{
-			Name: "NonMatchesAfter",
-			Raw:  []byte(`17 my log LOGEND 123my log LOGEND 12317 my log LOGEND 123`),
-			ExpectedTokenized: []string{
+			Name:  "NonMatchesAfter",
+			Input: []byte(`17 my log LOGEND 123my log LOGEND 12317 my log LOGEND 123`),
+			ExpectedTokens: []string{
 				`17 my log LOGEND 123`,
 				`my log LOGEND 12317 my log LOGEND 123`,
 			},
 		},
 		{
 			Name: "HugeLog100",
-			Raw: func() []byte {
-				newRaw := internal.GeneratedByteSliceOfLength(100)
+			Input: func() []byte {
+				newRaw := splittest.GenerateBytes(100)
 				newRaw = append([]byte(`100 `), newRaw...)
 				return newRaw
 			}(),
-			ExpectedTokenized: []string{
-				`100 ` + string(internal.GeneratedByteSliceOfLength(100)),
+			ExpectedTokens: []string{
+				`100 ` + string(splittest.GenerateBytes(100)),
 			},
 		},
 		{
 			Name: "maxCapacity",
-			Raw: func() []byte {
-				newRaw := internal.GeneratedByteSliceOfLength(4091)
+			Input: func() []byte {
+				newRaw := splittest.GenerateBytes(4091)
 				newRaw = append([]byte(`4091 `), newRaw...)
 				return newRaw
 			}(),
-			ExpectedTokenized: []string{
-				`4091 ` + string(internal.GeneratedByteSliceOfLength(4091)),
+			ExpectedTokens: []string{
+				`4091 ` + string(splittest.GenerateBytes(4091)),
 			},
 		},
 		{
 			Name: "over capacity",
-			Raw: func() []byte {
-				newRaw := internal.GeneratedByteSliceOfLength(4092)
+			Input: func() []byte {
+				newRaw := splittest.GenerateBytes(4092)
 				newRaw = append([]byte(`5000 `), newRaw...)
 				return newRaw
 			}(),
-			ExpectedTokenized: []string{
-				`5000 ` + string(internal.GeneratedByteSliceOfLength(4091)),
+			ExpectedTokens: []string{
+				`5000 ` + string(splittest.GenerateBytes(4091)),
 				`j`,
 			},
 		},
 	}
 	for _, tc := range testCases {
-		splitFunc, err := OctetMultiLineBuilder(helper.Encoding{})
+		splitFunc, err := OctetSplitFuncBuilder(nil)
 		require.NoError(t, err)
-		t.Run(tc.Name, tc.RunFunc(splitFunc))
+		t.Run(tc.Name, tc.Run(splitFunc))
 	}
 }
