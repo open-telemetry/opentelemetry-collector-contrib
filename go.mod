@@ -1126,5 +1126,3 @@ replace github.com/DataDog/datadog-agent/pkg/proto => github.com/DataDog/datadog
 replace github.com/DataDog/datadog-agent/pkg/trace => github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver => ./receiver/snowflakereceiver
-
-replace go.opentelemetry.io/collector/exporter/exporterhelper => /Users/vhiteshbhai/Desktop/Vihas/Otel/opentelemetry-collector/exporter/exporterhelper

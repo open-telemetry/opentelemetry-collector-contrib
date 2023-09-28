@@ -92,3 +92,41 @@ func testWithTracingGoldenDataset(
 
 	tc.ValidateData()
 }
+
+func TestSporadicCorrectness(t *testing.T) {
+	factories, err := testbed.Components()
+	require.NoError(t, err, "default components resulted in: %v", err)
+	runner := testbed.NewInProcessCollector(factories)
+	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	dataProvider := testbed.NewGoldenDataProvider(
+		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+		"")
+	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+	_, err = runner.PrepareConfig(correctnesstests.CreateConfigYamlSporadic(sender, receiver, nil, "traces", 1)) // non-permanent errors
+	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		runner,
+		validator,
+		correctnessResults,
+		testbed.WithSkipResults(),
+	)
+	defer tc.Stop()
+	tc.StartBackend()
+	tc.StartAgent()
+	tc.StartLoad(options)
+	tc.Sleep(3 * time.Second)
+
+	tc.StopLoad()
+
+	tc.WaitForN(func() bool {
+		return tc.LoadGenerator.DataItemsSent()-tc.LoadGenerator.PermanentErrors() == tc.MockBackend.DataItemsReceived()
+	}, 3*time.Second, "all data items received")
+	tc.StopAgent()
+	tc.ValidateData()
+}

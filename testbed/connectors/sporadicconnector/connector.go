@@ -46,8 +46,6 @@ func (mc *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		if err := randomPermanentError(); err != nil {
 			return err
 		}
-	case 3:
-		// TODO - make connector unavailable
 	}
 	return mc.metricsConsumer.ConsumeMetrics(ctx, md)
 }
@@ -77,8 +75,6 @@ func (lc *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		if err := randomPermanentError(); err != nil {
 			return err
 		}
-	case 3:
-		// TODO - make connector unavailable
 	}
 	return lc.logsConsumer.ConsumeLogs(ctx, ld)
 }
@@ -109,8 +105,6 @@ func (tc *traceConnector) ConsumeTraces(ctx context.Context, tr ptrace.Traces) e
 		if err := randomPermanentError(); err != nil {
 			return err
 		}
-	case 3:
-		// TODO - make connector unavailable
 	}
 	return tc.tracesConsumer.ConsumeTraces(ctx, tr)
 }
