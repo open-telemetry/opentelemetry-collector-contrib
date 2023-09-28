@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension
 
-go 1.18
+go 1.20
 
 require (
 	github.com/oklog/ulid/v2 v2.1.0
