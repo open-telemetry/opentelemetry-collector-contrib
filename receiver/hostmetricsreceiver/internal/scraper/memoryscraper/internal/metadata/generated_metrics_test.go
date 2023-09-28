@@ -91,7 +91,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.linux.memory.available"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Linux-specific more accurate alternative to system.memory.usage with state=free", ms.At(i).Description())
+					assert.Equal(t, "An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

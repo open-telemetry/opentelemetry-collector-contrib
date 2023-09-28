@@ -67,7 +67,7 @@ type metricSystemLinuxMemoryAvailable struct {
 // init fills system.linux.memory.available metric with initial data.
 func (m *metricSystemLinuxMemoryAvailable) init() {
 	m.data.SetName("system.linux.memory.available")
-	m.data.SetDescription("Linux-specific more accurate alternative to system.memory.usage with state=free")
+	m.data.SetDescription("An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

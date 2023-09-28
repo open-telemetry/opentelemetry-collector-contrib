@@ -40,7 +40,7 @@ metrics:
 
 ### system.linux.memory.available
 
-Linux-specific more accurate alternative to system.memory.usage with state=free
+An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
