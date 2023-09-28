@@ -15,7 +15,7 @@ import (
 )
 
 type extractSumMetricArguments struct {
-	Monotonic bool `ottlarg:"0"`
+	Monotonic bool
 }
 
 func newExtractSumMetricFactory() ottl.Factory[ottlmetric.TransformContext] {

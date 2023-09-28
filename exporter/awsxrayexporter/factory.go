@@ -17,7 +17,7 @@ import (
 
 var skipTimestampValidationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.awsxray.skiptimestampvalidation",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Remove XRay's timestamp validation on first 32 bits of trace ID"),
 	featuregate.WithRegisterFromVersion("v0.84.0"))
 

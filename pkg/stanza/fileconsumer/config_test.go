@@ -8,9 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -18,6 +20,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
+
+func TestNewConfig(t *testing.T) {
+	cfg := NewConfig()
+	assert.True(t, cfg.IncludeFileName)
+	assert.False(t, cfg.IncludeFilePath)
+	assert.False(t, cfg.IncludeFileNameResolved)
+	assert.False(t, cfg.IncludeFilePathResolved)
+	assert.Equal(t, "end", cfg.StartAt)
+	assert.Equal(t, 200*time.Millisecond, cfg.PollInterval)
+	assert.Equal(t, fingerprint.DefaultSize, int(cfg.FingerprintSize))
+	assert.Equal(t, defaultEncoding, cfg.Encoding)
+	assert.Equal(t, defaultMaxLogSize, int(cfg.MaxLogSize))
+	assert.Equal(t, defaultMaxConcurrentFiles, cfg.MaxConcurrentFiles)
+	assert.Equal(t, defaultFlushPeriod, cfg.FlushPeriod)
+}
 
 func TestUnmarshal(t *testing.T) {
 	operatortest.ConfigUnmarshalTests{

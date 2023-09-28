@@ -703,7 +703,7 @@ func Test_FunctionGetter(t *testing.T) {
 		Function    FunctionGetter[any]
 	}
 	type FuncArgs struct {
-		Input StringGetter[any] `ottlarg:"0"`
+		Input StringGetter[any]
 	}
 	tests := []struct {
 		name             string
