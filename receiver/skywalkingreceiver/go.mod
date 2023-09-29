@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/mux v1.8.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.86.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.86.0
 	go.opentelemetry.io/collector/config/configgrpc v0.86.0
@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.86.0
 	go.opentelemetry.io/collector/semconv v0.86.0
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.58.1
+	google.golang.org/grpc v1.58.2
 	google.golang.org/protobuf v1.31.0
 	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f
 )
