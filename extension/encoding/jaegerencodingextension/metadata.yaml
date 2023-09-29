@@ -1,4 +1,4 @@
-type: encoding
+type: jaegerencoding
 
 status:
   class: extension
@@ -6,4 +6,4 @@ status:
     development: [extension]
   distributions: []
   codeowners:
-    active: [MovieStoreGuy]
+    active: [MovieStoreGuy, atoulme]
