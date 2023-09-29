@@ -102,7 +102,6 @@ func TestUnthrottled(t *testing.T) {
 
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
-
 		return m, nil
 	}
 
