@@ -31,18 +31,18 @@ type logFieldAttributesConfig struct {
 	TraceIDAttribute        *logFieldAttribute `mapstructure:"trace_id"`
 }
 
-// SpanIDToHexOrEmptyString returns a hex string from SpanID.
+// spanIDToHexOrEmptyString returns a hex string from SpanID.
 // An empty string is returned, if SpanID is empty.
-func SpanIDToHexOrEmptyString(id pcommon.SpanID) string {
+func spanIDToHexOrEmptyString(id pcommon.SpanID) string {
 	if id.IsEmpty() {
 		return ""
 	}
 	return hex.EncodeToString(id[:])
 }
 
-// TraceIDToHexOrEmptyString returns a hex string from TraceID.
+// traceIDToHexOrEmptyString returns a hex string from TraceID.
 // An empty string is returned, if TraceID is empty.
-func TraceIDToHexOrEmptyString(id pcommon.TraceID) string {
+func traceIDToHexOrEmptyString(id pcommon.TraceID) string {
 	if id.IsEmpty() {
 		return ""
 	}
@@ -103,11 +103,11 @@ func (proc *logFieldsConversionProcessor) addAttributes(log plog.LogRecord) {
 	}
 	if _, found := log.Attributes().Get(SpanIDAttributeName); !found &&
 		proc.LogFieldsAttributes.SpanIDAttribute.Enabled {
-		log.Attributes().PutStr(proc.LogFieldsAttributes.SpanIDAttribute.Name, SpanIDToHexOrEmptyString(log.SpanID()))
+		log.Attributes().PutStr(proc.LogFieldsAttributes.SpanIDAttribute.Name, spanIDToHexOrEmptyString(log.SpanID()))
 	}
 	if _, found := log.Attributes().Get(TraceIDAttributeName); !found &&
 		proc.LogFieldsAttributes.TraceIDAttribute.Enabled {
-		log.Attributes().PutStr(proc.LogFieldsAttributes.TraceIDAttribute.Name, TraceIDToHexOrEmptyString(log.TraceID()))
+		log.Attributes().PutStr(proc.LogFieldsAttributes.TraceIDAttribute.Name, traceIDToHexOrEmptyString(log.TraceID()))
 	}
 }
 
