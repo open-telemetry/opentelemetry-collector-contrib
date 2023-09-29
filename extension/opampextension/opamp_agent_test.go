@@ -20,6 +20,7 @@ import (
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
@@ -27,8 +28,11 @@ import (
 func TestNewOpampAgent(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
+	assert.Equal(t, o.agentType, "otelcoltest")
+	assert.Equal(t, o.agentVersion, "test version")
 	assert.NotEmpty(t, o.instanceId.String())
 	assert.NotEmpty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)

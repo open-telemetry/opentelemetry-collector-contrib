@@ -122,10 +122,23 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 }
 
 func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, res pcommon.Resource) (*opampAgent, error) {
+	agentType := build.Command
+
+	sn, ok := res.Attributes().Get(semconv.AttributeServiceName)
+	if ok {
+		agentType = sn.AsString()
+	}
+
+	agentVersion := build.Version
+
+	sv, ok := res.Attributes().Get(semconv.AttributeServiceVersion)
+	if ok {
+		agentVersion = sv.AsString()
+	}
+
 	uid := ulid.Make()
 
 	sid, ok := res.Attributes().Get(semconv.AttributeServiceInstanceID)
-
 	if ok {
 		puid, err := ulid.Parse(sid.AsString())
 		if err != nil {
@@ -145,8 +158,8 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 	agent := &opampAgent{
 		cfg:             cfg,
 		logger:          logger,
-		agentType:       build.Command,
-		agentVersion:    build.Version,
+		agentType:       agentType,
+		agentVersion:    agentVersion,
 		instanceId:      uid,
 		effectiveConfig: localConfig, // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6596
 	}
