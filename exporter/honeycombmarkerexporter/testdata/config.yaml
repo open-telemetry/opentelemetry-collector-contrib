@@ -1,5 +1,10 @@
 honeycomb: 
   apikey: 
   apiurl: http://localhost:8080/
-  presets: 
+  markers:
+    {
+      markertype: "type1",
+      messagefield: "test message",
+      urlfield: "http://localhost:8080/",
+      rules: }
 
