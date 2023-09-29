@@ -21,7 +21,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "2"
             name: k8s.cronjob.active_jobs
-            unit: "1"
+            unit: "{job}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest

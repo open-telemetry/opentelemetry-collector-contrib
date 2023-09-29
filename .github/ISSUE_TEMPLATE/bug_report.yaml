@@ -57,6 +57,7 @@ body:
       - exporter/influxdb
       - exporter/instana
       - exporter/kafka
+      - exporter/kinetica
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
@@ -82,7 +83,8 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
-      - extension/encoding
+      - extension/encoding/jaegerencoding
+      - extension/encoding/textencoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder

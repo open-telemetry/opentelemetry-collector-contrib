@@ -151,14 +151,8 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetHaproxyAddr("haproxy.addr-val")
-			rb.SetHaproxyAlgo("haproxy.algo-val")
-			rb.SetHaproxyIid("haproxy.iid-val")
-			rb.SetHaproxyPid("haproxy.pid-val")
 			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
 			rb.SetHaproxyServiceName("haproxy.service_name-val")
-			rb.SetHaproxySid("haproxy.sid-val")
-			rb.SetHaproxyType("haproxy.type-val")
-			rb.SetHaproxyURL("haproxy.url-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

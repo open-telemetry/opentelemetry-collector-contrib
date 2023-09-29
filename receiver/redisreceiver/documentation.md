@@ -298,7 +298,7 @@ Command execution latency
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| us | Gauge | Double |
+| s | Gauge | Double |
 
 #### Attributes
 
