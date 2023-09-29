@@ -4,7 +4,6 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -25,7 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/connectors/sporadicconnector"
 )
 
 // Components returns the set of components for tests
@@ -64,17 +62,11 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
-	connectors, err := connector.MakeFactoryMap(
-		sporadicconnector.NewFactory(),
-	)
-	errs = multierr.Append(errs, err)
-
 	factories := otelcol.Factories{
 		Extensions: extensions,
 		Receivers:  receivers,
 		Processors: processors,
 		Exporters:  exporters,
-		Connectors: connectors,
 	}
 
 	return factories, errs

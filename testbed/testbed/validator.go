@@ -80,7 +80,7 @@ func NewCorrectTestValidator(senderName string, receiverName string, provider Da
 
 func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 	if assert.EqualValues(tc.t,
-		int64(tc.LoadGenerator.DataItemsSent()),
+		int64(tc.LoadGenerator.DataItemsSent()-tc.LoadGenerator.PermanentErrors()),
 		int64(tc.MockBackend.DataItemsReceived()),
 		"Received and sent counters do not match.") {
 		log.Printf("Sent and received data counters match.")

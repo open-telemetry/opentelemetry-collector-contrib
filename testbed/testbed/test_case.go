@@ -51,6 +51,9 @@ type TestCase struct {
 	doneSignal     chan struct{}
 	errorCause     string
 	resultsSummary TestResultsSummary
+
+	// decision makes mockbackend return permanent/non-permament errors at random basis
+	decision int
 }
 
 const mibibyte = 1024 * 1024
@@ -110,7 +113,7 @@ func NewTestCase(
 	tc.LoadGenerator, err = NewLoadGenerator(dataProvider, sender)
 	require.NoError(t, err, "Cannot create generator")
 
-	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver)
+	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver, tc.decision)
 
 	go tc.logStats()
 

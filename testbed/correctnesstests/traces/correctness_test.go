@@ -104,7 +104,7 @@ func TestSporadicCorrectness(t *testing.T) {
 		"")
 	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
-	_, err = runner.PrepareConfig(correctnesstests.CreateConfigYamlSporadic(sender, receiver, nil, "traces", 1)) // non-permanent errors
+	_, err = runner.PrepareConfig(correctnesstests.CreateConfigYaml(sender, receiver, nil, "traces"))
 	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
 	tc := testbed.NewTestCase(
 		t,
@@ -115,6 +115,7 @@ func TestSporadicCorrectness(t *testing.T) {
 		validator,
 		correctnessResults,
 		testbed.WithSkipResults(),
+		testbed.WithDecision(1),
 	)
 	defer tc.Stop()
 	tc.StartBackend()
@@ -126,7 +127,7 @@ func TestSporadicCorrectness(t *testing.T) {
 
 	tc.WaitForN(func() bool {
 		return tc.LoadGenerator.DataItemsSent()-tc.LoadGenerator.PermanentErrors() == tc.MockBackend.DataItemsReceived()
-	}, 3*time.Second, "all data items received")
+	}, 15*time.Second, "all data items received")
 	tc.StopAgent()
 	tc.ValidateData()
 }
