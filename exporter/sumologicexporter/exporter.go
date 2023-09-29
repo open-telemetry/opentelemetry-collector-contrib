@@ -1,22 +1,10 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sumologicexporter
+package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -34,8 +22,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-
-	"github.com/SumoLogic/sumologic-otel-collector/pkg/extension/sumologicextension"
 )
 
 const (
@@ -200,7 +186,6 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 	// Follow different execution path for OTLP format
 	if sdr.config.LogFormat == OTLPLogFormat {
 		if err := sdr.sendOTLPLogs(ctx, ld); err != nil {
-			se.handleUnauthorizedErrors(ctx, err)
 			return consumererror.NewLogs(err, ld)
 		}
 		return nil
@@ -250,7 +235,6 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 		}
 
 		errs = deduplicateErrors(errs)
-		se.handleUnauthorizedErrors(ctx, errs...)
 		return consumererror.NewLogs(multierr.Combine(errs...), ld)
 	}
 
@@ -301,29 +285,10 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 	}
 
 	if len(errs) > 0 {
-		se.handleUnauthorizedErrors(ctx, errs...)
 		return consumererror.NewMetrics(multierr.Combine(errs...), droppedMetrics)
 	}
 
 	return nil
-}
-
-// handleUnauthorizedErrors checks if any of the provided errors is an unauthorized error.
-// In which case it triggers exporter reconfiguration which in turn takes the credentials
-// from sumologicextension which at this point should already detect the problem with
-// authorization (via heartbeats) and prepare new collector credentials to be available.
-func (se *sumologicexporter) handleUnauthorizedErrors(ctx context.Context, errs ...error) {
-	for _, err := range errs {
-		if errors.Is(err, errUnauthorized) {
-			se.logger.Warn("Received unauthorized status code, triggering reconfiguration")
-			if errC := se.configure(ctx); errC != nil {
-				se.logger.Error("Error configuring the exporter with new credentials", zap.Error(err))
-			} else {
-				// It's enough to successfully reconfigure the exporter just once.
-				return
-			}
-		}
-	}
 }
 
 func (se *sumologicexporter) pushTracesData(ctx context.Context, td ptrace.Traces) error {
@@ -353,7 +318,6 @@ func (se *sumologicexporter) pushTracesData(ctx context.Context, td ptrace.Trace
 	}
 
 	err = sdr.sendTraces(ctx, td)
-	se.handleUnauthorizedErrors(ctx, err)
 	return err
 }
 
@@ -374,53 +338,9 @@ func (se *sumologicexporter) start(ctx context.Context, host component.Host) err
 }
 
 func (se *sumologicexporter) configure(ctx context.Context) error {
-	var (
-		ext          *sumologicextension.SumologicExtension
-		foundSumoExt bool
-	)
-
 	httpSettings := se.config.HTTPClientSettings
 
-	for _, e := range se.host.GetExtensions() {
-		v, ok := e.(*sumologicextension.SumologicExtension)
-		if ok && httpSettings.Auth.AuthenticatorID == v.ComponentID() {
-			ext = v
-			foundSumoExt = true
-			break
-		}
-	}
-
-	if httpSettings.Endpoint == "" && httpSettings.Auth != nil &&
-		string(httpSettings.Auth.AuthenticatorID.Type()) == "sumologic" {
-		// If user specified using sumologicextension as auth but none was
-		// found then return an error.
-		if !foundSumoExt {
-			return fmt.Errorf(
-				"sumologic was specified as auth extension (named: %q) but "+
-					"a matching extension was not found in the config, "+
-					"please re-check the config and/or define the sumologicextension",
-				httpSettings.Auth.AuthenticatorID.String(),
-			)
-		}
-
-		// If we're using sumologicextension as authentication extension and
-		// endpoint was not set then send data on a collector generic ingest URL
-		// with authentication set by sumologicextension.
-
-		u, err := url.Parse(ext.BaseUrl())
-		if err != nil {
-			return fmt.Errorf("failed to parse API base URL from sumologicextension: %w", err)
-		}
-
-		logsUrl := *u
-		logsUrl.Path = logsDataUrl
-		metricsUrl := *u
-		metricsUrl.Path = metricsDataUrl
-		tracesUrl := *u
-		tracesUrl.Path = tracesDataUrl
-		se.setDataURLs(logsUrl.String(), metricsUrl.String(), tracesUrl.String())
-
-	} else if httpSettings.Endpoint != "" {
+	if httpSettings.Endpoint != "" {
 		logsUrl, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeLogs)
 		if err != nil {
 			return err
@@ -441,7 +361,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 			httpSettings.Auth = nil
 		}
 	} else {
-		return fmt.Errorf("no auth extension and no endpoint specified")
+		return fmt.Errorf("no endpoint specified")
 	}
 
 	client, err := httpSettings.ToClient(se.host, component.TelemetrySettings{})
