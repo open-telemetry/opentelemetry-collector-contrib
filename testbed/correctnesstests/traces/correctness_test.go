@@ -93,7 +93,7 @@ func testWithTracingGoldenDataset(
 	tc.ValidateData()
 }
 
-func TestSporadicCorrectness(t *testing.T) {
+func TestSporadicCorrectnessNonPermanent(t *testing.T) {
 	factories, err := testbed.Components()
 	require.NoError(t, err, "default components resulted in: %v", err)
 	runner := testbed.NewInProcessCollector(factories)
@@ -104,6 +104,14 @@ func TestSporadicCorrectness(t *testing.T) {
 		"")
 	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+	receiver.WithRetry(`
+    retry_on_failure:
+      enabled: false
+`)
+	receiver.WithQueue(`
+    sending_queue:
+      enabled: false
+`)
 	_, err = runner.PrepareConfig(correctnesstests.CreateConfigYaml(sender, receiver, nil, "traces"))
 	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
 	tc := testbed.NewTestCase(

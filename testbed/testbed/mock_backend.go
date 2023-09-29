@@ -50,6 +50,10 @@ type MockBackend struct {
 	ReceivedMetrics []pmetric.Metrics
 	ReceivedLogs    []plog.Logs
 
+	DroppedTraces  []ptrace.Traces
+	DroppedMetrics []pmetric.Metrics
+	DroppedLogs    []plog.Logs
+
 	// decision to return permanent/non-permanent errors
 	decision int
 }
@@ -180,6 +184,9 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 		}
 	case 2:
 		if err := randomPermanentError(); err != nil {
+			if tc.backend.isRecording {
+				tc.backend.DroppedTraces = append(tc.backend.DroppedTraces, td)
+			}
 			return err
 		}
 	case 3:
@@ -239,6 +246,9 @@ func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metri
 		}
 	case 2:
 		if err := randomPermanentError(); err != nil {
+			if mc.backend.isRecording {
+				mc.backend.DroppedMetrics = append(mc.backend.DroppedMetrics, md)
+			}
 			return err
 		}
 	case 3:
@@ -276,6 +286,9 @@ func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 		}
 	case 2:
 		if err := randomPermanentError(); err != nil {
+			if lc.backend.isRecording {
+				lc.backend.DroppedLogs = append(lc.backend.DroppedLogs, ld)
+			}
 			return err
 		}
 	case 3:
@@ -292,7 +305,7 @@ func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 func randomNonPermanentError() error {
 	code := codes.Unavailable
 	s := status.New(code, errNonPermanent.Error())
-	if rand.Float32() < 0.2 {
+	if rand.Float32() < 0.5 {
 		return s.Err()
 	}
 	return nil
