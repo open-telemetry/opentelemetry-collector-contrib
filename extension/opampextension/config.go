@@ -18,10 +18,13 @@ import (
 	"errors"
 
 	"github.com/oklog/ulid/v2"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config has the configuration for the opamp extension.
 type Config struct {
+	confighttp.HTTPClientSettings `mapstructure:",squash"`
+
 	// Endpoint is the OpAMP server URL. Transport based on the scheme of the URL.
 	Endpoint string `mapstructure:"endpoint"`
 
