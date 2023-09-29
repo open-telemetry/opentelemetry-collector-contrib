@@ -45,7 +45,6 @@ func TestUnmarshalConfig(t *testing.T) {
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "wss://127.0.0.1:4320/v1/opamp",
 			},
-			Endpoint:    "wss://127.0.0.1:4320/v1/opamp",
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
 		}, cfg)
 }

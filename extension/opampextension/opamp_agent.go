@@ -16,6 +16,8 @@ package opampextension
 
 import (
 	"context"
+	"crypto/tls"
+	"net/http"
 	"os"
 	"runtime"
 
@@ -69,7 +71,19 @@ type opampAgent struct {
 func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 	o.opampClient = client.NewWebSocket(o.logger.Sugar())
 
+	header := http.Header{}
+	for k, v := range o.cfg.Headers {
+		header.Set(k, string(v))
+	}
+
+	tls := &tls.Config{
+		ServerName:         o.cfg.TLSSetting.ServerName,
+		InsecureSkipVerify: o.cfg.TLSSetting.InsecureSkipVerify,
+	}
+
 	settings := types.StartSettings{
+		Header:         header,
+		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Endpoint,
 		InstanceUid:    o.instanceId.String(),
 		Callbacks: types.CallbacksStruct{
