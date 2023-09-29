@@ -29,6 +29,9 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Exclude:   ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+				},
 			},
 		},
 		{
@@ -114,6 +117,7 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{KeyRegex: "opentel.*", From: kube.MetadataFromPod},
 					},
+					Metadata: enabledAttributes(),
 				},
 				Exclude: ExcludeConfig{
 					Pods: []ExcludePodConfig{

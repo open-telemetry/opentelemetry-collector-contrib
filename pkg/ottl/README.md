@@ -90,6 +90,18 @@ For slice parameters, the following types are supported:
 - `uint8`. Byte slice literals are parsed as byte slices by the OTTL.
 - `Getter`
 
+To make a parameter optional, use the `Optional` type, which takes a type argument for the underlying
+parameter type. For example, an optional string parameter would be specified as `Optional[string]`.
+All optional parameters must be specified after all required parameters.
+
+#### Arguments in invocations
+
+Function arguments must be passed in the order defined in the `Arguments` struct for the function unless they are named, in which case the arguments can come in any order. All named arguments must come after all arguments without
+names. Argument names are snake-cased versions of the argument's field name in the function's `Arguments` struct.
+
+When passing optional arguments, all optional arguments preceding a given optional argument must be specified if
+the arguments are not named. Passing a named argument allows skipping the preceding optional arguments.
+
 ### Values
 
 Values are passed as function parameters or are used in a Boolean Expression. Values can take the form of:

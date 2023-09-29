@@ -12,8 +12,8 @@ import (
 )
 
 type IsMatchArguments[K any] struct {
-	Target  ottl.StringLikeGetter[K] `ottlarg:"0"`
-	Pattern string                   `ottlarg:"1"`
+	Target  ottl.StringLikeGetter[K]
+	Pattern string
 }
 
 func NewIsMatchFactory[K any]() ottl.Factory[K] {

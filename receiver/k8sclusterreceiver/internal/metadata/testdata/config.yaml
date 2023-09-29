@@ -116,6 +116,10 @@ all_set:
       enabled: true
     k8s.job.uid:
       enabled: true
+    k8s.kubelet.version:
+      enabled: true
+    k8s.kubeproxy.version:
+      enabled: true
     k8s.namespace.name:
       enabled: true
     k8s.namespace.uid:
@@ -266,6 +270,10 @@ none_set:
     k8s.job.name:
       enabled: false
     k8s.job.uid:
+      enabled: false
+    k8s.kubelet.version:
+      enabled: false
+    k8s.kubeproxy.version:
       enabled: false
     k8s.namespace.name:
       enabled: false

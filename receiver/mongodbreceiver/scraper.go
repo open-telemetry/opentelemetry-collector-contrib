@@ -40,7 +40,7 @@ func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongod
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
-	c, err := NewClient(ctx, s.config, s.logger)
+	c, err := newClient(ctx, s.config, s.logger)
 	if err != nil {
 		return fmt.Errorf("create mongo client: %w", err)
 	}

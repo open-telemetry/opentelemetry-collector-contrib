@@ -132,8 +132,8 @@ func (m *MockClient) TransportNodes(ctx context.Context) ([]model.TransportNode,
 	return r0, r1
 }
 
-// NewMockClient creates a new instance of MockClient. It also registers the testing.TB interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMockClient(t testing.TB) *MockClient {
+// newMockClient creates a new instance of MockClient. It also registers the testing.TB interface on the mock and a cleanup function to assert the mocks expectations.
+func newMockClient(t testing.TB) *MockClient {
 	mock := &MockClient{}
 	mock.Mock.Test(t)
 

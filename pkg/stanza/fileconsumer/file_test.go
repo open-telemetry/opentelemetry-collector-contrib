@@ -25,8 +25,50 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
+
+// TestDefaultBehaviors
+// - Files are read starting from the end.
+// - Logs are tokenized based on newlines.
+// - Leading and trailing whitespace is trimmed.
+// - log.file.name is included as an attribute.
+// - Incomplete logs are flushed after a default flush period.
+func TestDefaultBehaviors(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	operator, emitCalls := buildTestManager(t, cfg)
+
+	temp := openTemp(t, tempDir)
+	tempName := filepath.Base(temp.Name())
+	writeString(t, temp, " testlog1 \n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	// Should not emit the pre-existing token, even after flush period
+	expectNoTokensUntil(t, emitCalls, defaultFlushPeriod)
+
+	// Complete token should be emitted quickly
+	writeString(t, temp, " testlog2 \n")
+	call := waitForEmit(t, emitCalls)
+	assert.Equal(t, []byte("testlog2"), call.token)
+	assert.Len(t, call.attrs, 1)
+	assert.Equal(t, tempName, call.attrs[logFileName])
+
+	// Incomplete token should not be emitted until after flush period
+	writeString(t, temp, " testlog3 ")
+	expectNoTokensUntil(t, emitCalls, defaultFlushPeriod/2)
+	time.Sleep(defaultFlushPeriod)
+
+	call = waitForEmit(t, emitCalls)
+	assert.Equal(t, []byte("testlog3"), call.token)
+	assert.Len(t, call.attrs, 1)
+	assert.Equal(t, tempName, call.attrs[logFileName])
+}
 
 func TestCleanStop(t *testing.T) {
 	t.Parallel()
@@ -337,7 +379,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = 8
-			cfg.Splitter.Encoding = "nop"
+			cfg.Encoding = "nop"
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
@@ -421,7 +463,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = tc.maxLogSize
-			cfg.Splitter.Encoding = "nop"
+			cfg.Encoding = "nop"
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
@@ -547,8 +589,7 @@ func TestNoNewline(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg.Splitter = tokenize.NewSplitterConfig()
-	cfg.Splitter.Flusher.Period = time.Nanosecond
+	cfg.FlushPeriod = time.Nanosecond
 	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
@@ -1289,7 +1330,7 @@ func TestEncodings(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
-			cfg.Splitter.Encoding = tc.encoding
+			cfg.Encoding = tc.encoding
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Populate the file
