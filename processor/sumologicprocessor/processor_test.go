@@ -1006,7 +1006,7 @@ func TestAggregateAttributesForLogs(t *testing.T) {
 			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
-					Patterns:  []string{"pod_labels_"},
+					Prefixes:  []string{"pod_labels_"},
 				},
 			},
 			createLogs: func() plog.Logs {
@@ -1044,7 +1044,7 @@ func TestAggregateAttributesForLogs(t *testing.T) {
 			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
-					Patterns:  []string{},
+					Prefixes:  []string{},
 				},
 			},
 			createLogs: func() plog.Logs {
@@ -1102,7 +1102,7 @@ func TestAggregateAttributesForMetrics(t *testing.T) {
 			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
-					Patterns:  []string{"pod_labels_"},
+					Prefixes:  []string{"pod_labels_"},
 				},
 			},
 			createMetrics: func() pmetric.Metrics {
@@ -1142,7 +1142,7 @@ func TestAggregateAttributesForMetrics(t *testing.T) {
 			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
-					Patterns:  []string{},
+					Prefixes:  []string{},
 				},
 			},
 			createMetrics: func() pmetric.Metrics {
@@ -1202,7 +1202,7 @@ func TestAggregateAttributesForTraces(t *testing.T) {
 			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
-					Patterns:  []string{"pod_labels_"},
+					Prefixes:  []string{"pod_labels_"},
 				},
 			},
 			createTraces: func() ptrace.Traces {
@@ -1240,7 +1240,7 @@ func TestAggregateAttributesForTraces(t *testing.T) {
 			config: []aggregationPair{
 				{
 					Attribute: "kubernetes.labels",
-					Patterns:  []string{},
+					Prefixes:  []string{},
 				},
 			},
 			createTraces: func() ptrace.Traces {

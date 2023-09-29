@@ -142,11 +142,11 @@ func TestLoadConfig(t *testing.T) {
 			AggregateAttributes: []aggregationPair{
 				{
 					Attribute: "attr1",
-					Patterns:  []string{"pattern1", "pattern2", "pattern3"},
+					Prefixes:  []string{"pattern1", "pattern2", "pattern3"},
 				},
 				{
 					Attribute: "attr2",
-					Patterns:  []string{"pattern4"},
+					Prefixes:  []string{"pattern4"},
 				},
 			},
 			LogFieldsAttributes: &logFieldAttributesConfig{
@@ -277,4 +277,35 @@ func TestLoadConfig(t *testing.T) {
 			},
 			TranslateDockerMetrics: true,
 		})
+}
+
+func TestConfigValidation(t *testing.T) {
+	tests := []struct {
+		name   string
+		config Config
+		err    string
+	}{
+		{
+			name: "conflicts within aggregation",
+			config: Config{
+				AggregateAttributes: []aggregationPair{
+					{
+						Attribute: "foo",
+						Prefixes:  []string{"prefix1_", "pref"},
+					},
+				},
+			},
+			err: "prefixes conflict in aggregate_attributes configuration: prefix1_ starts with pref",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.err == "" {
+				assert.NoError(t, tt.config.Validate())
+			} else {
+				assert.EqualError(t, tt.config.Validate(), tt.err)
+			}
+		})
+	}
 }

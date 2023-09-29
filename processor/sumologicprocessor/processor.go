@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type sumologicSubprocessor interface {
@@ -62,16 +63,13 @@ func newsumologicProcessor(set processor.CreateSettings, config *Config) *sumolo
 }
 
 func (processor *sumologicProcessor) start(_ context.Context, _ component.Host) error {
-	procs := processor.subprocessors
-	processor.logger.Info(
-		"Sumo Logic Processor has started.",
-		zap.Bool(procs[0].ConfigPropertyName(), procs[0].isEnabled()),
-		zap.Bool(procs[1].ConfigPropertyName(), procs[1].isEnabled()),
-		zap.Bool(procs[2].ConfigPropertyName(), procs[2].isEnabled()),
-		zap.Bool(procs[3].ConfigPropertyName(), procs[3].isEnabled()),
-		zap.Bool(procs[4].ConfigPropertyName(), procs[4].isEnabled()),
-		zap.Bool(procs[5].ConfigPropertyName(), procs[5].isEnabled()),
-	)
+	enabledSubprocessors := []zapcore.Field{}
+
+	for _, proc := range processor.subprocessors {
+		enabledSubprocessors = append(enabledSubprocessors, zap.Bool(proc.ConfigPropertyName(), proc.isEnabled()))
+	}
+
+	processor.logger.Info("Sumo Logic Processor has started.", enabledSubprocessors...)
 	return nil
 }
 

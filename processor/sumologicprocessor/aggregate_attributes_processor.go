@@ -29,7 +29,7 @@ func newAggregateAttributesProcessor(config []aggregationPair) *aggregateAttribu
 	for i := 0; i < len(config); i++ {
 		pair := &aggregation{
 			attribute: config[i].Attribute,
-			prefixes:  config[i].Patterns,
+			prefixes:  config[i].Prefixes,
 		}
 		aggregations = append(aggregations, pair)
 	}
@@ -124,10 +124,6 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 			attributes.Range(func(key string, value pcommon.Value) bool {
 				ok, trimmedKey := getNewKey(key, prefix)
 				if ok {
-					// TODO: Potential name conflict to resolve, eg.:
-					// pod_* matches pod_foo
-					// pod2_* matches pod2_foo
-					// both will be renamed to foo
 					names = append(names, trimmedKey)
 					val := pcommon.NewValueEmpty()
 					value.CopyTo(val)
