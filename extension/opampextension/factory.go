@@ -19,15 +19,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-)
 
-const (
-	// The value of extension "type" in configuration.
-	typeStr = "opamp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
 )
 
 func NewFactory() extension.Factory {
-	return extension.NewFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelAlpha)
+	return extension.NewFactory(
+		metadata.Type,
+		createDefaultConfig,
+		createExtension,
+		metadata.ExtensionStability,
+	)
 }
 
 func createDefaultConfig() component.Config {
