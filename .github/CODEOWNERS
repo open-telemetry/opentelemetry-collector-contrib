@@ -91,7 +91,8 @@ extension/asapauthextension/                                            @open-te
 extension/awsproxy/                                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                                           @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin @frzifus
 extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123 @frzifus
-extension/encodingextension/                                            @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+extension/encoding/jaegerencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
+extension/encoding/textencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/headerssetterextension/                                       @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                                @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
