@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type                     = "datadog"
-	TracesToMetricsStability = component.StabilityLevelBeta
+	Type               = "jaegerencoding"
+	ExtensionStability = component.StabilityLevelDevelopment
 )
