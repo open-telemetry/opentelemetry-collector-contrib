@@ -87,7 +87,7 @@ func TestRateOfMetrics(t *testing.T) {
 	// verify
 	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
 	assert.True(t, len(m.rms) >= 6, "there should have been more than 6 metrics, had %d", len(m.rms))
-	// // the maximum acceptable number of metrics for the rate of 10/sec for half a second
+	// the maximum acceptable number of metrics for the rate of 10/sec for half a second
 	assert.True(t, len(m.rms) <= 20, "there should have been less than 20 metrics, had %d", len(m.rms))
 }
 
