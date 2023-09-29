@@ -96,7 +96,7 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name:      "ScanLinesNoEOF",
-			splitFunc: scanLinesStrict,
+			splitFunc: ScanLinesStrict,
 			input:     []byte("foo bar.\nhello world!\nincomplete line"),
 			steps: []Step{
 				ExpectAdvanceToken(len("foo bar.\n"), "foo bar."),
@@ -130,14 +130,6 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func scanLinesStrict(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	advance, token, err = bufio.ScanLines(data, atEOF)
-	if advance == len(token) {
-		return 0, nil, nil
-	}
-	return
-}
-
 func scanLinesError(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	advance, token, err = bufio.ScanLines(data, atEOF)
 	if strings.Contains(string(token), "error") {
@@ -149,7 +141,7 @@ func scanLinesError(data []byte, atEOF bool) (advance int, token []byte, err err
 func scanLinesStrictWithFlush(flushPeriod time.Duration) bufio.SplitFunc {
 	now := time.Now()
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		advance, token, err = scanLinesStrict(data, atEOF)
+		advance, token, err = ScanLinesStrict(data, atEOF)
 		if advance > 0 || token != nil || err != nil {
 			return
 		}
