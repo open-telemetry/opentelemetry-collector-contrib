@@ -1,9 +1,18 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
+// Copyright 2020 OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-//go:generate mdatagen metadata.yaml
-
-package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
+package sumologicexporter
 
 import (
 	"context"
@@ -12,17 +21,22 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+)
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
+const (
+	// The value of "type" key in configuration.
+	typeStr        = "sumologic"
+	stabilityLevel = component.StabilityLevelBeta
 )
 
 // NewFactory returns a new factory for the sumologic exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		metadata.Type,
+		typeStr,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, stabilityLevel),
+		exporter.WithMetrics(createMetricsExporter, stabilityLevel),
+		exporter.WithTraces(createTracesExporter, stabilityLevel),
 	)
 }
 
@@ -31,29 +45,33 @@ func createDefaultConfig() component.Config {
 	qs.Enabled = false
 
 	return &Config{
-
 		CompressEncoding:   DefaultCompressEncoding,
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
 		LogFormat:          DefaultLogFormat,
 		MetricFormat:       DefaultMetricFormat,
-		SourceCategory:     DefaultSourceCategory,
-		SourceName:         DefaultSourceName,
-		SourceHost:         DefaultSourceHost,
 		Client:             DefaultClient,
-		GraphiteTemplate:   DefaultGraphiteTemplate,
+		ClearLogsTimestamp: DefaultClearLogsTimestamp,
+		JSONLogs: JSONLogs{
+			LogKey:       DefaultLogKey,
+			AddTimestamp: DefaultAddTimestamp,
+			TimestampKey: DefaultTimestampKey,
+			FlattenBody:  DefaultFlattenBody,
+		},
+		TraceFormat: OTLPTraceFormat,
 
-		HTTPClientSettings: createDefaultHTTPClientSettings(),
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:      qs,
+		HTTPClientSettings:   CreateDefaultHTTPClientSettings(),
+		RetrySettings:        exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:        qs,
+		DropRoutingAttribute: DefaultDropRoutingAttribute,
 	}
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	params exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	exp, err := newLogsExporter(cfg.(*Config), params)
+	exp, err := newLogsExporter(ctx, params, cfg.(*Config))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the logs exporter: %w", err)
 	}
@@ -62,13 +80,26 @@ func createLogsExporter(
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	params exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	exp, err := newMetricsExporter(cfg.(*Config), params)
+	exp, err := newMetricsExporter(ctx, params, cfg.(*Config))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the metrics exporter: %w", err)
+	}
+
+	return exp, nil
+}
+
+func createTracesExporter(
+	ctx context.Context,
+	params exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
+	exp, err := newTracesExporter(ctx, params, cfg.(*Config))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the traces exporter: %w", err)
 	}
 
 	return exp, nil
