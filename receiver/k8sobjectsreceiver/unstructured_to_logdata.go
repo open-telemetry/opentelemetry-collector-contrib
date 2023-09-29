@@ -60,24 +60,10 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 				resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
 			}
 
-			kind, ok, _ := unstructured.NestedString(e.Object, "object", "kind")
-			if ok && kind == "Event" {
-				namespace, ok, _ := unstructured.NestedString(e.Object, "object", "regarding", "namespace")
-				if ok {
-					resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
-				}
-				regardingKind, ok, _ := unstructured.NestedString(e.Object, "object", "regarding", "kind")
-				if ok {
-					regardingKind = strings.ToLower(regardingKind)
-					regardingName, ok, _ := unstructured.NestedString(e.Object, "object", "regarding", "name")
-					if ok {
-						resourceAttrs.PutStr(fmt.Sprintf("k8s.%v.name", regardingKind), regardingName)
-					}
-					regardingUID, ok, _ := unstructured.NestedString(e.Object, "object", "regarding", "uid")
-					if ok {
-						resourceAttrs.PutStr(fmt.Sprintf("k8s.%v.uid", regardingKind), regardingUID)
-					}
-				}
+			if config.gvr.Version == "events.k8s.io/v1" {
+				extractResourceAttributes(resourceAttrs, e.Object, "regarding")
+			} else {
+				extractResourceAttributes(resourceAttrs, e.Object, "involvedObject")
 			}
 
 			sl := rl.ScopeLogs().AppendEmpty()
@@ -100,4 +86,26 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 		destMap.FromRaw(e.Object)
 	}
 	return out
+}
+
+func extractResourceAttributes(resourceAttrs pcommon.Map, object map[string]any, location string) {
+	objKind, ok, _ := unstructured.NestedString(object, "object", "kind")
+	if ok && objKind == "Event" {
+		namespace, ok, _ := unstructured.NestedString(object, "object", location, "namespace")
+		if ok {
+			resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
+		}
+		kind, ok, _ := unstructured.NestedString(object, "object", location, "kind")
+		if ok {
+			kind = strings.ToLower(kind)
+			regardingName, ok, _ := unstructured.NestedString(object, "object", location, "name")
+			if ok {
+				resourceAttrs.PutStr(fmt.Sprintf("k8s.%v.name", kind), regardingName)
+			}
+			regardingUID, ok, _ := unstructured.NestedString(object, "object", location, "uid")
+			if ok {
+				resourceAttrs.PutStr(fmt.Sprintf("k8s.%v.uid", kind), regardingUID)
+			}
+		}
+	}
 }
