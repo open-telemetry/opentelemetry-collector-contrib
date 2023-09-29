@@ -142,6 +142,8 @@ func createLogsExporter(
 		adxCfg,
 		adp.logsDataPusher,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(adxCfg.RetrySettings),
+		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
 
 	if err != nil {
