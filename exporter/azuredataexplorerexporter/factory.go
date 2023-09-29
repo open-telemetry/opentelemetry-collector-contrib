@@ -42,11 +42,14 @@ func NewFactory() exporter.Factory {
 // Create default configurations
 func createDefaultConfig() component.Config {
 	return &Config{
-		Database:      otelDb,
-		MetricTable:   defaultMetricTable,
-		LogTable:      defaultLogTable,
-		TraceTable:    defaultTraceTable,
-		IngestionType: queuedIngestTest,
+		Database:        otelDb,
+		MetricTable:     defaultMetricTable,
+		LogTable:        defaultLogTable,
+		TraceTable:      defaultTraceTable,
+		IngestionType:   queuedIngestTest,
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 	}
 }
 
@@ -75,6 +78,8 @@ func createMetricsExporter(
 		adxCfg,
 		adp.metricsDataPusher,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(adxCfg.RetrySettings),
+		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
 
 	if err != nil {
@@ -105,6 +110,8 @@ func createTracesExporter(
 		adxCfg,
 		adp.tracesDataPusher,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(adxCfg.RetrySettings),
+		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
 
 	if err != nil {
