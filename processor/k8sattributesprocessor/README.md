@@ -79,23 +79,24 @@ The "from" field has only two possible values "pod" and "namespace" and defaults
 A few examples to use this config are as follows:
 
 ```yaml
-annotations:
-  - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
-    key: annotation-one
-    from: pod
-  - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
-    key: annotation-two
-    regex: field=(?P<value>.+)
-    from: namespace
+extract:
+  annotations:
+    - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
+      key: annotation-one
+      from: pod
+    - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+      key: annotation-two
+      regex: field=(?P<value>.+)
+      from: namespace
 
-labels:
-  - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
-    key: label1
-    from: namespace
-  - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
-    key: label2
-    regex: field=(?P<value>.+)
-    from: pod
+  labels:
+    - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
+      key: label1
+      from: namespace
+    - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
+      key: label2
+      regex: field=(?P<value>.+)
+      from: pod
 ```
 
 ### Config example
@@ -115,6 +116,10 @@ k8sattributes:
         - k8s.namespace.name
         - k8s.node.name
         - k8s.pod.start_time
+      labels:
+        - tag_name: app.label.component
+          key: app.kubenetes.io/component
+          from: pod
     pod_association:
       - sources:
           - from: resource_attribute
