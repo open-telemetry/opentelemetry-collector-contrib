@@ -24,7 +24,7 @@ import (
 
 // Start starts the metric telemetry generator
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}

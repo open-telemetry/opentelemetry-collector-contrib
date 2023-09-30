@@ -406,6 +406,7 @@ jobs:
           - arm
           - arm64
           - ppc64le
+          - s390x
         include:
           - os: linux
           - arch: arm
@@ -417,12 +418,16 @@ jobs:
             arch: arm
           - os: darwin
             arch: ppc64le
+          - os: darwin
+            arch: s390x
           - os: windows
             arch: arm
           - os: windows
             arch: arm64
           - os: windows
             arch: ppc64le
+          - os: windows
+            arch: s390x
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
@@ -485,6 +490,8 @@ jobs:
         run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "arm64" "./dist/"
       - name: Build ${{ matrix.package_type }} ppc64le package
         run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "ppc64le" "./dist/"
+      - name: Build ${{ matrix.package_type }} s390x package
+        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "s390x" "./dist/"
       - name: Test ${{ matrix.package_type }} package
         run: |
           if [[ "${{ matrix.package_type }}" = "deb" ]]; then

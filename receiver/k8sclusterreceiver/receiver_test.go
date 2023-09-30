@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -225,7 +226,7 @@ func setupReceiver(
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}
 
-	r, _ := newReceiver(context.Background(), tt.ToReceiverCreateSettings(), config)
+	r, _ := newReceiver(context.Background(), receiver.CreateSettings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, config)
 	kr := r.(*kubernetesReceiver)
 	kr.metricsConsumer = metricsConsumer
 	kr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {

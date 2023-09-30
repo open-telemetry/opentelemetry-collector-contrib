@@ -83,6 +83,7 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *azureScraper {
 		settings:                        settings.TelemetrySettings,
 		mb:                              metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 		azIDCredentialsFunc:             azidentity.NewClientSecretCredential,
+		azIDWorkloadFunc:                azidentity.NewWorkloadIdentityCredential,
 		armClientFunc:                   armresources.NewClient,
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
 		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
@@ -103,6 +104,7 @@ type azureScraper struct {
 	resourcesUpdated                time.Time
 	mb                              *metadata.MetricsBuilder
 	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
+	azIDWorkloadFunc                func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
 	armMonitorDefinitionsClientFunc func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	armMonitorMetricsClientFunc     func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
@@ -139,8 +141,7 @@ func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
 }
 
 func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
-	s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil)
-	if err != nil {
+	if err = s.loadCredentials(); err != nil {
 		return err
 	}
 
@@ -151,6 +152,22 @@ func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 	s.resources = map[string]*azureResource{}
 
 	return
+}
+
+func (s *azureScraper) loadCredentials() (err error) {
+	switch s.cfg.Authentication {
+	case servicePrincipal:
+		if s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil); err != nil {
+			return err
+		}
+	case workloadIdentity:
+		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown authentication %v", s.cfg.Authentication)
+	}
+	return nil
 }
 
 func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
