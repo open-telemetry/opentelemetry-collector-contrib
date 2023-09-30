@@ -15,7 +15,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/threadpool"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/trie"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -45,6 +49,15 @@ type Manager struct {
 	seenPaths  map[string]struct{}
 
 	currentFps []*fingerprint.Fingerprint
+
+	// Following fields are used only when useThreadPool is enabled
+	pool           *threadpool.Pool[readerEnvelope]
+	knownFilesLock sync.RWMutex
+	trieLock       sync.RWMutex
+	once           sync.Once
+
+	// TRIE - this data structure stores the fingerprint of the files which are currently being consumed
+	trie *trie.Trie
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -61,6 +74,11 @@ func (m *Manager) Start(persister operator.Persister) error {
 		m.Warnf("finding files: %v", err)
 	}
 
+	if useThreadPool.IsEnabled() {
+		m.once.Do(func() {
+			m.pool.StartConsumers(ctx)
+		})
+	}
 	// Start polling goroutine
 	m.startPoller(ctx)
 
@@ -71,6 +89,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
+	if useThreadPool.IsEnabled() {
+		m.pool.StopConsumers()
+	}
 	m.roller.cleanup()
 	for _, reader := range m.knownFiles {
 		reader.Close()

@@ -18,6 +18,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/threadpool"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/trie"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -45,6 +47,13 @@ var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
+)
+
+var useThreadPool = featuregate.GlobalRegistry().MustRegister(
+	"filelog.useThreadPool",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, log collection switches to a thread pool model, respecting the `poll_interval` config."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
 )
 
 // NewConfig creates a new input config with default values
@@ -89,6 +98,12 @@ type Config struct {
 type HeaderConfig struct {
 	Pattern           string            `mapstructure:"pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
+}
+
+// struct used to thread pool
+type readerEnvelope struct {
+	reader  *reader
+	trieKey *fingerprint.Fingerprint
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -160,7 +175,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		return nil, err
 	}
 
-	return &Manager{
+	manager := &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
 		readerFactory: readerFactory{
@@ -187,7 +202,12 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
-	}, nil
+	}
+	if useThreadPool.IsEnabled() {
+		manager.trie = trie.NewTrie()
+		manager.pool = threadpool.NewPool(manager.maxBatchFiles, manager.worker)
+	}
+	return manager, nil
 }
 
 func (c Config) validate() error {
