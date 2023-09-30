@@ -221,9 +221,16 @@ func (s *snmpScraper) indexedDataToMetric(
 	// with the row index of the SNMP data
 	resourceAttributeNames := configHelper.getResourceAttributeNames(data.columnOID)
 
+	// Check how many of the resource attributes on this metric are scalar
+	var numScalarResourceAttributes int
+	for name := range resourceAttributes {
+		if s.cfg.ResourceAttributes[name].ScalarOID != "" {
+			numScalarResourceAttributes++
+		}
+	}
 	var resourceKey string
-	// If we only have scalar resource attributes, we don't need multiple resources
-	if len(resourceAttributes) == len(columnOIDScalarResourceAttributeValues) {
+	// If the only resource attributes on this metric are scalar, we don't need multiple resources
+	if len(resourceAttributes) == numScalarResourceAttributes {
 		resourceKey = getResourceKey(resourceAttributeNames, "")
 	} else {
 		resourceKey = getResourceKey(resourceAttributeNames, indexString)

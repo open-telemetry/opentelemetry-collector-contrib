@@ -285,11 +285,13 @@ Available Converters:
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
+- [Len](#len)
 - [Log](#log)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
 - [Minutes](#minutes)
 - [Nanoseconds](#nanoseconds)
+- [Now](#now)
 - [ParseJSON](#parsejson)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
@@ -298,6 +300,8 @@ Available Converters:
 - [Split](#split)
 - [Substring](#substring)
 - [Time](#time)
+- [TraceID](#traceid)
+- [TruncateTime](#truncatetime)
 - [UnixMicro](#unixmicro)
 - [UnixMilli](#unixmilli)
 - [UnixNano](#unixnano)
@@ -595,6 +599,19 @@ Examples:
 
 - `Nanoseconds(Duration("1h"))`
 
+### Now
+
+`Now()`
+
+The `Now` function returns the current time as represented by `time.Now()` in Go.
+
+The returned type is `time.Time`.
+
+Examples:
+
+- `UnixSeconds(Now())`
+- `set(start_time, Now())`
+
 ### ParseJSON
 
 `ParseJSON(target)`
@@ -749,6 +766,20 @@ The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte sli
 Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
+
+### TruncateTime
+
+`TruncateTime(time, duration)`
+
+The `TruncateTime` Converter returns the given time rounded down to a multiple of the given duration. The Converter [uses the `time.Truncate` function](https://pkg.go.dev/time#Time.Truncate).
+
+`time` is a `time.Time`. `duration` is a `time.Duration`. If `time` is not a `time.Time` or if `duration` is not a `time.Duration`, an error will be returned. 
+
+While some common paths can return a `time.Time` object, you will most like need to use the [Duration Converter](#duration) to create a `time.Duration`.
+
+Examples:
+
+- `TruncateTime(start_time, Duration("1s"))`
 
 ### UnixMicro
 

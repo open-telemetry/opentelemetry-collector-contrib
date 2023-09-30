@@ -12,7 +12,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -38,8 +37,8 @@ func TestUnmarshal(t *testing.T) {
 					cfg.TCP.ListenAddress = "10.0.0.1:9000"
 					cfg.TCP.AddAttributes = true
 					cfg.TCP.Encoding = "utf-16"
-					cfg.TCP.Multiline = tokenize.NewMultilineConfig()
-					cfg.TCP.Multiline.LineStartPattern = "ABC"
+					cfg.TCP.SplitConfig.LineStartPattern = "ABC"
+					cfg.TCP.SplitConfig.LineEndPattern = ""
 					cfg.TCP.TLS = &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "foo",
@@ -62,8 +61,8 @@ func TestUnmarshal(t *testing.T) {
 					cfg.UDP.ListenAddress = "10.0.0.1:9000"
 					cfg.UDP.AddAttributes = true
 					cfg.UDP.Encoding = "utf-16"
-					cfg.UDP.Multiline = tokenize.NewMultilineConfig()
-					cfg.UDP.Multiline.LineStartPattern = "ABC"
+					cfg.UDP.SplitConfig.LineStartPattern = "ABC"
+					cfg.UDP.SplitConfig.LineEndPattern = ""
 					return cfg
 				}(),
 			},

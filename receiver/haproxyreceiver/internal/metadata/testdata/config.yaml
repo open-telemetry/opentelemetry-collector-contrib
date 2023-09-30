@@ -56,21 +56,9 @@ all_set:
   resource_attributes:
     haproxy.addr:
       enabled: true
-    haproxy.algo:
-      enabled: true
-    haproxy.iid:
-      enabled: true
-    haproxy.pid:
-      enabled: true
     haproxy.proxy_name:
       enabled: true
     haproxy.service_name:
-      enabled: true
-    haproxy.sid:
-      enabled: true
-    haproxy.type:
-      enabled: true
-    haproxy.url:
       enabled: true
 none_set:
   metrics:
@@ -129,19 +117,7 @@ none_set:
   resource_attributes:
     haproxy.addr:
       enabled: false
-    haproxy.algo:
-      enabled: false
-    haproxy.iid:
-      enabled: false
-    haproxy.pid:
-      enabled: false
     haproxy.proxy_name:
       enabled: false
     haproxy.service_name:
-      enabled: false
-    haproxy.sid:
-      enabled: false
-    haproxy.type:
-      enabled: false
-    haproxy.url:
       enabled: false

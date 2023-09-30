@@ -1,0 +1,9 @@
+type: textencoding
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [MovieStoreGuy, atoulme]

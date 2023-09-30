@@ -152,7 +152,7 @@ func (m *metric) validate() error {
 	if m.Description == "" {
 		errs = multierr.Append(errs, errors.New(`missing metric description`))
 	}
-	if m.Unit == "" {
+	if m.Unit == nil {
 		errs = multierr.Append(errs, errors.New(`missing metric unit`))
 	}
 	if m.Sum != nil {

@@ -21,6 +21,8 @@ all_set:
       enabled: true
     postgresql.database.count:
       enabled: true
+    postgresql.database.locks:
+      enabled: true
     postgresql.db_size:
       enabled: true
     postgresql.deadlocks:
@@ -79,6 +81,8 @@ none_set:
     postgresql.connection.max:
       enabled: false
     postgresql.database.count:
+      enabled: false
+    postgresql.database.locks:
       enabled: false
     postgresql.db_size:
       enabled: false

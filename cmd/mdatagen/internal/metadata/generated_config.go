@@ -28,6 +28,7 @@ type MetricsConfig struct {
 	DefaultMetric            MetricConfig `mapstructure:"default.metric"`
 	DefaultMetricToBeRemoved MetricConfig `mapstructure:"default.metric.to_be_removed"`
 	OptionalMetric           MetricConfig `mapstructure:"optional.metric"`
+	OptionalMetricEmptyUnit  MetricConfig `mapstructure:"optional.metric.empty_unit"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -39,6 +40,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		OptionalMetric: MetricConfig{
+			Enabled: false,
+		},
+		OptionalMetricEmptyUnit: MetricConfig{
 			Enabled: false,
 		},
 	}

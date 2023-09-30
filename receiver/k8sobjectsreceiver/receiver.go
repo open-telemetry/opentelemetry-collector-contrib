@@ -7,16 +7,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -29,13 +32,13 @@ import (
 
 type k8sobjectsreceiver struct {
 	setting              receiver.CreateSettings
-	logger               *zap.Logger
 	objects              []*K8sObjectsConfig
 	stopperChanList      []chan struct{}
 	client               dynamic.Interface
 	consumer             consumer.Logs
-	obsrecv              *obsreport.Receiver
+	obsrecv              *receiverhelper.ObsReport
 	mu                   sync.Mutex
+	logger               *zap.Logger
 	leaderElection       k8sconfig.LeaderElectionConfig
 	leaderElectionClient kubernetes.Interface
 }
@@ -47,7 +50,7 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		return nil, err
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: params,
@@ -210,36 +213,64 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 }
 
 func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
-
 	stopperChan := make(chan struct{})
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
-	resourceVersion, err := getResourceVersion(ctx, config, resource)
-	if err != nil {
-		kr.setting.Logger.Error("could not retrieve an initial resourceVersion", zap.String("resource", config.gvr.String()), zap.Error(err))
-		return
-	}
 	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
 		options.FieldSelector = config.FieldSelector
 		options.LabelSelector = config.LabelSelector
 		return resource.Watch(ctx, options)
 	}
 
+	cancelCtx, cancel := context.WithCancel(ctx)
+	cfgCopy := *config
+	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
+		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
+		if err != nil {
+			kr.setting.Logger.Error("could not retrieve a resourceVersion", zap.String("resource", cfgCopy.gvr.String()), zap.Error(err))
+			cancel()
+			return
+		}
+
+		done := kr.doWatch(newCtx, &cfgCopy, resourceVersion, watchFunc, stopperChan)
+		if done {
+			cancel()
+			return
+		}
+
+		// need to restart with a fresh resource version
+		cfgCopy.ResourceVersion = ""
+	}, 0)
+}
+
+// doWatch returns true when watching is done, false when watching should be restarted.
+func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsConfig, resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
 	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		kr.setting.Logger.Error("error in watching object", zap.String("resource", config.gvr.String()), zap.Error(err))
-		return
+		return true
 	}
 
+	defer watcher.Stop()
 	res := watcher.ResultChan()
 	for {
 		select {
 		case data, ok := <-res:
+			if data.Type == apiWatch.Error {
+				errObject := apierrors.FromObject(data.Object)
+				// nolint:errorlint
+				if errObject.(*apierrors.StatusError).ErrStatus.Code == http.StatusGone {
+					kr.setting.Logger.Info("received a 410, grabbing new resource version", zap.Any("data", data))
+					// we received a 410 so we need to restart
+					return false
+				}
+			}
+
 			if !ok {
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
-				return
+				return true
 			}
 
 			if config.exclude[data.Type] {
@@ -257,10 +288,9 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 			}
 		case <-stopperChan:
 			watcher.Stop()
-			return
+			return true
 		}
 	}
-
 }
 
 func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) (string, error) {

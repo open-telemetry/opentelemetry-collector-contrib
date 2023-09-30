@@ -14,8 +14,8 @@ import (
 )
 
 type ExtractPatternsArguments[K any] struct {
-	Target  ottl.StringGetter[K] `ottlarg:"0"`
-	Pattern string               `ottlarg:"1"`
+	Target  ottl.StringGetter[K]
+	Pattern string
 }
 
 func NewExtractPatternsFactory[K any]() ottl.Factory[K] {
