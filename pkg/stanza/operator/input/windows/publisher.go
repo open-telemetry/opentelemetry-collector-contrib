@@ -29,7 +29,7 @@ func (p *Publisher) Open(provider string) error {
 
 	handle, err := evtOpenPublisherMetadata(0, utf16, nil, 0, 0)
 	if err != nil {
-		return fmt.Errorf("failed to open publisher for the %q provider: %w", provider, err)
+		return fmt.Errorf("failed to open the metadata for the %q provider: %w", provider, err)
 	}
 
 	p.handle = handle
