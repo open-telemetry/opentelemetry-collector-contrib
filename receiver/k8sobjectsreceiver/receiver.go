@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -336,9 +335,4 @@ func newTicker(repeat time.Duration) *time.Ticker {
 	}()
 	ticker.C = nc
 	return ticker
-}
-
-// getLeaderElectionLockName return string as leader election lock name parsed from component.ID
-func getLeaderElectionLockName(id component.ID) string {
-	return strings.ReplaceAll(id.String(), "/", "-")
 }
