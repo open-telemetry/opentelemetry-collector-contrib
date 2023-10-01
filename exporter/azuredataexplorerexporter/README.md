@@ -92,7 +92,8 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 | SpanId                    | A valid span identifier is an 8-byte array with at least one non-zero byte.                      |
 | ParentId                    | A parent spanId, for the current span                                                          |
 | SpanName                    | The span name                                                                                  |
-| SpanStatus             | [Status](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status) of the Span. |
+| SpanStatus             | [Status Code](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status) of the Span. |
+| SpanStatusMessage             | [Status Message](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status) of the Span |
 | SpanKind                   | [SpanKind](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#spankind) describes the relationship between the Span, its parents, and its children in a Trace |
 | StartTime                   | A start timestamp                                                                               |
 | EndTime                   | An end timestamp                                                                                  |
@@ -139,6 +140,10 @@ The following tables need to be created in the database specified in the configu
 .create-merge table <Metrics-Table-Name> (Timestamp:datetime, MetricName:string, MetricType:string, MetricUnit:string, MetricDescription:string, MetricValue:real, Host:string, ResourceAttributes:dynamic,MetricAttributes:dynamic) 
 
 .create-merge table <Traces-Table-Name> (TraceID:string, SpanID:string, ParentID:string, SpanName:string, SpanStatus:string, SpanKind:string, StartTime:datetime, EndTime:datetime, ResourceAttributes:dynamic, TraceAttributes:dynamic, Events:dynamic, Links:dynamic) 
+
+// This is an optional column to store the status code and message as a dynamic field. This augments the status field with Status code and status message
+
+.alter-merge table <Traces-Table-Name> (SpanStatusMessage:string) 
 
 //Enable streaming ingestion( for managed streaming) for the created tables using
 .alter table <Table-Name> policy streamingingestion enable

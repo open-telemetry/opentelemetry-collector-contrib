@@ -8,8 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -66,7 +66,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
 		}
 		converter := NewConverter(params.Logger, converterOpts...)
-		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 			ReceiverID:             params.ID,
 			ReceiverCreateSettings: params,
 		})
