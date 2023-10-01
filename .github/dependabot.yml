@@ -8,11 +8,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/opampsupervisor"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/cmd/otelcontribcol"
     schedule:
       interval: "weekly"
@@ -414,6 +409,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/k8stest"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/internal/kafka"
     schedule:
       interval: "weekly"
       day: "wednesday"
