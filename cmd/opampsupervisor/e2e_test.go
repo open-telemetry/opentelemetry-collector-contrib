@@ -1,6 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build e2e
+// +build e2e
+
 package main
 
 import (
@@ -41,7 +44,8 @@ func (tl testLogger) Errorf(format string, args ...any) {
 	tl.t.Logf(format, args...)
 }
 
-func defaultConnectingHandler(connectionCallbacks server.ConnectionCallbacksStruct) func(request *http.Request) types.ConnectionResponse {
+func defaultConnectingHandler(connecti
+	onCallbacks server.ConnectionCallbacksStruct) func(request *http.Request) types.ConnectionResponse {
 	return func(request *http.Request) types.ConnectionResponse {
 		return types.ConnectionResponse{
 			Accept:              true,
