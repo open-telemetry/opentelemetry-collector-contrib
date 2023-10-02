@@ -41,7 +41,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.86.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.86.0
@@ -1086,8 +1085,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshch
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../../receiver/datadogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ../../receiver/chronyreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter => ../../exporter/parquetexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver => ../../extension/observer/ecstaskobserver
 

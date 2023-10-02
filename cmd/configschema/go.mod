@@ -47,7 +47,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.86.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.86.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.86.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.86.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.86.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.86.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.86.0 // indirect
@@ -790,8 +789,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokie
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter => ../../exporter/mezmoexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../../exporter/opencensusexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter => ../../exporter/parquetexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../../exporter/prometheusexporter
 
