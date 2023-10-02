@@ -19,6 +19,11 @@ This exporter converts OpenTelemetry metrics to
 and then sends them directly to CloudWatch Logs using the 
 [PutLogEvents](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html) API.
 
+---
+**_NOTE:_** The [batch](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) processor must be used with the EMF Exporter if there are more than 100 metrics per scrape as the log event only supports 100 metric definition objects.
+
+---
+
 ## Data Conversion
 Convert OpenTelemetry ```Int64DataPoints```, ```DoubleDataPoints```, ```SummaryDataPoints``` metrics datapoints into 
 CloudWatch ```EMF``` structured log formats and send it to CloudWatch. Logs and Metrics will be displayed in 
