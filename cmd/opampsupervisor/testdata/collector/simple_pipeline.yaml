@@ -6,11 +6,9 @@ receivers:
 exporters:
   file:
     path: {{.outputLogFile}}
-  logging:
-    verbosity: detailed
 
 service:
   pipelines:
     logs:
       receivers: [filelog]
-      exporters: [file, logging]
+      exporters: [file]
