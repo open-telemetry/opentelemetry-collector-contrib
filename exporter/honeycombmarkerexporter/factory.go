@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter/internal/metadata"
 )
 
 func NewFactory() exporter.Factory {
@@ -18,8 +18,6 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		CreateDefaultConfig,
 		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
 	)
 }
 
@@ -27,8 +25,16 @@ func CreateDefaultConfig() component.Config {
 	return &Config{
 		APIKey: "",
 		APIURL: "",
-		Presets: presets{
-			K8sEvents: true,
+		Markers: []marker{
+			{
+				MarkerType:   "",
+				MessageField: "",
+				UrlField:     "",
+				Rules: Rules{
+					ResourceConditions: []string{},
+					LogConditions:      []string{},
+				},
+			},
 		},
 	}
 }

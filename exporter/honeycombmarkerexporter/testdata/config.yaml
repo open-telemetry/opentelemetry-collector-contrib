@@ -2,9 +2,17 @@ honeycomb:
   apikey: 
   apiurl: http://localhost:8080/
   markers:
-    {
-      markertype: "type1",
+    - markertype: "type1",
       messagefield: "test message",
       urlfield: "http://localhost:8080/",
-      rules: }
-
+      rules:
+        - resourceconditions:
+            - "ResourceCondition1"
+            - "ResourceCondition2"
+        - logconditions:
+            - "LogCondition1"
+            - "LogCondition2"
+    - markertype: "type2",
+      messagefield: "another test message",
+      urlfield: "http://localhost:8080/",
+      rules:
