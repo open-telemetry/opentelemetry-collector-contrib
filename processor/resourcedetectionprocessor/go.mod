@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.86.0
-	github.com/shirou/gopsutil/v3 v3.23.8
+	github.com/shirou/gopsutil/v3 v3.23.9
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.86.0
 	go.opentelemetry.io/collector/config/confighttp v0.86.0
