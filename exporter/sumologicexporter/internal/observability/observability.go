@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package observability
+package observability // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/observability"
 
 import (
 	"context"
