@@ -105,7 +105,7 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 			index:          i,
 		}
 
-		go w.simulateLogs(res, exp)
+		go w.simulateLogs(res, exp, c.GetTelemetryAttributes())
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)
