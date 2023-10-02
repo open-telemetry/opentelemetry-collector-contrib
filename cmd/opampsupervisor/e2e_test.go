@@ -1,9 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build e2e
-// +build e2e
-
 package main
 
 import (
@@ -53,7 +50,19 @@ func defaultConnectingHandler(connectionCallbacks server.ConnectionCallbacksStru
 	}
 }
 
-func newServer(t *testing.T, connectingCallback func(connectionCallbacks server.ConnectionCallbacksStruct) func(request *http.Request) types.ConnectionResponse, callbacks server.ConnectionCallbacksStruct) (string, chan bool, func(*protobufs.ServerToAgent)) {
+// onConnectingFuncFactory is a function that will be given to server.CallbacksStruct as
+// OnConnectingFunc. This allows changing the ConnectionCallbacks both from the newOpAMPServer
+// caller and inside of newOpAMP Server, and for custom implementations of the value for `Accept`
+// in types.ConnectionResponse.
+type onConnectingFuncFactory func(connectionCallbacks server.ConnectionCallbacksStruct) func(request *http.Request) types.ConnectionResponse
+
+type testingOpAMPServer struct {
+	addr                string
+	supervisorConnected chan bool
+	sendToSupervisor    func(*protobufs.ServerToAgent)
+}
+
+func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, callbacks server.ConnectionCallbacksStruct) *testingOpAMPServer {
 	var agentConn atomic.Value
 	var isAgentConnected atomic.Bool
 	connectedChan := make(chan bool)
@@ -99,16 +108,18 @@ func newServer(t *testing.T, connectingCallback func(connectionCallbacks server.
 		agentConn.Load().(types.Connection).Send(context.Background(), msg)
 	}
 	t.Cleanup(func() {
-		waitForConnection(connectedChan, false)
+		waitForSupervisorConnection(connectedChan, false)
 		shutdown()
 	})
-	return httpSrv.Listener.Addr().String(), connectedChan, send
+	return &testingOpAMPServer{
+		addr:                httpSrv.Listener.Addr().String(),
+		supervisorConnected: connectedChan,
+		sendToSupervisor:    send,
+	}
 }
 
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) *supervisor.Supervisor {
-	wd, err := os.Getwd()
-	require.NoError(t, err)
-	tpl, err := os.ReadFile(path.Join(wd, "testdata", "supervisor", "supervisor_"+configType+".yaml"))
+	tpl, err := os.ReadFile(path.Join("testdata", "supervisor", "supervisor_"+configType+".yaml"))
 	require.NoError(t, err)
 
 	templ, err := template.New("").Parse(string(tpl))
@@ -142,7 +153,7 @@ func newSupervisor(t *testing.T, configType string, extraConfigData map[string]s
 
 func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 	var agentConfig atomic.Value
-	addr, connected, send := newServer(
+	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
@@ -158,14 +169,14 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "basic", map[string]string{"url": addr})
+	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
 	defer s.Shutdown()
 
-	waitForConnection(connected, true)
+	waitForSupervisorConnection(server.supervisorConnected, true)
 
-	cfg, hash, input, output := createSimplePipelineConfig(t)
+	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
 
-	send(&protobufs.ServerToAgent{
+	server.sendToSupervisor(&protobufs.ServerToAgent{
 		RemoteConfig: &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
 				ConfigMap: map[string]*protobufs.AgentConfigFile{
@@ -181,19 +192,19 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 		if ok {
 			// The effective config may be structurally different compared to what was sent,
 			// so just check that it includes some strings we know to be unique to the remote config.
-			return strings.Contains(cfg, input.Name()) && strings.Contains(cfg, output.Name())
+			return strings.Contains(cfg, inputFile.Name()) && strings.Contains(cfg, outputFile.Name())
 		}
 
 		return false
 	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
 
-	n, err := input.WriteString("{\"body\":\"hello, world\"}\n")
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
 	require.NotZero(t, n, "Could not write to input file")
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		logRecord := make([]byte, 1024)
-		n, _ := output.Read(logRecord)
+		n, _ := outputFile.Read(logRecord)
 
 		return n != 0
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
@@ -201,7 +212,8 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 
 func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	var healthReport atomic.Value
-	addr, connected, send := newServer(
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
@@ -209,15 +221,45 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				if message.Health != nil {
 					healthReport.Store(message.Health)
 				}
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
 
 				return &protobufs.ServerToAgent{}
 			},
 		})
 
-	s := newSupervisor(t, "basic", map[string]string{"url": addr})
+	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
 	defer s.Shutdown()
 
-	waitForConnection(connected, true)
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	cfg, hash := createBadCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			// The effective config may be structurally different compared to what was sent,
+			// so just check that it includes some strings we know to be unique to the remote config.
+			return strings.Contains(cfg, "doesntexist")
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
 
 	require.Eventually(t, func() bool {
 		health := healthReport.Load().(*protobufs.AgentHealth)
@@ -229,9 +271,9 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 		return false
 	}, 5*time.Second, 250*time.Millisecond, "Supervisor never reported that the Collector was unhealthy")
 
-	cfg, hash, _, _ := createSimplePipelineConfig(t)
+	cfg, hash, _, _ = createSimplePipelineCollectorConf(t)
 
-	send(&protobufs.ServerToAgent{
+	server.sendToSupervisor(&protobufs.ServerToAgent{
 		RemoteConfig: &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
 				ConfigMap: map[string]*protobufs.AgentConfigFile{
@@ -255,7 +297,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 
 func TestSupervisorConfiguresCapabilities(t *testing.T) {
 	var capabilities atomic.Uint64
-	addr, connected, _ := newServer(
+	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
@@ -266,10 +308,10 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "nocap", map[string]string{"url": addr})
+	s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
 	defer s.Shutdown()
 
-	waitForConnection(connected, true)
+	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	require.Eventually(t, func() bool {
 		cap := capabilities.Load()
@@ -278,15 +320,20 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 	}, 5*time.Second, 250*time.Millisecond)
 }
 
-func createSimplePipelineConfig(t *testing.T) (*bytes.Buffer, []byte, *os.File, *os.File) {
+// Creates a Collector config that reads and writes logs to files and provides
+// file descriptors for I/O operations to those files. The files are placed
+// in a unique temp directory that is cleaned up after the test's completion.
+func createSimplePipelineCollectorConf(t *testing.T) (*bytes.Buffer, []byte, *os.File, *os.File) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
+	// Create input and output files so we can "communicate" with a Collector binary.
+	// The testing package will automatically clean these up after each test.
 	tempDir := t.TempDir()
-	input, err := os.CreateTemp(tempDir, "input_*.yaml")
+	inputFile, err := os.CreateTemp(tempDir, "input_*.yaml")
 	require.NoError(t, err)
 
-	output, err := os.CreateTemp(tempDir, "output_*.yaml")
+	outputFile, err := os.CreateTemp(tempDir, "output_*.yaml")
 	require.NoError(t, err)
 
 	colCfgTpl, err := os.ReadFile(path.Join(wd, "testdata", "collector", "simple_pipeline.yaml"))
@@ -296,7 +343,13 @@ func createSimplePipelineConfig(t *testing.T) (*bytes.Buffer, []byte, *os.File, 
 	require.NoError(t, err)
 
 	var confmapBuf bytes.Buffer
-	err = templ.Execute(&confmapBuf, map[string]string{"input": input.Name(), "output": output.Name()})
+	err = templ.Execute(
+		&confmapBuf,
+		map[string]string{
+			"inputLogFile":  inputFile.Name(),
+			"outputLogFile": outputFile.Name(),
+		},
+	)
 	require.NoError(t, err)
 
 	h := sha256.New()
@@ -304,10 +357,23 @@ func createSimplePipelineConfig(t *testing.T) (*bytes.Buffer, []byte, *os.File, 
 		log.Fatal(err)
 	}
 
-	return &confmapBuf, h.Sum(nil), input, output
+	return &confmapBuf, h.Sum(nil), inputFile, outputFile
 }
 
-func waitForConnection(connection chan bool, connected bool) {
+func createBadCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
+	colCfg, err := os.ReadFile(path.Join("testdata", "collector", "bad_config.yaml"))
+	require.NoError(t, err)
+
+	h := sha256.New()
+	if _, err := io.Copy(h, bytes.NewBuffer(colCfg)); err != nil {
+		log.Fatal(err)
+	}
+
+	return bytes.NewBuffer(colCfg), h.Sum(nil)
+}
+
+// Wait for the Supervisor to connect to or disconnect from the OpAMP server
+func waitForSupervisorConnection(connection chan bool, connected bool) {
 	select {
 	case <-time.After(5 * time.Second):
 		break

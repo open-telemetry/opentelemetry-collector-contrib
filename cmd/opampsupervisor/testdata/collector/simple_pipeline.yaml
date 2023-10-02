@@ -1,11 +1,11 @@
 receivers:
   filelog:
-    include: [{{.input}}]
+    include: [{{.inputLogFile}}]
     start_at: "beginning"
 
 exporters:
   file:
-    path: {{.output}}
+    path: {{.outputLogFile}}
   logging:
     verbosity: detailed
 
