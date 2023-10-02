@@ -9,10 +9,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// DecomposeHistograms decomposes any histograms present in the metric data into individual Sums and Gauges
+// decomposeHistograms decomposes any histograms present in the metric data into individual Sums and Gauges
 // This is a noop if no Histograms are present, but otherwise makes a copy of the whole structure
 // This exists because Sumo doesn't support OTLP histograms yet, and has the same semantics as the conversion to Prometheus format in prometheus_formatter.go
-func DecomposeHistograms(md pmetric.Metrics) pmetric.Metrics {
+func decomposeHistograms(md pmetric.Metrics) pmetric.Metrics {
 	// short circuit and do nothing if no Histograms are present
 	foundHistogram := false
 outer:

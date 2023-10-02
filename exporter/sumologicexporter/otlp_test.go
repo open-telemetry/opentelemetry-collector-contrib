@@ -22,13 +22,13 @@ func TestHistogramDecomposeNoHistogram(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	resourceAttributes.CopyTo(metrics.ResourceMetrics().AppendEmpty().Resource().Attributes())
 	metric.MoveTo(metrics.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
-	decomposedMetrics := DecomposeHistograms(metrics)
+	decomposedMetrics := decomposeHistograms(metrics)
 	assert.Equal(t, metrics, decomposedMetrics)
 }
 
 func TestHistogramDecompose(t *testing.T) {
 	metrics := metricsWithHistogram()
-	decomposedMetrics := DecomposeHistograms(metrics)
+	decomposedMetrics := decomposeHistograms(metrics)
 	assert.Equal(t, metrics.ResourceMetrics().At(0).Resource(), decomposedMetrics.ResourceMetrics().At(0).Resource())
 	expectedMetrics := pmetric.NewMetrics()
 	expectedResourceMetric := expectedMetrics.ResourceMetrics().AppendEmpty()

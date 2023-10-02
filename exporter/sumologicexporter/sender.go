@@ -601,7 +601,7 @@ func (s *sender) sendOTLPMetrics(ctx context.Context, md pmetric.Metrics) error 
 		return nil
 	}
 	if s.config.DecomposeOtlpHistograms {
-		md = DecomposeHistograms(md)
+		md = decomposeHistograms(md)
 	}
 
 	body, err := metricsMarshaler.MarshalMetrics(md)

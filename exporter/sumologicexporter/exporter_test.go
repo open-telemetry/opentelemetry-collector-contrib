@@ -29,7 +29,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func LogRecordsToLogs(records []plog.LogRecord) plog.Logs {
+func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
 	logs := plog.NewLogs()
 	logsSlice := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for _, record := range records {
@@ -124,7 +124,7 @@ func TestAllSuccess(t *testing.T) {
 		},
 	})
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 
 	err := test.exp.pushLogsData(context.Background(), logs)
 	assert.NoError(t, err)
@@ -167,7 +167,7 @@ func TestLogsResourceAttributesSentAsFields(t *testing.T) {
 				buffer[1].Attributes().PutStr("key2", "value2")
 				buffer[1].Attributes().PutStr("key3", "value3")
 
-				logs := LogRecordsToLogs(buffer)
+				logs := logRecordsToLogs(buffer)
 				logs.ResourceLogs().At(0).Resource().Attributes().PutStr("res_attr1", "1")
 				logs.ResourceLogs().At(0).Resource().Attributes().PutStr("res_attr2", "2")
 				return logs
@@ -279,7 +279,7 @@ func TestPushInvalidCompressor(t *testing.T) {
 	test := prepareExporterTest(t, createTestConfig(), nil)
 	test.exp.config.CompressEncoding = "invalid"
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 
 	err := test.exp.pushLogsData(context.Background(), logs)
 	assert.EqualError(t, err, "failed to initialize compressor: invalid format: invalid")
@@ -313,7 +313,7 @@ func TestPushFailedBatch(t *testing.T) {
 		},
 	})
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 	logs.ResourceLogs().EnsureCapacity(maxBufferSize + 1)
 	log := logs.ResourceLogs().At(0)
 	rLogs := logs.ResourceLogs()
@@ -330,7 +330,7 @@ func TestPushOTLPLogsClearTimestamp(t *testing.T) {
 	createLogs := func() plog.Logs {
 		exampleLogs := exampleLog()
 		exampleLogs[0].SetTimestamp(12345)
-		logs := LogRecordsToLogs(exampleLogs)
+		logs := logRecordsToLogs(exampleLogs)
 		return logs
 	}
 
@@ -621,7 +621,7 @@ func TestLogsTextFormatMetadataFilterWithDroppedAttribute(t *testing.T) {
 	test.exp.config.LogFormat = TextFormat
 	test.exp.config.DropRoutingAttribute = "key1"
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("key1", "value1")
 	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("key2", "value2")
 
@@ -728,7 +728,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 		for i := 0; i < 10; i++ {
 			wg.Add(1)
 			go func() {
-				err := exp.pushLogsData(context.Background(), LogRecordsToLogs(exampleNLogs(128)))
+				err := exp.pushLogsData(context.Background(), logRecordsToLogs(exampleNLogs(128)))
 				if err != nil {
 					b.Logf("Failed pushing logs: %v", err)
 				}
