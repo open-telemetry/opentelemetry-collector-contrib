@@ -295,7 +295,27 @@ func TestConfigValidation(t *testing.T) {
 					},
 				},
 			},
-			err: "prefixes conflict in aggregate_attributes configuration: prefix1_ starts with pref",
+			err: "prefixes conflict in `aggregate_attributes` configuration: `prefix1_` starts with `pref`",
+		},
+		{
+			name: "conflicts within aggregation attributes",
+			config: Config{
+				AggregateAttributes: []aggregationPair{
+					{
+						Attribute: "foo",
+						Prefixes:  []string{"prefix1_"},
+					},
+					{
+						Attribute: "bar",
+						Prefixes:  []string{"prefix2_"},
+					},
+					{
+						Attribute: "foo",
+						Prefixes:  []string{"prefix3_"},
+					},
+				},
+			},
+			err: "duplicated attribute `foo` in `aggregate_attributes` configuration for `0` and `2` array elements",
 		},
 	}
 

@@ -80,10 +80,12 @@ func createDefaultConfig() component.Config {
 // Validate config
 func (cfg *Config) Validate() error {
 	prefixes := []string{}
+	attributes := []string{}
 	errs := []error{}
 
 	for _, agg := range cfg.AggregateAttributes {
 		prefixes = append(prefixes, agg.Prefixes...)
+		attributes = append(attributes, agg.Attribute)
 	}
 
 	for i, prefix := range prefixes {
@@ -92,7 +94,15 @@ func (cfg *Config) Validate() error {
 				continue
 			}
 			if strings.HasPrefix(p, prefix) {
-				errs = append(errs, fmt.Errorf("prefixes conflict in aggregate_attributes configuration: %s starts with %s", p, prefix))
+				errs = append(errs, fmt.Errorf("prefixes conflict in `aggregate_attributes` configuration: `%s` starts with `%s`", p, prefix))
+			}
+		}
+	}
+
+	for i, attribute := range attributes {
+		for j, attr := range attributes {
+			if attr == attribute && i < j {
+				errs = append(errs, fmt.Errorf("duplicated attribute `%s` in `aggregate_attributes` configuration for `%d` and `%d` array elements", attribute, i, j))
 			}
 		}
 	}
