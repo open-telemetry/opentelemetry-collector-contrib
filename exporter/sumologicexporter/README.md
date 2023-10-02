@@ -57,14 +57,6 @@ exporters:
     # default = true
     clear_logs_timestamp: {true, false}
 
-    # name of resource attribute which should be dropped for records
-    # this is for attribute used by routing processor
-    # other attributes should be removed by processors in pipelines before
-    # This is workaround for the following issue:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7407
-    # default = ``
-    routing_atttribute_to_drop: <routing_atttribute_to_drop>
-
     json_logs:
       # defines which key will be used to attach the log body at.
       # This option affects JSON log format only.

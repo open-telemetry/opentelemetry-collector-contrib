@@ -46,14 +46,6 @@ type Config struct {
 	// The format of traces you will be sending, currently only otlp format is supported
 	TraceFormat TraceFormatType `mapstructure:"trace_format"`
 
-	// DEPRECATED: The below attributes only exist so we can print a nicer error
-	// message about not supporting them anymore.
-
-	// Attribute used by routingprocessor which should be dropped during data ingestion
-	// This is workaround for the following issue:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7407
-	DropRoutingAttribute string `mapstructure:"routing_atttribute_to_drop"`
-
 	// Sumo specific options
 	// Name of the client
 	Client string `mapstructure:"client"`
@@ -226,6 +218,4 @@ const (
 	DefaultTimestampKey string = "timestamp"
 	// DefaultFlattenBody defines default FlattenBody value
 	DefaultFlattenBody bool = false
-	// DefaultDropRoutingAttribute defines default DropRoutingAttribute
-	DefaultDropRoutingAttribute string = ""
 )

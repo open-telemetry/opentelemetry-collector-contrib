@@ -187,7 +187,6 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
 
-		se.dropRoutingAttribute(rl.Resource().Attributes())
 		currentMetadata := newFields(rl.Resource().Attributes())
 
 		if droppedRecords, err := sdr.sendNonOTLPLogs(ctx, rl, currentMetadata); err != nil {
@@ -246,15 +245,6 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 		se.id,
 	)
 
-	// Transform metrics metadata
-	// this includes dropping the routing attribute and translating attributes
-	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-
-		se.dropRoutingAttribute(rm.Resource().Attributes())
-	}
-
 	var droppedMetrics pmetric.Metrics
 	var errs []error
 	if sdr.config.MetricFormat == OTLPMetricFormat {
@@ -292,12 +282,6 @@ func (se *sumologicexporter) pushTracesData(ctx context.Context, td ptrace.Trace
 		tracesURL,
 		se.id,
 	)
-
-	// Drop routing attribute from ResourceSpans
-	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		se.dropRoutingAttribute(rss.At(i).Resource().Attributes())
-	}
 
 	err = sdr.sendTraces(ctx, td)
 	return err
@@ -382,10 +366,6 @@ func (se *sumologicexporter) getDataURLs() (logs, metrics, traces string) {
 
 func (se *sumologicexporter) shutdown(context.Context) error {
 	return nil
-}
-
-func (se *sumologicexporter) dropRoutingAttribute(attr pcommon.Map) {
-	attr.Remove(se.config.DropRoutingAttribute)
 }
 
 // get the destination url for a given signal type

@@ -610,25 +610,6 @@ func TestPushMetricsInvalidCompressor(t *testing.T) {
 	assert.EqualError(t, err, "failed to initialize compressor: invalid format: invalid")
 }
 
-func TestLogsTextFormatMetadataFilterWithDroppedAttribute(t *testing.T) {
-	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
-			body := extractBody(t, req)
-			assert.Equal(t, `Example log`, body)
-			assert.Equal(t, "key2=value2", req.Header.Get("X-Sumo-Fields"))
-		},
-	})
-	test.exp.config.LogFormat = TextFormat
-	test.exp.config.DropRoutingAttribute = "key1"
-
-	logs := logRecordsToLogs(exampleLog())
-	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("key1", "value1")
-	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("key2", "value2")
-
-	err := test.exp.pushLogsData(context.Background(), logs)
-	assert.NoError(t, err)
-}
-
 func TestMetricsPrometheusFormatMetadataFilter(t *testing.T) {
 	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
@@ -647,55 +628,6 @@ func TestMetricsPrometheusFormatMetadataFilter(t *testing.T) {
 	attrs.PutStr("key2", "value2")
 
 	err := test.exp.pushMetricsData(context.Background(), metrics)
-	assert.NoError(t, err)
-}
-
-func TestMetricsPrometheusWithDroppedRoutingAttribute(t *testing.T) {
-	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
-			body := extractBody(t, req)
-			expected := `test.metric.data{test="test_value",test2="second_value",key1="value1",key2="value2"} 14500 1605534165000`
-			assert.Equal(t, expected, body)
-			assert.Equal(t, "application/vnd.sumologic.prometheus", req.Header.Get("Content-Type"))
-		},
-	})
-	test.exp.config.MetricFormat = PrometheusFormat
-	test.exp.config.DropRoutingAttribute = "http_listener_v2_path_custom"
-
-	metrics := metricAndAttributesToPdataMetrics(exampleIntMetric())
-
-	attrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
-	attrs.PutStr("key1", "value1")
-	attrs.PutStr("key2", "value2")
-	attrs.PutStr("http_listener_v2_path_custom", "prometheus.metrics")
-
-	err := test.exp.pushMetricsData(context.Background(), metrics)
-	assert.NoError(t, err)
-}
-
-func TestTracesWithDroppedAttribute(t *testing.T) {
-	// Prepare data to compare (trace without routing attribute)
-	traces := exampleTrace()
-	traces.ResourceSpans().At(0).Resource().Attributes().PutStr("key2", "value2")
-	tracesMarshaler = ptrace.ProtoMarshaler{}
-	bytes, err := tracesMarshaler.MarshalTraces(traces)
-	require.NoError(t, err)
-
-	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
-			body := extractBody(t, req)
-			assert.Equal(t, string(bytes), body)
-		},
-	})
-	test.exp.config.DropRoutingAttribute = "key1"
-
-	// add routing attribute and check if after marshaling it's different
-	traces.ResourceSpans().At(0).Resource().Attributes().PutStr("key1", "value1")
-	bytesWithAttribute, err := tracesMarshaler.MarshalTraces(traces)
-	require.NoError(t, err)
-	require.NotEqual(t, bytes, bytesWithAttribute)
-
-	err = test.exp.pushTracesData(context.Background(), traces)
 	assert.NoError(t, err)
 }
 
