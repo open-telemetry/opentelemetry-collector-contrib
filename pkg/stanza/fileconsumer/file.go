@@ -68,7 +68,6 @@ func (m *Manager) Stop() error {
 	for _, reader := range m.knownFiles {
 		reader.Close()
 	}
-	m.knownFiles = nil
 	m.cancel = nil
 	return nil
 }
@@ -96,12 +95,6 @@ func (m *Manager) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
-	// Increment the generation on all known readers
-	// This is done here because the next generation is about to start
-	for i := 0; i < len(m.knownFiles); i++ {
-		m.knownFiles[i].generation++
-	}
-
 	// Used to keep track of the number of batches processed in this poll cycle
 	batchesProcessed := 0
 
@@ -259,19 +252,12 @@ func (m *Manager) clearCurrentFingerprints() {
 // known files, then increments the generation of all tracked old readers
 // before clearing out readers that have existed for 3 generations.
 func (m *Manager) saveCurrent(readers []*reader) {
-	// Add readers from the current, completed poll interval to the list of known files
-	m.knownFiles = append(m.knownFiles, readers...)
-
-	// Clear out old readers. They are sorted such that they are oldest first,
-	// so we can just find the first reader whose generation is less than our
-	// max, and keep every reader after that
-	for i := 0; i < len(m.knownFiles); i++ {
-		reader := m.knownFiles[i]
-		if reader.generation <= 3 {
-			m.knownFiles = m.knownFiles[i:]
-			break
-		}
+	forgetNum := len(m.knownFiles) + len(readers) - cap(m.knownFiles)
+	if forgetNum > 0 {
+		m.knownFiles = append(m.knownFiles[forgetNum:], readers...)
+		return
 	}
+	m.knownFiles = append(m.knownFiles, readers...)
 }
 
 func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
@@ -331,7 +317,6 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 	}
 
 	if encoded == nil {
-		m.knownFiles = make([]*reader, 0, 10)
 		return nil
 	}
 
@@ -349,7 +334,6 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 	}
 
 	// Decode each of the known files
-	m.knownFiles = make([]*reader, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
 		rmd := &readerMetadata{}
 		if err = dec.Decode(rmd); err != nil {

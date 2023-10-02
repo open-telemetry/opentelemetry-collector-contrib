@@ -48,7 +48,6 @@ type reader struct {
 	decoder       *decode.Decoder
 	headerReader  *header.Reader
 	processFunc   emit.Callback
-	generation    int
 	eof           bool
 }
 
