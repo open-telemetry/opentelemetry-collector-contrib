@@ -294,9 +294,6 @@ func TestScrapeV2(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if tc.desc != "scrapeV2_single_container_with_optional_resource_attributes" {
-			continue
-		}
 		t.Run(tc.desc, func(t *testing.T) {
 			mockDockerEngine := tc.mockDockerEngine(t)
 			defer mockDockerEngine.Close()
