@@ -243,8 +243,7 @@ func TestOctetFramingSplitFunc(t *testing.T) {
 				return newRaw
 			}(),
 			ExpectedTokens: []string{
-				`5000 ` + string(splittest.GenerateBytes(4091)),
-				`j`,
+				`5000 ` + string(splittest.GenerateBytes(4092)),
 			},
 		},
 	}
