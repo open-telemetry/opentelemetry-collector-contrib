@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.86.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015
 	go.opentelemetry.io/collector/processor v0.86.0
-	go.opentelemetry.io/otel/schema v0.0.4
+	go.opentelemetry.io/otel/schema v0.0.7
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 )

@@ -321,8 +321,8 @@ go.opentelemetry.io/otel v1.18.0/go.mod h1:9lWqYO0Db579XzVuCKFNPDl4s73Voa+zEck3w
 go.opentelemetry.io/otel/exporters/prometheus v0.41.0 h1:A3/bhjP5SmELy8dcpK+uttHeh9Qrh+YnS16/VzrztRQ=
 go.opentelemetry.io/otel/metric v1.18.0 h1:JwVzw94UYmbx3ej++CwLUQZxEODDj/pOuTCvzhtRrSQ=
 go.opentelemetry.io/otel/metric v1.18.0/go.mod h1:nNSpsVDjWGfb7chbRLUNW+PBNdcSTHD4Uu5pfFMOI0k=
-go.opentelemetry.io/otel/schema v0.0.4 h1:xgqNjF5c5oy7F1PDm4q6a6wDUJTm+po4jEiXmcN5ncI=
-go.opentelemetry.io/otel/schema v0.0.4/go.mod h1:LBBdyW+43YB5XmeQtH4b2ET5k0hx7dh3yJgRGY4Qw+A=
+go.opentelemetry.io/otel/schema v0.0.7 h1:UslTvUtbFGmaxlpL1Z+aROrjsP7BRWt06Xxm5Ng/kAU=
+go.opentelemetry.io/otel/schema v0.0.7/go.mod h1:jFb7hFFzdtEQ8R8HdbDGy4KuBctXNZwH1XJBP470kH4=
 go.opentelemetry.io/otel/sdk v1.18.0 h1:e3bAB0wB3MljH38sHzpV/qWrOTCFrdZF2ct9F8rBkcY=
 go.opentelemetry.io/otel/sdk v1.18.0/go.mod h1:1RCygWV7plY2KmdskZEDDBs4tJeHG92MdHZIluiYs/M=
 go.opentelemetry.io/otel/sdk/metric v0.41.0 h1:c3sAt9/pQ5fSIUfl0gPtClV3HhE18DCVzByD33R/zsk=
