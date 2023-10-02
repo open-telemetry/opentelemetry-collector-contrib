@@ -8,115 +8,75 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-func TestFactory(t *testing.T) {
-	factory := NewFactory(bufio.ScanLines, trim.Nop, 0)
-	splitFunc := factory.SplitFunc()
-	assert.NotNil(t, splitFunc)
+func TestFactorySplitFunc(t *testing.T) {
+	testCases := []struct {
+		name        string
+		baseFunc    bufio.SplitFunc
+		trimFunc    trim.Func
+		flushPeriod time.Duration
+		input       []byte
+		steps       []splittest.Step
+	}{
+		{
+			name:        "ScanLinesStrict",
+			input:       []byte(" hello \n world \n extra "),
+			baseFunc:    splittest.ScanLinesStrict,
+			trimFunc:    trim.Nop,
+			flushPeriod: 0,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), " hello "),
+				splittest.ExpectAdvanceToken(len(" world \n"), " world "),
+			},
+		},
+		{
+			name:        "ScanLinesStrictWithTrim",
+			input:       []byte(" hello \n world \n extra "),
+			baseFunc:    splittest.ScanLinesStrict,
+			trimFunc:    trim.Whitespace,
+			flushPeriod: 0,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), "hello"),
+				splittest.ExpectAdvanceToken(len(" world \n"), "world"),
+			},
+		},
+		{
+			name:        "ScanLinesStrictWithFlush",
+			input:       []byte(" hello \n world \n extra "),
+			baseFunc:    splittest.ScanLinesStrict,
+			trimFunc:    trim.Nop,
+			flushPeriod: 100 * time.Millisecond,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), " hello "),
+				splittest.ExpectAdvanceToken(len(" world \n"), " world "),
+				splittest.ExpectReadMore(),
+				splittest.Eventually(
+					splittest.ExpectAdvanceToken(len(" extra "), " extra "), 200*time.Millisecond, 10*time.Millisecond,
+				),
+			},
+		},
+		{
+			name:        "ScanLinesStrictWithTrimAndFlush",
+			input:       []byte(" hello \n world \n extra "),
+			baseFunc:    splittest.ScanLinesStrict,
+			trimFunc:    trim.Whitespace,
+			flushPeriod: 100 * time.Millisecond,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), "hello"),
+				splittest.ExpectAdvanceToken(len(" world \n"), "world"),
+				splittest.ExpectReadMore(),
+				splittest.Eventually(
+					splittest.ExpectAdvanceToken(len(" extra "), "extra"), 200*time.Millisecond, 10*time.Millisecond,
+				),
+			},
+		},
+	}
 
-	input := []byte(" hello \n world \n extra ")
-
-	advance, token, err := splitFunc(input, false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte(" hello "), token)
-
-	advance, token, err = splitFunc(input[8:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte(" world "), token)
-
-	advance, token, err = splitFunc(input[16:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, advance)
-	assert.Nil(t, token)
-}
-
-func TestCustomWithTrim(t *testing.T) {
-	factory := NewFactory(bufio.ScanLines, trim.Whitespace, 0)
-	splitFunc := factory.SplitFunc()
-	assert.NotNil(t, splitFunc)
-
-	input := []byte(" hello \n world \n extra ")
-
-	advance, token, err := splitFunc(input, false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte("hello"), token)
-
-	advance, token, err = splitFunc(input[8:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte("world"), token)
-
-	advance, token, err = splitFunc(input[16:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, advance)
-	assert.Nil(t, token)
-}
-
-func TestCustomWithFlush(t *testing.T) {
-	flushPeriod := 100 * time.Millisecond
-	factory := NewFactory(bufio.ScanLines, trim.Nop, flushPeriod)
-	splitFunc := factory.SplitFunc()
-	assert.NotNil(t, splitFunc)
-
-	input := []byte(" hello \n world \n extra ")
-
-	advance, token, err := splitFunc(input, false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte(" hello "), token)
-
-	advance, token, err = splitFunc(input[8:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte(" world "), token)
-
-	advance, token, err = splitFunc(input[16:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, advance)
-	assert.Nil(t, token)
-
-	time.Sleep(2 * flushPeriod)
-
-	advance, token, err = splitFunc(input[16:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 7, advance)
-	assert.Equal(t, []byte(" extra "), token)
-}
-
-func TestCustomWithFlushTrim(t *testing.T) {
-	flushPeriod := 100 * time.Millisecond
-	factory := NewFactory(bufio.ScanLines, trim.Whitespace, flushPeriod)
-	splitFunc := factory.SplitFunc()
-	assert.NotNil(t, splitFunc)
-
-	input := []byte(" hello \n world \n extra ")
-
-	advance, token, err := splitFunc(input, false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte("hello"), token)
-
-	advance, token, err = splitFunc(input[8:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte("world"), token)
-
-	advance, token, err = splitFunc(input[16:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, advance)
-	assert.Nil(t, token)
-
-	time.Sleep(2 * flushPeriod)
-
-	advance, token, err = splitFunc(input[16:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 7, advance)
-	assert.Equal(t, []byte("extra"), token) // Ensure trim applies to flushed token
+	for _, tc := range testCases {
+		factory := NewFactory(tc.baseFunc, tc.trimFunc, tc.flushPeriod)
+		t.Run(tc.name, splittest.New(factory.SplitFunc(), tc.input, tc.steps...))
+	}
 }
