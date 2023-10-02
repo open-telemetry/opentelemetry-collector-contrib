@@ -67,7 +67,7 @@ func createExporterCreateSettings() exporter.CreateSettings {
 // and a slice of callbacks to be called for subsequent requests coming being
 // sent to the server.
 // The enclosed *httptest.Server is automatically closed on test cleanup.
-func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWriter, req *http.Request), cfgOpts ...func(*Config)) *exporterTest {
+func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWriter, req *http.Request)) *exporterTest {
 	var reqCounter int32
 	// generate a test server so we can capture and inspect the request
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -91,12 +91,8 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 
 	cfg.HTTPClientSettings.Endpoint = testServer.URL
 	cfg.HTTPClientSettings.Auth = nil
-	for _, cfgOpt := range cfgOpts {
-		cfgOpt(cfg)
-	}
 
-	exp, err := initExporter(cfg, createExporterCreateSettings())
-	require.NoError(t, err)
+	exp := initExporter(cfg, createExporterCreateSettings())
 
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 
@@ -107,31 +103,16 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	}
 }
 
-func TestInitExporter(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:        "json",
-		MetricFormat:     "otlp",
-		CompressEncoding: "gzip",
-		TraceFormat:      "otlp",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-	}, createExporterCreateSettings())
-	assert.NoError(t, err)
-}
-
 func TestConfigureExporter(t *testing.T) {
 	host := componenttest.NewNopHost()
 	config := createDefaultConfig().(*Config)
 	config.HTTPClientSettings.Endpoint = "http://test_endpoint"
-	exporter, err := initExporter(config, createExporterCreateSettings())
+	exporter := initExporter(config, createExporterCreateSettings())
+	err := exporter.start(context.Background(), host)
 	require.NoError(t, err)
-	err = exporter.start(context.Background(), host)
-	require.NoError(t, err)
-	require.Equal(t, "http://test_endpoint/v1/logs", exporter.dataUrlLogs)
-	require.Equal(t, "http://test_endpoint/v1/metrics", exporter.dataUrlMetrics)
-	require.Equal(t, "http://test_endpoint/v1/traces", exporter.dataUrlTraces)
+	require.Equal(t, "http://test_endpoint/v1/logs", exporter.dataURLLogs)
+	require.Equal(t, "http://test_endpoint/v1/metrics", exporter.dataURLMetrics)
+	require.Equal(t, "http://test_endpoint/v1/traces", exporter.dataURLTraces)
 }
 
 func TestAllSuccess(t *testing.T) {
@@ -274,7 +255,7 @@ func TestPartiallyFailed(t *testing.T) {
 }
 
 func TestInvalidHTTPCLient(t *testing.T) {
-	exp, err := initExporter(&Config{
+	exp := initExporter(&Config{
 		LogFormat:        "json",
 		MetricFormat:     "otlp",
 		CompressEncoding: "gzip",
@@ -286,7 +267,6 @@ func TestInvalidHTTPCLient(t *testing.T) {
 			},
 		},
 	}, createExporterCreateSettings())
-	assert.NoError(t, err)
 
 	assert.EqualError(t,
 		exp.start(context.Background(), componenttest.NewNopHost()),
@@ -709,7 +689,7 @@ func TestTracesWithDroppedAttribute(t *testing.T) {
 	})
 	test.exp.config.DropRoutingAttribute = "key1"
 
-	// add routing attribute and check if after marshalling it's different
+	// add routing attribute and check if after marshaling it's different
 	traces.ResourceSpans().At(0).Resource().Attributes().PutStr("key1", "value1")
 	bytesWithAttribute, err := tracesMarshaler.MarshalTraces(traces)
 	require.NoError(t, err)
@@ -736,8 +716,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	cfg := createConfig()
 	cfg.HTTPClientSettings.Endpoint = testServer.URL
 
-	exp, err := initExporter(cfg, createExporterCreateSettings())
-	require.NoError(b, err)
+	exp := initExporter(cfg, createExporterCreateSettings())
 	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(b, exp.shutdown(context.Background()))
@@ -795,12 +774,12 @@ func TestSendEmptyTraces(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestGetSignalUrl(t *testing.T) {
+func TestGetSignalURL(t *testing.T) {
 	testCases := []struct {
 		description  string
 		signalType   component.Type
 		cfg          Config
-		endpointUrl  string
+		endpointURL  string
 		expected     string
 		errorMessage string
 	}{
@@ -808,59 +787,59 @@ func TestGetSignalUrl(t *testing.T) {
 			description: "no change if log format not otlp",
 			signalType:  component.DataTypeLogs,
 			cfg:         Config{LogFormat: TextFormat},
-			endpointUrl: "http://localhost",
+			endpointURL: "http://localhost",
 			expected:    "http://localhost",
 		},
 		{
 			description: "no change if metric format not otlp",
 			signalType:  component.DataTypeMetrics,
 			cfg:         Config{MetricFormat: PrometheusFormat},
-			endpointUrl: "http://localhost",
+			endpointURL: "http://localhost",
 			expected:    "http://localhost",
 		},
 		{
 			description: "always add suffix for traces if not present",
 			signalType:  component.DataTypeTraces,
-			endpointUrl: "http://localhost",
+			endpointURL: "http://localhost",
 			expected:    "http://localhost/v1/traces",
 		},
 		{
 			description: "always add suffix for logs if not present",
 			signalType:  component.DataTypeLogs,
 			cfg:         Config{LogFormat: OTLPLogFormat},
-			endpointUrl: "http://localhost",
+			endpointURL: "http://localhost",
 			expected:    "http://localhost/v1/logs",
 		},
 		{
 			description: "always add suffix for metrics if not present",
 			signalType:  component.DataTypeMetrics,
 			cfg:         Config{MetricFormat: OTLPMetricFormat},
-			endpointUrl: "http://localhost",
+			endpointURL: "http://localhost",
 			expected:    "http://localhost/v1/metrics",
 		},
 		{
 			description: "no change if suffix already present",
 			signalType:  component.DataTypeTraces,
-			endpointUrl: "http://localhost/v1/traces",
+			endpointURL: "http://localhost/v1/traces",
 			expected:    "http://localhost/v1/traces",
 		},
 		{
 			description:  "error if url invalid",
 			signalType:   component.DataTypeTraces,
-			endpointUrl:  ":",
+			endpointURL:  ":",
 			errorMessage: `parse ":": missing protocol scheme`,
 		},
 		{
 			description:  "error if signal type is unknown",
 			signalType:   "unknown",
-			endpointUrl:  "http://localhost",
+			endpointURL:  "http://localhost",
 			errorMessage: `unknown signal type: unknown`,
 		},
 	}
 	for _, tC := range testCases {
 		testCase := tC
 		t.Run(tC.description, func(t *testing.T) {
-			actual, err := getSignalURL(&testCase.cfg, testCase.endpointUrl, testCase.signalType)
+			actual, err := getSignalURL(&testCase.cfg, testCase.endpointURL, testCase.signalType)
 			if testCase.errorMessage != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, testCase.errorMessage)

@@ -22,9 +22,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -67,10 +66,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	c, err := newCompressor(cfg.CompressEncoding)
 	require.NoError(t, err)
 
-	pf, err := newPrometheusFormatter()
-	require.NoError(t, err)
-
-	require.NoError(t, err)
+	pf := newPrometheusFormatter()
 
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
@@ -981,7 +977,7 @@ func TestLogsHandlesReceiverResponses(t *testing.T) {
 func TestInvalidEndpoint(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 
-	test.s.dataUrlLogs = ":"
+	test.s.dataURLLogs = ":"
 
 	rls := plog.NewResourceLogs()
 	rls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("Example log")
@@ -993,7 +989,7 @@ func TestInvalidEndpoint(t *testing.T) {
 func TestInvalidPostRequest(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 
-	test.s.dataUrlLogs = ""
+	test.s.dataURLLogs = ""
 	rls := plog.NewResourceLogs()
 	rls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("Example log")
 

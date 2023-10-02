@@ -20,7 +20,7 @@ type mockedEncrypter struct {
 	closeError error
 }
 
-func (e mockedEncrypter) Reset(dst io.Writer) {
+func (e mockedEncrypter) Reset(_ io.Writer) {
 }
 
 func (e mockedEncrypter) Write(p []byte) (n int, err error) {
@@ -46,7 +46,7 @@ func getTestCompressor(w error, c error) *compressor {
 
 type mockedReader struct{}
 
-func (r mockedReader) Read(p []byte) (n int, err error) {
+func (r mockedReader) Read(_ []byte) (n int, err error) {
 	return 0, errors.New("read error")
 }
 

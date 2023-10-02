@@ -31,18 +31,13 @@ const (
 	prometheusInfValue    string = "+Inf"
 )
 
-func newPrometheusFormatter() (prometheusFormatter, error) {
-	sanitNameRegex, err := regexp.Compile(`[^0-9a-zA-Z\./_:\-]`)
-	if err != nil {
-		return prometheusFormatter{}, err
-	}
-
+func newPrometheusFormatter() prometheusFormatter {
 	return prometheusFormatter{
-		sanitNameRegex: sanitNameRegex,
+		sanitNameRegex: regexp.MustCompile(`[^0-9a-zA-Z\./_:\-]`),
 		// `\`, `"` and `\n` should be escaped, everything else should be left as-is
 		// see: https://github.com/prometheus/docs/blob/main/content/docs/instrumenting/exposition_formats.md#line-format
 		replacer: strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`),
-	}, nil
+	}
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string

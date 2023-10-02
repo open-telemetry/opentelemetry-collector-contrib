@@ -24,12 +24,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	logsDataUrl    = "/api/v1/collector/logs"
-	metricsDataUrl = "/api/v1/collector/metrics"
-	tracesDataUrl  = "/api/v1/collector/traces"
-)
-
 type sumologicexporter struct {
 	config *Config
 	host   component.Host
@@ -44,19 +38,16 @@ type sumologicexporter struct {
 
 	// Lock around data URLs is needed because the reconfiguration of the exporter
 	// can happen asynchronously whenever the exporter is re registering.
-	dataUrlsLock   sync.RWMutex
-	dataUrlMetrics string
-	dataUrlLogs    string
-	dataUrlTraces  string
+	dataURLsLock   sync.RWMutex
+	dataURLMetrics string
+	dataURLLogs    string
+	dataURLTraces  string
 
 	id component.ID
 }
 
-func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sumologicexporter, error) {
-	pf, err := newPrometheusFormatter()
-	if err != nil {
-		return nil, err
-	}
+func initExporter(cfg *Config, createSettings exporter.CreateSettings) *sumologicexporter {
+	pf := newPrometheusFormatter()
 
 	se := &sumologicexporter{
 		config: cfg,
@@ -82,7 +73,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sumolog
 		zap.String("trace_format", string(cfg.TraceFormat)),
 	)
 
-	return se, nil
+	return se
 }
 
 func newLogsExporter(
@@ -90,10 +81,7 @@ func newLogsExporter(
 	params exporter.CreateSettings,
 	cfg *Config,
 ) (exporter.Logs, error) {
-	se, err := initExporter(cfg, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
-	}
+	se := initExporter(cfg, params)
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
@@ -115,10 +103,7 @@ func newMetricsExporter(
 	params exporter.CreateSettings,
 	cfg *Config,
 ) (exporter.Metrics, error) {
-	se, err := initExporter(cfg, params)
-	if err != nil {
-		return nil, err
-	}
+	se := initExporter(cfg, params)
 
 	return exporterhelper.NewMetricsExporter(
 		ctx,
@@ -140,10 +125,7 @@ func newTracesExporter(
 	params exporter.CreateSettings,
 	cfg *Config,
 ) (exporter.Traces, error) {
-	se, err := initExporter(cfg, params)
-	if err != nil {
-		return nil, err
-	}
+	se := initExporter(cfg, params)
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -170,16 +152,16 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 	}
 	defer se.compressorPool.Put(compr)
 
-	logsUrl, metricsUrl, tracesUrl := se.getDataURLs()
+	logsURL, metricsURL, tracesURL := se.getDataURLs()
 	sdr := newSender(
 		se.logger,
 		se.config,
 		se.getHTTPClient(),
 		compr,
 		se.prometheusFormatter,
-		metricsUrl,
-		logsUrl,
-		tracesUrl,
+		metricsURL,
+		logsURL,
+		tracesURL,
 		se.id,
 	)
 
@@ -251,16 +233,16 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 	}
 	defer se.compressorPool.Put(compr)
 
-	logsUrl, metricsUrl, tracesUrl := se.getDataURLs()
+	logsURL, metricsURL, tracesURL := se.getDataURLs()
 	sdr := newSender(
 		se.logger,
 		se.config,
 		se.getHTTPClient(),
 		compr,
 		se.prometheusFormatter,
-		metricsUrl,
-		logsUrl,
-		tracesUrl,
+		metricsURL,
+		logsURL,
+		tracesURL,
 		se.id,
 	)
 
@@ -298,16 +280,16 @@ func (se *sumologicexporter) pushTracesData(ctx context.Context, td ptrace.Trace
 	}
 	defer se.compressorPool.Put(compr)
 
-	logsUrl, metricsUrl, tracesUrl := se.getDataURLs()
+	logsURL, metricsURL, tracesURL := se.getDataURLs()
 	sdr := newSender(
 		se.logger,
 		se.config,
 		se.getHTTPClient(),
 		compr,
 		se.prometheusFormatter,
-		metricsUrl,
-		logsUrl,
-		tracesUrl,
+		metricsURL,
+		logsURL,
+		tracesURL,
 		se.id,
 	)
 
@@ -324,7 +306,7 @@ func (se *sumologicexporter) pushTracesData(ctx context.Context, td ptrace.Trace
 func (se *sumologicexporter) getCompressor() (*compressor, error) {
 	switch c := se.compressorPool.Get().(type) {
 	case error:
-		return &compressor{}, fmt.Errorf("%v", c)
+		return &compressor{}, fmt.Errorf("%w", c)
 	case *compressor:
 		return c, nil
 	default:
@@ -337,23 +319,23 @@ func (se *sumologicexporter) start(ctx context.Context, host component.Host) err
 	return se.configure(ctx)
 }
 
-func (se *sumologicexporter) configure(ctx context.Context) error {
+func (se *sumologicexporter) configure(_ context.Context) error {
 	httpSettings := se.config.HTTPClientSettings
 
 	if httpSettings.Endpoint != "" {
-		logsUrl, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeLogs)
+		logsURL, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeLogs)
 		if err != nil {
 			return err
 		}
-		metricsUrl, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeMetrics)
+		metricsURL, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeMetrics)
 		if err != nil {
 			return err
 		}
-		tracesUrl, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeTraces)
+		tracesURL, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeTraces)
 		if err != nil {
 			return err
 		}
-		se.setDataURLs(logsUrl, metricsUrl, tracesUrl)
+		se.setDataURLs(logsURL, metricsURL, tracesURL)
 
 		// Clean authenticator if set to sumologic.
 		// Setting to null in configuration doesn't work, so we have to force it that way.
@@ -386,16 +368,16 @@ func (se *sumologicexporter) getHTTPClient() *http.Client {
 }
 
 func (se *sumologicexporter) setDataURLs(logs, metrics, traces string) {
-	se.dataUrlsLock.Lock()
+	se.dataURLsLock.Lock()
 	se.logger.Info("setting data urls", zap.String("logs_url", logs), zap.String("metrics_url", metrics), zap.String("traces_url", traces))
-	se.dataUrlLogs, se.dataUrlMetrics, se.dataUrlTraces = logs, metrics, traces
-	se.dataUrlsLock.Unlock()
+	se.dataURLLogs, se.dataURLMetrics, se.dataURLTraces = logs, metrics, traces
+	se.dataURLsLock.Unlock()
 }
 
 func (se *sumologicexporter) getDataURLs() (logs, metrics, traces string) {
-	se.dataUrlsLock.RLock()
-	defer se.dataUrlsLock.RUnlock()
-	return se.dataUrlLogs, se.dataUrlMetrics, se.dataUrlTraces
+	se.dataURLsLock.RLock()
+	defer se.dataURLsLock.RUnlock()
+	return se.dataURLLogs, se.dataURLMetrics, se.dataURLTraces
 }
 
 func (se *sumologicexporter) shutdown(context.Context) error {
@@ -408,8 +390,8 @@ func (se *sumologicexporter) dropRoutingAttribute(attr pcommon.Map) {
 
 // get the destination url for a given signal type
 // this mostly adds signal-specific suffixes if the format is otlp
-func getSignalURL(oCfg *Config, endpointUrl string, signal component.DataType) (string, error) {
-	url, err := url.Parse(endpointUrl)
+func getSignalURL(oCfg *Config, endpointURL string, signal component.DataType) (string, error) {
+	url, err := url.Parse(endpointURL)
 	if err != nil {
 		return "", err
 	}
@@ -428,9 +410,9 @@ func getSignalURL(oCfg *Config, endpointUrl string, signal component.DataType) (
 		return "", fmt.Errorf("unknown signal type: %s", signal)
 	}
 
-	signalUrlSuffix := fmt.Sprintf("/v1/%s", signal)
-	if !strings.HasSuffix(url.Path, signalUrlSuffix) {
-		url.Path = path.Join(url.Path, signalUrlSuffix)
+	signalURLSuffix := fmt.Sprintf("/v1/%s", signal)
+	if !strings.HasSuffix(url.Path, signalURLSuffix) {
+		url.Path = path.Join(url.Path, signalURLSuffix)
 	}
 
 	return url.String(), nil

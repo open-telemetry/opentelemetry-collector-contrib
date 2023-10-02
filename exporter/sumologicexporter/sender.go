@@ -119,9 +119,9 @@ type sender struct {
 	compressor          *compressor
 	prometheusFormatter prometheusFormatter
 	jsonLogsConfig      JSONLogs
-	dataUrlMetrics      string
-	dataUrlLogs         string
-	dataUrlTraces       string
+	dataURLMetrics      string
+	dataURLLogs         string
+	dataURLTraces       string
 	id                  component.ID
 }
 
@@ -155,9 +155,9 @@ func newSender(
 	cl *http.Client,
 	c *compressor,
 	pf prometheusFormatter,
-	metricsUrl string,
-	logsUrl string,
-	tracesUrl string,
+	metricsURL string,
+	logsURL string,
+	tracesURL string,
 	id component.ID,
 ) *sender {
 	return &sender{
@@ -167,9 +167,9 @@ func newSender(
 		compressor:          c,
 		prometheusFormatter: pf,
 		jsonLogsConfig:      cfg.JSONLogs,
-		dataUrlMetrics:      metricsUrl,
-		dataUrlLogs:         logsUrl,
-		dataUrlTraces:       tracesUrl,
+		dataURLMetrics:      metricsURL,
+		dataURLLogs:         logsURL,
+		dataURLTraces:       tracesURL,
 		id:                  id,
 	}
 }
@@ -188,7 +188,7 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *counti
 		return err
 	}
 
-	if err := s.addRequestHeaders(req, pipeline, flds); err != nil {
+	if err = s.addRequestHeaders(req, pipeline, flds); err != nil {
 		return err
 	}
 
@@ -316,11 +316,11 @@ func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data 
 
 	switch pipeline {
 	case MetricsPipeline:
-		url = s.dataUrlMetrics
+		url = s.dataURLMetrics
 	case LogsPipeline:
-		url = s.dataUrlLogs
+		url = s.dataURLLogs
 	case TracesPipeline:
-		url = s.dataUrlTraces
+		url = s.dataURLTraces
 	default:
 		return nil, fmt.Errorf("unknown pipeline type: %s", pipeline)
 	}
@@ -410,11 +410,11 @@ func isEmptyAttributeValue(att pcommon.Value) bool {
 // returns array of records which has not been sent correctly and error
 func (s *sender) sendNonOTLPLogs(ctx context.Context, rl plog.ResourceLogs, flds fields) ([]plog.LogRecord, error) {
 	if s.config.LogFormat == OTLPLogFormat {
-		return nil, fmt.Errorf("Attempting to send OTLP logs as non-OTLP data")
+		return nil, fmt.Errorf("attempting to send OTLP logs as non-OTLP data")
 	}
 
 	var (
-		body           bodyBuilder = newBodyBuilder()
+		body           = newBodyBuilder()
 		errs           []error
 		droppedRecords []plog.LogRecord
 		currentRecords []plog.LogRecord
@@ -506,7 +506,7 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 	}
 
 	var (
-		body             bodyBuilder = newBodyBuilder()
+		body             = newBodyBuilder()
 		errs             []error
 		currentResources []pmetric.ResourceMetrics
 		flds             fields
@@ -665,10 +665,8 @@ func (s *sender) sendOTLPTraces(ctx context.Context, td ptrace.Traces) error {
 	if err != nil {
 		return err
 	}
-	if err := s.send(ctx, TracesPipeline, newCountingReader(capacity).withBytes(body), fields{}); err != nil {
-		return err
-	}
-	return nil
+
+	return s.send(ctx, TracesPipeline, newCountingReader(capacity).withBytes(body), fields{})
 }
 
 func addCompressHeader(req *http.Request, enc CompressEncodingType) error {

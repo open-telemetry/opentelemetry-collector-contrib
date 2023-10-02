@@ -81,7 +81,7 @@ func getHistogramBucketsMetric(metric pmetric.Metric) pmetric.Metric {
 	for i := 0; i < histogram.DataPoints().Len(); i++ {
 		histogramDataPoint := histogram.DataPoints().At(i)
 		histogramBounds := histogramDataPoint.ExplicitBounds()
-		var cumulative uint64 = 0
+		var cumulative uint64
 
 		for j := 0; j < histogramBounds.Len(); j++ {
 			bucketDataPoint := bucketsDatapoints.AppendEmpty()
