@@ -4,10 +4,6 @@
 package sumologicprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
 
 import (
-	"errors"
-	"fmt"
-	"strings"
-
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -79,37 +75,5 @@ func createDefaultConfig() component.Config {
 
 // Validate config
 func (cfg *Config) Validate() error {
-	prefixes := []string{}
-	attributes := []string{}
-	errs := []error{}
-
-	for _, agg := range cfg.AggregateAttributes {
-		prefixes = append(prefixes, agg.Prefixes...)
-		attributes = append(attributes, agg.Attribute)
-	}
-
-	for i, prefix := range prefixes {
-		for j, p := range prefixes {
-			if p == prefix && i == j {
-				continue
-			}
-			if strings.HasPrefix(p, prefix) {
-				errs = append(errs, fmt.Errorf("prefixes conflict in `aggregate_attributes` configuration: `%s` starts with `%s`", p, prefix))
-			}
-		}
-	}
-
-	for i, attribute := range attributes {
-		for j, attr := range attributes {
-			if attr == attribute && i < j {
-				errs = append(errs, fmt.Errorf("duplicated attribute `%s` in `aggregate_attributes` configuration for `%d` and `%d` array elements", attribute, i, j))
-			}
-		}
-	}
-
-	if len(errs) == 0 {
-		return nil
-	}
-
-	return errors.Join(errs...)
+	return nil
 }

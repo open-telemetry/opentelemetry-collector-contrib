@@ -124,6 +124,11 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 			attributes.Range(func(key string, value pcommon.Value) bool {
 				ok, trimmedKey := getNewKey(key, prefix)
 				if ok {
+					// TODO: Potential name conflict to resolve, eg.:
+					// pod_* matches pod_foo
+					// pod2_* matches pod2_foo
+					// both will be renamed to foo
+					// ref: https://github.com/SumoLogic/sumologic-otel-collector/issues/1263
 					names = append(names, trimmedKey)
 					val := pcommon.NewValueEmpty()
 					value.CopyTo(val)
