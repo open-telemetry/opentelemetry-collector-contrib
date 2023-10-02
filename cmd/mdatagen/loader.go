@@ -109,7 +109,7 @@ type metric struct {
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
 	// Unit of the metric.
-	Unit string `mapstructure:"unit"`
+	Unit *string `mapstructure:"unit"`
 
 	// Sum stores metadata for sum metric type
 	Sum *sum `mapstructure:"sum,omitempty"`

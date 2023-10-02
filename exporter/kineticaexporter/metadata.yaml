@@ -5,3 +5,5 @@ status:
   stability:
     development: [metrics, traces, logs]
   distributions: []
+  codeowners:
+    active: [am-kinetica, TylerHelmuth]
