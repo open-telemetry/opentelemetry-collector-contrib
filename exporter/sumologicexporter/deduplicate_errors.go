@@ -37,7 +37,7 @@ func deduplicateErrors(errs []error) []error {
 		if errorWithCount.count == 1 {
 			uniqueErrors = append(uniqueErrors, errorWithCount.err)
 		} else {
-			uniqueErrors = append(uniqueErrors, fmt.Errorf("%w (x%d)", errorWithCount.err, errorWithCount.count))
+			uniqueErrors = append(uniqueErrors, fmt.Errorf("%s (x%d)", errorWithCount.err.Error(), errorWithCount.count))
 		}
 	}
 	return uniqueErrors

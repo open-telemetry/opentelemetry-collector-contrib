@@ -4,10 +4,10 @@
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
-	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"golang.org/x/exp/slices"
 )
 
 // fields represents metadata
