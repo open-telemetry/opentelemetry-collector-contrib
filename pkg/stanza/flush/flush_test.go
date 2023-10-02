@@ -22,7 +22,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 		{
 			name:     "FlushNoPeriod",
 			input:    []byte("complete line\nincomplete"),
-			baseFunc: scanLinesStrict,
+			baseFunc: splittest.ScanLinesStrict,
 			steps: []splittest.Step{
 				splittest.ExpectAdvanceToken(len("complete line\n"), "complete line"),
 			},
@@ -30,7 +30,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 		{
 			name:        "FlushIncompleteLineAfterPeriod",
 			input:       []byte("complete line\nincomplete"),
-			baseFunc:    scanLinesStrict,
+			baseFunc:    splittest.ScanLinesStrict,
 			flushPeriod: 100 * time.Millisecond,
 			steps: []splittest.Step{
 				splittest.ExpectAdvanceToken(len("complete line\n"), "complete line"),
@@ -44,12 +44,4 @@ func TestNewlineSplitFunc(t *testing.T) {
 		splitFunc := WithPeriod(tc.baseFunc, tc.flushPeriod)
 		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
-}
-
-func scanLinesStrict(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	advance, token, err = bufio.ScanLines(data, atEOF)
-	if advance == len(token) {
-		return 0, nil, nil
-	}
-	return
 }
