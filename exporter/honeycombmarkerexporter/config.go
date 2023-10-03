@@ -5,6 +5,9 @@ package honeycombexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/common"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -55,6 +58,32 @@ func (cfg *Config) Validate() error {
 
 	if cfg.APIURL == "" {
 		return fmt.Errorf("invalid URL")
+	}
+
+	if len(cfg.Markers) != 0 {
+		for _, m := range cfg.Markers {
+			if len(m.Rules.ResourceConditions) == 0 && len(m.Rules.LogConditions) == 0 {
+				return fmt.Errorf("no rules supplied for marker %v", m)
+			}
+
+			pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(exporter.LogFunctions()))
+
+			if err != nil {
+				return err
+			}
+
+			cs := common.ContextStatements{
+				Context:    "log",
+				Statements: m.Rules.LogConditions,
+			}
+			_, err = pc.ParseContextStatements(cs)
+			if err != nil {
+				return fmt.Errorf("unable to parse log condition %v", m.Rules.LogConditions)
+			}
+
+		}
+	} else {
+		return fmt.Errorf("no markers supplied")
 	}
 
 	return nil
