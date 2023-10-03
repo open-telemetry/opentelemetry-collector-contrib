@@ -32,9 +32,11 @@ type Config struct {
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	_, err := ulid.ParseStrict(cfg.InstanceUID)
-	if err != nil {
-		return errors.New("opamp instance_uid is invalid")
+	if cfg.InstanceUID != "" {
+		_, err := ulid.ParseStrict(cfg.InstanceUID)
+		if err != nil {
+			return errors.New("opamp instance_uid is invalid")
+		}
 	}
 	return nil
 }

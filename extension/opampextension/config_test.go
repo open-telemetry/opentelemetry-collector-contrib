@@ -50,12 +50,12 @@ func TestUnmarshalConfig(t *testing.T) {
 }
 
 func TestConfigValidate(t *testing.T) {
-	cfg := &Config{InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL"}
+	cfg := &Config{}
+	assert.NoError(t, cfg.Validate())
+	cfg.InstanceUID = "01BX5ZZKBKACTAV9WEVGEMMVRZ"
+	require.NoError(t, cfg.Validate())
+	cfg.InstanceUID = "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL"
 	err := cfg.Validate()
 	require.Error(t, err)
 	assert.Equal(t, "opamp instance_uid is invalid", err.Error())
-}
-
-func TestConfigDefaultValidate(t *testing.T) {
-	require.NoError(t, createDefaultConfig().Validate())
 }
