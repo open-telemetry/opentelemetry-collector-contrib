@@ -26,7 +26,7 @@ import (
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := NewFactory().CreateDefaultConfig()
 	assert.Equal(t, &Config{}, cfg)
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
