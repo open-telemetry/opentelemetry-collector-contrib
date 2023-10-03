@@ -93,49 +93,62 @@ func testWithTracingGoldenDataset(
 	tc.ValidateData()
 }
 
-func TestSporadicCorrectnessNonPermanent(t *testing.T) {
-	factories, err := testbed.Components()
-	require.NoError(t, err, "default components resulted in: %v", err)
-	runner := testbed.NewInProcessCollector(factories)
-	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
-	dataProvider := testbed.NewGoldenDataProvider(
-		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
-		"")
-	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
-	receiver.WithRetry(`
+func TestSporadicGoldenDataset(t *testing.T) {
+	testCases := []struct {
+		decision int
+	}{
+		{
+			decision: 1,
+		},
+		{
+			decision: 2,
+		},
+	}
+	for _, tt := range testCases {
+		factories, err := testbed.Components()
+		require.NoError(t, err, "default components resulted in: %v", err)
+		runner := testbed.NewInProcessCollector(factories)
+		options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+		dataProvider := testbed.NewGoldenDataProvider(
+			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
+			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+			"")
+		sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+		receiver.WithRetry(`
     retry_on_failure:
       enabled: false
 `)
-	receiver.WithQueue(`
+		receiver.WithQueue(`
     sending_queue:
       enabled: false
 `)
-	_, err = runner.PrepareConfig(correctnesstests.CreateConfigYaml(sender, receiver, nil, "traces"))
-	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
-	tc := testbed.NewTestCase(
-		t,
-		dataProvider,
-		sender,
-		receiver,
-		runner,
-		validator,
-		correctnessResults,
-		testbed.WithSkipResults(),
-		testbed.WithDecision(1),
-	)
-	defer tc.Stop()
-	tc.StartBackend()
-	tc.StartAgent()
-	tc.StartLoad(options)
-	tc.Sleep(3 * time.Second)
+		_, err = runner.PrepareConfig(correctnesstests.CreateConfigYaml(sender, receiver, nil, "traces"))
+		require.NoError(t, err, "collector configuration resulted in: %v", err)
+		validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
+		tc := testbed.NewTestCase(
+			t,
+			dataProvider,
+			sender,
+			receiver,
+			runner,
+			validator,
+			correctnessResults,
+			testbed.WithSkipResults(),
+			testbed.WithDecision(tt.decision),
+		)
+		defer tc.Stop()
+		tc.StartBackend()
+		tc.StartAgent()
+		tc.StartLoad(options)
+		tc.Sleep(3 * time.Second)
 
-	tc.StopLoad()
+		tc.StopLoad()
 
-	tc.WaitForN(func() bool {
-		return tc.LoadGenerator.DataItemsSent()-tc.LoadGenerator.PermanentErrors() == tc.MockBackend.DataItemsReceived()
-	}, 15*time.Second, "all data items received")
-	tc.StopAgent()
-	tc.ValidateData()
+		tc.WaitForN(func() bool {
+			return tc.LoadGenerator.DataItemsSent()-tc.LoadGenerator.PermanentErrors() == tc.MockBackend.DataItemsReceived()
+		}, 5*time.Second, "all data items received")
+		tc.StopAgent()
+		tc.ValidateData()
+	}
 }

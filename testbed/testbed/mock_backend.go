@@ -190,7 +190,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 			return err
 		}
 	case 3:
-
+		// TODO
 	}
 	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
@@ -252,7 +252,7 @@ func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metri
 			return err
 		}
 	case 3:
-
+		// TODO
 	}
 	mc.numMetricsReceived.Add(uint64(md.DataPointCount()))
 	mc.backend.ConsumeMetric(md)
@@ -292,7 +292,7 @@ func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 			return err
 		}
 	case 3:
-
+		// TODO
 	}
 	recordCount := ld.LogRecordCount()
 	lc.numLogRecordsReceived.Add(uint64(recordCount))
