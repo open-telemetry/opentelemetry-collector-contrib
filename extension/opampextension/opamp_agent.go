@@ -16,7 +16,6 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"crypto/tls"
 	"net/http"
 	"os"
 	"runtime"
@@ -76,9 +75,9 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 		header.Set(k, string(v))
 	}
 
-	tls := &tls.Config{
-		ServerName:         o.cfg.TLSSetting.ServerName,
-		InsecureSkipVerify: o.cfg.TLSSetting.InsecureSkipVerify,
+	tls, err := o.cfg.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return err
 	}
 
 	settings := types.StartSettings{
