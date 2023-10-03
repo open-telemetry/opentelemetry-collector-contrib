@@ -302,6 +302,14 @@ func upsertToAttributeVal(value interface{}, dest pcommon.Value) {
 		dest.SetDouble(float64(t))
 	case map[string]interface{}:
 		upsertToMap(t, dest.SetEmptyMap())
+	case map[string]map[string]string: // output from syslog receiver
+		d := dest.SetEmptyMap()
+		for k, v := range t {
+			dd := d.PutEmptyMap(k)
+			for kk, vv := range v {
+				upsertToAttributeVal(vv, dd.PutEmpty(kk))
+			}
+		}
 	case []interface{}:
 		upsertToSlice(t, dest.SetEmptySlice())
 	default:
