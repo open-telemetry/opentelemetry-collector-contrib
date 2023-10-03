@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package threadpool
 
 import (
@@ -12,10 +15,10 @@ type Pool[T any] struct {
 	workerFunc func(context.Context, chan T)
 }
 
-func NewPool[T any](maxBatchFiles int, workerFunc func(context.Context, chan T)) *Pool[T] {
+func NewPool[T any](size int, workerFunc func(context.Context, chan T)) *Pool[T] {
 	return &Pool[T]{
 		workerFunc: workerFunc,
-		size:       maxBatchFiles,
+		size:       size,
 	}
 }
 

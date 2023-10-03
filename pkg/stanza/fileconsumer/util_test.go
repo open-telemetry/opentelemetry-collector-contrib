@@ -84,13 +84,20 @@ func withEmitChan(emitChan chan *emitParams) testManagerOption {
 	}
 }
 
-func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
+func buildTestManager(t testing.TB, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
 	tmc := &testManagerConfig{emitChan: make(chan *emitParams, 100)}
 	for _, opt := range opts {
 		opt(tmc)
 	}
 	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(tmc.emitChan))
 	require.NoError(t, err)
+	if useThreadPool.IsEnabled() {
+		ctx, cancel := context.WithCancel(context.Background())
+		input.cancel = cancel
+		input.once.Do(func() {
+			input.pool.StartConsumers(ctx)
+		})
+	}
 	return input, tmc.emitChan
 }
 

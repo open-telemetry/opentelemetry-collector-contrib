@@ -27,6 +27,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
+func TestMain(m *testing.M) {
+	// Run once with thread pool featuregate enabled
+	featuregate.GlobalRegistry().Set(useThreadPool.ID(), true) //nolint:all
+	if code := m.Run(); code > 0 {
+		os.Exit(code)
+	}
+	featuregate.GlobalRegistry().Set(useThreadPool.ID(), false) //nolint:all
+
+	// Run once with thread pool featuregate disabled
+	if code := m.Run(); code > 0 {
+		os.Exit(code)
+	}
+}
+
 // TestDefaultBehaviors
 // - Files are read starting from the end.
 // - Logs are tokenized based on newlines.
@@ -1383,6 +1397,7 @@ func TestDeleteAfterRead(t *testing.T) {
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, totalLines)
 	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
+	operator.persister = testutil.NewMockPersister("test")
 
 	operator.poll(context.Background())
 	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, totalLines)...)
@@ -1572,6 +1587,8 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 
 	// Stop consuming before long file has been fully consumed
 	cancel()
+	// operator.cancel()
+	// operator.pool.StopConsumers()
 	wg.Wait()
 
 	// short file was fully consumed and should have been deleted

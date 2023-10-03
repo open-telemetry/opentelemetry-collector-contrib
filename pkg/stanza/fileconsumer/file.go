@@ -91,6 +91,12 @@ func (m *Manager) Stop() error {
 	m.wg.Wait()
 	if useThreadPool.IsEnabled() {
 		m.pool.StopConsumers()
+		// save off any files left
+		// As we already cancelled our current context, create a new one to save any left offsets
+		ctx, cancel := context.WithCancel(context.Background())
+		m.syncLastPollFilesConcurrent(ctx)
+		cancel()
+		m.once = sync.Once{}
 	}
 	m.roller.cleanup()
 	for _, reader := range m.knownFiles {
@@ -122,8 +128,16 @@ func (m *Manager) startPoller(ctx context.Context) {
 	}()
 }
 
-// poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
+	if useThreadPool.IsEnabled() {
+		m.pollConcurrent(ctx)
+	} else {
+		m.pollRegular(ctx)
+	}
+}
+
+// poll checks all the watched paths for new entries
+func (m *Manager) pollRegular(ctx context.Context) {
 	// Increment the generation on all known readers
 	// This is done here because the next generation is about to start
 	for i := 0; i < len(m.knownFiles); i++ {
