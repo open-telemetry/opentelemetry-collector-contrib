@@ -79,6 +79,33 @@ func TestGroupConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestAutoDiscoverConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "eu-west-1"
+	cfg.PollInterval = time.Second * 1
+	cfg.Metrics = &MetricsConfig{
+		AutoDiscover: &AutoDiscoverConfig{
+			Namespace:      "AWS/EC2",
+			Limit:          20,
+			AwsAggregation: "Average",
+			Period:         time.Second * 60 * 5,
+		},
+	}
+	sink := &consumertest.MetricsSink{}
+	mtrcRcvr := newMetricReceiver(cfg, zap.NewNop(), sink)
+	mtrcRcvr.client = defaultMockCloudWatchClient()
+
+	err := mtrcRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return sink.DataPointCount() > 0
+	}, 2000*time.Second, 10*time.Millisecond)
+
+	err = mtrcRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
 const (
 	testNamespace      = "EC2"
 	testMetricName     = "CPUUtilization"
