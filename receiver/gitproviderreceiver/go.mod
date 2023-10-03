@@ -54,8 +54,8 @@ require (
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	github.com/rs/cors v1.10.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.8 // indirect
+	github.com/rs/cors v1.10.1 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.9 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -79,21 +79,21 @@ require (
 	go.opentelemetry.io/collector/service v0.86.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.19.0 // indirect
-	go.opentelemetry.io/otel v1.18.0 // indirect
+	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v0.41.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.41.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.41.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.41.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.18.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.18.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.18.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.41.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.42.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.42.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.42.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.19.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.19.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.42.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.41.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.18.0 // indirect
-	go.opentelemetry.io/otel/metric v1.18.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.18.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.41.0 // indirect
-	go.opentelemetry.io/otel/trace v1.18.0 // indirect
+	go.opentelemetry.io/otel/metric v1.19.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.19.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.19.0 // indirect
+	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
