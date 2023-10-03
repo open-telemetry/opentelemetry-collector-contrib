@@ -320,7 +320,7 @@ processors:
     * cloud.platform ("aws_eks")
     * k8s.cluster.name
 
-Note: The kubernetes cluster name is only available when running on EC2 instances.
+Note: The kubernetes cluster name is only available when running on EC2 instances, and requires permission to run the `EC2:DescribeInstances` [action](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html).
 
 Example:
 
