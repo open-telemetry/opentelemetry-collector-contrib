@@ -10,7 +10,7 @@ import "context"
 
 type closeImmediately struct{}
 
-func newRoller() roller {
+func newRoller(_ int) roller {
 	return &closeImmediately{}
 }
 

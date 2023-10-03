@@ -6,6 +6,7 @@ package finder
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -193,6 +194,9 @@ func TestFindFiles(t *testing.T) {
 }
 
 func TestFindFilesWithIOErrors(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permissions test not valid on windows")
+	}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 	require.NoError(t, os.Chdir(t.TempDir()))

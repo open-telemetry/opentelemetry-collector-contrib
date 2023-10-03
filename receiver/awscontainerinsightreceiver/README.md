@@ -218,8 +218,8 @@ data:
               - namespace_number_of_running_pods
 
 
-      logging:
-        loglevel: debug
+      debug:
+        verbosity: detailed
 
     service:
       pipelines:
@@ -729,14 +729,14 @@ exporters:
           - instance_cpu_limit
           - instance_memory_working_set
           - instance_memory_limit
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 service:
   pipelines:
     metrics:
       receivers: [awscontainerinsightreceiver]
       processors: [batch/metrics]
-      exporters: [awsemf,logging]
+      exporters: [awsemf,debug]
 ```
 To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/setup/ecs#3-setup-the-aws-otel-collector-for-ecs-ec2-instance-metrics) for details
 

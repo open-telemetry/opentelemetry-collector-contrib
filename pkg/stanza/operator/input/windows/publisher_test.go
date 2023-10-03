@@ -24,7 +24,7 @@ func TestPublisherOpenInvalidUTF8(t *testing.T) {
 	invalidUTF8 := "\u0000"
 	err := publisher.Open(invalidUTF8)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to convert provider to utf16")
+	require.Contains(t, err.Error(), "failed to convert the provider name \"\\x00\" to utf16: invalid argument")
 }
 
 func TestPublisherOpenSyscallFailure(t *testing.T) {
@@ -33,7 +33,7 @@ func TestPublisherOpenSyscallFailure(t *testing.T) {
 	openPublisherMetadataProc = SimpleMockProc(0, 0, ErrorNotSupported)
 	err := publisher.Open(provider)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to open publisher handle")
+	require.Contains(t, err.Error(), "failed to open the metadata for the \"provider\" provider: The request is not supported.")
 }
 
 func TestPublisherOpenSuccess(t *testing.T) {
