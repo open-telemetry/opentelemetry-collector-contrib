@@ -5,17 +5,18 @@ package honeycombexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"fmt"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/common"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.uber.org/zap"
 )
 
 // Config defines configuration for the Honeycomb Marker exporter.
 type Config struct {
 	// APIKey is the authentication token associated with the Honeycomb account.
-	APIKey string `mapstructure:"api_key"`
+	APIKey configopaque.String `mapstructure:"api_key"`
 
 	// API URL to use (defaults to https://api.honeycomb.io)
 	APIURL string `mapstructure:"api_url"`
