@@ -17,14 +17,14 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		CreateDefaultConfig,
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
 func CreateDefaultConfig() component.Config {
 	return &Config{
 		APIKey: "",
-		APIURL: "",
+		APIURL: "api.honeycomb.io:443",
 		Markers: []marker{
 			{
 				MarkerType:   "",
