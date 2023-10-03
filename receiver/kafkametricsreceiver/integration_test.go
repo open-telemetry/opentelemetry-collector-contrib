@@ -102,6 +102,5 @@ func TestIntegration(t *testing.T) {
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 		),
-		scraperinttest.WriteExpected(),
 	).Run(t)
 }
