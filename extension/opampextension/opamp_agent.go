@@ -32,7 +32,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 )
 
-// TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6596
+// TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27293
 const localConfig = `
 exporters:
   otlp:
@@ -131,7 +131,7 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 		return nil
 	}
 	o.logger.Debug("Stopping OpAMP client...")
-	return o.opampClient.Stop(ctx)	
+	return o.opampClient.Stop(ctx)
 }
 
 func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, res pcommon.Resource) (*opampAgent, error) {
@@ -174,7 +174,7 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 		agentType:       agentType,
 		agentVersion:    agentVersion,
 		instanceId:      uid,
-		effectiveConfig: localConfig, // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6596
+		effectiveConfig: localConfig, // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27293
 	}
 
 	return agent, nil
