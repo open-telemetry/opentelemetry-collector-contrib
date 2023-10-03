@@ -133,7 +133,7 @@ We map these environment variables to resource attributes as follows:
 | `HEROKU_RELEASE_VERSION`           | `service.version`                   |
 | `HEROKU_SLUG_COMMIT`               | `heroku.release.commit`             |
 
-For more information, see the [Heroku cloud provider documentation](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/heroku.md) under the [OpenTelemetry specification semantic conventions](https://github.com/open-telemetry/opentelemetry-specification).
+For more information, see the [Heroku cloud provider documentation](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/cloud_provider/heroku.md) under the [OpenTelemetry specification semantic conventions](https://github.com/open-telemetry/semantic-conventions).
 
 ```yaml
 processors:
@@ -337,13 +337,13 @@ processors:
 Uses the AWS Lambda [runtime environment variables](https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime)
 to retrieve the following resource attributes:
 
-[Cloud semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md)
+[Cloud semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/cloud.md)
 
 * `cloud.provider` (`"aws"`)
 * `cloud.platform` (`"aws_lambda"`)
 * `cloud.region` (`$AWS_REGION`)
 
-[Function as a Service semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md)
+[Function as a Service semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/faas.md)
 and [AWS Lambda semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#resource-detector)
 
 * `faas.name` (`$AWS_LAMBDA_FUNCTION_NAME`)
@@ -351,7 +351,7 @@ and [AWS Lambda semantic conventions](https://github.com/open-telemetry/opentele
 * `faas.instance` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
 * `faas.max_memory` (`$AWS_LAMBDA_FUNCTION_MEMORY_SIZE`)
 
-[AWS Logs semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/logs.md)
+[AWS Logs semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/cloud_provider/aws/logs.md)
 
 * `aws.log.group.names` (`$AWS_LAMBDA_LOG_GROUP_NAME`)
 * `aws.log.stream.names` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
