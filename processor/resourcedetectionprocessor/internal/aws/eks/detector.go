@@ -82,26 +82,23 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
 	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
 
+	// The error is unhandled because we want to return successfully detected resources
+	// regardless of an error. The caller will properly handle any error hit while getting
+	// the cluster name.
 	clusterName, err := d.getClusterName()
-	if err != nil {
-		return pcommon.NewResource(), "", err
-	}
 	d.rb.SetK8sClusterName(clusterName)
-
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, err
 }
 
 func (d *detector) getClusterName() (string, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		d.logger.Debug("Failed to load default config", zap.Error(err))
 		return "", err
 	}
 
 	ec2IMS := imds.NewFromConfig(cfg)
 	regionOutput, err := ec2IMS.GetRegion(context.TODO(), &imds.GetRegionInput{})
 	if err != nil {
-		d.logger.Debug("Failed to get EC2 instance region", zap.Error(err))
 		return "", err
 	}
 	cfg.Region = regionOutput.Region
@@ -109,11 +106,15 @@ func (d *detector) getClusterName() (string, error) {
 	client := ec2.NewFromConfig(cfg)
 	describeInstances, err := client.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{})
 	if err != nil {
-		d.logger.Debug("Failed to describe EC2 instances", zap.Error(err))
 		return "", err
 	}
 
-	return d.getClusterNameTagFromReservations(describeInstances.Reservations), nil
+	clusterName := d.getClusterNameTagFromReservations(describeInstances.Reservations)
+
+	if len(clusterName) == 0 {
+		return clusterName, fmt.Errorf("Failed to detect EKS cluster name. No tag for cluster name found on EC2 instance.")
+	}
+	return clusterName, nil
 }
 
 func (d *detector) getClusterNameTagFromReservations(reservations []types.Reservation) string {
@@ -127,7 +128,6 @@ func (d *detector) getClusterNameTagFromReservations(reservations []types.Reserv
 		}
 	}
 
-	d.logger.Debug("Could not find cluster name within EC2 instance tags")
 	return ""
 }
 
