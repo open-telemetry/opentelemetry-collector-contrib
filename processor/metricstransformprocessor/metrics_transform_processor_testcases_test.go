@@ -1165,9 +1165,11 @@ var (
 			name: "combine_exponential_histogram",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric(?P<namedsubmatch>[12])$")},
-					Action:              Combine,
-					NewName:             "new",
+					MetricIncludeFilter: internalFilterRegexp{
+						include: regexp.MustCompile("^metric(?P<namedsubmatch>[12])$"),
+					},
+					Action:  Combine,
+					NewName: "new",
 				},
 			},
 			in: []pmetric.Metric{
