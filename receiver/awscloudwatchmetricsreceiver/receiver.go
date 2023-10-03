@@ -50,9 +50,10 @@ type request struct {
 	Dimensions     []types.Dimension
 }
 
+// CloudWatchAPI is an interface to represent subset of AWS CloudWatch metrics functionality.
 type client interface {
-	ListMetrics(ctx context.Context, params *cloudwatch.ListMetricsInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.ListMetricsOutput, error)
 	GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error)
+	ListMetrics(ctx context.Context, params *cloudwatch.ListMetricsInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.ListMetricsOutput, error)
 }
 
 func buildGetMetricDataQueries(metric *request) types.MetricDataQuery {
@@ -214,21 +215,17 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context, r []request, startT
 		}
 	default:
 		filters := m.request(startTime, endTime)
-		for idx := range filters {
-			paginator := cloudwatch.NewGetMetricDataPaginator(m.client, &filters[idx])
-			for paginator.HasMorePages() {
-				output, err := paginator.NextPage(ctx)
-				if err != nil {
-					m.logger.Error("unable to retrieve metric data from cloudwatch", zap.Error(err))
-					break
-				}
-				observedTime := pcommon.NewTimestampFromTime(time.Now())
-				metrics := m.parseMetrics(observedTime, m.requests[idx], output)
-				if metrics.MetricCount() > 0 {
-					if err := m.consumer.ConsumeMetrics(ctx, metrics); err != nil {
-						m.logger.Error("unable to consume metrics", zap.Error(err))
-						break
-					}
+		for idx, filter := range filters {
+			output, err := m.client.GetMetricData(ctx, &filter)
+			if err != nil {
+				m.logger.Error("unable to retrieve metric data from cloudwatch", zap.Error(err))
+				continue
+			}
+			observedTime := pcommon.NewTimestampFromTime(time.Now())
+			metrics := m.parseMetrics(observedTime, m.requests[idx], output)
+			if metrics.MetricCount() > 0 {
+				if err := m.consumer.ConsumeMetrics(ctx, metrics); err != nil {
+					m.logger.Error("unable to consume metrics", zap.Error(err))
 				}
 			}
 		}
@@ -279,26 +276,34 @@ func (m *metricReceiver) autoDiscoverRequests(ctx context.Context, auto *AutoDis
 	m.logger.Debug("discovering metrics", zap.String("namespace", auto.Namespace))
 
 	requests := []request{}
-
-	paginator := cloudwatch.NewListMetricsPaginator(m.client, &cloudwatch.ListMetricsInput{
+	input := &cloudwatch.ListMetricsInput{
 		Namespace: aws.String(auto.Namespace),
-	})
-	for paginator.HasMorePages() {
-		if len(requests) > auto.Limit {
-			m.logger.Debug("reached limit of number of metrics, try increasing the limit config to increase the number of individial metrics polled")
-		}
-		out, err := paginator.NextPage(ctx)
+	}
+
+	for {
+		out, err := m.client.ListMetrics(ctx, input)
 		if err != nil {
 			return nil, err
 		}
-		for _, metric := range out.Metrics {
 
+		for _, metric := range out.Metrics {
+			if len(requests) > auto.Limit {
+				m.logger.Debug("reached limit of number of metrics, try increasing the limit config to increase the number of individial metrics polled")
+				break
+			}
 			requests = append(requests, request{Namespace: *metric.Namespace,
 				MetricName: *metric.MetricName, Period: auto.Period,
 				AwsAggregation: auto.AwsAggregation, Dimensions: metric.Dimensions,
 			})
 		}
+
+		// Manual Pagination: Check if more data is available.
+		if out.NextToken == nil {
+			break
+		}
+		input.NextToken = out.NextToken
 	}
+
 	m.logger.Debug("number of metrics discovered", zap.Int("metrics", len(requests)))
 	return requests, nil
 }

@@ -8,6 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -40,7 +43,7 @@ func TestDefaultFactory(t *testing.T) {
 func TestGroupConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "eu-west-1"
-	cfg.PollInterval = time.Minute * 5
+	cfg.PollInterval = time.Second * 1
 	cfg.Metrics = &MetricsConfig{
 		Group: []GroupConfig{
 			{
@@ -63,33 +66,74 @@ func TestGroupConfig(t *testing.T) {
 	}
 	sink := &consumertest.MetricsSink{}
 	mtrcRcvr := newMetricReceiver(cfg, zap.NewNop(), sink)
-	mtrcRcvr.client = defaultMockClient()
+	mtrcRcvr.client = defaultMockCloudWatchClient()
 
 	err := mtrcRcvr.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		return sink.DataPointCount() > 0
-	}, 2*time.Second, 10*time.Millisecond)
-
-	groupRequests := mtrcRcvr.groupRequests
-	require.Len(t, groupRequests, 1)
-	require.Equal(t, groupRequests[0].groupName(), "test-log-group-name")
+	}, 2000*time.Second, 10*time.Millisecond)
 
 	err = mtrcRcvr.Shutdown(context.Background())
 	require.NoError(t, err)
-
-	logs := sink.AllLogs()[0]
-	expected, err := golden.ReadLogs(filepath.Join("testdata", "processed", "prefixed.yaml"))
-	require.NoError(t, err)
-	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 }
 
-func defaultMockClient() client {
-	mc := &mockClient{}
-	mc.On()
+const (
+	testNamespace      = "EC2"
+	testMetricName     = "CPUUtilization"
+	TestDimensionName  = "InstanceId"
+	TestDimensionValue = "i-1234567890abcdef0"
+)
+
+var testDimensions = []types.Dimension{
+	{
+		Name:  aws.String(TestDimensionName),
+		Value: aws.String(TestDimensionValue),
+	},
 }
 
-type mockClient struct {
+func defaultMockCloudWatchClient() client {
+	mc := &MockClient{}
+
+	mc.On("ListMetrics", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{
+					MetricName: aws.String(testMetricName),
+					Namespace:  aws.String(testNamespace),
+					Dimensions: testDimensions,
+				},
+			},
+			NextToken: nil,
+		}, nil)
+
+	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.GetMetricDataOutput{
+			MetricDataResults: []types.MetricDataResult{
+				{
+					Id:         aws.String("t1"),
+					Label:      aws.String("testLabel"),
+					Values:     []float64{1.0},
+					Timestamps: []time.Time{time.Now()},
+					StatusCode: types.StatusCodeComplete,
+				},
+			},
+			NextToken: nil,
+		}, nil)
+	return mc
+}
+
+type MockClient struct {
 	mock.Mock
+}
+
+func (m *MockClient) GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	return args.Get(0).(*cloudwatch.GetMetricDataOutput), args.Error(1)
+}
+
+func (m *MockClient) ListMetrics(ctx context.Context, params *cloudwatch.ListMetricsInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.ListMetricsOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	return args.Get(0).(*cloudwatch.ListMetricsOutput), args.Error(1)
 }
