@@ -1,0 +1,26 @@
+{
+  "MetricDataResults": [
+    {
+      "Id": "ec2_cpu_utilization",
+      "Label": "EC2Instance-CPUUtilization",
+      "Timestamps": [
+        1688620800,
+        1688617200,
+        1688613600,
+        1688610000,
+        1688606400
+      ],
+      "Values": [
+        45.3,
+        47.6,
+        43.9,
+        41.2,
+        44.5
+      ],
+      "StatusCode": "Complete",
+      "Messages": []
+    }
+  ],
+  "NextToken": null,
+  "Messages": []
+}
