@@ -7,7 +7,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -28,10 +33,16 @@ const (
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 	authConfigmapNS             = "kube-system"
 	authConfigmapName           = "aws-auth"
+
+	clusterNameAwsEksTag     = "aws:eks:cluster-name"
+	clusterNameEksTag        = "eks:cluster-name"
+	kubernetesClusterNameTag = "kubernetes.io/cluster/"
 )
 
 type detectorUtils interface {
 	getConfigMap(ctx context.Context, namespace string, name string) (map[string]string, error)
+	getClusterName(ctx context.Context) (string, error)
+	getClusterNameTagFromReservations([]*ec2.Reservation) string
 }
 
 type eksDetectorUtils struct {
@@ -54,6 +65,7 @@ var _ detectorUtils = (*eksDetectorUtils)(nil)
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	utils, err := newK8sDetectorUtils()
+
 	return &detector{
 		utils:  utils,
 		logger: set.Logger,
@@ -74,7 +86,12 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
 	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
 
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	// The error is unhandled because we want to return successfully detected resources
+	// regardless of an error. The caller will properly handle any error hit while getting
+	// the cluster name.
+	clusterName, err := d.utils.getClusterName(ctx)
+	d.rb.SetK8sClusterName(clusterName)
+	return d.rb.Emit(), conventions.SchemaURL, err
 }
 
 func isEKS(ctx context.Context, utils detectorUtils) (bool, error) {
@@ -113,4 +130,50 @@ func (e eksDetectorUtils) getConfigMap(ctx context.Context, namespace string, na
 		return nil, fmt.Errorf("failed to retrieve ConfigMap %s/%s: %w", namespace, name, err)
 	}
 	return cm.Data, nil
+}
+
+func (e eksDetectorUtils) getClusterName(ctx context.Context) (string, error) {
+	sess := session.Must(session.NewSession())
+	ec2Svc := ec2metadata.New(sess)
+	region, err := ec2Svc.Region()
+	if err != nil {
+		return "", err
+	}
+
+	svc := ec2.New(sess, aws.NewConfig().WithRegion(region))
+	instanceIdentityDocument, err := ec2Svc.GetInstanceIdentityDocumentWithContext(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	instances, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{
+		InstanceIds: []*string{
+			aws.String(instanceIdentityDocument.InstanceID),
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	clusterName := e.getClusterNameTagFromReservations(instances.Reservations)
+	if len(clusterName) == 0 {
+		return clusterName, fmt.Errorf("Failed to detect EKS cluster name. No tag for cluster name found on EC2 instance")
+	}
+	return clusterName, nil
+}
+
+func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []*ec2.Reservation) string {
+	for _, reservation := range reservations {
+		for _, instance := range reservation.Instances {
+			for _, tag := range instance.Tags {
+				if *tag.Key == clusterNameAwsEksTag || *tag.Key == clusterNameEksTag {
+					return *tag.Value
+				} else if strings.HasPrefix(*tag.Key, kubernetesClusterNameTag) {
+					return strings.TrimPrefix(*tag.Key, kubernetesClusterNameTag)
+				}
+			}
+		}
+	}
+
+	return ""
 }
