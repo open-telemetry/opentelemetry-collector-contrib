@@ -44,12 +44,10 @@ func TestMetadataErrorCases(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							UID: "pod-uid-123",
 						},
-						Status: v1.PodStatus{
-							ContainerStatuses: []v1.ContainerStatus{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
 								{
-									// different container name
-									Name:        "container2",
-									ContainerID: "test-container",
+									Name: "container2",
 								},
 							},
 						},

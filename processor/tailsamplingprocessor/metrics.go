@@ -90,7 +90,7 @@ func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 	}
 
 	countGlobalTracesSampledView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statCountGlobalTracesSampled.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountGlobalTracesSampled.Name()),
 		Measure:     statCountGlobalTracesSampled,
 		Description: statCountGlobalTracesSampled.Description(),
 		TagKeys:     []tag.Key{tagSampledKey},
