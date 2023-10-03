@@ -196,9 +196,9 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 
 	ident := []*protobufs.KeyValue{
-		stringKeyValue("service.instance.id", o.instanceId.String()),
-		stringKeyValue("service.name", o.agentType),
-		stringKeyValue("service.version", o.agentVersion),
+		stringKeyValue(semconv.AttributeServiceInstanceID, o.instanceId.String()),
+		stringKeyValue(semconv.AttributeServiceName, o.agentType),
+		stringKeyValue(semconv.AttributeServiceVersion, o.agentVersion),
 	}
 
 	nonIdent := []*protobufs.KeyValue{
