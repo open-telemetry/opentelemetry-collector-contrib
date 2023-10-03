@@ -239,7 +239,7 @@ func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPer
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: splitter.NewFactory(splitFunc, trim.Whitespace, flushPeriod),
+		splitterFactory: splitter.NewFactory(splitFunc, trim.Whitespace, flushPeriod, maxLogSize),
 		encoding:        enc,
 	}, emitChan
 }
