@@ -33,7 +33,7 @@ type Config struct {
 	Protocol string `mapstructure:"protocol"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting *configtls.TLSClientSetting `mapstructure:"tls"`
 
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`

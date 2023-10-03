@@ -132,10 +132,8 @@ func (s *sender) addStructuredData(msg map[string]any) {
 		return
 	}
 
-	sd, ok := msg[structuredData].(map[string]map[string]string)
-	if !ok {
-		msg[structuredData] = emptyValue
-	} else {
+	switch sd := msg[structuredData].(type) {
+	case map[string]map[string]string:
 		sdElements := []string{}
 		for key, val := range sd {
 			sdElements = append(sdElements, key)
@@ -144,6 +142,26 @@ func (s *sender) addStructuredData(msg map[string]any) {
 			}
 		}
 		msg[structuredData] = sdElements
+	case map[string]interface{}:
+		sdElements := []string{}
+		for key, val := range sd {
+			sdElements = append(sdElements, key)
+			vval, ok := val.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			for k, v := range vval {
+				vv, ok := v.(string)
+				if !ok {
+					fmt.Printf("zepsuteee\n")
+					continue
+				}
+				sdElements = append(sdElements, fmt.Sprintf("%s=\"%s\"", k, vv))
+			}
+		}
+		msg[structuredData] = sdElements
+	default:
+		msg[structuredData] = emptyValue
 	}
 }
 
@@ -171,8 +189,8 @@ func populateDefaults(msg map[string]any, msgProperties []string) {
 func (s *sender) formatRFC3164(msg map[string]any, timestamp time.Time) string {
 	msgProperties := []string{priority, hostname, message}
 	populateDefaults(msg, msgProperties)
-	timestampString := timestamp.Format("2006-01-02T15:04:05.000-03:00")
-	return fmt.Sprintf("<%d>%s %s %s", msg[priority], timestampString, msg[hostname], msg[message])
+	timestampString := timestamp.Format("Jan 02 15:04:05")
+	return fmt.Sprintf("<%d>%s %s%s", msg[priority], timestampString, msg[hostname], formatMessagePart(msg[message]))
 }
 
 func (s *sender) formatRFC5424(msg map[string]any, timestamp time.Time) string {
@@ -180,10 +198,15 @@ func (s *sender) formatRFC5424(msg map[string]any, timestamp time.Time) string {
 	populateDefaults(msg, msgProperties)
 	s.addStructuredData(msg)
 	timestampString := timestamp.Format(time.RFC3339)
-	message := msg[message].(string)
 
-	if message != emptyMessage {
-		message = " " + message
+	return fmt.Sprintf("<%d>%d %s %s %s %s %s %s%s", msg[priority], msg[version], timestampString, msg[hostname], msg[app], msg[pid], msg[msgID], msg[structuredData], formatMessagePart(msg[message]))
+}
+
+func formatMessagePart(message any) string {
+	msg := message.(string)
+	if msg != emptyMessage {
+		msg = " " + msg
 	}
-	return fmt.Sprintf("<%d>%d %s %s %s %s %s %s%s", msg[priority], msg[version], timestampString, msg[hostname], msg[app], msg[pid], msg[msgID], msg[structuredData], message)
+
+	return msg
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -134,7 +135,9 @@ func prepareExporterTest(t *testing.T, cfg *Config, invalidExporter bool) *expor
 func createTestConfig() *Config {
 	config := createDefaultConfig().(*Config)
 	config.Network = "tcp"
-	config.TLSSetting.Insecure = true
+	config.TLSSetting = &configtls.TLSClientSetting{
+		Insecure: true,
+	}
 	return config
 }
 
