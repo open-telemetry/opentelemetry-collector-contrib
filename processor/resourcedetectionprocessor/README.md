@@ -318,6 +318,9 @@ processors:
 
     * cloud.provider ("aws")
     * cloud.platform ("aws_eks")
+    * k8s.cluster.name
+
+Note: The kubernetes cluster name is only available when running on EC2 instances.
 
 Example:
 

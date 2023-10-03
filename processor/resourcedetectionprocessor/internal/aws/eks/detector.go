@@ -8,6 +8,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -28,6 +32,9 @@ const (
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 	authConfigmapNS             = "kube-system"
 	authConfigmapName           = "aws-auth"
+
+	clusterNameAwsEksTag = "aws:eks:cluster-name"
+	clusterNameEksTag    = "eks:cluster-name"
 )
 
 type detectorUtils interface {
@@ -54,6 +61,7 @@ var _ detectorUtils = (*eksDetectorUtils)(nil)
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	utils, err := newK8sDetectorUtils()
+
 	return &detector{
 		utils:  utils,
 		logger: set.Logger,
@@ -74,7 +82,53 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
 	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
 
+	clusterName, err := d.getClusterName()
+	if err != nil {
+		return pcommon.NewResource(), "", err
+	}
+	d.rb.SetK8sClusterName(clusterName)
+
 	return d.rb.Emit(), conventions.SchemaURL, nil
+}
+
+func (d *detector) getClusterName() (string, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		d.logger.Debug("Failed to load default config", zap.Error(err))
+		return "", err
+	}
+
+	ec2IMS := imds.NewFromConfig(cfg)
+	regionOutput, err := ec2IMS.GetRegion(context.TODO(), &imds.GetRegionInput{})
+	if err != nil {
+		d.logger.Debug("Failed to get EC2 instance region", zap.Error(err))
+		return "", err
+	}
+	cfg.Region = regionOutput.Region
+
+	client := ec2.NewFromConfig(cfg)
+	describeInstances, err := client.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{})
+	if err != nil {
+		d.logger.Debug("Failed to describe EC2 instances", zap.Error(err))
+		return "", err
+	}
+
+	return d.getClusterNameTagFromReservations(describeInstances.Reservations), nil
+}
+
+func (d *detector) getClusterNameTagFromReservations(reservations []types.Reservation) string {
+	for _, reservation := range reservations {
+		for _, instance := range reservation.Instances {
+			for _, tag := range instance.Tags {
+				if *tag.Key == clusterNameAwsEksTag || *tag.Key == clusterNameEksTag {
+					return *tag.Value
+				}
+			}
+		}
+	}
+
+	d.logger.Debug("Could not find cluster name within EC2 instance tags")
+	return ""
 }
 
 func isEKS(ctx context.Context, utils detectorUtils) (bool, error) {
