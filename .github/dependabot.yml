@@ -338,7 +338,12 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/extension/encodingextension"
+    directory: "/extension/encoding/jaegerencodingextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/extension/encoding/textencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1094,11 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/solacereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/splunkenterprisereceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
