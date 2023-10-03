@@ -3,6 +3,7 @@
 package main
 
 import (
+	failoverconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 	"go.opentelemetry.io/collector/connector"
 	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
 	"go.opentelemetry.io/collector/exporter"
@@ -409,6 +410,7 @@ func components() (otelcol.Factories, error) {
 		routingconnector.NewFactory(),
 		servicegraphconnector.NewFactory(),
 		spanmetricsconnector.NewFactory(),
+		failoverconnector.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
