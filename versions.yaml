@@ -15,6 +15,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
