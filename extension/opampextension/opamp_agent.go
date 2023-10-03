@@ -101,7 +101,7 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 			},
 			OnMessageFunc: o.onMessage,
 		},
-		// Include ReportsEffectiveConfig once the extension has access to the
+		// TODO: Include ReportsEffectiveConfig once the extension has access to the
 		// collector's effective configuration.
 		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 	}
