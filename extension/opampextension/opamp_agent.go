@@ -150,21 +150,21 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 
 	uid := ulid.Make()
 
-	sid, ok := res.Attributes().Get(semconv.AttributeServiceInstanceID)
-	if ok {
-		puid, err := ulid.Parse(sid.AsString())
-		if err != nil {
-			return nil, err
-		}
-		uid = puid
-	}
-
 	if cfg.InstanceUID != "" {
 		puid, err := ulid.Parse(cfg.InstanceUID)
 		if err != nil {
 			return nil, err
 		}
 		uid = puid
+	} else {
+		sid, ok := res.Attributes().Get(semconv.AttributeServiceInstanceID)
+		if ok {
+			puid, err := ulid.Parse(sid.AsString())
+			if err != nil {
+				return nil, err
+			}
+			uid = puid
+		}
 	}
 
 	agent := &opampAgent{

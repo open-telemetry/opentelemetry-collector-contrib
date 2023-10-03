@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
 func TestNewOpampAgent(t *testing.T) {
@@ -36,6 +37,20 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.NotEmpty(t, o.instanceId.String())
 	assert.NotEmpty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
+}
+
+func TestNewOpampAgentAttributes(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := extensiontest.NewNopCreateSettings()
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
+	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, "otelcol-distro")
+	set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, "distro.0")
+	set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "01BX5ZZKBKACTAV9WEVGEMMVRZ")
+	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
+	assert.NoError(t, err)
+	assert.Equal(t, o.agentType, "otelcol-distro")
+	assert.Equal(t, o.agentVersion, "distro.0")
+	assert.Equal(t, o.instanceId.String(), "01BX5ZZKBKACTAV9WEVGEMMVRZ")
 }
 
 func TestCreateAgentDescription(t *testing.T) {
