@@ -1,3 +1,4 @@
+// Deprecated: this component is no longer developed and will be removed in the next release.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter
 
 go 1.20
