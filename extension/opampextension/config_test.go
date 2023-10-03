@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -42,20 +41,29 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t,
 		&Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "wss://127.0.0.1:4320/v1/opamp",
+			Server: &OpAMPServer{
+				WS: &OpAMPWebsocket{
+					Endpoint: "wss://127.0.0.1:4320/v1/opamp",
+				},
 			},
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
 		}, cfg)
 }
 
 func TestConfigValidate(t *testing.T) {
-	cfg := &Config{}
-	assert.NoError(t, cfg.Validate())
-	cfg.InstanceUID = "01BX5ZZKBKACTAV9WEVGEMMVRZ"
-	require.NoError(t, cfg.Validate())
-	cfg.InstanceUID = "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL"
+	cfg := &Config{
+			Server: &OpAMPServer{
+				WS: &OpAMPWebsocket{},
+			},
+	}
 	err := cfg.Validate()
+	assert.Equal(t, "opamp server websocket endpoint must be provided", err.Error())
+	cfg.Server.WS.Endpoint = "wss://127.0.0.1:4320/v1/opamp"
+	assert.NoError(t, cfg.Validate())
+	cfg.InstanceUID = "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL"
+	err = cfg.Validate()
 	require.Error(t, err)
 	assert.Equal(t, "opamp instance_uid is invalid", err.Error())
+	cfg.InstanceUID = "01BX5ZZKBKACTAV9WEVGEMMVRZ"
+	require.NoError(t, cfg.Validate())
 }

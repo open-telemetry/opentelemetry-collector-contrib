@@ -68,14 +68,15 @@ type opampAgent struct {
 }
 
 func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
+	// TODO: Add OpAMP HTTP transport support.
 	o.opampClient = client.NewWebSocket(o.logger.Sugar())
 
 	header := http.Header{}
-	for k, v := range o.cfg.Headers {
+	for k, v := range o.cfg.Server.WS.Headers {
 		header.Set(k, string(v))
 	}
 
-	tls, err := o.cfg.TLSSetting.LoadTLSConfig()
+	tls, err := o.cfg.Server.WS.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return err
 	}
@@ -83,7 +84,7 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 	settings := types.StartSettings{
 		Header:         header,
 		TLSConfig:      tls,
-		OpAMPServerURL: o.cfg.Endpoint,
+		OpAMPServerURL: o.cfg.Server.WS.Endpoint,
 		InstanceUid:    o.instanceId.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func() {

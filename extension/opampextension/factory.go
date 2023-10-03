@@ -33,7 +33,11 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Server: &OpAMPServer{
+			WS: &OpAMPWebsocket{},
+		},
+	}
 }
 
 func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {

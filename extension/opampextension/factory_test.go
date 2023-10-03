@@ -27,7 +27,7 @@ import (
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
-	assert.Equal(t, &Config{}, cfg)
+	assert.Equal(t, createDefaultConfig().(*Config), cfg)
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
@@ -36,7 +36,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
-	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg := NewFactory().CreateDefaultConfig()
 	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
