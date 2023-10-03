@@ -55,3 +55,7 @@ func TestConfigValidate(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "opamp instance_uid is invalid", err.Error())
 }
+
+func TestConfigDefaultValidate(t *testing.T) {
+	require.NoError(t, createDefaultConfig().Validate())
+}
