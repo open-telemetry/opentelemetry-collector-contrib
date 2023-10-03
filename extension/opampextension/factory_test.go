@@ -36,7 +36,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
