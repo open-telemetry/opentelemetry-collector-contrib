@@ -133,7 +133,7 @@ We map these environment variables to resource attributes as follows:
 | `HEROKU_RELEASE_VERSION`           | `service.version`                   |
 | `HEROKU_SLUG_COMMIT`               | `heroku.release.commit`             |
 
-For more information, see the [Heroku cloud provider documentation](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/cloud_provider/heroku.md) under the [OpenTelemetry specification semantic conventions](https://github.com/open-telemetry/semantic-conventions).
+For more information, see the [Heroku cloud provider documentation](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/cloud-provider/heroku.md) under the [OpenTelemetry specification semantic conventions](https://github.com/open-telemetry/semantic-conventions).
 
 ```yaml
 processors:
