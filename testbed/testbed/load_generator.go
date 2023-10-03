@@ -198,18 +198,19 @@ func (lg *LoadGenerator) generateTrace() {
 	}
 
 	for {
-		err := traceSender.ConsumeTraces(context.Background(), traceData)
-		if err == nil {
-			lg.prevErr = nil
-		} else if !consumererror.IsPermanent(err) {
-			lg.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
-			continue
-		} else {
-			if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-				lg.prevErr = err
-				log.Printf("Cannot send traces: %v", err)
+		if err := traceSender.ConsumeTraces(context.Background(), traceData); err != nil {
+			if consumererror.IsPermanent(err) {
+				if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+					lg.prevErr = err
+					log.Printf("Cannot send traces: %v", err)
+				}
+				lg.permanentErrors.Add(uint64(traceData.SpanCount()))
+			} else {
+				lg.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
+				continue
 			}
-			lg.permanentErrors.Add(uint64(traceData.SpanCount()))
+		} else {
+			lg.prevErr = nil
 		}
 		break
 	}
@@ -223,18 +224,19 @@ func (lg *LoadGenerator) generateMetrics() {
 		return
 	}
 	for {
-		err := metricSender.ConsumeMetrics(context.Background(), metricData)
-		if err == nil {
-			lg.prevErr = nil
-		} else if !consumererror.IsPermanent(err) {
-			lg.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
-			continue
-		} else {
-			if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-				lg.prevErr = err
-				log.Printf("Cannot send metrics: %v", err)
+		if err := metricSender.ConsumeMetrics(context.Background(), metricData); err != nil {
+			if consumererror.IsPermanent(err) {
+				if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+					lg.prevErr = err
+					log.Printf("Cannot send metrics: %v", err)
+				}
+				lg.permanentErrors.Add(uint64(metricData.DataPointCount()))
+			} else {
+				lg.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
+				continue
 			}
-			lg.permanentErrors.Add(uint64(metricData.DataPointCount()))
+		} else {
+			lg.prevErr = nil
 		}
 		break
 	}
@@ -248,18 +250,19 @@ func (lg *LoadGenerator) generateLog() {
 		return
 	}
 	for {
-		err := logSender.ConsumeLogs(context.Background(), logData)
-		if err == nil {
-			lg.prevErr = nil
-		} else if !consumererror.IsPermanent(err) {
-			lg.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
-			continue
-		} else {
-			if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-				lg.prevErr = err
-				log.Printf("Cannot send logs: %v", err)
+		if err := logSender.ConsumeLogs(context.Background(), logData); err != nil {
+			if consumererror.IsPermanent(err) {
+				if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+					lg.prevErr = err
+					log.Printf("Cannot send logs: %v", err)
+				}
+				lg.permanentErrors.Add(uint64(logData.LogRecordCount()))
+			} else {
+				lg.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
+				continue
 			}
-			lg.permanentErrors.Add(uint64(logData.LogRecordCount()))
+		} else {
+			lg.prevErr = nil
 		}
 		break
 	}
