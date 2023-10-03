@@ -235,9 +235,12 @@ func (o *opampAgent) onMessage(ctx context.Context, msg *types.MessageData) {
 	if msg.AgentIdentification == nil {
 		return
 	}
+
 	instanceId, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
 	if err != nil {
 		o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
+		return
 	}
+
 	o.updateAgentIdentity(instanceId)
 }
