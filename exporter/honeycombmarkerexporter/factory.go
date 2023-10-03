@@ -17,7 +17,7 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		CreateDefaultConfig,
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
