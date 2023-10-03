@@ -42,14 +42,11 @@ func NewFactory() exporter.Factory {
 // Create default configurations
 func createDefaultConfig() component.Config {
 	return &Config{
-		Database:        otelDb,
-		MetricTable:     defaultMetricTable,
-		LogTable:        defaultLogTable,
-		TraceTable:      defaultTraceTable,
-		IngestionType:   queuedIngestTest,
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		Database:      otelDb,
+		MetricTable:   defaultMetricTable,
+		LogTable:      defaultLogTable,
+		TraceTable:    defaultTraceTable,
+		IngestionType: queuedIngestTest,
 	}
 }
 
