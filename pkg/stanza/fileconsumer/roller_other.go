@@ -9,20 +9,14 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"sync"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 )
 
 type detectLostFiles struct {
-	oldReaders      []*reader
-	fingerprintSize int // used when we check for truncation
+	oldReaders []*reader
 }
 
-func newRoller(fingerprintSize int) roller {
-	return &detectLostFiles{
-		oldReaders:      []*reader{},
-		fingerprintSize: fingerprintSize,
-	}
+func newRoller() roller {
+	return &detectLostFiles{oldReaders: []*reader{}}
 }
 
 func (r *detectLostFiles) readLostFiles(ctx context.Context, newReaders []*reader) {
@@ -37,15 +31,9 @@ OUTER:
 			if oldReader.fileName == newReader.fileName {
 				// At this point, we know that the file has been rotated. However, we do not know
 				// if it was moved or truncated. If truncated, then both handles point to the same
-				// file, in which case we should only read from it using the new reader.
-
-				// We can detect truncation by recreating a fingerprint from the old handle.
-				// If it matches the old fingerprint, then we know that the file was moved,
-				// so we can consider the file lost and continue reading from the old handle.
-				// If there's an error reading a new fingerprint from the old handle, let's assume we can't
-				// read the rest of it anyways.
-				refreshedFingerprint, err := fingerprint.New(oldReader.file, r.fingerprintSize)
-				if err == nil && !refreshedFingerprint.StartsWith(oldReader.Fingerprint) {
+				// file, in which case we should only read from it using the new reader. We can use
+				// the validateFingerprint method to establish that the file has not been truncated.
+				if !oldReader.validateFingerprint() {
 					continue OUTER
 				}
 			}
