@@ -84,4 +84,11 @@ func TestFormatRFC5424(t *testing.T) {
 	assert.Equal(t, true, strings.Contains(formattedMsg, "UserHostAddress=\"192.168.2.132\""))
 	assert.Equal(t, true, strings.Contains(formattedMsg, "UserID=\"Tester2\""))
 	assert.Equal(t, true, strings.Contains(formattedMsg, "PEN=\"27389\""))
+
+	// Test defaults
+	msg4 := map[string]any{}
+	expected = "<165>1 2003-08-24T05:14:15-07:00 - - - - -"
+	timeObj1, err = time.Parse(time.RFC3339, "2003-08-24T05:14:15.000003-07:00")
+	assert.Equal(t, expected, s.formatRFC5424(msg4, timeObj1))
+	assert.Nil(t, err)
 }

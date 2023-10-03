@@ -32,6 +32,7 @@ const structuredData = "structured_data"
 const message = "message"
 
 const emptyValue = "-"
+const emptyMessage = ""
 
 type sender struct {
 	network   string
@@ -147,26 +148,23 @@ func (s *sender) addStructuredData(msg map[string]any) {
 }
 
 func populateDefaults(msg map[string]any, msgProperties []string) {
-
 	for _, msgProperty := range msgProperties {
-		msgValue, ok := msg[msgProperty]
-		if !ok && msgProperty == priority {
+		if _, ok := msg[msgProperty]; ok {
+			continue
+		}
+
+		switch msgProperty {
+		case priority:
 			msg[msgProperty] = defaultPriority
-			return
-		}
-		if !ok && msgProperty == version {
+		case version:
 			msg[msgProperty] = versionRFC5424
-			return
-		}
-		if !ok && msgProperty == facility {
+		case facility:
 			msg[msgProperty] = defaultFacility
-			return
-		}
-		if !ok {
+		case message:
+			msg[msgProperty] = emptyMessage
+		default:
 			msg[msgProperty] = emptyValue
-			return
 		}
-		msg[msgProperty] = msgValue
 	}
 }
 
@@ -182,5 +180,10 @@ func (s *sender) formatRFC5424(msg map[string]any, timestamp time.Time) string {
 	populateDefaults(msg, msgProperties)
 	s.addStructuredData(msg)
 	timestampString := timestamp.Format(time.RFC3339)
-	return fmt.Sprintf("<%d>%d %s %s %s %s %s %s %s", msg[priority], msg[version], timestampString, msg[hostname], msg[app], msg[pid], msg[msgID], msg[structuredData], msg[message])
+	message := msg[message].(string)
+
+	if message != emptyMessage {
+		message = " " + message
+	}
+	return fmt.Sprintf("<%d>%d %s %s %s %s %s %s%s", msg[priority], msg[version], timestampString, msg[hostname], msg[app], msg[pid], msg[msgID], msg[structuredData], message)
 }
