@@ -40,6 +40,8 @@ The address:port to bind the listener to.
 
 default: `0.0.0.0:4433`
 
+The `component.UseLocalHostAsDefaultHost` feature gate changes the default to localhost:4433.
+
 ### tls:
 See [documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#server-configuration) for more details.
 

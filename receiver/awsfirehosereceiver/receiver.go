@@ -36,6 +36,9 @@ var (
 	errInBodyDiffRequestID      = errors.New("different request id in body")
 )
 
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
+
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
 type firehoseConsumer interface {
 	// Consume unmarshalls and consumes the records.
@@ -106,6 +109,10 @@ var _ http.Handler = (*firehoseReceiver)(nil)
 // Start spins up the receiver's HTTP server and makes the receiver start
 // its processing.
 func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(fmr.settings.Logger)
+	})
+
 	if host == nil {
 		return errMissingHost
 	}

@@ -20,7 +20,7 @@ import (
 
 const (
 	defaultRecordType = cwmetricstream.TypeStr
-	defaultEndpoint   = "0.0.0.0:4433"
+	port              = 4433
 )
 
 var (
@@ -63,7 +63,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		RecordType: defaultRecordType,
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
+			Endpoint: component.EndpointForPort(port),
 		},
 	}
 }
