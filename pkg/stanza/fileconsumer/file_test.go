@@ -4,7 +4,6 @@
 package fileconsumer
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -1384,7 +1383,7 @@ func TestDeleteAfterRead(t *testing.T) {
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, totalLines)
 	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
-
+	operator.persister = testutil.NewMockPersister("test")
 	operator.poll(context.Background())
 	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, totalLines)...)
 
@@ -1518,7 +1517,6 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	bytesPerLine := 100
 	shortFileLine := tokenWithLength(bytesPerLine - 1)
 	longFileLines := 100000
-	longFileSize := longFileLines * bytesPerLine
 	longFileFirstLine := "first line of long file\n"
 
 	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
@@ -1580,12 +1578,6 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 
 	// long file was partially consumed and should NOT have been deleted
 	require.FileExists(t, longFile.Name())
-
-	// Verify that only long file is remembered and that (0 < offset < fileSize)
-	require.Equal(t, 1, len(operator.knownFiles))
-	reader := operator.knownFiles[0]
-	require.True(t, bytes.HasPrefix(reader.Fingerprint.FirstBytes, []byte(longFileFirstLine)))
-	require.Less(t, reader.Offset, int64(longFileSize))
 }
 
 func TestHeaderPersistance(t *testing.T) {

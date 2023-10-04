@@ -150,22 +150,6 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
-	// Save off any files that were not fully read
-	if m.deleteAfterRead {
-		unfinished := make([]*reader.Reader, 0, len(readers))
-		for _, r := range readers {
-			if !r.EOF {
-				unfinished = append(unfinished, r)
-			}
-		}
-		readers = unfinished
-
-		// If all files were read and deleted then no need to do bookkeeping on readers
-		if len(readers) == 0 {
-			return
-		}
-	}
-
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.FromBeginning = true
 
