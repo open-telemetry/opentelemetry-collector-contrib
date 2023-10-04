@@ -41,7 +41,6 @@ type Reader struct {
 	*Config
 	*Metadata
 	FileName      string
-	EOF           bool
 	logger        *zap.SugaredLogger
 	file          *os.File
 	lineSplitFunc bufio.SplitFunc
@@ -49,6 +48,7 @@ type Reader struct {
 	decoder       *decode.Decoder
 	headerReader  *header.Reader
 	processFunc   emit.Callback
+	eof           bool
 }
 
 // offsetToEnd sets the starting offset
@@ -87,10 +87,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		ok := s.Scan()
 		if !ok {
-			r.EOF = true
+			r.eof = true
 			if err := s.Error(); err != nil {
 				// If Scan returned an error then we are not guaranteed to be at the end of the file
-				r.EOF = false
+				r.eof = false
 				r.logger.Errorw("Failed during scan", zap.Error(err))
 			}
 			break
@@ -205,4 +205,8 @@ func (r *Reader) ValidateFingerprint() bool {
 		return false
 	}
 	return refreshedFingerprint.StartsWith(r.Fingerprint)
+}
+
+func (r *Reader) AtEOF() bool {
+	return r.eof
 }
