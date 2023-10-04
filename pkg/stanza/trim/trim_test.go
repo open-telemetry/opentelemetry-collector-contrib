@@ -114,3 +114,63 @@ func TestWithFunc(t *testing.T) {
 		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
 }
+
+func TestToLength(t *testing.T) {
+	testCases := []struct {
+		name      string
+		baseFunc  bufio.SplitFunc
+		maxLength int
+		input     []byte
+		steps     []splittest.Step
+	}{
+		{
+			name:      "IgnoreZeroLength",
+			input:     []byte(" hello \n world \n extra "),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 0,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), " hello "),
+				splittest.ExpectAdvanceToken(len(" world \n"), " world "),
+				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
+			},
+		},
+		{
+			name:      "NoLongTokens",
+			input:     []byte(" hello \n world \n extra "),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 100,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), " hello "),
+				splittest.ExpectAdvanceToken(len(" world \n"), " world "),
+				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
+			},
+		},
+		{
+			name:      "LongButNoToken",
+			input:     []byte("This is a long but incomplete token."),
+			baseFunc:  splittest.ScanLinesStrict,
+			maxLength: 10,
+			steps: []splittest.Step{
+				splittest.ExpectToken("This is a "),
+				splittest.ExpectToken("long but i"),
+				splittest.ExpectToken("ncomplete "),
+			},
+		},
+		{
+			name:      "OneLongToken",
+			input:     []byte("This is a very long token."),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 10,
+			steps: []splittest.Step{
+				splittest.ExpectToken("This is a "),
+				splittest.ExpectToken("very long "),
+				splittest.ExpectToken("token."),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		splitFunc := ToLength(tc.baseFunc, tc.maxLength)
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+	}
+}

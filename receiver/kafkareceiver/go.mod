@@ -26,7 +26,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.45.17 // indirect
+	github.com/aws/aws-sdk-go v1.45.20 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.4.0 // indirect
@@ -69,11 +69,11 @@ require (
 	go.opentelemetry.io/collector/exporter v0.86.0 // indirect
 	go.opentelemetry.io/collector/extension v0.86.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015 // indirect
-	go.opentelemetry.io/otel v1.18.0 // indirect
-	go.opentelemetry.io/otel/metric v1.18.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.18.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.41.0 // indirect
-	go.opentelemetry.io/otel/trace v1.18.0 // indirect
+	go.opentelemetry.io/otel v1.19.0 // indirect
+	go.opentelemetry.io/otel/metric v1.19.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.19.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.19.0 // indirect
+	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
