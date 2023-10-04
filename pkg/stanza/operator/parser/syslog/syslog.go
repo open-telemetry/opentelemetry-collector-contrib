@@ -253,6 +253,7 @@ func (s *Parser) toSafeMap(message map[string]interface{}) (map[string]interface
 }
 
 // convertMap converts map[string]map[string]string to map[string]interface{}
+// which is expected by stanza converter
 func convertMap(data map[string]map[string]string) map[string]interface{} {
 	ret := map[string]interface{}{}
 	for key, value := range data {
