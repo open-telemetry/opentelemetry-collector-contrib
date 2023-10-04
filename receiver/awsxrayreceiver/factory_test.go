@@ -9,21 +9,40 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, component.UseLocalHostAsDefaultHostfeatureGate, false)()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	assert.Equal(t, component.Type(metadata.Type), factory.Type())
+	awsxrayCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+	assert.Equal(t, awsxrayCfg.Endpoint, "0.0.0.0:2000")
+}
+
+func TestCreateDefaultConfigLocalHost(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, component.UseLocalHostAsDefaultHostfeatureGate, true)()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NotNil(t, cfg, "failed to create default config")
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	assert.Equal(t, component.Type(metadata.Type), factory.Type())
+	awsxrayCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+	assert.Equal(t, awsxrayCfg.Endpoint, "localhost:2000")
 }
 
 func TestCreateTracesReceiver(t *testing.T) {

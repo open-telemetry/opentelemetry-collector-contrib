@@ -29,10 +29,10 @@ func createDefaultConfig() component.Config {
 	// in the X-Ray daemon:
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
-		// X-Ray daemon defaults to 127.0.0.1:2000 but
-		// the default in OT is 0.0.0.0.
 		NetAddr: confignet.NetAddr{
-			Endpoint:  "0.0.0.0:2000",
+			// X-Ray daemon defaults to 127.0.0.1:2000 but
+			// the default in OT is 0.0.0.0 (until the component.UseLocalHostAsDefaultHost feature gate is enabled).
+			Endpoint:  component.EndpointForPort(2000),
 			Transport: udppoller.Transport,
 		},
 		ProxyServer: proxy.DefaultConfig(),

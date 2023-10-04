@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -26,6 +27,9 @@ const (
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L184
 	maxPollerCount = 2
 )
+
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
 
 // xrayReceiver implements the receiver.Traces interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
@@ -85,6 +89,10 @@ func newReceiver(config *Config,
 }
 
 func (x *xrayReceiver) Start(ctx context.Context, _ component.Host) error {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(x.settings.Logger)
+	})
+
 	// TODO: Might want to pass `host` into read() below to report a fatal error
 	x.poller.Start(ctx)
 	go x.start()
