@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.45.17
+	github.com/aws/aws-sdk-go v1.45.20
 	github.com/google/cadvisor v0.47.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.86.0
@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.86.0
-	github.com/shirou/gopsutil/v3 v3.23.8
+	github.com/shirou/gopsutil/v3 v3.23.9
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.86.0
 	go.opentelemetry.io/collector/config/confighttp v0.86.0
@@ -94,7 +94,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
-	github.com/rs/cors v1.10.0 // indirect
+	github.com/rs/cors v1.10.1 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
@@ -117,9 +117,9 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.86.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0 // indirect
-	go.opentelemetry.io/otel v1.18.0 // indirect
-	go.opentelemetry.io/otel/metric v1.18.0 // indirect
-	go.opentelemetry.io/otel/trace v1.18.0 // indirect
+	go.opentelemetry.io/otel v1.19.0 // indirect
+	go.opentelemetry.io/otel/metric v1.19.0 // indirect
+	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/oauth2 v0.12.0 // indirect
