@@ -17,6 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -113,7 +114,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 	}
 
 	// Ensure that splitter is buildable
-	factory := splitter.NewFactory(splitFunc, trimFunc, c.FlushPeriod)
+	factory := splitter.NewFactory(splitFunc, trimFunc, c.FlushPeriod, int(c.MaxLogSize))
 	return c.buildManager(logger, emit, factory)
 }
 
@@ -124,7 +125,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	}
 
 	// Ensure that splitter is buildable
-	factory := splitter.NewFactory(splitFunc, c.TrimConfig.Func(), c.FlushPeriod)
+	factory := splitter.NewFactory(splitFunc, c.TrimConfig.Func(), c.FlushPeriod, int(c.MaxLogSize))
 	return c.buildManager(logger, emit, factory)
 }
 
@@ -163,29 +164,29 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
-		readerFactory: readerFactory{
+		readerFactory: reader.Factory{
 			SugaredLogger: logger.With("component", "fileconsumer"),
-			readerConfig: &readerConfig{
-				fingerprintSize:         int(c.FingerprintSize),
-				maxLogSize:              int(c.MaxLogSize),
-				emit:                    emit,
-				includeFileName:         c.IncludeFileName,
-				includeFilePath:         c.IncludeFilePath,
-				includeFileNameResolved: c.IncludeFileNameResolved,
-				includeFilePathResolved: c.IncludeFilePathResolved,
+			Config: &reader.Config{
+				FingerprintSize:         int(c.FingerprintSize),
+				MaxLogSize:              int(c.MaxLogSize),
+				Emit:                    emit,
+				IncludeFileName:         c.IncludeFileName,
+				IncludeFilePath:         c.IncludeFilePath,
+				IncludeFileNameResolved: c.IncludeFileNameResolved,
+				IncludeFilePathResolved: c.IncludeFilePathResolved,
 			},
-			fromBeginning:   startAtBeginning,
-			splitterFactory: factory,
-			encoding:        enc,
-			headerConfig:    hCfg,
+			FromBeginning:   startAtBeginning,
+			SplitterFactory: factory,
+			Encoding:        enc,
+			HeaderConfig:    hCfg,
 		},
 		fileMatcher:     fileMatcher,
-		roller:          newRoller(int(c.FingerprintSize)),
+		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
 		maxBatches:      c.MaxBatches,
 		deleteAfterRead: c.DeleteAfterRead,
-		knownFiles:      make([]*reader, 0, 10),
+		knownFiles:      make([]*reader.Reader, 0, 10*c.MaxConcurrentFiles),
 		seenPaths:       make(map[string]struct{}, 100),
 	}, nil
 }
