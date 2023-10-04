@@ -44,18 +44,20 @@ func (v *KeyValue) Type() string {
 }
 
 type Config struct {
-	WorkerCount       int
-	Rate              int64
-	TotalDuration     time.Duration
-	ReportingInterval time.Duration
+	WorkerCount           int
+	Rate                  int64
+	TotalDuration         time.Duration
+	ReportingInterval     time.Duration
+	SkipSettingGRPCLogger bool
 
 	// OTLP config
-	Endpoint           string
-	Insecure           bool
-	UseHTTP            bool
-	HTTPPath           string
-	Headers            KeyValue
-	ResourceAttributes KeyValue
+	Endpoint            string
+	Insecure            bool
+	UseHTTP             bool
+	HTTPPath            string
+	Headers             KeyValue
+	ResourceAttributes  KeyValue
+	TelemetryAttributes KeyValue
 }
 
 func (c *Config) GetAttributes() []attribute.KeyValue {
@@ -63,6 +65,17 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 
 	if len(c.ResourceAttributes) > 0 {
 		for k, v := range c.ResourceAttributes {
+			attributes = append(attributes, attribute.String(k, v))
+		}
+	}
+	return attributes
+}
+
+func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
+	var attributes []attribute.KeyValue
+
+	if len(c.TelemetryAttributes) > 0 {
+		for k, v := range c.TelemetryAttributes {
 			attributes = append(attributes, attribute.String(k, v))
 		}
 	}
@@ -92,4 +105,8 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format key=\"value\"."+
 		"Note you may need to escape the quotes when using the tool from a cli."+
 		"Flag may be repeated to set multiple attributes (e.g -otlp-attributes key1=\"value1\" -otlp-attributes key2=\"value2\")")
+
+	c.TelemetryAttributes = make(map[string]string)
+	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in the format \"key=\\\"value\\\"\". "+
+		"Flag may be repeated to set multiple attributes (e.g --telemetry-attributes \"key1=\\\"value1\\\"\" --telemetry-attributes \"key2=\\\"value2\\\"\")")
 }

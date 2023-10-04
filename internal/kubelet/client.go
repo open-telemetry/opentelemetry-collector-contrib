@@ -42,10 +42,11 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 		}, nil
 	case k8sconfig.AuthTypeServiceAccount:
 		return &saClientProvider{
-			endpoint:   endpoint,
-			caCertPath: svcAcctCACertPath,
-			tokenPath:  svcAcctTokenPath,
-			logger:     logger,
+			endpoint:           endpoint,
+			caCertPath:         svcAcctCACertPath,
+			tokenPath:          svcAcctTokenPath,
+			insecureSkipVerify: cfg.InsecureSkipVerify,
+			logger:             logger,
 		}, nil
 	case k8sconfig.AuthTypeNone:
 		return &readOnlyClientProvider{
@@ -149,10 +150,11 @@ func (p *tlsClientProvider) BuildClient() (Client, error) {
 }
 
 type saClientProvider struct {
-	endpoint   string
-	caCertPath string
-	tokenPath  string
-	logger     *zap.Logger
+	endpoint           string
+	caCertPath         string
+	tokenPath          string
+	insecureSkipVerify bool
+	logger             *zap.Logger
 }
 
 func (p *saClientProvider) BuildClient() (Client, error) {
@@ -167,7 +169,7 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: p.insecureSkipVerify,
 	}
 	endpoint, err := buildEndpoint(p.endpoint, true, p.logger)
 	if err != nil {

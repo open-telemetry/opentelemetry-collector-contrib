@@ -6,6 +6,7 @@ package traces
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,7 +28,7 @@ import (
 )
 
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
@@ -123,17 +124,24 @@ func Run(c *Config, logger *zap.Logger) error {
 	}
 
 	var statusCode codes.Code
-	if c.StatusCode == "" {
+
+	switch strings.ToLower(c.StatusCode) {
+	case "0", "unset", "":
 		statusCode = codes.Unset
-	} else {
-		if err := statusCode.UnmarshalJSON([]byte(c.StatusCode)); err != nil {
-			return fmt.Errorf("expected `status-code` to be one of (Unset, Error, Ok) or (0, 1, 2), got %q instead", c.StatusCode)
-		}
+	case "1", "error":
+		statusCode = codes.Error
+	case "2", "ok":
+		statusCode = codes.Ok
+	default:
+		return fmt.Errorf("expected `status-code` to be one of (Unset, Error, Ok) or (0, 1, 2), got %q instead", c.StatusCode)
 	}
+
 	wg := sync.WaitGroup{}
 
 	running := &atomic.Bool{}
 	running.Store(true)
+
+	telemetryAttributes := c.GetTelemetryAttributes()
 
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
@@ -149,7 +157,7 @@ func Run(c *Config, logger *zap.Logger) error {
 			loadSize:         c.LoadSize,
 		}
 
-		go w.simulateTraces()
+		go w.simulateTraces(telemetryAttributes)
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)
