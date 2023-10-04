@@ -33,6 +33,8 @@ object configuration parameter.
 - `thrift_compact` (default `endpoint` = 0.0.0.0:6831)
 - `thrift_http` (default `endpoint` = 0.0.0.0:14268)
 
+The `component.UseLocalHostAsDefaultHost` feature gate changes the defaults to use `localhost` instead of `0.0.0.0`.
+
 Examples:
 
 ```yaml

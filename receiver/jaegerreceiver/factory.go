@@ -29,11 +29,10 @@ const (
 	protoThriftBinary  = "thrift_binary"
 	protoThriftCompact = "thrift_compact"
 
-	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint          = "0.0.0.0:14250"
-	defaultHTTPBindEndpoint          = "0.0.0.0:14268"
-	defaultThriftCompactBindEndpoint = "0.0.0.0:6831"
-	defaultThriftBinaryBindEndpoint  = "0.0.0.0:6832"
+	grpcPort          = 14250
+	httpPort          = 14268
+	thriftCompactPort = 6831
+	thriftBinaryPort  = 6832
 )
 
 var disableJaegerReceiverRemoteSampling = featuregate.GlobalRegistry().MustRegister(
@@ -78,19 +77,19 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCBindEndpoint,
+					Endpoint:  component.EndpointForPort(grpcPort),
 					Transport: "tcp",
 				},
 			},
 			ThriftHTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPBindEndpoint,
+				Endpoint: component.EndpointForPort(httpPort),
 			},
 			ThriftBinary: &ProtocolUDP{
-				Endpoint:        defaultThriftBinaryBindEndpoint,
+				Endpoint:        component.EndpointForPort(thriftBinaryPort),
 				ServerConfigUDP: defaultServerConfigUDP(),
 			},
 			ThriftCompact: &ProtocolUDP{
-				Endpoint:        defaultThriftCompactBindEndpoint,
+				Endpoint:        component.EndpointForPort(thriftCompactPort),
 				ServerConfigUDP: defaultServerConfigUDP(),
 			},
 		},

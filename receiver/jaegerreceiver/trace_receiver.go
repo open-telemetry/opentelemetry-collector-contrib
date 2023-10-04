@@ -39,6 +39,9 @@ import (
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
+
 // configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type configuration struct {
@@ -125,6 +128,9 @@ func newJaegerReceiver(
 }
 
 func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(jr.settings.Logger)
+	})
 	if err := jr.startAgent(host); err != nil {
 		return err
 	}
