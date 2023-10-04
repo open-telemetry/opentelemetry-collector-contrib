@@ -1,7 +1,11 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package sampling
 
 import (
 	"errors"
+	"io"
 	"strings"
 
 	"go.uber.org/multierr"
@@ -13,8 +17,7 @@ type KV struct {
 }
 
 var (
-	ErrTraceStateSize  = errors.New("invalid tracestate size")
-	ErrTraceStateCount = errors.New("invalid tracestate item count")
+	ErrTraceStateSize = errors.New("invalid tracestate size")
 )
 
 // keyValueScanner defines distinct scanner behaviors for lists of
@@ -30,6 +33,7 @@ type keyValueScanner struct {
 	equality byte
 }
 
+// commonTraceState is embedded in both W3C and OTel trace states.
 type commonTraceState struct {
 	kvs []KV
 }
@@ -45,15 +49,17 @@ func (cts commonTraceState) ExtraValues() []KV {
 // trimOws removes optional whitespace on both ends of a string.
 func trimOws(input string) string {
 	// Hard-codes the value of owsCharset
-	for len(input) > 0 && input[0] == ' ' || input[0] == '\t' {
+	for len(input) > 0 && (input[0] == ' ' || input[0] == '\t') {
 		input = input[1:]
 	}
-	for len(input) > 0 && input[len(input)-1] == ' ' || input[len(input)-1] == '\t' {
+	for len(input) > 0 && (input[len(input)-1] == ' ' || input[len(input)-1] == '\t') {
 		input = input[:len(input)-1]
 	}
 	return input
 }
 
+// scanKeyValues is common code to scan either W3C or OTel tracestate
+// entries, as parameterized in the keyValueScanner struct.
 func (s keyValueScanner) scanKeyValues(input string, f func(key, value string) error) error {
 	var rval error
 	items := 0
@@ -62,7 +68,7 @@ func (s keyValueScanner) scanKeyValues(input string, f func(key, value string) e
 		if s.maxItems > 0 && items >= s.maxItems {
 			// W3C specifies max 32 entries, tested here
 			// instead of via the regexp.
-			return ErrTraceStateCount
+			return ErrTraceStateSize
 		}
 
 		sep := strings.IndexByte(input, s.separator)
@@ -97,4 +103,22 @@ func (s keyValueScanner) scanKeyValues(input string, f func(key, value string) e
 		}
 	}
 	return rval
+}
+
+// serializer assists with checking and combining errors from
+// (io.StringWriter).WriteString().
+type serializer struct {
+	writer io.StringWriter
+	err    error
+}
+
+// write handles errors from io.StringWriter.
+func (ser *serializer) write(str string) {
+	_, err := ser.writer.WriteString(str)
+	ser.check(err)
+}
+
+// check handles errors (e.g., from another serializer).
+func (ser *serializer) check(err error) {
+	ser.err = multierr.Append(ser.err, err)
 }

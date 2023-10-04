@@ -1,9 +1,13 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package sampling
 
 import (
 	"io"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 type W3CTraceState struct {
@@ -12,7 +16,13 @@ type W3CTraceState struct {
 }
 
 const (
-	hardMaxW3CLength = 1024
+	hardMaxNumPairs     = 32
+	hardMaxW3CLength    = 1024
+	hardMaxKeyLength    = 256
+	hardMaxTenantLength = 241
+	hardMaxSystemLength = 14
+
+	otelVendorCode = "ot"
 
 	// keyRegexp is not an exact test, it permits all the
 	// characters and then we check various conditions.
@@ -27,10 +37,11 @@ const (
 	lcAlphaRegexp        = `[a-z]`
 	lcDigitPunctRegexp   = `[a-z0-9\-\*/_]`
 	lcDigitRegexp        = `[a-z0-9]`
-	tenantIDRegexp       = lcDigitRegexp + lcDigitPunctRegexp + `{0,240}`
-	systemIDRegexp       = lcAlphaRegexp + lcDigitPunctRegexp + `{0,13}`
-	multiTenantKeyRegexp = tenantIDRegexp + `@` + systemIDRegexp
-	simpleKeyRegexp      = lcAlphaRegexp + lcDigitPunctRegexp + `{0,255}`
+	multiTenantSep       = `@`
+	tenantIDRegexp       = lcDigitRegexp + lcDigitPunctRegexp + `*` // could be {0,hardMaxTenantLength-1}
+	systemIDRegexp       = lcAlphaRegexp + lcDigitPunctRegexp + `*` // could be {0,hardMaxSystemLength-1}
+	multiTenantKeyRegexp = tenantIDRegexp + multiTenantSep + systemIDRegexp
+	simpleKeyRegexp      = lcAlphaRegexp + lcDigitPunctRegexp + `*` // could be {0,hardMaxKeyLength-1}
 	keyRegexp            = `(?:(?:` + simpleKeyRegexp + `)|(?:` + multiTenantKeyRegexp + `))`
 
 	// value    = 0*255(chr) nblk-chr
@@ -49,22 +60,23 @@ const (
 	// list-member = (key "=" value) / OWS
 
 	owsCharSet      = ` \t`
-	owsRegexp       = `[` + owsCharSet + `]*`
-	w3cMemberRegexp = `(?:` + keyRegexp + `=` + valueRegexp + `)|(?:` + owsRegexp + `)`
+	owsRegexp       = `(?:[` + owsCharSet + `]*)`
+	w3cMemberRegexp = `(?:` + keyRegexp + `=` + valueRegexp + `)?`
 
 	// This regexp is large enough that regexp impl refuses to
 	// make 31 copies of it (i.e., `{0,31}`) so we use `*` below.
-	w3cOwsCommaMemberRegexp = `(?:` + owsRegexp + `,` + owsRegexp + w3cMemberRegexp + `)`
+	w3cOwsMemberOwsRegexp      = `(?:` + owsRegexp + w3cMemberRegexp + owsRegexp + `)`
+	w3cCommaOwsMemberOwsRegexp = `(?:` + `,` + w3cOwsMemberOwsRegexp + `)`
 
 	// The limit to 31 of owsCommaMemberRegexp is applied in code.
-	w3cTracestateRegexp = `^` + w3cMemberRegexp + w3cOwsCommaMemberRegexp + `*$`
+	w3cTracestateRegexp = `^` + w3cOwsMemberOwsRegexp + w3cCommaOwsMemberOwsRegexp + `*$`
 )
 
 var (
 	w3cTracestateRe = regexp.MustCompile(w3cTracestateRegexp)
 
 	w3cSyntax = keyValueScanner{
-		maxItems:  32,
+		maxItems:  hardMaxNumPairs,
 		trim:      true,
 		separator: ',',
 		equality:  '=',
@@ -81,8 +93,19 @@ func NewW3CTraceState(input string) (w3c W3CTraceState, _ error) {
 	}
 
 	err := w3cSyntax.scanKeyValues(input, func(key, value string) error {
+		if len(key) > hardMaxKeyLength {
+			return ErrTraceStateSize
+		}
+		if tenant, system, found := strings.Cut(key, multiTenantSep); found {
+			if len(tenant) > hardMaxTenantLength {
+				return ErrTraceStateSize
+			}
+			if len(system) > hardMaxSystemLength {
+				return ErrTraceStateSize
+			}
+		}
 		switch key {
-		case "ot":
+		case otelVendorCode:
 			var err error
 			w3c.otts, err = NewOTelTraceState(value)
 			return err
@@ -109,23 +132,25 @@ func (w3c *W3CTraceState) HasOTelValue() bool {
 	return w3c.otts.HasAnyValue()
 }
 
-func (w3c *W3CTraceState) Serialize(w io.StringWriter) {
+func (w3c *W3CTraceState) Serialize(w io.StringWriter) error {
+	ser := serializer{writer: w}
 	cnt := 0
 	sep := func() {
 		if cnt != 0 {
-			w.WriteString(",")
+			ser.write(",")
 		}
 		cnt++
 	}
 	if w3c.otts.HasAnyValue() {
 		sep()
-		w.WriteString("ot=")
-		w3c.otts.Serialize(w)
+		ser.write("ot=")
+		ser.check(w3c.otts.Serialize(w))
 	}
 	for _, kv := range w3c.ExtraValues() {
 		sep()
-		w.WriteString(kv.Key)
-		w.WriteString("=")
-		w.WriteString(kv.Value)
+		ser.write(kv.Key)
+		ser.write("=")
+		ser.write(kv.Value)
 	}
+	return ser.err
 }

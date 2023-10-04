@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package unsigned
+package sampling
 
 import (
 	"errors"
@@ -25,8 +14,9 @@ const (
 	MaxAdjustedCount = 1 << 56
 
 	// NumHexDigits is the number of hex digits equalling 56 bits.
-	NumHexDigits = 56 / 4
+	NumHexDigits = 56 / hexBits
 
+	hexBits = 4
 	hexBase = 16
 )
 
@@ -47,7 +37,8 @@ var (
 	AlwaysSampleThreshold = Threshold{unsigned: MaxAdjustedCount}
 )
 
-// TValueToThreshold returns a Threshold, see Threshold.ShouldSample(TraceID).
+// TValueToThreshold returns a Threshold.  Because TValue strings
+// have trailing zeros omitted, this function performs the reverse.
 func TValueToThreshold(s string) (Threshold, error) {
 	if len(s) > NumHexDigits {
 		return AlwaysSampleThreshold, ErrTValueSize
@@ -56,36 +47,45 @@ func TValueToThreshold(s string) (Threshold, error) {
 		return AlwaysSampleThreshold, nil
 	}
 
-	// Note that this handles zero correctly, but the inverse
-	// operation does not.  I.e., "0" parses as unsigned == 0.
+	// Having checked length above, there are no range errors
+	// possible.  Parse the hex string to an unsigned valued.
 	unsigned, err := strconv.ParseUint(s, hexBase, 64)
 	if err != nil {
-		return AlwaysSampleThreshold, err
+		return AlwaysSampleThreshold, err // e.g. parse error
 	}
 
-	// Zero-padding is done by shifting 4 bits per absent hex digit.
-	extend := NumHexDigits - len(s)
+	// The unsigned value requires shifting to account for the
+	// trailing zeros that were omitted by the encoding (see
+	// TValue for the reverse).  Compute the number to shift by:
+	extendByHexZeros := NumHexDigits - len(s)
 	return Threshold{
-		unsigned: unsigned << (4 * extend),
+		unsigned: unsigned << (hexBits * extendByHexZeros),
 	}, nil
 }
 
+// TValue encodes a threshold, which is a variable-length hex string
+// up to 14 characters.  The empty string is returned for 100%
+// sampling.
 func (th Threshold) TValue() string {
 	// Special cases
 	switch th.unsigned {
 	case MaxAdjustedCount:
-		// 100% sampling
+		// 100% sampling.  Samplers are specified not to
+		// include a TValue in this case.
 		return ""
 	case 0:
-		// 0% sampling.  This is a special case, otherwise, the TrimRight
-		// below will return an empty matching the case above.
+		// 0% sampling.  This is a special case, otherwise,
+		// the TrimRight below will return an empty string
+		// matching the case above.
 		return "0"
 	}
-	// Add MaxAdjustedCount yields 15 hex digits with a leading "1".
-	allBits := MaxAdjustedCount + th.unsigned
-	// Then format and remove the most-significant hex digit.
-	digits := strconv.FormatUint(allBits, hexBase)[1:]
-	// Leaving NumHexDigits hex digits, with trailing zeros removed.
+
+	// For thresholds other than the extremes, format a full-width
+	// (14 digit) unsigned value with leading zeros, then, remove
+	// the trailing zeros.  Use the logic for (Randomness).RValue().
+	digits := Randomness(th).RValue()
+
+	// Remove trailing zeros.
 	return strings.TrimRight(digits, "0")
 }
 

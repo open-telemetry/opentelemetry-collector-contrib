@@ -1,6 +1,10 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package sampling
 
 import (
+	"fmt"
 	"io"
 	"regexp"
 	"strconv"
@@ -18,9 +22,9 @@ type OTelTraceState struct {
 
 const (
 	// RName is the OTel tracestate field for R-value
-	RName = "rv"
+	RName = "r"
 	// TName is the OTel tracestate field for T-value
-	TName = "th"
+	TName = "t"
 
 	// hardMaxOTelLength is the maximum encoded size of an OTel
 	// tracestate value.
@@ -49,15 +53,27 @@ var (
 		separator: ';',
 		equality:  ':',
 	}
+
+	// ErrInconsistentSampling is returned when a sampler update
+	// is illogical.  It is safe to ignore.  Samplers should avoid
+	// this condition using a ThresholdLessThan() test.
+	ErrInconsistentSampling = fmt.Errorf("cannot raise existing sampling probability")
+	ErrInconsistentZero     = fmt.Errorf("cannot zero sampling probability")
 )
 
-func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
+func NewOTelTraceState(input string) (OTelTraceState, error) {
+	// Note: the default value has threshold == 0 and tvalue == "".
+	// It is important to recognize this as always-sample, meaning
+	// to check HasTValue() before using TValueThreshold(), since
+	// TValueThreshold() == NeverSampleThreshold when !HasTValue().
+	otts := OTelTraceState{}
+
 	if len(input) > hardMaxOTelLength {
 		return otts, ErrTraceStateSize
 	}
 
 	if !otelTracestateRe.MatchString(input) {
-		return OTelTraceState{}, strconv.ErrSyntax
+		return otts, strconv.ErrSyntax
 	}
 
 	err := otelSyntax.scanKeyValues(input, func(key, value string) error {
@@ -70,12 +86,14 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 				// The zero-value for randomness implies always-sample;
 				// the threshold test is R < T, but T is not meaningful
 				// at zero, and this value implies zero adjusted count.
+				otts.rvalue = ""
 				otts.rnd = Randomness{}
 			}
 		case TName:
 			if otts.threshold, err = TValueToThreshold(value); err == nil {
 				otts.tvalue = value
 			} else {
+				otts.tvalue = ""
 				otts.threshold = AlwaysSampleThreshold
 			}
 		default:
@@ -106,8 +124,8 @@ func (otts *OTelTraceState) HasTValue() bool {
 	return otts.tvalue != ""
 }
 
-func (otts *OTelTraceState) HasNonZeroTValue() bool {
-	return otts.HasTValue() && otts.TValueThreshold() != NeverSampleThreshold
+func (otts *OTelTraceState) HasZeroTValue() bool {
+	return otts.HasTValue() && otts.TValueThreshold() == NeverSampleThreshold
 }
 
 func (otts *OTelTraceState) TValue() string {
@@ -118,22 +136,36 @@ func (otts *OTelTraceState) TValueThreshold() Threshold {
 	return otts.threshold
 }
 
-func (otts *OTelTraceState) SetTValue(threshold Threshold, encoded string) {
-	otts.threshold = threshold
-	otts.tvalue = encoded
+func (otts *OTelTraceState) UpdateTValueWithSampling(sampledThreshold Threshold, encodedTValue string) error {
+	if otts.HasTValue() && ThresholdLessThan(otts.threshold, sampledThreshold) {
+		return ErrInconsistentSampling
+	}
+	otts.threshold = sampledThreshold
+	otts.tvalue = encodedTValue
+	return nil
 }
 
-func (otts *OTelTraceState) UnsetTValue() {
+func (otts *OTelTraceState) AdjustedCount() float64 {
+	if !otts.HasTValue() {
+		return 1
+	}
+	if otts.TValueThreshold() == NeverSampleThreshold {
+		return 0
+	}
+	return 1.0 / otts.threshold.Probability()
+}
+
+func (otts *OTelTraceState) ClearTValue() {
 	otts.tvalue = ""
 	otts.threshold = Threshold{}
 }
 
 func (otts *OTelTraceState) SetRValue(randomness Randomness) {
 	otts.rnd = randomness
-	otts.rvalue = randomness.ToRValue()
+	otts.rvalue = randomness.RValue()
 }
 
-func (otts *OTelTraceState) UnsetRValue() {
+func (otts *OTelTraceState) ClearRValue() {
 	otts.rvalue = ""
 	otts.rnd = Randomness{}
 }
@@ -142,30 +174,32 @@ func (otts *OTelTraceState) HasAnyValue() bool {
 	return otts.HasRValue() || otts.HasTValue() || otts.HasExtraValues()
 }
 
-func (otts *OTelTraceState) Serialize(w io.StringWriter) {
+func (otts *OTelTraceState) Serialize(w io.StringWriter) error {
+	ser := serializer{writer: w}
 	cnt := 0
 	sep := func() {
 		if cnt != 0 {
-			w.WriteString(";")
+			ser.write(";")
 		}
 		cnt++
 	}
 	if otts.HasRValue() {
 		sep()
-		w.WriteString(RName)
-		w.WriteString(":")
-		w.WriteString(otts.RValue())
+		ser.write(RName)
+		ser.write(":")
+		ser.write(otts.RValue())
 	}
 	if otts.HasTValue() {
 		sep()
-		w.WriteString(TName)
-		w.WriteString(":")
-		w.WriteString(otts.TValue())
+		ser.write(TName)
+		ser.write(":")
+		ser.write(otts.TValue())
 	}
 	for _, kv := range otts.ExtraValues() {
 		sep()
-		w.WriteString(kv.Key)
-		w.WriteString(":")
-		w.WriteString(kv.Value)
+		ser.write(kv.Key)
+		ser.write(":")
+		ser.write(kv.Value)
 	}
+	return ser.err
 }
