@@ -39,6 +39,9 @@ type metricsReceiver struct {
 	settings component.TelemetrySettings
 }
 
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
+
 func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
 	influxLogger := newZapInfluxLogger(settings.TelemetrySettings.Logger)
 	converter, err := influx2otel.NewLineProtocolToOtelMetrics(influxLogger)
@@ -65,6 +68,10 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 }
 
 func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(r.settings.Logger)
+	})
+
 	ln, err := r.httpServerSettings.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.httpServerSettings.Endpoint, err)
