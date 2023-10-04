@@ -12,7 +12,7 @@ jobs:
   get_issues:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: npm install js-yaml
         working-directory: ./.github/workflows/scripts
       - uses: actions/github-script@v6
