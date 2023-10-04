@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/Azure/azure-kusto-go v0.13.1
-	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/google/uuid v1.3.1
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.86.0
