@@ -247,6 +247,8 @@ func TestComponentNameWithUnsafeCharacters(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, client)
+
+	client.Close(context.Background())
 }
 
 func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
