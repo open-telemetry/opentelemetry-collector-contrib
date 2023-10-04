@@ -205,3 +205,24 @@ with ( docstring = "Histo sum count processing function", folder = "UpdatePolicy
 .alter table HistoData policy update 
 @'[{ "IsEnabled": true, "Source": "RawMetricsData","Query": "ExtractHistoCountColumns()", "IsTransactional": false, "PropagateIngestionProperties": false}]'
 ```
+
+### Opentelemetry Exporter Helper Configurations
+
+The ADX exporter now includes support for Opentelemetry exporter helper configurations. This feature allows you to leverage the exporter helper capabilities(retries, timeout etc.) provided natively by Otel.
+
+Please note that this configuration is not enabled by default. To utilize the Opentelemetry exporter helper, you will need to add it manually to the configuration.
+
+#### Example Configuration
+
+```yaml
+# Example Opentelemetry Exporter Configuration
+  timeout: 10s
+  sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 10
+  retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
