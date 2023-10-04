@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	defaultEndpoint = "0.0.0.0:2000"
+	port = 2000
 )
 
 // NewFactory creates a factory for awsproxy extension.
@@ -33,7 +33,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ProxyConfig: proxy.Config{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: defaultEndpoint,
+				Endpoint: component.EndpointForPort(port),
 			},
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: false,

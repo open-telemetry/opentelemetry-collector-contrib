@@ -24,11 +24,26 @@ import (
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, component.UseLocalHostAsDefaultHostfeatureGate, false)()
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ProxyConfig: proxy.Config{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: defaultEndpoint,
+				Endpoint: "0.0.0.0:2000",
+			},
+		},
+	}, cfg)
+
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+func TestFactory_CreateDefaultConfigLocalhost(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, component.UseLocalHostAsDefaultHostfeatureGate, true)()
+	cfg := createDefaultConfig()
+	assert.Equal(t, &Config{
+		ProxyConfig: proxy.Config{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "localhost:2000",
 			},
 		},
 	}, cfg)
