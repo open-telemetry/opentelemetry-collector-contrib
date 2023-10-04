@@ -103,7 +103,7 @@ func TestFormatRFC5424(t *testing.T) {
 		"proc_id":       "8710",
 		"version":       1,
 		"structured_data": map[string]interface{}{
-			"SecureAuth@27389": map[string]string{
+			"SecureAuth@27389": map[string]interface{}{
 				"PEN":             "27389",
 				"Realm":           "SecureAuth0",
 				"UserHostAddress": "192.168.2.132",
