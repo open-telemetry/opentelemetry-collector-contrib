@@ -31,6 +31,9 @@ const (
 
 const ErrAtLeastOneEntryFailedToProcess = "at least one entry in the push request failed to process"
 
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
+
 type lokiReceiver struct {
 	conf         *Config
 	nextConsumer consumer.Logs
@@ -169,6 +172,9 @@ func (r *lokiReceiver) Push(ctx context.Context, pushRequest *push.PushRequest) 
 }
 
 func (r *lokiReceiver) Start(_ context.Context, host component.Host) error {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(r.settings.Logger)
+	})
 	return r.startProtocolsServers(host)
 }
 

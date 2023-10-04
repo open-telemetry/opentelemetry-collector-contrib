@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	defaultGRPCBindEndpoint = "0.0.0.0:3600"
-	defaultHTTPBindEndpoint = "0.0.0.0:3500"
+	grpcPort = 3600
+	httpPort = 3500
 )
 
 // NewFactory return a new receiver.Factory for loki receiver.
@@ -36,12 +36,12 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCBindEndpoint,
+					Endpoint:  component.EndpointForPort(grpcPort),
 					Transport: "tcp",
 				},
 			},
 			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPBindEndpoint,
+				Endpoint: component.EndpointForPort(httpPort),
 			},
 		},
 	}
