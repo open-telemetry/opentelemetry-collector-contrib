@@ -17,7 +17,7 @@ import (
 // This file implements factory for Zipkin receiver.
 
 const (
-	defaultBindEndpoint = "0.0.0.0:9411"
+	port = 9411
 )
 
 // NewFactory creates a new Zipkin receiver factory
@@ -33,7 +33,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultBindEndpoint,
+			Endpoint: component.EndpointForPort(9411),
 		},
 		ParseStringTags: false,
 	}

@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "parse_strings"),
 			expected: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: defaultBindEndpoint,
+					Endpoint: "0.0.0.0:9411",
 				},
 				ParseStringTags: true,
 			},
