@@ -18,6 +18,8 @@ const (
 
 	hexBits = 4
 	hexBase = 16
+
+	NeverSampleTValue = "0"
 )
 
 // Threshold used to compare with the least-significant 7 bytes of the TraceID.
