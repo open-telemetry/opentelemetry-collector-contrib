@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/google/go-github/v53 v53.2.0
 	go.opentelemetry.io/collector/confmap v0.86.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -26,5 +27,4 @@ require (
 	golang.org/x/sys v0.12.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
