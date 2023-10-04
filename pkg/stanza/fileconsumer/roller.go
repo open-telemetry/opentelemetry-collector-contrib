@@ -3,10 +3,14 @@
 
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
-import "context"
+import (
+	"context"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+)
 
 type roller interface {
-	readLostFiles(context.Context, []*reader)
-	roll(context.Context, []*reader)
+	readLostFiles(context.Context, []*reader.Reader)
+	roll(context.Context, []*reader.Reader)
 	cleanup()
 }
