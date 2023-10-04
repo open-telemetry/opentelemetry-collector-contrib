@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
@@ -33,8 +34,9 @@ const (
 	authConfigmapNS             = "kube-system"
 	authConfigmapName           = "aws-auth"
 
-	clusterNameAwsEksTag = "aws:eks:cluster-name"
-	clusterNameEksTag    = "eks:cluster-name"
+	clusterNameAwsEksTag     = "aws:eks:cluster-name"
+	clusterNameEksTag        = "eks:cluster-name"
+	kubernetesClusterNameTag = "kubernetes.io/cluster/"
 )
 
 type detectorUtils interface {
@@ -131,20 +133,20 @@ func (e eksDetectorUtils) getConfigMap(ctx context.Context, namespace string, na
 }
 
 func (e eksDetectorUtils) getClusterName() (string, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSRegion())
 	if err != nil {
 		return "", err
 	}
-
-	ec2IMS := imds.NewFromConfig(cfg)
-	regionOutput, err := ec2IMS.GetRegion(context.TODO(), &imds.GetRegionInput{})
-	if err != nil {
-		return "", err
-	}
-	cfg.Region = regionOutput.Region
 
 	client := ec2.NewFromConfig(cfg)
-	describeInstances, err := client.DescribeInstances(context.TODO(), &ec2.DescribeInstancesInput{})
+	ec2ImdsClient := imds.NewFromConfig(cfg)
+	instanceIDDoc, err := ec2ImdsClient.GetInstanceIdentityDocument(context.TODO(), &imds.GetInstanceIdentityDocumentInput{})
+	if err != nil {
+		return "", err
+	}
+
+	describeInstances, err := client.DescribeInstances(context.TODO(),
+		&ec2.DescribeInstancesInput{InstanceIds: []string{instanceIDDoc.InstanceID}})
 	if err != nil {
 		return "", err
 	}
@@ -163,6 +165,8 @@ func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []types
 			for _, tag := range instance.Tags {
 				if *tag.Key == clusterNameAwsEksTag || *tag.Key == clusterNameEksTag {
 					return *tag.Value
+				} else if strings.HasPrefix(*tag.Key, kubernetesClusterNameTag) {
+					return strings.TrimPrefix(*tag.Key, kubernetesClusterNameTag)
 				}
 			}
 		}
