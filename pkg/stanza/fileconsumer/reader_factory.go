@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
@@ -99,24 +100,24 @@ func (f *readerFactory) build(file *os.File, m *readerMetadata, lineSplitFunc bu
 	}
 
 	if f.readerConfig.includeFileName {
-		r.FileAttributes[logFileName] = filepath.Base(r.fileName)
-	} else if r.FileAttributes[logFileName] != nil {
-		delete(r.FileAttributes, logFileName)
+		r.FileAttributes[attrs.LogFileName] = filepath.Base(r.fileName)
+	} else if r.FileAttributes[attrs.LogFileName] != nil {
+		delete(r.FileAttributes, attrs.LogFileName)
 	}
 	if f.readerConfig.includeFilePath {
-		r.FileAttributes[logFilePath] = r.fileName
-	} else if r.FileAttributes[logFilePath] != nil {
-		delete(r.FileAttributes, logFilePath)
+		r.FileAttributes[attrs.LogFilePath] = r.fileName
+	} else if r.FileAttributes[attrs.LogFilePath] != nil {
+		delete(r.FileAttributes, attrs.LogFilePath)
 	}
 	if f.readerConfig.includeFileNameResolved {
-		r.FileAttributes[logFileNameResolved] = filepath.Base(abs)
-	} else if r.FileAttributes[logFileNameResolved] != nil {
-		delete(r.FileAttributes, logFileNameResolved)
+		r.FileAttributes[attrs.LogFileNameResolved] = filepath.Base(abs)
+	} else if r.FileAttributes[attrs.LogFileNameResolved] != nil {
+		delete(r.FileAttributes, attrs.LogFileNameResolved)
 	}
 	if f.readerConfig.includeFilePathResolved {
-		r.FileAttributes[logFilePathResolved] = abs
-	} else if r.FileAttributes[logFilePathResolved] != nil {
-		delete(r.FileAttributes, logFilePathResolved)
+		r.FileAttributes[attrs.LogFilePathResolved] = abs
+	} else if r.FileAttributes[attrs.LogFilePathResolved] != nil {
+		delete(r.FileAttributes, attrs.LogFilePathResolved)
 	}
 
 	return r, nil

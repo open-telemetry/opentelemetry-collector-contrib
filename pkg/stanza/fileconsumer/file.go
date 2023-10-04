@@ -19,13 +19,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-const (
-	logFileName         = "log.file.name"
-	logFilePath         = "log.file.path"
-	logFileNameResolved = "log.file.name_resolved"
-	logFilePathResolved = "log.file.path_resolved"
-)
-
 type Manager struct {
 	*zap.SugaredLogger
 	wg     sync.WaitGroup

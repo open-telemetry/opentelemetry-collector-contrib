@@ -180,3 +180,23 @@ func min0(a, b int) int {
 	}
 	return b
 }
+
+// validateFingerprint checks whether or not the reader still has a valid file handle.
+//
+// It creates a new fingerprint from the old file handle and compares it to the
+// previously known fingerprint. If there has been a change to the fingerprint
+// (other than appended data), the file is considered invalid. Consequently, the
+// reader will automatically close the file and drop the handle.
+//
+// The function returns true if the file handle is still valid, false otherwise.
+func (r *reader) validateFingerprint() bool {
+	if r.file == nil {
+		return false
+	}
+	refreshedFingerprint, err := fingerprint.New(r.file, r.fingerprintSize)
+	if err != nil {
+		r.Debugw("Failed to create fingerprint", zap.Error(err))
+		return false
+	}
+	return refreshedFingerprint.StartsWith(r.Fingerprint)
+}
