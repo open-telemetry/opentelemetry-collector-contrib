@@ -29,6 +29,8 @@ object configuration parameter.
 - `grpc` (default `endpoint` = 0.0.0.0:11800)
 - `http` (default `endpoint` = 0.0.0.0:12800)
 
+The `component.UseLocalHostAsDefaultHost` feature gate changes the defaults from 0.0.0.0 to localhost.
+
 Examples:
 
 ```yaml

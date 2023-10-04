@@ -27,9 +27,8 @@ const (
 	protoGRPC = "grpc"
 	protoHTTP = "http"
 
-	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint = "0.0.0.0:11800"
-	defaultHTTPBindEndpoint = "0.0.0.0:12800"
+	grpcPort = 11800
+	httpPort = 12800
 )
 
 // NewFactory creates a new Skywalking receiver factory.
@@ -47,12 +46,12 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCBindEndpoint,
+					Endpoint:  component.EndpointForPort(grpcPort),
 					Transport: "tcp",
 				},
 			},
 			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPBindEndpoint,
+				Endpoint: component.EndpointForPort(httpPort),
 			},
 		},
 	}

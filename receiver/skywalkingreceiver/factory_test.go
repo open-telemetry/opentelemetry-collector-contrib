@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
@@ -31,10 +32,28 @@ func TestTypeStr(t *testing.T) {
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	defer testutil.SetFeatureGateForTest(t, component.UseLocalHostAsDefaultHostfeatureGate, false)()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	swCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+	assert.Equal(t, swCfg.Protocols.GRPC.NetAddr.Endpoint, "0.0.0.0:11800")
+	assert.Equal(t, swCfg.Protocols.HTTP.Endpoint, "0.0.0.0:12800")
+
+}
+
+func TestCreateDefaultConfigLocalHost(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, component.UseLocalHostAsDefaultHostfeatureGate, true)()
+	cfg := createDefaultConfig()
+	assert.NotNil(t, cfg, "failed to create default config")
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	swCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+	assert.Equal(t, swCfg.Protocols.GRPC.NetAddr.Endpoint, "localhost:11800")
+	assert.Equal(t, swCfg.Protocols.HTTP.Endpoint, "localhost:12800")
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -43,7 +62,7 @@ func TestCreateReceiver(t *testing.T) {
 	// have to enable at least one protocol for the skywalking receiver to be created
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
-			Endpoint:  defaultGRPCBindEndpoint,
+			Endpoint:  "0.0.0.0:11800",
 			Transport: "tcp",
 		},
 	}
@@ -88,7 +107,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
-			Endpoint:  defaultGRPCBindEndpoint,
+			Endpoint:  "0.0.0.0:11800",
 			Transport: "tcp",
 		},
 	}
@@ -106,7 +125,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
-			Endpoint:  defaultGRPCBindEndpoint,
+			Endpoint:  "0.0.0.0:11800",
 			Transport: "tcp",
 		},
 		TLSSetting: &configtls.TLSServerSetting{
@@ -127,7 +146,7 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.HTTP = &confighttp.HTTPServerSettings{
-		Endpoint: defaultHTTPBindEndpoint,
+		Endpoint: "0.0.0.0:12800",
 		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
 				CertFile: "./testdata/server.crt",
@@ -147,7 +166,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.HTTP = &confighttp.HTTPServerSettings{
-		Endpoint: defaultHTTPBindEndpoint,
+		Endpoint: "0.0.0.0:12800",
 	}
 	set := receivertest.NewNopCreateSettings()
 	traceSink := new(consumertest.TracesSink)

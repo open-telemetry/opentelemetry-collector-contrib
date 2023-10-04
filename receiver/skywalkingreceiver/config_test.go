@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
 						NetAddr: confignet.NetAddr{
-							Endpoint:  defaultGRPCBindEndpoint,
+							Endpoint:  "0.0.0.0:11800",
 							Transport: "tcp",
 						},
 					},

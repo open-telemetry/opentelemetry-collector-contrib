@@ -29,6 +29,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/trace"
 )
 
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
+
 // configuration defines the behavior and the ports that
 // the Skywalking receiver will use.
 type configuration struct {
@@ -111,6 +114,10 @@ func (sr *swReceiver) collectorHTTPEnabled() bool {
 }
 
 func (sr *swReceiver) Start(_ context.Context, host component.Host) error {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(sr.settings.Logger)
+	})
+
 	return sr.startCollector(host)
 }
 
