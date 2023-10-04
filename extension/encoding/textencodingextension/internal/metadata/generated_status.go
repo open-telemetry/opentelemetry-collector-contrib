@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type               = "encoding"
+	Type               = "textencoding"
 	ExtensionStability = component.StabilityLevelDevelopment
 )
