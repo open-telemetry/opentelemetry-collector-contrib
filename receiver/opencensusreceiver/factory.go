@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
 			NetAddr: confignet.NetAddr{
-				Endpoint:  "0.0.0.0:55678",
+				Endpoint:  component.EndpointForPort(55678),
 				Transport: "tcp",
 			},
 			// We almost write 0 bytes, so no need to tune WriteBufferSize.

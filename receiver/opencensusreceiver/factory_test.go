@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -20,9 +21,25 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, component.UseLocalHostAsDefaultHostfeatureGate, false)()
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	ocCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+	assert.Equal(t, ocCfg.GRPCServerSettings.NetAddr.Endpoint, "0.0.0.0:55678")
+}
+
+func TestCreateDefaultConfigLocalHost(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, component.UseLocalHostAsDefaultHostfeatureGate, true)()
+	cfg := createDefaultConfig()
+	assert.NotNil(t, cfg, "failed to create default config")
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	ocCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+	assert.Equal(t, ocCfg.GRPCServerSettings.NetAddr.Endpoint, "localhost:55678")
 }
 
 func TestCreateReceiver(t *testing.T) {

@@ -28,6 +28,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/octrace"
 )
 
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
+
 // ocReceiver is the type that exposes Trace and Metrics reception.
 type ocReceiver struct {
 	mu                 sync.Mutex
@@ -86,6 +89,10 @@ func newOpenCensusReceiver(
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (ocr *ocReceiver) Start(_ context.Context, host component.Host) error {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(ocr.settings.Logger)
+	})
+
 	hasConsumer := false
 	if ocr.traceConsumer != nil {
 		hasConsumer = true
