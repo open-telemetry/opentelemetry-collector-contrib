@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -27,6 +28,9 @@ import (
 const jmxMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
 
 var _ receiver.Metrics = (*jmxMetricReceiver)(nil)
+
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
 
 type jmxMetricReceiver struct {
 	logger       *zap.Logger
@@ -53,6 +57,9 @@ func newJMXMetricReceiver(
 
 func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) error {
 	jmx.logger.Debug("starting JMX Receiver")
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(jmx.logger)
+	})
 
 	var err error
 	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()

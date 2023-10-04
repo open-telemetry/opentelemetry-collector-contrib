@@ -118,6 +118,9 @@ The otlp exporter endpoint to which to listen and submit metrics.
 
 Corresponds to the `otel.exporter.otlp.endpoint` property.
 
+The `component.UseLocalHostAsDefaultHost` feature gate changes 
+the default to `localhost:<random open port>`.
+
 ### otlp.timeout (default: `5s`)
 
 The otlp exporter request timeout.

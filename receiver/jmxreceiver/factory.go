@@ -15,10 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
 )
 
-const (
-	otlpEndpoint = "0.0.0.0:0"
-)
-
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
@@ -31,7 +27,7 @@ func createDefaultConfig() component.Config {
 		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 		CollectionInterval: 10 * time.Second,
 		OTLPExporterConfig: otlpExporterConfig{
-			Endpoint: otlpEndpoint,
+			Endpoint: component.EndpointForPort(0),
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 5 * time.Second,
 			},
