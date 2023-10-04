@@ -111,3 +111,5 @@ retract (
 
 // https://github.com/go-openapi/spec/issues/156
 replace github.com/go-openapi/spec v0.20.5 => github.com/go-openapi/spec v0.20.6
+
+replace go.opentelemetry.io/collector/component => github.com/mx-psi/opentelemetry-collector/component v0.0.0-20231004155359-8f14eb08185e

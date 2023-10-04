@@ -110,3 +110,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 // see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240
 replace github.com/docker/docker v24.0.4+incompatible => github.com/docker/docker v24.0.5-0.20230719162248-f022632503d1+incompatible
+
+replace go.opentelemetry.io/collector/component => github.com/mx-psi/opentelemetry-collector/component v0.0.0-20231004155359-8f14eb08185e

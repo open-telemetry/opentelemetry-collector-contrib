@@ -77,3 +77,5 @@ require (
 replace github.com/DataDog/datadog-agent/pkg/proto => github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
 
 replace github.com/DataDog/datadog-agent/pkg/trace => github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
+
+replace go.opentelemetry.io/collector/component => github.com/mx-psi/opentelemetry-collector/component v0.0.0-20231004155359-8f14eb08185e

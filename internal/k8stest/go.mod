@@ -50,3 +50,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace go.opentelemetry.io/collector/component => github.com/mx-psi/opentelemetry-collector/component v0.0.0-20231004155359-8f14eb08185e

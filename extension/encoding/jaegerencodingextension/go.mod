@@ -51,3 +51,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../../pkg/translator/jaeger
+
+replace go.opentelemetry.io/collector/component => github.com/mx-psi/opentelemetry-collector/component v0.0.0-20231004155359-8f14eb08185e

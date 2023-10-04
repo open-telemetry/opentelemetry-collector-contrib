@@ -28,3 +28,5 @@ retract (
 	v0.76.2
 	v0.76.1
 )
+
+replace go.opentelemetry.io/collector/component => github.com/mx-psi/opentelemetry-collector/component v0.0.0-20231004155359-8f14eb08185e
