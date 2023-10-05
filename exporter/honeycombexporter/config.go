@@ -12,10 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-/*
-undo all changes to filterprocessor
-*/
- */
 // Config defines configuration for the Honeycomb Marker exporter.
 type Config struct {
 	// APIKey is the authentication token associated with the Honeycomb account.
