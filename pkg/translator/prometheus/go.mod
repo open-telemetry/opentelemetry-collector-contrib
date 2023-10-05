@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.86.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.86.1-0.20231004185026-b5635a7a90d2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015.0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231004185026-b5635a7a90d2
 )
 
 require (
