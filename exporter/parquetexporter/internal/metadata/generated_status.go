@@ -8,7 +8,7 @@ import (
 
 const (
 	Type             = "parquet"
-	TracesStability  = component.StabilityLevelDevelopment
-	MetricsStability = component.StabilityLevelDevelopment
-	LogsStability    = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelDeprecated
+	MetricsStability = component.StabilityLevelDeprecated
+	LogsStability    = component.StabilityLevelDeprecated
 )

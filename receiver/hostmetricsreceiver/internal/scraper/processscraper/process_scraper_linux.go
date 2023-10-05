@@ -7,6 +7,8 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"context"
+
 	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -26,8 +28,8 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.Iowait, metadata.AttributeStateWait)
 }
 
-func getProcessName(proc processHandle, _ string) (string, error) {
-	name, err := proc.Name()
+func getProcessName(ctx context.Context, proc processHandle, _ string) (string, error) {
+	name, err := proc.NameWithContext(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -35,8 +37,8 @@ func getProcessName(proc processHandle, _ string) (string, error) {
 	return name, err
 }
 
-func getProcessExecutable(proc processHandle) (string, error) {
-	exe, err := proc.Exe()
+func getProcessExecutable(ctx context.Context, proc processHandle) (string, error) {
+	exe, err := proc.ExeWithContext(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -44,8 +46,8 @@ func getProcessExecutable(proc processHandle) (string, error) {
 	return exe, nil
 }
 
-func getProcessCommand(proc processHandle) (*commandMetadata, error) {
-	cmdline, err := proc.CmdlineSlice()
+func getProcessCommand(ctx context.Context, proc processHandle) (*commandMetadata, error) {
+	cmdline, err := proc.CmdlineSliceWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}

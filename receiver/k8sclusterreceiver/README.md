@@ -137,7 +137,7 @@ for the format of emitted log records.
 ## Example
 
 Here is an example deployment of the collector that sets up this receiver along with
-the logging exporter.
+the debug exporter.
 
 Follow the below sections to setup various Kubernetes resources required for the deployment.
 
@@ -159,15 +159,15 @@ data:
       k8s_cluster:
         collection_interval: 10s
     exporters:
-      logging:
+      debug:
     service:
       pipelines:
         metrics:
           receivers: [k8s_cluster]
-          exporters: [logging]
+          exporters: [debug]
         logs/entity_events:
           receivers: [k8s_cluster]
-          exporters: [logging]
+          exporters: [debug]
 EOF
 ```
 

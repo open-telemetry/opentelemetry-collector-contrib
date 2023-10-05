@@ -22,12 +22,12 @@ import (
 )
 
 // Logs
-func GenerateLogRecordWithNestedBody() plog.LogRecord {
+func generateLogRecordWithNestedBody() plog.LogRecord {
 	lr := plog.NewLogRecord()
 	fillLogOne(lr)
 	return lr
 }
-func GenerateLogRecordWithMultiTypeValues() plog.LogRecord {
+func generateLogRecordWithMultiTypeValues() plog.LogRecord {
 	lr := plog.NewLogRecord()
 	fillLogTwo(lr)
 	return lr
@@ -41,7 +41,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 	}
 
 	var convertLogRecordToJSONTests = []convertLogRecordToJSONTest{
-		{GenerateLogRecordWithNestedBody(),
+		{generateLogRecordWithNestedBody(),
 			pcommon.NewResource(),
 			map[string]interface{}{
 				"23":           float64(45),
@@ -56,7 +56,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"traceID":      "08040201000000000000000000000000",
 			},
 		},
-		{GenerateLogRecordWithMultiTypeValues(),
+		{generateLogRecordWithMultiTypeValues(),
 			pcommon.NewResource(),
 			map[string]interface{}{
 				"bool":       true,

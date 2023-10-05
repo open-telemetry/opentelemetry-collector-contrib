@@ -120,7 +120,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	}
 	require.True(t, found, "No nginx container found")
 
-	tcDockerClient, err := testcontainers.NewDockerClient()
+	tcDockerClient, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.Nil(t, err)
 
 	require.NoError(t, tcDockerClient.ContainerRename(context.Background(), container.GetContainerID(), "nginx-updated"))

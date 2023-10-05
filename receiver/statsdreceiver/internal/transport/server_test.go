@@ -23,33 +23,46 @@ import (
 func Test_Server_ListenAndServe(t *testing.T) {
 	tests := []struct {
 		name          string
+		transport     string
 		buildServerFn func(addr string) (Server, error)
 		buildClientFn func(host string, port int) (*client.StatsD, error)
 	}{
 		{
 			name:          "udp",
+			transport:     "udp",
 			buildServerFn: NewUDPServer,
 			buildClientFn: func(host string, port int) (*client.StatsD, error) {
 				return client.NewStatsD(client.UDP, host, port)
 			},
 		},
+		{
+			name:          "tcp",
+			transport:     "tcp",
+			buildServerFn: NewTCPServer,
+			buildClientFn: func(host string, port int) (*client.StatsD, error) {
+				return client.NewStatsD(client.TCP, host, port)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
+			addr := testutil.GetAvailableLocalNetworkAddress(t, tt.transport)
 
-			// Endpoint should be free.
-			ln0, err := net.ListenPacket("udp", addr)
-			require.NoError(t, err)
-			require.NotNil(t, ln0)
+			if tt.transport == "udp" {
+				// Endpoint should be free.
+				ln0, err := net.ListenPacket("udp", addr)
+				require.NoError(t, err)
+				require.NotNil(t, ln0)
 
-			// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
-			ln1, err := net.ListenPacket("udp", addr)
-			require.Error(t, err)
-			require.Nil(t, ln1)
+				// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
+				ln1, err := net.ListenPacket("udp", addr)
+				require.Error(t, err)
+				require.Nil(t, ln1)
 
-			// Unbind the local address so the mock UDP service can use it
-			ln0.Close()
+				// Unbind the local address so the mock UDP service can use it
+				err = ln0.Close()
+				require.NoError(t, err)
+			}
 
 			srv, err := tt.buildServerFn(addr)
 			require.NoError(t, err)

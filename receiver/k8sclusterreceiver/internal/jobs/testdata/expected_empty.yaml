@@ -21,19 +21,19 @@ resourceMetrics:
               dataPoints:
                 - asInt: "2"
             name: k8s.job.active_pods
-            unit: "1"
+            unit: "{pod}"
           - description: The number of pods which reached phase Failed for a job
             gauge:
               dataPoints:
                 - asInt: "0"
             name: k8s.job.failed_pods
-            unit: "1"
+            unit: "{pod}"
           - description: The number of pods which reached phase Succeeded for a job
             gauge:
               dataPoints:
                 - asInt: "3"
             name: k8s.job.successful_pods
-            unit: "1"
+            unit: "{pod}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
