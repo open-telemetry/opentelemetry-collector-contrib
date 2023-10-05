@@ -85,6 +85,7 @@ func newReceiver(
 	settings receiver.CreateSettings,
 	config Config,
 ) (*sfxReceiver, error) {
+	component.LogAboutUseLocalHostAsDefault(settings.Logger)
 	transport := "http"
 	if config.TLSSetting != nil {
 		transport = "https"

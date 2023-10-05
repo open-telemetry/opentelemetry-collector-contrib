@@ -20,11 +20,7 @@ import (
 
 // This file implements factory for SignalFx receiver.
 
-const (
-
-	// Default endpoints to bind to.
-	defaultEndpoint = ":9943"
-)
+const port = 9943
 
 // NewFactory creates a factory for SignalFx receiver.
 func NewFactory() receiver.Factory {
@@ -38,7 +34,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
+			Endpoint: component.EndpointForPort(port),
 		},
 	}
 }
