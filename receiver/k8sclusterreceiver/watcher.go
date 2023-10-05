@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
@@ -56,7 +55,6 @@ type resourceWatcher struct {
 	informerFactories   []sharedInformer
 	metadataStore       *metadata.Store
 	logger              *zap.Logger
-	sampledLogger       *zap.Logger
 	metadataConsumers   []metadataConsumer
 	initialTimeout      time.Duration
 	initialSyncDone     *atomic.Bool
@@ -73,18 +71,8 @@ type metadataConsumer func(metadata []*experimentalmetricmetadata.MetadataUpdate
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(set receiver.CreateSettings, cfg *Config, metadataStore *metadata.Store) *resourceWatcher {
-	// Create a sampled logger for error messages.
-	core := zapcore.NewSamplerWithOptions(
-		set.Logger.Core(),
-		1*time.Second,
-		1,    // 1 per second initially
-		1000, // then 1/1000 of messages
-	)
-	sampledLogger := zap.New(core)
-
 	return &resourceWatcher{
 		logger:                   set.Logger,
-		sampledLogger:            sampledLogger,
 		metadataStore:            metadataStore,
 		initialSyncDone:          &atomic.Bool{},
 		initialSyncTimedOut:      &atomic.Bool{},
@@ -386,7 +374,7 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 		if logs.LogRecordCount() != 0 {
 			err := rw.entityLogConsumer.ConsumeLogs(context.Background(), logs)
 			if err != nil {
-				rw.sampledLogger.Error("Error sending entity events to the consumer", zap.Error(err))
+				rw.logger.Error("Error sending entity events to the consumer", zap.Error(err))
 
 				// Note: receiver contract says that we need to retry sending if the
 				// returned error is not Permanent. However, we are not doing it here.
