@@ -206,8 +206,8 @@ type LogMatchProperties struct {
 	LogBodies []string `mapstructure:"bodies"`
 }
 
-// Validate checks that the LogMatchProperties is valid
-func (lmp LogMatchProperties) Validate() error {
+// validate checks that the LogMatchProperties is valid
+func (lmp LogMatchProperties) validate() error {
 	if lmp.SeverityNumberProperties != nil {
 		return lmp.SeverityNumberProperties.validate()
 	}
@@ -301,6 +301,14 @@ func (cfg *Config) Validate() error {
 	if cfg.Logs.LogConditions != nil {
 		_, err := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
+	}
+
+	if cfg.Logs.LogConditions != nil && cfg.Logs.Include != nil {
+		errors = multierr.Append(errors, cfg.Logs.Include.validate())
+	}
+
+	if cfg.Logs.LogConditions != nil && cfg.Logs.Exclude != nil {
+		errors = multierr.Append(errors, cfg.Logs.Exclude.validate())
 	}
 
 	return errors
