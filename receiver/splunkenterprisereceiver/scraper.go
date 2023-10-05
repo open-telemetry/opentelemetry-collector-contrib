@@ -56,6 +56,14 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	s.scrapeLicenseUsageByIndex(ctx, now, errs)
 	s.scrapeIndexThroughput(ctx, now, errs)
+	s.scrapeIndexesTotalSize(ctx, now, errs)
+	s.scrapeIndexesEventCount(ctx, now, errs)
+	s.scrapeIndexesBucketCount(ctx, now, errs)
+	s.scrapeIndexesRawSize(ctx, now, errs)
+	s.scrapeIndexesBucketEventCount(ctx, now, errs)
+	s.scrapeIndexesBucketHotWarmCount(ctx, now, errs)
+	s.scrapeIntrospectionQueues(ctx, now, errs)
+	s.scrapeIntrospectionQueuesBytes(ctx, now, errs)
 	return s.mb.Emit(), errs.Combine()
 }
 
@@ -170,6 +178,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -182,14 +191,451 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	for _, entry := range it.Entries {
 		s.mb.RecordSplunkIndexerThroughputDataPoint(now, 1000*entry.Content.AvgKb, entry.Content.Status)
+	}
+}
+
+// Scrape indexes extended total size
+func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var it IndexesExtended
+	var ept string
+
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled {
+		return
+	}
+
+	ept = apiDict[`SplunkDataIndexesExtended`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	err = json.Unmarshal(body, &it)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	var name string
+	var totalSize int64
+	for _, f := range it.Entries {
+		if f.Name != "" {
+			name = f.Name
+		}
+		if f.Content.TotalSize != "" {
+			mb, err := strconv.ParseFloat(f.Content.TotalSize, 64)
+			totalSize = int64(mb * 1024 * 1024)
+			if err != nil {
+				errs.Add(err)
+			}
+		}
+
+		s.mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(now, totalSize, name)
+	}
+}
+
+// Scrape indexes extended total event count
+func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var it IndexesExtended
+	var ept string
+
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedEventCount.Enabled {
+		return
+	}
+
+	ept = apiDict[`SplunkDataIndexesExtended`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	err = json.Unmarshal(body, &it)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	var name string
+	for _, f := range it.Entries {
+		if f.Name != "" {
+			name = f.Name
+		}
+		totalEventCount := int64(f.Content.TotalEventCount)
+
+		s.mb.RecordSplunkDataIndexesExtendedEventCountDataPoint(now, totalEventCount, name)
+	}
+}
+
+// Scrape indexes extended total bucket count
+func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var it IndexesExtended
+	var ept string
+
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled {
+		return
+	}
+
+	ept = apiDict[`SplunkDataIndexesExtended`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	err = json.Unmarshal(body, &it)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	var name string
+	var totalBucketCount int64
+	for _, f := range it.Entries {
+		if f.Name != "" {
+			name = f.Name
+		}
+		if f.Content.TotalBucketCount != "" {
+			totalBucketCount, err = strconv.ParseInt(f.Content.TotalBucketCount, 10, 64)
+			if err != nil {
+				errs.Add(err)
+			}
+		}
+
+		s.mb.RecordSplunkDataIndexesExtendedBucketCountDataPoint(now, totalBucketCount, name)
+	}
+}
+
+// Scrape indexes extended raw size
+func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var it IndexesExtended
+	var ept string
+
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedRawSize.Enabled {
+		return
+	}
+
+	ept = apiDict[`SplunkDataIndexesExtended`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	err = json.Unmarshal(body, &it)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	var name string
+	var totalRawSize int64
+	for _, f := range it.Entries {
+		if f.Name != "" {
+			name = f.Name
+		}
+		if f.Content.TotalRawSize != "" {
+			mb, err := strconv.ParseFloat(f.Content.TotalRawSize, 64)
+			totalRawSize = int64(mb * 1024 * 1024)
+			if err != nil {
+				errs.Add(err)
+			}
+		}
+		s.mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(now, totalRawSize, name)
+	}
+}
+
+// Scrape indexes extended bucket event count
+func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var it IndexesExtended
+	var ept string
+
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled {
+		return
+	}
+
+	ept = apiDict[`SplunkDataIndexesExtended`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	err = json.Unmarshal(body, &it)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	var name string
+	var bucketDir string
+	var bucketEventCount int64
+	for _, f := range it.Entries {
+		if f.Name != "" {
+			name = f.Name
+		}
+		if f.Content.BucketDirs.Cold.EventCount != "" {
+			bucketDir = "cold"
+			bucketEventCount, err = strconv.ParseInt(f.Content.BucketDirs.Cold.EventCount, 10, 64)
+			if err != nil {
+				errs.Add(err)
+			}
+			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir)
+		}
+		if f.Content.BucketDirs.Home.EventCount != "" {
+			bucketDir = "home"
+			bucketEventCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.EventCount, 10, 64)
+			if err != nil {
+				errs.Add(err)
+			}
+			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir)
+		}
+		if f.Content.BucketDirs.Thawed.EventCount != "" {
+			bucketDir = "thawed"
+			bucketEventCount, err = strconv.ParseInt(f.Content.BucketDirs.Thawed.EventCount, 10, 64)
+			if err != nil {
+				errs.Add(err)
+			}
+			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir)
+		}
+	}
+}
+
+// Scrape indexes extended bucket hot/warm count
+func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var it IndexesExtended
+	var ept string
+
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled {
+		return
+	}
+
+	ept = apiDict[`SplunkDataIndexesExtended`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	err = json.Unmarshal(body, &it)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	var name string
+	var bucketDir string
+	var bucketHotCount int64
+	var bucketWarmCount int64
+	for _, f := range it.Entries {
+		if f.Name != "" {
+			name = f.Name
+		}
+		if f.Content.BucketDirs.Home.HotBucketCount != "" {
+			bucketHotCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.HotBucketCount, 10, 64)
+			bucketDir = "hot"
+			if err != nil {
+				errs.Add(err)
+			}
+			s.mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(now, bucketHotCount, name, bucketDir)
+		}
+		if f.Content.BucketDirs.Home.WarmBucketCount != "" {
+			bucketWarmCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.WarmBucketCount, 10, 64)
+			bucketDir = "warm"
+			if err != nil {
+				errs.Add(err)
+			}
+			s.mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(now, bucketWarmCount, name, bucketDir)
+		}
+	}
+}
+
+// Scrape introspection queues
+func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var it IntrospectionQueues
+	var ept string
+
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled {
+		return
+	}
+
+	ept = apiDict[`SplunkIntrospectionQueues`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	err = json.Unmarshal(body, &it)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	var name string
+	for _, f := range it.Entries {
+		if f.Name != "" {
+			name = f.Name
+		}
+
+		currentQueuesSize := int64(f.Content.CurrentSize)
+
+		s.mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(now, currentQueuesSize, name)
+	}
+}
+
+// Scrape introspection queues bytes
+func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var it IntrospectionQueues
+	var ept string
+
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled {
+		return
+	}
+
+	ept = apiDict[`SplunkIntrospectionQueues`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	err = json.Unmarshal(body, &it)
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+	var name string
+	for _, f := range it.Entries {
+		if f.Name != "" {
+			name = f.Name
+		}
+
+		currentQueueSizeBytes := int64(f.Content.CurrentSizeBytes)
+
+		s.mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(now, currentQueueSizeBytes, name)
 	}
 }

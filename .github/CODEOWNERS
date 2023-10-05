@@ -42,7 +42,7 @@ examples/demo/                                                          @open-te
 
 exporter/alibabacloudlogserviceexporter/                                @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
 exporter/awscloudwatchlogsexporter/                                     @open-telemetry/collector-contrib-approvers @boostchicken @bryan-aguilar @rapphil
-exporter/awsemfexporter/                                                @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia
+exporter/awsemfexporter/                                                @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia @bryan-aguilar
 exporter/awskinesisexporter/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awss3exporter/                                                 @open-telemetry/collector-contrib-approvers @atoulme @pdelewski
 exporter/awsxrayexporter/                                               @open-telemetry/collector-contrib-approvers @wangzlei @srprash
@@ -91,7 +91,8 @@ extension/asapauthextension/                                            @open-te
 extension/awsproxy/                                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                                           @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin @frzifus
 extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123 @frzifus
-extension/encodingextension/                                            @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+extension/encoding/jaegerencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
+extension/encoding/textencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/headerssetterextension/                                       @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                                @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
