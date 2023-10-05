@@ -22,7 +22,7 @@ func TestFactory(t *testing.T) {
 	require.Equal(t, component.Type(expectType), f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, ":6060", cfg.Ingress.Endpoint)
+	require.Equal(t, "0.0.0.0:6060", cfg.Ingress.Endpoint)
 	require.Equal(t, 10*time.Second, cfg.Egress.Timeout)
 
 	tests := []struct {

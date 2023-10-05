@@ -15,8 +15,7 @@ import (
 )
 
 const (
-	// Default endpoints to bind to.
-	defaultEndpoint = ":6060"
+	port = 6060
 )
 
 // NewFactory creates a factory for HostObserver extension.
@@ -31,7 +30,7 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Ingress: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
+			Endpoint: component.EndpointForPort(6060),
 		},
 		Egress: confighttp.HTTPClientSettings{
 			Timeout: 10 * time.Second,

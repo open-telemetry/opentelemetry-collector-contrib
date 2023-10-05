@@ -111,6 +111,7 @@ func addViaHeader(header http.Header, protocol string, host string) {
 }
 
 func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (extension.Extension, error) {
+	component.LogAboutUseLocalHostAsDefault(settings.Logger)
 	if config.Egress.Endpoint == "" {
 		return nil, errors.New("'egress.endpoint' config option cannot be empty")
 	}
