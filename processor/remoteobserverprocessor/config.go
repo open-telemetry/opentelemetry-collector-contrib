@@ -9,7 +9,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-const defaultEndpoint = ":12001"
+const port = 12001
 
 type Config struct {
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -22,7 +22,7 @@ type Config struct {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
+			Endpoint: component.EndpointForPort(port),
 		},
 		Limit: 1,
 	}

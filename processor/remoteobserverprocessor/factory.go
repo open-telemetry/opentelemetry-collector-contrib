@@ -5,6 +5,7 @@ package remoteobserverprocessor // import "github.com/open-telemetry/opentelemet
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -14,6 +15,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor/internal/metadata"
 )
+
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
 
 var processors = sharedcomponent.NewSharedComponents()
 
@@ -28,6 +32,9 @@ func NewFactory() processor.Factory {
 }
 
 func createMetricsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Metrics) (processor.Metrics, error) {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(params.Logger)
+	})
 	rCfg := cfg.(*Config)
 	p := processors.GetOrAdd(cfg, func() component.Component {
 		return newProcessor(params, rCfg)
@@ -43,6 +50,9 @@ func createMetricsProcessor(ctx context.Context, params processor.CreateSettings
 }
 
 func createLogsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Logs) (processor.Logs, error) {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(params.Logger)
+	})
 	rCfg := cfg.(*Config)
 	p := processors.GetOrAdd(cfg, func() component.Component {
 		return newProcessor(params, rCfg)
@@ -58,6 +68,9 @@ func createLogsProcessor(ctx context.Context, params processor.CreateSettings, c
 }
 
 func createTraceProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Traces) (processor.Traces, error) {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(params.Logger)
+	})
 	rCfg := cfg.(*Config)
 	p := processors.GetOrAdd(cfg, func() component.Component {
 		return newProcessor(params, rCfg)
