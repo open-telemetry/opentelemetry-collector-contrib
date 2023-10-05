@@ -26,7 +26,7 @@ func TestFactory(t *testing.T) {
 	// Assert defaults.
 	assert.Equal(t, 10*time.Second, rCfg.CollectionInterval)
 	assert.Equal(t, 10*time.Second, rCfg.Timeout)
-	assert.Equal(t, ":2181", rCfg.Endpoint)
+	assert.Equal(t, "0.0.0.0:2181", rCfg.Endpoint)
 
 	tests := []struct {
 		name    string

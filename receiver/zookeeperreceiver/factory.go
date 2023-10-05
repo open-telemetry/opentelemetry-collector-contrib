@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: cfg,
 		TCPAddr: confignet.TCPAddr{
-			Endpoint: ":2181",
+			Endpoint: component.EndpointForPort(2181),
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -50,6 +50,7 @@ func createMetricsReceiver(
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	component.LogAboutUseLocalHostAsDefault(params.Logger)
 	rConfig := config.(*Config)
 	zms, err := newZookeeperMetricsScraper(params, rConfig)
 	if err != nil {
