@@ -47,7 +47,7 @@ const (
 	notInSpanAttrName0     = "shouldBeInMetric"
 	notInSpanAttrName1     = "shouldNotBeInMetric"
 	regionResourceAttrName = "region"
-	DimensionsCacheSize    = 2
+	DimensionsCacheSize    = 1000
 
 	sampleRegion          = "us-east-1"
 	sampleLatency         = float64(11)
@@ -144,7 +144,7 @@ func TestProcessorConcurrentShutdown(t *testing.T) {
 	ticker := mockClock.NewTicker(time.Nanosecond)
 
 	// Test
-	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, ticker)
+	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, ticker, DimensionsCacheSize)
 	err := p.Start(ctx, mhost)
 	require.NoError(t, err)
 
@@ -230,7 +230,7 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 	tcon := &mocks.TracesConsumer{}
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(fakeErr)
 
-	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, nil)
+	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, nil, DimensionsCacheSize)
 
 	traces := buildSampleTrace()
 
@@ -262,7 +262,7 @@ func TestProcessorConsumeMetricsErrors(t *testing.T) {
 
 	mockClock := clock.NewMock(time.Now())
 	ticker := mockClock.NewTicker(time.Nanosecond)
-	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, ticker)
+	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, ticker, DimensionsCacheSize)
 
 	exporters := map[component.DataType]map[component.ID]component.Component{}
 	mhost := &mocks.Host{}
@@ -362,7 +362,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			mockClock := clock.NewMock(time.Now())
 			ticker := mockClock.NewTicker(time.Nanosecond)
 
-			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t), ticker)
+			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t), ticker, DimensionsCacheSize)
 
 			exporters := map[component.DataType]map[component.ID]component.Component{}
 			mhost := &mocks.Host{}
@@ -387,39 +387,61 @@ func TestProcessorConsumeTraces(t *testing.T) {
 	}
 }
 
-func TestMetricKeyCache(t *testing.T) {
-	mexp := &mocks.MetricsConsumer{}
-	tcon := &mocks.TracesConsumer{}
+func TestMetricCache(t *testing.T) {
+	var wg sync.WaitGroup
 
-	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	mexp := &mocks.MetricsConsumer{}
+	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
+		wg.Done()
+		return true
+	})).Return(nil)
+
+	tcon := &mocks.TracesConsumer{}
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t), nil)
-	traces := buildSampleTrace()
+	mockClock := clock.NewMock(time.Now())
+	ticker := mockClock.NewTicker(time.Nanosecond)
+	dimensionsCacheSize := 2
+
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t), ticker, dimensionsCacheSize)
+
+	exporters := map[component.DataType]map[component.ID]component.Component{}
+	mhost := &mocks.Host{}
+	mhost.On("GetExporters").Return(exporters)
 
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	err := p.Start(ctx, mhost)
+	require.NoError(t, err)
 
 	// 0 key was cached at beginning
-	assert.Zero(t, p.metricKeyToDimensions.Len())
+	assert.Zero(t, len(p.histograms))
 
-	err := p.ConsumeTraces(ctx, traces)
+	traces := buildSampleTrace()
+	require.Condition(t, func() bool {
+		return traces.SpanCount() >= dimensionsCacheSize
+	})
+
+	err = p.ConsumeTraces(ctx, traces)
+	wg.Add(1)
+	mockClock.Add(time.Nanosecond)
+	wg.Wait()
+
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
-	assert.Eventually(t, func() bool {
-		return p.metricKeyToDimensions.Len() == DimensionsCacheSize
-	}, 10*time.Second, time.Millisecond*100)
+	assert.Equal(t, len(p.histograms), dimensionsCacheSize)
 
 	// consume another batch of traces
 	err = p.ConsumeTraces(ctx, traces)
 	require.NoError(t, err)
+	wg.Add(1)
+	mockClock.Add(time.Nanosecond)
+	wg.Wait()
 
 	// 2 key was cached, other keys were evicted and cleaned after the processing
-	assert.Eventually(t, func() bool {
-		return p.metricKeyToDimensions.Len() == DimensionsCacheSize
-	}, 10*time.Second, time.Millisecond*100)
+	assert.Equal(t, len(p.histograms), dimensionsCacheSize)
 }
 
 func BenchmarkProcessorConsumeTraces(b *testing.B) {
@@ -431,7 +453,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(b), nil)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(b), nil, DimensionsCacheSize)
 
 	traces := buildSampleTrace()
 
@@ -442,10 +464,10 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsConsumer, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger, ticker *clock.Ticker) *processorImp {
+func newProcessorImp(mexp *mocks.MetricsConsumer, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger, ticker *clock.Ticker, cacheSize int) *processorImp {
 	defaultNotInSpanAttrVal := pcommon.NewValueStr("defaultNotInSpanAttrVal")
 	// use size 2 for LRU cache for testing purpose
-	metricKeyToDimensions, err := cache.NewCache[metricKey, pcommon.Map](DimensionsCacheSize)
+	metricKeyToDimensions, err := cache.NewCache[metricKey, pcommon.Map](cacheSize)
 	if err != nil {
 		panic(err)
 	}
@@ -979,8 +1001,7 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 	mockClock := clock.NewMock(time.Now())
 	ticker := mockClock.NewTicker(time.Nanosecond)
 
-	// Note: default dimension key cache size is 2.
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t), ticker)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t), ticker, DimensionsCacheSize)
 
 	exporters := map[component.DataType]map[component.ID]component.Component{}
 
