@@ -8,11 +8,11 @@ require (
 	github.com/samber/lo v1.38.1
 	github.com/stretchr/testify v1.8.4
 	github.com/wk8/go-ordered-map v1.0.0
-	go.opentelemetry.io/collector/component v0.86.0
-	go.opentelemetry.io/collector/config/configopaque v0.86.0
-	go.opentelemetry.io/collector/confmap v0.86.0
-	go.opentelemetry.io/collector/exporter v0.86.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015
+	go.opentelemetry.io/collector/component v0.86.1-0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/config/configopaque v0.86.1-0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/confmap v0.86.1-0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/exporter v0.86.1-0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231004185026-b5635a7a90d2
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -48,8 +48,6 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.19.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/net v0.15.0 // indirect
