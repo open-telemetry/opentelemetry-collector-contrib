@@ -60,7 +60,7 @@ func (f *Factory) build(file *os.File, m *Metadata, lineSplitFunc bufio.SplitFun
 		Metadata:      m,
 		file:          file,
 		FileName:      file.Name(),
-		SugaredLogger: f.SugaredLogger.With("path", file.Name()),
+		logger:        f.SugaredLogger.With("path", file.Name()),
 		decoder:       decode.New(f.Encoding),
 		lineSplitFunc: lineSplitFunc,
 	}
