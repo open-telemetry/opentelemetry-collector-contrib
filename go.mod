@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.20
 
 replace (
-	github.com/DataDog/datadog-agent/cmd/agent/common/path => ../../dd/datadog-agent/cmd/agent/common/path
 	github.com/DataDog/datadog-agent/comp/core/config => ../../dd/datadog-agent/comp/core/config
 	github.com/DataDog/datadog-agent/comp/core/telemetry => ../../dd/datadog-agent/comp/core/telemetry
 	github.com/DataDog/datadog-agent/comp/logs/agent/config => ../../dd/datadog-agent/comp/logs/agent/config

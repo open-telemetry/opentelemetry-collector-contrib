@@ -5,18 +5,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 go 1.20
 
 replace (
-	github.com/DataDog/datadog-agent/cmd/agent/common/path => ../../../../dd/datadog-agent/cmd/agent/common/path
 	github.com/DataDog/datadog-agent/comp/core/config => ../../../../dd/datadog-agent/comp/core/config
-	github.com/DataDog/datadog-agent/comp/core/log => ../../../../dd/datadog-agent/comp/core/log
 	github.com/DataDog/datadog-agent/comp/core/telemetry => ../../../../dd/datadog-agent/comp/core/telemetry
 	github.com/DataDog/datadog-agent/comp/logs/agent/config => ../../../../dd/datadog-agent/comp/logs/agent/config
-	github.com/DataDog/datadog-agent/comp/logs/agent/pipeline => ../../../../dd/datadog-agent/comp/logs/agent/pipeline
 	github.com/DataDog/datadog-agent/pkg/autodiscovery/common/types => ../../../../dd/datadog-agent/pkg/autodiscovery/common/types
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults => ../../../../dd/datadog-agent/pkg/collector/check/defaults
 	github.com/DataDog/datadog-agent/pkg/conf => ../../../../dd/datadog-agent/pkg/conf
 	github.com/DataDog/datadog-agent/pkg/config/configsetup => ../../../../dd/datadog-agent/pkg/config/configsetup
 	github.com/DataDog/datadog-agent/pkg/config/load => ../../../../dd/datadog-agent/pkg/config/load
-	github.com/DataDog/datadog-agent/pkg/config/logsetup => ../../../../dd/datadog-agent/pkg/config/logsetup
 	github.com/DataDog/datadog-agent/pkg/logs/auditor => ../../../../dd/datadog-agent/pkg/logs/auditor
 	github.com/DataDog/datadog-agent/pkg/logs/client => ../../../../dd/datadog-agent/pkg/logs/client
 	github.com/DataDog/datadog-agent/pkg/logs/diagnostic/module => ../../../../dd/datadog-agent/pkg/logs/diagnostic/module
@@ -40,7 +36,6 @@ replace (
 	github.com/DataDog/datadog-agent/pkg/util/go_routines => ../../../../dd/datadog-agent/pkg/util/go_routines
 	github.com/DataDog/datadog-agent/pkg/util/http => ../../../../dd/datadog-agent/pkg/util/http
 	github.com/DataDog/datadog-agent/pkg/util/log => ../../../../dd/datadog-agent/pkg/util/log
-	github.com/DataDog/datadog-agent/pkg/util/optional => ../../../../dd/datadog-agent/pkg/util/optional
 	github.com/DataDog/datadog-agent/pkg/util/scrubber => ../../../../dd/datadog-agent/pkg/util/scrubber
 	github.com/DataDog/datadog-agent/pkg/util/startstop => ../../../../dd/datadog-agent/pkg/util/startstop
 	github.com/DataDog/datadog-agent/pkg/util/stats_tracker => ../../../../dd/datadog-agent/pkg/util/stats_tracker
