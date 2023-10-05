@@ -1,7 +1,7 @@
 @@ -0,0 +1,18 @@
 # Honeycomb Marker Exporter
 
-This exporter supports sending creating markers and sending them to the Honeycomb Markers API. 
+This exporter allows creating markers, via the Honeycomb Markers API, based on the look of incoming telemetry. 
 
 The following configuration options are supported:
 
