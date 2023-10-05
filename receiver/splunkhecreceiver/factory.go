@@ -5,6 +5,7 @@ package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -21,8 +22,11 @@ import (
 
 const (
 	// Default endpoints to bind to.
-	defaultEndpoint = ":8088"
+	port = 8088
 )
+
+// onceLogLocalHost is used to log the info log about changing the default once.
+var onceLogLocalHost sync.Once
 
 // NewFactory creates a factory for Splunk HEC receiver.
 func NewFactory() receiver.Factory {
@@ -37,7 +41,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
+			Endpoint: component.EndpointForPort(port),
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
@@ -59,6 +63,9 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(params.Logger)
+	})
 	var err error
 	var recv receiver.Metrics
 	rCfg := cfg.(*Config)
@@ -80,6 +87,9 @@ func createLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
+	onceLogLocalHost.Do(func() {
+		component.LogAboutUseLocalHostAsDefault(params.Logger)
+	})
 	var err error
 	var recv receiver.Logs
 	rCfg := cfg.(*Config)
