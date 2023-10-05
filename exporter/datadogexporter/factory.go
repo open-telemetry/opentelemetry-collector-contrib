@@ -12,6 +12,7 @@ import (
 	"github.com/DataDog/datadog-agent/comp/logs/agent/config"
 	"github.com/DataDog/datadog-agent/pkg/logs/message"
 	"github.com/DataDog/datadog-agent/pkg/logs/sources"
+	"github.com/DataDog/datadog-agent/pkg/otlp/logsagentexporter"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -427,7 +428,7 @@ func (f *factory) createLogsExporter(
 			return nil, err
 		}
 		f.logsAgentChannel = exp.pipelineChan
-		pusher = createConsumeLogsFunc(set.TelemetrySettings.Logger, logSource, f.logsAgentChannel)
+		pusher = logsagentexporter.CreateConsumeLogsFunc(set.TelemetrySettings.Logger, logSource, f.logsAgentChannel)
 	}
 	return exporterhelper.NewLogsExporter(
 		ctx,

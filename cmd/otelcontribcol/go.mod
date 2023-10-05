@@ -29,6 +29,8 @@ replace (
 	github.com/DataDog/datadog-agent/pkg/logs/sender => ../../../../dd/datadog-agent/pkg/logs/sender
 	github.com/DataDog/datadog-agent/pkg/logs/sources => ../../../../dd/datadog-agent/pkg/logs/sources
 	github.com/DataDog/datadog-agent/pkg/logs/status/module => ../../../../dd/datadog-agent/pkg/logs/status/module
+	github.com/DataDog/datadog-agent/pkg/otlp/internal/testutil => ../../../../dd/datadog-agent/pkg/otlp/internal/testutil
+	github.com/DataDog/datadog-agent/pkg/otlp/logsagentexporter => ../../../../dd/datadog-agent/pkg/otlp/logsagentexporter
 	github.com/DataDog/datadog-agent/pkg/secrets => ../../../../dd/datadog-agent/pkg/secrets
 	github.com/DataDog/datadog-agent/pkg/status/health => ../../../../dd/datadog-agent/pkg/status/health
 	github.com/DataDog/datadog-agent/pkg/telemetry => ../../../../dd/datadog-agent/pkg/telemetry
@@ -308,6 +310,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.0.0-00010101000000-000000000000 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/module v0.0.0-00010101000000-000000000000 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/logsagentexporter v0.0.0-00010101000000-000000000000 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.0.0-00010101000000-000000000000 // indirect

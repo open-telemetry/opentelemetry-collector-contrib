@@ -27,6 +27,8 @@ replace (
 	github.com/DataDog/datadog-agent/pkg/logs/sender => ../../../../dd/datadog-agent/pkg/logs/sender
 	github.com/DataDog/datadog-agent/pkg/logs/sources => ../../../../dd/datadog-agent/pkg/logs/sources
 	github.com/DataDog/datadog-agent/pkg/logs/status/module => ../../../../dd/datadog-agent/pkg/logs/status/module
+	github.com/DataDog/datadog-agent/pkg/otlp/internal/testutil => ../../../../dd/datadog-agent/pkg/otlp/internal/testutil
+	github.com/DataDog/datadog-agent/pkg/otlp/logsagentexporter => ../../../../dd/datadog-agent/pkg/otlp/logsagentexporter
 	github.com/DataDog/datadog-agent/pkg/secrets => ../../../../dd/datadog-agent/pkg/secrets
 	github.com/DataDog/datadog-agent/pkg/status/health => ../../../../dd/datadog-agent/pkg/status/health
 	github.com/DataDog/datadog-agent/pkg/telemetry => ../../../../dd/datadog-agent/pkg/telemetry
@@ -54,17 +56,16 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/message v0.0.0-00010101000000-000000000000
 	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.0.0-00010101000000-000000000000
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.0.0-00010101000000-000000000000
+	github.com/DataDog/datadog-agent/pkg/otlp/logsagentexporter v0.0.0-00010101000000-000000000000
 	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/status/health v0.0.0-00010101000000-000000000000
 	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
 	github.com/DataDog/datadog-agent/pkg/util/go_routines v0.0.0-00010101000000-000000000000
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.0.0-00010101000000-000000000000
 	github.com/DataDog/datadog-api-client-go/v2 v2.17.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.8.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.8.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.8.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.8.0
 	github.com/DataDog/sketches-go v1.4.2
@@ -125,10 +126,12 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/http v0.0.0-00010101000000-000000000000 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.48.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/stats_tracker v0.0.0-00010101000000-000000000000 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.0.0-00010101000000-000000000000 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.8.0 // indirect
 	github.com/DataDog/viper v1.12.0 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
