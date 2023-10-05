@@ -9,6 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/logs/agent/config"
+	"github.com/DataDog/datadog-agent/pkg/logs/message"
+	"github.com/DataDog/datadog-agent/pkg/logs/sources"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -50,7 +53,10 @@ func enableZorkianMetricExport() error {
 	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), false)
 }
 
-const metadataReporterPeriod = 30 * time.Minute
+const (
+	logSourceName          = "OTLP log ingestion"
+	metadataReporterPeriod = 30 * time.Minute
+)
 
 func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
 	if err := metadataReporter.ConsumeResource(res); err != nil {
@@ -72,7 +78,8 @@ type factory struct {
 
 	wg sync.WaitGroup // waits for agent to exit
 
-	registry *featuregate.Registry
+	registry         *featuregate.Registry
+	logsAgentChannel chan *message.Message
 }
 
 func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
@@ -380,6 +387,8 @@ func (f *factory) createLogsExporter(
 	set exporter.CreateSettings,
 	c component.Config,
 ) (exporter.Logs, error) {
+	logSource := sources.NewLogSource(logSourceName, &config.LogsConfig{})
+
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
 
 	var pusher consumer.ConsumeLogsFunc
@@ -417,7 +426,8 @@ func (f *factory) createLogsExporter(
 			f.wg.Wait() // then wait for shutdown
 			return nil, err
 		}
-		pusher = exp.consumeLogs
+		f.logsAgentChannel = exp.pipelineChan
+		pusher = createConsumeLogsFunc(set.TelemetrySettings.Logger, logSource, f.logsAgentChannel)
 	}
 	return exporterhelper.NewLogsExporter(
 		ctx,
