@@ -188,8 +188,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		objects.Items = append(objects.Items, object)
 		config := &K8sObjectsConfig{
 			gvr: &schema.GroupVersionResource{
-				Group:    "",
-				Version:  "events.k8s.io/v1",
+				Group:    "events.k8s.io",
+				Version:  "v1",
 				Resource: "events",
 			},
 		}
