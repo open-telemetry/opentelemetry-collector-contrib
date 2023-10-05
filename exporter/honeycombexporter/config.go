@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
 )
 
+/*
+undo all changes to filterprocessor
+*/
+ */
 // Config defines configuration for the Honeycomb Marker exporter.
 type Config struct {
 	// APIKey is the authentication token associated with the Honeycomb account.
@@ -23,10 +26,6 @@ type Config struct {
 
 	// Markers is the list of markers to create
 	Markers []marker `mapstructure:"markers"`
-
-	Logs filterprocessor.LogFilters `mapstructure:"logs"`
-
-	Resources filterprocessor.ResourceFilters `mapstructure:"logs"`
 }
 
 type marker struct {
@@ -71,27 +70,18 @@ func (cfg *Config) Validate() error {
 				return fmt.Errorf("no rules supplied for marker %v", m)
 			}
 
+			_, err := filterottl.NewBoolExprForResource(m.Rules.ResourceConditions, filterottl.StandardResourceFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+			if err != nil {
+				return err
+			}
+
+			_, err = filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		return fmt.Errorf("no markers supplied")
-	}
-
-	if cfg.Logs.LogConditions != nil {
-		_, err := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		return err
-	}
-
-	if cfg.Logs.LogConditions != nil && cfg.Logs.Include != nil {
-		return cfg.Logs.Include.Validate()
-	}
-
-	if cfg.Logs.LogConditions != nil && cfg.Logs.Exclude != nil {
-		return cfg.Logs.Exclude.Validate()
-	}
-
-	if cfg.Resources.ResourceConditions != nil {
-		_, err := filterottl.NewBoolExprForLog(cfg.Resources.ResourceConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		return err
 	}
 
 	return nil

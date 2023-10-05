@@ -33,8 +33,6 @@ type Config struct {
 
 	Logs LogFilters `mapstructure:"logs"`
 
-	Resources ResourceFilters `mapstructure:"logs"`
-
 	Spans filterconfig.MatchConfig `mapstructure:"spans"`
 
 	Traces TraceFilters `mapstructure:"traces"`
@@ -94,23 +92,6 @@ type LogFilters struct {
 	// If any condition resolves to true, the log event will be dropped.
 	// Supports `and`, `or`, and `()`
 	LogConditions []string `mapstructure:"log_record"`
-}
-
-// ResourceFilters filters by Log properties.
-type ResourceFilters struct {
-	// Include match properties describe logs that should be included in the Collector Service pipeline,
-	// all other recources should be dropped from further processing.
-	// If both Include and Exclude are specified, Include filtering occurs first.
-	Include *ResourceMatchProperties `mapstructure:"include"`
-	// Exclude match properties describe logs that should be excluded from the Collector Service pipeline,
-	// all other logs should be included.
-	// If both Include and Exclude are specified, Include filtering occurs first.
-	Exclude *ResourceMatchProperties `mapstructure:"exclude"`
-
-	// LogConditions is a list of OTTL conditions for an ottllog context.
-	// If any condition resolves to true, the log event will be dropped.
-	// Supports `and`, `or`, and `()`
-	ResourceConditions []string `mapstructure:"log_record"`
 }
 
 // LogMatchType specifies the strategy for matching against `plog.Log`s.
@@ -283,17 +264,6 @@ func (lmp LogSeverityNumberMatchProperties) validate() error {
 
 var _ component.Config = (*Config)(nil)
 
-type ResourceMatchProperties struct {
-	// LogMatchType specifies the type of matching desired
-	ResourceMatchType ResourceMatchType `mapstructure:"match_type"`
-
-	// ResourceAttributes defines a list of possible resource attributes to match logs against.
-	// A match occurs if any resource attribute matches all expressions in this given list.
-	ResourceAttributes []filterconfig.Attribute `mapstructure:"resource_attributes"`
-}
-
-type ResourceMatchType string
-
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
 	if (cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil) && (cfg.Spans.Include != nil || cfg.Spans.Exclude != nil) {
@@ -304,9 +274,6 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.Logs.LogConditions != nil && (cfg.Logs.Include != nil || cfg.Logs.Exclude != nil) {
 		return fmt.Errorf("cannot use ottl conditions and include/exclude for logs at the same time")
-	}
-	if cfg.Resources.ResourceConditions != nil && (cfg.Resources.Include != nil || cfg.Resources.Exclude != nil) {
-		return fmt.Errorf("cannot use ottl conditions and include/exclude for resources at the same time")
 	}
 
 	var errors error
@@ -333,19 +300,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Logs.LogConditions != nil {
 		_, err := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
-	}
-
-	if cfg.Logs.LogConditions != nil && cfg.Logs.Include != nil {
-		errors = multierr.Append(errors, cfg.Logs.Include.Validate())
-	}
-
-	if cfg.Logs.LogConditions != nil && cfg.Logs.Exclude != nil {
-		errors = multierr.Append(errors, cfg.Logs.Exclude.Validate())
-	}
-
-	if cfg.Resources.ResourceConditions != nil {
-		_, err := filterottl.NewBoolExprForResource(cfg.Resources.ResourceConditions, filterottl.StandardResourceFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
