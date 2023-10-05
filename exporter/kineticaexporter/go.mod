@@ -41,11 +41,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/ztrue/tracerr v0.3.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.86.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.86.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.86.0 // indirect
-	go.opentelemetry.io/collector/extension v0.86.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015 // indirect
+	go.opentelemetry.io/collector v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	go.opentelemetry.io/collector/consumer v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	go.opentelemetry.io/collector/extension v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015.0.20231004185026-b5635a7a90d2 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
