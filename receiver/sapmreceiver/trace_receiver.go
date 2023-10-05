@@ -201,6 +201,8 @@ func newReceiver(
 	config *Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
+	component.LogAboutUseLocalHostAsDefault(params.Logger)
+
 	// build the response message
 	defaultResponse := &splunksapm.PostSpansResponse{}
 	defaultResponseBytes, err := defaultResponse.Marshal()

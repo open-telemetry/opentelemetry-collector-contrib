@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	// Default endpoints to bind to.
-	defaultEndpoint = ":7276"
+	// Default port to bind to.
+	port = 7276
 )
 
 // NewFactory creates a factory for SAPM receiver.
@@ -35,7 +35,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
+			Endpoint: component.EndpointForPort(port),
 		},
 	}
 }
