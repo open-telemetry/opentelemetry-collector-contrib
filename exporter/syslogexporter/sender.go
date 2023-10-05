@@ -153,7 +153,6 @@ func (s *sender) addStructuredData(msg map[string]any) {
 			for k, v := range vval {
 				vv, ok := v.(string)
 				if !ok {
-					fmt.Printf("zepsuteee\n")
 					continue
 				}
 				sdElements = append(sdElements, fmt.Sprintf("%s=\"%s\"", k, vv))
