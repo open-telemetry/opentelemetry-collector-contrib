@@ -216,8 +216,6 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 				continue
 			}
 
-			kr.setting.Logger.Info("gvr)", zap.Any("gvr)", config.gvr))
-
 			logs, err := watchObjectsToLogData(&data, time.Now(), config)
 			if err != nil {
 				kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))

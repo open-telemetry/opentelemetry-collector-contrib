@@ -60,10 +60,12 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 				resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
 			}
 
-			if config.gvr.Version == "events.k8s.io/v1" {
-				extractResourceAttributes(resourceAttrs, e.Object, "regarding")
-			} else {
-				extractResourceAttributes(resourceAttrs, e.Object, "involvedObject")
+			if config.gvr.Resource == "events" {
+				if config.gvr.Group == "events.k8s.io" {
+					extractResourceAttributesFromEvent(resourceAttrs, e.Object, "regarding")
+				} else {
+					extractResourceAttributesFromEvent(resourceAttrs, e.Object, "involvedObject")
+				}
 			}
 
 			sl := rl.ScopeLogs().AppendEmpty()
@@ -88,7 +90,7 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 	return out
 }
 
-func extractResourceAttributes(resourceAttrs pcommon.Map, object map[string]any, location string) {
+func extractResourceAttributesFromEvent(resourceAttrs pcommon.Map, object map[string]any, location string) {
 	objKind, ok, _ := unstructured.NestedString(object, "object", "kind")
 	if ok && objKind == "Event" {
 		namespace, ok, _ := unstructured.NestedString(object, "object", location, "namespace")
