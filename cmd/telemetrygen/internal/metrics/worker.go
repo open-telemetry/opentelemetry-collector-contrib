@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -27,7 +28,7 @@ type worker struct {
 	index          int             // worker index
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdkmetric.Exporter, error)) {
+func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdkmetric.Exporter, error), signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
 	exporter, err := exporterFunc()
@@ -54,8 +55,9 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Time:  time.Now(),
-							Value: i,
+							Time:       time.Now(),
+							Value:      i,
+							Attributes: attribute.NewSet(signalAttrs...),
 						},
 					},
 				},
@@ -68,9 +70,10 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 					Temporality: metricdata.CumulativeTemporality,
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							StartTime: time.Now().Add(-1 * time.Second),
-							Time:      time.Now(),
-							Value:     i,
+							StartTime:  time.Now().Add(-1 * time.Second),
+							Time:       time.Now(),
+							Value:      i,
+							Attributes: attribute.NewSet(signalAttrs...),
 						},
 					},
 				},

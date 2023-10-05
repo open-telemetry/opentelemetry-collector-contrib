@@ -31,6 +31,18 @@ func Test_createDefaultConfig(t *testing.T) {
 	})
 }
 
+func TestWithTracesMarshalers_err(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = ""
+
+	tracesMarshaler := &customTraceMarshaler{encoding: "unknown"}
+	f := NewFactory(withTracesMarshalers(tracesMarshaler))
+	r, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	// no available broker
+	require.Error(t, err)
+	assert.Nil(t, r)
+}
+
 func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""

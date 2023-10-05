@@ -107,7 +107,7 @@ func Run(c *Config, exp func() (sdkmetric.Exporter, error), logger *zap.Logger) 
 			index:          i,
 		}
 
-		go w.simulateMetrics(res, exp)
+		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes())
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)
