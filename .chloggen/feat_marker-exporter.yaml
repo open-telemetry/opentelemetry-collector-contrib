@@ -7,7 +7,7 @@ change_type: 'new_component'
 component: 'honeycombmarkerexporter'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "This component will export markers to be consumed by the Honeycomb Markers API to highlight user events based initially on preset configurations."
+note: "This component will export markers to be consumed by the Honeycomb Markers API to highlight user events"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [26653]
