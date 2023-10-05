@@ -23,6 +23,9 @@ type Settings struct {
 	AddMetricSuffixes   bool
 }
 
+// keep track of metrics that have logged the empty data points error to avoid spamming
+var emptyDataPointsErrorLogged map[string]bool = make(map[string]bool)
+
 // FromMetrics converts pmetric.Metrics to prometheus remote write format.
 func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*prompb.TimeSeries, errs error) {
 	tsMap = make(map[string]*prompb.TimeSeries)
@@ -44,6 +47,10 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 				metric := metricSlice.At(k)
 				mostRecentTimestamp = maxTimestamp(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
 
+				if !emptyDataPointsErrorLogged[metric.Name()] { // add metric to map if the key does not exist
+					emptyDataPointsErrorLogged[metric.Name()] = false
+				}
+
 				if !isValidAggregationTemporality(metric) {
 					errs = multierr.Append(errs, fmt.Errorf("invalid temporality and type combination for metric %q", metric.Name()))
 					continue
@@ -54,32 +61,36 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
 					dataPoints := metric.Gauge().DataPoints()
-					if dataPoints.Len() == 0 {
+					if dataPoints.Len() == 0 && !emptyDataPointsErrorLogged[metric.Name()] {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+						emptyDataPointsErrorLogged[metric.Name()] = true
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
 						addSingleGaugeNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
 					}
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
-					if dataPoints.Len() == 0 {
+					if dataPoints.Len() == 0 && !emptyDataPointsErrorLogged[metric.Name()] {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+						emptyDataPointsErrorLogged[metric.Name()] = true
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
 						addSingleSumNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
-					if dataPoints.Len() == 0 {
+					if dataPoints.Len() == 0 && !emptyDataPointsErrorLogged[metric.Name()] {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+						emptyDataPointsErrorLogged[metric.Name()] = true
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
 						addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
-					if dataPoints.Len() == 0 {
+					if dataPoints.Len() == 0 && !emptyDataPointsErrorLogged[metric.Name()] {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+						emptyDataPointsErrorLogged[metric.Name()] = true
 					}
 					name := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
 					for x := 0; x < dataPoints.Len(); x++ {
@@ -96,8 +107,9 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 					}
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
-					if dataPoints.Len() == 0 {
+					if dataPoints.Len() == 0 && !emptyDataPointsErrorLogged[metric.Name()] {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+						emptyDataPointsErrorLogged[metric.Name()] = true
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
 						addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
