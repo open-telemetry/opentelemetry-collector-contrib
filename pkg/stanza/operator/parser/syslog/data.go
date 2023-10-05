@@ -159,8 +159,8 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 					"msg_id":   "ID52020",
 					"priority": 86,
 					"proc_id":  "23108",
-					"structured_data": map[string]map[string]string{
-						"SecureAuth@27389": {
+					"structured_data": map[string]interface{}{
+						"SecureAuth@27389": map[string]interface{}{
 							"PEN":             "27389",
 							"Realm":           "SecureAuth0",
 							"UserHostAddress": "192.168.2.132",
@@ -197,8 +197,8 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 					"msg_id":   "ID52020",
 					"priority": 86,
 					"proc_id":  "23108",
-					"structured_data": map[string]map[string]string{
-						"SecureAuth@27389": {
+					"structured_data": map[string]interface{}{
+						"SecureAuth@27389": map[string]interface{}{
 							"PEN":             "27389",
 							"Realm":           "SecureAuth0",
 							"UserHostAddress": "192.168.2.132",
@@ -235,8 +235,8 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 					"msg_id":   "ID52020",
 					"priority": 86,
 					"proc_id":  "23108",
-					"structured_data": map[string]map[string]string{
-						"SecureAuth@27389": {
+					"structured_data": map[string]interface{}{
+						"SecureAuth@27389": map[string]interface{}{
 							"PEN":             "27389",
 							"Realm":           "SecureAuth0",
 							"UserHostAddress": "192.168.2.132",
