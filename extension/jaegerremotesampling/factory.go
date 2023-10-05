@@ -36,11 +36,11 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerSettings: &confighttp.HTTPServerSettings{
-			Endpoint: ":5778",
+			Endpoint: component.EndpointForPort(5778),
 		},
 		GRPCServerSettings: &configgrpc.GRPCServerSettings{
 			NetAddr: confignet.NetAddr{
-				Endpoint:  ":14250",
+				Endpoint:  component.EndpointForPort(14250),
 				Transport: "tcp",
 			},
 		},
@@ -68,5 +68,6 @@ var protoGate = featuregate.GlobalRegistry().MustRegister(
 
 func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	logDeprecation(set.Logger)
+	component.LogAboutUseLocalHostAsDefault(set.Logger)
 	return newExtension(cfg.(*Config), set.TelemetrySettings), nil
 }
