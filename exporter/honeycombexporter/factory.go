@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter/internal/metadata"
 )
 
 func NewFactory() exporter.Factory {

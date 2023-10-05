@@ -43,6 +43,4 @@ exporters:
           - logconditions:
               - "LogCondition1"
               - "LogCondition2"
-
-
 ```
