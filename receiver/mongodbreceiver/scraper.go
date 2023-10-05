@@ -30,12 +30,11 @@ type mongodbScraper struct {
 }
 
 func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongodbScraper {
-	v, _ := version.NewVersion("0.0")
 	return &mongodbScraper{
 		logger:       settings.Logger,
 		config:       config,
 		mb:           metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		mongoVersion: v,
+		mongoVersion: unknownVersion(),
 	}
 }
 
@@ -60,7 +59,7 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), errors.New("no client was initialized before calling scrape")
 	}
 
-	if s.mongoVersion == nil {
+	if s.mongoVersion.Equal(unknownVersion()) {
 		version, err := s.client.GetVersion(ctx)
 		if err == nil {
 			s.mongoVersion = version
@@ -190,4 +189,8 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
+}
+
+func unknownVersion() *version.Version {
+	return version.Must(version.NewVersion("0.0"))
 }
