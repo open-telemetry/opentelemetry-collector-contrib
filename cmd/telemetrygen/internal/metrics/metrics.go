@@ -6,6 +6,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -30,14 +31,14 @@ func Start(cfg *Config) error {
 	logger.Info("starting the metrics generator with configuration", zap.Any("config", cfg))
 
 	grpcExpOpt := []otlpmetricgrpc.Option{
-		otlpmetricgrpc.WithEndpoint(cfg.Endpoint),
+		otlpmetricgrpc.WithEndpoint(cfg.Endpoint()),
 		otlpmetricgrpc.WithDialOption(
 			grpc.WithBlock(),
 		),
 	}
 
 	httpExpOpt := []otlpmetrichttp.Option{
-		otlpmetrichttp.WithEndpoint(cfg.Endpoint),
+		otlpmetrichttp.WithEndpoint(cfg.Endpoint()),
 		otlpmetrichttp.WithURLPath(cfg.HTTPPath),
 	}
 
