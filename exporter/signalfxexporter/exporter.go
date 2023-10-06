@@ -76,9 +76,8 @@ func newSignalFxExporter(
 		return nil, err
 	}
 
-	sampledLogger := translation.CreateSampledLogger(createSettings.Logger)
 	converter, err := translation.NewMetricsConverter(
-		sampledLogger,
+		createSettings.TelemetrySettings.Logger,
 		metricTranslator,
 		config.ExcludeMetrics,
 		config.IncludeMetrics,
