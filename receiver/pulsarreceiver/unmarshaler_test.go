@@ -49,6 +49,8 @@ func TestDefaultMetricsUnMarshaler(t *testing.T) {
 func TestDefaultLogsUnMarshaler(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",
+		"text",
+		"json",
 	}
 	marshalers := defaultLogsUnmarshalers()
 	assert.Equal(t, len(expectedEncodings), len(marshalers))

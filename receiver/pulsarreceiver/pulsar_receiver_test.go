@@ -31,57 +31,57 @@ type testPulsarConsumer struct {
 	messageChan chan pulsar.ConsumerMessage
 }
 
-func (_ testPulsarConsumer) Subscription() string {
+func (c testPulsarConsumer) Subscription() string {
 	panic("implement me")
 }
 
-func (_ testPulsarConsumer) Unsubscribe() error {
+func (c testPulsarConsumer) Unsubscribe() error {
 	panic("implement me")
 }
 
-func (consumer testPulsarConsumer) Receive(_ context.Context) (pulsar.Message, error) {
-	msg, ok := <-consumer.messageChan
+func (c testPulsarConsumer) Receive(_ context.Context) (pulsar.Message, error) {
+	msg, ok := <-c.messageChan
 	if !ok {
 		return nil, errors.New(alreadyClosedError)
 	}
 	return msg, nil
 }
 
-func (consumer testPulsarConsumer) Chan() <-chan pulsar.ConsumerMessage {
-	return consumer.messageChan
+func (c testPulsarConsumer) Chan() <-chan pulsar.ConsumerMessage {
+	return c.messageChan
 }
 
-func (_ testPulsarConsumer) Ack(_ pulsar.Message) {
+func (c testPulsarConsumer) Ack(_ pulsar.Message) {
 	// no-op
 }
 
-func (_ testPulsarConsumer) ReconsumeLater(_ pulsar.Message, _ time.Duration) {
+func (c testPulsarConsumer) ReconsumeLater(_ pulsar.Message, _ time.Duration) {
 	panic("implement me")
 }
 
-func (_ testPulsarConsumer) AckID(_ pulsar.MessageID) {
+func (c testPulsarConsumer) AckID(_ pulsar.MessageID) {
 	panic("implement me")
 }
 
-func (_ testPulsarConsumer) Nack(_ pulsar.Message) {
+func (c testPulsarConsumer) Nack(_ pulsar.Message) {
 	// no-op
 }
 
-func (_ testPulsarConsumer) NackID(_ pulsar.MessageID) {
+func (c testPulsarConsumer) NackID(_ pulsar.MessageID) {
 	panic("implement me")
 }
 
-func (_ testPulsarConsumer) Close() {}
+func (c testPulsarConsumer) Close() {}
 
-func (_ testPulsarConsumer) Seek(_ pulsar.MessageID) error {
+func (c testPulsarConsumer) Seek(_ pulsar.MessageID) error {
 	panic("implement me")
 }
 
-func (_ testPulsarConsumer) SeekByTime(time time.Time) error {
+func (c testPulsarConsumer) SeekByTime(_ time.Time) error {
 	panic("implement me")
 }
 
-func (_ testPulsarConsumer) Name() string {
+func (c testPulsarConsumer) Name() string {
 	panic("implement me")
 }
 
@@ -89,11 +89,11 @@ type testPulsarMessage struct {
 	payload []byte
 }
 
-func (_ testPulsarMessage) Topic() string {
+func (msg testPulsarMessage) Topic() string {
 	panic("implement me")
 }
 
-func (_ testPulsarMessage) Properties() map[string]string {
+func (msg testPulsarMessage) Properties() map[string]string {
 	panic("implement me")
 }
 
@@ -133,7 +133,7 @@ func (msg testPulsarMessage) GetReplicatedFrom() string {
 	panic("implement me")
 }
 
-func (msg testPulsarMessage) GetSchemaValue(v interface{}) error {
+func (msg testPulsarMessage) GetSchemaValue(_ interface{}) error {
 	panic("implement me")
 }
 
@@ -197,7 +197,8 @@ func Test_NewLogsReceiver_Text(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
-			consumeLogsLoop(ctx, consumer)
+			err := consumeLogsLoop(ctx, consumer)
+			assert.ErrorContains(t, err, alreadyClosedError)
 			wg.Done()
 		}()
 		encCfg := textutils.NewEncodingConfig()
@@ -240,7 +241,8 @@ func Test_NewLogsReceiver_JSON(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		consumeLogsLoop(ctx, consumer)
+		err := consumeLogsLoop(ctx, consumer)
+		assert.ErrorContains(t, err, alreadyClosedError)
 		wg.Done()
 	}()
 	jsonStr := `{"key":"value"}`
