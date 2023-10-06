@@ -21,6 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
+var unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
+
 type mongodbScraper struct {
 	logger       *zap.Logger
 	config       *Config
@@ -189,8 +191,4 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
-}
-
-func unknownVersion() *version.Version {
-	return version.Must(version.NewVersion("0.0"))
 }
