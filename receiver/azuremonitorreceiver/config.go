@@ -20,6 +20,10 @@ var (
 	errMissingClientID       = errors.New(`ClientID" is not specified in config`)
 	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
 	errMissingFedTokenFile   = errors.New(`FederatedTokenFile is not specified in config`)
+	errInvalidCloud          = errors.New(`Cloud" is invalid`)
+
+	azureCloud           = "AzureCloud"
+	azureGovernmentCloud = "AzureUSGovernment"
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -225,6 +229,7 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Cloud                                   string                        `mapstructure:",cloud"`
 	SubscriptionID                          string                        `mapstructure:"subscription_id"`
 	Authentication                          string                        `mapstructure:"auth"`
 	TenantID                                string                        `mapstructure:"tenant_id"`
@@ -277,6 +282,10 @@ func (c Config) Validate() (err error) {
 		}
 	default:
 		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v]", c.Authentication, servicePrincipal, workloadIdentity)
+	}
+
+	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud {
+		err = multierr.Append(err, errInvalidCloud)
 	}
 
 	return
