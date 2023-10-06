@@ -36,6 +36,36 @@ func TestLoadConfig(t *testing.T) {
 						MarkerType:   "fooType",
 						MessageField: "test message",
 						UrlField:     "https://api.testhost.io",
+						Rules: Rules{
+							ResourceConditions: []string{
+								`IsMatch(attributes["test"], ".*")`,
+							},
+							LogConditions: []string{
+								`body == "test"`,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName("honeycomb", "color_no_type"),
+			expected: &Config{
+				APIKey: "test-apikey",
+				APIURL: "https://api.testhost.io",
+				Markers: []marker{
+					{
+						MarkerColor:  "green",
+						MessageField: "test message",
+						UrlField:     "https://api.testhost.io",
+						Rules: Rules{
+							ResourceConditions: []string{
+								`IsMatch(attributes["test"], ".*")`,
+							},
+							LogConditions: []string{
+								`body == "test"`,
+							},
+						},
 					},
 				},
 			},
@@ -44,7 +74,16 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "unknown_log"),
+			id: component.NewIDWithName(metadata.Type, "no_conditions"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "no_api_key"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "no_api_url"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "no_marker_message"),
 		},
 	}
 
@@ -56,6 +95,12 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			if tt.expected == nil {
+				err = component.ValidateConfig(cfg)
+				assert.Error(t, err)
+				return
+			}
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
