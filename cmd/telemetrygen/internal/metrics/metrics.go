@@ -6,10 +6,11 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"google.golang.org/grpc"
 
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
+	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
