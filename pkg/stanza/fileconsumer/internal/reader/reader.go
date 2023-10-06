@@ -28,6 +28,7 @@ type Config struct {
 	IncludeFilePath         bool
 	IncludeFileNameResolved bool
 	IncludeFilePathResolved bool
+	DeleteAtEOF             bool
 }
 
 type Metadata struct {
@@ -49,7 +50,6 @@ type Reader struct {
 	decoder       *decode.Decoder
 	headerReader  *header.Reader
 	processFunc   emit.Callback
-	eof           bool
 }
 
 // offsetToEnd sets the starting offset
@@ -79,6 +79,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	s := scanner.New(r, r.MaxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
+	var eof bool
 	for {
 		select {
 		case <-ctx.Done():
@@ -88,10 +89,9 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		ok := s.Scan()
 		if !ok {
-			r.eof = true
-			if err := s.Error(); err != nil {
-				// If Scan returned an error then we are not guaranteed to be at the end of the file
-				r.eof = false
+			if err := s.Error(); err == nil {
+				eof = true
+			} else {
 				r.logger.Errorw("Failed during scan", zap.Error(err))
 			}
 			break
@@ -122,6 +122,9 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		r.Offset = s.Pos()
 	}
+	if eof && r.DeleteAtEOF {
+		r.delete()
+	}
 }
 
 func (r *Reader) finalizeHeader() {
@@ -133,10 +136,7 @@ func (r *Reader) finalizeHeader() {
 }
 
 // Delete will close and delete the file
-func (r *Reader) Delete() {
-	if r.file == nil {
-		return
-	}
+func (r *Reader) delete() {
 	r.Close()
 	if err := os.Remove(r.FileName); err != nil {
 		r.logger.Errorf("could not delete %s", r.FileName)
@@ -211,8 +211,4 @@ func (r *Reader) ValidateOrClose() bool {
 	r.logger.Debugw("Closing truncated file", zap.String(attrs.LogFileName, r.FileName))
 	r.Close()
 	return false
-}
-
-func (r *Reader) AtEOF() bool {
-	return r.eof
 }
