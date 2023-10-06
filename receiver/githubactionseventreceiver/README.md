@@ -33,8 +33,8 @@ Example:
 receivers:
     githubactionsevent:
         endpoint: localhost:19418
-        path: "/events"
-        secret: "sha256=aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+        path: /events
+        secret: It's a Secret to Everybody
 ```
 The full list of settings exposed for this receiver are documented [here](./config.go) with a detailed sample configuration [here](./testdata/config.yaml)
 
