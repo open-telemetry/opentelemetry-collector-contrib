@@ -26,6 +26,8 @@ The following settings can be optionally configured:
     - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
     - `zipkin_json`: the payload is deserialized into a list of Zipkin V2 JSON spans.
     - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
+    - `text`: (logs only) the payload is deserialized into text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior.
+    - `json`: (logs only) the payload is deserialized as JSON and inserted as the body of a log record.
 - `consumer_name`: specifies the consumer name.
 - `auth`
   - `tls`
