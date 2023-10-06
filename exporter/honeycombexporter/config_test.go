@@ -3,6 +3,7 @@
 package honeycombexporter
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter/internal/metadata"
 	"path/filepath"
 	"testing"
 
@@ -18,7 +19,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultCfg := CreateDefaultConfig()
+	//defaultCfg := CreateDefaultConfig()
 
 	tests := []struct {
 		id       component.ID
@@ -26,8 +27,24 @@ func TestLoadConfig(t *testing.T) {
 	}{
 
 		{
-			id:       component.NewIDWithName("honeycomb", ""),
-			expected: defaultCfg,
+			id: component.NewIDWithName("honeycomb", ""),
+			expected: &Config{
+				APIKey: "test-apikey",
+				APIURL: "https://api.testhost.io",
+				Markers: []marker{
+					{
+						MarkerType:   "fooType",
+						MessageField: "test message",
+						UrlField:     "https://api.testhost.io",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "unknown_log"),
 		},
 	}
 

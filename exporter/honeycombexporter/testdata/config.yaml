@@ -1,18 +1,30 @@
 honeycomb: 
-  apikey: 
-  apiurl: http://localhost:8080/
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
   markers:
-    - markertype: "type1",
-      messagefield: "test message",
-      urlfield: "http://localhost:8080/",
-      rules:
-        - resourceconditions:
-            - "ResourceCondition1"
-            - "ResourceCondition2"
-        - logconditions:
-            - "LogCondition1"
-            - "LogCondition2"
-    - markertype: "type2",
-      messagefield: "another test message",
-      urlfield: "http://localhost:8080/",
-      rules:
+    - marker_type: "fooType",
+      message_field: "test message",
+      url_field: "https://api.testhost.io",
+#      rules:
+#        - resource_conditions:
+#            - context: resource
+#              statements:
+#              - set(attributes["test"], [])
+#              - limit(attributes, 100, [])
+#        - log_conditions:
+#            - context: log
+#              statements:
+#                - set(attributes["foo"], foo)
+#    - markertype: "barType",
+#      messagefield: "another test message",
+#      urlfield: "http://localhost:8080/",
+#      rules:
+#        - resourceconditions:
+#            - context: resource
+#              statements:
+#                - keep_keys(attributes, ["test.name", "test.namespace")
+#                - limit(attributes, 100, [])
+#        - logconditions:
+#            - context: log
+#              statements:
+#                - set(attributes["bar"], bar)
