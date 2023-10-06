@@ -28,7 +28,7 @@ var removeGCPFaasID = featuregate.GlobalRegistry().MustRegister(
 	"processor.resourcedetection.removeGCPFaasID",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Remove faas.id from the GCP detector. Use faas.instance instead."),
-	featuregate.WithRegisterFromVersion("v0.85.0"))
+	featuregate.WithRegisterFromVersion("v0.87.0"))
 
 // NewDetector returns a detector which can detect resource attributes on:
 // * Google Compute Engine (GCE).
