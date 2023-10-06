@@ -12,6 +12,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -19,9 +20,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 // Start starts the metric telemetry generator
@@ -58,10 +56,10 @@ func Start(cfg *Config) error {
 		var exp sdkmetric.Exporter
 		if cfg.UseHTTP {
 			logger.Info("starting HTTP exporter")
-			exp, err = otlpmetrichttp.New(context.Background(), httpExpOpt...)
+			exp, err = otlpmetrichttp.New(context.Background(), httpExporterOptions(cfg)...)
 		} else {
 			logger.Info("starting gRPC exporter")
-			exp, err = otlpmetricgrpc.New(context.Background(), grpcExpOpt...)
+			exp, err = otlpmetricgrpc.New(context.Background(), grpcExporterOptions(cfg)...)
 		}
 		return exp, err
 	}
