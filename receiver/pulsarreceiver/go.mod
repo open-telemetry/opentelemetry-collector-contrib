@@ -8,7 +8,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.48.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.86.1-0.20231004185026-b5635a7a90d2
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.86.1-0.20231004185026-b5635a7a90d2
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.86.1-0.20231004185026-b5635a7a90d2
 	github.com/openzipkin/zipkin-go v0.4.2
