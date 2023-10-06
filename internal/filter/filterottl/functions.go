@@ -56,14 +56,14 @@ func standardFuncs[K any]() map[string]ottl.Factory[K] {
 }
 
 func newDropFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("drop", nil, createDropFunction[K])
+	return ottl.NewFactory("noop", nil, createNoopFunction[K])
 }
 
-func createDropFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return dropFn[K]()
+func createNoopFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return noopFn[K]()
 }
 
-func dropFn[K any]() (ottl.ExprFunc[K], error) {
+func noopFn[K any]() (ottl.ExprFunc[K], error) {
 	return func(context.Context, K) (interface{}, error) {
 		return true, nil
 	}, nil
