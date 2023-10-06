@@ -385,7 +385,7 @@ func (msf *multiStreamPusherFactory) CreateMultiStreamPusher() Pusher {
 type LogStreamManager interface {
 	// Initialize a stream so that it can receive logs
 	// This will make sure that the stream exists and if it does not exist,
-	// It will create one. Implementations of this method MUST be thread safe.
+	// It will create one. Implementations of this method MUST be safe for concurrent use.
 	InitStream(streamKey StreamKey) error
 }
 
