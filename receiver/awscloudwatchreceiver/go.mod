@@ -8,10 +8,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.86.1-0.20231006161201-d364ad61c4d7
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.86.1-0.20231006161201-d364ad61c4d7
-	go.opentelemetry.io/collector/confmap v0.86.1-0.20231006161411-ffedebe8585f
-	go.opentelemetry.io/collector/consumer v0.86.1-0.20231006161411-ffedebe8585f
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231006161411-ffedebe8585f
-	go.opentelemetry.io/collector/receiver v0.86.1-0.20231006161411-ffedebe8585f
+	go.opentelemetry.io/collector/confmap v0.86.1-0.20231006161201-d364ad61c4d7
+	go.opentelemetry.io/collector/consumer v0.86.1-0.20231006161201-d364ad61c4d7
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231006161201-d364ad61c4d7
+	go.opentelemetry.io/collector/receiver v0.86.1-0.20231006161201-d364ad61c4d7
 	go.uber.org/zap v1.26.0
 )
 
@@ -32,8 +32,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.86.1-0.20231006161411-ffedebe8585f // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015.0.20231006161411-ffedebe8585f // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015.0.20231006161201-d364ad61c4d7 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
