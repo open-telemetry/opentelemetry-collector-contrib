@@ -116,20 +116,25 @@ func processSteps(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, l
 	}
 
 	traceID := generateTraceID()
-	parentSpanID := createParentSpan(scopeSpans, job, traceID, logger)
+	parentSpanID := createParentSpan(scopeSpans, steps, job, traceID, logger)
 	for _, step := range steps {
 		createSpan(scopeSpans, step, traceID, parentSpanID, logger)
 	}
 }
 
-func createParentSpan(scopeSpans ptrace.ScopeSpans, job WorkflowJob, traceID pcommon.TraceID, logger *zap.Logger) pcommon.SpanID {
+func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, logger *zap.Logger) pcommon.SpanID {
 	logger.Info("Creating parent span", zap.String("name", job.Name))
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(generateSpanID())
 	span.SetName(job.Name)
 	span.SetKind(ptrace.SpanKindServer)
-	setSpanTimes(span, job.CreatedAt, job.CompletedAt)
+	if len(steps) > 0 {
+		setSpanTimes(span, steps[0].StartedAt, steps[len(steps)-1].CompletedAt)
+	} else {
+		logger.Warn("No steps found, defaulting to job times")
+		setSpanTimes(span, job.CreatedAt, job.CompletedAt)
+	}
 	return span.SpanID()
 }
 
