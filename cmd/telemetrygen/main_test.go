@@ -38,7 +38,7 @@ func TestGenerateTraces(t *testing.T) {
 			Rate:                  10,
 			TotalDuration:         10 * time.Second,
 			ReportingInterval:     10,
-			Endpoint:              endpoint,
+			CustomEndpoint:        endpoint,
 			Insecure:              true,
 			UseHTTP:               false,
 			Headers:               nil,
