@@ -17,7 +17,8 @@ type AdxTrace struct {
 	SpanID             string                 // SpanID associated to the Trace
 	ParentID           string                 // ParentID associated to the Trace
 	SpanName           string                 // The SpanName of the Trace
-	SpanStatus         string                 // The SpanStatus associated to the Trace
+	SpanStatus         string                 // The SpanStatus Code associated to the Trace
+	SpanStatusMessage  string                 // The SpanStatusMessage associated to the Trace
 	SpanKind           string                 // The SpanKind of the Trace
 	StartTime          string                 // The start time of the occurrence. Formatted into string as RFC3339Nano
 	EndTime            string                 // The end time of the occurrence. Formatted into string as RFC3339Nano
@@ -40,6 +41,11 @@ type Link struct {
 	SpanLinkAttributes map[string]interface{}
 }
 
+type Status struct {
+	Code    string
+	Message string
+}
+
 func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope, spanData ptrace.Span) *AdxTrace {
 
 	traceAttrib := spanData.Attributes().AsRaw()
@@ -52,6 +58,7 @@ func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope
 		ParentID:           traceutil.SpanIDToHexOrEmptyString(spanData.ParentSpanID()),
 		SpanName:           spanData.Name(),
 		SpanStatus:         traceutil.StatusCodeStr(spanData.Status().Code()),
+		SpanStatusMessage:  spanData.Status().Message(),
 		SpanKind:           traceutil.SpanKindStr(spanData.Kind()),
 		StartTime:          spanData.StartTimestamp().AsTime().Format(time.RFC3339Nano),
 		EndTime:            spanData.EndTimestamp().AsTime().Format(time.RFC3339Nano),

@@ -56,8 +56,8 @@ type ServerConfigUDP struct {
 	SocketBufferSize int `mapstructure:"socket_buffer_size"`
 }
 
-// DefaultServerConfigUDP creates the default ServerConfigUDP.
-func DefaultServerConfigUDP() ServerConfigUDP {
+// defaultServerConfigUDP creates the default ServerConfigUDP.
+func defaultServerConfigUDP() ServerConfigUDP {
 	return ServerConfigUDP{
 		QueueSize:        defaultQueueSize,
 		MaxPacketSize:    defaultMaxPacketSize,

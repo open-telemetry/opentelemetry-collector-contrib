@@ -7,6 +7,8 @@ all_set:
       enabled: true
     optional.metric:
       enabled: true
+    optional.metric.empty_unit:
+      enabled: true
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -25,6 +27,8 @@ none_set:
     default.metric.to_be_removed:
       enabled: false
     optional.metric:
+      enabled: false
+    optional.metric.empty_unit:
       enabled: false
   resource_attributes:
     map.resource.attr:

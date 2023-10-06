@@ -67,6 +67,21 @@ metrics:
 | string_attr | Attribute with any string value. | Any Str |
 | boolean_attr | Attribute with a boolean value. | Any Bool |
 
+### optional.metric.empty_unit
+
+[DEPRECATED] Gauge double metric disabled by default.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+|  | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| boolean_attr | Attribute with a boolean value. | Any Bool |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
