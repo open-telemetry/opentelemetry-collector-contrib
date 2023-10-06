@@ -11,9 +11,8 @@ const (
 	HashSeed     SamplerMode = "hash_seed"
 	Equalizing   SamplerMode = "equalizing"
 	Proportional SamplerMode = "proportional"
+	DefaultMode  SamplerMode = Proportional
 	modeUnset    SamplerMode = ""
-
-	DefaultMode = Proportional
 )
 
 func (sm *SamplerMode) UnmarshalText(in []byte) error {

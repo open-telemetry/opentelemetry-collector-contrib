@@ -230,13 +230,15 @@ func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTrace
 	}
 	incoming := 1.0
 	otts := wts.OTelValue()
-	if otts.HasZeroTValue() {
-		return true, wts, nil
+	if otts.HasTValue() {
+		incoming = otts.TValueThreshold().Probability()
 	}
-	incoming = otts.TValueThreshold().Probability()
 	threshold, _ := sampling.ProbabilityToThreshold(incoming * ts.ratio)
-	_ = otts.UpdateTValueWithSampling(threshold, threshold.TValue())
-	return threshold.ShouldSample(rnd), wts, err
+	should := threshold.ShouldSample(rnd)
+	if should {
+		_ = otts.UpdateTValueWithSampling(threshold, threshold.TValue())
+	}
+	return should, wts, err
 }
 
 func (ts *traceProportionalizer) updateTracestate(tid pcommon.TraceID, should bool, otts *sampling.OTelTraceState) error {
@@ -268,8 +270,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					tp.logger.Error("trace-state", zap.Error(err))
 				}
 
-				forceSample := priority == mustSampleSpan
-
+				forceSample := priority == mustSampleSpan || wts.OTelValue().HasZeroTValue()
 				sampled := forceSample || probSample
 
 				if forceSample {

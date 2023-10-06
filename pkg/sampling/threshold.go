@@ -94,7 +94,7 @@ func (th Threshold) TValue() string {
 // ShouldSample returns true when the span passes this sampler's
 // consistent sampling decision.
 func (t Threshold) ShouldSample(rnd Randomness) bool {
-	return t == NeverSampleThreshold || rnd.unsigned < t.unsigned
+	return rnd.unsigned < t.unsigned
 }
 
 // ThresholdLessThan allows direct comparison of Threshold values.
