@@ -1,6 +1,6 @@
 receivers:
   githubactionsevent:
-    secret: aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899
+    # secret: It's a Secret to Everybody
   otlp:
     protocols:
       grpc:
