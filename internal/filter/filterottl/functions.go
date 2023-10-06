@@ -50,12 +50,12 @@ func StandardResourceFuncs() map[string]ottl.Factory[ottlresource.TransformConte
 
 func standardFuncs[K any]() map[string]ottl.Factory[K] {
 	m := ottlfuncs.StandardConverters[K]()
-	f := newDropFactory[K]()
+	f := newNoopFactory[K]()
 	m[f.Name()] = f
 	return m
 }
 
-func newDropFactory[K any]() ottl.Factory[K] {
+func newNoopFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("noop", nil, createNoopFunction[K])
 }
 

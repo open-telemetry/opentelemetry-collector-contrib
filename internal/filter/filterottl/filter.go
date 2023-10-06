@@ -18,9 +18,9 @@ import (
 
 // NewBoolExprForSpan creates a BoolExpr[ottlspan.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottlspan.TransformContext.
-// If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
+// If a function named `noop` is not present in the function map it will be added automatically so that parsing works as expected
 func NewBoolExprForSpan(conditions []string, functions map[string]ottl.Factory[ottlspan.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlspan.TransformContext], error) {
-	noop := newDropFactory[ottlspan.TransformContext]()
+	noop := newNoopFactory[ottlspan.TransformContext]()
 	if _, ok := functions[noop.Name()]; !ok {
 		functions[noop.Name()] = noop
 	}
@@ -39,9 +39,9 @@ func NewBoolExprForSpan(conditions []string, functions map[string]ottl.Factory[o
 
 // NewBoolExprForSpanEvent creates a BoolExpr[ottlspanevent.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottlspanevent.TransformContext.
-// If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
+// If a function named `noop` is not present in the function map it will be added automatically so that parsing works as expected
 func NewBoolExprForSpanEvent(conditions []string, functions map[string]ottl.Factory[ottlspanevent.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlspanevent.TransformContext], error) {
-	noop := newDropFactory[ottlspanevent.TransformContext]()
+	noop := newNoopFactory[ottlspanevent.TransformContext]()
 	if _, ok := functions[noop.Name()]; !ok {
 		functions[noop.Name()] = noop
 	}
@@ -60,9 +60,9 @@ func NewBoolExprForSpanEvent(conditions []string, functions map[string]ottl.Fact
 
 // NewBoolExprForMetric creates a BoolExpr[ottlmetric.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottlmetric.TransformContext.
-// If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
+// If a function named `noop` is not present in the function map it will be added automatically so that parsing works as expected
 func NewBoolExprForMetric(conditions []string, functions map[string]ottl.Factory[ottlmetric.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlmetric.TransformContext], error) {
-	noop := newDropFactory[ottlmetric.TransformContext]()
+	noop := newNoopFactory[ottlmetric.TransformContext]()
 	if _, ok := functions[noop.Name()]; !ok {
 		functions[noop.Name()] = noop
 	}
@@ -81,9 +81,9 @@ func NewBoolExprForMetric(conditions []string, functions map[string]ottl.Factory
 
 // NewBoolExprForDataPoint creates a BoolExpr[ottldatapoint.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottldatapoint.TransformContext.
-// If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
+// If a function named `noop` is not present in the function map it will be added automatically so that parsing works as expected
 func NewBoolExprForDataPoint(conditions []string, functions map[string]ottl.Factory[ottldatapoint.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottldatapoint.TransformContext], error) {
-	noop := newDropFactory[ottldatapoint.TransformContext]()
+	noop := newNoopFactory[ottldatapoint.TransformContext]()
 	if _, ok := functions[noop.Name()]; !ok {
 		functions[noop.Name()] = noop
 	}
@@ -102,9 +102,9 @@ func NewBoolExprForDataPoint(conditions []string, functions map[string]ottl.Fact
 
 // NewBoolExprForLog creates a BoolExpr[ottllog.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottllog.TransformContext.
-// If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
+// If a function named `noop` is not present in the function map it will be added automatically so that parsing works as expected
 func NewBoolExprForLog(conditions []string, functions map[string]ottl.Factory[ottllog.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottllog.TransformContext], error) {
-	noop := newDropFactory[ottllog.TransformContext]()
+	noop := newNoopFactory[ottllog.TransformContext]()
 	if _, ok := functions[noop.Name()]; !ok {
 		functions[noop.Name()] = noop
 	}
@@ -123,9 +123,9 @@ func NewBoolExprForLog(conditions []string, functions map[string]ottl.Factory[ot
 
 // NewBoolExprForResource creates a BoolExpr[ottlresource.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottlresource.TransformContext.
-// If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
+// If a function named `noop` is not present in the function map it will be added automatically so that parsing works as expected
 func NewBoolExprForResource(conditions []string, functions map[string]ottl.Factory[ottlresource.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlresource.TransformContext], error) {
-	noop := newDropFactory[ottlresource.TransformContext]()
+	noop := newNoopFactory[ottlresource.TransformContext]()
 	if _, ok := functions[noop.Name()]; !ok {
 		functions[noop.Name()] = noop
 	}
