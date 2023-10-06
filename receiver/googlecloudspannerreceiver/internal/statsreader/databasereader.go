@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
@@ -70,17 +72,24 @@ func (databaseReader *DatabaseReader) Read(ctx context.Context) ([]*metadata.Met
 	databaseReader.logger.Debug("Executing read method for database",
 		zap.String("database", databaseReader.database.DatabaseID().ID()))
 
-	var result []*metadata.MetricsDataPoint
+	var (
+		result []*metadata.MetricsDataPoint
+		err    error
+	)
 
 	for _, reader := range databaseReader.readers {
-		dataPoints, err := reader.Read(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("cannot read data for data points databaseReader %q because of an error: %w",
-				reader.Name(), err)
+		dataPoints, lastErr := reader.Read(ctx)
+		if lastErr != nil {
+			err = multierr.Append(err, fmt.Errorf("cannot read data for data points databaseReader %q because of an error: %w",
+				reader.Name(), lastErr))
+		} else {
+			result = append(result, dataPoints...)
 		}
-
-		result = append(result, dataPoints...)
 	}
 
-	return result, nil
+	if len(result) > 0 && err != nil {
+		err = scrapererror.NewPartialScrapeError(err, len(multierr.Errors(err)))
+	}
+
+	return result, err
 }
