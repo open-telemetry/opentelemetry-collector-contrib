@@ -42,7 +42,8 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:      "testing",
 				Endpoint:           "",
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: QueueSettings{
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
 					NumConsumers: 1,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
@@ -62,7 +63,8 @@ func TestLoadConfig(t *testing.T) {
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				LogGroupName:       "test-2",
 				LogStreamName:      "testing",
-				QueueSettings: QueueSettings{
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
 					NumConsumers: 1,
 					QueueSize:    2,
 				},
@@ -70,7 +72,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_queue_size"),
-			errorMessage: "'sending_queue.queue_size' must be 1 or greater",
+			errorMessage: "queue size must be positive",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_num_consumers"),
+			errorMessage: "'sending_queue.num_consumers' must be 1 or greater",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_stream"),
@@ -79,10 +85,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_group"),
 			errorMessage: "'log_group_name' must be set",
-		},
-		{
-			id:           component.NewIDWithName(metadata.Type, "invalid_queue_setting"),
-			errorMessage: `'sending_queue' has invalid keys: enabled`,
 		},
 	}
 
@@ -115,7 +117,8 @@ func TestRetentionValidateCorrect(t *testing.T) {
 		Endpoint:           "",
 		LogRetention:       365,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: QueueSettings{
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
 			NumConsumers: 1,
 			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
@@ -133,7 +136,8 @@ func TestRetentionValidateWrong(t *testing.T) {
 		Endpoint:           "",
 		LogRetention:       366,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: QueueSettings{
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:   true,
 			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
@@ -216,7 +220,8 @@ func TestValidateTags(t *testing.T) {
 				Endpoint:           "",
 				Tags:               tt.tags,
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: QueueSettings{
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
 					NumConsumers: 1,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},

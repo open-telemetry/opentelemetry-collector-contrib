@@ -92,7 +92,7 @@ func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.
 		params,
 		config,
 		logsPusher.consumeLogs,
-		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
+		exporterhelper.WithQueue(expConfig.QueueSettings),
 		exporterhelper.WithRetry(expConfig.RetrySettings),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithShutdown(logsPusher.shutdown),

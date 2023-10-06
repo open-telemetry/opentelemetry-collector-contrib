@@ -41,9 +41,8 @@ type Config struct {
 	// Values must be between 1-256 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$
 	Tags map[string]*string `mapstructure:"tags"`
 
-	// QueueSettings is a subset of exporterhelper.QueueSettings,
-	// because we want to force the queue to always be enabled
-	QueueSettings QueueSettings `mapstructure:"sending_queue"`
+	// Queue settings frm the exporterhelper
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 
 	logger *zap.Logger
 
@@ -52,13 +51,6 @@ type Config struct {
 	// Export raw log string instead of log wrapper
 	// Required for emf logs
 	RawLog bool `mapstructure:"raw_log,omitempty"`
-}
-
-type QueueSettings struct {
-	// QueueSize set the length of the sending queue
-	QueueSize int `mapstructure:"queue_size"`
-	// NumConsumers set the number of consumers consuming from the queue
-	NumConsumers int `mapstructure:"num_consumers"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -71,25 +63,23 @@ func (config *Config) Validate() error {
 	if config.LogStreamName == "" {
 		return errors.New("'log_stream_name' must be set")
 	}
-	if config.QueueSettings.QueueSize < 1 {
-		return errors.New("'sending_queue.queue_size' must be 1 or greater")
+
+	if err := config.QueueSettings.Validate(); err != nil {
+		return err
 	}
+
+	// TODO: once QueueSettings.Validate validate the number of consumers remove the next
+	// verification
+
 	if config.QueueSettings.NumConsumers < 1 {
 		return errors.New("'sending_queue.num_consumers' must be 1 or greater")
 	}
+
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}
 	return cwlogs.ValidateTagsInput(config.Tags)
 
-}
-
-func (config *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
-	return exporterhelper.QueueSettings{
-		Enabled:      true,
-		NumConsumers: config.QueueSettings.NumConsumers,
-		QueueSize:    config.QueueSettings.QueueSize,
-	}
 }
 
 // TODO(jbd): Add ARN role to config.
