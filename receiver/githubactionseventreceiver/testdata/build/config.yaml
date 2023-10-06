@@ -1,0 +1,20 @@
+receivers:
+  githubactionsevent:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  # batch:
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [githubactionsevent, otlp]
+      # processors: [batch]
+      exporters: [debug]

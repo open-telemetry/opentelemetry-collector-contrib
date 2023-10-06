@@ -1,0 +1,4 @@
+# each webhook will require its own webhook event receiver
+githubactionsevent/valid_config:
+  endpoint: localhost:8080
+  path: "some/path"
