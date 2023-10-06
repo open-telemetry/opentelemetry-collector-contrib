@@ -1,5 +1,6 @@
 receivers:
   githubactionsevent:
+    secret: aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899
   otlp:
     protocols:
       grpc:
