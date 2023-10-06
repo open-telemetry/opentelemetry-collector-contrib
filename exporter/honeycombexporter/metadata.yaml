@@ -1,4 +1,4 @@
-type: honeycomb
+type: honeycombmarker
 
 status:
   class: exporter
