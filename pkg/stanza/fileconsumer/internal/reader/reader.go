@@ -12,6 +12,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -187,24 +188,29 @@ func min0(a, b int) int {
 	return b
 }
 
-// validateFingerprint checks whether or not the reader still has a valid file handle.
+// ValidateOrClose returns true if the reader still has a valid file handle, false otherwise.
+// If false is returned, the file handle should be considered closed.
 //
-// It creates a new fingerprint from the old file handle and compares it to the
+// It may create a new fingerprint from the old file handle and compare it to the
 // previously known fingerprint. If there has been a change to the fingerprint
-// (other than appended data), the file is considered invalid. Consequently, the
+// (other than appended data), the file is considered truncated. Consequently, the
 // reader will automatically close the file and drop the handle.
-//
-// The function returns true if the file handle is still valid, false otherwise.
-func (r *Reader) ValidateFingerprint() bool {
+func (r *Reader) ValidateOrClose() bool {
 	if r.file == nil {
 		return false
 	}
 	refreshedFingerprint, err := fingerprint.New(r.file, r.FingerprintSize)
 	if err != nil {
-		r.logger.Debugw("Failed to create fingerprint", zap.Error(err))
+		r.logger.Debugw("Closing unreadable file", zap.Error(err), zap.String(attrs.LogFileName, r.FileName))
+		r.Close()
 		return false
 	}
-	return refreshedFingerprint.StartsWith(r.Fingerprint)
+	if refreshedFingerprint.StartsWith(r.Fingerprint) {
+		return true
+	}
+	r.logger.Debugw("Closing truncated file", zap.String(attrs.LogFileName, r.FileName))
+	r.Close()
+	return false
 }
 
 func (r *Reader) AtEOF() bool {

@@ -34,8 +34,8 @@ OUTER:
 				// At this point, we know that the file has been rotated. However, we do not know
 				// if it was moved or truncated. If truncated, then both handles point to the same
 				// file, in which case we should only read from it using the new reader. We can use
-				// the validateFingerprint method to establish that the file has not been truncated.
-				if !oldReader.ValidateFingerprint() {
+				// the ValidateOrClose method to establish that the file has not been truncated.
+				if !oldReader.ValidateOrClose() {
 					continue OUTER
 				}
 			}
