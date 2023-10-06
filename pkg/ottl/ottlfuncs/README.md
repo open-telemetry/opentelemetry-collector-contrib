@@ -57,6 +57,7 @@ The key will be deleted from the map.
 
 Examples:
 
+
 - `delete_key(attributes, "http.request.header.authorization")`
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
@@ -72,6 +73,7 @@ The `delete_matching_keys` function removes all keys from a `pdata.Map` that mat
 All keys that match the pattern will be deleted from the map.
 
 Examples:
+
 
 - `delete_key(attributes, "http.request.header.authorization")`
 
@@ -90,6 +92,7 @@ The map will be changed to only contain the keys specified by the list of string
 Examples:
 
 - `keep_keys(attributes, ["http.method"])`
+
 
 - `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
 
@@ -113,6 +116,7 @@ Examples:
 
 - `limit(attributes, 100, [])`
 
+
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
 ### merge_maps
@@ -135,18 +139,19 @@ Examples:
 
 - `merge_maps(attributes, ParseJSON(body), "upsert")`
 
+
 - `merge_maps(attributes, ParseJSON(attributes["kubernetes"]), "update")`
+
 
 - `merge_maps(attributes, resource.attributes, "insert")`
 
 ### replace_all_matches
 
-`replace_all_matches(target, pattern, replacement, hashFunction)`
+`replace_all_matches(target, pattern, replacement, function)`
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `hashFunction` is an optional argument
-that creates a hash of `replacement` and then replaces any matching string with the hash value.
+`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching string with the hash value of `replacement`.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
@@ -160,7 +165,7 @@ Examples:
 
 ### replace_all_patterns
 
-`replace_all_patterns(target, mode, regex, replacement, hashFunction)`
+`replace_all_patterns(target, mode, regex, replacement, function)`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
@@ -172,7 +177,7 @@ If one or more sections of `target` match `regex` they will get replaced with `r
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
 
-The `hashFunction` is an optional argument that creates a hash of `replacement` and then replaces the regex pattern with the hash value.
+The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching regex pattern with the hash value of `replacement`.
 
 There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
 If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
@@ -191,7 +196,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 ### replace_match
 
-`replace_match(target, pattern, replacement, hashFunction)`
+`replace_match(target, pattern, replacement, function)`
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
@@ -199,7 +204,7 @@ The `replace_match` function allows replacing entire strings if they match a glo
 
 If `target` matches `pattern` it will get replaced with `replacement`.
 
-The `hashFunction` is an optional argument that creates a hash of `replacement` and then replaces entire strings if they match a glob pattern with the hash value.
+The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching glob pattern with the hash value of `replacement`.
 
 There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
 [See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
@@ -211,7 +216,7 @@ Examples:
 
 ### replace_pattern
 
-`replace_pattern(target, regex, replacement, hashFunction)`
+`replace_pattern(target, regex, replacement, function)`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
@@ -221,7 +226,7 @@ If one or more sections of `target` match `regex` they will get replaced with `r
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
 
-The `hashFunction` is an optional argument that creates a hash of `replacement` and then replaces all string sections that match a regex pattern with the hash value.
+The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces a matching regex pattern with the hash value of `replacement`.
 
 There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
 If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
@@ -251,9 +256,12 @@ Examples:
 
 - `set(attributes["http.path"], "/foo")`
 
+
 - `set(name, attributes["http.route"])`
 
+
 - `set(trace_state["svc"], "example")`
+
 
 - `set(attributes["source"], trace_state["source"])`
 
@@ -270,6 +278,7 @@ The map will be mutated such that the number of characters in all string values 
 Examples:
 
 - `truncate_all(attributes, 100)`
+
 
 - `truncate_all(resource.attributes, 50)`
 
@@ -327,7 +336,9 @@ Examples:
 
 - `Concat([attributes["http.method"], attributes["http.path"]], ": ")`
 
+
 - `Concat([name, 1], " ")`
+
 
 - `Concat(["HTTP method is: ", attributes["http.method"]], "")`
 
@@ -402,6 +413,7 @@ Examples:
 
 - `FNV(attributes["device.name"])`
 
+
 - `FNV("name")`
 
 ### Hours
@@ -441,6 +453,7 @@ Examples:
 
 - `Int(attributes["http.status_code"])`
 
+
 - `Int("2.0")`
 
 ### IsMap
@@ -456,6 +469,7 @@ If `value` is a `map[string]any` or a `pcommon.ValueTypeMap` then returns `true`
 Examples:
 
 - `IsMap(body)`
+
 
 - `IsMap(attributes["maybe a map"])`
 
@@ -484,6 +498,7 @@ There is currently a bug with OTTL that does not allow the target string to end 
 Examples:
 
 - `IsMatch(attributes["http.path"], "foo")`
+
 
 - `IsMatch("string", ".*ring")`
 
@@ -539,6 +554,7 @@ If target is nil an error is returned.
 Examples:
 
 - `Log(attributes["duration_ms"])`
+
 
 - `Int(Log(attributes["duration_ms"])`
 
@@ -636,7 +652,9 @@ Examples:
 
 - `ParseJSON("{\"attr\":true}")`
 
+
 - `ParseJSON(attributes["kubernetes"])`
+
 
 - `ParseJSON(body)`
 
@@ -670,6 +688,7 @@ Examples:
 
 - `SHA1(attributes["device.name"])`
 
+
 - `SHA1("name")`
 
 **Note:** According to the National Institute of Standards and Technology (NIST), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
@@ -690,6 +709,7 @@ Examples:
 
 - `SHA256(attributes["device.name"])`
 
+
 - `SHA256("name")`
 
 **Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
@@ -708,7 +728,7 @@ Examples:
 
 ### Split
 
-`Split(target, delimiter)`
+```Split(target, delimiter)```
 
 The `Split` Converter separates a string by the delimiter, and returns an array of substrings.
 

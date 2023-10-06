@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -129,6 +130,57 @@ func Test_replaceAllMatches_bad_input(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
+}
+
+func Test_replaceAllMatches_bad_function_input(t *testing.T) {
+	input := pcommon.NewValueInt(1)
+	target := &ottl.StandardPMapGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
+		},
+	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return nil, nil
+		},
+	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+
+	exprFunc, err := replaceAllMatches[interface{}](target, "regexp", replacement, function)
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, input)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "expected pcommon.Map")
+	assert.Nil(t, result)
+}
+
+func Test_replaceAllMatches_bad_function_result(t *testing.T) {
+	input := pcommon.NewValueInt(1)
+	target := &ottl.StandardPMapGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
+		},
+	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{replacement}", nil
+		},
+	}
+	ottlValue := ottl.StandardFunctionGetter[interface{}]{
+		FCtx: ottl.FunctionContext{
+			Set: componenttest.NewNopTelemetrySettings(),
+		},
+		Fact: StandardConverters[interface{}]()["IsString"],
+	}
+	function := ottl.NewTestingOptional[ottl.FunctionGetter[interface{}]](ottlValue)
+
+	exprFunc, err := replaceAllMatches[interface{}](target, "regexp", replacement, function)
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, input)
+	require.Error(t, err)
+	assert.Nil(t, result)
 }
 
 func Test_replaceAllMatches_get_nil(t *testing.T) {

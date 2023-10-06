@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add optional parameters to converters
+note: Add optional Converter parameters to replacement Editors
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [27235]
@@ -16,7 +16,7 @@ issues: [27235]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Hashing functions are passed as optional arguments to the following converters:
+  Functions to modify matched text during replacement can now be passed as optional arguments to the following Editors:
   - `replace_pattern`
   - `replace_all_patterns`
   - `replace_match`

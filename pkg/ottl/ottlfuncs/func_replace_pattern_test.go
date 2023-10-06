@@ -172,6 +172,66 @@ func Test_replacePattern_bad_input(t *testing.T) {
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
 
+func Test_replacePattern_bad_function_input(t *testing.T) {
+	input := pcommon.NewValueInt(1)
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
+		},
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+			t.Errorf("nothing should be set in this scenario")
+			return nil
+		},
+	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return nil, nil
+		},
+	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+
+	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, function)
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, input)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "expected string but got nil")
+	assert.Nil(t, result)
+}
+
+func Test_replacePattern_bad_function_result(t *testing.T) {
+	input := pcommon.NewValueInt(1)
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
+		},
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+			t.Errorf("nothing should be set in this scenario")
+			return nil
+		},
+	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return nil, nil
+		},
+	}
+	ottlValue := ottl.StandardFunctionGetter[interface{}]{
+		FCtx: ottl.FunctionContext{
+			Set: componenttest.NewNopTelemetrySettings(),
+		},
+		Fact: StandardConverters[interface{}]()["IsString"],
+	}
+	function := ottl.NewTestingOptional[ottl.FunctionGetter[interface{}]](ottlValue)
+
+	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, function)
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, input)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "replacement value is not a string")
+	assert.Nil(t, result)
+}
+
 func Test_replacePattern_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {

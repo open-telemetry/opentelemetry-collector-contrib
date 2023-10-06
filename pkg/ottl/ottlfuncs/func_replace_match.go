@@ -19,6 +19,10 @@ type ReplaceMatchArguments[K any] struct {
 	Function    ottl.Optional[ottl.FunctionGetter[K]]
 }
 
+type replaceMatchFuncArgs[K any] struct {
+	Input ottl.StringGetter[K]
+}
+
 func NewReplaceMatchFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("replace_match", &ReplaceMatchArguments[K]{}, createReplaceMatchFunction[K])
 }
@@ -35,12 +39,12 @@ func createReplaceMatchFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argume
 
 func replaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	glob, err := glob.Compile(pattern)
-	var replacementVal string
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
 	}
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
+		var replacementVal string
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +55,7 @@ func replaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement o
 			}
 		} else {
 			fnVal := fn.Get()
-			replacementExpr, errNew := fnVal.Get(&FuncArgs[K]{Input: replacement})
+			replacementExpr, errNew := fnVal.Get(&replaceMatchFuncArgs[K]{Input: replacement})
 			if errNew != nil {
 				return nil, errNew
 			}
@@ -59,7 +63,11 @@ func replaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement o
 			if errNew != nil {
 				return nil, errNew
 			}
-			replacementVal = replacementValRaw.(string)
+			replacementValStr, ok := replacementValRaw.(string)
+			if !ok {
+				return nil, fmt.Errorf("replacement value is not a string")
+			}
+			replacementVal = replacementValStr
 		}
 		if err != nil {
 			return nil, err

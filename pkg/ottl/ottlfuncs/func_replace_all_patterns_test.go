@@ -293,6 +293,57 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func Test_replaceAllPatterns_bad_function_input(t *testing.T) {
+	input := pcommon.NewValueInt(1)
+	target := &ottl.StandardPMapGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
+		},
+	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return nil, nil
+		},
+	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement, function)
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, input)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "expected pcommon.Map")
+	assert.Nil(t, result)
+}
+
+func Test_replaceAllPatterns_bad_function_result(t *testing.T) {
+	input := pcommon.NewValueInt(1)
+	target := &ottl.StandardPMapGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
+		},
+	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{anything}", nil
+		},
+	}
+	ottlValue := ottl.StandardFunctionGetter[interface{}]{
+		FCtx: ottl.FunctionContext{
+			Set: componenttest.NewNopTelemetrySettings(),
+		},
+		Fact: StandardConverters[interface{}]()["IsString"],
+	}
+	function := ottl.NewTestingOptional[ottl.FunctionGetter[interface{}]](ottlValue)
+
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement, function)
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, input)
+	require.Error(t, err)
+	assert.Nil(t, result)
+}
+
 func Test_replaceAllPatterns_get_nil(t *testing.T) {
 	target := &ottl.StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
