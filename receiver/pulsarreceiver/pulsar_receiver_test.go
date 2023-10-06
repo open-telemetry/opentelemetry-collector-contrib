@@ -197,8 +197,7 @@ func Test_NewLogsReceiver_Text(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
-			err := consumeLogsLoop(ctx, consumer)
-			assert.ErrorContains(t, err, alreadyClosedError)
+			assert.ErrorContains(t, consumeLogsLoop(ctx, consumer), alreadyClosedError)
 			wg.Done()
 		}()
 		encCfg := textutils.NewEncodingConfig()

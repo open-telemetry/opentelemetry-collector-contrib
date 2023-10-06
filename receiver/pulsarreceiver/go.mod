@@ -7,6 +7,8 @@ require (
 	github.com/apache/thrift v0.19.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.48.0
+	github.com/json-iterator/go v1.1.12
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.86.0
 	github.com/openzipkin/zipkin-go v0.4.2
@@ -38,7 +40,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
@@ -52,7 +53,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.86.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
