@@ -449,7 +449,7 @@ func TestCollectMetrics(t *testing.T) {
 					}
 
 					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-					require.Regexp(t, `variableLabels: \[.*label_1.+label_2.+job.+instance.*\]`, m.Desc().String())
+					require.Contains(t, m.Desc().String(), `variableLabels: {label_1,label_2,job,instance}`)
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))

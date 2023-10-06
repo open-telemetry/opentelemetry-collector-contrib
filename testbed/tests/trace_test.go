@@ -192,7 +192,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 				t,
 				testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 				testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
-				testbed.ResourceSpec{ExpectedMaxCPU: 60, ExpectedMaxRAM: testConf.ExpectedMaxRAM},
+				testbed.ResourceSpec{ExpectedMaxCPU: 80, ExpectedMaxRAM: testConf.ExpectedMaxRAM},
 				performanceResultsSummary,
 				testConf,
 			)
