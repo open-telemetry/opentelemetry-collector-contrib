@@ -6,13 +6,13 @@ require (
 	github.com/Azure/azure-kusto-go v0.13.1
 	github.com/google/uuid v1.3.1
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.86.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.86.1-0.20231004185026-b5635a7a90d2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.86.0
-	go.opentelemetry.io/collector/config/configopaque v0.86.0
-	go.opentelemetry.io/collector/confmap v0.86.0
-	go.opentelemetry.io/collector/exporter v0.86.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015
+	go.opentelemetry.io/collector/component v0.86.1-0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/config/configopaque v0.86.1-0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/confmap v0.86.1-0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/exporter v0.86.1-0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231004185026-b5635a7a90d2
 	go.uber.org/zap v1.26.0
 )
 
@@ -33,8 +33,6 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/go-logr/logr v1.2.4 // indirect
-	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
@@ -53,15 +51,13 @@ require (
 	github.com/samber/lo v1.37.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.86.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.86.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.86.0 // indirect
-	go.opentelemetry.io/collector/extension v0.86.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015 // indirect
+	go.opentelemetry.io/collector v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	go.opentelemetry.io/collector/consumer v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	go.opentelemetry.io/collector/extension v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015.0.20231004185026-b5635a7a90d2 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.19.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
