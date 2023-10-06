@@ -18,6 +18,7 @@ type Config struct {
 }
 
 // NewFactory creates a factory for the Parquet exporter.
+// Deprecated: this exporter is no longer supported and will be removed in the next version.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
