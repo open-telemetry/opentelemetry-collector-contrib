@@ -7,8 +7,8 @@ import (
 	"context"
 
 	"go.opencensus.io/trace"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
@@ -19,13 +19,13 @@ import (
 type reporter struct {
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
-	obsrecv       *obsreport.Receiver
+	obsrecv       *receiverhelper.ObsReport
 }
 
 var _ transport.Reporter = (*reporter)(nil)
 
 func newReporter(set receiver.CreateSettings) (transport.Reporter, error) {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "tcp",
 		ReceiverCreateSettings: set,

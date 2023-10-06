@@ -53,6 +53,8 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 	producerConfig.AccessKeySecret = string(config.AccessKeySecret)
 	if config.ECSRamRole != "" || config.TokenFilePath != "" {
 		tokenUpdateFunc, _ := slsutil.NewTokenUpdateFunc(config.ECSRamRole, config.TokenFilePath)
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26987
+		// nolint
 		producerConfig.UpdateStsToken = tokenUpdateFunc
 		producerConfig.StsTokenShutDown = make(chan struct{})
 	}

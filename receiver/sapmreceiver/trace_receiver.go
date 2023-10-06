@@ -18,8 +18,8 @@ import (
 	"github.com/signalfx/sapm-proto/sapmprotocol"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -46,7 +46,7 @@ type sapmReceiver struct {
 	// for every request. At some point this may be removed when there is actual content to return.
 	defaultResponse []byte
 
-	obsrecv *obsreport.Receiver
+	obsrecv *receiverhelper.ObsReport
 }
 
 // handleRequest parses an http request containing sapm and passes the trace data to the next consumer
@@ -211,7 +211,7 @@ func newReceiver(
 	if config.TLSSetting != nil {
 		transport = "https"
 	}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: params,

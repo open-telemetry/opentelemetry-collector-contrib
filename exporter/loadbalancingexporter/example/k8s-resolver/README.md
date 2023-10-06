@@ -101,7 +101,7 @@ spec:
     processors:
 
     exporters:
-      logging:
+      debug:
 
     service:
       pipelines:
@@ -110,7 +110,7 @@ spec:
             - otlp
           processors: []
           exporters:
-            - logging
+            - debug
 EOF
 ```
 

@@ -32,6 +32,7 @@ const structuredData = "structured_data"
 const message = "message"
 
 const emptyValue = "-"
+const emptyMessage = ""
 
 type sender struct {
 	network   string
@@ -131,10 +132,8 @@ func (s *sender) addStructuredData(msg map[string]any) {
 		return
 	}
 
-	sd, ok := msg[structuredData].(map[string]map[string]string)
-	if !ok {
-		msg[structuredData] = emptyValue
-	} else {
+	switch sd := msg[structuredData].(type) {
+	case map[string]map[string]string:
 		sdElements := []string{}
 		for key, val := range sd {
 			sdElements = append(sdElements, key)
@@ -143,38 +142,54 @@ func (s *sender) addStructuredData(msg map[string]any) {
 			}
 		}
 		msg[structuredData] = sdElements
+	case map[string]interface{}:
+		sdElements := []string{}
+		for key, val := range sd {
+			sdElements = append(sdElements, key)
+			vval, ok := val.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			for k, v := range vval {
+				vv, ok := v.(string)
+				if !ok {
+					continue
+				}
+				sdElements = append(sdElements, fmt.Sprintf("%s=\"%s\"", k, vv))
+			}
+		}
+		msg[structuredData] = sdElements
+	default:
+		msg[structuredData] = emptyValue
 	}
 }
 
 func populateDefaults(msg map[string]any, msgProperties []string) {
-
 	for _, msgProperty := range msgProperties {
-		msgValue, ok := msg[msgProperty]
-		if !ok && msgProperty == priority {
+		if _, ok := msg[msgProperty]; ok {
+			continue
+		}
+
+		switch msgProperty {
+		case priority:
 			msg[msgProperty] = defaultPriority
-			return
-		}
-		if !ok && msgProperty == version {
+		case version:
 			msg[msgProperty] = versionRFC5424
-			return
-		}
-		if !ok && msgProperty == facility {
+		case facility:
 			msg[msgProperty] = defaultFacility
-			return
-		}
-		if !ok {
+		case message:
+			msg[msgProperty] = emptyMessage
+		default:
 			msg[msgProperty] = emptyValue
-			return
 		}
-		msg[msgProperty] = msgValue
 	}
 }
 
 func (s *sender) formatRFC3164(msg map[string]any, timestamp time.Time) string {
 	msgProperties := []string{priority, hostname, message}
 	populateDefaults(msg, msgProperties)
-	timestampString := timestamp.Format("2006-01-02T15:04:05.000-03:00")
-	return fmt.Sprintf("<%d>%s %s %s", msg[priority], timestampString, msg[hostname], msg[message])
+	timestampString := timestamp.Format("Jan 02 15:04:05")
+	return fmt.Sprintf("<%d>%s %s%s", msg[priority], timestampString, msg[hostname], formatMessagePart(msg[message]))
 }
 
 func (s *sender) formatRFC5424(msg map[string]any, timestamp time.Time) string {
@@ -182,5 +197,15 @@ func (s *sender) formatRFC5424(msg map[string]any, timestamp time.Time) string {
 	populateDefaults(msg, msgProperties)
 	s.addStructuredData(msg)
 	timestampString := timestamp.Format(time.RFC3339)
-	return fmt.Sprintf("<%d>%d %s %s %s %s %s %s %s", msg[priority], msg[version], timestampString, msg[hostname], msg[app], msg[pid], msg[msgID], msg[structuredData], msg[message])
+
+	return fmt.Sprintf("<%d>%d %s %s %s %s %s %s%s", msg[priority], msg[version], timestampString, msg[hostname], msg[app], msg[pid], msg[msgID], msg[structuredData], formatMessagePart(msg[message]))
+}
+
+func formatMessagePart(message any) string {
+	msg := message.(string)
+	if msg != emptyMessage {
+		msg = " " + msg
+	}
+
+	return msg
 }
