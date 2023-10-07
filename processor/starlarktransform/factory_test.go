@@ -12,5 +12,5 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.NotNil(t, cfg)
-	assert.Equal(t, "def transform(event): return json.decode(event)", cfg.(*Config).Code)
+	assert.Equal(t, "def transform(e): return json.decode(e)", cfg.(*Config).Code)
 }
