@@ -40,7 +40,7 @@ func (e *gRPCClientExporter) export(logs plog.Logs) error {
 
 // Start starts the log telemetry generator
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func Start(cfg *Config) error {
 	}
 
 	// only support grpc in insecure mode
-	clientConn, err := grpc.DialContext(context.TODO(), cfg.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	clientConn, err := grpc.DialContext(context.TODO(), cfg.Endpoint(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 			index:          i,
 		}
 
-		go w.simulateLogs(res, exp)
+		go w.simulateLogs(res, exp, c.GetTelemetryAttributes())
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)

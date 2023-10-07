@@ -35,6 +35,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		Exclude:   defaultExcludes,
+		Extract: ExtractConfig{
+			Metadata: enabledAttributes(),
+		},
 	}
 }
 

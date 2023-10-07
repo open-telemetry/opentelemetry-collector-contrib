@@ -1,8 +1,5 @@
 connector/servicegraphconnector
-exporter/coralogixexporter
 exporter/kafkaexporter
-exporter/pulsarexporter
-extension/observer/ecsobserver
 extension/observer
 processor/servicegraphprocessor
 receiver/carbonreceiver
@@ -10,5 +7,4 @@ receiver/collectdreceiver
 receiver/dockerstatsreceiver
 receiver/journaldreceiver
 receiver/kafkareceiver
-receiver/pulsarreceiver
 receiver/windowseventlogreceiver

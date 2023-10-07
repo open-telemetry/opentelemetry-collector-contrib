@@ -767,7 +767,7 @@ func TestBuildWithHeader(t *testing.T) {
 			},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.NotNil(t, m.readerFactory.headerConfig.SplitFunc)
+				require.NotNil(t, m.readerFactory.HeaderConfig.SplitFunc)
 			},
 		},
 	}
