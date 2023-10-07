@@ -1093,7 +1093,6 @@ func TestNoRetryOnHttpClientError(t *testing.T) {
 func TestNoRetryOnDeadServer(t *testing.T) {
 	responseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	mockServer := httptest.NewServer(responseHandler)
-	defer mockServer.Close()
 
 	endpointURL, err := url.Parse(mockServer.URL)
 	require.NoError(t, err)
