@@ -17,9 +17,21 @@ Starlark is a scripting language used for configuration that is designed to be s
 
 The processor leverages Starlark to modify telemetry data while using familiar, pythonic syntax. Modifying telemetry data is as a simple as modifying a `Dict`.
 
+## Why?
+
+While there are a number of transform processors, most notably, the main OTTL [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor), this processor aims to grant users more flexibility by allowing them to manipulate telemetry data using a familiar syntax.
+
+Python is a popular, well known language, even among non-developers. By allowing Starlark code to be used as an option to transform telemetry data, users can leverage their existing knowledge of Python.
+
+
 ## Config
 
-To configure starlarktransform, you add your code using the `code` option in the config. Each instance of starlarktransform can only have a single code section. 
+| Parameter | Desc |
+| ------- | ---- |
+| code | Add in-line starlark code directly to your config |
+| script | Allows you to set the script source. Supports __File path__ or __HTTP URL__ |
+
+To configure starlarktransform, you can add your code using the `code` option in the config.
 
 
 ```yaml
@@ -32,13 +44,24 @@ processors:
         return event
 ```
 
+
+Alternatively, in cases where you prefer to not have starlark code present or visible in your Open Telemetry configuration, you can use the `script` parameter to pass your script from a file or http url.
+
+```yaml
+processors:
+  starlarktransform:
+	script: /path/to/script.star
+
+# or
+processors:
+  starlarktransform:
+	script: https://some.url.com/script.star
+
+```
+
+
+
 You must define a function called `transform` that accepts a single argument, `event`. This function is called by the processor and is passed the telemetry event. The function **must return** the modified, json decoded event.
-
-## Why?
-
-While there are a number of transform processors, most notably, the main OTTL [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor), this processor aims to grant users more flexibility by allowing them to manipulate telemetry data using a familiar syntax.
-
-Python is a popular, well known language, even among non-developers. By allowing Starlark code to be used as an option to transform telemetry data, users can leverage their existing knowledge of Python.
 
 
 ## How it works
