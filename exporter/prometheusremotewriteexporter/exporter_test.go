@@ -1049,3 +1049,42 @@ func TestNoRetryOn4xx(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err))
 	assert.Equal(t, 1, attempts)
 }
+
+// Simulate a timeout error that would result in an `http.client` returning an error.
+// This test retries once, and then on the second retry the server is configured to timeout.
+// This should lead to a permanent error.
+func TestNoRetryOnHttpClientError(t *testing.T) {
+	attempts := 0
+	responseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if attempts < 1 {
+			attempts++
+			http.Error(w, "Bad Request", http.StatusInternalServerError)
+		} else {
+			// Add waiting time for response
+			time.Sleep(20 * time.Millisecond)
+		}
+
+	})
+	mockServer := httptest.NewServer(responseHandler)
+	defer mockServer.Close()
+
+	endpointURL, err := url.Parse(mockServer.URL)
+	require.NoError(t, err)
+
+	settings := &confighttp.HTTPClientSettings{
+		Timeout: 10 * time.Millisecond,
+	}
+	// Create the prwExporter
+	exporterTest := &prwExporter{
+		endpointURL: endpointURL,
+	}
+	exporterTest.client, err = settings.ToClient(nil, exporterTest.settings)
+
+	ctx := context.Background()
+
+	// Execute the write request and verify that the exporter returns an error due to the 4xx response.
+	err = exporterTest.execute(ctx, &prompb.WriteRequest{})
+	assert.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+	assert.Equal(t, 1, attempts)
+}

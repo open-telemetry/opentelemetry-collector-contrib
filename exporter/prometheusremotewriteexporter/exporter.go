@@ -245,7 +245,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 		resp, err := prwe.client.Do(req)
 		if err != nil {
-			return err
+			return backoff.Permanent(consumererror.NewPermanent(err))
 		}
 		defer resp.Body.Close()
 
