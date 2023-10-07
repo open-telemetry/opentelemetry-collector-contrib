@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/qri-io/starlib/re"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -40,11 +41,20 @@ type Processor struct {
 
 func (p *Processor) Start(context.Context, component.Host) error {
 
-	global := starlark.StringDict{
+	modules := starlark.StringDict{
 		"json": jsonlib.Module,
 	}
 
-	globals, err := starlark.ExecFile(p.thread, "", p.code, global)
+	regexMod, err := re.LoadModule()
+	if err != nil {
+		return err
+	}
+
+	for k, v := range regexMod {
+		modules[k] = v
+	}
+
+	globals, err := starlark.ExecFile(p.thread, "", p.code, modules)
 	if err != nil {
 		return err
 	}

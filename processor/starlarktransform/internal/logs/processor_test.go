@@ -87,6 +87,32 @@ func TestLogConsumer(t *testing.T) {
 			expectError:      nil,
 			expectStartError: errors.New("starlark: no 'transform' function defined in script"),
 		},
+		{
+			name:  "regex transform",
+			event: testlogevent,
+			code: heredoc.Doc(`
+								def transform(event):
+									event = json.decode(event)
+									val = event['resourceLogs'][0]['scopeLogs'][0]['logRecords'][0]['body']['stringValue']
+									val = re.sub('{.*}', 'NONE', val)
+									start, end = re.search('[A-Z]{4}', val)
+
+									# update log body
+									event['resourceLogs'][0]['scopeLogs'][0]['logRecords'][0]['body']['stringValue'] = val
+
+									# add severity
+									event['resourceLogs'][0]['scopeLogs'][0]['logRecords'][0]['attributes'].append({
+										"key": "severity",
+										"value": {"stringValue": val[start:end]}
+									})
+									return event`),
+
+			next: &fakeLogConsumer{
+				t:        t,
+				expected: `{"resourceLogs":[{"resource":{"attributes":[{"key":"log.file.name","value":{"stringValue":"test.log"}}]},"scopeLogs":[{"scope":{},"logRecords":[{"observedTimeUnixNano":"1694127596456358000","body":{"stringValue":"2023-09-06T01:09:24.045+0200    INFO    internal/command.go:117 OpenTelemetry Collector Builder NONE"},"attributes":[{"key":"app","value":{"stringValue":"dev"}},{"key":"severity","value":{"stringValue":"INFO"}}],"traceId":"","spanId":""}]}]}]}`},
+			expectError:      nil,
+			expectStartError: nil,
+		},
 	}
 
 	for _, tt := range testcases {
