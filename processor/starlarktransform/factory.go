@@ -42,7 +42,16 @@ func createLogsProcessor(
 		return nil, errors.New("invalid config type")
 	}
 
-	return logs.NewProcessor(ctx, set.Logger, config.Code, nextConsumer), nil
+	if err := config.validate(); err != nil {
+		return nil, err
+	}
+
+	code, err := config.GetCode()
+	if err != nil {
+		return nil, err
+	}
+
+	return logs.NewProcessor(ctx, set.Logger, code, nextConsumer), nil
 }
 
 func createMetricsProcessor(
@@ -56,7 +65,16 @@ func createMetricsProcessor(
 		return nil, errors.New("invalid config type")
 	}
 
-	return metrics.NewProcessor(ctx, set.Logger, config.Code, nextConsumer), nil
+	if err := config.validate(); err != nil {
+		return nil, err
+	}
+
+	code, err := config.GetCode()
+	if err != nil {
+		return nil, err
+	}
+
+	return metrics.NewProcessor(ctx, set.Logger, code, nextConsumer), nil
 }
 
 func createTracesProcessor(
@@ -70,5 +88,14 @@ func createTracesProcessor(
 		return nil, errors.New("invalid config type")
 	}
 
-	return traces.NewProcessor(ctx, set.Logger, config.Code, nextConsumer), nil
+	if err := config.validate(); err != nil {
+		return nil, err
+	}
+
+	code, err := config.GetCode()
+	if err != nil {
+		return nil, err
+	}
+
+	return traces.NewProcessor(ctx, set.Logger, code, nextConsumer), nil
 }
