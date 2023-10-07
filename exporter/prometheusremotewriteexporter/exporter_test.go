@@ -1079,6 +1079,7 @@ func TestNoRetryOnHttpClientError(t *testing.T) {
 		endpointURL: endpointURL,
 	}
 	exporterTest.client, err = settings.ToClient(nil, exporterTest.settings)
+	require.NoError(t, err)
 
 	ctx := context.Background()
 
