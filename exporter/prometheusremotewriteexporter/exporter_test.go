@@ -1089,3 +1089,28 @@ func TestNoRetryOnHttpClientError(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err))
 	assert.Equal(t, 1, attempts)
 }
+
+func TestNoRetryOnDeadServer(t *testing.T) {
+	responseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	mockServer := httptest.NewServer(responseHandler)
+	defer mockServer.Close()
+
+	endpointURL, err := url.Parse(mockServer.URL)
+	require.NoError(t, err)
+	mockServer.Close()
+
+	settings := confighttp.NewDefaultHTTPClientSettings()
+	// Create the prwExporter
+	exporterTest := &prwExporter{
+		endpointURL: endpointURL,
+	}
+	exporterTest.client, err = settings.ToClient(nil, exporterTest.settings)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	// Execute the write request and verify that the exporter returns an error due to the 4xx response.
+	err = exporterTest.execute(ctx, &prompb.WriteRequest{})
+	assert.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+}
