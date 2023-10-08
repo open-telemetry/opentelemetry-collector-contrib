@@ -6,7 +6,7 @@
     "workflow_name": "Tests",
     "head_branch": "main",
     "run_url": "https://api.github.com/repos/krzko/webhook-testing/actions/runs/6445853087",
-    "run_attempt": 10,
+    "run_attempt": 12,
     "node_id": "CR_kwDOKdcZe88AAAAEExnimQ",
     "head_sha": "18c794325491632496d3bd43dcdd31a1d3cee3f4",
     "url": "https://api.github.com/repos/krzko/webhook-testing/actions/jobs/17500332697",

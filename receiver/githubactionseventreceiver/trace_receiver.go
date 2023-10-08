@@ -78,12 +78,12 @@ func eventToTraces(event interface{}, logger *zap.Logger) ptrace.Traces {
 	logger.Info("Determining event")
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	jobResource := resourceSpans.Resource()
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
 	switch e := event.(type) {
 	case *WorkflowJobEvent:
 		logger.Info("Processing WorkflowJobEvent")
+		jobResource := resourceSpans.Resource()
 		createResourceAttributes(jobResource, e, logger)
 		traceID, err := generateTraceID(e.WorkflowJob.RunID, e.WorkflowJob.RunAttempt)
 		if err != nil {
@@ -94,12 +94,14 @@ func eventToTraces(event interface{}, logger *zap.Logger) ptrace.Traces {
 		processSteps(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, parentSpanID, logger)
 	case *WorkflowRunEvent:
 		logger.Info("Processing WorkflowRunEvent")
+		runResource := resourceSpans.Resource()
 		traceID, err := generateTraceID(e.WorkflowRun.ID, e.WorkflowRun.RunNumber)
 		if err != nil {
 			logger.Error("Failed to generate trace ID", zap.Error(err))
 			return traces
 		}
 		if e.WorkflowRun.Status == "in_progress" {
+			createResourceAttributes(runResource, e, logger)
 			createRootParentSpan(resourceSpans, e, traceID, logger)
 		}
 	default:
@@ -129,17 +131,40 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 	return span.SpanID()
 }
 
-func createResourceAttributes(resource pcommon.Resource, event *WorkflowJobEvent, logger *zap.Logger) {
+func createResourceAttributes(resource pcommon.Resource, event interface{}, logger *zap.Logger) {
 	attrs := resource.Attributes()
-	serviceName := fmt.Sprintf("github.%s", strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(event.Repository.FullName, "/", "."), "-", "_")))
-	attrs.PutStr("service.name", serviceName)
-	attrs.PutStr("service.version", "v0.0.1")
 
-	attrs.PutStr("github.workflow", event.WorkflowJob.Name)
-	attrs.PutInt("github.job_id", event.WorkflowJob.ID)
-	attrs.PutStr("github.job.html_url", event.WorkflowJob.HTMLURL)
-	attrs.PutStr("github.sha", event.WorkflowJob.HeadSha)
-	attrs.PutInt("github.job.run_attempt", int64(event.WorkflowJob.RunAttempt))
+	switch e := event.(type) {
+	case *WorkflowJobEvent:
+		serviceName := fmt.Sprintf("github.%s", strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(e.Repository.FullName, "/", "."), "-", "_")))
+		attrs.PutStr("service.name", serviceName)
+
+		attrs.PutStr("github.actor", e.Repository.Owner.Login)
+		attrs.PutStr("github.head_branch", e.WorkflowJob.HeadBranch)
+		attrs.PutStr("github.head_sha", e.WorkflowJob.HeadSha)
+		attrs.PutStr("github.job", e.WorkflowJob.Name)
+		attrs.PutStr("github.repository", e.Repository.FullName)
+		attrs.PutInt("github.run_id", e.WorkflowJob.RunID)
+		attrs.PutInt("github.run_number", int64(e.WorkflowJob.RunAttempt))
+		attrs.PutStr("github.runner.name", e.WorkflowJob.RunnerName)
+		attrs.PutStr("github.workflow", e.WorkflowJob.WorkflowName)
+
+	case *WorkflowRunEvent:
+		serviceName := fmt.Sprintf("github.%s", strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(e.Repository.FullName, "/", "."), "-", "_")))
+		attrs.PutStr("service.name", serviceName)
+
+		attrs.PutStr("github.actor", e.WorkflowRun.Repository.Owner.Login)
+		attrs.PutStr("github.head_branch", e.WorkflowRun.HeadBranch)
+		attrs.PutStr("github.head_sha", e.WorkflowRun.HeadSha)
+		attrs.PutStr("github.repository", e.Repository.FullName)
+		attrs.PutInt("github.run_id", e.WorkflowRun.ID)
+		attrs.PutInt("github.run_number", int64(e.WorkflowRun.RunNumber))
+		attrs.PutStr("github.workflow", e.WorkflowRun.Name)
+		attrs.PutStr("github.workflow_path", e.WorkflowRun.Path)
+
+	default:
+		logger.Error("unknown event type")
+	}
 }
 
 func createRootParentSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent, traceID pcommon.TraceID, logger *zap.Logger) (pcommon.SpanID, error) {

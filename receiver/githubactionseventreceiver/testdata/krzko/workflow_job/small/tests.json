@@ -8,7 +8,7 @@
     "head_sha": "18c794325491632496d3bd43dcdd31a1d3cee3f4",
     "path": ".github/workflows/tests.yml",
     "display_title": "fix: update workflow",
-    "run_number": 10,
+    "run_number": 12,
     "event": "push",
     "status": "in_progress",
     "conclusion": "",

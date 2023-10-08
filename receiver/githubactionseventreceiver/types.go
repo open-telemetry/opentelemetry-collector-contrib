@@ -19,6 +19,7 @@ type WorkflowRunEvent struct {
 	Organization Organization `json:"organization,omitempty"`
 	Sender       Sender       `json:"sender,omitempty"`
 }
+
 type Actor struct {
 	Login             string `json:"login,omitempty"`
 	ID                int    `json:"id,omitempty"`
@@ -67,7 +68,7 @@ type HeadRepository struct {
 	Private          bool   `json:"private,omitempty"`
 	Owner            Owner  `json:"owner,omitempty"`
 	HTMLURL          string `json:"html_url,omitempty"`
-	Description      string `json:"description,omitempty"`
+	Description      any    `json:"description,omitempty"`
 	Fork             bool   `json:"fork,omitempty"`
 	URL              string `json:"url,omitempty"`
 	ForksURL         string `json:"forks_url,omitempty"`
@@ -152,7 +153,7 @@ type Repository struct {
 	Private                  bool      `json:"private,omitempty"`
 	Owner                    Owner     `json:"owner,omitempty"`
 	HTMLURL                  string    `json:"html_url,omitempty"`
-	Description              string    `json:"description,omitempty"`
+	Description              any       `json:"description,omitempty"`
 	Fork                     bool      `json:"fork,omitempty"`
 	URL                      string    `json:"url,omitempty"`
 	ForksURL                 string    `json:"forks_url,omitempty"`
@@ -202,12 +203,13 @@ type Repository struct {
 	Size                     int       `json:"size,omitempty"`
 	StargazersCount          int       `json:"stargazers_count,omitempty"`
 	WatchersCount            int       `json:"watchers_count,omitempty"`
-	Language                 any       `json:"language,omitempty"`
+	Language                 string    `json:"language,omitempty"`
 	HasIssues                bool      `json:"has_issues,omitempty"`
 	HasProjects              bool      `json:"has_projects,omitempty"`
 	HasDownloads             bool      `json:"has_downloads,omitempty"`
 	HasWiki                  bool      `json:"has_wiki,omitempty"`
 	HasPages                 bool      `json:"has_pages,omitempty"`
+	HasDiscussions           bool      `json:"has_discussions,omitempty"`
 	ForksCount               int       `json:"forks_count,omitempty"`
 	MirrorURL                any       `json:"mirror_url,omitempty"`
 	Archived                 bool      `json:"archived,omitempty"`
@@ -292,6 +294,8 @@ type Workflow struct {
 type WorkflowJob struct {
 	ID              int64     `json:"id,omitempty"`
 	RunID           int64     `json:"run_id,omitempty"`
+	WorkflowName    string    `json:"workflow_name,omitempty"`
+	HeadBranch      string    `json:"head_branch,omitempty"`
 	RunURL          string    `json:"run_url,omitempty"`
 	RunAttempt      int       `json:"run_attempt,omitempty"`
 	NodeID          string    `json:"node_id,omitempty"`
@@ -300,9 +304,9 @@ type WorkflowJob struct {
 	HTMLURL         string    `json:"html_url,omitempty"`
 	Status          string    `json:"status,omitempty"`
 	Conclusion      string    `json:"conclusion,omitempty"`
+	CreatedAt       time.Time `json:"created_at,omitempty"`
 	StartedAt       time.Time `json:"started_at,omitempty"`
 	CompletedAt     time.Time `json:"completed_at,omitempty"`
-	CreatedAt       time.Time `json:"created_at,omitempty"`
 	Name            string    `json:"name,omitempty"`
 	Steps           []Step    `json:"steps,omitempty"`
 	CheckRunURL     string    `json:"check_run_url,omitempty"`
@@ -320,6 +324,7 @@ type WorkflowRun struct {
 	HeadBranch          string          `json:"head_branch,omitempty"`
 	HeadSha             string          `json:"head_sha,omitempty"`
 	Path                string          `json:"path,omitempty"`
+	DisplayTitle        string          `json:"display_title,omitempty"`
 	RunNumber           int             `json:"run_number,omitempty"`
 	Event               string          `json:"event,omitempty"`
 	Status              string          `json:"status,omitempty"`
