@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -252,18 +253,22 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 			switch decision {
 			case sampling.Sampled:
 				samplingDecision[sampling.Sampled] = true
+				tsp.recordPolicySampledDecisionMetric(p, true)
 				trace.Decisions[i] = decision
 
 			case sampling.NotSampled:
 				samplingDecision[sampling.NotSampled] = true
+				tsp.recordPolicySampledDecisionMetric(p, false)
 				trace.Decisions[i] = decision
 
 			case sampling.InvertSampled:
 				samplingDecision[sampling.InvertSampled] = true
+				tsp.recordPolicySampledDecisionMetric(p, true)
 				trace.Decisions[i] = sampling.Sampled
 
 			case sampling.InvertNotSampled:
 				samplingDecision[sampling.InvertNotSampled] = true
+				tsp.recordPolicySampledDecisionMetric(p, false)
 				trace.Decisions[i] = sampling.NotSampled
 			}
 		}
@@ -279,28 +284,17 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		finalDecision = sampling.Sampled
 	}
 
-	for i, p := range tsp.policies {
-		switch trace.Decisions[i] {
+	for _, p := range tsp.policies {
+		switch finalDecision {
 		case sampling.Sampled:
 			// any single policy that decides to sample will cause the decision to be sampled
 			// the nextConsumer will get the context from the first matching policy
 			if matchingPolicy == nil {
 				matchingPolicy = p
 			}
-
-			_ = stats.RecordWithTags(
-				p.ctx,
-				[]tag.Mutator{tag.Upsert(tagSampledKey, "true")},
-				statCountTracesSampled.M(int64(1)),
-			)
 			metrics.decisionSampled++
 
 		case sampling.NotSampled:
-			_ = stats.RecordWithTags(
-				p.ctx,
-				[]tag.Mutator{tag.Upsert(tagSampledKey, "false")},
-				statCountTracesSampled.M(int64(1)),
-			)
 			metrics.decisionNotSampled++
 		}
 	}
@@ -321,6 +315,17 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	}
 
 	return finalDecision, matchingPolicy
+}
+
+func (tsp *tailSamplingSpanProcessor) recordPolicySampledDecisionMetric(policy *policy, sampled bool) {
+	_ = stats.RecordWithTags(
+		policy.ctx,
+		[]tag.Mutator{
+			tag.Upsert(tagPolicyKey, policy.name),
+			tag.Upsert(tagSampledKey, strconv.FormatBool(sampled)),
+		},
+		statCountTracesSampled.M(int64(1)),
+	)
 }
 
 // ConsumeTraces is required by the processor.Traces interface.
