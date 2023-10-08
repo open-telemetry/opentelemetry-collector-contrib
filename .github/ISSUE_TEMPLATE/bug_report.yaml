@@ -103,6 +103,7 @@ body:
       - extension/oidcauth
       - extension/opamp
       - extension/pprof
+      - extension/remoteobserver
       - extension/sigv4auth
       - extension/storage
       - extension/storage/dbstorage
