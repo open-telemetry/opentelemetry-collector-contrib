@@ -85,15 +85,48 @@ func eventToTraces(event interface{}, logger *zap.Logger) ptrace.Traces {
 	case *WorkflowJobEvent:
 		logger.Info("Processing WorkflowJobEvent")
 		createResourceAttributes(jobResource, e, logger)
-		processSteps(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, logger)
+		traceID, err := generateTraceID(e.WorkflowJob.RunID, e.WorkflowJob.RunAttempt)
+		if err != nil {
+			logger.Error("Failed to generate trace ID", zap.Error(err))
+			return traces
+		}
+		parentSpanID := createParentSpan(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, logger)
+		processSteps(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, parentSpanID, logger)
 	case *WorkflowRunEvent:
 		logger.Info("Processing WorkflowRunEvent")
-		// TODO(krzko): Similar logic for WorkflowJobEvent
+		traceID, err := generateTraceID(e.WorkflowRun.ID, e.WorkflowRun.RunNumber)
+		if err != nil {
+			logger.Error("Failed to generate trace ID", zap.Error(err))
+			return traces
+		}
+		if e.WorkflowRun.Status == "in_progress" {
+			createRootParentSpan(resourceSpans, e, traceID, logger)
+		}
 	default:
 		logger.Error("unknown event type")
 	}
 
 	return traces
+}
+
+func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, logger *zap.Logger) pcommon.SpanID {
+	logger.Info("Creating parent span", zap.String("name", job.Name))
+	span := scopeSpans.Spans().AppendEmpty()
+	span.SetTraceID(traceID)
+
+	parentSpanID, _ := generateRootSpanID(job.RunID, job.RunAttempt)
+	span.SetParentSpanID(parentSpanID)
+
+	span.SetSpanID(generateSpanID())
+	span.SetName(job.Name)
+	span.SetKind(ptrace.SpanKindServer)
+	if len(steps) > 0 {
+		setSpanTimes(span, steps[0].StartedAt, steps[len(steps)-1].CompletedAt)
+	} else {
+		logger.Warn("No steps found, defaulting to job times")
+		setSpanTimes(span, job.CreatedAt, job.CompletedAt)
+	}
+	return span.SpanID()
 }
 
 func createResourceAttributes(resource pcommon.Resource, event *WorkflowJobEvent, logger *zap.Logger) {
@@ -109,33 +142,35 @@ func createResourceAttributes(resource pcommon.Resource, event *WorkflowJobEvent
 	attrs.PutInt("github.job.run_attempt", int64(event.WorkflowJob.RunAttempt))
 }
 
-func processSteps(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, logger *zap.Logger) {
+func createRootParentSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent, traceID pcommon.TraceID, logger *zap.Logger) (pcommon.SpanID, error) {
+	logger.Info("Creating root parent span", zap.String("name", event.WorkflowRun.Name))
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	span := scopeSpans.Spans().AppendEmpty()
+
+	rootSpanID, err := generateRootSpanID(event.WorkflowRun.ID, event.WorkflowRun.RunNumber)
+	if err != nil {
+		logger.Error("Failed to generate root span ID", zap.Error(err))
+		return pcommon.SpanID{}, err
+	}
+
+	span.SetTraceID(traceID)
+	span.SetSpanID(rootSpanID)
+	span.SetName(event.WorkflowRun.Name)
+	span.SetKind(ptrace.SpanKindServer)
+	setSpanTimes(span, event.WorkflowRun.CreatedAt, event.WorkflowRun.UpdatedAt)
+
+	return rootSpanID, nil
+}
+
+func processSteps(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger) {
 	if job.Status != "completed" {
 		logger.Info("Job not completed, skipping")
 		return
 	}
 
-	traceID := generateTraceID()
-	parentSpanID := createParentSpan(scopeSpans, steps, job, traceID, logger)
 	for _, step := range steps {
 		createSpan(scopeSpans, step, traceID, parentSpanID, logger)
 	}
-}
-
-func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, logger *zap.Logger) pcommon.SpanID {
-	logger.Info("Creating parent span", zap.String("name", job.Name))
-	span := scopeSpans.Spans().AppendEmpty()
-	span.SetTraceID(traceID)
-	span.SetSpanID(generateSpanID())
-	span.SetName(job.Name)
-	span.SetKind(ptrace.SpanKindServer)
-	if len(steps) > 0 {
-		setSpanTimes(span, steps[0].StartedAt, steps[len(steps)-1].CompletedAt)
-	} else {
-		logger.Warn("No steps found, defaulting to job times")
-		setSpanTimes(span, job.CreatedAt, job.CompletedAt)
-	}
-	return span.SpanID()
 }
 
 func createSpan(scopeSpans ptrace.ScopeSpans, step Step, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger) pcommon.SpanID {
@@ -165,10 +200,32 @@ func createSpan(scopeSpans ptrace.ScopeSpans, step Step, traceID pcommon.TraceID
 	return span.SpanID()
 }
 
-func generateTraceID() pcommon.TraceID {
+func generateTraceID(runID int64, runAttempt int) (pcommon.TraceID, error) {
+	input := fmt.Sprintf("%d%d", runID, runAttempt)
+	hash := sha256.Sum256([]byte(input))
+	traceIDHex := hex.EncodeToString(hash[:])
+
 	var traceID pcommon.TraceID
-	binary.Read(rand.Reader, binary.BigEndian, &traceID)
-	return traceID
+	_, err := hex.Decode(traceID[:], []byte(traceIDHex[:32]))
+	if err != nil {
+		return pcommon.TraceID{}, err
+	}
+
+	return traceID, nil
+}
+
+func generateRootSpanID(runID int64, runAttempt int) (pcommon.SpanID, error) {
+	input := fmt.Sprintf("%d%d", runID, runAttempt)
+	hash := sha256.Sum256([]byte(input))
+	spanIDHex := hex.EncodeToString(hash[:])
+
+	var spanID pcommon.SpanID
+	_, err := hex.Decode(spanID[:], []byte(spanIDHex[16:32]))
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+
+	return spanID, nil
 }
 
 func generateSpanID() pcommon.SpanID {
