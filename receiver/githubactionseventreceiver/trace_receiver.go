@@ -332,7 +332,8 @@ func (gaer *githubActionsEventReceiver) ServeHTTP(w http.ResponseWriter, r *http
 	if gaer.config.Secret != "" {
 		signatureHeader := r.Header.Get("X-Hub-Signature-256")
 		if signatureHeader == "" || len(signatureHeader) < 7 {
-			http.Error(w, "Unauthorized - No Signature Header", http.StatusUnauthorized)
+			gaer.logger.Error("Unauthorized - No Signature Header")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		receivedSig := signatureHeader[7:]
@@ -343,7 +344,8 @@ func (gaer *githubActionsEventReceiver) ServeHTTP(w http.ResponseWriter, r *http
 		gaer.logger.Info("Debugging Signatures", zap.String("Received", receivedSig), zap.String("Computed", expectedSig))
 
 		if !hmac.Equal([]byte(expectedSig), []byte(receivedSig)) {
-			http.Error(w, "Unauthorized - Signature Mismatch", http.StatusUnauthorized)
+			gaer.logger.Error("Unauthorized - Signature Mismatch")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 	}
