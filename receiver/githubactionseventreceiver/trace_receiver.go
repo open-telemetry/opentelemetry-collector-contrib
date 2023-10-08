@@ -264,6 +264,21 @@ func setSpanTimes(span ptrace.Span, start, end time.Time) {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(end))
 }
 
+func validateSignature(secret string, signatureHeader string, body []byte, logger *zap.Logger) bool {
+	if signatureHeader == "" || len(signatureHeader) < 7 {
+		logger.Debug("Unauthorized - No Signature Header")
+		return false
+	}
+	receivedSig := signatureHeader[7:]
+	computedHash := hmac.New(sha256.New, []byte(secret))
+	computedHash.Write(body)
+	expectedSig := hex.EncodeToString(computedHash.Sum(nil))
+
+	logger.Info("Debugging Signatures", zap.String("Received", receivedSig), zap.String("Computed", expectedSig))
+
+	return hmac.Equal([]byte(expectedSig), []byte(receivedSig))
+}
+
 func newReceiver(
 	config *Config,
 	params receiver.CreateSettings,
@@ -329,25 +344,10 @@ func (gaer *githubActionsEventReceiver) ServeHTTP(w http.ResponseWriter, r *http
 	}
 
 	// Validate the request if Secret is set in the configuration
-	if gaer.config.Secret != "" {
-		signatureHeader := r.Header.Get("X-Hub-Signature-256")
-		if signatureHeader == "" || len(signatureHeader) < 7 {
-			gaer.logger.Debug("Unauthorized - No Signature Header")
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		receivedSig := signatureHeader[7:]
-		computedHash := hmac.New(sha256.New, []byte(gaer.config.Secret))
-		computedHash.Write([]byte(string(slurp)))
-		expectedSig := hex.EncodeToString(computedHash.Sum(nil))
-
-		gaer.logger.Info("Debugging Signatures", zap.String("Received", receivedSig), zap.String("Computed", expectedSig))
-
-		if !hmac.Equal([]byte(expectedSig), []byte(receivedSig)) {
-			gaer.logger.Debug("Unauthorized - Signature Mismatch")
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+	if gaer.config.Secret != "" && !validateSignature(gaer.config.Secret, r.Header.Get("X-Hub-Signature-256"), slurp, gaer.logger) {
+		gaer.logger.Debug("Unauthorized - Signature Mismatch")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
 
 	gaer.logger.Debug("Received request", zap.ByteString("payload", slurp))
