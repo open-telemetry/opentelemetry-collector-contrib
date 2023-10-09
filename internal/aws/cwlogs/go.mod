@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/aws/aws-sdk-go v1.45.20
 	github.com/stretchr/testify v1.8.4
-	go.uber.org/multierr v1.11.0
 	go.opentelemetry.io/collector/component v0.86.1-0.20231004185026-b5635a7a90d2
 	go.uber.org/zap v1.26.0
 )

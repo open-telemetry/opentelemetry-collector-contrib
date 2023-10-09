@@ -5,11 +5,11 @@ package awscloudwatchlogsexporter
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -29,7 +29,7 @@ func (p *mockPusher) AddLogEntry(_ *cwlogs.Event) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return errors.New("Add log entry Error")
 	}
 	return nil
 }
@@ -38,7 +38,7 @@ func (p *mockPusher) ForceFlush() error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return errors.New("Push error")
 	}
 	return nil
 }
@@ -303,22 +303,73 @@ func TestConsumeLogs(t *testing.T) {
 	expCfg.MaxRetries = 0
 	exp, err := newCwLogsPusher(expCfg, exportertest.NewNopCreateSettings())
 
-	logPusher := new(mockPusher)
-	exp.pusherFactory = &mockFactory{logPusher}
-	assert.Nil(t, err)
-	assert.NotNil(t, exp)
-	ld := plog.NewLogs()
-	r := ld.ResourceLogs().AppendEmpty()
-	r.Resource().Attributes().PutStr("hello", "test")
-	logRecords := r.ScopeLogs().AppendEmpty().LogRecords()
-	logRecords.EnsureCapacity(5)
-	logRecords.AppendEmpty()
-	assert.Equal(t, 1, ld.LogRecordCount())
+	testcases := []struct {
+		id                 string
+		setupLogPusherFunc func(pusher *mockPusher)
+		shouldError        bool
+	}{
+		{
+			id: "push has no errors",
+			setupLogPusherFunc: func(pusher *mockPusher) {
+				pusher.On("AddLogEntry", nil).Return("").Times(3)
+				pusher.On("ForceFlush", nil).Return("").Once()
+			},
+		},
+		{
+			id: "AddLogEntry has error",
+			setupLogPusherFunc: func(pusher *mockPusher) {
+				pusher.On("AddLogEntry", nil).Return("").Once().
+					On("AddLogEntry", nil).Return("error").Once().
+					On("AddLogEntry", nil).Return("").Once()
+				pusher.On("ForceFlush", nil).Return("").Once()
+			},
+			shouldError: true,
+		},
+		{
+			id: "ForceFlush has error",
+			setupLogPusherFunc: func(pusher *mockPusher) {
+				pusher.On("AddLogEntry", nil).Return("").Times(3)
+				pusher.On("ForceFlush", nil).Return("error").Once()
+			},
+			shouldError: true,
+		},
+	}
 
-	logPusher.On("AddLogEntry", nil).Return("").Once()
-	logPusher.On("ForceFlush", nil).Return("").Twice()
-	require.NoError(t, exp.consumeLogs(ctx, ld))
-	require.NoError(t, exp.shutdown(ctx))
+	for _, testcase := range testcases {
+		t.Run(testcase.id, func(t *testing.T) {
+			logPusher := new(mockPusher)
+			exp.pusherFactory = &mockFactory{logPusher}
+			assert.Nil(t, err)
+			assert.NotNil(t, exp)
+			ld := plog.NewLogs()
+			r := ld.ResourceLogs().AppendEmpty()
+			r.Resource().Attributes().PutStr("hello", "test")
+			logRecords := r.ScopeLogs().AppendEmpty().LogRecords()
+
+			record1 := logRecords.AppendEmpty()
+			record2 := logRecords.AppendEmpty()
+			record3 := logRecords.AppendEmpty()
+
+			record1.Body().SetStr("Hello world")
+			record2.Body().SetStr("Hello world")
+			record3.Body().SetStr("Hello world")
+
+			require.Equal(t, 3, ld.LogRecordCount())
+
+			testcase.setupLogPusherFunc(logPusher)
+
+			if !testcase.shouldError {
+				require.NoError(t, exp.consumeLogs(ctx, ld))
+			} else {
+				require.Error(t, exp.consumeLogs(ctx, ld))
+			}
+
+			require.NoError(t, exp.shutdown(ctx))
+
+			logPusher.AssertNumberOfCalls(t, "ForceFlush", 1)
+			logPusher.AssertNumberOfCalls(t, "AddLogEntry", 3)
+		})
+	}
 }
 
 func TestNewExporterWithoutRegionErr(t *testing.T) {

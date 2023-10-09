@@ -101,17 +101,22 @@ func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.
 
 func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	pusher := e.pusherFactory.CreateMultiStreamPusher()
+	var errs []error
 
-	_, err := logsToCWLogs(e.logger, ld, e.Config, pusher)
+	err := pushLogsToCWLogs(e.logger, ld, e.Config, pusher)
 
 	if err != nil {
-		return fmt.Errorf("Error pushing logs:  %w", err)
+		errs = append(errs, fmt.Errorf("Error pushing logs: %w", err))
 	}
 
 	err = pusher.ForceFlush()
 
 	if err != nil {
-		return fmt.Errorf("Error flushing logs:  %w", err)
+		errs = append(errs, fmt.Errorf("Error flushing logs: %w", err))
+	}
+
+	if len(errs) != 0 {
+		return errors.Join(errs...)
 	}
 
 	return nil
@@ -121,13 +126,14 @@ func (e *cwlExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
-func logsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher cwlogs.Pusher) (int, error) {
+func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher cwlogs.Pusher) error {
 	n := ld.ResourceLogs().Len()
+
 	if n == 0 {
-		return 0, nil
+		return nil
 	}
 
-	var dropped int
+	var errs []error
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -143,18 +149,21 @@ func logsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher cwlog
 				event, err := logToCWLog(resourceAttrs, log, config)
 				if err != nil {
 					logger.Debug("Failed to convert to CloudWatch Log", zap.Error(err))
-					dropped++
 				} else {
-					logger.Debug("Adding log event", zap.Any("event", event))
 					err := pusher.AddLogEntry(event)
 					if err != nil {
-						return dropped, err
+						errs = append(errs, err)
 					}
 				}
 			}
 		}
 	}
-	return dropped, nil
+
+	if len(errs) != 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
 }
 
 type cwLogBody struct {

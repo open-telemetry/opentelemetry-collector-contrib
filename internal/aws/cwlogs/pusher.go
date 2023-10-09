@@ -11,7 +11,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -345,15 +344,20 @@ func (m *multiStreamPusher) AddLogEntry(event *Event) error {
 }
 
 func (m *multiStreamPusher) ForceFlush() error {
-	var errors error
+	var errs []error
+
 	for _, val := range m.pusherMap {
 		err := val.ForceFlush()
 		if err != nil {
-			errors = multierr.Append(errors, err)
+			errs = append(errs, err)
 		}
 	}
 
-	return errors
+	if len(errs) != 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
 }
 
 // Factory for a Pusher that has capability of sending events to multiple log streams
