@@ -38,12 +38,12 @@ func (ex *zipkinExtension) Start(ctx context.Context, host component.Host) error
 	case zipkinProtobufEncoding:
 		switch version {
 		case v1:
-			return fmt.Errorf("unsupported version: %q and protocal: %q", version, protocol)
+			return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		case v2:
 			ex.marshaler = zipkinv2.NewProtobufTracesMarshaler()
 			ex.unmarshaler = zipkinv2.NewProtobufTracesUnmarshaler(false, false)
 		default:
-			return fmt.Errorf("unsupported version: %q and protocal: %q", version, protocol)
+			return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		}
 	case zipkinJSONEncoding:
 		switch version {
@@ -54,7 +54,7 @@ func (ex *zipkinExtension) Start(ctx context.Context, host component.Host) error
 			ex.marshaler = zipkinv2.NewJSONTracesMarshaler()
 			ex.unmarshaler = zipkinv2.NewJSONTracesUnmarshaler(false)
 		default:
-			return fmt.Errorf("unsupported version: %q and protocal: %q", version, protocol)
+			return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		}
 	case zipkinThriftEncoding:
 		switch version {
@@ -62,10 +62,10 @@ func (ex *zipkinExtension) Start(ctx context.Context, host component.Host) error
 			ex.marshaler = nil
 			ex.unmarshaler = zipkinv1.NewThriftTracesUnmarshaler()
 		default:
-			return fmt.Errorf("unsupported version: %q and protocal: %q", version, protocol)
+			return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		}
 	default:
-		return fmt.Errorf("unsupported version: %q and protocal: %q", version, protocol)
+		return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 	}
 
 	return nil
