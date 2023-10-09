@@ -12,6 +12,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -27,6 +28,7 @@ type Config struct {
 	IncludeFilePath         bool
 	IncludeFileNameResolved bool
 	IncludeFilePathResolved bool
+	DeleteAtEOF             bool
 }
 
 type Metadata struct {
@@ -38,11 +40,10 @@ type Metadata struct {
 
 // Reader manages a single file
 type Reader struct {
-	*zap.SugaredLogger
 	*Config
 	*Metadata
 	FileName      string
-	EOF           bool
+	logger        *zap.SugaredLogger
 	file          *os.File
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
@@ -71,13 +72,14 @@ func (r *Reader) NewFingerprintFromFile() (*fingerprint.Fingerprint, error) {
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
-		r.Errorw("Failed to seek", zap.Error(err))
+		r.logger.Errorw("Failed to seek", zap.Error(err))
 		return
 	}
 
 	s := scanner.New(r, r.MaxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
+	var eof bool
 	for {
 		select {
 		case <-ctx.Done():
@@ -87,18 +89,17 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		ok := s.Scan()
 		if !ok {
-			r.EOF = true
-			if err := s.Error(); err != nil {
-				// If Scan returned an error then we are not guaranteed to be at the end of the file
-				r.EOF = false
-				r.Errorw("Failed during scan", zap.Error(err))
+			if err := s.Error(); err == nil {
+				eof = true
+			} else {
+				r.logger.Errorw("Failed during scan", zap.Error(err))
 			}
 			break
 		}
 
 		token, err := r.decoder.Decode(s.Bytes())
 		if err != nil {
-			r.Errorw("decode: %w", zap.Error(err))
+			r.logger.Errorw("decode: %w", zap.Error(err))
 		} else if err := r.processFunc(ctx, token, r.FileAttributes); err != nil {
 			if errors.Is(err, header.ErrEndOfHeader) {
 				r.finalizeHeader()
@@ -110,35 +111,35 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				r.splitFunc = r.lineSplitFunc
 				r.processFunc = r.Emit
 				if _, err = r.file.Seek(r.Offset, 0); err != nil {
-					r.Errorw("Failed to seek post-header", zap.Error(err))
+					r.logger.Errorw("Failed to seek post-header", zap.Error(err))
 					return
 				}
 				s = scanner.New(r, r.MaxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 			} else {
-				r.Errorw("process: %w", zap.Error(err))
+				r.logger.Errorw("process: %w", zap.Error(err))
 			}
 		}
 
 		r.Offset = s.Pos()
 	}
+	if eof && r.DeleteAtEOF {
+		r.delete()
+	}
 }
 
 func (r *Reader) finalizeHeader() {
 	if err := r.headerReader.Stop(); err != nil {
-		r.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
+		r.logger.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
 	}
 	r.headerReader = nil
 	r.HeaderFinalized = true
 }
 
 // Delete will close and delete the file
-func (r *Reader) Delete() {
-	if r.file == nil {
-		return
-	}
+func (r *Reader) delete() {
 	r.Close()
 	if err := os.Remove(r.FileName); err != nil {
-		r.Errorf("could not delete %s", r.FileName)
+		r.logger.Errorf("could not delete %s", r.FileName)
 	}
 }
 
@@ -146,14 +147,14 @@ func (r *Reader) Delete() {
 func (r *Reader) Close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
-			r.Debugw("Problem closing reader", zap.Error(err))
+			r.logger.Debugw("Problem closing reader", zap.Error(err))
 		}
 		r.file = nil
 	}
 
 	if r.headerReader != nil {
 		if err := r.headerReader.Stop(); err != nil {
-			r.Errorw("Failed to stop header pipeline", zap.Error(err))
+			r.logger.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
 }
@@ -187,22 +188,27 @@ func min0(a, b int) int {
 	return b
 }
 
-// validateFingerprint checks whether or not the reader still has a valid file handle.
+// ValidateOrClose returns true if the reader still has a valid file handle, false otherwise.
+// If false is returned, the file handle should be considered closed.
 //
-// It creates a new fingerprint from the old file handle and compares it to the
+// It may create a new fingerprint from the old file handle and compare it to the
 // previously known fingerprint. If there has been a change to the fingerprint
-// (other than appended data), the file is considered invalid. Consequently, the
+// (other than appended data), the file is considered truncated. Consequently, the
 // reader will automatically close the file and drop the handle.
-//
-// The function returns true if the file handle is still valid, false otherwise.
-func (r *Reader) ValidateFingerprint() bool {
+func (r *Reader) ValidateOrClose() bool {
 	if r.file == nil {
 		return false
 	}
 	refreshedFingerprint, err := fingerprint.New(r.file, r.FingerprintSize)
 	if err != nil {
-		r.Debugw("Failed to create fingerprint", zap.Error(err))
+		r.logger.Debugw("Closing unreadable file", zap.Error(err), zap.String(attrs.LogFileName, r.FileName))
+		r.Close()
 		return false
 	}
-	return refreshedFingerprint.StartsWith(r.Fingerprint)
+	if refreshedFingerprint.StartsWith(r.Fingerprint) {
+		return true
+	}
+	r.logger.Debugw("Closing truncated file", zap.String(attrs.LogFileName, r.FileName))
+	r.Close()
+	return false
 }
