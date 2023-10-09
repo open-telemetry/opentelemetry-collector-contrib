@@ -20,6 +20,7 @@ require (
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	go.opentelemetry.io/collector/config/configopaque v0.86.1-0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/otel/metric v1.19.0
 )
 
 require (
@@ -44,7 +45,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015.0.20231004185026-b5635a7a90d2 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
-	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect

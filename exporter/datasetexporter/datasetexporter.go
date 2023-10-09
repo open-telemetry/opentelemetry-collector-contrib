@@ -48,7 +48,7 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 		set.BuildInfo.Version,
 		entity,
 	)
-	client, err := client.NewClient(
+	datasetClient, err := client.NewClient(
 		exporterCfg.datasetConfig,
 		&http.Client{Timeout: time.Second * 60},
 		logger,
@@ -59,13 +59,16 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 		return nil, fmt.Errorf("cannot create newDatasetExporter: %w", err)
 	}
 
+	meter := set.TelemetrySettings.MeterProvider.Meter("datasetexporter" + statsDelim + entity)
+	reportStatistics(meter, datasetClient)
+
 	return &DatasetExporter{
-		client:      client,
+		client:      datasetClient,
 		limiter:     rate.NewLimiter(100*rate.Every(1*time.Minute), 100), // 100 requests / minute
 		session:     uuid.New().String(),
 		logger:      logger,
 		exporterCfg: exporterCfg,
-		serverHost:  client.ServerHost(),
+		serverHost:  datasetClient.ServerHost(),
 	}, nil
 }
 
