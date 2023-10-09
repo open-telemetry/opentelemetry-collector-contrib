@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: 'enhancement'
+change_type: 'breaking'
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: kafkaexporter
+component: exporter/kafka, receiver/kafka, receiver/kafkametrics
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Move kafka configures authentication to internal pkg
+note: Move configuration parts to an internal pkg
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [27093]
@@ -24,4 +24,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [api]
