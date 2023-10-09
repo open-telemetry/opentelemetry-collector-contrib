@@ -39,12 +39,12 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	)
 
 	isAwsSdkSpan := isAwsSdkSpan(span)
-	hasExceptions := false
+	hasExceptionEvents := false
 	hasAwsIndividualHTTPError := false
 	for i := 0; i < span.Events().Len(); i++ {
 		event := span.Events().At(i)
 		if event.Name() == ExceptionEventName {
-			hasExceptions = true
+			hasExceptionEvents = true
 			break
 		}
 		if isAwsSdkSpan && event.Name() == AwsIndividualHTTPEventName {
@@ -52,9 +52,10 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			break
 		}
 	}
+	hasExceptions := hasExceptionEvents || hasAwsIndividualHTTPError
 
 	switch {
-	case hasExceptions || hasAwsIndividualHTTPError:
+	case hasExceptions:
 		language := ""
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
 			language = val.Str()

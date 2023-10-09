@@ -53,6 +53,8 @@ const (
 	defaultSegmentName = "span"
 	// maxSegmentNameLength the maximum length of a Segment name
 	maxSegmentNameLength = 200
+	// rpc.system value for AWS service remotes
+	awsAPIRPCSystem = "aws-api"
 )
 
 const (
@@ -82,7 +84,7 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 func isAwsSdkSpan(span ptrace.Span) bool {
 	attributes := span.Attributes()
 	if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
-		return rpcSystem.Str() == "aws-api"
+		return rpcSystem.Str() == awsAPIRPCSystem
 	}
 	return false
 }
