@@ -21,7 +21,7 @@ func NewFactory() extension.Factory {
 	)
 }
 
-func createExtension(_ context.Context, _ extension.CreateSettings, config component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
 	return &jsonExtension{}, nil
 }
 
