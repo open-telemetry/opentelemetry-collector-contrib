@@ -119,19 +119,22 @@ type groupRequest interface {
 
 func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *logsReceiver {
 	groups := []groupRequest{}
-	for logGroupName, sc := range cfg.Logs.Groups.NamedConfigs {
-		for _, prefix := range sc.Prefixes {
-			groups = append(groups, &streamPrefix{group: logGroupName, prefix: prefix})
+	autodiscover := &AutodiscoverConfig{}
+
+	if len(cfg.Logs.Groups.NamedConfigs) > 0 {
+		for logGroupName, sc := range cfg.Logs.Groups.NamedConfigs {
+			for _, prefix := range sc.Prefixes {
+				groups = append(groups, &streamPrefix{group: logGroupName, prefix: prefix})
+			}
+			if len(sc.Names) > 0 {
+				groups = append(groups, &streamNames{group: logGroupName, names: sc.Names})
+			}
 		}
-		if len(sc.Names) > 0 {
-			groups = append(groups, &streamNames{group: logGroupName, names: sc.Names})
-		}
+		autodiscover = nil
 	}
 
-	// safeguard from using both
-	autodiscover := cfg.Logs.Groups.AutodiscoverConfig
-	if len(cfg.Logs.Groups.NamedConfigs) > 0 {
-		autodiscover = nil
+	if cfg.Logs.Groups.AutodiscoverConfig != nil {
+		autodiscover = cfg.Logs.Groups.AutodiscoverConfig
 	}
 
 	return &logsReceiver{
