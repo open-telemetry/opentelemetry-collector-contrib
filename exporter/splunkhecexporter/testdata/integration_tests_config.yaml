@@ -1,4 +1,5 @@
 # SPLUNK DATA
+SPLUNK_IMAGE : "splunk/splunk:9.1"
 HOST : "non"
 
 #credentials:

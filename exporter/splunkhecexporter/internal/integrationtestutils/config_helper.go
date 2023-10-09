@@ -23,6 +23,7 @@ type IntegrationTestsConfig struct {
 	MetricIndex    string `yaml:"METRIC_INDEX"`
 	TraceIndex     string `yaml:"TRACE_INDEX"`
 	HecToken       string `yaml:"HEC_TOKEN"`
+	SplunkImage    string `yaml:"SPLUNK_IMAGE"`
 }
 
 func GetConfigVariable(key string) string {
@@ -59,6 +60,8 @@ func GetConfigVariable(key string) string {
 		return config.TraceIndex
 	case "HEC_TOKEN":
 		return config.HecToken
+	case "SPLUNK_IMAGE":
+		return config.SplunkImage
 	default:
 		fmt.Println("Invalid field")
 		return "None"

@@ -40,10 +40,10 @@ type SplunkContainerConfig struct {
 	container testcontainers.Container
 }
 
-func setup(imageName string) SplunkContainerConfig {
+func setup() SplunkContainerConfig {
 	// Perform setup operations here
 	fmt.Println("Setting up...")
-	cfg := startSplunk(imageName)
+	cfg := startSplunk()
 	integrationtestutils.CreateAnIndexInSplunk(integrationtestutils.GetConfigVariable("EVENT_INDEX"), "event")
 	integrationtestutils.CreateAnIndexInSplunk(integrationtestutils.GetConfigVariable("METRIC_INDEX"), "metric")
 	integrationtestutils.CreateAnIndexInSplunk(integrationtestutils.GetConfigVariable("TRACE_INDEX"), "event")
@@ -51,7 +51,7 @@ func setup(imageName string) SplunkContainerConfig {
 	return cfg
 }
 
-func teardown(cfg SplunkContainerConfig, imageName string) {
+func teardown(cfg SplunkContainerConfig) {
 	// Perform teardown operations here
 	fmt.Println("Tearing down...")
 	// Stop and remove the container
@@ -62,25 +62,25 @@ func teardown(cfg SplunkContainerConfig, imageName string) {
 		panic(err)
 	}
 	// Remove docker image after tests
-	cmd := exec.Command("docker", "rmi", imageName)
+	splunkImage := integrationtestutils.GetConfigVariable("SPLUNK_IMAGE")
+	cmd := exec.Command("docker", "rmi", splunkImage)
 
 	// Execute command
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("Error removing Docker image: %v\n", err)
 	}
-	fmt.Printf("Removed Docker image: %s\n", imageName)
+	fmt.Printf("Removed Docker image: %s\n", splunkImage)
 	fmt.Printf("Command output:\n%s\n", output)
 }
 
 func TestMain(m *testing.M) {
-	imageName := "splunk/splunk:9.1"
-	splunkContCfg := setup(imageName)
+	splunkContCfg := setup()
 
 	// Run the tests
 	code := m.Run()
 
-	teardown(splunkContCfg, imageName)
+	teardown(splunkContCfg)
 	// Exit with the test result code
 	os.Exit(code)
 }
@@ -98,7 +98,7 @@ func createInsecureClient() *http.Client {
 	return client
 }
 
-func startSplunk(imageName string) SplunkContainerConfig {
+func startSplunk() SplunkContainerConfig {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
@@ -107,8 +107,9 @@ func startSplunk(imageName string) SplunkContainerConfig {
 	conContext := context.Background()
 
 	// Create a new container
+	splunkImage := integrationtestutils.GetConfigVariable("SPLUNK_IMAGE")
 	req := testcontainers.ContainerRequest{
-		Image:        imageName,
+		Image:        splunkImage,
 		ExposedPorts: []string{"8000/tcp", "8088/tcp", "8089/tcp"},
 		Env: map[string]string{
 			"SPLUNK_START_ARGS": "--accept-license",
