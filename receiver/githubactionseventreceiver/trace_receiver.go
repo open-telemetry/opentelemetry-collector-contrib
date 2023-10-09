@@ -67,8 +67,8 @@ func (j *jsonTracesUnmarshaler) UnmarshalTraces(blob []byte) (ptrace.Traces, err
 		j.logger.Info("Unmarshalling WorkflowRunEvent")
 		traces = eventToTraces(&runEvent, j.logger)
 	} else {
-		j.logger.Error("Unknown event type")
-		return ptrace.Traces{}, fmt.Errorf("unknown event type")
+		j.logger.Error("Unknown event type, dropping payload")
+		return ptrace.Traces{}, fmt.Errorf("unknown event type, dropping payload")
 	}
 
 	return traces, nil
@@ -107,7 +107,8 @@ func eventToTraces(event interface{}, logger *zap.Logger) ptrace.Traces {
 			createRootParentSpan(resourceSpans, e, traceID, logger)
 		}
 	default:
-		logger.Error("unknown event type")
+		logger.Error("unknown event type, dropping payload")
+		return ptrace.Traces{}
 	}
 
 	return traces
