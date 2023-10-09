@@ -6,7 +6,7 @@ package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -27,7 +27,7 @@ type Config struct {
 	GroupMatch string `mapstructure:"group_match"`
 
 	// Authentication data
-	Authentication kafkaexporter.Authentication `mapstructure:"auth"`
+	Authentication kafka.Authentication `mapstructure:"auth"`
 
 	// Scrapers defines which metric data points to be captured from kafka
 	Scrapers []string `mapstructure:"scrapers"`
