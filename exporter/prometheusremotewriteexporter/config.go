@@ -48,6 +48,9 @@ type Config struct {
 
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
+
+	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
+	SendMetadata bool `mapstructure:"send_metadata"`
 }
 
 type CreatedMetric struct {

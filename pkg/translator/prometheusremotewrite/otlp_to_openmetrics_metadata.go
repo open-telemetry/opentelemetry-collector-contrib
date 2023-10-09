@@ -26,7 +26,7 @@ func otelMetricTypeToPromMetricType(otelMetric pmetric.Metric) prompb.MetricMeta
 	return prompb.MetricMetadata_UNKNOWN
 }
 
-func OtelMetricsToMetadata(md pmetric.Metrics) []prompb.MetricMetadata {
+func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool) []prompb.MetricMetadata {
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	metadataLength := 0
@@ -44,7 +44,7 @@ func OtelMetricsToMetadata(md pmetric.Metrics) []prompb.MetricMetadata {
 				metric := scopeMetrics.Metrics().At(k)
 				entry := prompb.MetricMetadata{
 					Type:             otelMetricTypeToPromMetricType(metric),
-					MetricFamilyName: prometheustranslator.BuildCompliantName(metric, "", true), // TODO expose addMetricSuffixes in configuration
+					MetricFamilyName: prometheustranslator.BuildCompliantName(metric, "", addMetricSuffixes),
 					Help:             metric.Description(),
 					Unit:             metric.Unit(),
 				}

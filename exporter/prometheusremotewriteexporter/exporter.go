@@ -77,6 +77,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
 			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
+			SendMetadata:        true,
 		},
 	}
 	if cfg.WAL == nil {
@@ -131,14 +132,18 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		return errors.New("shutdown has been called")
 	default:
 
-		m := prometheusremotewrite.OtelMetricsToMetadata(md)
-
 		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
 			err = consumererror.NewPermanent(err)
 		}
+
+		if prwe.exporterSettings.SendMetadata {
+			m := prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
+			// Call export even if a conversion error, since there may be points that were successfully converted.
+			return multierr.Combine(err, prwe.handleExport(ctx, tsMap, m))
+		}
 		// Call export even if a conversion error, since there may be points that were successfully converted.
-		return multierr.Combine(err, prwe.handleExport(ctx, tsMap, m))
+		return multierr.Combine(err, prwe.handleExport(ctx, tsMap, nil))
 	}
 }
 

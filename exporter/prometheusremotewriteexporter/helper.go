@@ -21,8 +21,10 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 	sizeOfCurrentBatch := 0
 
 	sizeOfM := 0
-	for _, mi := range m {
-		sizeOfM += mi.Size()
+	if m != nil {
+		for _, mi := range m {
+			sizeOfM += mi.Size()
+		}
 	}
 
 	i := 0
@@ -53,13 +55,24 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 func convertTimeseriesToRequest(tsArray []prompb.TimeSeries, m []prompb.MetricMetadata) *prompb.WriteRequest {
 	// the remote_write endpoint only requires the timeseries.
 	// otlp defines it's own way to handle metric metadata
+
+	if m != nil {
+		return &prompb.WriteRequest{
+			// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
+			// See:
+			// * https://github.com/open-telemetry/wg-prometheus/issues/10
+			// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
+			Timeseries: orderBySampleTimestamp(tsArray),
+			Metadata:   m,
+		}
+	}
+
 	return &prompb.WriteRequest{
 		// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
 		// See:
 		// * https://github.com/open-telemetry/wg-prometheus/issues/10
 		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
 		Timeseries: orderBySampleTimestamp(tsArray),
-		Metadata:   m,
 	}
 }
 
