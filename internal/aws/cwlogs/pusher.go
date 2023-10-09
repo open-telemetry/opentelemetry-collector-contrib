@@ -261,7 +261,7 @@ func (p *logPusher) pushEventBatch(req interface{}) error {
 
 	startTime := time.Now()
 
-	_, err := p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
+	err := p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
 
 	if err != nil {
 		return err
@@ -412,7 +412,7 @@ func (lsm *logStreamManager) InitStream(streamKey StreamKey) error {
 		defer lsm.logStreamMutex.Unlock()
 
 		if _, ok := lsm.streams[streamKey]; !ok {
-			_, err := lsm.client.CreateStream(&streamKey.LogGroupName, &streamKey.LogStreamName)
+			err := lsm.client.CreateStream(&streamKey.LogGroupName, &streamKey.LogStreamName)
 			lsm.streams[streamKey] = true
 			return err
 		}
