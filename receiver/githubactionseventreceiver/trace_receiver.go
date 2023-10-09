@@ -237,7 +237,7 @@ func generateTraceID(runID int64, runAttempt int) (pcommon.TraceID, error) {
 }
 
 func generateRootSpanID(runID int64, runAttempt int) (pcommon.SpanID, error) {
-	input := fmt.Sprintf("%d%d", runID, runAttempt)
+	input := fmt.Sprintf("%d%d%d%d", runID, runAttempt, runID, runAttempt)
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
 
