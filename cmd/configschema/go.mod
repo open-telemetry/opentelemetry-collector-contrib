@@ -493,6 +493,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
@@ -723,6 +724,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../internal/docker
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../internal/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ../../internal/kubelet
 

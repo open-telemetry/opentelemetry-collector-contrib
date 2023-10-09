@@ -500,6 +500,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
@@ -724,6 +725,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filte
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./internal/k8sconfig
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ./internal/k8stest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ./internal/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ./internal/kubelet
 
