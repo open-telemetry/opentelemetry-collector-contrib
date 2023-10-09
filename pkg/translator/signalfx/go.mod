@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.86.1-0.20231004185026-b5635a7a90d2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.86.1-0.20231004185026-b5635a7a90d2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.86.1-0.20231006161201-d364ad61c4d7
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.86.1-0.20231006161201-d364ad61c4d7
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231004185026-b5635a7a90d2
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231006161201-d364ad61c4d7
 	go.uber.org/multierr v1.11.0
 )
 
@@ -19,7 +19,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.86.1-0.20231004185026-b5635a7a90d2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect

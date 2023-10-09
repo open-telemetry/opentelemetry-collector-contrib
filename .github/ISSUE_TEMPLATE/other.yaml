@@ -104,6 +104,7 @@ body:
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
+      - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
       - internal/sharedcomponent
