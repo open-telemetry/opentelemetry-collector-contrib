@@ -103,3 +103,7 @@ jobs:
         run: |
           cd receiver/kubeletstatsreceiver
           go test -v --tags=e2e
+      - name: run receiver/k8sobjectsreceiver e2e tests
+        run: |
+          cd receiver/k8sobjectsreceiver
+          go test -v --tags=e2e
