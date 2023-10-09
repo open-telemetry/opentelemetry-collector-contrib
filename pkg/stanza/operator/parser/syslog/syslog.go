@@ -243,13 +243,29 @@ func (s *Parser) toSafeMap(message map[string]interface{}) (map[string]interface
 				delete(message, key)
 				continue
 			}
-			message[key] = *v
+			message[key] = convertMap(*v)
 		default:
 			return nil, fmt.Errorf("key %s has unknown field of type %T", key, v)
 		}
 	}
 
 	return message, nil
+}
+
+// convertMap converts map[string]map[string]string to map[string]interface{}
+// which is expected by stanza converter
+func convertMap(data map[string]map[string]string) map[string]interface{} {
+	ret := map[string]interface{}{}
+	for key, value := range data {
+		ret[key] = map[string]interface{}{}
+		r := ret[key].(map[string]interface{})
+
+		for k, v := range value {
+			r[k] = v
+		}
+	}
+
+	return ret
 }
 
 func toBytes(value interface{}) ([]byte, error) {

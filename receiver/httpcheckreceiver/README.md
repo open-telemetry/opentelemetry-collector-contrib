@@ -38,6 +38,8 @@ Each target has the following properties:
 - `endpoint` (required): the URL to be monitored
 - `method` (optional, default: `GET`): The HTTP method used to call the endpoint
 
+Additionally, each target supports the client configuration options of [confighttp].
+
 ### Example Configuration
 
 ```yaml
@@ -48,9 +50,15 @@ receivers:
         method: GET
       - endpoint: http://localhost:8080/health
         method: GET
+      - endpoint: http://localhost:8081/health
+        method: POST
+        headers:
+          test-header: "test-value"
     collection_interval: 10s
 ```
 
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
+
+[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration
