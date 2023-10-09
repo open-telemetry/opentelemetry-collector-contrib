@@ -184,7 +184,7 @@ func createRootParentSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRun
 	span.SetSpanID(rootSpanID)
 	span.SetName(event.WorkflowRun.Name)
 	span.SetKind(ptrace.SpanKindServer)
-	setSpanTimes(span, event.WorkflowRun.CreatedAt, event.WorkflowRun.UpdatedAt)
+	setSpanTimes(span, event.WorkflowRun.RunStartedAt, event.WorkflowRun.UpdatedAt)
 
 	return rootSpanID, nil
 }
