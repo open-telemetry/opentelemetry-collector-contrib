@@ -332,12 +332,11 @@ func (m *multiStreamPusher) AddLogEntry(event *Event) error {
 	}
 
 	var pusher Pusher
+	var ok bool
 
-	if _, ok := m.pusherMap[event.StreamKey]; !ok {
+	if pusher, ok = m.pusherMap[event.StreamKey]; !ok {
 		pusher = NewPusher(event.StreamKey, 1, m.client, m.logger)
 		m.pusherMap[event.StreamKey] = pusher
-	} else {
-		pusher = m.pusherMap[event.StreamKey]
 	}
 
 	return pusher.AddLogEntry(event)

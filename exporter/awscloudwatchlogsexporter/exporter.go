@@ -101,25 +101,21 @@ func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.
 
 func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	pusher := e.pusherFactory.CreateMultiStreamPusher()
-	var errs []error
+	var errs error
 
 	err := pushLogsToCWLogs(e.logger, ld, e.Config, pusher)
 
 	if err != nil {
-		errs = append(errs, fmt.Errorf("Error pushing logs: %w", err))
+		errs = errors.Join(errs, fmt.Errorf("Error pushing logs: %w", err))
 	}
 
 	err = pusher.ForceFlush()
 
 	if err != nil {
-		errs = append(errs, fmt.Errorf("Error flushing logs: %w", err))
+		errs = errors.Join(errs, fmt.Errorf("Error flushing logs: %w", err))
 	}
 
-	if len(errs) != 0 {
-		return errors.Join(errs...)
-	}
-
-	return nil
+	return errs
 }
 
 func (e *cwlExporter) shutdown(_ context.Context) error {
@@ -133,7 +129,7 @@ func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher c
 		return nil
 	}
 
-	var errs []error
+	var errs error
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -152,18 +148,14 @@ func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher c
 				} else {
 					err := pusher.AddLogEntry(event)
 					if err != nil {
-						errs = append(errs, err)
+						errs = errors.Join(errs, err)
 					}
 				}
 			}
 		}
 	}
 
-	if len(errs) != 0 {
-		return errors.Join(errs...)
-	}
-
-	return nil
+	return errs
 }
 
 type cwLogBody struct {
