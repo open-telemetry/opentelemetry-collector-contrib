@@ -119,6 +119,7 @@ internal/docker/                                                        @open-te
 internal/filter/                                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/k8sconfig/                                                     @open-telemetry/collector-contrib-approvers @dmitryax
 internal/k8stest/                                                       @open-telemetry/collector-contrib-approvers @crobert-1
+internal/kafka/                                                         @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 internal/kubelet/                                                       @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 internal/sharedcomponent/                                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
