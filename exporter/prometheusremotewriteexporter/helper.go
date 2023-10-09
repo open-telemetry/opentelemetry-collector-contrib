@@ -11,28 +11,21 @@ import (
 )
 
 // batchTimeSeries splits series into multiple batch write requests.
-func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, m []prompb.MetricMetadata) ([]*prompb.WriteRequest, error) {
+func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, m []*prompb.MetricMetadata) ([]*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
 
-	requests := make([]*prompb.WriteRequest, 0, len(tsMap))
+	requests := make([]*prompb.WriteRequest, 0, len(tsMap)+len(m))
 	tsArray := make([]prompb.TimeSeries, 0, len(tsMap))
 	sizeOfCurrentBatch := 0
-
-	sizeOfM := 0
-	if m != nil {
-		for _, mi := range m {
-			sizeOfM += mi.Size()
-		}
-	}
 
 	i := 0
 	for _, v := range tsMap {
 		sizeOfSeries := v.Size()
 
-		if sizeOfCurrentBatch+sizeOfSeries+sizeOfM >= maxBatchByteSize {
-			wrapped := convertTimeseriesToRequest(tsArray, m)
+		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
+			wrapped := convertTimeseriesToRequest(tsArray, nil)
 			requests = append(requests, wrapped)
 
 			tsArray = make([]prompb.TimeSeries, 0, len(tsMap)-i)
@@ -45,7 +38,31 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 	}
 
 	if len(tsArray) != 0 {
-		wrapped := convertTimeseriesToRequest(tsArray, m)
+		wrapped := convertTimeseriesToRequest(tsArray, nil)
+		requests = append(requests, wrapped)
+	}
+
+	mArray := make([]prompb.MetricMetadata, 0, len(m))
+	sizeOfCurrentBatch = 0
+	i = 0
+	for _, v := range m {
+		sizeOfM := v.Size()
+
+		if sizeOfCurrentBatch+sizeOfM >= maxBatchByteSize {
+			wrapped := convertTimeseriesToRequest(nil, mArray)
+			requests = append(requests, wrapped)
+
+			mArray = make([]prompb.MetricMetadata, 0, len(m)-i)
+			sizeOfCurrentBatch = 0
+		}
+
+		mArray = append(mArray, *v)
+		sizeOfCurrentBatch += sizeOfM
+		i++
+	}
+
+	if len(mArray) != 0 {
+		wrapped := convertTimeseriesToRequest(nil, mArray)
 		requests = append(requests, wrapped)
 	}
 
@@ -56,7 +73,7 @@ func convertTimeseriesToRequest(tsArray []prompb.TimeSeries, m []prompb.MetricMe
 	// the remote_write endpoint only requires the timeseries.
 	// otlp defines it's own way to handle metric metadata
 
-	if m != nil {
+	if m != nil && tsArray != nil {
 		return &prompb.WriteRequest{
 			// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
 			// See:
@@ -64,6 +81,16 @@ func convertTimeseriesToRequest(tsArray []prompb.TimeSeries, m []prompb.MetricMe
 			// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
 			Timeseries: orderBySampleTimestamp(tsArray),
 			Metadata:   m,
+		}
+	}
+
+	if m != nil {
+		return &prompb.WriteRequest{
+			// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
+			// See:
+			// * https://github.com/open-telemetry/wg-prometheus/issues/10
+			// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
+			Metadata: m,
 		}
 	}
 

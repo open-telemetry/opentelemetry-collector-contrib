@@ -159,7 +159,7 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	return sanitizedLabels, nil
 }
 
-func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []prompb.MetricMetadata) error {
+func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []*prompb.MetricMetadata) error {
 	// There are no metrics to export, so return.
 	if len(tsMap) == 0 {
 		return nil

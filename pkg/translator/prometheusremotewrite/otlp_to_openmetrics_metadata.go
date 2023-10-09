@@ -26,14 +26,14 @@ func otelMetricTypeToPromMetricType(otelMetric pmetric.Metric) prompb.MetricMeta
 	return prompb.MetricMetadata_UNKNOWN
 }
 
-func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool) []prompb.MetricMetadata {
+func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool) []*prompb.MetricMetadata {
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	metadataLength := 0
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		metadataLength += resourceMetricsSlice.At(i).ScopeMetrics().Len()
 	}
-	var metadata = make([]prompb.MetricMetadata, 0, metadataLength)
+	var metadata = make([]*prompb.MetricMetadata, 0, metadataLength)
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
 		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
@@ -48,7 +48,7 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool) []prompb.
 					Help:             metric.Description(),
 					Unit:             metric.Unit(),
 				}
-				metadata = append(metadata, entry)
+				metadata = append(metadata, &entry)
 			}
 		}
 	}
