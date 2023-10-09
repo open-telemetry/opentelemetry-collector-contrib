@@ -90,17 +90,19 @@ func eventToTraces(event interface{}, logger *zap.Logger) ptrace.Traces {
 			logger.Error("Failed to generate trace ID", zap.Error(err))
 			return traces
 		}
-		parentSpanID := createParentSpan(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, logger)
-		processSteps(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, parentSpanID, logger)
+		if e.WorkflowJob.Status == "completed" {
+			parentSpanID := createParentSpan(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, logger)
+			processSteps(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, parentSpanID, logger)
+		}
 	case *WorkflowRunEvent:
 		logger.Info("Processing WorkflowRunEvent")
 		runResource := resourceSpans.Resource()
-		traceID, err := generateTraceID(e.WorkflowRun.ID, e.WorkflowRun.RunNumber)
+		traceID, err := generateTraceID(e.WorkflowRun.ID, e.WorkflowRun.RunAttempt)
 		if err != nil {
 			logger.Error("Failed to generate trace ID", zap.Error(err))
 			return traces
 		}
-		if e.WorkflowRun.Status == "in_progress" {
+		if e.WorkflowRun.Status == "completed" {
 			createResourceAttributes(runResource, e, logger)
 			createRootParentSpan(resourceSpans, e, traceID, logger)
 		}
@@ -145,7 +147,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, logg
 		attrs.PutStr("github.job", e.WorkflowJob.Name)
 		attrs.PutStr("github.repository", e.Repository.FullName)
 		attrs.PutInt("github.run_id", e.WorkflowJob.RunID)
-		attrs.PutInt("github.run_number", int64(e.WorkflowJob.RunAttempt))
+		attrs.PutInt("github.run_attempt", int64(e.WorkflowJob.RunAttempt))
 		attrs.PutStr("github.runner.name", e.WorkflowJob.RunnerName)
 		attrs.PutStr("github.workflow", e.WorkflowJob.WorkflowName)
 
@@ -158,7 +160,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, logg
 		attrs.PutStr("github.head_sha", e.WorkflowRun.HeadSha)
 		attrs.PutStr("github.repository", e.Repository.FullName)
 		attrs.PutInt("github.run_id", e.WorkflowRun.ID)
-		attrs.PutInt("github.run_number", int64(e.WorkflowRun.RunNumber))
+		attrs.PutInt("github.run_attempt", int64(e.WorkflowRun.RunAttempt))
 		attrs.PutStr("github.workflow", e.WorkflowRun.Name)
 		attrs.PutStr("github.workflow_path", e.WorkflowRun.Path)
 
@@ -172,7 +174,7 @@ func createRootParentSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRun
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 
-	rootSpanID, err := generateRootSpanID(event.WorkflowRun.ID, event.WorkflowRun.RunNumber)
+	rootSpanID, err := generateRootSpanID(event.WorkflowRun.ID, event.WorkflowRun.RunAttempt)
 	if err != nil {
 		logger.Error("Failed to generate root span ID", zap.Error(err))
 		return pcommon.SpanID{}, err
@@ -188,11 +190,6 @@ func createRootParentSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRun
 }
 
 func processSteps(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger) {
-	if job.Status != "completed" {
-		logger.Info("Job not completed, skipping")
-		return
-	}
-
 	for _, step := range steps {
 		createSpan(scopeSpans, step, traceID, parentSpanID, logger)
 	}
