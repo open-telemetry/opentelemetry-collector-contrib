@@ -145,21 +145,9 @@ service:
 	})
 	require.NoError(t, err)
 
-	// prepare data
-
+	// build mesaage to send
 	message := ""
-	expectedAttributes := []map[string]interface{}{}
-	expectedLogs := plog.NewLogs()
-	rl := expectedLogs.ResourceLogs().AppendEmpty()
-	lrs := rl.ScopeLogs().AppendEmpty().LogRecords()
-
 	for _, e := range expectedData {
-		lr := lrs.AppendEmpty()
-		lr.Body().SetStr(e.message)
-		lr.SetSeverityNumber(e.severityNumber)
-		lr.SetSeverityText(e.severityText)
-		lr.SetTimestamp(e.timestamp)
-		expectedAttributes = append(expectedAttributes, e.attributes)
 		message += e.message + "\n"
 	}
 
@@ -180,18 +168,16 @@ service:
 	require.Equal(t, backend.ReceivedLogs[0].ResourceLogs().At(0).ScopeLogs().Len(), 1)
 	require.Equal(t, backend.ReceivedLogs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(), len(expectedData))
 
-	// Clean received logs
-	attributes := []map[string]interface{}{}
-
-	lrs = backend.ReceivedLogs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	// Perform assertions
+	lrs := backend.ReceivedLogs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < lrs.Len(); i++ {
-		lrs.At(i).SetObservedTimestamp(0)
+		lr := lrs.At(i)
+		ed := expectedData[i]
 
-		attributes = append(attributes, lrs.At(i).Attributes().AsRaw())
-		lrs.At(i).Attributes().Clear()
+		assert.Equal(t, ed.message, lr.Body().AsRaw())
+		assert.Equal(t, ed.severityNumber, lr.SeverityNumber())
+		assert.Equal(t, ed.severityText, lr.SeverityText())
+		assert.Equal(t, ed.timestamp, lr.Timestamp())
+		assert.Equal(t, ed.attributes, lr.Attributes().AsRaw())
 	}
-
-	// Assert
-	assert.Equal(t, expectedLogs, backend.ReceivedLogs[0])
-	assert.Equal(t, expectedAttributes, attributes)
 }
