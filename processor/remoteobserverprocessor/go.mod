@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231006161201-d364ad61c4d7
 	go.opentelemetry.io/collector/processor v0.86.1-0.20231006161201-d364ad61c4d7
 	go.uber.org/zap v1.26.0
-	golang.org/x/net v0.16.0
+	golang.org/x/net v0.17.0
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 )
 
