@@ -80,6 +80,9 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		}
 
 		opt := trace.WithTimestamp(time.Now().Add(fakeSpanDuration))
+		w.logger.Info("Trace", zap.String("traceId", sp.SpanContext().TraceID().String()))
+		w.logger.Info("Parent Span", zap.String("spanId", sp.SpanContext().SpanID().String()))
+		w.logger.Info("Child Span", zap.String("spanId", child.SpanContext().SpanID().String()))
 		child.SetStatus(w.statusCode, "")
 		child.End(opt)
 		sp.SetStatus(w.statusCode, "")
