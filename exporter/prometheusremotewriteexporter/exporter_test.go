@@ -1062,6 +1062,7 @@ func TestNoRetryOnHttpClientError(t *testing.T) {
 		} else {
 			// Add waiting time for response
 			time.Sleep(20 * time.Millisecond)
+			w.WriteHeader(http.StatusOK)
 		}
 
 	})
