@@ -64,7 +64,7 @@ You can create a webhook to subscribe to events that occur in a specific reposit
 4. Click Add **webhook**.
 5. Under "Payload URL", type the URL where you'd like to receive payloads.
 6. Select the **Content type** drop-down menu, and click a data format to receive the webhook payload in. 
-    * Select `application/json` will deliver the JSON payload directly as the body of the `POST` request.
+    * Select `application/json`, which will deliver the JSON payload directly as the body of the `POST` request.
 7. Optionally (recomended), under "Secret", type a string to use as a secret key. You should choose a random string of text with high entropy. You can use the webhook secret to limit incoming requests to only those originating from GitHub. 
 8. Under "Which events would you like to trigger this webhook?"
     * Select **Let me select individual events**.
