@@ -51,13 +51,15 @@ type Rules struct {
 	LogConditions []string `mapstructure:"log_conditions"`
 }
 
+var defaultCfg = CreateDefaultConfig().(*Config)
+
 func (cfg *Config) Validate() error {
-	if cfg.APIKey == "" {
-		return fmt.Errorf("invalid API Key")
+	if cfg == nil {
+		*cfg = *defaultCfg
 	}
 
-	if cfg.APIURL == "" {
-		return fmt.Errorf("invalid URL")
+	if cfg.APIKey == "" {
+		return fmt.Errorf("invalid API Key")
 	}
 
 	if len(cfg.Markers) != 0 {

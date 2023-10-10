@@ -19,13 +19,10 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	//defaultCfg := CreateDefaultConfig()
-
 	tests := []struct {
 		id       component.ID
 		expected component.Config
 	}{
-
 		{
 			id: component.NewIDWithName("honeycomb", ""),
 			expected: &Config{
@@ -80,10 +77,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "no_api_key"),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "no_api_url"),
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "no_marker_message"),
+			id: component.NewIDWithName(metadata.Type, "no_markers_supplied"),
 		},
 	}
 

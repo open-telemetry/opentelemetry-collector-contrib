@@ -11,12 +11,14 @@ import (
 )
 
 type honeycombLogsExporter struct {
-	logger *zap.Logger
+	logger  *zap.Logger
+	markers []marker
 }
 
-func newLogsExporter(logger *zap.Logger, _ *Config) *honeycombLogsExporter {
+func newLogsExporter(logger *zap.Logger, config *Config) *honeycombLogsExporter {
 	logsExp := &honeycombLogsExporter{
-		logger: logger,
+		logger:  logger,
+		markers: config.Markers,
 	}
 	return logsExp
 }

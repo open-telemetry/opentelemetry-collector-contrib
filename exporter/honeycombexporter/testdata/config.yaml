@@ -70,3 +70,9 @@ honeycomb/no_api_url:
           - IsMatch(attributes["test"], ".*")
         log_conditions:
           - body == "test"
+
+honeycomb/no_markers_supplied:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+
