@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 					{
 						MarkerType:   "fooType",
 						MessageField: "test message",
-						UrlField:     "https://api.testhost.io",
+						URLField:     "https://api.testhost.io",
 						Rules: Rules{
 							ResourceConditions: []string{
 								`IsMatch(attributes["test"], ".*")`,
@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 					{
 						MarkerColor:  "green",
 						MessageField: "test message",
-						UrlField:     "https://api.testhost.io",
+						URLField:     "https://api.testhost.io",
 						Rules: Rules{
 							ResourceConditions: []string{
 								`IsMatch(attributes["test"], ".*")`,
