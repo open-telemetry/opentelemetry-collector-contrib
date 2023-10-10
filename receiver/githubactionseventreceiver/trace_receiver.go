@@ -132,6 +132,27 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 		logger.Warn("No steps found, defaulting to job times")
 		setSpanTimes(span, job.CreatedAt, job.CompletedAt)
 	}
+
+	allSuccessful := true
+	anyFailure := false
+	for _, step := range steps {
+		if step.Status != "completed" || step.Conclusion != "success" {
+			allSuccessful = false
+		}
+		if step.Conclusion == "failure" {
+			anyFailure = true
+			break
+		}
+	}
+
+	if anyFailure {
+		span.Status().SetCode(ptrace.StatusCodeError)
+	} else if allSuccessful {
+		span.Status().SetCode(ptrace.StatusCodeOk)
+	} else {
+		span.Status().SetCode(ptrace.StatusCodeUnset)
+	}
+
 	return span.SpanID()
 }
 
@@ -196,6 +217,17 @@ func createRootParentSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRun
 	span.SetKind(ptrace.SpanKindServer)
 	setSpanTimes(span, event.WorkflowRun.RunStartedAt, event.WorkflowRun.UpdatedAt)
 
+	switch event.WorkflowRun.Conclusion {
+	case "success":
+		span.Status().SetCode(ptrace.StatusCodeOk)
+	case "failure":
+		span.Status().SetCode(ptrace.StatusCodeError)
+	default:
+		span.Status().SetCode(ptrace.StatusCodeUnset)
+	}
+
+	span.Status().SetMessage(event.WorkflowRun.Conclusion)
+
 	return rootSpanID, nil
 }
 
@@ -215,18 +247,15 @@ func createSpan(scopeSpans ptrace.ScopeSpans, step Step, traceID pcommon.TraceID
 	span.SetName(step.Name)
 	span.SetKind(ptrace.SpanKindServer)
 
-	if step.Status == "completed" {
-		switch step.Conclusion {
-		case "success":
-			span.Status().SetCode(ptrace.StatusCodeOk)
-		case "failure":
-			span.Status().SetCode(ptrace.StatusCodeError)
-		default:
-			span.Status().SetCode(ptrace.StatusCodeUnset)
-		}
-	} else {
+	switch step.Conclusion {
+	case "success":
+		span.Status().SetCode(ptrace.StatusCodeOk)
+	case "failure":
+		span.Status().SetCode(ptrace.StatusCodeError)
+	default:
 		span.Status().SetCode(ptrace.StatusCodeUnset)
 	}
+
 	span.Status().SetMessage(step.Conclusion)
 
 	return span.SpanID()
