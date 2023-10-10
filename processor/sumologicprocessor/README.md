@@ -135,29 +135,29 @@ Note that this may cause some of Sumo Logic apps, built-in dashboards to not wor
 
 Below is a list of all attribute keys that are being translated.
 
-| OTC key name              | Sumo Logic key name |
-|---------------------------|---------------------|
-| `cloud.account.id`        | `AccountId`         |
-| `cloud.availability_zone` | `AvailabilityZone`  |
-| `cloud.platform`          | `aws_service`       |
-| `cloud.region`            | `Region`            |
-| `host.id`                 | `InstanceId`        |
-| `host.name`               | `host`              |
-| `host.type`               | `InstanceType`      |
-| `k8s.cluster.name`        | `Cluster`           |
-| `k8s.container.name`      | `container`         |
-| `k8s.daemonset.name`      | `daemonset`         |
-| `k8s.deployment.name`     | `deployment`        |
-| `k8s.namespace.name`      | `namespace`         |
-| `k8s.node.name`           | `node`              |
-| `k8s.service.name`        | `service`           |
-| `k8s.pod.hostname`        | `host`              |
-| `k8s.pod.name`            | `pod`               |
-| `k8s.pod.uid`             | `pod_id`            |
-| `k8s.replicaset.name`     | `replicaset`        |
-| `k8s.statefulset.name`    | `statefulset`       |
-| `service.name`            | `service`           |
-| `log.file.path_resolved`  | `_sourceName`       |
+| Open Telemetry convention | Sumo Logic convention |
+|---------------------------|-----------------------|
+| `cloud.account.id`        | `AccountId`           |
+| `cloud.availability_zone` | `AvailabilityZone`    |
+| `cloud.platform`          | `aws_service`         |
+| `cloud.region`            | `Region`              |
+| `host.id`                 | `InstanceId`          |
+| `host.name`               | `host`                |
+| `host.type`               | `InstanceType`        |
+| `k8s.cluster.name`        | `Cluster`             |
+| `k8s.container.name`      | `container`           |
+| `k8s.daemonset.name`      | `daemonset`           |
+| `k8s.deployment.name`     | `deployment`          |
+| `k8s.namespace.name`      | `namespace`           |
+| `k8s.node.name`           | `node`                |
+| `k8s.service.name`        | `service`             |
+| `k8s.pod.hostname`        | `host`                |
+| `k8s.pod.name`            | `pod`                 |
+| `k8s.pod.uid`             | `pod_id`              |
+| `k8s.replicaset.name`     | `replicaset`          |
+| `k8s.statefulset.name`    | `statefulset`         |
+| `service.name`            | `service`             |
+| `log.file.path_resolved`  | `_sourceName`         |
 
 ### Nesting attributes
 
@@ -268,6 +268,9 @@ It is not possible to predict, what will be the result. It will have the followi
 ```
 
 However, it is not possible to know a priori if the value under key `c` will be equal to `d` or `e`.
+Refer to [GitHube issue][issue] for details and discussion.
+
+[issue]: https://github.com/SumoLogic/sumologic-otel-collector/issues/1263
 
 ### Aggregating attributes
 

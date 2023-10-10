@@ -41,10 +41,7 @@ const (
 
 var (
 	defaultAggregateAttributes = []aggregationPair{}
-)
-
-// Ensure the Config struct satisfies the config.Processor interface.
-var (
+	// Ensure the Config struct satisfies the config.Processor interface.
 	_                     component.Config = (*Config)(nil)
 	defaultNestingInclude                  = []string{}
 	defaultNestingExclude                  = []string{}

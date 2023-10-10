@@ -86,17 +86,19 @@ func (proc *translateDockerMetricsProcessor) processLogs(_ plog.Logs) error {
 }
 
 func (proc *translateDockerMetricsProcessor) processMetrics(metrics pmetric.Metrics) error {
-	if proc.shouldTranslate {
-		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-			rm := metrics.ResourceMetrics().At(i)
-			translateDockerResourceAttributes(rm.Resource().Attributes())
+	if !proc.shouldTranslate {
+		return nil
+	}
 
-			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-				metricsSlice := rm.ScopeMetrics().At(j).Metrics()
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		translateDockerResourceAttributes(rm.Resource().Attributes())
 
-				for k := 0; k < metricsSlice.Len(); k++ {
-					translateDockerMetric(metricsSlice.At(k))
-				}
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			metricsSlice := rm.ScopeMetrics().At(j).Metrics()
+
+			for k := 0; k < metricsSlice.Len(); k++ {
+				translateDockerMetric(metricsSlice.At(k))
 			}
 		}
 	}

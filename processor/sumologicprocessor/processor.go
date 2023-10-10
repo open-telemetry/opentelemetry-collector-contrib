@@ -79,8 +79,7 @@ func (processor *sumologicProcessor) shutdown(_ context.Context) error {
 }
 
 func (processor *sumologicProcessor) processLogs(_ context.Context, logs plog.Logs) (plog.Logs, error) {
-	for i := 0; i < len(processor.subprocessors); i++ {
-		subprocessor := processor.subprocessors[i]
+	for _, subprocessor := range processor.subprocessors {
 		if err := subprocessor.processLogs(logs); err != nil {
 			return logs, fmt.Errorf("failed to process logs for property %s: %w", subprocessor.ConfigPropertyName(), err)
 		}
@@ -90,8 +89,7 @@ func (processor *sumologicProcessor) processLogs(_ context.Context, logs plog.Lo
 }
 
 func (processor *sumologicProcessor) processMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
-	for i := 0; i < len(processor.subprocessors); i++ {
-		subprocessor := processor.subprocessors[i]
+	for _, subprocessor := range processor.subprocessors {
 		if err := subprocessor.processMetrics(metrics); err != nil {
 			return metrics, fmt.Errorf("failed to process metrics for property %s: %w", subprocessor.ConfigPropertyName(), err)
 		}
@@ -101,8 +99,7 @@ func (processor *sumologicProcessor) processMetrics(_ context.Context, metrics p
 }
 
 func (processor *sumologicProcessor) processTraces(_ context.Context, traces ptrace.Traces) (ptrace.Traces, error) {
-	for i := 0; i < len(processor.subprocessors); i++ {
-		subprocessor := processor.subprocessors[i]
+	for _, subprocessor := range processor.subprocessors {
 		if err := subprocessor.processTraces(traces); err != nil {
 			return traces, fmt.Errorf("failed to process traces for property %s: %w", subprocessor.ConfigPropertyName(), err)
 		}

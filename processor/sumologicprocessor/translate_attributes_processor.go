@@ -47,20 +47,24 @@ func newTranslateAttributesProcessor(shouldTranslate bool) *translateAttributesP
 }
 
 func (proc *translateAttributesProcessor) processLogs(logs plog.Logs) error {
-	if proc.shouldTranslate {
-		for i := 0; i < logs.ResourceLogs().Len(); i++ {
-			translateAttributes(logs.ResourceLogs().At(i).Resource().Attributes())
-		}
+	if !proc.shouldTranslate {
+		return nil
+	}
+
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		translateAttributes(logs.ResourceLogs().At(i).Resource().Attributes())
 	}
 
 	return nil
 }
 
 func (proc *translateAttributesProcessor) processMetrics(metrics pmetric.Metrics) error {
-	if proc.shouldTranslate {
-		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-			translateAttributes(metrics.ResourceMetrics().At(i).Resource().Attributes())
-		}
+	if !proc.shouldTranslate {
+		return nil
+	}
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		translateAttributes(metrics.ResourceMetrics().At(i).Resource().Attributes())
 	}
 
 	return nil

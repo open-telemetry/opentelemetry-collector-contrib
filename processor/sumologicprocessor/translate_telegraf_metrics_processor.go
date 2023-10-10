@@ -84,16 +84,18 @@ func (proc *translateTelegrafMetricsProcessor) processLogs(_ plog.Logs) error {
 }
 
 func (proc *translateTelegrafMetricsProcessor) processMetrics(metrics pmetric.Metrics) error {
-	if proc.shouldTranslate {
-		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-			rm := metrics.ResourceMetrics().At(i)
+	if !proc.shouldTranslate {
+		return nil
+	}
 
-			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-				metricsSlice := rm.ScopeMetrics().At(j).Metrics()
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
 
-				for k := 0; k < metricsSlice.Len(); k++ {
-					translateTelegrafMetric(metricsSlice.At(k))
-				}
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			metricsSlice := rm.ScopeMetrics().At(j).Metrics()
+
+			for k := 0; k < metricsSlice.Len(); k++ {
+				translateTelegrafMetric(metricsSlice.At(k))
 			}
 		}
 	}

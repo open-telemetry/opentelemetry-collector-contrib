@@ -112,16 +112,18 @@ func (proc *logFieldsConversionProcessor) addAttributes(log plog.LogRecord) {
 }
 
 func (proc *logFieldsConversionProcessor) processLogs(logs plog.Logs) error {
-	if proc.isEnabled() {
-		rls := logs.ResourceLogs()
-		for i := 0; i < rls.Len(); i++ {
-			ills := rls.At(i).ScopeLogs()
+	if !proc.isEnabled() {
+		return nil
+	}
 
-			for j := 0; j < ills.Len(); j++ {
-				logs := ills.At(j).LogRecords()
-				for k := 0; k < logs.Len(); k++ {
-					proc.addAttributes(logs.At(k))
-				}
+	rls := logs.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		ills := rls.At(i).ScopeLogs()
+
+		for j := 0; j < ills.Len(); j++ {
+			logs := ills.At(j).LogRecords()
+			for k := 0; k < logs.Len(); k++ {
+				proc.addAttributes(logs.At(k))
 			}
 		}
 	}
