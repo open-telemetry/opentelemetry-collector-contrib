@@ -70,7 +70,7 @@ func TestMakeCauseAwsSdkSpan(t *testing.T) {
 	event1.SetName(AwsIndividualHTTPEventName)
 	event1.Attributes().PutStr(AwsIndividualHTTPErrorCodeAttr, "503")
 	event1.Attributes().PutStr(AwsIndividualHTTPErrorMsgAttr, "service is temporarily unavailable")
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	timestamp := pcommon.NewTimestampFromTime(time.Unix(1696954760, 0))
 	event1.SetTimestamp(timestamp)
 
 	res := pcommon.NewResource()
@@ -88,7 +88,7 @@ func TestMakeCauseAwsSdkSpan(t *testing.T) {
 
 	messageParts := strings.SplitN(*exception.Message, "@", 3)
 	assert.Equal(t, "503", messageParts[0])
-	assert.Equal(t, timestamp.String(), messageParts[1])
+	assert.Equal(t, "1696954760", messageParts[1])
 	assert.Equal(t, "service is temporarily unavailable", messageParts[2])
 }
 
