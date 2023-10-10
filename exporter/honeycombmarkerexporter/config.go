@@ -53,7 +53,7 @@ type Rules struct {
 	LogConditions []string `mapstructure:"log_conditions"`
 }
 
-var defaultCfg = CreateDefaultConfig().(*Config)
+var defaultCfg = createDefaultConfig().(*Config)
 
 func (cfg *Config) Validate() error {
 	if cfg == nil {

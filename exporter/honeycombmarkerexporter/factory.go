@@ -16,12 +16,12 @@ import (
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
-		CreateDefaultConfig,
+		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
-func CreateDefaultConfig() component.Config {
+func createDefaultConfig() component.Config {
 	return &Config{
 		APIKey:  "",
 		APIURL:  "api.honeycomb.io:443",
