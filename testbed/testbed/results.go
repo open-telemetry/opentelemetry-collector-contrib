@@ -266,3 +266,75 @@ func consolidateAssertionFailures(failures []*TraceAssertionFailure) map[string]
 	}
 	return afMap
 }
+
+type MultiReceiverTestResult struct {
+	testName                   string
+	result                     string
+	duration                   time.Duration
+	traceAssertionFailureCount uint64
+	traceAssertionFailures     []*TraceAssertionFailure
+}
+
+// MultiReceiverTestResults implements the TestResultsSummary interface
+type MultiReceiverTestResults struct {
+	resultsDir             string
+	resultsFile            *os.File
+	perTestResults         []*MultiReceiverTestResult
+	totalAssertionFailures uint64
+	totalDuration          time.Duration
+}
+
+func (r *MultiReceiverTestResults) Init(resultsDir string) {
+	r.resultsDir = resultsDir
+	r.perTestResults = []*MultiReceiverTestResult{}
+
+	// Create resultsSummary file
+	if err := os.MkdirAll(resultsDir, os.FileMode(0755)); err != nil {
+		log.Fatal(err)
+	}
+	var err error
+	r.resultsFile, err = os.Create(path.Join(r.resultsDir, "MULTI_RECEIVER_RESULTS.md"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Write the header
+	_, _ = io.WriteString(r.resultsFile,
+		"# Test Results\n"+
+			fmt.Sprintf("Started: %s\n\n", time.Now().Format(time.RFC1123Z))+
+			"Test                                                                  |Result|Duration|Failure Count|\n"+
+			"----------------------------------------------------------------------|------|-------:|------------:|\n")
+}
+
+func (r *MultiReceiverTestResults) Add(_ string, result interface{}) {
+	testResult, ok := result.(*MultiReceiverTestResult)
+	if !ok {
+		return
+	}
+	consolidated := consolidateAssertionFailures(testResult.traceAssertionFailures)
+	failuresStr := ""
+	for _, af := range consolidated {
+		failuresStr = fmt.Sprintf("%s%s,%#v!=%#v,count=%d; ", failuresStr, af.fieldPath, af.expectedValue,
+			af.actualValue, af.sumCount)
+	}
+	_, _ = io.WriteString(r.resultsFile,
+		fmt.Sprintf("%-70s|%-6s|%7.0fs|%13d|%s\n",
+			testResult.testName,
+			testResult.result,
+			testResult.duration.Seconds(),
+			testResult.traceAssertionFailureCount,
+			failuresStr,
+		),
+	)
+	r.perTestResults = append(r.perTestResults, testResult)
+	r.totalAssertionFailures += testResult.traceAssertionFailureCount
+	r.totalDuration += testResult.duration
+}
+
+func (r *MultiReceiverTestResults) Save() {
+	_, _ = io.WriteString(r.resultsFile,
+		fmt.Sprintf("\nTotal assertion failures: %d\n", r.totalAssertionFailures))
+	_, _ = io.WriteString(r.resultsFile,
+		fmt.Sprintf("\nTotal duration: %.0fs\n", r.totalDuration.Seconds()))
+	r.resultsFile.Close()
+}

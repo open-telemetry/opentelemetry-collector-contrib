@@ -42,6 +42,9 @@ func (rs *ResourceSpec) isSpecified() bool {
 // TestCaseOption defines a TestCase option.
 type TestCaseOption func(t *TestCase)
 
+// MultiReceiverTestCaseOption defines a MultiReceiverTestCase option.
+type MultiReceiverTestCaseOption func(t *MultiReceiverTestCase)
+
 // WithSkipResults disables writing out results file for a TestCase.
 func WithSkipResults() TestCaseOption {
 	return func(tc *TestCase) {
