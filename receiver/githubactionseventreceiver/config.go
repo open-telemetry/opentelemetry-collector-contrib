@@ -16,7 +16,7 @@ var (
 	errMissingEndpointFromConfig = errors.New("missing receiver server endpoint from config")
 )
 
-// Config defines configuration for Github Actions Event receiver.
+// Config defines configuration for GitHub Actions Event receiver.
 type Config struct {
 	// Configures the receiver server protocol.
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct

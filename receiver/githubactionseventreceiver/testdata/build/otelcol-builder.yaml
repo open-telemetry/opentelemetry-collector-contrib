@@ -1,6 +1,6 @@
 dist:
   name: otelcol-dev
-  description: Github Actions Events to OTLP Custom Collector
+  description: GitHub Actions Events to OTLP Custom Collector
   version: 0.0.1
   output_path: /tmp/dist
 

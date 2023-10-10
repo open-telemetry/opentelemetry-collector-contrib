@@ -14,14 +14,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubactionseventreceiver/internal/metadata"
 )
 
-// This file implements factory for Github Actions Event receiver.
+// This file implements factory for GitHub Actions Event receiver.
 
 const (
 	defaultBindEndpoint = "0.0.0.0:19418"
 	defaultPath         = "/events"
 )
 
-// NewFactory creates a new Github Actions Event receiver factory
+// NewFactory creates a new GitHub Actions Event receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
@@ -30,7 +30,7 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-// createDefaultConfig creates the default configuration for Github Actions Event receiver.
+// createDefaultConfig creates the default configuration for GitHub Actions Event receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
