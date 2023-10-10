@@ -245,39 +245,41 @@ func (proc *NestingProcessor) squash(attributes pcommon.Map) pcommon.Map {
 //
 // Else, nothing happens and "" is returned.
 func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
-	if value.Type() == pcommon.ValueTypeMap {
-		m := value.Map()
-		if m.Len() == 1 {
-			// If the map contains only one key-value pair, squash it.
-			key := ""
-			val := pcommon.NewValueEmpty()
-			// This will iterate only over one value (the only one)
-			m.Range(func(k string, v pcommon.Value) bool {
-				keySuffix := proc.squashAttribute(v)
-				key = proc.squashKey(k, keySuffix)
-				val = v
-				return false
-			})
+	if value.Type() != pcommon.ValueTypeMap {
+		return ""
+	}
 
-			val.CopyTo(value)
-			return key
-		}
-
-		// This map doesn't get squashed, but its content might have keys replaced.
-		newMap := pcommon.NewMap()
+	m := value.Map()
+	if m.Len() == 1 {
+		// If the map contains only one key-value pair, squash it.
+		key := ""
+		val := pcommon.NewValueEmpty()
+		// This will iterate only over one value (the only one)
 		m.Range(func(k string, v pcommon.Value) bool {
 			keySuffix := proc.squashAttribute(v)
-			// If "" was returned, the value was not a one-element map and did not get squashed.
-			if keySuffix == "" {
-				v.CopyTo(newMap.PutEmpty(k))
-			} else {
-				v.CopyTo(newMap.PutEmpty(proc.squashKey(k, keySuffix)))
-			}
-
-			return true
+			key = proc.squashKey(k, keySuffix)
+			val = v
+			return false
 		})
-		newMap.CopyTo(value.Map())
+
+		val.CopyTo(value)
+		return key
 	}
+
+	// This map doesn't get squashed, but its content might have keys replaced.
+	newMap := pcommon.NewMap()
+	m.Range(func(k string, v pcommon.Value) bool {
+		keySuffix := proc.squashAttribute(v)
+		// If "" was returned, the value was not a one-element map and did not get squashed.
+		if keySuffix == "" {
+			v.CopyTo(newMap.PutEmpty(k))
+		} else {
+			v.CopyTo(newMap.PutEmpty(proc.squashKey(k, keySuffix)))
+		}
+
+		return true
+	})
+	newMap.CopyTo(value.Map())
 
 	return ""
 }
