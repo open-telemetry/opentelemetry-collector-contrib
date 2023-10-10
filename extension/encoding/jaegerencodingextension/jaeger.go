@@ -14,14 +14,51 @@ type jaegerProtobufTrace struct {
 }
 
 func (j jaegerProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
-	span := &jaegerproto.Span{}
-	err := span.Unmarshal(buf)
+	buff := newReadableBuffer(buf)
+	slices, err := buff.slices()
 	if err != nil {
 		return ptrace.NewTraces(), err
 	}
-	batch := jaegerproto.Batch{
-		Spans:   []*jaegerproto.Span{span},
-		Process: span.Process,
+
+	batches := make([]*jaegerproto.Batch, 0)
+	for _, slice := range slices {
+		batch := jaegerproto.Batch{}
+		e := batch.Unmarshal(slice)
+		if e != nil {
+			return ptrace.NewTraces(), e
+		}
+		batches = append(batches, &batch)
 	}
-	return jaeger.ProtoToTraces([]*jaegerproto.Batch{&batch})
+
+	return jaeger.ProtoToTraces(batches)
+}
+
+func (j jaegerProtobufTrace) MarshalTraces(traces ptrace.Traces) ([]byte, error) {
+	batches, err := jaeger.ProtoFromTraces(traces)
+	if err != nil {
+		return nil, err
+	}
+
+	arr := make([][]byte, len(batches))
+	for _, batch := range batches {
+		bts, e := batch.Marshal()
+		if e != nil {
+			return nil, e
+		}
+		arr = append(arr, bts)
+	}
+
+	buff, err := newWritableBuffer()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, bytes := range arr {
+		err := buff.writeBytes(bytes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return buff.bytes(), nil
 }
