@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otlp_encodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlp_encodingextension"
+package otlpencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
 
 import "fmt"
 

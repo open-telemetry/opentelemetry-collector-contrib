@@ -8,17 +8,17 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/cmd/configschema"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/cmd/otelcontribcol"
     schedule:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/cmd/oteltestbedcol"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/telemetrygen"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -304,11 +304,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/bearertokenauthextension"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/extension/encoding/jaegerencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
