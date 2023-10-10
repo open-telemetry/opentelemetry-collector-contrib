@@ -37,7 +37,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.86.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.86.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	go.opentelemetry.io/collector/consumer v0.86.0 // indirect
 	go.opentelemetry.io/collector/extension v0.86.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015 // indirect
