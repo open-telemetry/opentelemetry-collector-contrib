@@ -49,5 +49,5 @@ func createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
 	rCfg := cfg.(*Config)
-	return newReceiver(rCfg, set, nextConsumer)
+	return newTracesReceiver(set, rCfg, nextConsumer)
 }

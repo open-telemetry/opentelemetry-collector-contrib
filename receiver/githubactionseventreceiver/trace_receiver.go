@@ -12,6 +12,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
+
+var errMissingEndpoint = errors.New("missing a receiver endpoint")
 
 type githubActionsEventReceiver struct {
 	nextConsumer    consumer.Traces
@@ -330,13 +333,17 @@ func validateSignatureSHA1(secret string, signatureHeader string, body []byte, l
 	return hmac.Equal([]byte(expectedSig), []byte(receivedSig))
 }
 
-func newReceiver(
-	config *Config,
+func newTracesReceiver(
 	params receiver.CreateSettings,
+	config *Config,
 	nextConsumer consumer.Traces,
 ) (*githubActionsEventReceiver, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
+	}
+
+	if config.Endpoint == "" {
+		return nil, errMissingEndpoint
 	}
 
 	gaer := &githubActionsEventReceiver{

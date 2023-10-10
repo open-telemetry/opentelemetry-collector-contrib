@@ -12,9 +12,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-var (
-	errMissingEndpointFromConfig = errors.New("missing receiver server endpoint from config")
-)
+var errMissingEndpointFromConfig = errors.New("missing receiver server endpoint from config")
 
 // Config defines configuration for GitHub Actions Event receiver.
 type Config struct {
