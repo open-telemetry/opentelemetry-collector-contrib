@@ -3,22 +3,22 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datado
 go 1.20
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
-	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
+	github.com/DataDog/datadog-agent/pkg/proto v0.48.0
+	github.com/DataDog/datadog-agent/pkg/trace v0.48.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
-	github.com/DataDog/go-tuf v1.0.1-0.5.2 // indirect
+	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.8.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.8.0 // indirect
 	github.com/DataDog/sketches-go v1.4.3 // indirect
@@ -72,8 +72,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// v0.47.x and v0.48.x are incompatible, prefer to use v0.48.x
-replace github.com/DataDog/datadog-agent/pkg/proto => github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
-
-replace github.com/DataDog/datadog-agent/pkg/trace => github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
