@@ -6,15 +6,9 @@ package kineticaexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"net/url"
-	"strconv"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.uber.org/zap"
-)
-
-var (
-	kineticaLogger *zap.Logger
 )
 
 // Config defines configuration for the Kinetica exporter.
@@ -40,14 +34,6 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
-}
-
-func parseNumber(s string, fallback int) int {
-	v, err := strconv.Atoi(s)
-	if err == nil {
-		return v
-	}
-	return fallback
 }
 
 var _ component.Config = (*Config)(nil)
