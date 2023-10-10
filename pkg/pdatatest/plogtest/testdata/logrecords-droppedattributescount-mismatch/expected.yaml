@@ -15,7 +15,6 @@ resourceLogs:
                   stringValue: teststringvalue2
             body:
               stringValue: testscopevalue1
-            droppedAttributesCount: 10
             flags: 1
             observedTimeUnixNano: "11651379494838206464"
             severityNumber: 9

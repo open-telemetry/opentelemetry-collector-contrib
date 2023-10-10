@@ -2197,6 +2197,9 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if mbc.ResourceAttributes.OpencensusResourcetype.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `opencensus.resourcetype` should not be configured: This resource_attribute is deprecated and will be removed soon.")
+	}
 	mb := &MetricsBuilder{
 		config:                                  mbc,
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),

@@ -37,10 +37,9 @@ func TestDeploymentMetrics(t *testing.T) {
 	rm := m.ResourceMetrics().At(0)
 	assert.Equal(t,
 		map[string]interface{}{
-			"k8s.deployment.uid":      "test-deployment-1-uid",
-			"k8s.deployment.name":     "test-deployment-1",
-			"k8s.namespace.name":      "test-namespace",
-			"opencensus.resourcetype": "k8s",
+			"k8s.deployment.uid":  "test-deployment-1-uid",
+			"k8s.deployment.name": "test-deployment-1",
+			"k8s.namespace.name":  "test-namespace",
 		},
 		rm.Resource().Attributes().AsRaw(),
 	)
