@@ -353,7 +353,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		OpencensusResourcetype: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		OpenshiftClusterquotaName: ResourceAttributeConfig{
 			Enabled: true,

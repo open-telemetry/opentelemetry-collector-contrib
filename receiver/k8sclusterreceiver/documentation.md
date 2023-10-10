@@ -438,6 +438,6 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |
-| opencensus.resourcetype | The OpenCensus resource type. | Any Str | true |
+| opencensus.resourcetype | The OpenCensus resource type. | Any Str | false |
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |
