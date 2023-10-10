@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: datadogereceiver
+component: datadogreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "The datadogreceiver supports the new datadog protocol that is sent by the datadog agent API/v0.2/traces."
