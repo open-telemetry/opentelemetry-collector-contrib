@@ -1162,6 +1162,25 @@ var (
 			},
 		},
 		{
+			name: "combine_exponential_histogram",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{
+						include: regexp.MustCompile("^metric(?P<namedsubmatch>[12])$"),
+					},
+					Action:  Combine,
+					NewName: "new",
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric1").build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric2").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "new", "namedsubmatch").build(),
+			},
+		},
+		{
 			name: "combine_error_type",
 			transforms: []internalTransform{
 				{
