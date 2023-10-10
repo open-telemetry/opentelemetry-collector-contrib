@@ -34,6 +34,24 @@ type Client struct {
 	tags         map[string]*string
 	logger       *zap.Logger
 }
+type UserAgentOption func(*UserAgentFlag)
+
+type UserAgentFlag struct {
+	isEnhancedContainerInsights bool
+	isPulseApm                  bool
+}
+
+func WithEnabledContainerInsights(flag bool) UserAgentOption {
+	return func(ua *UserAgentFlag) {
+		ua.isEnhancedContainerInsights = flag
+	}
+}
+
+func WithEnabledPulseApm(flag bool) UserAgentOption {
+	return func(ua *UserAgentFlag) {
+		ua.isPulseApm = flag
+	}
+}
 
 // Create a log client based on the actual cloudwatch logs client.
 func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, logger *zap.Logger) *Client {
@@ -45,10 +63,20 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetent
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, opts ...UserAgentOption) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
-	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, componentName))
+
+	// Loop through each option
+	option := &UserAgentFlag{
+		isEnhancedContainerInsights: false,
+		isPulseApm:                  false,
+	}
+	for _, opt := range opts {
+		opt(option)
+	}
+
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, option))
 	return newCloudWatchLogClient(client, logRetention, tags, logger)
 }
 
@@ -175,11 +203,20 @@ func (client *Client) CreateStream(logGroup, streamName *string) error {
 	return nil
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, componentName string) request.NamedHandler {
-	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName)
-	if matchContainerInsightsPattern(logGroupName) {
-		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName, "ContainerInsights")
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, userAgentFlag *UserAgentFlag) request.NamedHandler {
+	extraStr := ""
+
+	switch {
+	case userAgentFlag.isEnhancedContainerInsights && enhancedContainerInsightsEKSPattern.MatchString(logGroupName):
+		extraStr = "EnhancedEKSContainerInsights"
+	case containerInsightsRegexPattern.MatchString(logGroupName):
+		extraStr = "ContainerInsights"
+	case userAgentFlag.isPulseApm:
+		extraStr = "Pulse"
 	}
+
+	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, extraStr)
+
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
 		Fn:   fn,

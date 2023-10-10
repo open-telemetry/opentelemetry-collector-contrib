@@ -27,6 +27,10 @@ const (
 	// OutputDestination Options
 	outputDestinationCloudWatch = "cloudwatch"
 	outputDestinationStdout     = "stdout"
+
+	// Pulse EMF config
+	pulseMetricNamespace    = "AWS/APM"
+	pulseLogGroupNamePrefix = "/aws/apm/"
 )
 
 type emfExporter struct {
@@ -56,7 +60,16 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(set.Logger, awsConfig, set.BuildInfo, config.LogGroupName, config.LogRetention, config.Tags, session, metadata.Type.String())
+	svcStructuredLog := cwlogs.NewClient(set.Logger,
+		awsConfig,
+		set.BuildInfo,
+		config.LogGroupName,
+		config.LogRetention,
+		config.Tags,
+		session,
+		cwlogs.WithEnabledContainerInsights(isEnhancedContainerInsights(config)),
+		cwlogs.WithEnabledPulseApm(isPulseApmEnabled(config)),
+	)
 	collectorIdentifier, err := uuid.NewRandom()
 
 	if err != nil {
@@ -189,4 +202,21 @@ func wrapErrorIfBadRequest(err error) error {
 		return consumererror.NewPermanent(err)
 	}
 	return err
+}
+
+func isEnhancedContainerInsights(_ *Config) bool {
+	return false // temporarily disable, also need to rename _config to config
+	// return config.EnhancedContainerInsights && !config.DisableMetricExtraction
+}
+
+func isPulseApmEnabled(config *Config) bool {
+	if config.LogGroupName == "" || config.Namespace == "" {
+		return false
+	}
+
+	if config.Namespace == pulseMetricNamespace && strings.HasPrefix(config.LogGroupName, pulseLogGroupNamePrefix) {
+		return true
+	}
+
+	return false
 }

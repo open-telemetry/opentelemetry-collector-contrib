@@ -538,50 +538,100 @@ func TestUserAgent(t *testing.T) {
 		name                 string
 		buildInfo            component.BuildInfo
 		logGroupName         string
+		userAgentOption      UserAgentOption
 		expectedUserAgentStr string
 	}{
 		{
 			"emptyLogGroup",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"",
-			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s)", expectedComponentName),
+			WithEnabledContainerInsights(false),
+			"opentelemetry-collector-contrib/1.0",
+		},
+		{
+			"emptyLogGroupPulse",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"",
+			WithEnabledPulseApm(false),
+			"opentelemetry-collector-contrib/1.0",
 		},
 		{
 			"buildInfoCommandUsed",
 			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
 			"",
-			fmt.Sprintf("test-collector-contrib/1.0 (%s)", expectedComponentName),
+			WithEnabledContainerInsights(false),
+			"test-collector-contrib/1.0",
+		},
+		{
+			"buildInfoCommandUsedPulse",
+			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
+			"",
+			WithEnabledPulseApm(false),
+			"test-collector-contrib/1.0",
 		},
 		{
 			"non container insights",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.1"},
 			"test-group",
-			fmt.Sprintf("opentelemetry-collector-contrib/1.1 (%s)", expectedComponentName),
+			WithEnabledContainerInsights(false),
+			"opentelemetry-collector-contrib/1.1",
 		},
 		{
 			"container insights EKS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/eks-cluster-name/performance",
-			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
+			WithEnabledContainerInsights(false),
+			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
 		},
 		{
 			"container insights ECS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/ecs/containerinsights/ecs-cluster-name/performance",
-			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
+			WithEnabledContainerInsights(false),
+			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
 		},
 		{
 			"container insights prometheus",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/cluster-name/prometheus",
-			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
+			WithEnabledContainerInsights(false),
+			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
+		},
+		{
+			"enhanced container insights EKS",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/containerinsights/eks-cluster-name/performance",
+			WithEnabledContainerInsights(true),
+			"opentelemetry-collector-contrib/1.0 (EnhancedEKSContainerInsights)",
+		},
+		{
+			"negative - enhanced container insights ECS",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			// this is an ECS path, enhanced CI is not supported
+			"/aws/ecs/containerinsights/ecs-cluster-name/performance",
+			WithEnabledContainerInsights(true),
+			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
+		},
+		{
+			"validPulseEMFEnabled",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/apm",
+			WithEnabledPulseApm(true),
+			"opentelemetry-collector-contrib/1.0 (Pulse)",
+		},
+		{
+			"PulseEMFNotEnabled",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/apm",
+			WithEnabledPulseApm(false),
+			"opentelemetry-collector-contrib/1.0",
 		},
 	}
 
 	testSession, _ := session.NewSession()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, testSession, expectedComponentName)
+			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, session, tc.userAgentOption)
 			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
 
 			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
