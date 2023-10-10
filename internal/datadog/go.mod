@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231006161201-d364ad61c4d7
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016
 )
 
 require (
@@ -55,7 +55,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/collector/semconv v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
+	go.opentelemetry.io/collector/semconv v0.87.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
