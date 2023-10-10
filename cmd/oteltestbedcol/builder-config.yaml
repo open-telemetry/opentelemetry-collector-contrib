@@ -2,7 +2,7 @@ dist:
   module: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   name: oteltestbedcol
   description: OpenTelemetry Collector binary for testbed only tests.
-  version: 0.86.0-dev
+  version: 0.87.0-dev
   otelcol_version: 0.85.0
 
 extensions:
