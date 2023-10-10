@@ -5,6 +5,7 @@ package resourcedetectionprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +33,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+)
+
+const (
+	defaultTimeout    = 5 * time.Second
+	eksDefaultTimeout = 11 * time.Second
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -97,7 +103,7 @@ func createDefaultConfig() component.Config {
 
 func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
 	httpClientSettings := confighttp.NewDefaultHTTPClientSettings()
-	httpClientSettings.Timeout = 5 * time.Second
+	httpClientSettings.Timeout = defaultTimeout
 	return httpClientSettings
 }
 
@@ -172,6 +178,11 @@ func (f *factory) getResourceDetectionProcessor(
 	if oCfg.Attributes != nil {
 		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
 	}
+
+	if slices.Contains(oCfg.Detectors, eks.TypeStr) && oCfg.HTTPClientSettings.Timeout == defaultTimeout {
+		oCfg.HTTPClientSettings.Timeout = eksDefaultTimeout
+	}
+
 	provider, err := f.getResourceProvider(params, oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err

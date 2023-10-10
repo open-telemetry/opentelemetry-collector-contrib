@@ -41,7 +41,7 @@ const (
 
 type detectorUtils interface {
 	getConfigMap(ctx context.Context, namespace string, name string) (map[string]string, error)
-	getClusterName() (string, error)
+	getClusterName(ctx context.Context) (string, error)
 	getClusterNameTagFromReservations([]types.Reservation) string
 }
 
@@ -89,7 +89,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	// The error is unhandled because we want to return successfully detected resources
 	// regardless of an error. The caller will properly handle any error hit while getting
 	// the cluster name.
-	clusterName, err := d.utils.getClusterName()
+	clusterName, err := d.utils.getClusterName(ctx)
 	d.rb.SetK8sClusterName(clusterName)
 	return d.rb.Emit(), conventions.SchemaURL, err
 }
@@ -132,20 +132,20 @@ func (e eksDetectorUtils) getConfigMap(ctx context.Context, namespace string, na
 	return cm.Data, nil
 }
 
-func (e eksDetectorUtils) getClusterName() (string, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSRegion())
+func (e eksDetectorUtils) getClusterName(ctx context.Context) (string, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithEC2IMDSRegion())
 	if err != nil {
 		return "", err
 	}
 
 	client := ec2.NewFromConfig(cfg)
 	ec2ImdsClient := imds.NewFromConfig(cfg)
-	instanceIDDoc, err := ec2ImdsClient.GetInstanceIdentityDocument(context.TODO(), &imds.GetInstanceIdentityDocumentInput{})
+	instanceIDDoc, err := ec2ImdsClient.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 	if err != nil {
 		return "", err
 	}
 
-	describeInstances, err := client.DescribeInstances(context.TODO(),
+	describeInstances, err := client.DescribeInstances(ctx,
 		&ec2.DescribeInstancesInput{InstanceIds: []string{instanceIDDoc.InstanceID}})
 	if err != nil {
 		return "", err

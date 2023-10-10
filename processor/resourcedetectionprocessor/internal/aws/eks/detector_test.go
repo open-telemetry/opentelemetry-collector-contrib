@@ -31,7 +31,7 @@ func (detectorUtils *MockDetectorUtils) getConfigMap(_ context.Context, namespac
 	return args.Get(0).(map[string]string), args.Error(1)
 }
 
-func (detectorUtils *MockDetectorUtils) getClusterName() (string, error) {
+func (detectorUtils *MockDetectorUtils) getClusterName(_ context.Context) (string, error) {
 	var reservations []types.Reservation
 	return detectorUtils.getClusterNameTagFromReservations(reservations), nil
 }
