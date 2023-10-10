@@ -21,8 +21,8 @@ const (
 	v2                     = "v2"
 )
 
-var _ ptrace.Marshaler = &zipkinExtension{}
-var _ ptrace.Unmarshaler = &zipkinExtension{}
+var _ ptrace.Marshaler = (*zipkinExtension)(nil)
+var _ ptrace.Unmarshaler = (*zipkinExtension)(nil)
 
 type zipkinExtension struct {
 	config      *Config
@@ -30,48 +30,59 @@ type zipkinExtension struct {
 	unmarshaler ptrace.Unmarshaler
 }
 
-func (ex *zipkinExtension) Start(ctx context.Context, host component.Host) error {
-	protocol := ex.config.Protocol
-	version := ex.config.Version
+func newExtension(config *Config) (*zipkinExtension, error) {
+	var ex *zipkinExtension = nil
+	var err = config.validate()
+	if err != nil {
+		return nil, err
+	}
 
+	protocol := config.Protocol
+	version := config.Version
 	switch protocol {
 	case zipkinProtobufEncoding:
 		switch version {
-		case v1:
-			return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		case v2:
+			ex = new(zipkinExtension)
+			ex.config = config
 			ex.marshaler = zipkinv2.NewProtobufTracesMarshaler()
 			ex.unmarshaler = zipkinv2.NewProtobufTracesUnmarshaler(false, false)
 		default:
-			return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
+			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		}
 	case zipkinJSONEncoding:
 		switch version {
 		case v1:
+			ex = new(zipkinExtension)
+			ex.config = config
 			ex.marshaler = nil
 			ex.unmarshaler = zipkinv1.NewJSONTracesUnmarshaler(false)
 		case v2:
+			ex = new(zipkinExtension)
+			ex.config = config
 			ex.marshaler = zipkinv2.NewJSONTracesMarshaler()
 			ex.unmarshaler = zipkinv2.NewJSONTracesUnmarshaler(false)
-		default:
-			return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		}
 	case zipkinThriftEncoding:
 		switch version {
 		case v1:
+			ex = new(zipkinExtension)
+			ex.config = config
 			ex.marshaler = nil
 			ex.unmarshaler = zipkinv1.NewThriftTracesUnmarshaler()
 		default:
-			return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
+			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		}
-	default:
-		return fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 	}
 
+	return ex, err
+}
+
+func (ex *zipkinExtension) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (ex *zipkinExtension) Shutdown(ctx context.Context) error {
+func (ex *zipkinExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 

@@ -25,7 +25,7 @@ func NewFactory() extension.Factory {
 }
 
 func createExtension(_ context.Context, _ extension.CreateSettings, config component.Config) (extension.Extension, error) {
-	return &zipkinExtension{config: config.(*Config)}, nil
+	return newExtension(config.(*Config))
 }
 
 func createDefaultConfig() component.Config {

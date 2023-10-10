@@ -22,7 +22,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
 	go.opentelemetry.io/collector/confmap v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015.0.20231006161201-d364ad61c4d7 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect

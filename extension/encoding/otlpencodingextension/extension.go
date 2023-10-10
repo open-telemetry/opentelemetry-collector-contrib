@@ -5,7 +5,6 @@ package otlpencodingextension // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"fmt"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,6 +34,37 @@ type otlpExtension struct {
 	metricUnmarshaler pmetric.Unmarshaler
 }
 
+func newExtension(config *Config) (*otlpExtension, error) {
+	err := config.validate()
+	if err != nil {
+		return nil, err
+	}
+	var ex *otlpExtension
+	protocol := config.Protocol
+	switch protocol {
+	case otlpProto:
+		ex = new(otlpExtension)
+		ex.config = config
+		ex.traceMarshaler = &ptrace.ProtoMarshaler{}
+		ex.traceUnmarshaler = &ptrace.ProtoUnmarshaler{}
+		ex.logMarshaler = &plog.ProtoMarshaler{}
+		ex.logUnmarshaler = &plog.ProtoUnmarshaler{}
+		ex.metricMarshaler = &pmetric.ProtoMarshaler{}
+		ex.metricUnmarshaler = &pmetric.ProtoUnmarshaler{}
+	case otlpJSON:
+		ex = new(otlpExtension)
+		ex.config = config
+		ex.traceMarshaler = &ptrace.JSONMarshaler{}
+		ex.traceUnmarshaler = &ptrace.JSONUnmarshaler{}
+		ex.logMarshaler = &plog.JSONMarshaler{}
+		ex.logUnmarshaler = &plog.JSONUnmarshaler{}
+		ex.metricMarshaler = &pmetric.JSONMarshaler{}
+		ex.metricUnmarshaler = &pmetric.JSONUnmarshaler{}
+	}
+
+	return ex, err
+}
+
 func (ex *otlpExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	return ex.traceUnmarshaler.UnmarshalTraces(buf)
 }
@@ -60,26 +90,6 @@ func (ex *otlpExtension) MarshalLogs(logs plog.Logs) ([]byte, error) {
 }
 
 func (ex *otlpExtension) Start(_ context.Context, _ component.Host) error {
-
-	protocol := ex.config.Protocol
-	switch protocol {
-	case otlpProto:
-		ex.traceMarshaler = &ptrace.ProtoMarshaler{}
-		ex.traceUnmarshaler = &ptrace.ProtoUnmarshaler{}
-		ex.logMarshaler = &plog.ProtoMarshaler{}
-		ex.logUnmarshaler = &plog.ProtoUnmarshaler{}
-		ex.metricMarshaler = &pmetric.ProtoMarshaler{}
-		ex.metricUnmarshaler = &pmetric.ProtoUnmarshaler{}
-	case otlpJSON:
-		ex.traceMarshaler = &ptrace.JSONMarshaler{}
-		ex.traceUnmarshaler = &ptrace.JSONUnmarshaler{}
-		ex.logMarshaler = &plog.JSONMarshaler{}
-		ex.logUnmarshaler = &plog.JSONUnmarshaler{}
-		ex.metricMarshaler = &pmetric.JSONMarshaler{}
-		ex.metricUnmarshaler = &pmetric.JSONUnmarshaler{}
-	default:
-		return fmt.Errorf("unsupported protocol: %q", protocol)
-	}
 	return nil
 }
 
