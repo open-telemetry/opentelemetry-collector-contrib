@@ -7,7 +7,7 @@ change_type: enhancement
 component: kubeletstatsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adds new `k8s.pod.memory.utilization` and `container.memory.utilization` metrics that represent the ratio of memory used vs limits set.
+note: Adds new `k8s.pod.memory_limit_utilization`, `k8s.pod.memory_request_utilization`, `k8s.container.memory_limit_utilization`, and `k8s.container.memory_request_utilization` metrics that represent the ratio of memory used vs set limits and requests.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [25894]
