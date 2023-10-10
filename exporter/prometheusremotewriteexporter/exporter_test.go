@@ -344,6 +344,12 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = endpoint.String()
 	cfg.RemoteWriteQueue.NumConsumers = 1
+	cfg.RetrySettings = exporterhelper.RetrySettings{
+		Enabled:         true,
+		InitialInterval: 100 * time.Millisecond, // Shorter initial interval
+		MaxInterval:     1 * time.Second,        // Shorter max interval
+		MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
+	}
 
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -1009,6 +1015,9 @@ func TestRetryOn5xx(t *testing.T) {
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
 		client:      http.DefaultClient,
+		retrySettings: exporterhelper.RetrySettings{
+			Enabled: true,
+		},
 	}
 
 	ctx := context.Background()
@@ -1039,6 +1048,9 @@ func TestNoRetryOn4xx(t *testing.T) {
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
 		client:      http.DefaultClient,
+		retrySettings: exporterhelper.RetrySettings{
+			Enabled: true,
+		},
 	}
 
 	ctx := context.Background()
