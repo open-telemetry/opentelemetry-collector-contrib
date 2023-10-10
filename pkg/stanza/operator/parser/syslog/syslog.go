@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	sl "github.com/influxdata/go-syslog/v3"
@@ -78,8 +77,6 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	proto := strings.ToLower(c.Protocol)
-
 	switch {
 	case proto == "":
 		return nil, fmt.Errorf("missing field 'protocol'")
@@ -106,7 +103,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	return &Parser{
 		ParserOperator:               parserOperator,
-		protocol:                     proto,
+		protocol:                     c.Protocol,
 		location:                     location,
 		enableOctetCounting:          c.EnableOctetCounting,
 		nonTransparentFramingTrailer: c.NonTransparentFramingTrailer,
