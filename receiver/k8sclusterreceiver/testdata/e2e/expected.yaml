@@ -139,7 +139,7 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.node.condition_ready
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
