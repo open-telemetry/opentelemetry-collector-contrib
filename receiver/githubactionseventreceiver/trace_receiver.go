@@ -142,28 +142,36 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, logg
 		serviceName := fmt.Sprintf("github.%s", strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(e.Repository.FullName, "/", "."), "-", "_")))
 		attrs.PutStr("service.name", serviceName)
 
-		attrs.PutStr("github.actor", e.Repository.Owner.Login)
-		attrs.PutStr("github.head_branch", e.WorkflowJob.HeadBranch)
-		attrs.PutStr("github.head_sha", e.WorkflowJob.HeadSha)
-		attrs.PutStr("github.job", e.WorkflowJob.Name)
-		attrs.PutStr("github.repository", e.Repository.FullName)
-		attrs.PutInt("github.run_id", e.WorkflowJob.RunID)
-		attrs.PutInt("github.run_attempt", int64(e.WorkflowJob.RunAttempt))
-		attrs.PutStr("github.runner.name", e.WorkflowJob.RunnerName)
-		attrs.PutStr("github.workflow", e.WorkflowJob.WorkflowName)
+		attrs.PutStr("ci.system", "github")
+		attrs.PutStr("ci.actor", e.Repository.Owner.Login)
+
+		attrs.PutStr("ci.github.job", e.WorkflowJob.Name)
+		attrs.PutInt("ci.github.run_id", e.WorkflowJob.RunID)
+		attrs.PutInt("ci.github.run_attempt", int64(e.WorkflowJob.RunAttempt))
+		attrs.PutStr("ci.github.runner.name", e.WorkflowJob.RunnerName)
+		attrs.PutStr("ci.github.workflow", e.WorkflowJob.WorkflowName)
+
+		attrs.PutStr("vcs.system", "git")
+		attrs.PutStr("vcs.git.branch", e.WorkflowJob.HeadBranch)
+		attrs.PutStr("vcs.git.sha", e.WorkflowJob.HeadSha)
+		attrs.PutStr("vcs.git.repo", e.Repository.FullName)
 
 	case *WorkflowRunEvent:
 		serviceName := fmt.Sprintf("github.%s", strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(e.Repository.FullName, "/", "."), "-", "_")))
 		attrs.PutStr("service.name", serviceName)
 
-		attrs.PutStr("github.actor", e.WorkflowRun.Repository.Owner.Login)
-		attrs.PutStr("github.head_branch", e.WorkflowRun.HeadBranch)
-		attrs.PutStr("github.head_sha", e.WorkflowRun.HeadSha)
-		attrs.PutStr("github.repository", e.Repository.FullName)
-		attrs.PutInt("github.run_id", e.WorkflowRun.ID)
-		attrs.PutInt("github.run_attempt", int64(e.WorkflowRun.RunAttempt))
-		attrs.PutStr("github.workflow", e.WorkflowRun.Name)
-		attrs.PutStr("github.workflow_path", e.WorkflowRun.Path)
+		attrs.PutStr("ci.system", "github")
+		attrs.PutStr("ci.actor", e.WorkflowRun.Repository.Owner.Login)
+
+		attrs.PutInt("ci.github.run_id", e.WorkflowRun.ID)
+		attrs.PutInt("ci.github.run_attempt", int64(e.WorkflowRun.RunAttempt))
+		attrs.PutStr("ci.github.workflow", e.WorkflowRun.Name)
+		attrs.PutStr("ci.github.workflow_path", e.WorkflowRun.Path)
+
+		attrs.PutStr("vcs.system", "git")
+		attrs.PutStr("vcs.git.branch", e.WorkflowRun.HeadBranch)
+		attrs.PutStr("vcs.git.sha", e.WorkflowRun.HeadSha)
+		attrs.PutStr("vcs.git.repo", e.Repository.FullName)
 
 	default:
 		logger.Error("unknown event type")
