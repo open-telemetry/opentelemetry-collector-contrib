@@ -35,9 +35,9 @@ type marker struct {
 	// If necessary the value will be converted to a string.
 	MessageField string `mapstructure:"message_field"`
 
-	// UrlField is the attribute that will be used as the url.
+	// URLField is the attribute that will be used as the url.
 	// If necessary the value will be converted to a string.
-	UrlField string `mapstructure:"url_field"`
+	URLField string `mapstructure:"url_field"`
 
 	// Rules are the OTTL rules that determine when a piece of telemetry should be turned into a Marker
 	Rules Rules `mapstructure:"rules"`
@@ -55,7 +55,7 @@ var defaultCfg = CreateDefaultConfig().(*Config)
 
 func (cfg *Config) Validate() error {
 	if cfg == nil {
-		*cfg = *defaultCfg
+		cfg = defaultCfg
 	}
 
 	if cfg.APIKey == "" {
