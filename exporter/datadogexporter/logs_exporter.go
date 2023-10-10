@@ -47,6 +47,7 @@ func newLogsExporter(
 	c := conf.NewConfig("test", "DD", strings.NewReplacer(".", "_"))
 	c.Set("api_key", os.Getenv("DD_API_KEY"))
 	c.Set("site", "datadoghq.com")
+	c.Set("logs_config.logs_dd_url", os.Getenv("DD_LOGS_CONFIG_LOGS_DD_URL"))
 	logsAgent := pkgLogsAgent.NewLogsAgent(params.Logger, c)
 	err := logsAgent.Start(ctx)
 	if err != nil {
