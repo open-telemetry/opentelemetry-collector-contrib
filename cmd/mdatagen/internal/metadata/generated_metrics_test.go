@@ -65,6 +65,19 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] `optional.metric.empty_unit` should not be configured: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
+			if test.configSet == testSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetAll || test.configSet == testSetNone {
+				assert.Equal(t, "[WARNING] `string.resource.attr_remove_warning` should not be configured: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -90,6 +103,9 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
 			rb.SetStringEnumResourceAttrOne()
 			rb.SetStringResourceAttr("string.resource.attr-val")
+			rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
+			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
+			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
