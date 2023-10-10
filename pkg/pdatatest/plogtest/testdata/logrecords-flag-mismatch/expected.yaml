@@ -15,7 +15,7 @@ resourceLogs:
                   stringValue: teststringvalue2
             body:
               stringValue: testscopevalue1
-            flags: 2
+            flags: 1
             observedTimeUnixNano: "11651379494838206464"
             severityNumber: 9
             severityText: TEST
