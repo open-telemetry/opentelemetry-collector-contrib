@@ -50,20 +50,20 @@ func StandardResourceFuncs() map[string]ottl.Factory[ottlresource.TransformConte
 
 func standardFuncs[K any]() map[string]ottl.Factory[K] {
 	m := ottlfuncs.StandardConverters[K]()
-	f := newNoopFactory[K]()
+	f := newMatchFactory[K]()
 	m[f.Name()] = f
 	return m
 }
 
-func newNoopFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("noop", nil, createNoopFunction[K])
+func newMatchFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("match", nil, createMatchFunction[K])
 }
 
-func createNoopFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return noopFn[K]()
+func createMatchFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return matchFn[K]()
 }
 
-func noopFn[K any]() (ottl.ExprFunc[K], error) {
+func matchFn[K any]() (ottl.ExprFunc[K], error) {
 	return func(context.Context, K) (interface{}, error) {
 		return true, nil
 	}, nil
