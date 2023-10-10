@@ -361,3 +361,58 @@ func TestIsEnhancedContainerInsights(t *testing.T) {
 	cfg.DisableMetricExtraction = true
 	assert.False(t, isEnhancedContainerInsights(cfg))
 }
+
+func TestIsPulseApmEnabled(t *testing.T) {
+
+	tests := []struct {
+		name            string
+		metricNameSpace string
+		logGroupName    string
+		expectedResult  bool
+	}{
+		{
+			"validPulseEMF",
+			"AWS/APM",
+			"/aws/apm/eks",
+			true,
+		},
+		{
+			"invalidPulseLogsGroup",
+			"AWS/APM",
+			"/nonaws/apm/eks",
+			false,
+		},
+		{
+			"invalidPulseMetricNamespace",
+			"NonAWS/APM",
+			"/aws/apm/eks",
+			false,
+		},
+		{
+			"invalidPulseEMF",
+			"NonAWS/APM",
+			"/nonaws/apm/eks",
+			false,
+		},
+		{
+			"defaultConfig",
+			"",
+			"",
+			false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			if len(tc.metricNameSpace) > 0 {
+				cfg.Namespace = tc.metricNameSpace
+			}
+			if len(tc.logGroupName) > 0 {
+				cfg.LogGroupName = tc.logGroupName
+			}
+
+			assert.Equal(t, isPulseApmEnabled(cfg), tc.expectedResult)
+		})
+	}
+}

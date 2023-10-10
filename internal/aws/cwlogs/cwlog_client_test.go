@@ -582,59 +582,73 @@ func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
 
 	tests := []struct {
-		name                      string
-		buildInfo                 component.BuildInfo
-		logGroupName              string
-		enhancedContainerInsights bool
-		expectedUserAgentStr      string
+		name                 string
+		buildInfo            component.BuildInfo
+		logGroupName         string
+		userAgentOption      UserAgentOption
+		expectedUserAgentStr string
 	}{
 		{
 			"emptyLogGroup",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"",
-			false,
+			WithEnabledContainerInsights(false),
+			"opentelemetry-collector-contrib/1.0",
+		},
+		{
+			"emptyLogGroupPulse",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"",
+			WithEnabledPulseApm(false),
 			"opentelemetry-collector-contrib/1.0",
 		},
 		{
 			"buildInfoCommandUsed",
 			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
 			"",
-			false,
+			WithEnabledContainerInsights(false),
+			"test-collector-contrib/1.0",
+		},
+		{
+			"buildInfoCommandUsedPulse",
+			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
+			"",
+			WithEnabledPulseApm(false),
 			"test-collector-contrib/1.0",
 		},
 		{
 			"non container insights",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.1"},
 			"test-group",
-			false,
+			WithEnabledContainerInsights(false),
 			"opentelemetry-collector-contrib/1.1",
 		},
 		{
 			"container insights EKS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/eks-cluster-name/performance",
-			false,
+			WithEnabledContainerInsights(false),
 			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
 		},
 		{
 			"container insights ECS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/ecs/containerinsights/ecs-cluster-name/performance",
-			false,
+			WithEnabledContainerInsights(false),
 			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
 		},
 		{
 			"container insights prometheus",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/cluster-name/prometheus",
-			false,
+			WithEnabledContainerInsights(false),
 			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
 		},
 		{
 			"enhanced container insights EKS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/eks-cluster-name/performance",
-			true,
+			WithEnabledContainerInsights(true),
 			"opentelemetry-collector-contrib/1.0 (EnhancedEKSContainerInsights)",
 		},
 		{
@@ -642,15 +656,29 @@ func TestUserAgent(t *testing.T) {
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			// this is an ECS path, enhanced CI is not supported
 			"/aws/ecs/containerinsights/ecs-cluster-name/performance",
-			true,
+			WithEnabledContainerInsights(true),
 			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
+		},
+		{
+			"validPulseEMFEnabled",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/apm",
+			WithEnabledPulseApm(true),
+			"opentelemetry-collector-contrib/1.0 (Pulse)",
+		},
+		{
+			"PulseEMFNotEnabled",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/apm",
+			WithEnabledPulseApm(false),
+			"opentelemetry-collector-contrib/1.0",
 		},
 	}
 
 	session, _ := session.NewSession()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, session, tc.enhancedContainerInsights)
+			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, session, tc.userAgentOption)
 			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
 
 			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
