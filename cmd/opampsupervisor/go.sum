@@ -37,10 +37,10 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-go.opentelemetry.io/collector/config/configopaque v0.86.1-0.20231006161201-d364ad61c4d7 h1:mT9H5U+wIW7lPvny0cNClJvl5lnaAztJdM3aeS/sh8M=
-go.opentelemetry.io/collector/config/configopaque v0.86.1-0.20231006161201-d364ad61c4d7/go.mod h1:TPCHaU+QXiEV+JXbgyr6mSErTI9chwQyasDVMdJr3eY=
-go.opentelemetry.io/collector/config/configtls v0.86.1-0.20231006161201-d364ad61c4d7 h1:zh8BN/nAzzfx93egknnQvyl/uTvsKPESV55dJnmAOFY=
-go.opentelemetry.io/collector/config/configtls v0.86.1-0.20231006161201-d364ad61c4d7/go.mod h1:vopMMIUjAvb6kojrc5G6vQOmfPIRxTU+hMHomvGNa2s=
+go.opentelemetry.io/collector/config/configopaque v0.87.0 h1:+qqJG1oEzX4+/YNbgeaXW9YM0BPWSj5XCi5y2zZLhDY=
+go.opentelemetry.io/collector/config/configopaque v0.87.0/go.mod h1:TPCHaU+QXiEV+JXbgyr6mSErTI9chwQyasDVMdJr3eY=
+go.opentelemetry.io/collector/config/configtls v0.87.0 h1:EXa9Plr74+r9t2/59dTyjR3y53zqwigHN0dQsI8VGiQ=
+go.opentelemetry.io/collector/config/configtls v0.87.0/go.mod h1:3UoeynehS/NNhg1Qbt3xQdgPyrkWnjBRLUG2Gw7BFFc=
 go.uber.org/goleak v1.2.0 h1:xqgm/S+aQvhWFTtR0XK3Jvg7z8kGV8P4X14IzwN3Eqk=
 go.uber.org/multierr v1.10.0 h1:S0h4aNzvfcFsC3dRF1jLoaov7oRaKqRGC/pUEJ2yvPQ=
 go.uber.org/multierr v1.10.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=

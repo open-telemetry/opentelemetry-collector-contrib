@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/servi
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.86.1-0.20231006161201-d364ad61c4d7
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.87.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.86.1-0.20231006161201-d364ad61c4d7
-	go.opentelemetry.io/collector/connector v0.86.1-0.20231006161201-d364ad61c4d7
-	go.opentelemetry.io/collector/consumer v0.86.1-0.20231006161201-d364ad61c4d7
+	go.opentelemetry.io/collector/component v0.87.0
+	go.opentelemetry.io/collector/connector v0.87.0
+	go.opentelemetry.io/collector/consumer v0.87.0
 )
 
 require (
@@ -24,14 +24,14 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
-	go.opentelemetry.io/collector/confmap v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
-	go.opentelemetry.io/collector/exporter v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015.0.20231006161201-d364ad61c4d7 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015.0.20231006161201-d364ad61c4d7 // indirect
-	go.opentelemetry.io/collector/processor v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
-	go.opentelemetry.io/collector/semconv v0.86.1-0.20231006161201-d364ad61c4d7 // indirect
+	go.opentelemetry.io/collector v0.87.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.87.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.87.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.87.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0016 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016 // indirect
+	go.opentelemetry.io/collector/processor v0.87.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.87.0 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
