@@ -132,12 +132,12 @@ type kineticaMetricsExporter struct {
 	writer *KiWriter
 }
 
-func newMetricsExporter(_ *zap.Logger, cfg *Config) *kineticaMetricsExporter {
+func newMetricsExporter(logger *zap.Logger, cfg *Config) *kineticaMetricsExporter {
 	if err := cfg.Validate(); err != nil {
 		return nil
 	}
 
-	kineticaLogger := cfg.createLogger()
+	kineticaLogger := logger
 	writer := NewKiWriter(context.TODO(), *cfg, kineticaLogger)
 	metricsExp := &kineticaMetricsExporter{
 		logger: kineticaLogger,
