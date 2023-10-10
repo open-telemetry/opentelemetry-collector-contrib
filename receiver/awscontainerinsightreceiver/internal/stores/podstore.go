@@ -497,12 +497,14 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 		if p.includeEnhancedMetrics {
 			p.addPodStatusMetrics(metric, pod)
 			p.addPodConditionMetrics(metric, pod)
+			p.addPodContainerStatusMetrics(metric, pod)
 		}
 
 		var curContainerRestarts int
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			curContainerRestarts += int(containerStatus.RestartCount)
 		}
+
 		podKey := createPodKeyFromMetric(metric)
 		if podKey != "" {
 			content, ok := p.getPrevMeasurement(ci.TypePod, podKey)
@@ -520,28 +522,16 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 		if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 			for _, containerStatus := range pod.Status.ContainerStatuses {
 				if containerStatus.Name == containerName {
-					possibleStatuses := map[string]int{
-						ci.StatusRunning:    0,
-						ci.StatusWaiting:    0,
-						ci.StatusTerminated: 0,
-					}
 					switch {
 					case containerStatus.State.Running != nil:
 						metric.AddTag(ci.ContainerStatus, "Running")
-						possibleStatuses[ci.StatusRunning] = 1
 					case containerStatus.State.Waiting != nil:
 						metric.AddTag(ci.ContainerStatus, "Waiting")
-						possibleStatuses[ci.StatusWaiting] = 1
-						reason := containerStatus.State.Waiting.Reason
-						if reason != "" {
-							metric.AddTag(ci.ContainerStatusReason, reason)
-							if val, ok := ci.WaitingReasonLookup[reason]; ok {
-								possibleStatuses[val] = 1
-							}
+						if containerStatus.State.Waiting.Reason != "" {
+							metric.AddTag(ci.ContainerStatusReason, containerStatus.State.Waiting.Reason)
 						}
 					case containerStatus.State.Terminated != nil:
 						metric.AddTag(ci.ContainerStatus, "Terminated")
-						possibleStatuses[ci.StatusTerminated] = 1
 						if containerStatus.State.Terminated.Reason != "" {
 							metric.AddTag(ci.ContainerStatusReason, containerStatus.State.Terminated.Reason)
 						}
@@ -549,9 +539,6 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 
 					if containerStatus.LastTerminationState.Terminated != nil && containerStatus.LastTerminationState.Terminated.Reason != "" {
 						metric.AddTag(ci.ContainerLastTerminationReason, containerStatus.LastTerminationState.Terminated.Reason)
-						if strings.Contains(containerStatus.LastTerminationState.Terminated.Reason, "OOMKilled") {
-							possibleStatuses[ci.StatusTerminatedReasonOOMKilled] = 1
-						}
 					}
 					containerKey := createContainerKeyFromMetric(metric)
 					if containerKey != "" {
@@ -565,13 +552,6 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 							metric.AddField(ci.ContainerRestartCount, result)
 						}
 						p.setPrevMeasurement(ci.TypeContainer, containerKey, prevContainerMeasurement{restarts: int(containerStatus.RestartCount)})
-					}
-
-					// add container containerStatus metrics
-					if p.includeEnhancedMetrics {
-						for name, val := range possibleStatuses {
-							metric.AddField(ci.MetricName(ci.TypeContainer, name), val)
-						}
 					}
 				}
 			}
@@ -610,6 +590,52 @@ func (p *PodStore) addPodConditionMetrics(metric CIMetric, pod *corev1.Pod) {
 			}
 		}
 
+	}
+}
+
+func (p *PodStore) addPodContainerStatusMetrics(metric CIMetric, pod *corev1.Pod) {
+	possibleStatuses := map[string]int{
+		ci.StatusContainerRunning:    0,
+		ci.StatusContainerWaiting:    0,
+		ci.StatusContainerTerminated: 0,
+	}
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		switch {
+		case containerStatus.State.Running != nil:
+			possibleStatuses[ci.StatusContainerRunning]++
+		case containerStatus.State.Waiting != nil:
+			possibleStatuses[ci.StatusContainerWaiting]++
+			reason := containerStatus.State.Waiting.Reason
+			if reason != "" {
+				if val, ok := ci.WaitingReasonLookup[reason]; ok {
+					if _, foundStatus := possibleStatuses[val]; foundStatus {
+						possibleStatuses[val]++
+					} else {
+						possibleStatuses[val] = 1
+					}
+				}
+			}
+		case containerStatus.State.Terminated != nil:
+			possibleStatuses[ci.StatusContainerTerminated]++
+			if containerStatus.State.Terminated.Reason != "" {
+				metric.AddTag(ci.ContainerStatusReason, containerStatus.State.Terminated.Reason)
+			}
+		}
+
+		if containerStatus.LastTerminationState.Terminated != nil && containerStatus.LastTerminationState.Terminated.Reason != "" {
+			if strings.Contains(containerStatus.LastTerminationState.Terminated.Reason, "OOMKilled") {
+				if _, foundStatus := possibleStatuses[ci.StatusContainerTerminatedReasonOOMKilled]; foundStatus {
+					possibleStatuses[ci.StatusContainerTerminatedReasonOOMKilled]++
+				} else {
+					possibleStatuses[ci.StatusContainerTerminatedReasonOOMKilled] = 1
+				}
+			}
+		}
+	}
+
+	for name, val := range possibleStatuses {
+		// desired prefix: pod_container_
+		metric.AddField(ci.MetricName(ci.TypePod, name), val)
 	}
 }
 

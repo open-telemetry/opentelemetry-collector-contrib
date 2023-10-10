@@ -76,38 +76,39 @@ const (
 	FSInodesfree  = "filesystem_inodes_free"
 	FSUtilization = "filesystem_utilization"
 
-	StatusConditionReady                          = "status_condition_ready"
-	StatusConditionDiskPressure                   = "status_condition_disk_pressure"
-	StatusConditionMemoryPressure                 = "status_condition_memory_pressure"
-	StatusConditionPIDPressure                    = "status_condition_pid_pressure"
-	StatusConditionNetworkUnavailable             = "status_condition_network_unavailable"
-	StatusConditionUnknown                        = "status_condition_unknown"
-	StatusCapacityPods                            = "status_capacity_pods"
-	StatusAllocatablePods                         = "status_allocatable_pods"
-	StatusNumberAvailable                         = "status_number_available"
-	StatusNumberUnavailable                       = "status_number_unavailable"
-	StatusDesiredNumberScheduled                  = "status_desired_number_scheduled"
-	StatusCurrentNumberScheduled                  = "status_current_number_scheduled"
-	StatusReplicasAvailable                       = "status_replicas_available"
-	StatusReplicasUnavailable                     = "status_replicas_unavailable"
-	SpecReplicas                                  = "spec_replicas"
-	StatusRunning                                 = "status_running"
-	StatusTerminated                              = "status_terminated"
-	StatusWaiting                                 = "status_waiting"
-	StatusWaitingReasonCrashLoopBackOff           = "status_waiting_reason_crash_loop_back_off"
-	StatusWaitingReasonImagePullError             = "status_waiting_reason_image_pull_error"
-	StatusWaitingReasonStartError                 = "status_waiting_reason_start_error"
-	StatusWaitingReasonCreateContainerError       = "status_waiting_reason_create_container_error"
-	StatusWaitingReasonCreateContainerConfigError = "status_waiting_reason_create_container_config_error"
-	StatusTerminatedReasonOOMKilled               = "status_terminated_reason_oom_killed"
-	StatusPending                                 = "status_pending"
-	StatusSucceeded                               = "status_succeeded"
-	StatusFailed                                  = "status_failed"
-	StatusUnknown                                 = "status_unknown"
-	StatusReady                                   = "status_ready"
-	StatusScheduled                               = "status_scheduled"
-	ReplicasDesired                               = "replicas_desired"
-	ReplicasReady                                 = "replicas_ready"
+	StatusConditionReady                                   = "status_condition_ready"
+	StatusConditionDiskPressure                            = "status_condition_disk_pressure"
+	StatusConditionMemoryPressure                          = "status_condition_memory_pressure"
+	StatusConditionPIDPressure                             = "status_condition_pid_pressure"
+	StatusConditionNetworkUnavailable                      = "status_condition_network_unavailable"
+	StatusConditionUnknown                                 = "status_condition_unknown"
+	StatusCapacityPods                                     = "status_capacity_pods"
+	StatusAllocatablePods                                  = "status_allocatable_pods"
+	StatusNumberAvailable                                  = "status_number_available"
+	StatusNumberUnavailable                                = "status_number_unavailable"
+	StatusDesiredNumberScheduled                           = "status_desired_number_scheduled"
+	StatusCurrentNumberScheduled                           = "status_current_number_scheduled"
+	StatusReplicasAvailable                                = "status_replicas_available"
+	StatusReplicasUnavailable                              = "status_replicas_unavailable"
+	SpecReplicas                                           = "spec_replicas"
+	StatusContainerRunning                                 = "container_status_running"
+	StatusContainerTerminated                              = "container_status_terminated"
+	StatusContainerWaiting                                 = "container_status_waiting"
+	StatusContainerWaitingReasonCrashLoopBackOff           = "container_status_waiting_reason_crash_loop_back_off"
+	StatusContainerWaitingReasonImagePullError             = "container_status_waiting_reason_image_pull_error"
+	StatusContainerWaitingReasonStartError                 = "container_status_waiting_reason_start_error"
+	StatusContainerWaitingReasonCreateContainerError       = "container_status_waiting_reason_create_container_error"
+	StatusContainerWaitingReasonCreateContainerConfigError = "container_status_waiting_reason_create_container_config_error"
+	StatusContainerTerminatedReasonOOMKilled               = "container_status_terminated_reason_oom_killed"
+	StatusRunning                                          = "status_running"
+	StatusPending                                          = "status_pending"
+	StatusSucceeded                                        = "status_succeeded"
+	StatusFailed                                           = "status_failed"
+	StatusUnknown                                          = "status_unknown"
+	StatusReady                                            = "status_ready"
+	StatusScheduled                                        = "status_scheduled"
+	ReplicasDesired                                        = "replicas_desired"
+	ReplicasReady                                          = "replicas_ready"
 
 	RunningPodCount       = "number_of_running_pods"
 	RunningContainerCount = "number_of_running_containers"
@@ -163,13 +164,13 @@ const (
 )
 
 var WaitingReasonLookup = map[string]string{
-	"CrashLoopBackOff":           StatusWaitingReasonCrashLoopBackOff,
-	"ErrImagePull":               StatusWaitingReasonImagePullError,
-	"ImagePullBackOff":           StatusWaitingReasonImagePullError,
-	"InvalidImageName":           StatusWaitingReasonImagePullError,
-	"CreateContainerError":       StatusWaitingReasonCreateContainerError,
-	"CreateContainerConfigError": StatusWaitingReasonCreateContainerConfigError,
-	"StartError":                 StatusWaitingReasonStartError,
+	"CrashLoopBackOff":           StatusContainerWaitingReasonCrashLoopBackOff,
+	"ErrImagePull":               StatusContainerWaitingReasonImagePullError,
+	"ImagePullBackOff":           StatusContainerWaitingReasonImagePullError,
+	"InvalidImageName":           StatusContainerWaitingReasonImagePullError,
+	"CreateContainerError":       StatusContainerWaitingReasonCreateContainerError,
+	"CreateContainerConfigError": StatusContainerWaitingReasonCreateContainerConfigError,
+	"StartError":                 StatusContainerWaitingReasonStartError,
 }
 
 var metricToUnitMap map[string]string
@@ -261,20 +262,20 @@ func init() {
 		ReplicasReady:                     UnitCount,
 
 		// kube-state-metrics equivalents
-		StatusRunning:                                 UnitCount,
-		StatusTerminated:                              UnitCount,
-		StatusWaiting:                                 UnitCount,
-		StatusWaitingReasonCrashLoopBackOff:           UnitCount,
-		StatusWaitingReasonImagePullError:             UnitCount,
-		StatusWaitingReasonStartError:                 UnitCount,
-		StatusWaitingReasonCreateContainerConfigError: UnitCount,
-		StatusWaitingReasonCreateContainerError:       UnitCount,
-		StatusFailed:                                  UnitCount,
-		StatusPending:                                 UnitCount,
-		StatusSucceeded:                               UnitCount,
-		StatusUnknown:                                 UnitCount,
-		StatusReady:                                   UnitCount,
-		StatusScheduled:                               UnitCount,
+		StatusContainerRunning:                                 UnitCount,
+		StatusContainerTerminated:                              UnitCount,
+		StatusContainerWaiting:                                 UnitCount,
+		StatusContainerWaitingReasonCrashLoopBackOff:           UnitCount,
+		StatusContainerWaitingReasonImagePullError:             UnitCount,
+		StatusContainerWaitingReasonStartError:                 UnitCount,
+		StatusContainerWaitingReasonCreateContainerConfigError: UnitCount,
+		StatusContainerWaitingReasonCreateContainerError:       UnitCount,
+		StatusFailed:    UnitCount,
+		StatusPending:   UnitCount,
+		StatusSucceeded: UnitCount,
+		StatusUnknown:   UnitCount,
+		StatusReady:     UnitCount,
+		StatusScheduled: UnitCount,
 
 		// cluster metrics
 		NodeCount:       UnitCount,

@@ -687,52 +687,61 @@ kubectl apply -f config.yaml
 <br/><br/> 
 
 ### Pod
-| Metric                                | Unit         |
-|---------------------------------------|--------------|
-| pod_cpu_limit                         | Millicore    |
-| pod_cpu_request                       | Millicore    |
-| pod_cpu_reserved_capacity             | Percent      |
-| pod_cpu_usage_system                  | Millicore    |
-| pod_cpu_usage_total                   | Millicore    |
-| pod_cpu_usage_user                    | Millicore    |
-| pod_cpu_utilization                   | Percent      |
-| pod_cpu_utilization_over_pod_limit    | Percent      |
-| pod_memory_cache                      | Bytes        |
-| pod_memory_failcnt                    | Count        |
-| pod_memory_hierarchical_pgfault       | Count/Second |
-| pod_memory_hierarchical_pgmajfault    | Count/Second |
-| pod_memory_limit                      | Bytes        |
-| pod_memory_mapped_file                | Bytes        |
-| pod_memory_max_usage                  | Bytes        |
-| pod_memory_pgfault                    | Count/Second |
-| pod_memory_pgmajfault                 | Count/Second |
-| pod_memory_request                    | Bytes        |
-| pod_memory_reserved_capacity          | Percent      |
-| pod_memory_rss                        | Bytes        |
-| pod_memory_swap                       | Bytes        |
-| pod_memory_usage                      | Bytes        |
-| pod_memory_utilization                | Percent      |
-| pod_memory_utilization_over_pod_limit | Percent      |
-| pod_memory_working_set                | Bytes        |
-| pod_network_rx_bytes                  | Bytes/Second |
-| pod_network_rx_dropped                | Count/Second |
-| pod_network_rx_errors                 | Count/Second |
-| pod_network_rx_packets                | Count/Second |
-| pod_network_total_bytes               | Bytes/Second |
-| pod_network_tx_bytes                  | Bytes/Second |
-| pod_network_tx_dropped                | Count/Second |
-| pod_network_tx_errors                 | Count/Second |
-| pod_network_tx_packets                | Count/Second |
-| pod_number_of_container_restarts      | Count        | 
-| pod_number_of_containers              | Count        |   
-| pod_number_of_running_containers      | Count        |  
-| pod_status_ready                      | Count        |
-| pod_status_scheduled                  | Count        |
-| pod_status_unknown                    | Count        |
-| pod_status_failed                     | Count        |
-| pod_status_pending                    | Count        |
-| pod_status_running                    | Count        |
-| pod_status_succeeded                  | Count        |
+| Metric                                                            | Unit         |
+|-------------------------------------------------------------------|--------------|
+| pod_cpu_limit                                                     | Millicore    |
+| pod_cpu_request                                                   | Millicore    |
+| pod_cpu_reserved_capacity                                         | Percent      |
+| pod_cpu_usage_system                                              | Millicore    |
+| pod_cpu_usage_total                                               | Millicore    |
+| pod_cpu_usage_user                                                | Millicore    |
+| pod_cpu_utilization                                               | Percent      |
+| pod_cpu_utilization_over_pod_limit                                | Percent      |
+| pod_memory_cache                                                  | Bytes        |
+| pod_memory_failcnt                                                | Count        |
+| pod_memory_hierarchical_pgfault                                   | Count/Second |
+| pod_memory_hierarchical_pgmajfault                                | Count/Second |
+| pod_memory_limit                                                  | Bytes        |
+| pod_memory_mapped_file                                            | Bytes        |
+| pod_memory_max_usage                                              | Bytes        |
+| pod_memory_pgfault                                                | Count/Second |
+| pod_memory_pgmajfault                                             | Count/Second |
+| pod_memory_request                                                | Bytes        |
+| pod_memory_reserved_capacity                                      | Percent      |
+| pod_memory_rss                                                    | Bytes        |
+| pod_memory_swap                                                   | Bytes        |
+| pod_memory_usage                                                  | Bytes        |
+| pod_memory_utilization                                            | Percent      |
+| pod_memory_utilization_over_pod_limit                             | Percent      |
+| pod_memory_working_set                                            | Bytes        |
+| pod_network_rx_bytes                                              | Bytes/Second |
+| pod_network_rx_dropped                                            | Count/Second |
+| pod_network_rx_errors                                             | Count/Second |
+| pod_network_rx_packets                                            | Count/Second |
+| pod_network_total_bytes                                           | Bytes/Second |
+| pod_network_tx_bytes                                              | Bytes/Second |
+| pod_network_tx_dropped                                            | Count/Second |
+| pod_network_tx_errors                                             | Count/Second |
+| pod_network_tx_packets                                            | Count/Second |
+| pod_number_of_container_restarts                                  | Count        | 
+| pod_number_of_containers                                          | Count        |   
+| pod_number_of_running_containers                                  | Count        |  
+| pod_status_ready                                                  | Count        |
+| pod_status_scheduled                                              | Count        |
+| pod_status_unknown                                                | Count        |
+| pod_status_failed                                                 | Count        |
+| pod_status_pending                                                | Count        |
+| pod_status_running                                                | Count        |
+| pod_status_succeeded                                              | Count        |
+| pod_container_status_running                                      | Count        |
+| pod_container_status_terminated                                   | Count        |
+| pod_container_status_waiting                                      | Count        |
+| pod_container_status_waiting_reason_crash_loop_back_off           | Count        |
+| pod_container_status_waiting_reason_image_pull_error              | Count        |
+| pod_container_status_waiting_reason_start_error                   | Count        |
+| pod_container_status_waiting_reason_create_container_error        | Count        |
+| pod_container_status_waiting_reason_create_container_config_error | Count        |
+| pod_container_status_terminated_reason_oom_killed                 | Count        |
 
 | Resource Attribute   |
 |----------------------|
@@ -816,15 +825,6 @@ kubectl apply -f config.yaml
 | container_memory_utilization_over_container_limit             | Percent      |
 | container_memory_working_set                                  | Bytes        |
 | number_of_container_restarts                                  | Count        |
-| container_status_running                                      | Count        |
-| container_status_terminated                                   | Count        |
-| container_status_waiting                                      | Count        |
-| container_status_waiting_reason_crash_loop_back_off           | Count        |
-| container_status_waiting_reason_image_pull_error              | Count        |
-| container_status_waiting_reason_start_error                   | Count        |
-| container_status_waiting_reason_create_container_error        | Count        |
-| container_status_waiting_reason_create_container_config_error | Count        |
-| container_status_terminated_reason_oom_killed                 | Count        |
 
 <br/><br/> 
 
