@@ -24,7 +24,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -71,7 +71,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
