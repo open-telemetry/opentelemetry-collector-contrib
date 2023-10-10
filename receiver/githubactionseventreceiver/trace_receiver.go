@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -270,13 +271,28 @@ func setSpanTimes(span ptrace.Span, start, end time.Time) {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(end))
 }
 
-func validateSignature(secret string, signatureHeader string, body []byte, logger *zap.Logger) bool {
+func validateSignatureSHA256(secret string, signatureHeader string, body []byte, logger *zap.Logger) bool {
 	if signatureHeader == "" || len(signatureHeader) < 7 {
 		logger.Debug("Unauthorized - No Signature Header")
 		return false
 	}
 	receivedSig := signatureHeader[7:]
 	computedHash := hmac.New(sha256.New, []byte(secret))
+	computedHash.Write(body)
+	expectedSig := hex.EncodeToString(computedHash.Sum(nil))
+
+	logger.Info("Debugging Signatures", zap.String("Received", receivedSig), zap.String("Computed", expectedSig))
+
+	return hmac.Equal([]byte(expectedSig), []byte(receivedSig))
+}
+
+func validateSignatureSHA1(secret string, signatureHeader string, body []byte, logger *zap.Logger) bool {
+	if signatureHeader == "" {
+		logger.Debug("Unauthorized - No Signature Header")
+		return false
+	}
+	receivedSig := signatureHeader[5:] // Assume "sha1=" prefix
+	computedHash := hmac.New(sha1.New, []byte(secret))
 	computedHash.Write(body)
 	expectedSig := hex.EncodeToString(computedHash.Sum(nil))
 
@@ -336,6 +352,12 @@ func (gaer *githubActionsEventReceiver) Shutdown(ctx context.Context) error {
 func (gaer *githubActionsEventReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	userAgent := r.Header.Get("User-Agent")
+	if !strings.HasPrefix(userAgent, "GitHub-Hookshot") {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
 	if r.URL.Path != gaer.config.Path {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
@@ -350,10 +372,20 @@ func (gaer *githubActionsEventReceiver) ServeHTTP(w http.ResponseWriter, r *http
 	}
 
 	// Validate the request if Secret is set in the configuration
-	if gaer.config.Secret != "" && !validateSignature(gaer.config.Secret, r.Header.Get("X-Hub-Signature-256"), slurp, gaer.logger) {
-		gaer.logger.Debug("Unauthorized - Signature Mismatch")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+	if gaer.config.Secret != "" {
+		signatureSHA256 := r.Header.Get("X-Hub-Signature-256")
+		if signatureSHA256 != "" && !validateSignatureSHA256(gaer.config.Secret, signatureSHA256, slurp, gaer.logger) {
+			gaer.logger.Debug("Unauthorized - Signature Mismatch SHA256")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		} else {
+			signatureSHA1 := r.Header.Get("X-Hub-Signature")
+			if signatureSHA1 != "" && !validateSignatureSHA1(gaer.config.Secret, signatureSHA1, slurp, gaer.logger) {
+				gaer.logger.Debug("Unauthorized - Signature Mismatch SHA1")
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
 	}
 
 	gaer.logger.Debug("Received request", zap.ByteString("payload", slurp))
