@@ -78,7 +78,7 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 
 	if config.LeaderElection.Enabled {
 		if objReceiver.leaderElection.LockName == "" {
-			return nil, errors.New("luckName must not be empty if LeaderElection enabled")
+			return nil, errors.New("lockName must not be empty if LeaderElection enabled")
 		}
 
 		objReceiver.leaderElectionClient, err = config.getClient()
