@@ -10,9 +10,6 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: test-namespace
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:

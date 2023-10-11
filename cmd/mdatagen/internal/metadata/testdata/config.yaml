@@ -20,6 +20,12 @@ all_set:
       enabled: true
     string.resource.attr:
       enabled: true
+    string.resource.attr_disable_warning:
+      enabled: true
+    string.resource.attr_remove_warning:
+      enabled: true
+    string.resource.attr_to_be_removed:
+      enabled: true
 none_set:
   metrics:
     default.metric:
@@ -40,4 +46,10 @@ none_set:
     string.enum.resource.attr:
       enabled: false
     string.resource.attr:
+      enabled: false
+    string.resource.attr_disable_warning:
+      enabled: false
+    string.resource.attr_remove_warning:
+      enabled: false
+    string.resource.attr_to_be_removed:
       enabled: false
