@@ -152,47 +152,13 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	rac.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// ResourceAttributesConfig provides config for mongodb resource attributes.
-type ResourceAttributesConfig struct {
-	Database ResourceAttributeConfig `mapstructure:"database"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		Database: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
-
 // MetricsBuilderConfig is a configuration for mongodb metrics builder.
 type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
+		Metrics: DefaultMetricsConfig(),
 	}
 }

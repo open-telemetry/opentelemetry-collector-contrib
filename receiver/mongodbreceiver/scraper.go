@@ -116,10 +116,7 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 		return
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
-
-	rb := s.mb.NewResourceBuilder()
-	rb.SetDatabase(databaseName)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	s.mb.EmitForResource()
 }
 
 func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {

@@ -167,9 +167,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbUptimeDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetDatabase("database-val")
-			res := rb.Emit()
+			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

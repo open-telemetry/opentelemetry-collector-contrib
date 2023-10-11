@@ -206,10 +206,7 @@ resourceMetrics:
           name: otelcol/mongodbreceiver
           version: latest
   - resource:
-      attributes:
-        - key: database
-          value:
-            stringValue: admin
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The number of collections.
@@ -416,10 +413,7 @@ resourceMetrics:
           name: otelcol/mongodbreceiver
           version: latest
   - resource:
-      attributes:
-        - key: database
-          value:
-            stringValue: config
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The number of collections.
@@ -626,10 +620,7 @@ resourceMetrics:
           name: otelcol/mongodbreceiver
           version: latest
   - resource:
-      attributes:
-        - key: database
-          value:
-            stringValue: local
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The number of collections.
@@ -813,10 +804,7 @@ resourceMetrics:
           name: otelcol/mongodbreceiver
           version: latest
   - resource:
-      attributes:
-        - key: database
-          value:
-            stringValue: testdb
+      attributes: []
     scopeMetrics:
       - metrics:
           - description: The number of collections.

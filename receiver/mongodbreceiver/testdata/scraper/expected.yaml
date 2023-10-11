@@ -299,54 +299,6 @@ resourceMetrics:
   - resource: {}
     scopeMetrics:
       - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: collection
-                      value:
-                        stringValue: products
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: '{accesses}'
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  attributes:
-                    - key: collection
-                      value:
-                        stringValue: orders
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: '{accesses}'
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: database
-          value:
-            stringValue: fakedatabase
-    scopeMetrics:
-      - metrics:
           - description: The number of collections.
             name: mongodb.collection.count
             sum:
@@ -537,6 +489,50 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
+        scope:
+          name: otelcol/mongodbreceiver
+          version: latest
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: products
+                    - key: database
+                      value:
+                        stringValue: fakedatabase
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{accesses}'
+        scope:
+          name: otelcol/mongodbreceiver
+          version: latest
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: orders
+                    - key: database
+                      value:
+                        stringValue: fakedatabase
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver
           version: latest
