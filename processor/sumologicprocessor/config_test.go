@@ -29,252 +29,250 @@ func TestLoadConfig(t *testing.T) {
 	p0 := cfg.Processors[component.NewID(metadata.Type)]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 
-	p1 := cfg.Processors[component.NewIDWithName(metadata.Type, "disabled-cloud-namespace")]
-
-	assert.Equal(t, p1,
-		&Config{
-			AddCloudNamespace:           false,
-			TranslateAttributes:         true,
-			TranslateTelegrafAttributes: true,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            false,
-				Separator:          ".",
-				Include:            []string{},
-				Exclude:            []string{},
-				SquashSingleValues: false,
-			},
-			AggregateAttributes: []aggregationPair{},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
-			},
-			TranslateDockerMetrics: false,
-		})
-
-	p2 := cfg.Processors[component.NewIDWithName(metadata.Type, "disabled-attribute-translation")]
-
-	assert.Equal(t, p2,
-		&Config{
-			AddCloudNamespace:           true,
-			TranslateAttributes:         false,
-			TranslateTelegrafAttributes: true,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            false,
-				Separator:          ".",
-				Include:            []string{},
-				Exclude:            []string{},
-				SquashSingleValues: false,
-			},
-			AggregateAttributes: []aggregationPair{},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
-			},
-			TranslateDockerMetrics: false,
-		})
-
-	p3 := cfg.Processors[component.NewIDWithName(metadata.Type, "disabled-telegraf-attribute-translation")]
-
-	assert.Equal(t, p3,
-		&Config{
-			AddCloudNamespace:           true,
-			TranslateAttributes:         true,
-			TranslateTelegrafAttributes: false,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            false,
-				Separator:          ".",
-				Include:            []string{},
-				Exclude:            []string{},
-				SquashSingleValues: false,
-			},
-			AggregateAttributes: []aggregationPair{},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
-			},
-			TranslateDockerMetrics: false,
-		})
-
-	p4 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-nesting")]
-
-	assert.Equal(t, p4,
-		&Config{
-			AddCloudNamespace:           true,
-			TranslateAttributes:         true,
-			TranslateTelegrafAttributes: true,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            true,
-				Separator:          "!",
-				Include:            []string{"blep"},
-				Exclude:            []string{"nghu"},
-				SquashSingleValues: true,
-			},
-			AggregateAttributes: []aggregationPair{},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
-			},
-			TranslateDockerMetrics: false,
-		})
-
-	p5 := cfg.Processors[component.NewIDWithName(metadata.Type, "aggregate-attributes")]
-
-	assert.Equal(t, p5,
-		&Config{
-			AddCloudNamespace:           true,
-			TranslateAttributes:         true,
-			TranslateTelegrafAttributes: true,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            false,
-				Separator:          ".",
-				Include:            []string{},
-				Exclude:            []string{},
-				SquashSingleValues: false,
-			},
-			AggregateAttributes: []aggregationPair{
-				{
-					Attribute: "attr1",
-					Prefixes:  []string{"pattern1", "pattern2", "pattern3"},
+	for _, tt := range []struct {
+		processor string
+		config    *Config
+	}{
+		{
+			processor: "disabled-cloud-namespace",
+			config: &Config{
+				AddCloudNamespace:           false,
+				TranslateAttributes:         true,
+				TranslateTelegrafAttributes: true,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            false,
+					Separator:          ".",
+					Include:            []string{},
+					Exclude:            []string{},
+					SquashSingleValues: false,
 				},
-				{
-					Attribute: "attr2",
-					Prefixes:  []string{"pattern4"},
+				AggregateAttributes: []aggregationPair{},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
 				},
+				TranslateDockerMetrics: false,
 			},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+		},
+		{
+			processor: "disabled-attribute-translation",
+			config: &Config{
+				AddCloudNamespace:           true,
+				TranslateAttributes:         false,
+				TranslateTelegrafAttributes: true,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            false,
+					Separator:          ".",
+					Include:            []string{},
+					Exclude:            []string{},
+					SquashSingleValues: false,
+				},
+				AggregateAttributes: []aggregationPair{},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+				},
+				TranslateDockerMetrics: false,
 			},
-			TranslateDockerMetrics: false,
-		})
-
-	p6 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-severity-number-attribute")]
-
-	assert.Equal(t, p6,
-		&Config{
-			AddCloudNamespace:           true,
-			TranslateAttributes:         true,
-			TranslateTelegrafAttributes: true,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            false,
-				Separator:          ".",
-				Include:            []string{},
-				Exclude:            []string{},
-				SquashSingleValues: false,
+		},
+		{
+			processor: "disabled-telegraf-attribute-translation",
+			config: &Config{
+				AddCloudNamespace:           true,
+				TranslateAttributes:         true,
+				TranslateTelegrafAttributes: false,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            false,
+					Separator:          ".",
+					Include:            []string{},
+					Exclude:            []string{},
+					SquashSingleValues: false,
+				},
+				AggregateAttributes: []aggregationPair{},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+				},
+				TranslateDockerMetrics: false,
 			},
-			AggregateAttributes: []aggregationPair{},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{true, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+		},
+		{
+			processor: "enabled-nesting",
+			config: &Config{
+				AddCloudNamespace:           true,
+				TranslateAttributes:         true,
+				TranslateTelegrafAttributes: true,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            true,
+					Separator:          "!",
+					Include:            []string{"blep"},
+					Exclude:            []string{"nghu"},
+					SquashSingleValues: true,
+				},
+				AggregateAttributes: []aggregationPair{},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+				},
+				TranslateDockerMetrics: false,
 			},
-			TranslateDockerMetrics: false,
-		})
-
-	p7 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-severity-text-attribute")]
-
-	assert.Equal(t, p7,
-		&Config{
-			AddCloudNamespace:           true,
-			TranslateAttributes:         true,
-			TranslateTelegrafAttributes: true,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            false,
-				Separator:          ".",
-				Include:            []string{},
-				Exclude:            []string{},
-				SquashSingleValues: false,
+		},
+		{
+			processor: "aggregate-attributes",
+			config: &Config{
+				AddCloudNamespace:           true,
+				TranslateAttributes:         true,
+				TranslateTelegrafAttributes: true,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            false,
+					Separator:          ".",
+					Include:            []string{},
+					Exclude:            []string{},
+					SquashSingleValues: false,
+				},
+				AggregateAttributes: []aggregationPair{
+					{
+						Attribute: "attr1",
+						Prefixes:  []string{"pattern1", "pattern2", "pattern3"},
+					},
+					{
+						Attribute: "attr2",
+						Prefixes:  []string{"pattern4"},
+					},
+				},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+				},
+				TranslateDockerMetrics: false,
 			},
-			AggregateAttributes: []aggregationPair{},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{true, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+		},
+		{
+			processor: "enabled-severity-number-attribute",
+			config: &Config{
+				AddCloudNamespace:           true,
+				TranslateAttributes:         true,
+				TranslateTelegrafAttributes: true,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            false,
+					Separator:          ".",
+					Include:            []string{},
+					Exclude:            []string{},
+					SquashSingleValues: false,
+				},
+				AggregateAttributes: []aggregationPair{},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{true, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+				},
+				TranslateDockerMetrics: false,
 			},
-			TranslateDockerMetrics: false,
-		})
-
-	p8 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-span-id-attribute")]
-
-	assert.Equal(t, p8,
-		&Config{
-			AddCloudNamespace:           true,
-			TranslateAttributes:         true,
-			TranslateTelegrafAttributes: true,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            false,
-				Separator:          ".",
-				Include:            []string{},
-				Exclude:            []string{},
-				SquashSingleValues: false,
+		},
+		{
+			processor: "enabled-severity-text-attribute",
+			config: &Config{
+				AddCloudNamespace:           true,
+				TranslateAttributes:         true,
+				TranslateTelegrafAttributes: true,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            false,
+					Separator:          ".",
+					Include:            []string{},
+					Exclude:            []string{},
+					SquashSingleValues: false,
+				},
+				AggregateAttributes: []aggregationPair{},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{true, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+				},
+				TranslateDockerMetrics: false,
 			},
-			AggregateAttributes: []aggregationPair{},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{true, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+		},
+		{
+			processor: "enabled-span-id-attribute",
+			config: &Config{
+				AddCloudNamespace:           true,
+				TranslateAttributes:         true,
+				TranslateTelegrafAttributes: true,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            false,
+					Separator:          ".",
+					Include:            []string{},
+					Exclude:            []string{},
+					SquashSingleValues: false,
+				},
+				AggregateAttributes: []aggregationPair{},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{true, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+				},
+				TranslateDockerMetrics: false,
 			},
-			TranslateDockerMetrics: false,
-		})
-
-	p9 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-trace-id-attribute")]
-
-	assert.Equal(t, p9,
-		&Config{
-			AddCloudNamespace:           true,
-			TranslateAttributes:         true,
-			TranslateTelegrafAttributes: true,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            false,
-				Separator:          ".",
-				Include:            []string{},
-				Exclude:            []string{},
-				SquashSingleValues: false,
+		},
+		{
+			processor: "enabled-trace-id-attribute",
+			config: &Config{
+				AddCloudNamespace:           true,
+				TranslateAttributes:         true,
+				TranslateTelegrafAttributes: true,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            false,
+					Separator:          ".",
+					Include:            []string{},
+					Exclude:            []string{},
+					SquashSingleValues: false,
+				},
+				AggregateAttributes: []aggregationPair{},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{true, TraceIDAttributeName},
+				},
+				TranslateDockerMetrics: false,
 			},
-			AggregateAttributes: []aggregationPair{},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{true, TraceIDAttributeName},
+		},
+		{
+			processor: "enabled-docker-metrics-translation",
+			config: &Config{
+				AddCloudNamespace:           true,
+				TranslateAttributes:         true,
+				TranslateTelegrafAttributes: true,
+				NestAttributes: &NestingProcessorConfig{
+					Enabled:            false,
+					Separator:          ".",
+					Include:            []string{},
+					Exclude:            []string{},
+					SquashSingleValues: false,
+				},
+				AggregateAttributes: []aggregationPair{},
+				LogFieldsAttributes: &logFieldAttributesConfig{
+					SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
+					SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
+					SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
+					TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
+				},
+				TranslateDockerMetrics: true,
 			},
-			TranslateDockerMetrics: false,
-		})
-
-	p10 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-docker-metrics-translation")]
-
-	assert.Equal(t, p10,
-		&Config{
-			AddCloudNamespace:           true,
-			TranslateAttributes:         true,
-			TranslateTelegrafAttributes: true,
-			NestAttributes: &NestingProcessorConfig{
-				Enabled:            false,
-				Separator:          ".",
-				Include:            []string{},
-				Exclude:            []string{},
-				SquashSingleValues: false,
-			},
-			AggregateAttributes: []aggregationPair{},
-			LogFieldsAttributes: &logFieldAttributesConfig{
-				SeverityNumberAttribute: &logFieldAttribute{false, SeverityNumberAttributeName},
-				SeverityTextAttribute:   &logFieldAttribute{false, SeverityTextAttributeName},
-				SpanIDAttribute:         &logFieldAttribute{false, SpanIDAttributeName},
-				TraceIDAttribute:        &logFieldAttribute{false, TraceIDAttributeName},
-			},
-			TranslateDockerMetrics: true,
-		})
+		},
+	} {
+		assert.Equal(t, cfg.Processors[component.NewIDWithName(metadata.Type, tt.processor)], tt.config)
+	}
 }

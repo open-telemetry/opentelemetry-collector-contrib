@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [sumo] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fsumologic%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fsumologic) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fsumologic%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fsumologic) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@aboguszewski-sumo](https://www.github.com/aboguszewski-sumo), [@astencel-sumo](https://www.github.com/astencel-sumo), [@sumo-drosiek](https://www.github.com/sumo-drosiek) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
@@ -267,7 +268,7 @@ It is not possible to predict, what will be the result. It will have the followi
 }
 ```
 
-However, it is not possible to know a priori if the value under key `c` will be equal to `d` or `e`.
+However, it is not possible to know beforehand if the value under key `c` will be equal to `d` or `e`.
 Refer to [GitHube issue][issue] for details and discussion.
 
 [issue]: https://github.com/SumoLogic/sumologic-otel-collector/issues/1263

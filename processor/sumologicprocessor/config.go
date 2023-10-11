@@ -39,13 +39,19 @@ const (
 	defaultAddTraceIDAttribute        = false
 )
 
-var (
-	defaultAggregateAttributes = []aggregationPair{}
-	// Ensure the Config struct satisfies the config.Processor interface.
-	_                     component.Config = (*Config)(nil)
-	defaultNestingInclude                  = []string{}
-	defaultNestingExclude                  = []string{}
-)
+var _ component.Config = (*Config)(nil)
+
+func defaultNestingInclude() []string {
+	return []string{}
+}
+
+func defaultNestingExclude() []string {
+	return []string{}
+}
+
+func defaultAggregateAttributes() []aggregationPair {
+	return []aggregationPair{}
+}
 
 func createDefaultConfig() component.Config {
 	return &Config{
@@ -55,11 +61,11 @@ func createDefaultConfig() component.Config {
 		NestAttributes: &NestingProcessorConfig{
 			Separator:          defaultNestingSeparator,
 			Enabled:            defaultNestingEnabled,
-			Include:            defaultNestingInclude,
-			Exclude:            defaultNestingExclude,
+			Include:            defaultNestingInclude(),
+			Exclude:            defaultNestingExclude(),
 			SquashSingleValues: defaultNestingSquashSingleValues,
 		},
-		AggregateAttributes: defaultAggregateAttributes,
+		AggregateAttributes: defaultAggregateAttributes(),
 		LogFieldsAttributes: &logFieldAttributesConfig{
 			SeverityNumberAttribute: &logFieldAttribute{defaultAddSeverityNumberAttribute, SeverityNumberAttributeName},
 			SeverityTextAttribute:   &logFieldAttribute{defaultAddSeverityTextAttribute, SeverityTextAttributeName},
