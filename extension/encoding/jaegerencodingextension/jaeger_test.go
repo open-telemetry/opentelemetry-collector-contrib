@@ -74,12 +74,3 @@ func TestJaegerProtoCompatible(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, trace.SpanCount(), trace1.SpanCount())
 }
-
-func Test0(t *testing.T) {
-	arr := make([]int, 0, 3)
-	arr = append(arr, 0)
-	arr = append(arr, 1)
-	arr = append(arr, 2)
-	arr = append(arr, 3)
-
-}

@@ -75,14 +75,23 @@ type writeOnlyLengthFieldBuffer struct {
 	buff *bytes.Buffer
 }
 
-func newWritableBuffer() (*writeOnlyLengthFieldBuffer, error) {
-	buff := &bytes.Buffer{}
+func newWritableBuffer(initCap int) (*writeOnlyLengthFieldBuffer, error) {
+	arr := make([]byte, 0, initCap)
+	buff := bytes.NewBuffer(arr)
 	// write head to buff first.
 	n, err := buff.Write(header)
 	if n != len(header) || err != nil {
 		return nil, errors.New("unable to create buffer")
 	}
 	return &writeOnlyLengthFieldBuffer{buff: buff}, nil
+}
+
+func calculateCap(bts [][]byte) int {
+	c := 4
+	for _, bt := range bts {
+		c = len(bt) + 4
+	}
+	return c
 }
 
 // writeBytes write a byte array to the buffer.

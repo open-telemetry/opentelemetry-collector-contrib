@@ -48,7 +48,7 @@ func (j jaegerProtobufTrace) MarshalTraces(traces ptrace.Traces) ([]byte, error)
 		arr = append(arr, bts)
 	}
 
-	buff, err := newWritableBuffer()
+	buff, err := newWritableBuffer(calculateCap(arr))
 	if err != nil {
 		return nil, err
 	}

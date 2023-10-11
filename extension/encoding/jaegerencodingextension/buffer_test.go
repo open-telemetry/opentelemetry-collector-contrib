@@ -11,7 +11,7 @@ import (
 
 func TestBufferInt(t *testing.T) {
 	for n := 0; n < 1024*1024; n++ {
-		buff, err := newWritableBuffer()
+		buff, err := newWritableBuffer(0)
 		require.NoError(t, err)
 		require.NoError(t, buff.writeInt(n))
 		bts := buff.bytes()
@@ -29,7 +29,7 @@ func TestBuffSlices(t *testing.T) {
 		v := fmt.Sprintf("OpenTelemetry Collector %d", n)
 		arr = append(arr, v)
 	}
-	writableBuff, err := newWritableBuffer()
+	writableBuff, err := newWritableBuffer(0)
 	require.NoError(t, err)
 	for _, s := range arr {
 		require.NoError(t, writableBuff.writeBytes([]byte(s)))
