@@ -9,8 +9,10 @@ import (
 	"errors"
 )
 
-var invalidBuff = errors.New("invalid buffer")
-var header = []byte{'o', 't', 'l', 'p'}
+var (
+	errInvalidBuff = errors.New("invalid buffer")
+	header         = []byte{'o', 't', 'l', 'p'}
+)
 
 type readonlyLengthFieldBuffer struct {
 	buff      *bytes.Buffer
@@ -45,12 +47,12 @@ func (b *readonlyLengthFieldBuffer) slices() ([][]byte, error) {
 		}
 		size, err := b.readInt()
 		if err != nil {
-			return nil, invalidBuff
+			return nil, errInvalidBuff
 		}
 		bts := make([]byte, size)
 		n, err := b.buff.Read(bts)
 		if n != size {
-			return nil, invalidBuff
+			return nil, errInvalidBuff
 		}
 		if err != nil {
 			return nil, err
@@ -103,7 +105,7 @@ func (b *writeOnlyLengthFieldBuffer) writeBytes(bts []byte) error {
 	}
 	n, err0 := b.buff.Write(bts)
 	if n != length {
-		return invalidBuff
+		return errInvalidBuff
 	}
 	if err0 != nil {
 		return err0

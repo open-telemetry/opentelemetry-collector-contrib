@@ -5,8 +5,9 @@ package jaegerencodingextension // import "github.com/open-telemetry/opentelemet
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestBufferInt(t *testing.T) {
