@@ -1,9 +1,0 @@
-type: parquet
-
-status:
-  class: exporter
-  stability:
-    deprecated: [traces, metrics, logs]
-  distributions: [contrib]
-  codeowners:
-    active: [atoulme]
