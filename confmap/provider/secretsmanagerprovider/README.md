@@ -6,6 +6,6 @@ Collector the ability to read data stored in AWS Secrets Manager.
 - Just use the placeholders with the following pattern `${secretsmanager:<arn or name>}`
 - Make sure you have the `secretsmanager:GetSecretValue` in the OTEL Collector Role
 
-Prerequistes:
+Prerequisites:
 - Need to setup access keys from IAM console (aws_access_key_id and aws_secret_access_key) with permission to access Amazon Secrets Manager
 - For details, can take a look at https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/
