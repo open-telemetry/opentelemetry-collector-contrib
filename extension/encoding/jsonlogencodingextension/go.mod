@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonencodingextension
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
 
 go 1.20
 

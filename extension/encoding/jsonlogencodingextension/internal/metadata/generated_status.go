@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type               = "jsonencoding"
+	Type               = "json_log_encoding"
 	ExtensionStability = component.StabilityLevelDevelopment
 )

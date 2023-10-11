@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package jsonencodingextension
+package jsonlogencodingextension
 
 import (
 	"testing"
@@ -9,12 +9,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestMarshalUnmarshal(t *testing.T) {
 	t.Parallel()
 	e := &jsonExtension{}
-	json := `{"example": "example valid json to test that the unmarshaler is correctly returning a plog value"}`
+	json := `{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}`
 	ld, err := e.UnmarshalLogs([]byte(json))
 	assert.NoError(t, err)
 	assert.Equal(t, 1, ld.LogRecordCount())
@@ -30,5 +31,19 @@ func TestMarshalUnmarshal(t *testing.T) {
 	buf, err := e.MarshalLogs(ld)
 	assert.NoError(t, err)
 	assert.True(t, len(buf) > 0)
-	assert.Equal(t, string(buf), `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"kvlistValue":{"values":[{"key":"example","value":{"stringValue":"example valid json to test that the unmarshaler is correctly returning a plog value"}}]}},"traceId":"","spanId":""}]}]}]}`)
+	assert.Equal(t, json, string(buf))
+}
+
+func TestInvalidMarshal(t *testing.T) {
+	e := &jsonExtension{}
+	p := plog.NewLogs()
+	p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("NOT A MAP")
+	_, err := e.MarshalLogs(p)
+	assert.ErrorContains(t, err, "Marshal: Expected 'Map' found 'Str'")
+}
+
+func TestInvalidUnmarshal(t *testing.T) {
+	e := &jsonExtension{}
+	_, err := e.UnmarshalLogs([]byte("NOT A JSON"))
+	assert.ErrorContains(t, err, "ReadMapCB: expect { or n, but found N")
 }

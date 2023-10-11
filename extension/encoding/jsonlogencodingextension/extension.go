@@ -1,10 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package jsonencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonencodingextension"
+package jsonlogencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension"
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
@@ -13,15 +15,23 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var _ plog.Unmarshaler = &jsonExtension{}
-var _ plog.Marshaler = &jsonExtension{}
-
 type jsonExtension struct {
 }
 
 func (e *jsonExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
-	marshaler := &plog.JSONMarshaler{}
-	return marshaler.MarshalLogs(ld)
+	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+	var raw map[string]any
+	switch logRecord.Type() {
+	case pcommon.ValueTypeMap:
+		raw = logRecord.Map().AsRaw()
+	default:
+		return nil, errors.New(fmt.Sprintf("Marshal: Expected 'Map' found '%v'", logRecord.Type().String()))
+	}
+	if buf, err := jsoniter.Marshal(raw); err != nil {
+		return nil, err
+	} else {
+		return buf, nil
+	}
 }
 
 func (e *jsonExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
