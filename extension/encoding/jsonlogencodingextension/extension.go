@@ -5,7 +5,6 @@ package jsonlogencodingextension // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -25,13 +24,14 @@ func (e *jsonExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	case pcommon.ValueTypeMap:
 		raw = logRecord.Map().AsRaw()
 	default:
-		return nil, errors.New(fmt.Sprintf("Marshal: Expected 'Map' found '%v'", logRecord.Type().String()))
+		return nil, fmt.Errorf("Marshal: Expected 'Map' found '%v'", logRecord.Type().String())
 	}
-	if buf, err := jsoniter.Marshal(raw); err != nil {
+	buf, err := jsoniter.Marshal(raw)
+	if err != nil {
 		return nil, err
-	} else {
-		return buf, nil
 	}
+	return buf, nil
+
 }
 
 func (e *jsonExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
