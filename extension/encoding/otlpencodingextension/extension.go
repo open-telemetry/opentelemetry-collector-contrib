@@ -18,13 +18,15 @@ const (
 	otlpJSON  = "otlp_json"
 )
 
-var _ component.Component = (*otlpExtension)(nil)
-var _ ptrace.Marshaler = (*otlpExtension)(nil)
-var _ ptrace.Unmarshaler = (*otlpExtension)(nil)
-var _ plog.Marshaler = (*otlpExtension)(nil)
-var _ plog.Unmarshaler = (*otlpExtension)(nil)
-var _ pmetric.Marshaler = (*otlpExtension)(nil)
-var _ pmetric.Unmarshaler = (*otlpExtension)(nil)
+var (
+	_ component.Component = (*otlpExtension)(nil)
+	_ ptrace.Marshaler    = (*otlpExtension)(nil)
+	_ ptrace.Unmarshaler  = (*otlpExtension)(nil)
+	_ plog.Marshaler      = (*otlpExtension)(nil)
+	_ plog.Unmarshaler    = (*otlpExtension)(nil)
+	_ pmetric.Marshaler   = (*otlpExtension)(nil)
+	_ pmetric.Unmarshaler = (*otlpExtension)(nil)
+)
 
 type otlpExtension struct {
 	config            *Config

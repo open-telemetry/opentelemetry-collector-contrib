@@ -23,8 +23,10 @@ const (
 	v2                     = "v2"
 )
 
-var _ ptrace.Marshaler = (*zipkinExtension)(nil)
-var _ ptrace.Unmarshaler = (*zipkinExtension)(nil)
+var (
+	_ ptrace.Marshaler   = (*zipkinExtension)(nil)
+	_ ptrace.Unmarshaler = (*zipkinExtension)(nil)
+)
 
 type zipkinExtension struct {
 	config      *Config
