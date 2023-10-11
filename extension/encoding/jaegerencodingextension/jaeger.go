@@ -39,7 +39,7 @@ func (j jaegerProtobufTrace) MarshalTraces(traces ptrace.Traces) ([]byte, error)
 		return nil, err
 	}
 
-	arr := make([][]byte, len(batches))
+	arr := make([][]byte, 0)
 	for _, batch := range batches {
 		bts, e := batch.Marshal()
 		if e != nil {
