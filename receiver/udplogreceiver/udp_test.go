@@ -28,6 +28,12 @@ func TestUdp(t *testing.T) {
 	testUDP(t, testdataConfigYaml())
 }
 
+func TestAsyncUdp(t *testing.T) {
+	cfg := testdataConfigYaml()
+	cfg.AsyncConcurrentMode = true
+	testUDP(t, cfg)
+}
+
 func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	numLogs := 5
 
