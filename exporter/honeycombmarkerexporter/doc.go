@@ -3,5 +3,5 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package honeycombmarkerexporter exports marker data to Honeycomb.
+// Package honeycombmarkerexporter exports Marker data to Honeycomb.
 package honeycombmarkerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"

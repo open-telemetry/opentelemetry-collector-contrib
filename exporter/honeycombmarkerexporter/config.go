@@ -23,15 +23,15 @@ type Config struct {
 	APIURL string `mapstructure:"api_url"`
 
 	// Markers is the list of markers to create
-	Markers []marker `mapstructure:"markers"`
+	Markers []Marker `mapstructure:"markers"`
 }
 
-type marker struct {
-	// MarkerType defines the type of marker.  Markers with the same type appear in Honeycomb with the same color
-	MarkerType string `mapstructure:"type"`
+type Marker struct {
+	// Type defines the type of Marker.  Markers with the same type appear in Honeycomb with the same color
+	Type string `mapstructure:"type"`
 
-	// MarkerColor is the color of the marker. Will only be used if the MarkerType does not already exist.
-	MarkerColor string `mapstructure:"color"`
+	// Color is the color of the Marker. Will only be used if the Type does not already exist.
+	Color string `mapstructure:"color"`
 
 	// MessageField is the attribute that will be used as the message.
 	// If necessary the value will be converted to a string.
@@ -67,7 +67,7 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Markers) != 0 {
 		for _, m := range cfg.Markers {
 			if len(m.Rules.ResourceConditions) == 0 && len(m.Rules.LogConditions) == 0 {
-				return fmt.Errorf("no rules supplied for marker %v", m)
+				return fmt.Errorf("no rules supplied for Marker %v", m)
 			}
 
 			_, err := filterottl.NewBoolExprForResource(m.Rules.ResourceConditions, filterottl.StandardResourceFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})

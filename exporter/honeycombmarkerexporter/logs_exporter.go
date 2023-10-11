@@ -12,7 +12,7 @@ import (
 
 type honeycombLogsExporter struct {
 	logger  *zap.Logger
-	markers []marker
+	markers []Marker
 }
 
 func newLogsExporter(logger *zap.Logger, config *Config) *honeycombLogsExporter {

@@ -30,9 +30,9 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				APIKey: "test-apikey",
 				APIURL: "https://api.testhost.io",
-				Markers: []marker{
+				Markers: []Marker{
 					{
-						MarkerType:   "fooType",
+						Type:         "fooType",
 						MessageField: "test message",
 						URLField:     "https://api.testhost.io",
 						Rules: Rules{
@@ -52,9 +52,9 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				APIKey: "test-apikey",
 				APIURL: "https://api.testhost.io",
-				Markers: []marker{
+				Markers: []Marker{
 					{
-						MarkerColor:  "green",
+						Color:        "green",
 						MessageField: "test message",
 						URLField:     "https://api.testhost.io",
 						Rules: Rules{

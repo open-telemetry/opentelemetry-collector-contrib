@@ -25,7 +25,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		APIKey:  "",
 		APIURL:  "api.honeycomb.io:443",
-		Markers: []marker{},
+		Markers: []Marker{},
 	}
 }
 
