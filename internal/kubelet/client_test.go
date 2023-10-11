@@ -154,37 +154,59 @@ func TestSAClientBadTLS(t *testing.T) {
 }
 
 func TestNewKubeConfigClient(t *testing.T) {
-	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		// Check if call is authenticated using provided kubeconfig
-		require.Equal(t, req.Header.Get("Authorization"), "Bearer my-token")
-		require.Equal(t, "/api/v1/nodes/nodename/proxy/", req.URL.EscapedPath())
-		// Send response to be tested
-		_, err := rw.Write([]byte(`OK`))
-		require.NoError(t, err)
-	}))
-	server.StartTLS()
-	defer server.Close()
-
-	kubeConfig, err := clientcmd.LoadFromFile("testdata/kubeconfig")
-	require.NoError(t, err)
-	kubeConfig.Clusters["my-cluster"].Server = "https://" + server.Listener.Addr().String()
-	tempKubeConfig := filepath.Join(t.TempDir(), "kubeconfig")
-	require.NoError(t, clientcmd.WriteToFile(*kubeConfig, tempKubeConfig))
-	t.Setenv("KUBECONFIG", tempKubeConfig)
-
-	p, err := NewClientProvider("nodename", &ClientConfig{
-		APIConfig: k8sconfig.APIConfig{
-			AuthType: k8sconfig.AuthTypeKubeConfig,
+	tests := []struct {
+		name    string
+		cluster string
+		context string
+	}{
+		{
+			name:    "current context",
+			cluster: "my-cluster-1",
+			context: "",
 		},
-		InsecureSkipVerify: true,
-	}, zap.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, p)
-	client, err := p.BuildClient()
-	require.NoError(t, err)
-	resp, err := client.Get("/")
-	require.NoError(t, err)
-	require.Equal(t, []byte(`OK`), resp)
+		{
+			name:    "override context",
+			cluster: "my-cluster-2",
+			context: "my-context-2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				// Check if call is authenticated using provided kubeconfig
+				require.Equal(t, req.Header.Get("Authorization"), "Bearer my-token")
+				require.Equal(t, "/api/v1/nodes/nodename/proxy/", req.URL.EscapedPath())
+				// Send response to be tested
+				_, err := rw.Write([]byte(`OK`))
+				require.NoError(t, err)
+			}))
+			server.StartTLS()
+			defer server.Close()
+
+			kubeConfig, err := clientcmd.LoadFromFile("testdata/kubeconfig")
+			require.NoError(t, err)
+			kubeConfig.Clusters[tt.cluster].Server = "https://" + server.Listener.Addr().String()
+			tempKubeConfig := filepath.Join(t.TempDir(), "kubeconfig")
+			require.NoError(t, clientcmd.WriteToFile(*kubeConfig, tempKubeConfig))
+			t.Setenv("KUBECONFIG", tempKubeConfig)
+
+			p, err := NewClientProvider("nodename", &ClientConfig{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType: k8sconfig.AuthTypeKubeConfig,
+					Context:  tt.context,
+				},
+				InsecureSkipVerify: true,
+			}, zap.NewNop())
+			require.NoError(t, err)
+			require.NotNil(t, p)
+			client, err := p.BuildClient()
+			require.NoError(t, err)
+			resp, err := client.Get("/")
+			require.NoError(t, err)
+			require.Equal(t, []byte(`OK`), resp)
+		})
+	}
 }
 
 func TestBuildEndpoint(t *testing.T) {

@@ -72,7 +72,6 @@ exporter/lokiexporter/                                                  @open-te
 exporter/mezmoexporter/                                                 @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/opencensusexporter/                                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 exporter/opensearchexporter/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @MitchellGale @MaxKsyunz @YANG-DB
-exporter/parquetexporter/                                               @open-telemetry/collector-contrib-approvers @atoulme
 exporter/prometheusexporter/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9
 exporter/prometheusremotewriteexporter/                                 @open-telemetry/collector-contrib-approvers @Aneurysm9 @rapphil
 exporter/pulsarexporter/                                                @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
@@ -119,6 +118,7 @@ internal/docker/                                                        @open-te
 internal/filter/                                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/k8sconfig/                                                     @open-telemetry/collector-contrib-approvers @dmitryax
 internal/k8stest/                                                       @open-telemetry/collector-contrib-approvers @crobert-1
+internal/kafka/                                                         @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 internal/kubelet/                                                       @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 internal/sharedcomponent/                                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers

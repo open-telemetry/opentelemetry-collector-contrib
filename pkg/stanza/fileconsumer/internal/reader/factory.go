@@ -59,7 +59,7 @@ func (f *Factory) build(file *os.File, m *Metadata, lineSplitFunc bufio.SplitFun
 		Config:        f.Config,
 		Metadata:      m,
 		file:          file,
-		FileName:      file.Name(),
+		fileName:      file.Name(),
 		logger:        f.SugaredLogger.With("path", file.Name()),
 		decoder:       decode.New(f.Encoding),
 		lineSplitFunc: lineSplitFunc,
@@ -84,12 +84,12 @@ func (f *Factory) build(file *os.File, m *Metadata, lineSplitFunc bufio.SplitFun
 	}
 
 	// Resolve file name and path attributes
-	resolved := r.FileName
+	resolved := r.fileName
 
 	// Dirty solution, waiting for this permanent fix https://github.com/golang/go/issues/39786
 	// EvalSymlinks on windows is partially working depending on the way you use Symlinks and Junctions
 	if runtime.GOOS != "windows" {
-		resolved, err = filepath.EvalSymlinks(r.FileName)
+		resolved, err = filepath.EvalSymlinks(r.fileName)
 		if err != nil {
 			f.Errorf("resolve symlinks: %w", err)
 		}
@@ -100,12 +100,12 @@ func (f *Factory) build(file *os.File, m *Metadata, lineSplitFunc bufio.SplitFun
 	}
 
 	if f.Config.IncludeFileName {
-		r.FileAttributes[attrs.LogFileName] = filepath.Base(r.FileName)
+		r.FileAttributes[attrs.LogFileName] = filepath.Base(r.fileName)
 	} else if r.FileAttributes[attrs.LogFileName] != nil {
 		delete(r.FileAttributes, attrs.LogFileName)
 	}
 	if f.Config.IncludeFilePath {
-		r.FileAttributes[attrs.LogFilePath] = r.FileName
+		r.FileAttributes[attrs.LogFilePath] = r.fileName
 	} else if r.FileAttributes[attrs.LogFilePath] != nil {
 		delete(r.FileAttributes, attrs.LogFilePath)
 	}

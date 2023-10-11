@@ -10,6 +10,8 @@ import (
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 // Config defines configuration for Kafka exporter.
@@ -36,7 +38,7 @@ type Config struct {
 	Producer Producer `mapstructure:"producer"`
 
 	// Authentication defines used authentication mechanism.
-	Authentication Authentication `mapstructure:"auth"`
+	Authentication kafka.Authentication `mapstructure:"auth"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.
@@ -103,7 +105,7 @@ func (cfg *Config) Validate() error {
 	return validateSASLConfig(cfg.Authentication.SASL)
 }
 
-func validateSASLConfig(c *SASLConfig) error {
+func validateSASLConfig(c *kafka.SASLConfig) error {
 	if c == nil {
 		return nil
 	}
