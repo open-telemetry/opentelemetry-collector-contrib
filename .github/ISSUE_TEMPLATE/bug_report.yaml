@@ -65,7 +65,6 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
-      - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
