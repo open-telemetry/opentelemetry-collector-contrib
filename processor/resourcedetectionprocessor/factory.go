@@ -5,7 +5,6 @@ package resourcedetectionprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -179,8 +178,10 @@ func (f *factory) getResourceDetectionProcessor(
 		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
 	}
 
-	if slices.Contains(oCfg.Detectors, eks.TypeStr) && oCfg.HTTPClientSettings.Timeout == defaultTimeout {
-		oCfg.HTTPClientSettings.Timeout = eksDefaultTimeout
+	for _, detector := range oCfg.Detectors {
+		if detector == eks.TypeStr && oCfg.HTTPClientSettings.Timeout == defaultTimeout {
+			oCfg.HTTPClientSettings.Timeout = eksDefaultTimeout
+		}
 	}
 
 	provider, err := f.getResourceProvider(params, oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
