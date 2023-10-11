@@ -1,4 +1,4 @@
-type: jsonencoding
+type: json_log_encoding
 
 status:
   class: extension
