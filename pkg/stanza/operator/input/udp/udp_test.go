@@ -240,3 +240,55 @@ func BenchmarkUDPInput(b *testing.B) {
 
 	defer close(done)
 }
+
+func udpInputAsyncTest(input []byte, expected []string) func(t *testing.T) {
+	return func(t *testing.T) {
+		cfg := NewConfigWithID("test_input")
+		cfg.ListenAddress = ":0"
+		cfg.AsyncConcurrentMode = true
+		cfg.MaxGracefulShutdownTimeInMS = 10
+
+		op, err := cfg.Build(testutil.Logger(t))
+		require.NoError(t, err)
+
+		mockOutput := testutil.Operator{}
+		udpInput, ok := op.(*Input)
+		require.True(t, ok)
+
+		udpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+
+		entryChan := make(chan *entry.Entry, 1)
+		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+			entryChan <- args.Get(1).(*entry.Entry)
+		}).Return(nil)
+
+		err = udpInput.Start(testutil.NewMockPersister("test"))
+		require.NoError(t, err)
+		defer func() {
+			require.NoError(t, udpInput.Stop(), "expected to stop udp input operator without error")
+		}()
+
+		conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		_, err = conn.Write(input)
+		require.NoError(t, err)
+
+		for _, expectedBody := range expected {
+			select {
+			case entry := <-entryChan:
+				require.Equal(t, expectedBody, entry.Body)
+			case <-time.After(time.Second):
+				require.FailNow(t, "Timed out waiting for message to be written")
+			}
+		}
+
+		select {
+		case entry := <-entryChan:
+			require.FailNow(t, "Unexpected entry: %s", entry)
+		case <-time.After(100 * time.Millisecond):
+			return
+		}
+	}
+}

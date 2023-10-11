@@ -25,10 +25,19 @@ import (
 )
 
 func TestUdp(t *testing.T) {
-	testUDP(t, testdataConfigYaml())
+	listenAddress := "127.0.0.1:29018"
+	testUDP(t, testdataConfigYaml(listenAddress), listenAddress)
 }
 
-func testUDP(t *testing.T, cfg *UDPLogConfig) {
+func TestUdpAsync(t *testing.T) {
+	listenAddress := "127.0.0.1:29019"
+	cfg := testdataConfigYaml(listenAddress)
+	cfg.InputConfig.AsyncConcurrentMode = true
+	cfg.InputConfig.MaxGracefulShutdownTimeInMS = 10
+	testUDP(t, cfg, listenAddress)
+}
+
+func testUDP(t *testing.T, cfg *UDPLogConfig, listenAddress string) {
 	numLogs := 5
 
 	f := NewFactory()
@@ -38,7 +47,7 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	conn, err = net.Dial("udp", "127.0.0.1:29018")
+	conn, err = net.Dial("udp", listenAddress)
 	require.NoError(t, err)
 
 	for i := 0; i < numLogs; i++ {
@@ -63,8 +72,8 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	}
 
 	for i := 0; i < numLogs; i++ {
-		assert.Contains(t, expectedLogs, logs.At(i).Body().Str())
-	}
+        assert.Contains(t, expectedLogs, logs.At(i).Body().Str())
+    }
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -78,17 +87,17 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.NoError(t, component.ValidateConfig(cfg))
-	assert.Equal(t, testdataConfigYaml(), cfg)
+	assert.Equal(t, testdataConfigYaml("127.0.0.1:29018"), cfg)
 }
 
-func testdataConfigYaml() *UDPLogConfig {
+func testdataConfigYaml(listenAddress string) *UDPLogConfig {
 	return &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{},
 		},
 		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
-			c.ListenAddress = "127.0.0.1:29018"
+			c.ListenAddress = listenAddress
 			return *c
 		}(),
 	}
