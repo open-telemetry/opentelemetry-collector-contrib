@@ -8,6 +8,16 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/cmd/mdatagen"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/opampsupervisor"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/cmd/otelcontribcol"
     schedule:
       interval: "weekly"
@@ -218,11 +228,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/exporter/parquetexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/exporter/prometheusexporter"
     schedule:
       interval: "weekly"
@@ -264,11 +269,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/sumologicexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/syslogexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
