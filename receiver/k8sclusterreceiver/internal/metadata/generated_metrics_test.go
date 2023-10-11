@@ -49,10 +49,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.configSet == testSetAll || test.configSet == testSetNone {
-				assert.Equal(t, "[WARNING] `opencensus.resourcetype` should not be configured: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -261,7 +257,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
-			rb.SetOpencensusResourcetype("opencensus.resourcetype-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
 			res := rb.Emit()
