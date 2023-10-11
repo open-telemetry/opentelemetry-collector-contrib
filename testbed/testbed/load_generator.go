@@ -198,20 +198,23 @@ func (lg *LoadGenerator) generateTrace() {
 	}
 
 	for {
-		if err := traceSender.ConsumeTraces(context.Background(), traceData); err != nil {
-			if consumererror.IsPermanent(err) {
-				if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-					lg.prevErr = err
-					log.Printf("Cannot send traces: %v", err)
-				}
-				lg.permanentErrors.Add(uint64(traceData.SpanCount()))
-			} else {
-				lg.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
-				continue
-			}
-		} else {
+		if err := traceSender.ConsumeTraces(context.Background(), traceData); err == nil {
 			lg.prevErr = nil
+			break
 		}
+		
+		if !consumererror.IsPermanent(err) {
+			lg.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
+			continue
+		}
+
+		lg.permanentErrors.Add(uint64(traceData.SpanCount()))
+						
+		if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+			lg.prevErr = err
+			log.Printf("Cannot send traces: %v", err)
+		}
+
 		break
 	}
 }
