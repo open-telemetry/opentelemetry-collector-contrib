@@ -31,7 +31,9 @@ The following settings can be optionally configured:
   - `otlp_json`:  payload is JSON serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs. 
   - The following encodings are valid *only* for **traces**.
     - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
-    - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.\
+    - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
+    - `zipkin_proto`: the payload is serialized to Zipkin v2 proto Span.
+    - `zipkin_json`: the payload is serialized to Zipkin v2 JSON Span.
   - The following encodings are valid *only* for **logs**.
     - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
 - `auth`
@@ -47,11 +49,11 @@ The following settings can be optionally configured:
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
   - `tls`
     - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `cert_file`: path to the TLS cert to use for TLS required connections. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `key_file`: path to the TLS key to use for TLS required connections. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `insecure` (default = false): Disable verifying the server's certificate chain and host 
       name (`InsecureSkipVerify` in the tls config)
     - `server_name_override`: ServerName indicates the name of the server requested by the client

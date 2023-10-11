@@ -211,7 +211,7 @@ Imagine that you wish to configure the processor to implement the following rule
 
 1. **Rule 1:** Not all teams are ready to move to tail sampling. Therefore, sample all traces that are not from the team `team_a`.
 
-1. **Rule 2:** Sample only 1 percent of Readiness/liveness probes
+1. **Rule 2:** Sample only 0.1 percent of Readiness/liveness probes
 
 1. **Rule 3:** `service-1` has a noisy endpoint `/v1/name/{id}`. Sample only 1 percent of such traces.
 
