@@ -110,7 +110,7 @@ func eventToTraces(event interface{}, logger *zap.Logger) ptrace.Traces {
 		}
 		if e.WorkflowRun.Status == "completed" {
 			createResourceAttributes(runResource, e, logger)
-			createRootParentSpan(resourceSpans, e, traceID, logger)
+			createRootSpan(resourceSpans, e, traceID, logger)
 		}
 	default:
 		logger.Error("unknown event type, dropping payload")
@@ -125,7 +125,7 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 
-	parentSpanID, _ := generateRootSpanID(job.RunID, job.RunAttempt)
+	parentSpanID, _ := generateParentSpanID(job.RunID, job.RunAttempt)
 	span.SetParentSpanID(parentSpanID)
 
 	span.SetSpanID(generateSpanID())
@@ -205,12 +205,12 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, logg
 	}
 }
 
-func createRootParentSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent, traceID pcommon.TraceID, logger *zap.Logger) (pcommon.SpanID, error) {
+func createRootSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent, traceID pcommon.TraceID, logger *zap.Logger) (pcommon.SpanID, error) {
 	logger.Info("Creating root parent span", zap.String("name", event.WorkflowRun.Name))
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 
-	rootSpanID, err := generateRootSpanID(event.WorkflowRun.ID, event.WorkflowRun.RunAttempt)
+	rootSpanID, err := generateParentSpanID(event.WorkflowRun.ID, event.WorkflowRun.RunAttempt)
 	if err != nil {
 		logger.Error("Failed to generate root span ID", zap.Error(err))
 		return pcommon.SpanID{}, err
@@ -280,7 +280,7 @@ func generateTraceID(runID int64, runAttempt int) (pcommon.TraceID, error) {
 	return traceID, nil
 }
 
-func generateRootSpanID(runID int64, runAttempt int) (pcommon.SpanID, error) {
+func generateParentSpanID(runID int64, runAttempt int) (pcommon.SpanID, error) {
 	input := fmt.Sprintf("%d%ds", runID, runAttempt)
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
