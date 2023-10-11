@@ -95,13 +95,13 @@ func testWithTracingGoldenDataset(
 
 func TestSporadicGoldenDataset(t *testing.T) {
 	testCases := []struct {
-		decision int
+		decisionFunc func() error
 	}{
 		{
-			decision: 1,
+			decisionFunc: testbed.RandomNonPermanentError,
 		},
 		{
-			decision: 2,
+			decisionFunc: testbed.RandomPermanentError,
 		},
 	}
 	for _, tt := range testCases {
@@ -135,7 +135,7 @@ func TestSporadicGoldenDataset(t *testing.T) {
 			validator,
 			correctnessResults,
 			testbed.WithSkipResults(),
-			testbed.WithDecision(tt.decision),
+			testbed.WithDecisionFunc(tt.decisionFunc),
 		)
 		defer tc.Stop()
 		tc.StartBackend()

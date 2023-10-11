@@ -25,6 +25,8 @@ import (
 var errNonPermanent = errors.New("non permanent error")
 var errPermanent = errors.New("permanent error")
 
+type decisionFunc func() error
+
 // MockBackend is a backend that allows receiving the data locally.
 type MockBackend struct {
 	// Metric and trace consumers
@@ -55,23 +57,27 @@ type MockBackend struct {
 	DroppedLogs    []plog.Logs
 
 	// decision to return permanent/non-permanent errors
-	decision int
+	decision decisionFunc
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
-func NewMockBackend(logFilePath string, receiver DataReceiver, decision int) *MockBackend {
+func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 	mb := &MockBackend{
 		logFilePath: logFilePath,
 		receiver:    receiver,
 		tc:          &MockTraceConsumer{},
 		mc:          &MockMetricConsumer{},
 		lc:          &MockLogConsumer{},
-		decision:    decision,
+		decision:    func() error { return nil },
 	}
 	mb.tc.backend = mb
 	mb.mc.backend = mb
 	mb.lc.backend = mb
 	return mb
+}
+
+func (mb *MockBackend) WithDecisionFunc(decision decisionFunc) {
+	mb.decision = decision
 }
 
 // Start a backend.
@@ -177,21 +183,13 @@ func (tc *MockTraceConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	switch tc.backend.decision {
-	case 1:
-		if err := randomNonPermanentError(); err != nil {
-			return err
+	if err := tc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && tc.backend.isRecording {
+			tc.backend.DroppedTraces = append(tc.backend.DroppedTraces, td)
 		}
-	case 2:
-		if err := randomPermanentError(); err != nil {
-			if tc.backend.isRecording {
-				tc.backend.DroppedTraces = append(tc.backend.DroppedTraces, td)
-			}
-			return err
-		}
-	case 3:
-		// TODO: Return `server is busy` and put `time.Sleep`
+		return err
 	}
+
 	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
@@ -239,21 +237,13 @@ func (mc *MockMetricConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	switch mc.backend.decision {
-	case 1:
-		if err := randomNonPermanentError(); err != nil {
-			return err
+	if err := mc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && mc.backend.isRecording {
+			mc.backend.DroppedMetrics = append(mc.backend.DroppedMetrics, md)
 		}
-	case 2:
-		if err := randomPermanentError(); err != nil {
-			if mc.backend.isRecording {
-				mc.backend.DroppedMetrics = append(mc.backend.DroppedMetrics, md)
-			}
-			return err
-		}
-	case 3:
-		// TODO: Return `server is busy` and put `time.Sleep`
+		return err
 	}
+
 	mc.numMetricsReceived.Add(uint64(md.DataPointCount()))
 	mc.backend.ConsumeMetric(md)
 	return nil
@@ -279,21 +269,13 @@ func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	switch lc.backend.decision {
-	case 1:
-		if err := randomNonPermanentError(); err != nil {
-			return err
+	if err := lc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && lc.backend.isRecording {
+			lc.backend.DroppedLogs = append(lc.backend.DroppedLogs, ld)
 		}
-	case 2:
-		if err := randomPermanentError(); err != nil {
-			if lc.backend.isRecording {
-				lc.backend.DroppedLogs = append(lc.backend.DroppedLogs, ld)
-			}
-			return err
-		}
-	case 3:
-		// TODO: Return `server is busy` and put `time.Sleep`
+		return err
 	}
+
 	recordCount := ld.LogRecordCount()
 	lc.numLogRecordsReceived.Add(uint64(recordCount))
 	lc.backend.ConsumeLogs(ld)
@@ -302,7 +284,7 @@ func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 
 // randomNonPermanentError is a decision function that succeeds approximately
 // half of the time and fails with a non-permanent error the rest of the time.
-func randomNonPermanentError() error {
+func RandomNonPermanentError() error {
 	code := codes.Unavailable
 	s := status.New(code, errNonPermanent.Error())
 	if rand.Float32() < 0.5 {
@@ -313,7 +295,7 @@ func randomNonPermanentError() error {
 
 // randomPermanentError is a decision function that succeeds approximately
 // half of the time and fails with a permanent error the rest of the time.
-func randomPermanentError() error {
+func RandomPermanentError() error {
 	if rand.Float32() < 0.5 {
 		return consumererror.NewPermanent(errPermanent)
 	}

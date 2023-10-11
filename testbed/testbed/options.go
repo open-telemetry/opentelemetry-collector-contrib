@@ -68,7 +68,7 @@ func WithResourceLimits(resourceSpec ResourceSpec) TestCaseOption {
 }
 
 // WithDecision enables our mock backend to behave sporadically
-func WithDecision(decision int) TestCaseOption {
+func WithDecisionFunc(decision decisionFunc) TestCaseOption {
 	return func(tc *TestCase) {
 		tc.decision = decision
 	}

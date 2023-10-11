@@ -33,7 +33,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mb := NewMockBackend("mockbackend.log", test.receiver, -1)
+			mb := NewMockBackend("mockbackend.log", test.receiver)
 
 			assert.EqualValues(t, 0, mb.DataItemsReceived())
 			require.NoError(t, mb.Start(), "Cannot start backend")

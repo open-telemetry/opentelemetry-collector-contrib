@@ -53,7 +53,7 @@ type TestCase struct {
 	resultsSummary TestResultsSummary
 
 	// decision makes mockbackend return permanent/non-permament errors at random basis
-	decision int
+	decision decisionFunc
 }
 
 const mibibyte = 1024 * 1024
@@ -80,6 +80,7 @@ func NewTestCase(
 		agentProc:      agentProc,
 		validator:      validator,
 		resultsSummary: resultsSummary,
+		decision:       func() error { return nil },
 	}
 
 	// Get requested test case duration from env variable.
@@ -113,7 +114,8 @@ func NewTestCase(
 	tc.LoadGenerator, err = NewLoadGenerator(dataProvider, sender)
 	require.NoError(t, err, "Cannot create generator")
 
-	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver, tc.decision)
+	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver)
+	tc.MockBackend.WithDecisionFunc(tc.decision)
 
 	go tc.logStats()
 
