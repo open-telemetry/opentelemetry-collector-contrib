@@ -8,12 +8,7 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/mdatagen"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/opampsupervisor"
+    directory: "/cmd/githubgen"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -269,6 +264,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/sumologicexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/syslogexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
