@@ -356,7 +356,7 @@ Examples:
 
 The `Double` Converter converts an inputted `value` into a double.
 
-The returned type is double64.
+The returned type is float64.
 
 The input `value` types:
 * float64. returns the `value` without changes.
