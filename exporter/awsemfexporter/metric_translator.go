@@ -431,6 +431,9 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 			*/
 			fieldMap["CloudWatchMetrics"] = cWMetric.measurements
 		}
+	} else if len(cWMetric.measurements) < 1 && config.EnhancedContainerInsights {
+		// Return nil if requests does not contain metrics when EnhancedContainerInsights is enabled
+		return nil, nil
 	}
 
 	pleMsg, err := json.Marshal(fieldMap)

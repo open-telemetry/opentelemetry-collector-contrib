@@ -123,6 +123,11 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		if err != nil {
 			return err
 		}
+		// Drop a nil putLogEvent for EnhancedContainerInsights
+		if emf.config.EnhancedContainerInsights && putLogEvent == nil {
+			emf.config.logger.Debug("Dropping empty putLogEvents for EnhancedContainerInsights")
+			continue
+		}
 		// Currently we only support two options for "OutputDestination".
 		if strings.EqualFold(outputDestination, outputDestinationStdout) {
 			if putLogEvent != nil &&

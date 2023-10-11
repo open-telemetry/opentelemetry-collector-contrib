@@ -481,6 +481,67 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 
 }
 
+func TestTranslateCWMetricToEMFForEnhancedContainerInsights(t *testing.T) {
+	testCases := map[string]struct {
+		EnhancedContainerInsights bool
+		fields                    map[string]interface{}
+		measurements              []cWMeasurement
+		expectedEMFLogEvent       interface{}
+	}{
+		"EnhancedContainerInsightsEnabled": {
+			EnhancedContainerInsights: true,
+			fields: map[string]interface{}{
+				oTellibDimensionKey:                     "cloudwatch-otel",
+				"scrape_samples_post_metric_relabeling": "12",
+				"scrape_samples_scraped":                "34",
+				"scrape_series_added":                   "56",
+				"service.instance.id":                   "1.2.3.4:443",
+				"Sources":                               "[\"apiserver\"]",
+			},
+			measurements:        nil,
+			expectedEMFLogEvent: nil,
+		},
+		"EnhancedContainerInsightsDisabled": {
+			EnhancedContainerInsights: false,
+			fields: map[string]interface{}{
+				oTellibDimensionKey:                     "cloudwatch-otel",
+				"scrape_samples_post_metric_relabeling": "12",
+				"scrape_samples_scraped":                "34",
+				"scrape_series_added":                   "56",
+				"service.instance.id":                   "1.2.3.4:443",
+				"Sources":                               "[\"apiserver\"]",
+			},
+			measurements:        nil,
+			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"apiserver\"],\"scrape_samples_post_metric_relabeling\":\"12\",\"scrape_samples_scraped\":\"34\",\"scrape_series_added\":\"56\",\"service.instance.id\":\"1.2.3.4:443\"}",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(_ *testing.T) {
+			config := &Config{
+				// include valid json string, a non-existing key, and keys whose value are not json/string
+				ParseJSONEncodedAttributeValues: []string{"Sources"},
+				EnhancedContainerInsights:       tc.EnhancedContainerInsights,
+				logger:                          zap.NewNop(),
+			}
+
+			cloudwatchMetric := &cWMetrics{
+				timestampMs:  int64(1596151098037),
+				fields:       tc.fields,
+				measurements: tc.measurements,
+			}
+
+			emfLogEvent, err := translateCWMetricToEMF(cloudwatchMetric, config)
+			require.NoError(t, err)
+
+			if tc.expectedEMFLogEvent != nil {
+				assert.Equal(t, tc.expectedEMFLogEvent, *emfLogEvent.InputLogEvent.Message)
+			}
+		})
+	}
+
+}
+
 func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 	timestamp := int64(1596151098037)
 	namespace := "Namespace"
@@ -1395,21 +1456,21 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 					MetricNameSelectors: []string{"metric(1|3)"},
 				},
 			}, []cWMeasurement{
-				{
-					Namespace:  namespace,
-					Dimensions: [][]string{{}},
-					Metrics: []map[string]string{
-						{
-							"Name": "metric1",
-							"Unit": "Count",
-						},
-						{
-							"Name": "metric3",
-							"Unit": "Seconds",
-						},
+			{
+				Namespace:  namespace,
+				Dimensions: [][]string{{}},
+				Metrics: []map[string]string{
+					{
+						"Name": "metric1",
+						"Unit": "Count",
+					},
+					{
+						"Name": "metric3",
+						"Unit": "Seconds",
 					},
 				},
 			},
+		},
 		},
 		{
 			"label matchers",
