@@ -31,7 +31,7 @@ OUTER:
 				continue OUTER
 			}
 
-			if oldReader.FileName != newReader.FileName {
+			if !newReader.NameEquals(oldReader) {
 				continue
 			}
 
