@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 )
 
@@ -38,6 +39,7 @@ type githubActionsEventReceiver struct {
 	createSettings  receiver.CreateSettings
 	logger          *zap.Logger
 	jsonUnmarshaler *jsonTracesUnmarshaler
+	obsrecv         *receiverhelper.ObsReport
 }
 
 type jsonTracesUnmarshaler struct {
@@ -346,6 +348,21 @@ func newTracesReceiver(
 		return nil, errMissingEndpoint
 	}
 
+	transport := "http"
+	if config.TLSSetting != nil {
+		transport = "https"
+	}
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             params.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: params,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
 	gaer := &githubActionsEventReceiver{
 		nextConsumer:   nextConsumer,
 		config:         config,
@@ -354,12 +371,15 @@ func newTracesReceiver(
 		jsonUnmarshaler: &jsonTracesUnmarshaler{
 			logger: params.Logger,
 		},
+		obsrecv: obsrecv,
 	}
 
 	return gaer, nil
 }
 
 func (gaer *githubActionsEventReceiver) Start(ctx context.Context, host component.Host) error {
+	endpint := fmt.Sprintf("%s%s", gaer.config.Endpoint, gaer.config.Path)
+	gaer.logger.Info("Starting GithubActionsEvent server", zap.String("endpoint", endpint))
 	gaer.server = &http.Server{
 		Addr:    gaer.config.HTTPServerSettings.Endpoint,
 		Handler: gaer,
