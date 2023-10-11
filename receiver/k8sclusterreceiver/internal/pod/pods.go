@@ -76,7 +76,6 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	rb.SetK8sNodeName(pod.Spec.NodeName)
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sPodUID(string(pod.UID))
-	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	for _, c := range pod.Spec.Containers {
