@@ -664,16 +664,6 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 func buildHTTPClient(config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
 	config.HTTPClientSettings.Compression = ""
-	if config.MaxConnections != 0 && (config.MaxIdleConns == nil || config.HTTPClientSettings.MaxIdleConnsPerHost == nil) {
-		telemetrySettings.Logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/splunkhecexporter#advanced-configuration")
-		intMaxConns := int(config.MaxConnections)
-		if config.HTTPClientSettings.MaxIdleConns == nil {
-			config.HTTPClientSettings.MaxIdleConns = &intMaxConns
-		}
-		if config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
-			config.HTTPClientSettings.MaxIdleConnsPerHost = &intMaxConns
-		}
-	}
 	return config.ToClient(host, telemetrySettings)
 }
 
