@@ -68,13 +68,6 @@ func (config *Config) Validate() error {
 		return err
 	}
 
-	// TODO: once QueueSettings.Validate validate the number of consumers remove the next
-	// verification
-
-	if config.QueueSettings.NumConsumers < 1 {
-		return errors.New("'sending_queue.num_consumers' must be 1 or greater")
-	}
-
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}
