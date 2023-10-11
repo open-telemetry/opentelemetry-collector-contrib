@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.20
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
+	github.com/DataDog/datadog-agent/pkg/proto v0.48.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.0
 	github.com/DataDog/sketches-go v1.4.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.87.0
@@ -20,15 +20,15 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.0-beta.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
-	github.com/DataDog/go-tuf v1.0.1-0.5.2 // indirect
+	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.8.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.8.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
@@ -93,11 +93,6 @@ require (
 
 // It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
-
-// v0.47.x and v0.48.x are incompatible, prefer to use v0.48.x
-replace github.com/DataDog/datadog-agent/pkg/proto => github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
-
-replace github.com/DataDog/datadog-agent/pkg/trace => github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
 
