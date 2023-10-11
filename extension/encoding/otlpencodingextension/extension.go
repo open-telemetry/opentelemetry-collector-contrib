@@ -1,10 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otlpencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
+package otlpencodingextension // import "otlpencodingextension"
 
 import (
 	"context"
+	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,31 +37,32 @@ type otlpExtension struct {
 }
 
 func newExtension(config *Config) (*otlpExtension, error) {
-	err := config.validate()
-	if err != nil {
-		return nil, err
-	}
 	var ex *otlpExtension
+	var err error
 	protocol := config.Protocol
 	switch protocol {
 	case otlpProto:
-		ex = new(otlpExtension)
-		ex.config = config
-		ex.traceMarshaler = &ptrace.ProtoMarshaler{}
-		ex.traceUnmarshaler = &ptrace.ProtoUnmarshaler{}
-		ex.logMarshaler = &plog.ProtoMarshaler{}
-		ex.logUnmarshaler = &plog.ProtoUnmarshaler{}
-		ex.metricMarshaler = &pmetric.ProtoMarshaler{}
-		ex.metricUnmarshaler = &pmetric.ProtoUnmarshaler{}
+		ex = &otlpExtension{
+			config:            config,
+			traceMarshaler:    &ptrace.ProtoMarshaler{},
+			traceUnmarshaler:  &ptrace.ProtoUnmarshaler{},
+			logMarshaler:      &plog.ProtoMarshaler{},
+			logUnmarshaler:    &plog.ProtoUnmarshaler{},
+			metricMarshaler:   &pmetric.ProtoMarshaler{},
+			metricUnmarshaler: &pmetric.ProtoUnmarshaler{},
+		}
 	case otlpJSON:
-		ex = new(otlpExtension)
-		ex.config = config
-		ex.traceMarshaler = &ptrace.JSONMarshaler{}
-		ex.traceUnmarshaler = &ptrace.JSONUnmarshaler{}
-		ex.logMarshaler = &plog.JSONMarshaler{}
-		ex.logUnmarshaler = &plog.JSONUnmarshaler{}
-		ex.metricMarshaler = &pmetric.JSONMarshaler{}
-		ex.metricUnmarshaler = &pmetric.JSONUnmarshaler{}
+		ex = &otlpExtension{
+			config:            config,
+			traceMarshaler:    &ptrace.JSONMarshaler{},
+			traceUnmarshaler:  &ptrace.JSONUnmarshaler{},
+			logMarshaler:      &plog.JSONMarshaler{},
+			logUnmarshaler:    &plog.JSONUnmarshaler{},
+			metricMarshaler:   &pmetric.JSONMarshaler{},
+			metricUnmarshaler: &pmetric.JSONUnmarshaler{},
+		}
+	default:
+		err = fmt.Errorf("unsupported protocol: %q", protocol)
 	}
 
 	return ex, err

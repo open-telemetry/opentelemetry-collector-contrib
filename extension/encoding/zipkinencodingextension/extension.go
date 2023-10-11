@@ -1,16 +1,18 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package zipkinencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension"
+package zipkinencodingextension // import "zipkinencodingextension"
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
 const (
@@ -31,11 +33,8 @@ type zipkinExtension struct {
 }
 
 func newExtension(config *Config) (*zipkinExtension, error) {
-	var ex *zipkinExtension = nil
-	var err = config.validate()
-	if err != nil {
-		return nil, err
-	}
+	var err error
+	var ex *zipkinExtension
 
 	protocol := config.Protocol
 	version := config.Version
@@ -43,33 +42,37 @@ func newExtension(config *Config) (*zipkinExtension, error) {
 	case zipkinProtobufEncoding:
 		switch version {
 		case v2:
-			ex = new(zipkinExtension)
-			ex.config = config
-			ex.marshaler = zipkinv2.NewProtobufTracesMarshaler()
-			ex.unmarshaler = zipkinv2.NewProtobufTracesUnmarshaler(false, false)
+			ex = &zipkinExtension{
+				config:      config,
+				marshaler:   zipkinv2.NewProtobufTracesMarshaler(),
+				unmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(false, false),
+			}
 		default:
 			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		}
 	case zipkinJSONEncoding:
 		switch version {
 		case v1:
-			ex = new(zipkinExtension)
-			ex.config = config
-			ex.marshaler = nil
-			ex.unmarshaler = zipkinv1.NewJSONTracesUnmarshaler(false)
+			ex = &zipkinExtension{
+				config:      config,
+				marshaler:   nil,
+				unmarshaler: zipkinv1.NewJSONTracesUnmarshaler(false),
+			}
 		case v2:
-			ex = new(zipkinExtension)
-			ex.config = config
-			ex.marshaler = zipkinv2.NewJSONTracesMarshaler()
-			ex.unmarshaler = zipkinv2.NewJSONTracesUnmarshaler(false)
+			ex = &zipkinExtension{
+				config:      config,
+				marshaler:   zipkinv2.NewJSONTracesMarshaler(),
+				unmarshaler: zipkinv2.NewJSONTracesUnmarshaler(false),
+			}
 		}
 	case zipkinThriftEncoding:
 		switch version {
 		case v1:
-			ex = new(zipkinExtension)
-			ex.config = config
-			ex.marshaler = nil
-			ex.unmarshaler = zipkinv1.NewThriftTracesUnmarshaler()
+			ex = &zipkinExtension{
+				config:      config,
+				marshaler:   nil,
+				unmarshaler: zipkinv1.NewThriftTracesUnmarshaler(),
+			}
 		default:
 			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
 		}
