@@ -76,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_num_consumers"),
-			errorMessage: "'sending_queue.num_consumers' must be 1 or greater",
+			errorMessage: "number of queue consumers must be positive",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_stream"),
