@@ -52,7 +52,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 31, res.Attributes().Len())
+				assert.Equal(t, 30, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 33, res.Attributes().Len())
 			case "none_set":
@@ -213,7 +213,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "k8s.statefulset.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("opencensus.resourcetype")
-			assert.True(t, ok)
+			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "opencensus.resourcetype-val", val.Str())
 			}

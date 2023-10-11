@@ -66,7 +66,7 @@ Whether a container has passed its readiness probe (0 for no, 1 for yes)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ### k8s.container.restarts
 
@@ -226,7 +226,7 @@ The current phase of namespaces (1 for active and 0 for terminating)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ### k8s.pod.phase
 
@@ -234,7 +234,7 @@ Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ### k8s.replicaset.available
 
@@ -402,7 +402,7 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ## Resource Attributes
 
@@ -438,6 +438,6 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |
-| opencensus.resourcetype | The OpenCensus resource type. | Any Str | true |
+| opencensus.resourcetype | The OpenCensus resource type. | Any Str | false |
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |

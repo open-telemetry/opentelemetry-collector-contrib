@@ -13,9 +13,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: test-pod-1-uid
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -24,13 +21,13 @@ resourceMetrics:
               dataPoints:
                 - asInt: "4"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
           - description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
             gauge:
               dataPoints:
                 - asInt: "1"
             name: k8s.pod.status_reason
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -60,9 +57,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: test-pod-1-uid
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -77,7 +71,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
