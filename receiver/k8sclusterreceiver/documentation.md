@@ -429,6 +429,7 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.node.name | The k8s node name. | Any Str | true |
 | k8s.node.uid | The k8s node uid. | Any Str | true |
 | k8s.pod.name | The k8s pod name. | Any Str | true |
+| k8s.pod.qos_class | The k8s pod qos class name. One of Guaranteed, Burstable, BestEffort. | Any Str | false |
 | k8s.pod.uid | The k8s pod uid. | Any Str | true |
 | k8s.replicaset.name | The k8s replicaset name | Any Str | true |
 | k8s.replicaset.uid | The k8s replicaset uid | Any Str | true |
