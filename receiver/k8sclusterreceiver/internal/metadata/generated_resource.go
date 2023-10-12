@@ -168,6 +168,13 @@ func (rb *ResourceBuilder) SetK8sPodName(val string) {
 	}
 }
 
+// SetK8sPodQosClass sets provided value as "k8s.pod.qos_class" attribute.
+func (rb *ResourceBuilder) SetK8sPodQosClass(val string) {
+	if rb.config.K8sPodQosClass.Enabled {
+		rb.res.Attributes().PutStr("k8s.pod.qos_class", val)
+	}
+}
+
 // SetK8sPodUID sets provided value as "k8s.pod.uid" attribute.
 func (rb *ResourceBuilder) SetK8sPodUID(val string) {
 	if rb.config.K8sPodUID.Enabled {
