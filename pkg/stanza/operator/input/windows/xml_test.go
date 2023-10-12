@@ -260,6 +260,7 @@ func TestUnmarshal(t *testing.T) {
 	require.NoError(t, err)
 
 	xml := EventXML{
+		Namespace: "http://schemas.microsoft.com/win/2004/08/events/event",
 		EventID: EventID{
 			ID:         16384,
 			Qualifiers: 16384,
@@ -283,7 +284,58 @@ func TestUnmarshal(t *testing.T) {
 			{Name: "Time", Value: "2022-04-28T19:48:52Z"},
 			{Name: "Source", Value: "RulesEngine"},
 		},
-		Keywords: []string{"0x80000000000000"},
+		Keywords:  []string{"0x80000000000000"},
+		Security:  &Security{},
+		Execution: &Execution{},
+	}
+
+	require.Equal(t, xml, event)
+}
+
+func TestUnmarshalWithUserData(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlSampleUserData.xml"))
+	require.NoError(t, err)
+
+	event, err := unmarshalEventXML(data)
+	require.NoError(t, err)
+
+	xml := EventXML{
+		Namespace: "http://schemas.microsoft.com/win/2004/08/events/event",
+		EventID: EventID{
+			ID: 1102,
+		},
+		Provider: Provider{
+			Name: "Microsoft-Windows-Eventlog",
+			GUID: "{fc65ddd8-d6ef-4962-83d5-6e5cfe9ce148}",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2023-10-12T10:38:24.543506200Z",
+		},
+		Computer: "test.example.com",
+		Channel:  "Security",
+		RecordID: 2590526,
+		Level:    "4",
+		Message:  "",
+		Task:     "104",
+		Opcode:   "0",
+		Keywords: []string{"0x4020000000000000"},
+		Security: &Security{},
+		Execution: &Execution{
+			ProcessID: 1472,
+			ThreadID:  7784,
+		},
+		UserData: &UserData{
+			RawXML: `
+    <LogFileCleared xmlns="http://manifests.microsoft.com/win/2004/08/windows/eventlog">
+      <SubjectUserSid>S-1-5-21-1148437859-4135665037-1195073887-1000</SubjectUserSid>
+      <SubjectUserName>test_user</SubjectUserName>
+      <SubjectDomainName>TEST</SubjectDomainName>
+      <SubjectLogonId>0xa8bb72</SubjectLogonId>
+      <ClientProcessId>4536</ClientProcessId>
+      <ClientProcessStartKey>17732923532772643</ClientProcessStartKey>
+    </LogFileCleared>
+  `,
+		},
 	}
 
 	require.Equal(t, xml, event)
