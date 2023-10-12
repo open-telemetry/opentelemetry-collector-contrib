@@ -255,7 +255,6 @@ type ResourceAttributesConfig struct {
 	K8sResourcequotaUID          ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
 	K8sStatefulsetName           ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
-	OpencensusResourcetype       ResourceAttributeConfig `mapstructure:"opencensus.resourcetype"`
 	OpenshiftClusterquotaName    ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID     ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
 }
@@ -351,9 +350,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sStatefulsetUID: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		OpencensusResourcetype: ResourceAttributeConfig{
-			Enabled: false,
 		},
 		OpenshiftClusterquotaName: ResourceAttributeConfig{
 			Enabled: true,
