@@ -17,6 +17,7 @@ The `udp_input` operator listens for logs from UDP packets.
 | `preserve_leading_whitespaces`          | false            | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
 | `preserve_trailing_whitespaces`             | false            | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                            |
 | `encoding`                              | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options. |
+| `async`                     | {}               | An `async` configuration block. See below for details. |
 
 #### `multiline` configuration
 
@@ -44,6 +45,16 @@ The `omit_pattern` setting can be used to omit the start/end pattern from each e
 Other less common encodings are supported on a best-effort basis.
 See [https://www.iana.org/assignments/character-sets/character-sets.xhtml](https://www.iana.org/assignments/character-sets/character-sets.xhtml)
 for other encodings available.
+
+#### `async` configuration
+
+If set, the `async` configuration block instructs the `udp_input` operator to read and process logs asynchronsouly and concurrently.
+
+**note** If `async` is not set at all, a single thread will receive lines synchronously.
+
+| Field                                   | Default              | Description |
+| ---                                     | ---                  | ---         |
+| `fixed_reader_routine_count`            | 1                    | Concurrency level - Determines how many go routines read from UDP port (and process logs before sending downstream). |
 
 ### Example Configurations
 
