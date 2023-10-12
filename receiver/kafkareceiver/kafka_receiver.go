@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 const (
@@ -105,7 +105,7 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 		}
 		c.Version = version
 	}
-	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
@@ -207,7 +207,7 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 		}
 		c.Version = version
 	}
-	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
@@ -309,7 +309,7 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 		}
 		c.Version = version
 	}
-	if err = kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err = kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)

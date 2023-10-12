@@ -43,7 +43,6 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
-			rb.SetOpencensusResourcetype("opencensus.resourcetype-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
 
@@ -52,9 +51,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 31, res.Attributes().Len())
+				assert.Equal(t, 30, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 33, res.Attributes().Len())
+				assert.Equal(t, 32, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -211,11 +210,6 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.statefulset.uid-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("opencensus.resourcetype")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "opencensus.resourcetype-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("openshift.clusterquota.name")
 			assert.True(t, ok)

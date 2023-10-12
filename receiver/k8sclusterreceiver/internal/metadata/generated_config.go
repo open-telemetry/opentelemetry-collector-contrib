@@ -207,6 +207,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for k8s_cluster resource attributes.
@@ -241,7 +255,6 @@ type ResourceAttributesConfig struct {
 	K8sResourcequotaUID          ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
 	K8sStatefulsetName           ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
-	OpencensusResourcetype       ResourceAttributeConfig `mapstructure:"opencensus.resourcetype"`
 	OpenshiftClusterquotaName    ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID     ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
 }
@@ -336,9 +349,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sStatefulsetUID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		OpencensusResourcetype: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		OpenshiftClusterquotaName: ResourceAttributeConfig{

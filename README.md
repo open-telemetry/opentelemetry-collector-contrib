@@ -124,7 +124,7 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 
 ## PRs and Reviews
 
-When creating a PR please following the process [described
+When creating a PR please follow the process [described
 here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#how-to-structure-prs-to-get-expedient-reviews).
 
 News PRs will be automatically associated with the reviewers based on
