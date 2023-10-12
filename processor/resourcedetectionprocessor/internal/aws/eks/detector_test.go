@@ -62,7 +62,6 @@ func TestEKS(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{
 		"cloud.provider": "aws",
 		"cloud.platform": "aws_eks",
-		clusterNameKey:   clusterName,
 	}, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 }
 
