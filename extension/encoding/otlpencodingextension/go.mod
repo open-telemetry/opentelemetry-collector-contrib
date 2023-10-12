@@ -1,4 +1,4 @@
-module otlpencodingextension
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
 
 go 1.20
 
