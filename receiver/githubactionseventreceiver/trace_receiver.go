@@ -183,6 +183,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		attrs.PutStr("ci.system", "github")
 		attrs.PutStr("ci.actor", e.Repository.Owner.Login)
 
+		attrs.PutStr("ci.github.html_url", e.WorkflowJob.HTMLURL)
 		attrs.PutStr("ci.github.job", e.WorkflowJob.Name)
 		attrs.PutInt("ci.github.run_id", e.WorkflowJob.RunID)
 		attrs.PutInt("ci.github.run_attempt", int64(e.WorkflowJob.RunAttempt))
@@ -191,7 +192,6 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 
 		attrs.PutStr("scm.system", "git")
 		attrs.PutStr("scm.git.branch", e.WorkflowJob.HeadBranch)
-		attrs.PutStr("scm.git.html_url", e.WorkflowJob.HTMLURL)
 		attrs.PutStr("scm.git.sha", e.WorkflowJob.HeadSha)
 		attrs.PutStr("scm.git.repo", e.Repository.FullName)
 
@@ -203,6 +203,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		attrs.PutStr("ci.system", "github")
 		attrs.PutStr("ci.actor", e.WorkflowRun.Repository.Owner.Login)
 
+		attrs.PutStr("ci.github.html_url", e.WorkflowRun.HTMLURL)
 		attrs.PutInt("ci.github.run_id", e.WorkflowRun.ID)
 		attrs.PutInt("ci.github.run_attempt", int64(e.WorkflowRun.RunAttempt))
 		attrs.PutStr("ci.github.workflow", e.WorkflowRun.Name)
@@ -210,7 +211,6 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 
 		attrs.PutStr("scm.system", "git")
 		attrs.PutStr("scm.git.branch", e.WorkflowRun.HeadBranch)
-		attrs.PutStr("scm.git.html_url", e.WorkflowRun.HTMLURL)
 		attrs.PutStr("scm.git.sha", e.WorkflowRun.HeadSha)
 		attrs.PutStr("scm.git.repo", e.Repository.FullName)
 
