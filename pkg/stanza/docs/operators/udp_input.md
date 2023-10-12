@@ -17,6 +17,11 @@ The `udp_input` operator listens for logs from UDP packets.
 | `preserve_leading_whitespaces`          | false            | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
 | `preserve_trailing_whitespaces`             | false            | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                            |
 | `encoding`                              | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options. |
+| `async_concurrent_mode`                              | false              | Determines whether UDP receiver processes messages synchronsouly or asynchronsouly and concurrently. |
+| `fixed_async_reader_routine_count`                              | 1              | Concurrency level - Determines how many go routines read from UDP port and write to channel (relevant only if async_concurrent_mode==true). |
+| `fixed_async_processor_routine_count`                              | 1              | Concurrency level - Determines how many go routines read from channel, process (split, add attributes, etc.) and write downstream (relevant only if async_concurrent_mode==true). |
+| `max_async_queue_length`                              | 1000              | Determines max length of channel being used by reader async routines. When channel reaches max number, reader routine will wait until channel has room (relevant only if async_concurrent_mode==true). |
+| `max_graceful_shutdown_time_in_ms`                              | 1000              | During shutdown, determines how long the processor go routine will continue reading from channel and pushing downstream (reader routine will stop reading from UDP port immediately on when shutdown is requested; relevant only if async_concurrent_mode==true). |
 
 #### `multiline` configuration
 

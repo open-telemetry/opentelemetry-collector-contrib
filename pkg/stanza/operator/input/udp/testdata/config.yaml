@@ -8,3 +8,25 @@ all:
   multiline:
     line_start_pattern: ABC
     line_end_pattern: ""
+async-enabled:
+  type: udp_input
+  listen_address: 10.0.0.1:9000
+  add_attributes: true
+  encoding: utf-8
+  multiline:
+    line_start_pattern: ABC
+    line_end_pattern: ""
+  async_concurrent_mode: true
+  fixed_async_reader_routine_count: 2
+  fixed_async_processor_routine_count: 3
+  max_async_queue_length: 500
+  max_graceful_shutdown_time_in_ms: 1000
+async-disabled:
+  type: udp_input
+  listen_address: 10.0.0.1:9000
+  add_attributes: true
+  encoding: utf-8
+  multiline:
+    line_start_pattern: ABC
+    line_end_pattern: ""
+  async_concurrent_mode: false
