@@ -152,9 +152,9 @@ func MakeDependencySubsegmentForLocalRootDependencySpan(span ptrace.Span, resour
 		dependencySubsegment.Links = nil
 	}
 
-	myAwsRemoteService, _ := span.Attributes().Get(awsRemoteService)
-
-	dependencySubsegment.Name = awsxray.String(myAwsRemoteService.Str())
+	if myAwsRemoteService, ok := span.Attributes().Get(awsRemoteService); ok {
+		dependencySubsegment.Name = awsxray.String(myAwsRemoteService.Str())
+	}
 
 	return dependencySubsegment, err
 }
@@ -356,7 +356,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		}
 	}
 
-	if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
+	if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer || span.Kind() == ptrace.SpanKindConsumer {
 		if remoteServiceName, ok := attributes.Get(awsRemoteService); ok {
 			name = remoteServiceName.Str()
 		}

@@ -1464,7 +1464,7 @@ func TestNotLocalRootConsumer(t *testing.T) {
 	// Validate segment
 	assert.Equal(t, "subsegment", *segments[0].Type)
 	assert.Equal(t, "remote", *segments[0].Namespace)
-	assert.Equal(t, "MyService", *segments[0].Name)
+	assert.Equal(t, "myRemoteService", *segments[0].Name)
 }
 
 func TestNotLocalRootClient(t *testing.T) {
