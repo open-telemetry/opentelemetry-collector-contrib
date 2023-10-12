@@ -91,8 +91,12 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 				errorCode, ok1 := event.Attributes().Get(AwsIndividualHTTPErrorCodeAttr)
 				errorMessage, ok2 := event.Attributes().Get(AwsIndividualHTTPErrorMsgAttr)
 				if ok1 && ok2 {
-					eventEpochTime := event.Timestamp().AsTime().Unix()
-					strs := []string{errorCode.AsString(), strconv.FormatUint(uint64(eventEpochTime), 10), errorMessage.Str()}
+					eventEpochTime := event.Timestamp().AsTime().UnixMicro()
+					strs := []string{
+						errorCode.AsString(),
+						strconv.FormatFloat(float64(eventEpochTime)/1_000_000, 'f', 6, 64),
+						errorMessage.Str(),
+					}
 					message = strings.Join(strs, "@")
 					segmentID := newSegmentID()
 					exception := awsxray.Exception{
