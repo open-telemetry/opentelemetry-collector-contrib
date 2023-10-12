@@ -18,7 +18,7 @@ import (
 
 const (
 	defaultBindEndpoint = "0.0.0.0:19418"
-	defaultPath         = "/events"
+	defaultPath         = "/ghaevents"
 )
 
 // NewFactory creates a new GitHub Actions Event receiver factory

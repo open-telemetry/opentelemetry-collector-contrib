@@ -207,7 +207,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		attrs.PutStr("ci.github.workflow", e.WorkflowRun.Name)
 		attrs.PutStr("ci.github.workflow_path", e.WorkflowRun.Path)
 
-		attrs.PutStr("vcs.system", "git")
+		attrs.PutStr("scm.system", "git")
 		attrs.PutStr("scm.git.branch", e.WorkflowRun.HeadBranch)
 		attrs.PutStr("scm.git.sha", e.WorkflowRun.HeadSha)
 		attrs.PutStr("scm.git.repo", e.Repository.FullName)
