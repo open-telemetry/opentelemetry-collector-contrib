@@ -15,6 +15,8 @@ const (
 	modeUnset    SamplerMode = ""
 )
 
+var AllModes = []SamplerMode{HashSeed, Equalizing, Proportional}
+
 func (sm *SamplerMode) UnmarshalText(in []byte) error {
 	switch mode := SamplerMode(in); mode {
 	case HashSeed,

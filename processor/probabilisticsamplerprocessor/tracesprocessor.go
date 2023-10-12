@@ -57,7 +57,7 @@ type traceSampler interface {
 	// sampled, probabilistically or otherwise.  The "should" parameter
 	// is the result from decide(), for the span's TraceID, which
 	// will not be recalculated.
-	updateTracestate(tid pcommon.TraceID, should bool, otts *sampling.OTelTraceState) error
+	updateTracestate(tid pcommon.TraceID, should bool, wts *sampling.W3CTraceState) error
 }
 
 type traceProcessor struct {
@@ -187,7 +187,7 @@ func (ts *traceHashSampler) decide(s ptrace.Span) (bool, *sampling.W3CTraceState
 	return decision, nil, nil
 }
 
-func (ts *traceHashSampler) updateTracestate(tid pcommon.TraceID, should bool, otts *sampling.OTelTraceState) error {
+func (ts *traceHashSampler) updateTracestate(_ pcommon.TraceID, should bool, _ *sampling.W3CTraceState) error {
 	// Note: Sampling SIG will not like this idea.  What about using
 	// r:00000000000000;t:{ProbabilityToThreshold(pct/100.0)}?
 	return nil
@@ -211,15 +211,15 @@ func (ts *traceEqualizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, 
 	return ts.traceIDThreshold.ShouldSample(rnd), wts, err
 }
 
-func (ts *traceEqualizer) updateTracestate(tid pcommon.TraceID, should bool, otts *sampling.OTelTraceState) error {
+func (ts *traceEqualizer) updateTracestate(tid pcommon.TraceID, should bool, wts *sampling.W3CTraceState) error {
 	// When this sampler decided not to sample, the t-value becomes zero.
 	// Incoming TValue consistency is not checked when this happens.
 	if !should {
-		return otts.UpdateTValueWithSampling(sampling.NeverSampleThreshold, sampling.NeverSampleTValue)
+		return wts.OTelValue().UpdateTValueWithSampling(sampling.NeverSampleThreshold, sampling.NeverSampleTValue)
 	}
 	// Spans that appear consistently sampled but arrive w/ zero
 	// adjusted count remain zero.
-	return otts.UpdateTValueWithSampling(ts.traceIDThreshold, ts.tValueEncoding)
+	return wts.OTelValue().UpdateTValueWithSampling(ts.traceIDThreshold, ts.tValueEncoding)
 }
 
 func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
@@ -241,9 +241,9 @@ func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTrace
 	return should, wts, err
 }
 
-func (ts *traceProportionalizer) updateTracestate(tid pcommon.TraceID, should bool, otts *sampling.OTelTraceState) error {
+func (ts *traceProportionalizer) updateTracestate(tid pcommon.TraceID, should bool, wts *sampling.W3CTraceState) error {
 	if !should {
-		return otts.UpdateTValueWithSampling(sampling.NeverSampleThreshold, sampling.NeverSampleTValue)
+		return wts.OTelValue().UpdateTValueWithSampling(sampling.NeverSampleThreshold, sampling.NeverSampleTValue)
 	}
 	return nil
 }
@@ -270,7 +270,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					tp.logger.Error("trace-state", zap.Error(err))
 				}
 
-				forceSample := priority == mustSampleSpan || wts.OTelValue().HasZeroTValue()
+				forceSample := priority == mustSampleSpan || (wts != nil && wts.OTelValue().HasZeroTValue())
 				sampled := forceSample || probSample
 
 				if forceSample {
@@ -287,14 +287,16 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					)
 				}
 
-				if sampled {
-					err := tp.sampler.updateTracestate(s.TraceID(), probSample, wts.OTelValue())
+				if sampled && wts != nil {
+					err := tp.sampler.updateTracestate(s.TraceID(), probSample, wts)
 					if err != nil {
 						tp.logger.Debug("tracestate update", zap.Error(err))
 					}
 
 					var w strings.Builder
-					wts.Serialize(&w)
+					if err := wts.Serialize(&w); err != nil {
+						tp.logger.Debug("tracestate serialize", zap.Error(err))
+					}
 					s.TraceState().FromRaw(w.String())
 				}
 
