@@ -191,6 +191,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 
 		attrs.PutStr("scm.system", "git")
 		attrs.PutStr("scm.git.branch", e.WorkflowJob.HeadBranch)
+		attrs.PutStr("scm.git.html_url", e.WorkflowJob.HTMLURL)
 		attrs.PutStr("scm.git.sha", e.WorkflowJob.HeadSha)
 		attrs.PutStr("scm.git.repo", e.Repository.FullName)
 
@@ -209,6 +210,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 
 		attrs.PutStr("scm.system", "git")
 		attrs.PutStr("scm.git.branch", e.WorkflowRun.HeadBranch)
+		attrs.PutStr("scm.git.html_url", e.WorkflowRun.HTMLURL)
 		attrs.PutStr("scm.git.sha", e.WorkflowRun.HeadSha)
 		attrs.PutStr("scm.git.repo", e.Repository.FullName)
 
