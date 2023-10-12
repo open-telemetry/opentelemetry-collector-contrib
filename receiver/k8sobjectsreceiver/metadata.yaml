@@ -6,4 +6,4 @@ status:
     alpha: [logs]
   distributions: [contrib, splunk, sumo]
   codeowners:
-    active: [dmitryax, hvaghani221]
+    active: [dmitryax, hvaghani221, TylerHelmuth]

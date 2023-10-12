@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -53,7 +53,15 @@ func TestEndpointsAreWired(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
-			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
+			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{
+				getSamplingStrategyFunc: func(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
+					return &api_v2.SamplingStrategyResponse{
+						ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
+							SamplingRate: 1,
+						},
+					}, nil
+				},
+			})
 			require.NoError(t, err)
 			require.NotNil(t, s)
 
@@ -72,7 +80,7 @@ func TestEndpointsAreWired(t *testing.T) {
 			resp.Body.Close()
 
 			body := string(samplingStrategiesBytes)
-			assert.Equal(t, `{"strategyType":"PROBABILISTIC"}`, body)
+			assert.Equal(t, `{"probabilisticSampling":{"samplingRate":1}}`, body)
 		})
 	}
 }
@@ -102,7 +110,7 @@ func TestErrorFromClientConfigManager(t *testing.T) {
 	require.NotNil(t, s)
 
 	s.strategyStore = &mockCfgMgr{
-		getSamplingStrategyFunc: func(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
+		getSamplingStrategyFunc: func(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
 			return nil, errors.New("some error")
 		},
 	}

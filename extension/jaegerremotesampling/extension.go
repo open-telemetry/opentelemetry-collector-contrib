@@ -64,7 +64,13 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 			return fmt.Errorf("failed to create the remote strategy store: %w", err)
 		}
 		jrse.closers = append(jrse.closers, conn.Close)
-		jrse.samplingStore = internal.NewRemoteStrategyStore(conn, jrse.cfg.Source.Remote)
+		remoteStore, closer := internal.NewRemoteStrategyStore(
+			conn,
+			jrse.cfg.Source.Remote,
+			jrse.cfg.Source.ReloadInterval,
+		)
+		jrse.closers = append(jrse.closers, closer.Close)
+		jrse.samplingStore = remoteStore
 	}
 
 	if jrse.cfg.HTTPServerSettings != nil {

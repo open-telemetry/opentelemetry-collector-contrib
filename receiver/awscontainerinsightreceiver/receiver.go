@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -131,10 +130,10 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	var errs error
 
 	if acir.k8sapiserver != nil {
-		errs = multierr.Append(errs, acir.k8sapiserver.Shutdown())
+		errs = errors.Join(errs, acir.k8sapiserver.Shutdown())
 	}
 	if acir.cadvisor != nil {
-		errs = multierr.Append(errs, acir.cadvisor.Shutdown())
+		errs = errors.Join(errs, acir.cadvisor.Shutdown())
 	}
 
 	return errs

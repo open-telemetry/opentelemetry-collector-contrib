@@ -453,7 +453,8 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 				measurements: tc.measurements,
 			}
 
-			emfLogEvent := translateCWMetricToEMF(cloudwatchMetric, config)
+			emfLogEvent, err := translateCWMetricToEMF(cloudwatchMetric, config)
+			require.NoError(t, err)
 
 			assert.Equal(t, tc.expectedEMFLogEvent, *emfLogEvent.InputLogEvent.Message)
 		})
@@ -2174,7 +2175,8 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		translateCWMetricToEMF(met, &Config{})
+		_, err := translateCWMetricToEMF(met, &Config{})
+		require.NoError(b, err)
 	}
 }
 
@@ -2338,6 +2340,36 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			for _, actual := range groupedMetrics {
 				assert.Equal(t, test.outLogGroupName, actual.metadata.logGroup)
 				assert.Equal(t, test.outLogStreamName, actual.metadata.logStream)
+			}
+		})
+	}
+}
+
+func TestTranslateOtToGroupedMetricForInitialDeltaValue(t *testing.T) {
+	for _, test := range logGroupStreamTestCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{
+				Namespace:                       "",
+				LogGroupName:                    test.inLogGroupName,
+				LogStreamName:                   test.inLogStreamName,
+				DimensionRollupOption:           zeroAndSingleDimensionRollup,
+				logger:                          zap.NewNop(),
+				RetainInitialValueOfDeltaMetric: true,
+			}
+
+			translator := newMetricTranslator(*config)
+
+			groupedMetrics := make(map[interface{}]*groupedMetric)
+
+			rm := test.inputMetrics.ResourceMetrics().At(0)
+			err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
+			assert.Nil(t, err)
+
+			assert.NotNil(t, groupedMetrics)
+			assert.Equal(t, 1, len(groupedMetrics))
+
+			for _, actual := range groupedMetrics {
+				assert.True(t, actual.metadata.retainInitialValueForDelta)
 			}
 		})
 	}

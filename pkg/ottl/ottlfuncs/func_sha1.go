@@ -13,7 +13,7 @@ import (
 )
 
 type SHA1Arguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
+	Target ottl.StringGetter[K]
 }
 
 func NewSHA1Factory[K any]() ottl.Factory[K] {

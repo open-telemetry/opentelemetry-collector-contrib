@@ -219,12 +219,12 @@ func (f *taskFetcher) attachTaskDefinition(ctx context.Context, tasks []*ecs.Tas
 		arn2Def[arn] = def
 	}
 
-	var tasksWithDef []*taskAnnotated
-	for _, t := range tasks {
-		tasksWithDef = append(tasksWithDef, &taskAnnotated{
+	tasksWithDef := make([]*taskAnnotated, len(tasks))
+	for i, t := range tasks {
+		tasksWithDef[i] = &taskAnnotated{
 			Task:       t,
 			Definition: arn2Def[aws.StringValue(t.TaskDefinitionArn)],
-		})
+		}
 	}
 	return tasksWithDef, nil
 }
@@ -300,11 +300,11 @@ func (f *taskFetcher) describeContainerInstances(ctx context.Context, instanceLi
 	}
 
 	// Create the index to map ec2 id back to container instance id.
-	var ec2Ids []*string
+	ec2Ids := make([]*string, len(res.ContainerInstances))
 	ec2IdToCI := make(map[string]string)
-	for _, containerInstance := range res.ContainerInstances {
+	for i, containerInstance := range res.ContainerInstances {
 		ec2Id := containerInstance.Ec2InstanceId
-		ec2Ids = append(ec2Ids, ec2Id)
+		ec2Ids[i] = ec2Id
 		ec2IdToCI[aws.StringValue(ec2Id)] = aws.StringValue(containerInstance.ContainerInstanceArn)
 	}
 
@@ -414,9 +414,9 @@ func (f *taskFetcher) attachService(tasks []*taskAnnotated, services []*ecs.Serv
 // Util Start
 
 func sortStringPointers(ps []*string) {
-	var ss []string
-	for _, p := range ps {
-		ss = append(ss, aws.StringValue(p))
+	ss := make([]string, len(ps))
+	for i, p := range ps {
+		ss[i] = aws.StringValue(p)
 	}
 	sort.Strings(ss)
 	for i := range ss {

@@ -134,6 +134,8 @@ func assertMetricsEqual(t *testing.T, actual pmetric.Metrics) {
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, actual)
+	err = pmetrictest.CompareMetrics(expectedMetrics, actual, pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder())
 	require.NoError(t, err)
 }

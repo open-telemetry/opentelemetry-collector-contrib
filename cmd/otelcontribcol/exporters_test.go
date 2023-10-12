@@ -11,7 +11,6 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,8 +41,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
@@ -51,7 +48,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
@@ -97,22 +93,6 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "jaeger",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["jaeger"].CreateDefaultConfig().(*jaegerexporter.Config)
-				cfg.Endpoint = endpoint
-				return cfg
-			},
-		},
-		{
-			exporter: "jaeger_thrift",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["jaeger_thrift"].CreateDefaultConfig().(*jaegerthrifthttpexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "kafka",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["kafka"].CreateDefaultConfig().(*kafkaexporter.Config)
@@ -123,8 +103,10 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter:      "logging",
-			skipLifecycle: runtime.GOOS == "darwin", // TODO: investigate why this fails on darwin.
+			exporter: "debug",
+		},
+		{
+			exporter: "logging",
 		},
 		{
 			exporter: "opencensus",
@@ -153,15 +135,6 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
-		},
-		{
-			exporter: "parquet",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
-				cfg.Path = t.TempDir()
-				return cfg
-			},
-			skipLifecycle: true, // Causes race detector to fail
 		},
 		{
 			exporter: "prometheus",

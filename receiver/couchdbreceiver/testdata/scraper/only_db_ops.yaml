@@ -16,15 +16,15 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: reads
-                  startTimeUnixNano: "1651674345801839000"
-                  timeUnixNano: "1651674345801933000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "39"
                   attributes:
                     - key: operation
                       value:
                         stringValue: writes
-                  startTimeUnixNano: "1651674345801839000"
-                  timeUnixNano: "1651674345801933000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
         scope:

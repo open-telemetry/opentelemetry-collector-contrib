@@ -378,7 +378,7 @@ func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetri
 	})
 }
 
-func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
+func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, metricUnitExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
 	return func(t *testing.T, rm pmetric.ResourceMetrics) {
 		allMetrics := getMetrics(rm)
 		var present bool
@@ -389,6 +389,7 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 
 			present = true
 			metricTypeExpectations(t, m)
+			metricUnitExpectations(t, m)
 			for i, de := range dataPointExpectations {
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
@@ -431,6 +432,12 @@ func assertMetricAbsent(name string) testExpectation {
 func compareMetricType(typ pmetric.MetricType) metricTypeComparator {
 	return func(t *testing.T, metric pmetric.Metric) {
 		assert.Equal(t, typ.String(), metric.Type().String(), "Metric type does not match")
+	}
+}
+
+func compareMetricUnit(unit string) metricTypeComparator {
+	return func(t *testing.T, metric pmetric.Metric) {
+		assert.Equal(t, unit, metric.Unit(), "Metric unit does not match")
 	}
 }
 

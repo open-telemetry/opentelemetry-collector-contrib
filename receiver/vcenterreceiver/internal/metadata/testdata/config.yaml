@@ -86,6 +86,8 @@ all_set:
       enabled: true
     vcenter.host.name:
       enabled: true
+    vcenter.resource_pool.inventory_path:
+      enabled: true
     vcenter.resource_pool.name:
       enabled: true
     vcenter.vm.id:
@@ -178,6 +180,8 @@ none_set:
     vcenter.datastore.name:
       enabled: false
     vcenter.host.name:
+      enabled: false
+    vcenter.resource_pool.inventory_path:
       enabled: false
     vcenter.resource_pool.name:
       enabled: false

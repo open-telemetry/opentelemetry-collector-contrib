@@ -90,7 +90,7 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 	var nextLines []string
 	fs := newFields(record.attributes)
 	name := record.metric.Name()
-
+	//exhaustive:enforce
 	switch record.metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := record.metric.Gauge().DataPoints()

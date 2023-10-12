@@ -191,16 +191,31 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for vcenter resource attributes.
 type ResourceAttributesConfig struct {
-	VcenterClusterName      ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
-	VcenterDatastoreName    ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
-	VcenterHostName         ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
-	VcenterResourcePoolName ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.name"`
-	VcenterVMID             ResourceAttributeConfig `mapstructure:"vcenter.vm.id"`
-	VcenterVMName           ResourceAttributeConfig `mapstructure:"vcenter.vm.name"`
+	VcenterClusterName               ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
+	VcenterDatastoreName             ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
+	VcenterHostName                  ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
+	VcenterResourcePoolInventoryPath ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.inventory_path"`
+	VcenterResourcePoolName          ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.name"`
+	VcenterVMID                      ResourceAttributeConfig `mapstructure:"vcenter.vm.id"`
+	VcenterVMName                    ResourceAttributeConfig `mapstructure:"vcenter.vm.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -212,6 +227,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterHostName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		VcenterResourcePoolInventoryPath: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		VcenterResourcePoolName: ResourceAttributeConfig{

@@ -23,3 +23,27 @@ resource_attributes:
     description: The host.arch
     type: string
     enabled: false
+  host.cpu.vendor.id:
+    description: The host.cpu.vendor.id
+    type: string
+    enabled: false
+  host.cpu.family:
+    description: The host.cpu.family
+    type: int
+    enabled: false
+  host.cpu.model.id:
+    description: The host.cpu.model.id
+    type: int
+    enabled: false
+  host.cpu.model.name:
+    description: The host.cpu.model.name
+    type: string
+    enabled: false
+  host.cpu.stepping:
+    description: The host.cpu.stepping
+    type: int
+    enabled: false
+  host.cpu.cache.l2.size:
+    description: The host.cpu.cache.l2.size
+    type: int
+    enabled: false

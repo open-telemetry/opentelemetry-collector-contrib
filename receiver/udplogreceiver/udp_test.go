@@ -103,7 +103,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 		},
 		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
-			c.Encoding.Encoding = "fake"
+			c.Encoding = "fake"
 			return *c
 		}(),
 	}
