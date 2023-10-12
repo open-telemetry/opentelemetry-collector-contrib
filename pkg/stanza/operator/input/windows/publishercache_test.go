@@ -46,8 +46,8 @@ func TestValidAndInvalidPublishers(t *testing.T) {
 	publisherCache := newPublisherCache()
 	defer publisherCache.evictAll()
 
-	// Provider "EventCreate" exists in all Windows versions.
-	publisher, openPublisherErr := publisherCache.get("EventCreate")
+	// Provider "Application" exists in all Windows versions.
+	publisher, openPublisherErr := publisherCache.get("Application")
 	require.NoError(t, openPublisherErr)
 	require.True(t, publisher.Valid())
 
@@ -57,7 +57,7 @@ func TestValidAndInvalidPublishers(t *testing.T) {
 	require.False(t, publisher.Valid())
 
 	// Get the existing publisher again.
-	publisher, openPublisherErr = publisherCache.get("EventCreate")
+	publisher, openPublisherErr = publisherCache.get("Application")
 	require.NoError(t, openPublisherErr)
 	require.True(t, publisher.Valid())
 
