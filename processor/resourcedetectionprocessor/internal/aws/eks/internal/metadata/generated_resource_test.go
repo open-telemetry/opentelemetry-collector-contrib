@@ -22,7 +22,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 3, res.Attributes().Len())
 			case "none_set":
@@ -43,7 +43,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "cloud.provider-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cluster.name")
-			assert.True(t, ok)
+			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.cluster.name-val", val.Str())
 			}

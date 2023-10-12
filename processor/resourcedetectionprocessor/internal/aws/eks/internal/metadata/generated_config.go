@@ -39,7 +39,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sClusterName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }
