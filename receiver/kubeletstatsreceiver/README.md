@@ -231,7 +231,7 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 ### Role-based access control
 
-The Kubelet Stats Receiver  needs `get` permissions on the `nodes/stats` resources. Additionally, when using `extra_metadata_labels` or any of the `{request|limit}_utilization` metrics the processor also needs `get` permissions for `nodes/proxy` resources.
+The Kubelet Stats Receiver needs `get` permissions on the `nodes/stats` resources. Additionally, when using `extra_metadata_labels` or any of the `{request|limit}_utilization` metrics the processor also needs `get` permissions for `nodes/proxy` resources.
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
