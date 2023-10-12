@@ -46,7 +46,7 @@ type jsonTracesUnmarshaler struct {
 	logger *zap.Logger
 }
 
-func (j *jsonTracesUnmarshaler) UnmarshalTraces(blob []byte) (ptrace.Traces, error) {
+func (j *jsonTracesUnmarshaler) UnmarshalTraces(blob []byte, config *Config) (ptrace.Traces, error) {
 	var event map[string]json.RawMessage
 	if err := json.Unmarshal(blob, &event); err != nil {
 		j.logger.Error("Failed to unmarshal blob", zap.Error(err))
@@ -62,7 +62,11 @@ func (j *jsonTracesUnmarshaler) UnmarshalTraces(blob []byte) (ptrace.Traces, err
 			return ptrace.Traces{}, err
 		}
 		j.logger.Info("Unmarshalling WorkflowJobEvent")
-		traces = eventToTraces(&jobEvent, j.logger)
+		traces, err = eventToTraces(&jobEvent, config, j.logger)
+		if err != nil {
+			j.logger.Error("Failed to convert event to traces", zap.Error(err))
+			return ptrace.Traces{}, err
+		}
 	} else if _, ok := event["workflow_run"]; ok {
 		var runEvent WorkflowRunEvent
 		err := json.Unmarshal(blob, &runEvent)
@@ -71,16 +75,20 @@ func (j *jsonTracesUnmarshaler) UnmarshalTraces(blob []byte) (ptrace.Traces, err
 			return ptrace.Traces{}, err
 		}
 		j.logger.Info("Unmarshalling WorkflowRunEvent")
-		traces = eventToTraces(&runEvent, j.logger)
+		traces, err = eventToTraces(&runEvent, config, j.logger)
+		if err != nil {
+			j.logger.Error("Failed to convert event to traces", zap.Error(err))
+			return ptrace.Traces{}, err
+		}
 	} else {
-		j.logger.Error("Unknown event type, dropping payload")
-		return ptrace.Traces{}, fmt.Errorf("unknown event type, dropping payload")
+		j.logger.Warn("Unknown event type")
+		return ptrace.Traces{}, fmt.Errorf("unknown event type")
 	}
 
 	return traces, nil
 }
 
-func eventToTraces(event interface{}, logger *zap.Logger) ptrace.Traces {
+func eventToTraces(event interface{}, config *Config, logger *zap.Logger) (ptrace.Traces, error) {
 	logger.Info("Determining event")
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
@@ -90,11 +98,11 @@ func eventToTraces(event interface{}, logger *zap.Logger) ptrace.Traces {
 	case *WorkflowJobEvent:
 		logger.Info("Processing WorkflowJobEvent")
 		jobResource := resourceSpans.Resource()
-		createResourceAttributes(jobResource, e, logger)
+		createResourceAttributes(jobResource, e, config, logger)
 		traceID, err := generateTraceID(e.WorkflowJob.RunID, e.WorkflowJob.RunAttempt)
 		if err != nil {
 			logger.Error("Failed to generate trace ID", zap.Error(err))
-			return traces
+			return traces, fmt.Errorf("failed to generate trace ID")
 		}
 		if e.WorkflowJob.Status == "completed" {
 			parentSpanID := createParentSpan(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, logger)
@@ -106,18 +114,18 @@ func eventToTraces(event interface{}, logger *zap.Logger) ptrace.Traces {
 		traceID, err := generateTraceID(e.WorkflowRun.ID, e.WorkflowRun.RunAttempt)
 		if err != nil {
 			logger.Error("Failed to generate trace ID", zap.Error(err))
-			return traces
+			return traces, fmt.Errorf("failed to generate trace ID")
 		}
 		if e.WorkflowRun.Status == "completed" {
-			createResourceAttributes(runResource, e, logger)
+			createResourceAttributes(runResource, e, config, logger)
 			createRootSpan(resourceSpans, e, traceID, logger)
 		}
 	default:
 		logger.Error("unknown event type, dropping payload")
-		return ptrace.Traces{}
+		return ptrace.Traces{}, fmt.Errorf("unknown event type, dropping payload")
 	}
 
-	return traces
+	return traces, nil
 }
 
 func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, logger *zap.Logger) pcommon.SpanID {
@@ -128,7 +136,9 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 	parentSpanID, _ := generateParentSpanID(job.RunID, job.RunAttempt)
 	span.SetParentSpanID(parentSpanID)
 
-	span.SetSpanID(generateSpanID())
+	jobSpanID, _ := generateJobSpanID(job.ID, job.RunAttempt, job.Name)
+	span.SetSpanID(jobSpanID)
+
 	span.SetName(job.Name)
 	span.SetKind(ptrace.SpanKindServer)
 	if len(steps) > 0 {
@@ -161,12 +171,13 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 	return span.SpanID()
 }
 
-func createResourceAttributes(resource pcommon.Resource, event interface{}, logger *zap.Logger) {
+func createResourceAttributes(resource pcommon.Resource, event interface{}, config *Config, logger *zap.Logger) {
 	attrs := resource.Attributes()
 
 	switch e := event.(type) {
 	case *WorkflowJobEvent:
-		serviceName := fmt.Sprintf("github.%s", strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(e.Repository.FullName, "/", "."), "-", "_")))
+		serviceName := generateServiceName(config, e.Repository.FullName)
+
 		attrs.PutStr("service.name", serviceName)
 
 		attrs.PutStr("ci.system", "github")
@@ -178,13 +189,14 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, logg
 		attrs.PutStr("ci.github.runner.name", e.WorkflowJob.RunnerName)
 		attrs.PutStr("ci.github.workflow", e.WorkflowJob.WorkflowName)
 
-		attrs.PutStr("vcs.system", "git")
-		attrs.PutStr("vcs.git.branch", e.WorkflowJob.HeadBranch)
-		attrs.PutStr("vcs.git.sha", e.WorkflowJob.HeadSha)
-		attrs.PutStr("vcs.git.repo", e.Repository.FullName)
+		attrs.PutStr("scm.system", "git")
+		attrs.PutStr("scm.git.branch", e.WorkflowJob.HeadBranch)
+		attrs.PutStr("scm.git.sha", e.WorkflowJob.HeadSha)
+		attrs.PutStr("scm.git.repo", e.Repository.FullName)
 
 	case *WorkflowRunEvent:
-		serviceName := fmt.Sprintf("github.%s", strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(e.Repository.FullName, "/", "."), "-", "_")))
+		serviceName := generateServiceName(config, e.Repository.FullName)
+
 		attrs.PutStr("service.name", serviceName)
 
 		attrs.PutStr("ci.system", "github")
@@ -196,9 +208,9 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, logg
 		attrs.PutStr("ci.github.workflow_path", e.WorkflowRun.Path)
 
 		attrs.PutStr("vcs.system", "git")
-		attrs.PutStr("vcs.git.branch", e.WorkflowRun.HeadBranch)
-		attrs.PutStr("vcs.git.sha", e.WorkflowRun.HeadSha)
-		attrs.PutStr("vcs.git.repo", e.Repository.FullName)
+		attrs.PutStr("scm.git.branch", e.WorkflowRun.HeadBranch)
+		attrs.PutStr("scm.git.sha", e.WorkflowRun.HeadSha)
+		attrs.PutStr("scm.git.repo", e.Repository.FullName)
 
 	default:
 		logger.Error("unknown event type")
@@ -234,12 +246,6 @@ func createRootSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent,
 	span.Status().SetMessage(event.WorkflowRun.Conclusion)
 
 	return rootSpanID, nil
-}
-
-func processSteps(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger) {
-	for _, step := range steps {
-		createSpan(scopeSpans, step, traceID, parentSpanID, logger)
-	}
 }
 
 func createSpan(scopeSpans ptrace.ScopeSpans, step Step, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger) pcommon.SpanID {
@@ -280,6 +286,20 @@ func generateTraceID(runID int64, runAttempt int) (pcommon.TraceID, error) {
 	return traceID, nil
 }
 
+func generateJobSpanID(runID int64, runAttempt int, job string) (pcommon.SpanID, error) {
+	input := fmt.Sprintf("%d%d%s", runID, runAttempt, job)
+	hash := sha256.Sum256([]byte(input))
+	spanIDHex := hex.EncodeToString(hash[:])
+
+	var spanID pcommon.SpanID
+	_, err := hex.Decode(spanID[:], []byte(spanIDHex[16:32]))
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+
+	return spanID, nil
+}
+
 func generateParentSpanID(runID int64, runAttempt int) (pcommon.SpanID, error) {
 	input := fmt.Sprintf("%d%ds", runID, runAttempt)
 	hash := sha256.Sum256([]byte(input))
@@ -294,10 +314,24 @@ func generateParentSpanID(runID int64, runAttempt int) (pcommon.SpanID, error) {
 	return spanID, nil
 }
 
+func generateServiceName(config *Config, fullName string) string {
+	if config.CustomServiceName != "" {
+		return config.CustomServiceName
+	}
+	formattedName := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(fullName, "/", "-"), "_", "-"))
+	return fmt.Sprintf("%s%s%s", config.ServiceNamePrefix, formattedName, config.ServiceNameSuffix)
+}
+
 func generateSpanID() pcommon.SpanID {
 	var spanID pcommon.SpanID
 	binary.Read(rand.Reader, binary.BigEndian, &spanID)
 	return spanID
+}
+
+func processSteps(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger) {
+	for _, step := range steps {
+		createSpan(scopeSpans, step, traceID, parentSpanID, logger)
+	}
 }
 
 func setSpanTimes(span ptrace.Span, start, end time.Time) {
@@ -446,7 +480,7 @@ func (gaer *githubActionsEventReceiver) ServeHTTP(w http.ResponseWriter, r *http
 
 	gaer.logger.Debug("Received request", zap.ByteString("payload", slurp))
 
-	td, err := gaer.jsonUnmarshaler.UnmarshalTraces(slurp)
+	td, err := gaer.jsonUnmarshaler.UnmarshalTraces(slurp, gaer.config)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
