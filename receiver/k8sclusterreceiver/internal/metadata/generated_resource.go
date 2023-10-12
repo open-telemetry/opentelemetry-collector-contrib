@@ -231,13 +231,6 @@ func (rb *ResourceBuilder) SetK8sStatefulsetUID(val string) {
 	}
 }
 
-// SetOpencensusResourcetype sets provided value as "opencensus.resourcetype" attribute.
-func (rb *ResourceBuilder) SetOpencensusResourcetype(val string) {
-	if rb.config.OpencensusResourcetype.Enabled {
-		rb.res.Attributes().PutStr("opencensus.resourcetype", val)
-	}
-}
-
 // SetOpenshiftClusterquotaName sets provided value as "openshift.clusterquota.name" attribute.
 func (rb *ResourceBuilder) SetOpenshiftClusterquotaName(val string) {
 	if rb.config.OpenshiftClusterquotaName.Enabled {

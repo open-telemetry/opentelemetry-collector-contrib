@@ -17,6 +17,11 @@ type ReplaceAllMatchesArguments[K any] struct {
 	Target      ottl.PMapGetter[K]
 	Pattern     string
 	Replacement ottl.StringGetter[K]
+	Function    ottl.Optional[ottl.FunctionGetter[K]]
+}
+
+type replaceAllMatchesFuncArgs[K any] struct {
+	Input ottl.StringGetter[K]
 }
 
 func NewReplaceAllMatchesFactory[K any]() ottl.Factory[K] {
@@ -30,22 +35,40 @@ func createReplaceAllMatchesFunction[K any](_ ottl.FunctionContext, oArgs ottl.A
 		return nil, fmt.Errorf("ReplaceAllMatchesFactory args must be of type *ReplaceAllMatchesArguments[K]")
 	}
 
-	return replaceAllMatches(args.Target, args.Pattern, args.Replacement)
+	return replaceAllMatches(args.Target, args.Pattern, args.Replacement, args.Function)
 }
 
-func replaceAllMatches[K any](target ottl.PMapGetter[K], pattern string, replacement ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func replaceAllMatches[K any](target ottl.PMapGetter[K], pattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	glob, err := glob.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
 	}
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
+		var replacementVal string
 		if err != nil {
 			return nil, err
 		}
-		replacementVal, err := replacement.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
+		if fn.IsEmpty() {
+			replacementVal, err = replacement.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			fnVal := fn.Get()
+			replacementExpr, errNew := fnVal.Get(&replaceAllMatchesFuncArgs[K]{Input: replacement})
+			if errNew != nil {
+				return nil, errNew
+			}
+			replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+			if errNew != nil {
+				return nil, errNew
+			}
+			replacementValStr, ok := replacementValRaw.(string)
+			if !ok {
+				return nil, fmt.Errorf("replacement value is not a string")
+			}
+			replacementVal = replacementValStr
 		}
 		val.Range(func(key string, value pcommon.Value) bool {
 			if glob.Match(value.Str()) {

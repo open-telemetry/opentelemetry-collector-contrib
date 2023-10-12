@@ -172,13 +172,6 @@ resource_attributes:
     type: string
     enabled: true
 
-  opencensus.resourcetype:
-    description: The OpenCensus resource type.
-    type: string
-    enabled: false
-    warnings:
-      if_configured: This resource_attribute is deprecated and will be removed soon.
-
 attributes:
   k8s.namespace.name:
     description: The k8s namespace name.
