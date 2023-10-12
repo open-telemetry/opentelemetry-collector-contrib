@@ -17,7 +17,7 @@
 This receiver queries MySQL's global status and InnoDB tables.
 
 Some metrics will not appear if their corresponding feature is inactive.  
-There are also optional metrics that you must specify in your configuration to collect,  listed in documentation.md 
+There are also optional metrics that you must specify in your configuration to collect,  listed in [documentation.md](./documentation.md) 
 
 ## Prerequisites
 
