@@ -436,9 +436,34 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 		return nil, nil
 	}
 
+	// remove metrics from fieldMap
+	metricsMap := make(map[string]interface{})
+	for _, measurement := range cWMetric.measurements {
+		for _, metric := range measurement.Metrics {
+			metricName, exist := metric["Name"]
+			if exist {
+				v, ok := fieldMap[metricName]
+				if ok {
+					metricsMap[metricName] = v
+					delete(fieldMap, metricName)
+				}
+			}
+		}
+	}
+
 	pleMsg, err := json.Marshal(fieldMap)
 	if err != nil {
 		return nil, err
+	}
+
+	// append metrics json to pleMsg
+	if len(metricsMap) > 0 {
+		metricsMsg, err := json.Marshal(metricsMap)
+		if err != nil {
+			return nil, err
+		}
+		metricsMsg[0] = ','
+		pleMsg = append(pleMsg[:len(pleMsg)-1], metricsMsg...)
 	}
 
 	metricCreationTime := cWMetric.timestampMs
