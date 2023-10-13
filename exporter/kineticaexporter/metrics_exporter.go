@@ -113,7 +113,7 @@ var (
 		CreateExpHistogramDatapointAttribute,
 		CreateExpHistogramDatapointExemplar,
 		CreateExpHistogramDatapointExemplarAttribute,
-		CreateExpHistogramResourceAtribute,
+		CreateExpHistogramResourceAttribute,
 		CreateExpHistogramScopeAttribute,
 	}
 
@@ -133,12 +133,8 @@ type kineticaMetricsExporter struct {
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) *kineticaMetricsExporter {
-	if err := cfg.Validate(); err != nil {
-		return nil
-	}
-
 	kineticaLogger := logger
-	writer := NewKiWriter(context.TODO(), *cfg, kineticaLogger)
+	writer := newKiWriter(context.TODO(), *cfg, kineticaLogger)
 	metricsExp := &kineticaMetricsExporter{
 		logger: kineticaLogger,
 		writer: writer,
@@ -431,7 +427,7 @@ func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, _ str
 		datapoint.Attributes().Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Sum record attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				datapointAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid sum record attribute value", zap.String("Error", err.Error()))
@@ -478,7 +474,7 @@ func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, _ str
 	resAttr.Range(func(k string, v pcommon.Value) bool {
 		if k == "" {
 			e.logger.Debug("Resource attribute key is empty")
-		} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+		} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 			resourceAttributes[k] = v
 		} else {
 			e.logger.Debug("Invalid resource attribute value", zap.String("Error", err.Error()))
@@ -508,7 +504,7 @@ func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, _ str
 	scopeInstr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if k == "" {
 			e.logger.Debug("Scope attribute key is empty")
-		} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+		} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 			scopeAttributes[k] = v
 		} else {
 			e.logger.Debug("Invalid scope attribute value", zap.String("Error", err.Error()))
@@ -555,7 +551,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 		MetricName:             name,
 		Description:            description,
 		Unit:                   unit,
-		AggregationTemporality: int8(exponentialHistogramRecord.AggregationTemporality()),
+		AggregationTemporality: exponentialHistogramRecord.AggregationTemporality(),
 	}
 
 	kiExpHistogramRecord.histogram = histogram
@@ -594,7 +590,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 		datapoint.Attributes().Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Sum record attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				datapointAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid sum record attribute value", zap.String("Error", err.Error()))
@@ -638,7 +634,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 			exemplar.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
 				if k == "" {
 					e.logger.Debug("Sum record attribute key is empty")
-				} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+				} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 					exemplarAttributes[k] = v
 				} else {
 					e.logger.Debug("Invalid sum record attribute value", zap.String("Error", err.Error()))
@@ -697,7 +693,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 	resAttr.Range(func(k string, v pcommon.Value) bool {
 		if k == "" {
 			e.logger.Debug("Resource attribute key is empty")
-		} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+		} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 			resourceAttributes[k] = v
 		} else {
 			e.logger.Debug("Invalid resource attribute value", zap.String("Error", err.Error()))
@@ -727,7 +723,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 	scopeInstr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if k == "" {
 			e.logger.Debug("Scope attribute key is empty")
-		} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+		} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 			scopeAttributes[k] = v
 		} else {
 			e.logger.Debug("Invalid scope attribute value", zap.String("Error", err.Error()))
@@ -777,7 +773,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 		MetricName:             name,
 		Description:            description,
 		Unit:                   unit,
-		AggregationTemporality: int8(histogramRecord.AggregationTemporality()),
+		AggregationTemporality: histogramRecord.AggregationTemporality(),
 	}
 
 	kiHistogramRecord.histogram = histogram
@@ -810,7 +806,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 		datapoint.Attributes().Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Histogram record attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				datapointAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid histogram record attribute value", zap.String("Error", err.Error()))
@@ -854,7 +850,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 			exemplar.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
 				if k == "" {
 					e.logger.Debug("Histogram record attribute key is empty")
-				} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+				} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 					exemplarAttributes[k] = v
 				} else {
 					e.logger.Debug("Invalid histogram record attribute value", zap.String("Error", err.Error()))
@@ -911,7 +907,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 		resAttr.Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Resource attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				resourceAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid resource attribute value", zap.String("Error", err.Error()))
@@ -945,7 +941,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 		scopeInstr.Attributes().Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Scope attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				scopeAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid scope attribute value", zap.String("Error", err.Error()))
@@ -998,7 +994,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 		MetricName:             name,
 		Description:            description,
 		Unit:                   unit,
-		AggregationTemporality: int8(sumRecord.AggregationTemporality()),
+		AggregationTemporality: sumRecord.AggregationTemporality(),
 		IsMonotonic:            isMonotonic,
 	}
 
@@ -1028,7 +1024,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 		datapoint.Attributes().Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Sum record attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				sumDatapointAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid sum record attribute value", zap.String("Error", err.Error()))
@@ -1072,7 +1068,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 			exemplar.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
 				if k == "" {
 					e.logger.Debug("Sum record attribute key is empty")
-				} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+				} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 					exemplarAttributes[k] = v
 				} else {
 					e.logger.Debug("Invalid sum record attribute value", zap.String("Error", err.Error()))
@@ -1109,7 +1105,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 		resAttr.Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Resource attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				resourceAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid resource attribute value", zap.String("Error", err.Error()))
@@ -1142,7 +1138,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 		scopeInstr.Attributes().Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Scope attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				scopeAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid scope attribute value", zap.String("Error", err.Error()))
@@ -1228,7 +1224,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 		datapoint.Attributes().Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Gauge record attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				gaugeDatapointAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid gauge record attribute value", zap.String("Error", err.Error()))
@@ -1272,7 +1268,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 			exemplar.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
 				if k == "" {
 					e.logger.Debug("Sum record attribute key is empty")
-				} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+				} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 					exemplarAttributes[k] = v
 				} else {
 					e.logger.Debug("Invalid sum record attribute value", zap.String("Error", err.Error()))
@@ -1309,7 +1305,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 		resAttr.Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Resource attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				resourceAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid resource attribute value", zap.String("Error", err.Error()))
@@ -1349,7 +1345,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 		scopeInstr.Attributes().Range(func(k string, v pcommon.Value) bool {
 			if k == "" {
 				e.logger.Debug("Scope attribute key is empty")
-			} else if v, err := AttributeValueToKineticaFieldValue(v); err == nil {
+			} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
 				scopeAttributes[k] = v
 			} else {
 				e.logger.Debug("Invalid scope attribute value", zap.String("Error", err.Error()))

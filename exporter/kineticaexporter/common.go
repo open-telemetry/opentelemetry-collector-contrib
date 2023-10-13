@@ -5,9 +5,7 @@ package kineticaexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"reflect"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -481,7 +479,7 @@ const (
 		FOREIGN KEY (histogram_id) references %smetric_exp_histogram(histogram_id) as fk_exp_histogram_datapoint_exemplar_attribute
 	) USING TABLE PROPERTIES (NO_ERROR_IF_EXISTS = TRUE);
 	`
-	CreateExpHistogramResourceAtribute string = `CREATE TABLE %smetric_exp_histogram_resource_attribute
+	CreateExpHistogramResourceAttribute string = `CREATE TABLE %smetric_exp_histogram_resource_attribute
 	(
 		"histogram_id" UUID (primary_key) NOT NULL,
 		"key" VARCHAR (primary_key, 128, dict) NOT NULL,
@@ -583,30 +581,18 @@ const (
 	`
 )
 
-// AggregationTemporality - Metrics
-type AggregationTemporality int
-
-// const - Metrics
-//
-//	@param AggregationTemporalityUnspecified
-const (
-	AggregationTemporalityUnspecified AggregationTemporality = iota
-	AggregationTemporalityDelta
-	AggregationTemporalityCumulative
-)
-
 // ValueTypePair - struct to wrap a value as [any] and its type [pcommon.ValueType]
 type ValueTypePair struct {
 	value     interface{}
 	valueType pcommon.ValueType
 }
 
-// AttributeValueToKineticaFieldValue - Convert an attribute value to a [ValueTypePair] for writing to Kinetica
+// attributeValueToKineticaFieldValue - Convert an attribute value to a [ValueTypePair] for writing to Kinetica
 //
 //	@param value
 //	@return ValueTypePair
 //	@return error
-func AttributeValueToKineticaFieldValue(value pcommon.Value) (ValueTypePair, error) {
+func attributeValueToKineticaFieldValue(value pcommon.Value) (ValueTypePair, error) {
 	switch value.Type() {
 	case pcommon.ValueTypeStr:
 		var val string
@@ -750,52 +736,12 @@ func getAttributeValue(vtPair ValueTypePair) (*AttributeValue, error) {
 
 }
 
-// ValidateStruct - a helper method to validate whether a struct has been initialized or not
-//
-//	@param s
-//	@return err
-func ValidateStruct(s interface{}) (err error) {
-	// first make sure that the input is a struct
-	// having any other type, especially a pointer to a struct,
-	// might result in panic
-	structType := reflect.TypeOf(s)
-	if structType.Kind() != reflect.Struct {
-		return errors.New("Input param should be a struct")
-	}
-
-	// now go one by one through the fields and validate their value
-	structVal := reflect.ValueOf(s)
-	fieldNum := structVal.NumField()
-
-	for i := 0; i < fieldNum; i++ {
-		// Field(i) returns i'th value of the struct
-		field := structVal.Field(i)
-		fieldName := structType.Field(i).Name
-
-		// CAREFUL! IsZero interprets empty strings and int equal 0 as a zero value.
-		// To check only if the pointers have been initialized,
-		// you can check the kind of the field:
-		// if field.Kind() == reflect.Pointer { // check }
-
-		// IsZero panics if the value is invalid.
-		// Most functions and methods never return an invalid Value.
-		isSet := field.IsValid() && !field.IsZero()
-
-		if !isSet {
-			err = fmt.Errorf("%w%s is not set; ", err, fieldName)
-		}
-
-	}
-
-	return err
-}
-
-// ChunkBySize - Splits a slice into multiple slices of the given size
+// chunkBySize - Splits a slice into multiple slices of the given size
 //
 //	@param items
 //	@param chunkSize
 //	@return [][]T
-func ChunkBySize[T any](items []T, chunkSize int) [][]T {
+func chunkBySize[T any](items []T, chunkSize int) [][]T {
 	var _chunks = make([][]T, 0, (len(items)/chunkSize)+1)
 	for chunkSize < len(items) {
 		items, _chunks = items[chunkSize:], append(_chunks, items[0:chunkSize:chunkSize])

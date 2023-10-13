@@ -25,7 +25,7 @@ type AttributeValue struct {
 	BytesValue  []byte  `avro:"bytes_value"`
 }
 
-// NewAttributeValue Constructor for AttributeValue
+// newAttributeValue Constructor for AttributeValue
 //
 //	@param intValue
 //	@param stringValue
@@ -33,15 +33,15 @@ type AttributeValue struct {
 //	@param doubleValue
 //	@param bytesValue
 //	@return *AttributeValue
-func NewAttributeValue(intValue int, stringValue string, boolValue int8, doubleValue float64, bytesValue []byte) *AttributeValue {
-	o := new(AttributeValue)
-	o.IntValue = intValue
-	o.StringValue = stringValue
-	o.BoolValue = boolValue
-	o.DoubleValue = doubleValue
-	o.BytesValue = bytesValue
-	return o
-}
+// func newAttributeValue(intValue int, stringValue string, boolValue int8, doubleValue float64, bytesValue []byte) *AttributeValue {
+// 	o := new(AttributeValue)
+// 	o.IntValue = intValue
+// 	o.StringValue = stringValue
+// 	o.BoolValue = boolValue
+// 	o.DoubleValue = doubleValue
+// 	o.BytesValue = bytesValue
+// 	return o
+// }
 
 // KiWriter - struct modeling the Kinetica connection, contains the
 // Kinetica connection [kinetica.Kinetica], the Kinetica Options [kinetica.KineticaOptions],
@@ -90,30 +90,30 @@ func init() {
 	Writer = &KiWriter{*gpudbInst, options, *config, nil}
 }
 
-// NewKiWriter - Constructor for the [KiWriter] struct
+// newKiWriter - Constructor for the [KiWriter] struct
 //
 //	@param ctx
 //	@param cfg
 //	@return *KiWriter
-func NewKiWriter(ctx context.Context, cfg Config, logger *zap.Logger) *KiWriter {
+func newKiWriter(ctx context.Context, cfg Config, logger *zap.Logger) *KiWriter {
 	options := kinetica.KineticaOptions{Username: cfg.Username, Password: string(cfg.Password), ByPassSslCertCheck: cfg.BypassSslCertCheck}
 	gpudbInst := kinetica.NewWithOptions(ctx, cfg.Host, &options)
 	return &KiWriter{*gpudbInst, options, cfg, logger}
 }
 
-// GetGpuDbInst - Creates and returns a new [kinetica.Kinetica] struct
+// getGpuDbInst - Creates and returns a new [kinetica.Kinetica] struct
 //
 //	@param cfg
 //	@return *gpudb.Gpudb
-func GetGpuDbInst(cfg *Config) *kinetica.Kinetica {
-	ctx := context.TODO()
-	options := kinetica.KineticaOptions{Username: cfg.Username, Password: string(cfg.Password), ByPassSslCertCheck: cfg.BypassSslCertCheck}
-	// fmt.Println("Options", options)
-	gpudbInst := kinetica.NewWithOptions(ctx, cfg.Host, &options)
+// func getGpuDbInst(cfg *Config) *kinetica.Kinetica {
+// 	ctx := context.TODO()
+// 	options := kinetica.KineticaOptions{Username: cfg.Username, Password: string(cfg.Password), ByPassSslCertCheck: cfg.BypassSslCertCheck}
+// 	// fmt.Println("Options", options)
+// 	gpudbInst := kinetica.NewWithOptions(ctx, cfg.Host, &options)
 
-	return gpudbInst
+// 	return gpudbInst
 
-}
+// }
 
 // Metrics Handling
 
@@ -185,12 +185,12 @@ type GaugeScopeAttribute struct {
 
 // Sum - struct modeling a Sum metric
 type Sum struct {
-	SumID                  string `avro:"sum_id"`
-	MetricName             string `avro:"metric_name"`
-	Description            string `avro:"metric_description"`
-	Unit                   string `avro:"metric_unit"`
-	AggregationTemporality int8   `avro:"aggregation_temporality"`
-	IsMonotonic            int8   `avro:"is_monotonic"`
+	SumID                          string `avro:"sum_id"`
+	MetricName                     string `avro:"metric_name"`
+	Description                    string `avro:"metric_description"`
+	Unit                           string `avro:"metric_unit"`
+	pmetric.AggregationTemporality `avro:"aggregation_temporality"`
+	IsMonotonic                    int8 `avro:"is_monotonic"`
 }
 
 // SumDatapoint - struct modeling a Sum Datapoint
@@ -253,11 +253,11 @@ type SumScopeAttribute struct {
 
 // Histogram - struct modeling a Histogram metric type
 type Histogram struct {
-	HistogramID            string `avro:"histogram_id"`
-	MetricName             string `avro:"metric_name"`
-	Description            string `avro:"metric_description"`
-	Unit                   string `avro:"metric_unit"`
-	AggregationTemporality int8   `avro:"aggregation_temporality"`
+	HistogramID                    string `avro:"histogram_id"`
+	MetricName                     string `avro:"metric_name"`
+	Description                    string `avro:"metric_description"`
+	Unit                           string `avro:"metric_unit"`
+	pmetric.AggregationTemporality `avro:"aggregation_temporality"`
 }
 
 // HistogramDatapoint - struct modeling a Histogram Datapoint
@@ -339,11 +339,11 @@ type HistogramScopeAttribute struct {
 
 // ExponentialHistogram - struct modeling an Exponential Histogram
 type ExponentialHistogram struct {
-	HistogramID            string `avro:"histogram_id"`
-	MetricName             string `avro:"metric_name"`
-	Description            string `avro:"metric_description"`
-	Unit                   string `avro:"metric_unit"`
-	AggregationTemporality int8   `avro:"aggregation_temporality"`
+	HistogramID                    string `avro:"histogram_id"`
+	MetricName                     string `avro:"metric_name"`
+	Description                    string `avro:"metric_description"`
+	Unit                           string `avro:"metric_unit"`
+	pmetric.AggregationTemporality `avro:"aggregation_temporality"`
 }
 
 // ExponentialHistogramDatapoint - struct modeling an Exponential Histogram Datapoint
@@ -842,7 +842,7 @@ func (kiwriter *KiWriter) doChunkedInsert(_ context.Context, tableName string, r
 
 	kiwriter.logger.Debug("Writing to - ", zap.String("Table", finalTable), zap.Int("Record count", len(records)))
 
-	recordChunks := ChunkBySize(records, ChunkSize)
+	recordChunks := chunkBySize(records, ChunkSize)
 
 	errsChan := make(chan error, len(recordChunks))
 

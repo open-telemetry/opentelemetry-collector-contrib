@@ -1,6 +1,5 @@
 connector/servicegraphconnector
 exporter/kafkaexporter
-exporter/kineticaexporter
 exporter/pulsarexporter
 extension/observer
 processor/servicegraphprocessor
