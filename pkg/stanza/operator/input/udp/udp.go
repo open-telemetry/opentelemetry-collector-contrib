@@ -113,12 +113,12 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		resolver = helper.NewIPResolver()
 	}
 
-	if c.AsyncConfig == (UdpAsyncConfig{}) {
+	if c.AsyncConfig == nil {
 		c.AsyncConfig = NewUdpAsyncConfig()
 	}
 
 	if c.AsyncConfig.FixedReaderRoutineCount <= 0 {
-		return nil, fmt.Errorf("AsyncConfig.FixedReaderRoutineCount must be bigger than 0")
+		return nil, fmt.Errorf("async. fixed_reader_routine_count must be greater than 0")
 	}
 
 	udpInput := &Input{
