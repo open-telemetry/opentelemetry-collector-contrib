@@ -96,7 +96,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 		udpInput, err := udpInputCfg.Build(logger)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve upd config: %w", err)
+			return nil, fmt.Errorf("failed to resolve udp config: %w", err)
 		}
 
 		udpInput.SetOutputIDs([]string{syslogParser.ID()})

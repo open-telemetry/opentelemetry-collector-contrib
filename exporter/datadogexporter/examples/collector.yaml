@@ -372,7 +372,7 @@ exporters:
       ##
       ## To attach tags to telemetry signals regardless of the host, use a processor instead.
       #
-      # tags: []
+      # tags: ["team:infra", "<TAG_KEY>:<TAG_VALUE>"]
 
     ## @param logs - custom object - optional
     ## Logs exporter specific configuration.

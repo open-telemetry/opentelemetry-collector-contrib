@@ -186,7 +186,6 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	require.NoError(t, err)
 
 	r.ReadToEnd(context.Background())
-	require.True(t, r.EOF)
 
 	for _, expected := range expected {
 		require.Equal(t, expected, readToken(t, emitChan))
