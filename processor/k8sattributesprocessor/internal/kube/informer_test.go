@@ -33,6 +33,13 @@ func Test_newSharedNamespaceInformer(t *testing.T) {
 	assert.NotNil(t, informer)
 }
 
+func Test_newKubeSystemSharedInformer(t *testing.T) {
+	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	require.NoError(t, err)
+	informer := newKubeSystemSharedInformer(client)
+	assert.NotNil(t, informer)
+}
+
 func Test_informerListFuncWithSelectors(t *testing.T) {
 	ls, fs, err := selectorsFromFilters(Filters{
 		Fields: []FieldFilter{

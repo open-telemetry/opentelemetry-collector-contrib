@@ -117,11 +117,11 @@ type testData struct {
 func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
 	jobs := make([]map[string]interface{}, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
-	var metricPaths []string
-	for _, t := range tds {
+	metricPaths := make([]string, len(tds))
+	for i, t := range tds {
 		metricPath := fmt.Sprintf("/%s/metrics", t.name)
 		endpoints[metricPath] = t.pages
-		metricPaths = append(metricPaths, metricPath)
+		metricPaths[i] = metricPath
 	}
 	mp := newMockPrometheus(endpoints)
 	u, _ := url.Parse(mp.srv.URL)
@@ -378,7 +378,7 @@ func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetri
 	})
 }
 
-func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
+func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, metricUnitExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
 	return func(t *testing.T, rm pmetric.ResourceMetrics) {
 		allMetrics := getMetrics(rm)
 		var present bool
@@ -389,6 +389,7 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 
 			present = true
 			metricTypeExpectations(t, m)
+			metricUnitExpectations(t, m)
 			for i, de := range dataPointExpectations {
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
@@ -431,6 +432,12 @@ func assertMetricAbsent(name string) testExpectation {
 func compareMetricType(typ pmetric.MetricType) metricTypeComparator {
 	return func(t *testing.T, metric pmetric.Metric) {
 		assert.Equal(t, typ.String(), metric.Type().String(), "Metric type does not match")
+	}
+}
+
+func compareMetricUnit(unit string) metricTypeComparator {
+	return func(t *testing.T, metric pmetric.Metric) {
+		assert.Equal(t, unit, metric.Unit(), "Metric unit does not match")
 	}
 }
 

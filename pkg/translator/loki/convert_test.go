@@ -290,22 +290,99 @@ func TestRemoveAttributes(t *testing.T) {
 	}
 }
 
-func TestGetNestedAttribute(t *testing.T) {
-	// prepare
-	attrs := pcommon.NewMap()
-	err := attrs.FromRaw(map[string]interface{}{
-		"host": map[string]interface{}{
-			"name": "guarana",
+func TestGetAttribute(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		attr     string
+		attrs    map[string]interface{}
+		expected pcommon.Value
+		ok       bool
+	}{
+		{
+			desc: "attributes don't contain dotted names",
+			attr: "host.name",
+			attrs: map[string]interface{}{
+				"host": map[string]interface{}{
+					"name": "guarana",
+				},
+			},
+			expected: pcommon.NewValueStr("guarana"),
+			ok:       true,
 		},
-	})
-	require.NoError(t, err)
+		{
+			desc: "attributes contain dotted name on the nested level",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log": map[string]interface{}{
+					"file.name": "foo",
+				},
+			},
+			expected: pcommon.NewValueStr("foo"),
+			ok:       true,
+		},
+		{
+			desc: "attributes contain dotted name on the upper level",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log.file": map[string]interface{}{
+					"name": "foo",
+				},
+			},
+			expected: pcommon.NewValueStr("foo"),
+			ok:       true,
+		},
+		{
+			desc: "attributes contain dotted attribute",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log.file.name": "foo",
+			},
+			expected: pcommon.NewValueStr("foo"),
+			ok:       true,
+		},
+		{
+			desc: "dotted name that doesn't match attr",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log.file": "foo",
+			},
+			expected: pcommon.Value{},
+			ok:       false,
+		},
+		{
+			desc: "should get the longest match",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log.file.name": "foo",
+				"log": map[string]interface{}{
+					"file": map[string]interface{}{
+						"name": "bar",
+					},
+				},
+				"log.file": map[string]interface{}{
+					"name": "baz",
+				},
+			},
+			expected: pcommon.NewValueStr("foo"),
+			ok:       true,
+		},
+	}
 
-	// test
-	attr, ok := getNestedAttribute("host.name", attrs)
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			// prepare
+			attrs := pcommon.NewMap()
+			err := attrs.FromRaw(tC.attrs)
+			require.NoError(t, err)
 
-	// verify
-	assert.Equal(t, "guarana", attr.AsString())
-	assert.True(t, ok)
+			// test
+			attr, ok := getAttribute(tC.attr, attrs)
+
+			// verify
+			assert.Equal(t, tC.expected, attr)
+			assert.Equal(t, tC.ok, ok)
+		})
+	}
 }
 
 func TestConvertLogToLogRawEntry(t *testing.T) {

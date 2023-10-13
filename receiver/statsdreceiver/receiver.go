@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 )
 
 var _ receiver.Metrics = (*statsdReceiver)(nil)
@@ -36,8 +36,8 @@ type statsdReceiver struct {
 	cancel       context.CancelFunc
 }
 
-// New creates the StatsD receiver with the given parameters.
-func New(
+// newReceiver creates the StatsD receiver with the given parameters.
+func newReceiver(
 	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
@@ -72,6 +72,8 @@ func buildTransportServer(config Config) (transport.Server, error) {
 	switch strings.ToLower(config.NetAddr.Transport) {
 	case "", "udp":
 		return transport.NewUDPServer(config.NetAddr.Endpoint)
+	case "tcp":
+		return transport.NewTCPServer(config.NetAddr.Endpoint)
 	}
 
 	return nil, fmt.Errorf("unsupported transport %q", config.NetAddr.Transport)

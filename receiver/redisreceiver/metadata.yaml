@@ -45,6 +45,13 @@ attributes:
   cmd:
     description: Redis command name
     type: string
+  percentile:
+    description: Percentile
+    type: string
+    enum:
+      - p50
+      - p99
+      - p99.9
 
 metrics:
   redis.maxmemory:
@@ -61,7 +68,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [role]
 
   redis.cmd.calls:
@@ -71,7 +78,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [cmd]
 
   redis.cmd.usec:
@@ -81,8 +88,16 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [cmd]
+
+  redis.cmd.latency:
+    enabled: false
+    description: Command execution latency
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [cmd, percentile]
 
   redis.uptime:
     enabled: true
@@ -91,7 +106,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.cpu.time:
     enabled: true
@@ -100,7 +115,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [state]
 
   redis.clients.connected:
@@ -110,7 +125,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.clients.max_input_buffer:
     enabled: true
@@ -133,7 +148,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.keys.expired:
     enabled: true
@@ -142,7 +157,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
 
   redis.keys.evicted:
@@ -152,7 +167,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.connections.received:
     enabled: true
@@ -161,7 +176,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.connections.rejected:
     enabled: true
@@ -170,7 +185,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.memory.used:
     enabled: true
@@ -214,7 +229,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.commands:
     enabled: true
@@ -230,7 +245,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.net.input:
     enabled: true
@@ -239,7 +254,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.net.output:
     enabled: true
@@ -248,7 +263,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.keyspace.hits:
     enabled: true
@@ -257,7 +272,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.keyspace.misses:
     enabled: true
@@ -266,7 +281,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.latest_fork:
     enabled: true
@@ -282,7 +297,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.replication.backlog_first_byte_offset:
     enabled: true

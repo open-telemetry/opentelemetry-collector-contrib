@@ -8,11 +8,15 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -28,30 +32,60 @@ var (
 )
 
 type scraper struct {
-	endpoint string
-	logger   *zap.Logger
-	mb       *metadata.MetricsBuilder
+	cfg               *Config
+	httpClient        *http.Client
+	logger            *zap.Logger
+	mb                *metadata.MetricsBuilder
+	telemetrySettings component.TelemetrySettings
 }
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	var d net.Dialer
-	c, err := d.DialContext(ctx, "unix", s.endpoint)
-	if err != nil {
-		return pmetric.NewMetrics(), err
-	}
-	defer func(c net.Conn) {
-		_ = c.Close()
-	}(c)
-	records, err := s.readStats(c)
-	if err != nil {
-		return pmetric.NewMetrics(), err
+
+	var records []map[string]string
+	if u, notURLerr := url.Parse(s.cfg.Endpoint); notURLerr == nil && strings.HasPrefix(u.Scheme, "http") {
+
+		resp, err := s.httpClient.Get(s.cfg.Endpoint + ";csv")
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
+		defer resp.Body.Close()
+		buf, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
+		records, err = s.readStats(buf)
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
+	} else {
+		var d net.Dialer
+		c, err := d.DialContext(ctx, "unix", s.cfg.Endpoint)
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
+		defer func(c net.Conn) {
+			_ = c.Close()
+		}(c)
+		_, err = c.Write(showStatsCommand)
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
+		buf := make([]byte, 4096)
+		_, err = c.Read(buf)
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
+		records, err = s.readStats(buf)
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
 	}
 
 	var scrapeErrors []error
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, record := range records {
-		err = s.mb.RecordHaproxySessionsCountDataPoint(now, record["scur"])
+		err := s.mb.RecordHaproxySessionsCountDataPoint(now, record["scur"])
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
@@ -223,9 +257,9 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, err)
 		}
 		rb := s.mb.NewResourceBuilder()
-		rb.SetProxyName(record["pxname"])
-		rb.SetServiceName(record["svname"])
-		rb.SetHaproxyAddr(s.endpoint)
+		rb.SetHaproxyProxyName(record["pxname"])
+		rb.SetHaproxyServiceName(record["svname"])
+		rb.SetHaproxyAddr(s.cfg.Endpoint)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
@@ -235,16 +269,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func (s *scraper) readStats(c net.Conn) ([]map[string]string, error) {
-	_, err := c.Write(showStatsCommand)
-	if err != nil {
-		return nil, err
-	}
-	buf := make([]byte, 4096)
-	_, err = c.Read(buf)
-	if err != nil {
-		return nil, err
-	}
+func (s *scraper) readStats(buf []byte) ([]map[string]string, error) {
 	reader := csv.NewReader(bytes.NewReader(buf))
 	headers, err := reader.Read()
 	if err != nil {
@@ -268,10 +293,17 @@ func (s *scraper) readStats(c net.Conn) ([]map[string]string, error) {
 	return results, err
 }
 
+func (s *scraper) start(_ context.Context, host component.Host) error {
+	var err error
+	s.httpClient, err = s.cfg.HTTPClientSettings.ToClient(host, s.telemetrySettings)
+	return err
+}
+
 func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
 	return &scraper{
-		endpoint: cfg.Endpoint,
-		logger:   settings.TelemetrySettings.Logger,
-		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		logger:            settings.TelemetrySettings.Logger,
+		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		cfg:               cfg,
+		telemetrySettings: settings.TelemetrySettings,
 	}
 }

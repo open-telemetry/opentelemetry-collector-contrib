@@ -13,7 +13,7 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "1"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: metric1
             unit: By
         scope:
@@ -33,7 +33,7 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "2"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: metric1
             unit: By
         scope:

@@ -55,16 +55,3 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
-
-## Feature gate configurations
-
-See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
-
-**ALPHA**: `receiver.nginx.emitCurrentConnectionsAsSum`
-
-The feature gate `receiver.nginx.emitConnectionsCurrentAsSum` once enabled will change the data type of the
-`nginx.connections_current` metric from a gauge to a non-monotonic sum.
-
-This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
-to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
-is 0.80.0.

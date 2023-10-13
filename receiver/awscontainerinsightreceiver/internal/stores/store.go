@@ -40,6 +40,8 @@ type K8sDecorator struct {
 	// The K8sStore (e.g. podstore) does network request in Decorate function, thus needs to take a context
 	// object for canceling the request
 	ctx context.Context
+	// the pod store needs to be saved here because the map it is stateful and needs to be shut down.
+	podStore *PodStore
 }
 
 func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool, addFullPodNameMetricLabel bool, logger *zap.Logger) (*K8sDecorator, error) {
@@ -53,9 +55,11 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 	}
 
 	podstore, err := NewPodStore(hostIP, prefFullPodName, addFullPodNameMetricLabel, logger)
+
 	if err != nil {
 		return nil, err
 	}
+	k.podStore = podstore
 	k.stores = append(k.stores, podstore)
 
 	if tagService {
@@ -96,4 +100,8 @@ func (k *K8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.C
 	AddKubernetesInfo(metric, kubernetesBlob)
 	TagMetricSource(metric)
 	return metric
+}
+
+func (k *K8sDecorator) Shutdown() error {
+	return k.podStore.Shutdown()
 }

@@ -28,7 +28,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   #  topics scraper
   kafka.topic.partitions:
     enabled: true
@@ -37,7 +37,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [topic]
   kafka.partition.current_offset:
     enabled: true
@@ -60,7 +60,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [topic, partition]
   kafka.partition.replicas_in_sync:
     enabled: true
@@ -69,7 +69,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [topic, partition]
   #  consumers scraper
   kafka.consumer_group.members:
@@ -79,7 +79,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [group]
   kafka.consumer_group.offset:
     enabled: true

@@ -137,10 +137,10 @@ func setupMockTargetAllocator(responses Responses) (*MockTargetAllocator, error)
 }
 
 func labelSetTargetsToList(sets []model.LabelSet) []string {
-	var result []string
-	for _, set := range sets {
+	result := make([]string, len(sets))
+	for i, set := range sets {
 		address := set["__address__"]
-		result = append(result, string(address))
+		result[i] = string(address)
 	}
 	return result
 }

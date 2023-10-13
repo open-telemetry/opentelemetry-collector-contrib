@@ -615,7 +615,7 @@ func (c *client) stop(context.Context) error {
 	return nil
 }
 
-func (c *client) start(_ context.Context, host component.Host) (err error) {
+func (c *client) start(ctx context.Context, host component.Host) (err error) {
 
 	httpClient, err := buildHTTPClient(c.config, host, c.telemetrySettings)
 	if err != nil {
@@ -625,7 +625,7 @@ func (c *client) start(_ context.Context, host component.Host) (err error) {
 	if c.config.HecHealthCheckEnabled {
 		healthCheckURL, _ := c.config.getURL()
 		healthCheckURL.Path = c.config.HealthPath
-		if err := checkHecHealth(httpClient, healthCheckURL); err != nil {
+		if err := checkHecHealth(ctx, httpClient, healthCheckURL); err != nil {
 			return fmt.Errorf("%s: health check failed: %w", c.exporterName, err)
 		}
 	}
@@ -640,9 +640,9 @@ func (c *client) start(_ context.Context, host component.Host) (err error) {
 	return nil
 }
 
-func checkHecHealth(client *http.Client, healthCheckURL *url.URL) error {
+func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *url.URL) error {
 
-	req, err := http.NewRequest("GET", healthCheckURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), nil)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}

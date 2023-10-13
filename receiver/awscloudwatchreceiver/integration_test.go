@@ -78,14 +78,14 @@ var (
 )
 
 func loadLogGroups(t *testing.T) *cloudwatchlogs.DescribeLogGroupsOutput {
-	var output []*cloudwatchlogs.LogGroup
-	for _, lg := range logGroupFiles {
+	output := make([]*cloudwatchlogs.LogGroup, len(logGroupFiles))
+	for i, lg := range logGroupFiles {
 		bytes, err := os.ReadFile(lg)
 		require.NoError(t, err)
 		var logGroup cloudwatchlogs.LogGroup
 		err = json.Unmarshal(bytes, &logGroup)
 		require.NoError(t, err)
-		output = append(output, &logGroup)
+		output[i] = &logGroup
 	}
 
 	return &cloudwatchlogs.DescribeLogGroupsOutput{
@@ -95,14 +95,14 @@ func loadLogGroups(t *testing.T) *cloudwatchlogs.DescribeLogGroupsOutput {
 }
 
 func loadLogEvents(t *testing.T) *cloudwatchlogs.FilterLogEventsOutput {
-	var output []*cloudwatchlogs.FilteredLogEvent
-	for _, lg := range logEventsFiles {
+	output := make([]*cloudwatchlogs.FilteredLogEvent, len(logEventsFiles))
+	for i, lg := range logEventsFiles {
 		bytes, err := os.ReadFile(lg)
 		require.NoError(t, err)
 		var event cloudwatchlogs.FilteredLogEvent
 		err = json.Unmarshal(bytes, &event)
 		require.NoError(t, err)
-		output = append(output, &event)
+		output[i] = &event
 	}
 
 	return &cloudwatchlogs.FilterLogEventsOutput{

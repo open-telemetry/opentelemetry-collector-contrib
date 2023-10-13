@@ -10,7 +10,7 @@ import (
 )
 
 func getNewCompositePolicy(settings component.TelemetrySettings, config *CompositeCfg) (sampling.PolicyEvaluator, error) {
-	var subPolicyEvalParams []sampling.SubPolicyEvalParams
+	subPolicyEvalParams := make([]sampling.SubPolicyEvalParams, len(config.SubPolicyCfg))
 	rateAllocationsMap := getRateAllocationMap(config)
 	for i := range config.SubPolicyCfg {
 		policyCfg := &config.SubPolicyCfg[i]
@@ -23,7 +23,7 @@ func getNewCompositePolicy(settings component.TelemetrySettings, config *Composi
 			Evaluator:         policy,
 			MaxSpansPerSecond: int64(rateAllocationsMap[policyCfg.Name]),
 		}
-		subPolicyEvalParams = append(subPolicyEvalParams, evalParams)
+		subPolicyEvalParams[i] = evalParams
 	}
 	return sampling.NewComposite(settings.Logger, config.MaxTotalSpansPerSecond, subPolicyEvalParams, sampling.MonotonicClock{}), nil
 }

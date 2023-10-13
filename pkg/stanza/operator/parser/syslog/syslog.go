@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	sl "github.com/influxdata/go-syslog/v3"
@@ -77,17 +78,21 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
+	proto := strings.ToLower(c.Protocol)
+
 	switch {
-	case c.Protocol == "":
+	case proto == "":
 		return nil, fmt.Errorf("missing field 'protocol'")
-	case c.Protocol != RFC5424 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
+	case proto != RFC5424 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
 		return nil, errors.New("octet_counting and non_transparent_framing are only compatible with protocol rfc5424")
-	case c.Protocol == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
+	case proto == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
 		return nil, errors.New("only one of octet_counting or non_transparent_framing can be enabled")
-	case c.Protocol == RFC5424 && c.NonTransparentFramingTrailer != nil:
+	case proto == RFC5424 && c.NonTransparentFramingTrailer != nil:
 		if *c.NonTransparentFramingTrailer != NULTrailer && *c.NonTransparentFramingTrailer != LFTrailer {
 			return nil, fmt.Errorf("invalid non_transparent_framing_trailer '%s'. Must be either 'LF' or 'NUL'", *c.NonTransparentFramingTrailer)
 		}
+	case proto != RFC5424 && proto != RFC3164:
+		return nil, fmt.Errorf("unsupported protocol version: %s", proto)
 	}
 
 	if c.Location == "" {
@@ -101,7 +106,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	return &Parser{
 		ParserOperator:               parserOperator,
-		protocol:                     c.Protocol,
+		protocol:                     proto,
 		location:                     location,
 		enableOctetCounting:          c.EnableOctetCounting,
 		nonTransparentFramingTrailer: c.NonTransparentFramingTrailer,
@@ -243,13 +248,29 @@ func (s *Parser) toSafeMap(message map[string]interface{}) (map[string]interface
 				delete(message, key)
 				continue
 			}
-			message[key] = *v
+			message[key] = convertMap(*v)
 		default:
 			return nil, fmt.Errorf("key %s has unknown field of type %T", key, v)
 		}
 	}
 
 	return message, nil
+}
+
+// convertMap converts map[string]map[string]string to map[string]interface{}
+// which is expected by stanza converter
+func convertMap(data map[string]map[string]string) map[string]interface{} {
+	ret := map[string]interface{}{}
+	for key, value := range data {
+		ret[key] = map[string]interface{}{}
+		r := ret[key].(map[string]interface{})
+
+		for k, v := range value {
+			r[k] = v
+		}
+	}
+
+	return ret
 }
 
 func toBytes(value interface{}) ([]byte, error) {

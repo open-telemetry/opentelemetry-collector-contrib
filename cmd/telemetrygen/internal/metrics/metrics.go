@@ -17,47 +17,25 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 // Start starts the metric telemetry generator
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
-
-	grpcExpOpt := []otlpmetricgrpc.Option{
-		otlpmetricgrpc.WithEndpoint(cfg.Endpoint),
-		otlpmetricgrpc.WithDialOption(
-			grpc.WithBlock(),
-		),
-	}
-
-	httpExpOpt := []otlpmetrichttp.Option{
-		otlpmetrichttp.WithEndpoint(cfg.Endpoint),
-		otlpmetrichttp.WithURLPath(cfg.HTTPPath),
-	}
-
-	if cfg.Insecure {
-		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithInsecure())
-		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithInsecure())
-	}
-
-	if len(cfg.Headers) > 0 {
-		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithHeaders(cfg.Headers))
-		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithHeaders(cfg.Headers))
-	}
+	logger.Info("starting the metrics generator with configuration", zap.Any("config", cfg))
 
 	var exp sdkmetric.Exporter
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
-		exp, err = otlpmetrichttp.New(context.Background(), httpExpOpt...)
+		exp, err = otlpmetrichttp.New(context.Background(), httpExporterOptions(cfg)...)
 	} else {
 		logger.Info("starting gRPC exporter")
-		exp, err = otlpmetricgrpc.New(context.Background(), grpcExpOpt...)
+		exp, err = otlpmetricgrpc.New(context.Background(), grpcExporterOptions(cfg)...)
 	}
 
 	if err != nil {
@@ -104,6 +82,7 @@ func Run(c *Config, exp sdkmetric.Exporter, logger *zap.Logger) error {
 		wg.Add(1)
 		w := worker{
 			numMetrics:     c.NumMetrics,
+			metricType:     c.MetricType,
 			limitPerSecond: limit,
 			totalDuration:  c.TotalDuration,
 			running:        running,
@@ -112,7 +91,7 @@ func Run(c *Config, exp sdkmetric.Exporter, logger *zap.Logger) error {
 			index:          i,
 		}
 
-		go w.simulateMetrics(res, exp)
+		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes())
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)

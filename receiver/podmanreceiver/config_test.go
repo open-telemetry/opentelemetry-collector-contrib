@@ -38,7 +38,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				APIVersion: defaultAPIVersion,
 				Endpoint:   "unix:///run/podman/podman.sock",
-				Timeout:    5 * time.Second,
 			},
 		},
 		{
@@ -51,7 +50,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				APIVersion: defaultAPIVersion,
 				Endpoint:   "http://example.com/",
-				Timeout:    20 * time.Second,
 			},
 		},
 	}

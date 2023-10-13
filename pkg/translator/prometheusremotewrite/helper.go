@@ -256,6 +256,7 @@ func createAttributes(
 // isValidAggregationTemporality checks whether an OTel metric has a valid
 // aggregation temporality for conversion to a Prometheus metric.
 func isValidAggregationTemporality(metric pmetric.Metric) bool {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 		return true
@@ -437,6 +438,7 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 	var ts pcommon.Timestamp
 	// handle individual metric based on type
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dataPoints := metric.Gauge().DataPoints()

@@ -68,7 +68,7 @@ func (m *metric{{ $name.Render }}) init() {
 	m.data.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
 	{{- end }}
 	{{- if $metric.Data.HasAggregated }}
-	m.data.{{ $metric.Data.Type }}().SetAggregationTemporality(pmetric.AggregationTemporality{{ $metric.Data.Aggregated }})
+	m.data.{{ $metric.Data.Type }}().SetAggregationTemporality(pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }})
 	{{- end }}
 	{{- if $metric.Attributes }}
 	m.data.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
@@ -162,6 +162,23 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	{{- if $metric.Warnings.IfConfigured }}
 	if mbc.Metrics.{{ $name.Render }}.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}")
+	}
+	{{- end }}
+	{{- end }}
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if $attr.Warnings.IfEnabled }}
+	if mbc.ResourceAttributes.{{ $name.Render }}.Enabled {
+		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}")
+	}
+	{{- end }}
+	{{- if $attr.Warnings.IfEnabledNotSet }}
+	if !mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $attr.Warnings.IfEnabledNotSet }}")
+	}
+	{{- end }}
+	{{- if $attr.Warnings.IfConfigured }}
+	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}")
 	}
 	{{- end }}
 	{{- end }}

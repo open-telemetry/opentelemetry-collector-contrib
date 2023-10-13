@@ -14,11 +14,11 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 const (
@@ -40,6 +40,8 @@ type kafkaTracesConsumer struct {
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
+	headerExtraction  bool
+	headers           []string
 }
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
@@ -54,6 +56,8 @@ type kafkaMetricsConsumer struct {
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
+	headerExtraction  bool
+	headers           []string
 }
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
@@ -68,6 +72,8 @@ type kafkaLogsConsumer struct {
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
+	headerExtraction  bool
+	headers           []string
 }
 
 var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
@@ -99,7 +105,7 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 		}
 		c.Version = version
 	}
-	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
@@ -114,13 +120,15 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
+		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
+		headers:           config.HeaderExtraction.Headers,
 	}, nil
 }
 
 func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             c.settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: c.settings,
@@ -136,6 +144,13 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 		obsrecv:           obsrecv,
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
+		headerExtractor:   &nopHeaderExtractor{},
+	}
+	if c.headerExtraction {
+		consumerGroup.headerExtractor = &headerExtractor{
+			logger:  c.settings.Logger,
+			headers: c.headers,
+		}
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, consumerGroup); err != nil {
@@ -192,7 +207,7 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 		}
 		c.Version = version
 	}
-	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
@@ -207,13 +222,15 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
+		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
+		headers:           config.HeaderExtraction.Headers,
 	}, nil
 }
 
 func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             c.settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: c.settings,
@@ -229,6 +246,13 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 		obsrecv:           obsrecv,
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
+		headerExtractor:   &nopHeaderExtractor{},
+	}
+	if c.headerExtraction {
+		metricsConsumerGroup.headerExtractor = &headerExtractor{
+			logger:  c.settings.Logger,
+			headers: c.headers,
+		}
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
@@ -285,7 +309,7 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 		}
 		c.Version = version
 	}
-	if err = kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err = kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
@@ -300,6 +324,8 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
+		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
+		headers:           config.HeaderExtraction.Headers,
 	}, nil
 }
 
@@ -333,7 +359,7 @@ func getLogsUnmarshaler(encoding string, unmarshalers map[string]LogsUnmarshaler
 func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             c.settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: c.settings,
@@ -350,6 +376,13 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 		obsrecv:           obsrecv,
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
+		headerExtractor:   &nopHeaderExtractor{},
+	}
+	if c.headerExtraction {
+		logsConsumerGroup.headerExtractor = &headerExtractor{
+			logger:  c.settings.Logger,
+			headers: c.headers,
+		}
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
@@ -390,10 +423,11 @@ type tracesConsumerGroupHandler struct {
 
 	logger *zap.Logger
 
-	obsrecv *obsreport.Receiver
+	obsrecv *receiverhelper.ObsReport
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
+	headerExtractor   HeaderExtractor
 }
 
 type metricsConsumerGroupHandler struct {
@@ -405,10 +439,11 @@ type metricsConsumerGroupHandler struct {
 
 	logger *zap.Logger
 
-	obsrecv *obsreport.Receiver
+	obsrecv *receiverhelper.ObsReport
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
+	headerExtractor   HeaderExtractor
 }
 
 type logsConsumerGroupHandler struct {
@@ -420,10 +455,11 @@ type logsConsumerGroupHandler struct {
 
 	logger *zap.Logger
 
-	obsrecv *obsreport.Receiver
+	obsrecv *receiverhelper.ObsReport
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
+	headerExtractor   HeaderExtractor
 }
 
 var _ sarama.ConsumerGroupHandler = (*tracesConsumerGroupHandler)(nil)
@@ -480,6 +516,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 				return err
 			}
 
+			c.headerExtractor.extractHeadersTraces(traces, message)
 			spanCount := traces.SpanCount()
 			err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
 			c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
@@ -554,6 +591,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 				}
 				return err
 			}
+			c.headerExtractor.extractHeadersMetrics(metrics, message)
 
 			dataPointCount := metrics.DataPointCount()
 			err = c.nextConsumer.ConsumeMetrics(session.Context(), metrics)
@@ -634,7 +672,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 				}
 				return err
 			}
-
+			c.headerExtractor.extractHeadersLogs(logs, message)
 			err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
 			// TODO
 			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)

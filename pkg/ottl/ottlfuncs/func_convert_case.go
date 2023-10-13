@@ -14,8 +14,8 @@ import (
 )
 
 type ConvertCaseArguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
-	ToCase string               `ottlarg:"1"`
+	Target ottl.StringGetter[K]
+	ToCase string
 }
 
 func NewConvertCaseFactory[K any]() ottl.Factory[K] {

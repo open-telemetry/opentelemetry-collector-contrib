@@ -6,23 +6,26 @@ package cronjob
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestCronJobMetrics(t *testing.T) {
-	cj := newCronJob("1")
+	cj := testutils.NewCronJob("1")
 
-	m := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), cj)
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, cj, ts)
+	m := mb.Emit()
+
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
@@ -36,7 +39,7 @@ func TestCronJobMetrics(t *testing.T) {
 }
 
 func TestCronJobMetadata(t *testing.T) {
-	cj := newCronJob("1")
+	cj := testutils.NewCronJob("1")
 
 	actualMetadata := GetMetadata(cj)
 
@@ -60,25 +63,4 @@ func TestCronJobMetadata(t *testing.T) {
 		},
 		*actualMetadata["test-cronjob-1-uid"],
 	)
-}
-
-func newCronJob(id string) *batchv1.CronJob {
-	return &batchv1.CronJob{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-cronjob-" + id,
-			Namespace: "test-namespace",
-			UID:       types.UID("test-cronjob-" + id + "-uid"),
-			Labels: map[string]string{
-				"foo":  "bar",
-				"foo1": "",
-			},
-		},
-		Spec: batchv1.CronJobSpec{
-			Schedule:          "schedule",
-			ConcurrencyPolicy: "concurrency_policy",
-		},
-		Status: batchv1.CronJobStatus{
-			Active: []corev1.ObjectReference{{}, {}},
-		},
-	}
 }

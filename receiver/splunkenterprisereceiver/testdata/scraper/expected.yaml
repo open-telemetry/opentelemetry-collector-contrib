@@ -1,0 +1,136 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Count of buckets per index
+            gauge:
+              dataPoints:
+                - asInt: "51"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.data.indexes.extended.bucket.count
+            unit: '{buckets}'
+          - description: Count of events in this bucket super-directory
+            gauge:
+              dataPoints:
+                - asInt: "107267027"
+                  attributes:
+                    - key: splunk.bucket.dir
+                      value:
+                        stringValue: home
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.data.indexes.extended.bucket.event.count
+            unit: '{events}'
+          - description: (If size > 0) Number of hot buckets
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: splunk.bucket.dir
+                      value:
+                        stringValue: hot
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.data.indexes.extended.bucket.hot.count
+            unit: '{buckets}'
+          - description: (If size > 0) Number of warm buckets
+            gauge:
+              dataPoints:
+                - asInt: "50"
+                  attributes:
+                    - key: splunk.bucket.dir
+                      value:
+                        stringValue: warm
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.data.indexes.extended.bucket.warm.count
+            unit: '{buckets}'
+          - description: Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets.
+            gauge:
+              dataPoints:
+                - asInt: "108411855"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.data.indexes.extended.event.count
+            unit: '{events}'
+          - description: Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
+            gauge:
+              dataPoints:
+                - asInt: "70825079209"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.data.indexes.extended.raw.size
+            unit: By
+          - description: Size in bytes on disk of this index
+            gauge:
+              dataPoints:
+                - asInt: "20818468798"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.data.indexes.extended.total.size
+            unit: By
+          - description: Gauge tracking average bytes per second throughput of indexer
+            gauge:
+              dataPoints:
+                - asDouble: 25579.690815904476
+                  attributes:
+                    - key: splunk.indexer.status
+                      value:
+                        stringValue: normal
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.indexer.throughput
+            unit: By/s
+          - description: Gauge tracking current length of queue
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: splunk.queue.name
+                      value:
+                        stringValue: AEQ
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.server.introspection.queues.current
+            unit: '{queues}'
+          - description: Gauge tracking current bytes waiting in queue
+            gauge:
+              dataPoints:
+                - asInt: "100"
+                  attributes:
+                    - key: splunk.queue.name
+                      value:
+                        stringValue: AEQ
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.server.introspection.queues.current.bytes
+            unit: By
+        scope:
+          name: otelcol/splunkenterprisereceiver
+          version: latest

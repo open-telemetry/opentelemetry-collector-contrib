@@ -45,8 +45,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -61,8 +61,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -77,8 +77,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -93,8 +93,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -109,8 +109,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
         scope:
           name: otelcol/httpcheckreceiver

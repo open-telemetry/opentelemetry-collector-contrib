@@ -21,6 +21,7 @@ body:
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/datadog
       - connector/exceptions
       - connector/routing
       - connector/servicegraph
@@ -47,11 +48,11 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
+      - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/instana
-      - exporter/jaeger
-      - exporter/jaegerthrifthttp
       - exporter/kafka
+      - exporter/kinetica
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
@@ -59,7 +60,6 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
-      - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
@@ -77,11 +77,13 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
-      - extension/encoding
+      - extension/encoding/jaegerencoding
+      - extension/encoding/textencoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
       - extension/jaegerremotesampling
+      - extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
@@ -97,10 +99,12 @@ body:
       - extension/storage/filestorage
       - internal/aws
       - internal/core
+      - internal/datadog
       - internal/docker
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
+      - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
       - internal/sharedcomponent
@@ -177,6 +181,7 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
+      - receiver/gitprovider
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy
@@ -185,6 +190,7 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
+      - receiver/jaeger/internal/jaegerreceiverdeprecated
       - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
@@ -206,7 +212,6 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
-      - receiver/prometheusexec
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
