@@ -266,6 +266,7 @@ func (lg *LoadGenerator) generateLog() {
 
 		if !consumererror.IsPermanent(err) {
 			lg.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
+			continue
 		}
 
 		lg.permanentErrors.Add(uint64(logData.LogRecordCount()))
