@@ -20,13 +20,13 @@ is modeled as an [`entry.Entry`](./docs/types/entry.md).
 
 #### Operators
 
-Functionality in this module is primarily organized into distict [operators](./docs/operators/README.md). There are four types of operators:
+Functionality in this module is primarily organized into distinct [operators](./docs/operators/README.md). There are four types of operators:
 
-- Input operators are the point of ingestion. e.g. reading from a file, or a TCP socket. These are anologous to receivers in the collector.
+- Input operators are the point of ingestion, e.g. reading from a file, or a TCP socket. These are anologous to receivers in the collector.
 - Parser operators are responsible for extracting structured information from unstructured elements of a log record.
-- Transform operators are responsible for modifying log records in some way. e.g. adding or removing a field.
+- Transform operators are responsible for modifying log records in some way, e.g. adding or removing a field.
 - Output operators emit logs to an external destination. Most of these were removed because they were redundant with
-  the OpenTelemetry Collector's exporters. A few were reserved as they are occasionally useful for debugging.
+  the OpenTelemetry Collector's exporters. A few were preserved as they are occasionally useful for debugging.
 
 #### Operator Sequences
 
@@ -55,4 +55,4 @@ Q: Why don't we make every parser and transform operator into a distinct OpenTel
 
 A: The nature of a receiver is that it reads data from somewhere, converts it into the OpenTelemetry data model, and emits it.
    Unlike most other receivers, those which read logs from traditional log media generally require extensive flexibility in the way that they convert an external format into the OpenTelemetry data model. Parser and transformer operators are designed specifically to provide sufficient flexibility to handle this conversion. Therefore, they are embedded directly into receivers
-   in order to localize the conversion logic and to prevent this concern from leaking further down the pipeline.
+   in order to encapsulate the conversion logic and to prevent this concern from leaking further down the pipeline.
