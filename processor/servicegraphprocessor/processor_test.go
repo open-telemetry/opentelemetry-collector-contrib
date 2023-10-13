@@ -306,7 +306,7 @@ func verifyDuration(t *testing.T, m pmetric.Metric) {
 	assert.Equal(t, 1, dps.Len())
 
 	dp := dps.At(0)
-	assert.Equal(t, float64(1000), dp.Sum()) // Duration: 1sec
+	assert.Equal(t, float64(1), dp.Sum()) // Duration: 1sec
 	assert.Equal(t, uint64(1), dp.Count())
 	buckets := pcommon.NewUInt64Slice()
 	buckets.FromRaw([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
@@ -475,7 +475,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		reqClientDurationSecondsSum:          make(map[string]float64),
 		reqClientDurationSecondsCount:        make(map[string]uint64),
 		reqClientDurationSecondsBucketCounts: make(map[string][]uint64),
-		reqDurationBounds:                    defaultLatencyHistogramBucketsMs,
+		reqDurationBounds:                    defaultLatencyHistogramBuckets,
 		keyToMetric:                          make(map[string]metricSeries),
 		config: &Config{
 			Dimensions: []string{},
