@@ -94,6 +94,40 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "avroLogs"),
+			expected: &Config{
+				Topic:         "logs",
+				Encoding:      "direct",
+				Brokers:       []string{"coffee:123", "foobar:456"},
+				ClientID:      "otel-collector",
+				GroupID:       "otel-collector",
+				InitialOffset: "earliest",
+				Authentication: kafka.Authentication{
+					TLS: &configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile:   "ca.pem",
+							CertFile: "cert.pem",
+							KeyFile:  "key.pem",
+						},
+					},
+				},
+				Metadata: kafkaexporter.Metadata{
+					Full: true,
+					Retry: kafkaexporter.MetadataRetry{
+						Max:     10,
+						Backoff: time.Second * 5,
+					},
+				},
+				AutoCommit: AutoCommit{
+					Enable:   true,
+					Interval: 1 * time.Second,
+				},
+				Avro: Avro{
+					Schema: "{\"type\":\"record\",\"name\":\"test\",\"fields\":[]}",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
