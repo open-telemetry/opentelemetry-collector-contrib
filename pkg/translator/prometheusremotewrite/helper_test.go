@@ -733,22 +733,7 @@ func TestAddScopeInfo(t *testing.T) {
 			pcommon.NewInstrumentationScope(),
 			Settings{},
 			testdata.TestMetricStartTimestamp,
-			map[string]*prompb.TimeSeries{
-				"info-__name__-otel_scope_info": {
-					Labels: []prompb.Label{
-						{
-							Name:  "__name__",
-							Value: "otel_scope_info",
-						},
-					},
-					Samples: []prompb.Sample{
-						{
-							Value:     1,
-							Timestamp: 1581452772000,
-						},
-					},
-				},
-			},
+			map[string]*prompb.TimeSeries{},
 		},
 		{
 			"with scope attributes",

@@ -616,6 +616,10 @@ func addScopeInfo(
 	if settings.DisableScopeInfo {
 		return
 	}
+	if scope.Attributes().Len() == 0 {
+		// If the scope doesn't have additional attributes, then otel_scope_info isn't useful.
+		return
+	}
 
 	// Only add service name and instance id resource attributes
 	resCopy := pcommon.NewResource()
