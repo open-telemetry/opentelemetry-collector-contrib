@@ -20,6 +20,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -160,11 +161,11 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 	} else {
 		sid, ok := res.Attributes().Get(semconv.AttributeServiceInstanceID)
 		if ok {
-			puid, err := ulid.Parse(sid.AsString())
+			uuid, err := uuid.Parse(sid.AsString())
 			if err != nil {
 				return nil, err
 			}
-			uid = puid
+			uid = ulid.ULID(uuid)
 		}
 	}
 

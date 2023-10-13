@@ -3,11 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/opamp
 go 1.20
 
 require (
+	github.com/google/uuid v1.3.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/open-telemetry/opamp-go v0.9.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.86.0
 	go.opentelemetry.io/collector/config/confighttp v0.86.0
+	go.opentelemetry.io/collector/config/configtls v0.86.0
 	go.opentelemetry.io/collector/confmap v0.86.0
 	go.opentelemetry.io/collector/extension v0.86.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015
@@ -39,7 +41,6 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.86.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v0.86.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.86.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v0.86.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.86.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.86.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015 // indirect

@@ -32,8 +32,8 @@ func TestNewOpampAgent(t *testing.T) {
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
-	assert.Equal(t, o.agentType, "otelcoltest")
-	assert.Equal(t, o.agentVersion, "test version")
+	assert.Equal(t, "otelcoltest", o.agentType)
+	assert.Equal(t, "test version", o.agentVersion)
 	assert.NotEmpty(t, o.instanceId.String())
 	assert.NotEmpty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
@@ -45,12 +45,12 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, "otelcol-distro")
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, "distro.0")
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "01BX5ZZKBKACTAV9WEVGEMMVRZ")
+	set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
 	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
-	assert.Equal(t, o.agentType, "otelcol-distro")
-	assert.Equal(t, o.agentVersion, "distro.0")
-	assert.Equal(t, o.instanceId.String(), "01BX5ZZKBKACTAV9WEVGEMMVRZ")
+	assert.Equal(t, "otelcol-distro", o.agentType)
+	assert.Equal(t, "distro.0", o.agentVersion)
+	assert.Equal(t, "7RK6DW2K4V8RCSQBKZ02EJ84FC", o.instanceId.String())
 }
 
 func TestCreateAgentDescription(t *testing.T) {
