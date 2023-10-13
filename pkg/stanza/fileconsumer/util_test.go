@@ -96,6 +96,7 @@ func buildTestManager(t testing.TB, cfg *Config, opts ...testManagerOption) (*Ma
 		input.cancel = cancel
 		input.once.Do(func() {
 			input.pool.StartConsumers(ctx)
+			input.poolLost.StartConsumers(ctx)
 		})
 	}
 	return input, tmc.emitChan

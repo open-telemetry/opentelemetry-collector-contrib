@@ -52,6 +52,7 @@ type Manager struct {
 
 	// Following fields are used only when useThreadPool is enabled
 	pool           *threadpool.Pool[readerEnvelope]
+	poolLost       *threadpool.Pool[readerEnvelope]
 	knownFilesLock sync.RWMutex
 	trieLock       sync.RWMutex
 	once           sync.Once
@@ -77,6 +78,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 	if useThreadPool.IsEnabled() {
 		m.once.Do(func() {
 			m.pool.StartConsumers(ctx)
+			m.poolLost.StartConsumers(ctx)
 		})
 	}
 	// Start polling goroutine
@@ -91,6 +93,7 @@ func (m *Manager) Stop() error {
 	m.wg.Wait()
 	if useThreadPool.IsEnabled() {
 		m.pool.StopConsumers()
+		m.poolLost.StopConsumers()
 		// save off any files left
 		// As we already cancelled our current context, create a new one to save any left offsets
 		ctx, cancel := context.WithCancel(context.Background())

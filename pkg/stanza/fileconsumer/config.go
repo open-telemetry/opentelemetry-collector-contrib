@@ -206,6 +206,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 	if useThreadPool.IsEnabled() {
 		manager.trie = trie.NewTrie()
 		manager.pool = threadpool.NewPool(manager.maxBatchFiles, manager.worker)
+		manager.poolLost = threadpool.NewPool(manager.maxBatchFiles, manager.workerLostReaders)
 	}
 	return manager, nil
 }

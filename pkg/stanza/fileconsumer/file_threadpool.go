@@ -31,6 +31,22 @@ func (m *Manager) worker(ctx context.Context, queue chan readerEnvelope) {
 		}
 	}
 }
+
+func (m *Manager) workerLostReaders(ctx context.Context, queue chan readerEnvelope) {
+	for {
+		select {
+		case wrapper, ok := <-queue:
+			if !ok {
+				return
+			}
+			r, fp := wrapper.reader, wrapper.trieKey
+			r.ReadToEnd(ctx)
+			r.Close()
+			m.trieDelete(fp)
+		}
+	}
+}
+
 func (m *Manager) makeReaderConcurrent(filePath string) (*reader, *fingerprint.Fingerprint) {
 	fp, file := m.makeFingerprint(filePath)
 	if fp == nil {
@@ -100,25 +116,27 @@ func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {
 	// Clear out old readers. They are sorted such that they are oldest first,
 	// so we can just find the first reader whose poll cycle is less than our
 	// limit i.e. last 3 cycles, and keep every reader after that
-	i := 0
-	for ; i < len(m.knownFiles); i++ {
-		reader := m.knownFiles[i]
-		if reader.generation <= 3 {
-			break
-		}
-	}
-	m.knownFiles = m.knownFiles[i:]
+	// i := 0
+	// for ; i < len(m.knownFiles); i++ {
+	// 	reader := m.knownFiles[i]
+	// 	if reader.generation <= 3 {
+	// 		break
+	// 	}
+	// }
+	// m.knownFiles = m.knownFiles[i:]
 	var wg sync.WaitGroup
 	for _, r := range m.knownFiles {
 		if r.file == nil {
 			// already closed
 			continue
 		}
-		if m.checkTruncate(r) {
+		if !m.checkTruncate(r) {
 			// if it's an updated version, we don't to readToEnd, it will cause duplicates.
 			// current poll() will take care of reading
 			r.Close()
 		} else {
+			// m.triePut(r.Fingerprint)
+			// m.poolLost.Submit(readerEnvelope{reader: r, trieKey: r.Fingerprint})
 			wg.Add(1)
 			go func(r *reader) {
 				defer wg.Done()
