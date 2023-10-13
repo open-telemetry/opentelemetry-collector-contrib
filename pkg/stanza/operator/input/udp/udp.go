@@ -170,8 +170,6 @@ func (u *Input) Start(_ operator.Persister) error {
 
 // goHandleMessages will handle messages from a udp connection.
 func (u *Input) goHandleMessages(ctx context.Context) {
-	u.wg.Add(1)
-
 	for i := 0; i < u.AsyncConfig.Readers; i++ {
 		u.wg.Add(1)
 		go u.readAndProcessMessages(ctx)
