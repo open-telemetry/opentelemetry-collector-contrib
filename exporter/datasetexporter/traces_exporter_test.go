@@ -210,6 +210,68 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 	assert.Equal(t, expected, was)
 }
 
+func TestBuildEventsFromSpanAttributesDifferentTypes(t *testing.T) {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rss := rs.ScopeSpans().AppendEmpty()
+	span := rss.Spans().AppendEmpty()
+	fillAttributes(span.Attributes())
+	fillAttributes(rss.Scope().Attributes())
+	fillAttributes(rs.Resource().Attributes())
+
+	// sBytes := span.Attributes().PutEmptyBytes("bytes")
+	// sBytes.Append('a')
+	expected := &add_events.EventBundle{
+		Event: &add_events.Event{
+			Thread: "TT",
+			Log:    "LT",
+			Sev:    9,
+			Ts:     "0",
+			Attrs: map[string]interface{}{
+				"sca:schemVer": 1,
+				"sca:schema":   "tracing",
+				"sca:type":     "span",
+
+				"name": "",
+				"kind": "unspecified",
+
+				"start_time_unix_nano": "0",
+				"end_time_unix_nano":   "0",
+				"duration_nano":        "0",
+
+				"span_id":        "",
+				"trace_id":       "",
+				"status_code":    "unset",
+				"status_message": "",
+				"resource_name":  "",
+				"resource_type":  "process",
+				"string":         "string",
+				"double":         2.0,
+				"bool":           true,
+				"empty":          nil,
+				"int":            int64(3),
+
+				"map_map_empty":  nil,
+				"map_map_string": "map_string",
+				"slice_0":        "slice_string",
+			},
+			ServerHost: testServerHost,
+		},
+		Thread: testTThread,
+		Log:    testTLog,
+	}
+	was := buildEventFromSpan(
+		spanBundle{
+			span,
+			rs.Resource(),
+			rss.Scope(),
+		},
+		testServerHost,
+	)
+
+	assert.Equal(t, expected, was)
+}
+
 func TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent(t *testing.T) {
 	traces := testdata.GenerateTracesTwoSpansSameResourceOneDifferent()
 	traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("serverHost", "")
