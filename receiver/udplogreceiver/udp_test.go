@@ -32,7 +32,8 @@ func TestUdp(t *testing.T) {
 func TestUdpAsync(t *testing.T) {
 	listenAddress := "127.0.0.1:29019"
 	cfg := testdataConfigYaml(listenAddress)
-	cfg.InputConfig.AsyncConfig.FixedReaderRoutineCount = 2
+	cfg.InputConfig.AsyncConfig = udp.NewAsyncConfig()
+	cfg.InputConfig.AsyncConfig.Readers = 2
 	testUDP(t, testdataConfigYaml(listenAddress), listenAddress)
 }
 

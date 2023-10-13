@@ -17,4 +17,4 @@ all_with_async:
     line_start_pattern: ABC
     line_end_pattern: ""
   async:
-    fixed_reader_routine_count: 2
+    readers: 2

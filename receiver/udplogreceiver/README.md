@@ -78,7 +78,7 @@ If set, the `async` configuration block instructs the `udp_input` operator to re
 
 | Field                                   | Default              | Description |
 | ---                                     | ---                  | ---         |
-| `fixed_reader_routine_count`            | 1                    | Concurrency level - Determines how many go routines read from UDP port (and process logs before sending downstream). |
+| `readers`            | 1                    | Concurrency level - Determines how many go routines read from UDP port (and process logs before sending downstream). |
 
 ## Example Configurations
 

@@ -58,26 +58,26 @@ type Config struct {
 	BaseConfig         `mapstructure:",squash"`
 }
 
-type UdpAsyncConfig struct {
-	FixedReaderRoutineCount int `mapstructure:"fixed_reader_routine_count,omitempty"`
+type AsyncConfig struct {
+	Readers int `mapstructure:"readers,omitempty"`
 }
 
-// NewUdpAsyncConfig creates a new UdpAsyncConfig with default values.
-func NewUdpAsyncConfig() UdpAsyncConfig {
-	return UdpAsyncConfig{
-		FixedReaderRoutineCount: 1,
+// NewAsyncConfig creates a new AsyncConfig with default values.
+func NewAsyncConfig() *AsyncConfig {
+	return &AsyncConfig{
+		Readers: 1,
 	}
 }
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress   string         `mapstructure:"listen_address,omitempty"`
-	OneLogPerPacket bool           `mapstructure:"one_log_per_packet,omitempty"`
-	AddAttributes   bool           `mapstructure:"add_attributes,omitempty"`
-	Encoding        string         `mapstructure:"encoding,omitempty"`
-	SplitConfig     split.Config   `mapstructure:"multiline,omitempty"`
-	TrimConfig      trim.Config    `mapstructure:",squash"`
-	AsyncConfig     UdpAsyncConfig `mapstructure:"async,omitempty"`
+	ListenAddress   string       `mapstructure:"listen_address,omitempty"`
+	OneLogPerPacket bool         `mapstructure:"one_log_per_packet,omitempty"`
+	AddAttributes   bool         `mapstructure:"add_attributes,omitempty"`
+	Encoding        string       `mapstructure:"encoding,omitempty"`
+	SplitConfig     split.Config `mapstructure:"multiline,omitempty"`
+	TrimConfig      trim.Config  `mapstructure:",squash"`
+	AsyncConfig     *AsyncConfig `mapstructure:"async,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -114,11 +114,11 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	if c.AsyncConfig == nil {
-		c.AsyncConfig = NewUdpAsyncConfig()
+		c.AsyncConfig = NewAsyncConfig()
 	}
 
-	if c.AsyncConfig.FixedReaderRoutineCount <= 0 {
-		return nil, fmt.Errorf("async. fixed_reader_routine_count must be greater than 0")
+	if c.AsyncConfig.Readers <= 0 {
+		return nil, fmt.Errorf("async readers must be greater than 0")
 	}
 
 	udpInput := &Input{
@@ -142,7 +142,7 @@ type Input struct {
 	address         *net.UDPAddr
 	addAttributes   bool
 	OneLogPerPacket bool
-	AsyncConfig     UdpAsyncConfig
+	AsyncConfig     *AsyncConfig
 
 	connection net.PacketConn
 	cancel     context.CancelFunc
@@ -172,12 +172,7 @@ func (u *Input) Start(_ operator.Persister) error {
 func (u *Input) goHandleMessages(ctx context.Context) {
 	u.wg.Add(1)
 
-	numConcurrentReaders := 1
-	if u.AsyncConfig != (UdpAsyncConfig{}) {
-		numConcurrentReaders = u.AsyncConfig.FixedReaderRoutineCount
-	}
-
-	for i := 0; i < numConcurrentReaders; i++ {
+	for i := 0; i < u.AsyncConfig.Readers; i++ {
 		u.wg.Add(1)
 		go u.readAndProcessMessages(ctx)
 	}
