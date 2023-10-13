@@ -290,7 +290,7 @@ func TestMultipleBlockValues(t *testing.T) {
 		"mystery": pcommon.NewValueStr("mystery 52000"),
 	}
 	masked := map[string]pcommon.Value{
-		"name": pcommon.NewValueStr("placeholder 4111111111111111"),
+		"name": pcommon.NewValueStr("placeholder 4111111111111111 52000"),
 	}
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
@@ -324,7 +324,7 @@ func TestMultipleBlockValues(t *testing.T) {
 	assert.Equal(t, int64(len(blockedKeys)), maskedValueCount.Int())
 	nameValue, _ := attr.Get("name")
 	mysteryValue, _ := attr.Get("mystery")
-	assert.Equal(t, "placeholder ****", nameValue.Str())
+	assert.Equal(t, "placeholder **** ****", nameValue.Str())
 	assert.Equal(t, "mystery ****", mysteryValue.Str())
 }
 
