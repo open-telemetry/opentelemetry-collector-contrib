@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"github.com/oklog/ulid/v2"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -27,9 +28,9 @@ type OpAMPServer struct {
 
 // OpAMPWebsocket contains the OpAMP websocket transport configuration.
 type OpAMPWebsocket struct {
-	Endpoint   string                     `mapstructure:"endpoint"`
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
-	Headers    map[string]string          `mapstructure:"headers,omitempty"`
+	Endpoint   string                         `mapstructure:"endpoint"`
+	TLSSetting configtls.TLSClientSetting     `mapstructure:"tls,omitempty"`
+	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
 }
 
 // Validate checks if the extension configuration is valid

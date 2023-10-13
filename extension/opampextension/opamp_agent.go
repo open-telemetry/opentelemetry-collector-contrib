@@ -46,15 +46,13 @@ type opampAgent struct {
 	agentType    string
 	agentVersion string
 
-	instanceId ulid.ULID
+	instanceID ulid.ULID
 
 	effectiveConfig string
 
 	agentDescription *protobufs.AgentDescription
 
 	opampClient client.OpAMPClient
-
-	remoteConfigStatus *protobufs.RemoteConfigStatus
 }
 
 func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
@@ -75,7 +73,7 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 		Header:         header,
 		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Server.WS.Endpoint,
-		InstanceUid:    o.instanceId.String(),
+		InstanceUid:    o.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func() {
 				o.logger.Debug("Connected to the OpAMP server")
@@ -163,7 +161,7 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 		logger:          logger,
 		agentType:       agentType,
 		agentVersion:    agentVersion,
-		instanceId:      uid,
+		instanceID:      uid,
 		effectiveConfig: localConfig, // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27293
 	}
 
@@ -186,7 +184,7 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 
 	ident := []*protobufs.KeyValue{
-		stringKeyValue(semconv.AttributeServiceInstanceID, o.instanceId.String()),
+		stringKeyValue(semconv.AttributeServiceInstanceID, o.instanceID.String()),
 		stringKeyValue(semconv.AttributeServiceName, o.agentType),
 		stringKeyValue(semconv.AttributeServiceVersion, o.agentVersion),
 	}
@@ -205,11 +203,11 @@ func (o *opampAgent) createAgentDescription() error {
 	return nil
 }
 
-func (o *opampAgent) updateAgentIdentity(instanceId ulid.ULID) {
+func (o *opampAgent) updateAgentIdentity(instanceID ulid.ULID) {
 	o.logger.Debug("OpAMP agent identity is being changed",
-		zap.String("old_id", o.instanceId.String()),
-		zap.String("new_id", instanceId.String()))
-	o.instanceId = instanceId
+		zap.String("old_id", o.instanceID.String()),
+		zap.String("new_id", instanceID.String()))
+	o.instanceID = instanceID
 }
 
 func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
@@ -222,16 +220,16 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	}
 }
 
-func (o *opampAgent) onMessage(ctx context.Context, msg *types.MessageData) {
+func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	if msg.AgentIdentification == nil {
 		return
 	}
 
-	instanceId, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
+	instanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
 	if err != nil {
 		o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
 		return
 	}
 
-	o.updateAgentIdentity(instanceId)
+	o.updateAgentIdentity(instanceID)
 }

@@ -23,7 +23,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcoltest", o.agentType)
 	assert.Equal(t, "test version", o.agentVersion)
-	assert.NotEmpty(t, o.instanceId.String())
+	assert.NotEmpty(t, o.instanceID.String())
 	assert.NotEmpty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 }
@@ -39,7 +39,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcol-distro", o.agentType)
 	assert.Equal(t, "distro.0", o.agentVersion)
-	assert.Equal(t, "7RK6DW2K4V8RCSQBKZ02EJ84FC", o.instanceId.String())
+	assert.Equal(t, "7RK6DW2K4V8RCSQBKZ02EJ84FC", o.instanceID.String())
 }
 
 func TestCreateAgentDescription(t *testing.T) {
@@ -49,7 +49,8 @@ func TestCreateAgentDescription(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Nil(t, o.agentDescription)
-	o.createAgentDescription()
+	err = o.createAgentDescription()
+	assert.NoError(t, err)
 	assert.NotNil(t, o.agentDescription)
 }
 
@@ -59,14 +60,14 @@ func TestUpdateAgentIdentity(t *testing.T) {
 	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
 
-	olduid := o.instanceId
+	olduid := o.instanceID
 	assert.NotEmpty(t, olduid.String())
 
 	uid := ulid.Make()
 	assert.NotEqual(t, uid, olduid)
 
 	o.updateAgentIdentity(uid)
-	assert.Equal(t, o.instanceId, uid)
+	assert.Equal(t, o.instanceID, uid)
 }
 
 func TestComposeEffectiveConfig(t *testing.T) {
