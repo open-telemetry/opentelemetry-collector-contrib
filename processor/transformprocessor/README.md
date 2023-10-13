@@ -356,7 +356,7 @@ transform:
         - set(attributes["body"], body)
 ``` 
 
-### Comnbine two attributes
+### Combine two attributes
 Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined. 
 ```yaml
 transform:

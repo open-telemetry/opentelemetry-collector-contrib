@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.87.0
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0016
 	go.uber.org/zap v1.26.0
-	google.golang.org/grpc v1.58.2
+	google.golang.org/grpc v1.58.3
 )
 
 require (
