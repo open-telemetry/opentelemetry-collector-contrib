@@ -42,6 +42,7 @@ The following settings can be optionally configured:
   - `raw`: (logs only) the payload's bytes are inserted as the body of a log record.
   - `text`: (logs only) the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior.
   - `json`: (logs only) the payload is decoded as JSON and inserted as the body of a log record.
+  - `avro`: (logs only) the payload is decoded as AVRO and inserted as the body of a log record.
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
@@ -92,6 +93,9 @@ The following settings can be optionally configured:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel piepline
   - `headers` (default = []): List of headers they'd like to extract from kafka record. 
   **Note: Matching pattern will be `exact`. Regexes are not supported as of now.** 
+- `avro`
+  - `schema`: Required if encoding set to `avro`, AVRO schema definition
+
 Example:
 
 ```yaml
@@ -136,3 +140,16 @@ we will get a log record in collector similar to:
 
 - Here you can see the kafka record header `header1` and `header2` being added to resource attribute.
 - Every **matching** kafka header key is prefixed with `kafka.header` string and attached to resource attributes.
+
+Example using Avro encoding:
+
+```yaml
+receivers:
+  kafka:
+    encoding: avro
+    avro:
+      schema: |
+        {"type":"record","name":"test","fields":[]}
+```
+
+> More information about Avro as a encoding format can be found here: [Apache Avro specification](https://avro.apache.org/docs/current/specification/).

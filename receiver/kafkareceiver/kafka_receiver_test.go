@@ -917,7 +917,7 @@ func TestGetLogsUnmarshaler_encoding_text(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers())
+			_, err := getLogsUnmarshaler(&Config{Encoding: test.encoding}, defaultLogsUnmarshalers())
 			assert.NoError(t, err)
 		})
 	}
@@ -939,7 +939,7 @@ func TestGetLogsUnmarshaler_encoding_text_error(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers())
+			_, err := getLogsUnmarshaler(&Config{Encoding: test.encoding}, defaultLogsUnmarshalers())
 			assert.ErrorContains(t, err, fmt.Sprintf("unsupported encoding '%v'", test.encoding[5:]))
 		})
 	}

@@ -51,6 +51,7 @@ func TestDefaultLogsUnMarshaler(t *testing.T) {
 		"raw",
 		"text",
 		"json",
+		"avro",
 	}
 	marshalers := defaultLogsUnmarshalers()
 	assert.Equal(t, len(expectedEncodings), len(marshalers))
