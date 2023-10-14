@@ -17,7 +17,7 @@ The `udp_input` operator listens for logs from UDP packets.
 | `preserve_leading_whitespaces`          | false            | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
 | `preserve_trailing_whitespaces`             | false            | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                            |
 | `encoding`                              | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options. |
-| `async`                     | {}               | An `async` configuration block. See below for details. |
+| `async`                     | nil               | An `async` configuration block. See below for details. |
 
 #### `multiline` configuration
 
@@ -50,11 +50,11 @@ for other encodings available.
 
 If set, the `async` configuration block instructs the `udp_input` operator to read and process logs asynchronsouly and concurrently.
 
-**note** If `async` is not set at all, a single thread will receive lines synchronously.
+**note** If `async` is not set at all, a single thread will read lines synchronously.
 
 | Field                                   | Default              | Description |
 | ---                                     | ---                  | ---         |
-| `readers`            | 1                    | Concurrency level - Determines how many go routines read from UDP port (and process logs before sending downstream). |
+| `readers`                               | 1                    | Concurrency level - Determines how many go routines read from UDP port (and process logs before sending downstream). |
 
 ### Example Configurations
 
