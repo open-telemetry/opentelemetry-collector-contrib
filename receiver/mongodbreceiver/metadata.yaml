@@ -8,6 +8,14 @@ status:
   codeowners:
     active: [djaglowski, schmikei]
 
+resource_attributes:
+  database:
+    description: The name of a database.
+    enabled: false
+    type: string
+    warnings:
+      if_configured: This resource_attribute is deprecated and will be removed soon.
+
 attributes:
   database:
     description: The name of a database.

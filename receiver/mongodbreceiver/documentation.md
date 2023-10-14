@@ -397,3 +397,9 @@ The amount of time that the server has been running.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ms | Sum | Int | Cumulative | true |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| database | The name of a database. | Any Str | false |

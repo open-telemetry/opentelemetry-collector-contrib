@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -21,7 +22,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
-var unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
+const (
+	readmeURL                    = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/mongodbreceiver/README.md"
+	removeDatabaseResourceAttrID = "receiver.mongodb.removeDatabaseResourceAttr"
+)
+
+var (
+	unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
+
+	removeDatabaseResourceAttrFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		removeDatabaseResourceAttrID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("Remove duplicate database name resource attribute"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24972"),
+		featuregate.WithRegisterFromVersion("v0.88.0"))
+)
 
 type mongodbScraper struct {
 	logger       *zap.Logger
@@ -29,15 +44,27 @@ type mongodbScraper struct {
 	client       client
 	mongoVersion *version.Version
 	mb           *metadata.MetricsBuilder
+
+	// removeDatabaseResourceAttr if enabled, will remove database resource attribute on database metrics
+	removeDatabaseResourceAttr bool
 }
 
 func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongodbScraper {
-	return &mongodbScraper{
-		logger:       settings.Logger,
-		config:       config,
-		mb:           metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		mongoVersion: unknownVersion(),
+	ms := &mongodbScraper{
+		logger:                     settings.Logger,
+		config:                     config,
+		mb:                         metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		mongoVersion:               unknownVersion(),
+		removeDatabaseResourceAttr: removeDatabaseResourceAttrFeatureGate.IsEnabled(),
 	}
+
+	if !ms.removeDatabaseResourceAttr {
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", removeDatabaseResourceAttrID, readmeURL),
+		)
+	}
+
+	return ms
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
@@ -116,7 +143,15 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 		return
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
-	s.mb.EmitForResource()
+
+	emitWith := []metadata.ResourceMetricsOption{}
+	if !s.removeDatabaseResourceAttr {
+		rb := s.mb.NewResourceBuilder()
+		rb.SetDatabase(databaseName)
+		emitWith = append(emitWith, metadata.WithResource(rb.Emit()))
+	}
+
+	s.mb.EmitForResource(emitWith...)
 }
 
 func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {

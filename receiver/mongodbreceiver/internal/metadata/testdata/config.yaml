@@ -61,6 +61,9 @@ all_set:
       enabled: true
     mongodb.uptime:
       enabled: true
+  resource_attributes:
+    database:
+      enabled: true
 none_set:
   metrics:
     mongodb.cache.operations:
@@ -122,4 +125,7 @@ none_set:
     mongodb.storage.size:
       enabled: false
     mongodb.uptime:
+      enabled: false
+  resource_attributes:
+    database:
       enabled: false
