@@ -6,4 +6,4 @@ status:
     development: [extension]
   distributions: []
   codeowners:
-    active: [VihasMakwana]
+    active: [VihasMakwana, atoulme]
