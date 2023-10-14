@@ -94,6 +94,7 @@ type Input struct {
 	excludeProviders []string
 	pollInterval     time.Duration
 	persister        operator.Persister
+	publisherCache   publisherCache
 	cancel           context.CancelFunc
 	wg               sync.WaitGroup
 }
@@ -123,6 +124,8 @@ func (e *Input) Start(persister operator.Persister) error {
 		return fmt.Errorf("failed to open subscription: %w", err)
 	}
 
+	e.publisherCache = newPublisherCache()
+
 	e.wg.Add(1)
 	go e.readOnInterval(ctx)
 	return nil
@@ -139,6 +142,10 @@ func (e *Input) Stop() error {
 
 	if err := e.bookmark.Close(); err != nil {
 		return fmt.Errorf("failed to close bookmark: %w", err)
+	}
+
+	if err := e.publisherCache.evictAll(); err != nil {
+		return fmt.Errorf("failed to close publishers: %w", err)
 	}
 
 	return nil
@@ -231,13 +238,15 @@ func (e *Input) processEvent(ctx context.Context, event Event) {
 		}
 	}
 
-	publisher := NewPublisher()
-	if err := publisher.Open(simpleEvent.Provider.Name); err != nil {
-		e.Errorf("Failed to open publisher: %s: writing log entry to pipeline without metadata", err)
+	publisher, openPublisherErr := e.publisherCache.get(simpleEvent.Provider.Name)
+	if openPublisherErr != nil {
+		e.Warnf("Failed to open the %q event source, respective log entries can't be formatted: %s", simpleEvent.Provider.Name, openPublisherErr)
+	}
+
+	if !publisher.Valid() {
 		e.sendEvent(ctx, simpleEvent)
 		return
 	}
-	defer publisher.Close()
 
 	formattedEvent, err := event.RenderFormatted(e.buffer, publisher)
 	if err != nil {
