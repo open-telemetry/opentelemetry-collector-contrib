@@ -6,10 +6,12 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"crypto/sha256"
 	"crypto/sha512"
+	"crypto/tls"
 	"fmt"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 )
@@ -91,13 +93,8 @@ func configurePlaintext(config PlainTextConfig, saramaConfig *sarama.Config) {
 }
 
 func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
-
-	if config.Username == "" {
-		return fmt.Errorf("username have to be provided")
-	}
-
-	if config.Password == "" {
-		return fmt.Errorf("password have to be provided")
+	if err := validateSASL(config); err != nil {
+		return err
 	}
 
 	saramaConfig.Net.SASL.Enable = true
@@ -119,7 +116,7 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 		}
 		saramaConfig.Net.SASL.Mechanism = awsmsk.Mechanism
 	default:
-		return fmt.Errorf(`invalid SASL Mechanism %q: can be either "PLAIN", "AWS_MSK_IAM", "SCRAM-SHA-256" or "SCRAM-SHA-512"`, config.Mechanism)
+		// Do nothing, validateSASL validate mechanism
 	}
 
 	switch config.Version {
@@ -128,17 +125,18 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 	case 1:
 		saramaConfig.Net.SASL.Version = sarama.SASLHandshakeV1
 	default:
-		return fmt.Errorf(`invalid SASL Protocol Version %d: can be either 0 or 1`, config.Version)
+		// Do nothing, validateSASL validate version
 	}
 
 	return nil
 }
 
 func configureTLS(config configtls.TLSClientSetting, saramaConfig *sarama.Config) error {
-	tlsConfig, err := config.LoadTLSConfig()
+	tlsConfig, err := validateTLS(config)
 	if err != nil {
-		return fmt.Errorf("error loading tls config: %w", err)
+		return err
 	}
+
 	saramaConfig.Net.TLS.Enable = true
 	saramaConfig.Net.TLS.Config = tlsConfig
 	return nil
@@ -158,4 +156,50 @@ func configureKerberos(config KerberosConfig, saramaConfig *sarama.Config) {
 	saramaConfig.Net.SASL.GSSAPI.Username = config.Username
 	saramaConfig.Net.SASL.GSSAPI.Realm = config.Realm
 	saramaConfig.Net.SASL.GSSAPI.ServiceName = config.ServiceName
+}
+
+// Validate validates authentication config
+func (auth Authentication) Validate() error {
+	var errs error
+	if auth.TLS != nil {
+		_, err := validateTLS(*auth.TLS)
+		errs = multierr.Append(errs, err)
+	}
+	if auth.SASL != nil {
+		err := validateSASL(*auth.SASL)
+		errs = multierr.Append(errs, err)
+	}
+	return errs
+}
+
+func validateTLS(c configtls.TLSClientSetting) (*tls.Config, error) {
+	tlsConfig, err := c.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("error loading tls config: %w", err)
+	}
+
+	return tlsConfig, nil
+}
+
+func validateSASL(c SASLConfig) error {
+	if c.Username == "" {
+		return fmt.Errorf("auth.sasl.username is required")
+	}
+
+	if c.Password == "" {
+		return fmt.Errorf("auth.sasl.password is required")
+	}
+
+	switch c.Mechanism {
+	case "PLAIN", "AWS_MSK_IAM", "SCRAM-SHA-256", "SCRAM-SHA-512":
+		// Do nothing, valid mechanism
+	default:
+		return fmt.Errorf("auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v", c.Mechanism)
+	}
+
+	if c.Version < 0 || c.Version > 1 {
+		return fmt.Errorf("auth.sasl.version has to be either 0 or 1. configured value %v", c.Version)
+	}
+
+	return nil
 }

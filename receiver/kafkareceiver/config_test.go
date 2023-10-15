@@ -43,9 +43,9 @@ func TestLoadConfig(t *testing.T) {
 				Authentication: kafka.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
-							CAFile:   "ca.pem",
-							CertFile: "cert.pem",
-							KeyFile:  "key.pem",
+							CAFile:   "./testdata/certs/ca.pem",
+							CertFile: "./testdata/certs/cert.pem",
+							KeyFile:  "./testdata/certs/key.pem",
 						},
 					},
 				},
@@ -75,9 +75,9 @@ func TestLoadConfig(t *testing.T) {
 				Authentication: kafka.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
-							CAFile:   "ca.pem",
-							CertFile: "cert.pem",
-							KeyFile:  "key.pem",
+							CAFile:   "./testdata/certs/ca.pem",
+							CertFile: "./testdata/certs/cert.pem",
+							KeyFile:  "./testdata/certs/key.pem",
 						},
 					},
 				},

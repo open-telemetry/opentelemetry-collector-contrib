@@ -115,34 +115,7 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
-	return validateSASLConfig(cfg.Authentication.SASL)
-}
-
-func validateSASLConfig(c *kafka.SASLConfig) error {
-	if c == nil {
-		return nil
-	}
-
-	if c.Username == "" {
-		return fmt.Errorf("auth.sasl.username is required")
-	}
-
-	if c.Password == "" {
-		return fmt.Errorf("auth.sasl.password is required")
-	}
-
-	switch c.Mechanism {
-	case "PLAIN", "AWS_MSK_IAM", "SCRAM-SHA-256", "SCRAM-SHA-512":
-		// Do nothing, valid mechanism
-	default:
-		return fmt.Errorf("auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v", c.Mechanism)
-	}
-
-	if c.Version < 0 || c.Version > 1 {
-		return fmt.Errorf("auth.sasl.version has to be either 0 or 1. configured value %v", c.Version)
-	}
-
-	return nil
+	return cfg.Authentication.Validate()
 }
 
 func saramaProducerCompressionCodec(compression string) (sarama.CompressionCodec, error) {

@@ -110,22 +110,22 @@ func TestAuthentication(t *testing.T) {
 		{
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-222"}},
 			saramaConfig: saramaSASLSCRAM512Config,
-			err:          "invalid SASL Mechanism",
+			err:          "auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'",
 		},
 		{
 			auth:         Authentication{SASL: &SASLConfig{Username: "", Password: "pass", Mechanism: "SCRAM-SHA-512"}},
 			saramaConfig: saramaSASLSCRAM512Config,
-			err:          "username have to be provided",
+			err:          "auth.sasl.username is required",
 		},
 		{
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "", Mechanism: "SCRAM-SHA-512"}},
 			saramaConfig: saramaSASLSCRAM512Config,
-			err:          "password have to be provided",
+			err:          "auth.sasl.password is required",
 		},
 		{
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512", Version: 2}},
 			saramaConfig: saramaSASLSCRAM512Config,
-			err:          "invalid SASL Protocol Version",
+			err:          "auth.sasl.version has to be either 0 or 1",
 		},
 	}
 	for _, test := range tests {

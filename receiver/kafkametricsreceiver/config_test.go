@@ -28,6 +28,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
+	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Brokers:                   []string{"10.10.10.10:9092"},
@@ -37,9 +38,9 @@ func TestLoadConfig(t *testing.T) {
 		Authentication: kafka.Authentication{
 			TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile:   "ca.pem",
-					CertFile: "cert.pem",
-					KeyFile:  "key.pem",
+					CAFile:   "./testdata/certs/ca.pem",
+					CertFile: "./testdata/certs/cert.pem",
+					KeyFile:  "./testdata/certs/key.pem",
 				},
 			},
 		},
