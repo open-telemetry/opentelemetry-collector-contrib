@@ -118,7 +118,7 @@ type groupRequest interface {
 }
 
 func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *logsReceiver {
-	groups := []groupRequest{}
+	var groups []groupRequest
 	autodiscover := &AutodiscoverConfig{}
 
 	if len(cfg.Logs.Groups.NamedConfigs) > 0 {
@@ -246,7 +246,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
 	logs := plog.NewLogs()
 
-	resourceMap := map[string](map[string]*plog.ResourceLogs){}
+	resourceMap := map[string]map[string]*plog.ResourceLogs{}
 
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
@@ -285,11 +285,11 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			resourceAttributes.PutStr("cloudwatch.log.stream", logStreamName)
 			group[logStreamName] = resourceLogs
 
-			// Ensure one scopeLogs is initialized so we can handle in standardized way going forward.
+			// Ensure one scopeLogs is initialized, so we can handle in standardized way going forward.
 			_ = resourceLogs.ScopeLogs().AppendEmpty()
 		}
 
-		// Now we know resourceLogs is initialized and has one scopeLogs so we don't have to handle any special cases.
+		// Now we know resourceLogs is initialized and has one scopeLogs, so we don't have to handle any special cases.
 
 		logRecord := resourceLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
 
@@ -304,7 +304,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 
 func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]groupRequest, error) {
 	l.logger.Debug("attempting to discover log groups.", zap.Int("limit", auto.Limit))
-	groups := []groupRequest{}
+	var groups []groupRequest
 	err := l.ensureSession()
 	if err != nil {
 		return groups, fmt.Errorf("unable to establish a session to auto discover log groups: %w", err)
