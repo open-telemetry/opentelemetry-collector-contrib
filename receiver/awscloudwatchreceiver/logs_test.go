@@ -176,6 +176,7 @@ func TestAutodiscoverLimit(t *testing.T) {
 	for i := 0; i <= 100; i++ {
 		logGroups = append(logGroups, &cloudwatchlogs.LogGroup{
 			LogGroupName: aws.String(fmt.Sprintf("test log group: %d", i)),
+			Arn:          &testLogArn,
 			StoredBytes:  aws.Int64(storedBytes),
 		})
 	}
@@ -220,6 +221,7 @@ func defaultMockClient() client {
 			LogGroups: []*cloudwatchlogs.LogGroup{
 				{
 					LogGroupName: &testLogGroupName,
+					Arn:          &testLogArn,
 					StoredBytes:  &storedBytes,
 				},
 			},
@@ -264,6 +266,7 @@ func defaultMockClient() client {
 
 var (
 	testLogGroupName    = "test-log-group-name"
+	testLogArn          = "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole/*"
 	testLogStreamName   = "test-log-stream-name"
 	testLogStreamName2  = "test-log-stream-name-2"
 	testLogStreamPrefix = "test-log-stream"

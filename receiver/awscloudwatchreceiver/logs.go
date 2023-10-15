@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	noStreamName = "THIS IS INVALID STREAM"
+	noStreamName             = "THIS IS INVALID STREAM"
+	maxLogGroupsPerDiscovery = int64(50)
 )
 
 type logsReceiver struct {
@@ -40,8 +41,6 @@ type logsReceiver struct {
 	wg                  *sync.WaitGroup
 	doneChan            chan bool
 }
-
-const maxLogGroupsPerDiscovery = int64(50)
 
 type client interface {
 	DescribeLogGroupsWithContext(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...request.Option) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
@@ -62,6 +61,7 @@ func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *
 		EndTime:   aws.Int64(et.UnixMilli()),
 		Limit:     aws.Int64(int64(limit)),
 	}
+
 	if sn.arn != "" {
 		base.LogGroupIdentifier = aws.String(sn.arn)
 	} else {
@@ -350,28 +350,16 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 				l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
 				// default behavior is to collect all if not stream filtered
 				if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
-					if lg.Arn != nil && *lg.Arn != "" {
-						groups = append(groups, &streamNames{group: *lg.LogGroupName, arn: transformARN(*lg.Arn), storedBytes: *lg.StoredBytes})
-					} else {
-						groups = append(groups, &streamNames{group: *lg.LogGroupName})
-					}
+					groups = append(groups, &streamNames{group: *lg.LogGroupName, arn: transformARN(*lg.Arn), storedBytes: *lg.StoredBytes})
 					continue
 				}
 
 				for _, prefix := range auto.Streams.Prefixes {
-					if lg.Arn != nil && *lg.Arn != "" {
-						groups = append(groups, &streamPrefix{group: *lg.LogGroupName, arn: *lg.Arn, prefix: prefix, storedBytes: *lg.StoredBytes})
-					} else {
-						groups = append(groups, &streamPrefix{group: *lg.LogGroupName, prefix: prefix})
-					}
+					groups = append(groups, &streamPrefix{group: *lg.LogGroupName, arn: transformARN(*lg.Arn), prefix: prefix, storedBytes: *lg.StoredBytes})
 				}
 
 				if len(auto.Streams.Names) > 0 {
-					if lg.Arn != nil && *lg.Arn != "" {
-						groups = append(groups, &streamNames{group: *lg.LogGroupName, arn: *lg.Arn, names: auto.Streams.Names, storedBytes: *lg.StoredBytes})
-					} else {
-						groups = append(groups, &streamNames{group: *lg.LogGroupName, names: auto.Streams.Names})
-					}
+					groups = append(groups, &streamNames{group: *lg.LogGroupName, arn: transformARN(*lg.Arn), names: auto.Streams.Names, storedBytes: *lg.StoredBytes})
 				}
 			}
 		}
@@ -381,7 +369,10 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 }
 
 func transformARN(arn string) string {
-	return arn[:len(arn)-2]
+	if arn != "" {
+		return arn[:len(arn)-2]
+	}
+	return ""
 }
 
 func (l *logsReceiver) ensureSession() error {
