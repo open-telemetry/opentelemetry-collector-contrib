@@ -50,11 +50,13 @@ for other encodings available.
 
 If set, the `async` configuration block instructs the `udp_input` operator to read and process logs asynchronsouly and concurrently.
 
-**note** If `async` is not set at all, a single thread will read lines synchronously.
+**note** If `async` is not set at all, a single thread will read & process lines synchronously.
 
 | Field                                   | Default              | Description |
 | ---                                     | ---                  | ---         |
-| `readers`                               | 1                    | Concurrency level - Determines how many go routines read from UDP port (and process logs before sending downstream). |
+| `readers`                               | 1                    | Concurrency level - Determines how many go routines read from UDP port and push to channel (to be handled by processors). |
+| `processors`                            | 1                    | Concurrency level - Determines how many go routines read from channel (pushed by readers) and process logs before sending downstream. |
+| `max_queue_length`                      | 100                  | Determines max length of channel being used by async reader routines. When channel reaches max number, reader routine will block until channel has room. |
 
 ### Example Configurations
 
