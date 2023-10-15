@@ -52,7 +52,7 @@ func newRedisScraper(cfg *Config, settings receiver.CreateSettings) (scraperhelp
 func newRedisScraperWithClient(client client, settings receiver.CreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
 	configInfo, err := newConfigInfo(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("invalid config %w", err)
+		return nil, err
 	}
 	rs := &redisScraper{
 		client:     client,
