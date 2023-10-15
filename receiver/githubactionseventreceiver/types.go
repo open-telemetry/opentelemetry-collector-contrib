@@ -3,21 +3,21 @@ package githubactionseventreceiver
 import "time"
 
 type WorkflowJobEvent struct {
-	Action       string       `json:"action,omitempty"`
-	WorkflowJob  WorkflowJob  `json:"workflow_job,omitempty"`
-	Repository   Repository   `json:"repository,omitempty"`
-	Organization Organization `json:"organization,omitempty"`
-	Sender       Sender       `json:"sender,omitempty"`
-	Steps        []Step       `json:"steps,omitempty"`
+	Action       string       `json:"action"`
+	WorkflowJob  WorkflowJob  `json:"workflow_job"`
+	Repository   Repository   `json:"repository"`
+	Organization Organization `json:"organization"`
+	Sender       Sender       `json:"sender"`
+	Steps        []Step       `json:"steps"`
 }
 
 type WorkflowRunEvent struct {
-	Action       string       `json:"action,omitempty"`
-	WorkflowRun  WorkflowRun  `json:"workflow_run,omitempty"`
-	Workflow     Workflow     `json:"workflow,omitempty"`
-	Repository   Repository   `json:"repository,omitempty"`
-	Organization Organization `json:"organization,omitempty"`
-	Sender       Sender       `json:"sender,omitempty"`
+	Action       string       `json:"action"`
+	WorkflowRun  WorkflowRun  `json:"workflow_run"`
+	Workflow     Workflow     `json:"workflow"`
+	Repository   Repository   `json:"repository"`
+	Organization Organization `json:"organization"`
+	Sender       Sender       `json:"sender"`
 }
 
 type Actor struct {
@@ -292,12 +292,12 @@ type Workflow struct {
 }
 
 type WorkflowJob struct {
-	ID              int64     `json:"id,omitempty"`
-	RunID           int64     `json:"run_id,omitempty"`
+	ID              int64     `json:"id"`
+	RunID           int64     `json:"run_id"`
 	WorkflowName    string    `json:"workflow_name,omitempty"`
 	HeadBranch      string    `json:"head_branch,omitempty"`
 	RunURL          string    `json:"run_url,omitempty"`
-	RunAttempt      int       `json:"run_attempt,omitempty"`
+	RunAttempt      int       `json:"run_attempt"`
 	NodeID          string    `json:"node_id,omitempty"`
 	HeadSha         string    `json:"head_sha,omitempty"`
 	URL             string    `json:"url,omitempty"`
@@ -318,7 +318,7 @@ type WorkflowJob struct {
 }
 
 type WorkflowRun struct {
-	ID                  int64           `json:"id,omitempty"`
+	ID                  int64           `json:"id"`
 	Name                string          `json:"name,omitempty"`
 	NodeID              string          `json:"node_id,omitempty"`
 	HeadBranch          string          `json:"head_branch,omitempty"`

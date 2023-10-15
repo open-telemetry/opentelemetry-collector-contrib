@@ -4,6 +4,9 @@ receivers:
     # custom_service_name: github // default org-repo-name
     # service_name_prefix: foo- // ignored if custom_service_name set
     # service_name_suffix: -bar // ignored if custom_service_name set
+    cors:
+      allowed_origins: ["*"]
+      allowed_headers: ["*"]
   otlp:
     protocols:
       grpc:
