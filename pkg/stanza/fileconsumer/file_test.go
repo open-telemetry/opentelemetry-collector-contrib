@@ -1098,6 +1098,56 @@ func TestFileBatching(t *testing.T) {
 	}
 }
 
+func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
+	t.Parallel()
+
+	initFiles := 10
+	moreFiles := 10
+	maxConcurrentFiles := 2
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "end"
+	cfg.MaxConcurrentFiles = maxConcurrentFiles
+
+	operator, emitChan := buildTestManager(t, cfg)
+	operator.persister = testutil.NewMockPersister("test")
+
+	temps := make([]*os.File, 0, initFiles+moreFiles)
+	for i := 0; i < initFiles; i++ {
+		temps = append(temps, openTemp(t, tempDir))
+	}
+
+	// Write one log to each file
+	for i, temp := range temps {
+		message := fmt.Sprintf("file %d: %s", i, "written before start")
+		_, err := temp.WriteString(message + "\n")
+		require.NoError(t, err)
+	}
+
+	// Poll and expect no logs
+	operator.poll(context.Background())
+	expectNoTokens(t, emitChan)
+
+	// Create some more files
+	for i := 0; i < moreFiles; i++ {
+		temps = append(temps, openTemp(t, tempDir))
+	}
+
+	// Write a log to each file
+	expectedTokens := make([][]byte, 0, initFiles+moreFiles)
+	for i, temp := range temps {
+		message := fmt.Sprintf("file %d: %s", i, "written after start")
+		_, err := temp.WriteString(message + "\n")
+		require.NoError(t, err)
+		expectedTokens = append(expectedTokens, []byte(message))
+	}
+
+	// Poll again and expect one line from each file.
+	operator.poll(context.Background())
+	waitForTokens(t, emitChan, expectedTokens)
+}
+
 func TestFileReader_FingerprintUpdated(t *testing.T) {
 	t.Parallel()
 
