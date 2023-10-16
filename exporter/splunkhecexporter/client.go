@@ -248,6 +248,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
 	defer jsonStreamPool.Put(jsonStream)
 
+	tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
 	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		for j := is.library; j < rm.ScopeMetrics().Len(); j++ {
@@ -259,7 +260,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 
 				// Parsing metric record to Splunk event.
 				events := mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)
-				tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
+				tempBuf.Reset()
 				for _, event := range events {
 					// JSON encoding event and writing to buffer.
 					b, err := marshalEvent(event, c.config.MaxEventSize, jsonStream)
