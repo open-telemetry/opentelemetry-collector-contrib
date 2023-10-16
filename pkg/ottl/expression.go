@@ -254,8 +254,8 @@ type FunctionGetter[K any] interface {
 
 // StandardFunctionGetter is a basic implementation of FunctionGetter.
 type StandardFunctionGetter[K any] struct {
-	fCtx FunctionContext
-	fact Factory[K]
+	FCtx FunctionContext
+	Fact Factory[K]
 }
 
 // Get takes an Arguments struct containing arguments the caller wants passed to the
@@ -263,12 +263,12 @@ type StandardFunctionGetter[K any] struct {
 // If there is a mismatch between the function's signature and the arguments the caller
 // wants to pass to the function, an error is returned.
 func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
-	if g.fact == nil {
+	if g.Fact == nil {
 		return Expr[K]{}, fmt.Errorf("undefined function")
 	}
-	fArgs := g.fact.CreateDefaultArguments()
+	fArgs := g.Fact.CreateDefaultArguments()
 	if reflect.TypeOf(fArgs).Kind() != reflect.Pointer {
-		return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", g.fact.Name())
+		return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", g.Fact.Name())
 	}
 	if reflect.TypeOf(args).Kind() != reflect.Pointer {
 		return Expr[K]{}, fmt.Errorf("%q must be pointer to an Arguments value", reflect.TypeOf(args).Kind())
@@ -282,7 +282,7 @@ func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
 		field := argsVal.Field(i)
 		fArgsVal.Field(i).Set(field)
 	}
-	fn, err := g.fact.CreateFunction(g.fCtx, fArgs)
+	fn, err := g.Fact.CreateFunction(g.FCtx, fArgs)
 	if err != nil {
 		return Expr[K]{}, fmt.Errorf("couldn't create function: %w", err)
 	}
