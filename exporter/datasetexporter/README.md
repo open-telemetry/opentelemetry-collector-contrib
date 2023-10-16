@@ -43,6 +43,15 @@ The process of populating the serverHost attribute works as follows:
 
 Make sure to provide the appropriate server host value in the `serverHost` attribute to ensure the proper functionality of DataSet and accurate handling of events.
 
+### Attributes
+
+If exporting of attributes of given type are enabled, then they are exported in following order:
+1. Resource
+2. Scope
+3. Log itself
+
+In case of name conflict the later attribute name will be appended with the `export_separator` value. 
+
 ### Optional Settings
 
 - `buffer`:
@@ -53,7 +62,11 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
   - `retry_shutdown_timeout` (default = 30s): The maximum time for which it will try to send data to the DataSet during shutdown. This value should be shorter than container's grace period.
 - `logs`:
-    - `export_scope_info_on_event` (default = false): Include LogRecord scope information (if available) on the DataSet event.
+    - `export_resource_info_on_event` (default = false): Include LogRecord resource information (if available) on the DataSet event.
+    - `export_resource_prefix` (default = 'resource.attributes.'): If resource is included then following string will be used as prefix.
+    - `export_scope_info_on_event` (default = true): Include LogRecord scope information (if available) on the DataSet event.
+    - `export_scope_prefix` (default = 'scope.attributes.'): If scope is included then following string will be used as prefix.
+    - `export_separator` (default = '_'): When attribute contains some nested structures (maps, arrays) this string is used to separate them during flattening.
     - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
 - `server_host`:
   - `server_host` (default = ''): Specifies the server host to be used for the events.

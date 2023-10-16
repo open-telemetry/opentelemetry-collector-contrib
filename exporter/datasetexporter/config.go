@@ -26,9 +26,9 @@ func newDefaultTracesSettings() TracesSettings {
 }
 
 const logsExportResourceInfoDefault = false
-const logsExportResourcePrefixDefault = "resource.attributes"
+const logsExportResourcePrefixDefault = "resource.attributes."
 const logsExportScopeInfoDefault = true
-const logsExportScopePrefixDefault = "scope.attributes"
+const logsExportScopePrefixDefault = "scope.attributes."
 const logsExportSeparatorDefault = "_"
 const logsDecomposeComplexMessageFieldDefault = false
 

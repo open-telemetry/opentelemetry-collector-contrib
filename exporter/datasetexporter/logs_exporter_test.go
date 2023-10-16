@@ -209,35 +209,150 @@ var testLEventReq = &add_events.Event{
 
 func TestBuildEventFromLog(t *testing.T) {
 	tests := []struct {
-		name       string
-		settings   LogsSettings
-		serverHost string
-		expected   add_events.EventAttrs
+		name     string
+		settings LogsSettings
+		expected add_events.EventAttrs
 	}{
 		{
-			name:       "Default",
-			settings:   newDefaultLogsSettings(),
-			serverHost: testServerHost,
-			expected:   nil,
+			name:     "Default",
+			settings: newDefaultLogsSettings(),
+			expected: add_events.EventAttrs{
+				"message": "This is a log message",
+
+				"string":                     "stringA",
+				"map_map_empty":              nil,
+				"map_map_string":             "map_stringA",
+				"map_map_map_map_map_string": "map_map_stringA",
+				"slice_0":                    "slice_stringA",
+
+				"scope.attributes.string":                     "stringS",
+				"scope.attributes.map_map_empty":              nil,
+				"scope.attributes.map_map_string":             "map_stringS",
+				"scope.attributes.map_map_map_map_map_string": "map_map_stringS",
+				"scope.attributes.slice_0":                    "slice_stringS",
+			},
+		},
+		{
+			name: "Full",
+			settings: LogsSettings{
+				ExportResourceInfo:           true,
+				ExportResourcePrefix:         "__R__",
+				ExportScopeInfo:              true,
+				ExportScopePrefix:            "__S__",
+				ExportSeparator:              ".SEP.",
+				DecomposeComplexMessageField: true,
+			},
+			expected: add_events.EventAttrs{
+				"message": "This is a log message",
+
+				"string":                             "stringA",
+				"map.SEP.map_empty":                  nil,
+				"map.SEP.map_string":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string": "map_map_stringA",
+				"slice.SEP.0":                        "slice_stringA",
+
+				"__S__string":                             "stringS",
+				"__S__map.SEP.map_empty":                  nil,
+				"__S__map.SEP.map_string":                 "map_stringS",
+				"__S__map.SEP.map_map.SEP.map_map_string": "map_map_stringS",
+				"__S__slice.SEP.0":                        "slice_stringS",
+
+				"__R__string":                             "stringR",
+				"__R__map.SEP.map_empty":                  nil,
+				"__R__map.SEP.map_string":                 "map_stringR",
+				"__R__map.SEP.map_map.SEP.map_map_string": "map_map_stringR",
+				"__R__slice.SEP.0":                        "slice_stringR",
+
+				"__R__resource-attr": "resource-attr-val-1",
+			},
+		},
+		{
+			name: "Minimal",
+			settings: LogsSettings{
+				ExportResourceInfo:           false,
+				ExportResourcePrefix:         "__R__",
+				ExportScopeInfo:              false,
+				ExportScopePrefix:            "__S__",
+				ExportSeparator:              ".SEP.",
+				DecomposeComplexMessageField: false,
+			},
+			expected: add_events.EventAttrs{
+				"message": "This is a log message",
+
+				"string":                             "stringA",
+				"map.SEP.map_empty":                  nil,
+				"map.SEP.map_string":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string": "map_map_stringA",
+				"slice.SEP.0":                        "slice_stringA",
+			},
+		},
+		{
+			name: "EmptyPrefixes",
+			settings: LogsSettings{
+				ExportResourceInfo:           true,
+				ExportResourcePrefix:         "",
+				ExportScopeInfo:              true,
+				ExportScopePrefix:            "",
+				ExportSeparator:              ".SEP.",
+				DecomposeComplexMessageField: false,
+			},
+			expected: add_events.EventAttrs{
+				"message": "This is a log message",
+
+				"string":                             "stringR",
+				"map.SEP.map_empty":                  nil,
+				"map.SEP.map_string":                 "map_stringR",
+				"map.SEP.map_map.SEP.map_map_string": "map_map_stringR",
+				"slice.SEP.0":                        "slice_stringR",
+
+				"string.SEP.":                             "stringS",
+				"map.SEP.map_empty.SEP.":                  nil,
+				"map.SEP.map_string.SEP.":                 "map_stringS",
+				"map.SEP.map_map.SEP.map_map_string.SEP.": "map_map_stringS",
+				"slice.SEP.0.SEP.":                        "slice_stringS",
+
+				"string.SEP..SEP.":                             "stringA",
+				"map.SEP.map_empty.SEP..SEP.":                  nil,
+				"map.SEP.map_string.SEP..SEP.":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string.SEP..SEP.": "map_map_stringA",
+				"slice.SEP.0.SEP..SEP.":                        "slice_stringA",
+
+				"resource-attr": "resource-attr-val-1",
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lr := testdata.GenerateLogsOneLogRecord()
+			lr := testdata.GenerateLogsOneEmptyLogRecord()
 			ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			resource := lr.ResourceLogs().At(0).Resource()
+			scope := lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+
+			fillAttributes(resource.Attributes(), false, "R")
+			fillAttributes(scope.Attributes(), false, "S")
+			fillAttributes(ld.Attributes(), false, "A")
+			ld.SetTimestamp(testdata.TestLogTimestamp)
+			ld.Body().SetStr("This is a log message")
 
 			expected := &add_events.EventBundle{
-				Event:  testLEventRaw,
+				Event: &add_events.Event{
+					Thread:     testLThread.Id,
+					Log:        testLLog.Id,
+					Sev:        3,
+					Ts:         "1581452773000000789",
+					ServerHost: testServerHost,
+					Attrs:      tt.expected,
+				},
 				Thread: testLThread,
 				Log:    testLLog,
 			}
 
 			was := buildEventFromLog(
 				ld,
-				lr.ResourceLogs().At(0).Resource(),
-				lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
-				tt.serverHost,
+				resource,
+				scope,
+				testServerHost,
 				tt.settings,
 			)
 
@@ -458,9 +573,9 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	lr4.ResourceLogs().At(0).Resource().Attributes().PutStr("host.name", "serverHostFromResourceHost")
 	// set all possible values
 	lr5 := testdata.GenerateLogsOneLogRecord()
-	fillAttributes(lr5.ResourceLogs().At(0).Resource().Attributes())
-	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes())
-	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes())
+	fillAttributes(lr5.ResourceLogs().At(0).Resource().Attributes(), true, "A")
+	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(), true, "S")
+	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(), true, "R")
 
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty()

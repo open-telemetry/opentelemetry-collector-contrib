@@ -215,9 +215,9 @@ func TestBuildEventsFromSpanAttributesDifferentTypes(t *testing.T) {
 	rs := td.ResourceSpans().AppendEmpty()
 	rss := rs.ScopeSpans().AppendEmpty()
 	span := rss.Spans().AppendEmpty()
-	fillAttributes(span.Attributes())
-	fillAttributes(rss.Scope().Attributes())
-	fillAttributes(rs.Resource().Attributes())
+	fillAttributes(span.Attributes(), true, "A")
+	fillAttributes(rss.Scope().Attributes(), true, "S")
+	fillAttributes(rs.Resource().Attributes(), true, "R")
 
 	// sBytes := span.Attributes().PutEmptyBytes("bytes")
 	// sBytes.Append('a')

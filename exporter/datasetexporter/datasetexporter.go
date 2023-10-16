@@ -101,17 +101,7 @@ func updateWithPrefixedValuesArray(target map[string]interface{}, prefix string,
 }
 
 func updateWithPrefixedValues(target map[string]interface{}, prefix string, separator string, source interface{}, depth int) {
-	st := reflect.TypeOf(source)
-	if st == nil {
-		target[prefix] = source
-		return
-	}
-	switch st.Kind() {
-	case reflect.Map:
-		updateWithPrefixedValuesMap(target, prefix, separator, source.(map[string]interface{}), depth)
-	case reflect.Array, reflect.Slice:
-		updateWithPrefixedValuesArray(target, prefix, separator, source.([]interface{}), depth)
-	default:
+	update := func() {
 		for {
 			_, found := target[prefix]
 			if found {
@@ -121,7 +111,19 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 				break
 			}
 		}
-
+	}
+	st := reflect.TypeOf(source)
+	if st == nil {
+		update()
+		return
+	}
+	switch st.Kind() {
+	case reflect.Map:
+		updateWithPrefixedValuesMap(target, prefix, separator, source.(map[string]interface{}), depth)
+	case reflect.Array, reflect.Slice:
+		updateWithPrefixedValuesArray(target, prefix, separator, source.([]interface{}), depth)
+	default:
+		update()
 	}
 }
 
