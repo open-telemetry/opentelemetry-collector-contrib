@@ -208,23 +208,43 @@ var testLEventReq = &add_events.Event{
 }
 
 func TestBuildEventFromLog(t *testing.T) {
-	lr := testdata.GenerateLogsOneLogRecord()
-	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-
-	expected := &add_events.EventBundle{
-		Event:  testLEventRaw,
-		Thread: testLThread,
-		Log:    testLLog,
+	tests := []struct {
+		name       string
+		settings   LogsSettings
+		serverHost string
+		expected   add_events.EventAttrs
+	}{
+		{
+			name:       "Default",
+			settings:   newDefaultLogsSettings(),
+			serverHost: testServerHost,
+			expected:   nil,
+		},
 	}
-	was := buildEventFromLog(
-		ld,
-		lr.ResourceLogs().At(0).Resource(),
-		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
-		testServerHost,
-		newDefaultLogsSettings(),
-	)
 
-	assert.Equal(t, expected, was)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lr := testdata.GenerateLogsOneLogRecord()
+			ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+			expected := &add_events.EventBundle{
+				Event:  testLEventRaw,
+				Thread: testLThread,
+				Log:    testLLog,
+			}
+
+			was := buildEventFromLog(
+				ld,
+				lr.ResourceLogs().At(0).Resource(),
+				lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+				tt.serverHost,
+				tt.settings,
+			)
+
+			assert.Equal(t, expected, was)
+		})
+	}
+
 }
 
 func TestBuildEventFromLogExportResources(t *testing.T) {
@@ -232,7 +252,7 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	defaultAttrs := testLEventRaw.Attrs
-	defaultAttrs["resource.attributes.resource-attr"] = "resource-attr-val-1"
+	defaultAttrs["resource-attr"] = "resource-attr-val-1"
 
 	expected := &add_events.EventBundle{
 		Event: &add_events.Event{
@@ -306,7 +326,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedT
 	// 2023-06-08 14:38:33 +0000 UTC
 	testLEventRaw.Attrs["sca:observedTime"] = "1686235113000000000"
 	delete(testLEventRaw.Attrs, "timestamp")
-	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
+	delete(testLEventRaw.Attrs, "resource-attr")
 
 	expected := &add_events.EventBundle{
 		Event:  testLEventRaw,
@@ -343,7 +363,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 	testLEventRaw.Ts = strconv.FormatInt(currentTime.UnixNano(), 10)
 	delete(testLEventRaw.Attrs, "timestamp")
 	delete(testLEventRaw.Attrs, "sca:observedTime")
-	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
+	delete(testLEventRaw.Attrs, "resource-attr")
 
 	expected := &add_events.EventBundle{
 		Event:  testLEventRaw,

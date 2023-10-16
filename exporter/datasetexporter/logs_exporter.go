@@ -212,17 +212,17 @@ func buildEventFromLog(
 	}
 
 	if logSettings.ExportResourceInfo {
-		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
+		updateWithPrefixedValues(attrs, logSettings.ExportResourcePrefix, logSettings.ExportSeparator, resource.Attributes().AsRaw(), 0)
 	}
 
 	if logSettings.ExportScopeInfo {
 		if scope.Name() != "" {
 			attrs["scope.name"] = scope.Name()
 		}
-		updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
+		updateWithPrefixedValues(attrs, logSettings.ExportScopePrefix, logSettings.ExportSeparator, scope.Attributes().AsRaw(), 0)
 	}
 
-	updateWithPrefixedValues(attrs, "", "_", log.Attributes().AsRaw(), 0)
+	updateWithPrefixedValues(attrs, "", logSettings.ExportSeparator, log.Attributes().AsRaw(), 0)
 
 	event.Attrs = attrs
 	event.Log = "LL"

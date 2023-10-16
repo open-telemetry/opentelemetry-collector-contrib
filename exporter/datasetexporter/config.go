@@ -26,18 +26,34 @@ func newDefaultTracesSettings() TracesSettings {
 }
 
 const logsExportResourceInfoDefault = false
+const logsExportResourcePrefixDefault = "resource.attributes"
 const logsExportScopeInfoDefault = true
+const logsExportScopePrefixDefault = "scope.attributes"
+const logsExportSeparatorDefault = "_"
 const logsDecomposeComplexMessageFieldDefault = false
 
 type LogsSettings struct {
 	// ExportResourceInfo is optional flag to signal that the resource info is being exported to DataSet while exporting Logs.
 	// This is especially useful when reducing DataSet billable log volume.
-	// Default value: false.
+	// Default value: false
 	ExportResourceInfo bool `mapstructure:"export_resource_info_on_event"`
+
+	// ExportResourcePrefix is prefix for the resource attributes when they are exported (see ExportResourceInfo).
+	// Default value: resource.attributes
+	ExportResourcePrefix string `mapstructure:"export_resource_prefix"`
 
 	// ExportScopeInfo is an optional flag that signals if scope info should be exported (when available) with each event. If scope
 	// information is not utilized, it makes sense to disable exporting it since it will result in increased billable log volume.
+	// Default value: true
 	ExportScopeInfo bool `mapstructure:"export_scope_info_on_event"`
+
+	// ExportScopePrefix is prefix for the scope attributes when they are exported (see ExportScopeInfo).
+	// Default value: scope.attributes
+	ExportScopePrefix string `mapstructure:"export_scope_prefix"`
+
+	// ExportSeparator is separator used when flattening exported attributes
+	// Default value: _
+	ExportSeparator string `mapstructure:"export_separator"`
 
 	// DecomposeComplexMessageField is an optional flag to signal that message / body of complex types (e.g. a map) should be
 	// decomposed / deconstructed into multiple fields. This is usually done outside of the main DataSet integration on the
@@ -50,7 +66,10 @@ type LogsSettings struct {
 func newDefaultLogsSettings() LogsSettings {
 	return LogsSettings{
 		ExportResourceInfo:           logsExportResourceInfoDefault,
+		ExportResourcePrefix:         logsExportResourcePrefixDefault,
 		ExportScopeInfo:              logsExportScopeInfoDefault,
+		ExportScopePrefix:            logsExportScopePrefixDefault,
+		ExportSeparator:              logsExportSeparatorDefault,
 		DecomposeComplexMessageField: logsDecomposeComplexMessageFieldDefault,
 	}
 }
