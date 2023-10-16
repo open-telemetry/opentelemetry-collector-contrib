@@ -168,6 +168,9 @@ func createAttributes(
 	serviceName, haveServiceName := resource.Attributes().Get(conventions.AttributeServiceName)
 	instance, haveInstanceID := resource.Attributes().Get(conventions.AttributeServiceInstanceID)
 
+	scopeName := scope.Name()
+	scopeVersion := scope.Version()
+
 	// Calculate the maximum possible number of labels we could return so we can preallocate l
 	maxLabelCount := attributes.Len() + len(externalLabels) + len(extras)/2
 
@@ -176,6 +179,14 @@ func createAttributes(
 	}
 
 	if haveInstanceID {
+		maxLabelCount++
+	}
+
+	if len(scopeName) > 0 {
+		maxLabelCount++
+	}
+
+	if len(scopeVersion) > 0 {
 		maxLabelCount++
 	}
 
@@ -212,6 +223,13 @@ func createAttributes(
 	if haveInstanceID {
 		l[model.InstanceLabel] = instance.AsString()
 	}
+	// add scope name/version labels
+	if len(scopeName) > 0 {
+		l[scopeAttrName] = scopeName
+	}
+	if len(scopeVersion) > 0 {
+		l[scopeAttrVersion] = scopeVersion
+	}
 	for key, value := range externalLabels {
 		// External labels have already been sanitized
 		if _, alreadyExists := l[key]; alreadyExists {
@@ -219,14 +237,6 @@ func createAttributes(
 			continue
 		}
 		l[key] = value
-	}
-
-	// add scope name/version labels
-	if len(scope.Name()) > 0 {
-		extras = append(extras, scopeAttrName, scope.Name())
-	}
-	if len(scope.Version()) > 0 {
-		extras = append(extras, scopeAttrVersion, scope.Version())
 	}
 
 	for i := 0; i < len(extras); i += 2 {
@@ -619,17 +629,6 @@ func addScopeInfo(
 	if scope.Attributes().Len() == 0 {
 		// If the scope doesn't have additional attributes, then otel_scope_info isn't useful.
 		return
-	}
-
-	// Only add service name and instance id resource attributes
-	resCopy := pcommon.NewResource()
-	serviceName, ok := resource.Attributes().Get(conventions.AttributeServiceName)
-	if ok {
-		serviceName.CopyTo(resCopy.Attributes().PutEmpty(conventions.AttributeServiceName))
-	}
-	serviceInstanceID, ok := resource.Attributes().Get(conventions.AttributeServiceInstanceID)
-	if ok {
-		serviceInstanceID.CopyTo(resCopy.Attributes().PutEmpty(conventions.AttributeServiceInstanceID))
 	}
 
 	name := scopeMetricName
