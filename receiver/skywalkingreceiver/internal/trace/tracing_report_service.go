@@ -95,14 +95,14 @@ func (r *Receiver) CollectInSync(ctx context.Context, segments *agent.SegmentCol
 	return &common.Commands{}, nil
 }
 
-func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer consumer.Traces, obsreport  *receiverhelper.ObsReport) error {
+func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer consumer.Traces, obsreport *receiverhelper.ObsReport) error {
 	if segment == nil {
 		return nil
 	}
 	ptd := skywalking.ProtoToTraces(segment)
 	obsreport.StartTracesOp(ctx)
 	err := consumer.ConsumeTraces(ctx, ptd)
-	obsreport.EndTracesOp(ctx,format,ptd.SpanCount(), err)
+	obsreport.EndTracesOp(ctx, format, ptd.SpanCount(), err)
 	return err
 }
 

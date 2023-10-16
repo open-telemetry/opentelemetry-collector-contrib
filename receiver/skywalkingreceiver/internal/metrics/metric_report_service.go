@@ -60,14 +60,14 @@ func (r *Receiver) Collect(ctx context.Context, jvmMetricCollection *agent.JVMMe
 	return &common.Commands{}, nil
 }
 
-func consumeMetrics(ctx context.Context, collection *agent.JVMMetricCollection, nextConsumer consumer.Metrics, obsreport  *receiverhelper.ObsReport) error {
+func consumeMetrics(ctx context.Context, collection *agent.JVMMetricCollection, nextConsumer consumer.Metrics, obsreport *receiverhelper.ObsReport) error {
 	if collection == nil {
 		return nil
 	}
 	pmd := SwMetricsToMetrics(collection)
 	obsreport.StartMetricsOp(ctx)
 	err := nextConsumer.ConsumeMetrics(ctx, pmd)
-	obsreport.EndMetricsOp(ctx,format,pmd.MetricCount(),err)
+	obsreport.EndMetricsOp(ctx, format, pmd.MetricCount(), err)
 	return err
 
 }
