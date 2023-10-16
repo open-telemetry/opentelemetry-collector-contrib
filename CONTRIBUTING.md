@@ -111,8 +111,8 @@ providing the following information:
   components, having a sponsor means that your use case has been validated.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
-* The configuration options your component will accept. This will help us understand what it does and to have an idea of
-  what the implementation might look like.
+* The configuration options your component will accept. This will give us a better understanding of what it does, and 
+  how it may be implemented.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
