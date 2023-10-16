@@ -1,0 +1,15 @@
+name: workflow
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize]
+
+jobs:
+  myaction:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request. }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run a one-line script
+      run: echo Hello, world!
