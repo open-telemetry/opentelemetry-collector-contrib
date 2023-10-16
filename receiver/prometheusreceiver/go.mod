@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.87.0
 	github.com/prometheus/common v0.44.0
-	github.com/prometheus/prometheus v0.47.1
+	github.com/prometheus/prometheus v0.47.2
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.87.0
 	go.opentelemetry.io/collector/confmap v0.87.0
