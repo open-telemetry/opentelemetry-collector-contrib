@@ -46,6 +46,7 @@ var (
 		ContainerCPULimit:                          metricEnabled,
 		ContainerCPUPercent:                        metricEnabled,
 		ContainerCPUShares:                         metricEnabled,
+		ContainerCPUUtilization:                    metricEnabled,
 		ContainerCPUThrottlingDataPeriods:          metricEnabled,
 		ContainerCPUThrottlingDataThrottledPeriods: metricEnabled,
 		ContainerCPUThrottlingDataThrottledTime:    metricEnabled,

@@ -127,7 +127,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerCPUPercent: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUShares: MetricConfig{
 			Enabled: false,
@@ -157,7 +157,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerCPUUtilization: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ContainerMemoryActiveAnon: MetricConfig{
 			Enabled: false,

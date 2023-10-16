@@ -7,6 +7,62 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.87.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/kubeletstats`: Fixes a bug where the "insecure_skip_verify" config was not being honored when "auth_type" is "serviceAccount" in kubelet client. (#26319)
+  Before the fix, the kubelet client was not verifying kubelet's certificate. The default value of the config is false,
+  so with the fix the client will start verifying tls cert unless the config is explicitly set to true.
+  
+- `parquetexporter`: Deprecate the Parquet Exporter, it will be removed in the next release. (#27284)
+- `bug_fix`: Improve counting for the `count_traces_sampled` metric (#25882)
+- `extension/filestorage`: Replace path-unsafe characters in component names (#3148)
+
+### 🚩 Deprecations 🚩
+
+- `resourcedetectionprocessor`: Detect faas.instance in the gcp detector, and deprecate detecting faas.id in the gcp detector. (#26486)
+  faas.id has been removed from the semantic conventions.
+- `k8sclusterreceiver`: Deprecate opencensus.resourcetype resource attribute (#26487)
+  opencensus.resourcetype resource attribute is deprecated and disabled by default.
+
+### 🚀 New components 🚀
+
+- `encodingextension`: Add implementation of encodingextension (#6272)
+
+### 💡 Enhancements 💡
+
+- `processor/probabilisticsampler`: Allow non-bytes values to be used as the source for the sampling decision (#18222)
+- `receiver/azuremonitorreceiver`: Add support for authenticating using AD workload identity (#24451)
+- `kafkareceiver`: Allow users to attach kafka header metadata with the log/metric/trace record in the pipeline. Introduce a new config param, 'header_extraction' and some examples. (#24367)
+- `exporter/kafkaexporter`: Adding Zipkin encoding option for traces to kafkaexporter (#21102)
+- `kubeletstatsreceiver`: Support specifying context for `kubeConfig` `auth_type` (#26665)
+- `kubeletstatsreceiver`: Adds new `k8s.pod.cpu_limit_utilization`, `k8s.pod.cpu_request_utilization`, `k8s.container.cpu_limit_utilization`, and `k8s.container.cpu_request_utilization` metrics that represent the ratio of cpu used vs set limits and requests. (#27276)
+- `kubeletstatsreceiver`: Adds new `k8s.pod.memory_limit_utilization`, `k8s.pod.memory_request_utilization`, `k8s.container.memory_limit_utilization`, and `k8s.container.memory_request_utilization` metrics that represent the ratio of memory used vs set limits and requests. (#25894)
+- `filestatsreceiver`: Move the filestats receiver to beta stability (#27252)
+- `haproxyreceiver`: Move the haproxyreceiver to beta stability (#27254)
+- `splunkentreceiver`: adding additional metrics to the splunkentreceiver (#12667)
+- `cmd/telemetrygen`: Add support for custom telemetry attributes (#26505)
+
+### 🧰 Bug fixes 🧰
+
+- `processor/spanmetrics`: Prune histograms when dimension cache is pruned. (#27080)
+  Dimension cache was always pruned but histograms were not being pruned. This caused metric series created
+  by processor/spanmetrics to grow unbounded.
+  
+- `syslogexporter`: use proper defaults according to RFCs (#25114)
+- `syslogparser`: return correct structure from syslog parser (#27414)
+- `splunkhecreceiver`: Fix receiver behavior when used for metrics and logs at the same time; metrics are no longer dropped. (#27473)
+- `metricstransformprocessor`: Fixes a nil pointer dereference when copying an exponential histogram (#27409)
+- `telemetrygen`: better defaults for http exporter mode (#26999)
+  - the url path default is now correct for both traces and metrics
+  - when not provided, the endpoint is automatically set to target a local gRPC or HTTP endpoint depending on the communication mode selected
+  
+- `k8sclusterreceiver`: change k8s.container.ready, k8s.pod.phase, k8s.pod.status_reason, k8s.namespace.phase units to empty (#10553)
+- `k8sclusterreceiver`: Change k8s.node.condition* metric units to empty (#10553)
+- `syslogreceiver`: Fix issue where long tokens would be truncated prematurely (#27294)
+- `mongodbreceiver`: Fix mongo version not being collected (#27441)
+
 ## v0.86.0
 
 ### 🛑 Breaking changes 🛑

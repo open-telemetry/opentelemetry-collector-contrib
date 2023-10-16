@@ -1,9 +1,6 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: container.runtime
-          value:
-            stringValue: docker
         - key: container.hostname
           value:
             stringValue: 78de07328aff
@@ -107,7 +104,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
-          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
+          - description: '[DEPRECATED] Use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -119,8 +116,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1683723781127718000"
-                  timeUnixNano: "1683723781130612000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.shares
             unit: "1"
           - description: Number of periods with throttling active.
@@ -193,6 +190,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
+          - description: Percent of CPU used by the container.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: container.cpu.utilization
+            unit: "1"
           - description: The amount of anonymous memory that has been identified as active by the kernel.
             name: container.memory.active_anon
             sum:
@@ -447,14 +452,14 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1683723781127718000"
-                  timeUnixNano: "1683723781130612000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{restarts}"
+            unit: '{restarts}'
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 5.849208473080516e+06
+                - asDouble: 1.5532782694550516e+07
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
