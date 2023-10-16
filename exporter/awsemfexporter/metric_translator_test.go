@@ -1456,21 +1456,21 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 					MetricNameSelectors: []string{"metric(1|3)"},
 				},
 			}, []cWMeasurement{
-			{
-				Namespace:  namespace,
-				Dimensions: [][]string{{}},
-				Metrics: []map[string]string{
-					{
-						"Name": "metric1",
-						"Unit": "Count",
-					},
-					{
-						"Name": "metric3",
-						"Unit": "Seconds",
+				{
+					Namespace:  namespace,
+					Dimensions: [][]string{{}},
+					Metrics: []map[string]string{
+						{
+							"Name": "metric1",
+							"Unit": "Count",
+						},
+						{
+							"Name": "metric3",
+							"Unit": "Seconds",
+						},
 					},
 				},
 			},
-		},
 		},
 		{
 			"label matchers",
