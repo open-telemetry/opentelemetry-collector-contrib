@@ -26,6 +26,7 @@ const (
 	collectorHTTPTransport = "http"
 	grpcTransport          = "grpc"
 	failing                = "failing"
+	format                 = "protobuf"
 )
 
 type Receiver struct {
@@ -101,7 +102,7 @@ func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer c
 	ptd := skywalking.ProtoToTraces(segment)
 	obsreport.StartTracesOp(ctx)
 	err := consumer.ConsumeTraces(ctx, ptd)
-	obsreport.EndTracesOp(ctx,"protobuf",ptd.SpanCount(), err)
+	obsreport.EndTracesOp(ctx,format,ptd.SpanCount(), err)
 	return err
 }
 
