@@ -52,6 +52,7 @@ func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.Metadat
 
 type signalfxExporter struct {
 	config             *Config
+	version            string
 	logger             *zap.Logger
 	telemetrySettings  component.TelemetrySettings
 	pushMetricsData    func(ctx context.Context, md pmetric.Metrics) (droppedTimeSeries int, err error)
@@ -90,6 +91,7 @@ func newSignalFxExporter(
 
 	return &signalfxExporter{
 		config:            config,
+		version:           createSettings.BuildInfo.Version,
 		logger:            createSettings.Logger,
 		telemetrySettings: createSettings.TelemetrySettings,
 		converter:         converter,
@@ -102,7 +104,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		return err
 	}
 
-	headers := buildHeaders(se.config)
+	headers := buildHeaders(se.config, se.version)
 	client, err := se.createClient(host)
 	if err != nil {
 		return err
@@ -176,6 +178,7 @@ func newEventExporter(config *Config, createSettings exporter.CreateSettings) (*
 
 	return &signalfxExporter{
 		config:            config,
+		version:           createSettings.BuildInfo.Version,
 		logger:            createSettings.Logger,
 		telemetrySettings: createSettings.TelemetrySettings,
 	}, nil
@@ -188,7 +191,7 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 		return err
 	}
 
-	headers := buildHeaders(se.config)
+	headers := buildHeaders(se.config, se.version)
 	client, err := se.createClient(host)
 	if err != nil {
 		return err
@@ -242,11 +245,11 @@ func (se *signalfxExporter) pushMetadata(metadata []*metadata.MetadataUpdate) er
 	return se.dimClient.PushMetadata(metadata)
 }
 
-func buildHeaders(config *Config) map[string]string {
+func buildHeaders(config *Config, version string) map[string]string {
 	headers := map[string]string{
 		"Connection":   "keep-alive",
 		"Content-Type": "application/x-protobuf",
-		"User-Agent":   "OpenTelemetry-Collector SignalFx Exporter/v0.0.1",
+		"User-Agent":   fmt.Sprintf("OpenTelemetry-Collector SignalFx Exporter/%s", version),
 	}
 
 	if config.AccessToken != "" {
