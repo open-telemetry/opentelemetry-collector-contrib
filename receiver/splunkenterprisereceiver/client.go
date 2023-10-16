@@ -1,0 +1,107 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
+
+import (
+	"context"
+	"crypto/tls"
+	"encoding/base64"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+)
+
+type splunkEntClient struct {
+	endpoint  *url.URL
+	client    *http.Client
+	basicAuth string
+}
+
+func newSplunkEntClient(cfg *Config) splunkEntClient {
+	// tls party
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
+	client := &http.Client{Transport: tr}
+
+	endpoint, _ := url.Parse(cfg.Endpoint)
+
+	// build and encode our auth string. Do this work once to avoid rebuilding the
+	// auth header every time we make a new request
+	authString := fmt.Sprintf("%s:%s", cfg.Username, cfg.Password)
+	auth64 := base64.StdEncoding.EncodeToString([]byte(authString))
+	basicAuth := fmt.Sprintf("Basic %s", auth64)
+
+	return splunkEntClient{
+		client:    client,
+		endpoint:  endpoint,
+		basicAuth: basicAuth,
+	}
+}
+
+// For running ad hoc searches only
+func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse) (*http.Request, error) {
+	// Running searches via Splunk's REST API is a two step process: First you submit the job to run
+	// this returns a jobid which is then used in the second part to retrieve the search results
+	if sr.Jobid == nil {
+		path := "/services/search/jobs/"
+		url, _ := url.JoinPath(c.endpoint.String(), path)
+
+		// reader for the response data
+		data := strings.NewReader(sr.search)
+
+		// return the build request, ready to be run by makeRequest
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, data)
+		if err != nil {
+			return nil, err
+		}
+
+		// Required headers
+		req.Header.Add("Authorization", c.basicAuth)
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+		return req, nil
+	}
+	path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
+	url, _ := url.JoinPath(c.endpoint.String(), path)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Required headers
+	req.Header.Add("Authorization", c.basicAuth)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	return req, nil
+}
+
+func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint string) (*http.Request, error) {
+	url := c.endpoint.String() + apiEndpoint
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Required headers
+	req.Header.Add("Authorization", c.basicAuth)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	return req, nil
+}
+
+// Construct and perform a request to the API. Returns the searchResponse passed into the
+// function as state
+func (c *splunkEntClient) makeRequest(req *http.Request) (*http.Response, error) {
+	res, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

@@ -33,7 +33,6 @@ type bigipScraper struct {
 	logger   *zap.Logger
 	cfg      *Config
 	settings component.TelemetrySettings
-	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -43,7 +42,6 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 		logger:   logger,
 		cfg:      cfg,
 		settings: settings.TelemetrySettings,
-		rb:       metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
@@ -170,10 +168,11 @@ func (s *bigipScraper) collectVirtualServers(virtualServerStats *models.VirtualS
 		s.mb.RecordBigipVirtualServerEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.rb.SetBigipVirtualServerName(virtualServerStats.NestedStats.Entries.Name.Description)
-	s.rb.SetBigipVirtualServerDestination(virtualServerStats.NestedStats.Entries.Destination.Description)
-	s.rb.SetBigipPoolName(virtualServerStats.NestedStats.Entries.PoolName.Description)
-	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipVirtualServerName(virtualServerStats.NestedStats.Entries.Name.Description)
+	rb.SetBigipVirtualServerDestination(virtualServerStats.NestedStats.Entries.Destination.Description)
+	rb.SetBigipPoolName(virtualServerStats.NestedStats.Entries.PoolName.Description)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // collectPools collects pool metrics
@@ -213,8 +212,9 @@ func (s *bigipScraper) collectPools(poolStats *models.PoolStats, now pcommon.Tim
 		s.mb.RecordBigipPoolEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.rb.SetBigipPoolName(poolStats.NestedStats.Entries.Name.Description)
-	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipPoolName(poolStats.NestedStats.Entries.Name.Description)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // collectPoolMembers collects pool member metrics
@@ -252,10 +252,11 @@ func (s *bigipScraper) collectPoolMembers(poolMemberStats *models.PoolMemberStat
 		s.mb.RecordBigipPoolMemberEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.rb.SetBigipPoolMemberName(fmt.Sprintf("%s:%d", poolMemberStats.NestedStats.Entries.Name.Description, poolMemberStats.NestedStats.Entries.Port.Value))
-	s.rb.SetBigipPoolMemberIPAddress(poolMemberStats.NestedStats.Entries.IPAddress.Description)
-	s.rb.SetBigipPoolName(poolMemberStats.NestedStats.Entries.PoolName.Description)
-	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipPoolMemberName(fmt.Sprintf("%s:%d", poolMemberStats.NestedStats.Entries.Name.Description, poolMemberStats.NestedStats.Entries.Port.Value))
+	rb.SetBigipPoolMemberIPAddress(poolMemberStats.NestedStats.Entries.IPAddress.Description)
+	rb.SetBigipPoolName(poolMemberStats.NestedStats.Entries.PoolName.Description)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // collectNodes collects node metrics
@@ -293,7 +294,8 @@ func (s *bigipScraper) collectNodes(nodeStats *models.NodeStats, now pcommon.Tim
 		s.mb.RecordBigipNodeEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.rb.SetBigipNodeName(nodeStats.NestedStats.Entries.Name.Description)
-	s.rb.SetBigipNodeIPAddress(nodeStats.NestedStats.Entries.IPAddress.Description)
-	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipNodeName(nodeStats.NestedStats.Entries.Name.Description)
+	rb.SetBigipNodeIPAddress(nodeStats.NestedStats.Entries.IPAddress.Description)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }

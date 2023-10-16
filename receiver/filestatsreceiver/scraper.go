@@ -23,7 +23,6 @@ import (
 type scraper struct {
 	include string
 	logger  *zap.Logger
-	rb      *metadata.ResourceBuilder
 	mb      *metadata.MetricsBuilder
 }
 
@@ -52,9 +51,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		s.mb.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
 		collectStats(now, fileinfo, s.mb, s.logger)
 
-		s.rb.SetFileName(fileinfo.Name())
-		s.rb.SetFilePath(path)
-		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+		rb := s.mb.NewResourceBuilder()
+		rb.SetFileName(fileinfo.Name())
+		rb.SetFilePath(path)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	if len(scrapeErrors) > 0 {
@@ -67,7 +67,6 @@ func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
 	return &scraper{
 		include: cfg.Include,
 		logger:  settings.TelemetrySettings.Logger,
-		rb:      metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		mb:      metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }

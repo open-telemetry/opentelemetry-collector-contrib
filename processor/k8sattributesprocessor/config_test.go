@@ -29,6 +29,9 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Exclude:   ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
+				Extract: ExtractConfig{
+					Metadata: enabledAttributes(),
+				},
 			},
 		},
 		{
@@ -37,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 				Passthrough: false,
 				Extract: ExtractConfig{
-					Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time"},
+					Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time", "k8s.cluster.uid"},
 					Annotations: []FieldExtractConfig{
 						{TagName: "a1", Key: "annotation-one", From: "pod"},
 						{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)", From: kube.MetadataFromPod},
@@ -114,6 +117,7 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{KeyRegex: "opentel.*", From: kube.MetadataFromPod},
 					},
+					Metadata: enabledAttributes(),
 				},
 				Exclude: ExcludeConfig{
 					Pods: []ExcludePodConfig{
@@ -122,6 +126,51 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "too_many_sources"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_keys_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_keys_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_from_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_from_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_keyregex_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_keyregex_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_groups_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_groups_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_name_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_name_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_filter_label_op"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_filter_field_op"),
 		},
 	}
 
@@ -137,6 +186,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
+			if tt.expected == nil {
+				err = component.ValidateConfig(cfg)
+				assert.Error(t, err)
+				return
+			}
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})

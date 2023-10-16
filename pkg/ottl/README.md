@@ -90,6 +90,18 @@ For slice parameters, the following types are supported:
 - `uint8`. Byte slice literals are parsed as byte slices by the OTTL.
 - `Getter`
 
+To make a parameter optional, use the `Optional` type, which takes a type argument for the underlying
+parameter type. For example, an optional string parameter would be specified as `Optional[string]`.
+All optional parameters must be specified after all required parameters.
+
+#### Arguments in invocations
+
+Function arguments must be passed in the order defined in the `Arguments` struct for the function unless they are named, in which case the arguments can come in any order. All named arguments must come after all arguments without
+names. Argument names are snake-cased versions of the argument's field name in the function's `Arguments` struct.
+
+When passing optional arguments, all optional arguments preceding a given optional argument must be specified if
+the arguments are not named. Passing a named argument allows skipping the preceding optional arguments.
+
 ### Values
 
 Values are passed as function parameters or are used in a Boolean Expression. Values can take the form of:
@@ -172,9 +184,18 @@ When defining an OTTL function, if the function needs to take an Enum then the f
 
 Math Expressions represent arithmetic calculations.  They support `+`, `-`, `*`, and `/`, along with `()` for grouping.
 
-Math Expressions currently only support `int64` and `float64`.
+Math Expressions currently support `int64`, `float64`, `time.Time` and `time.Duration`. 
+For `time.Time` and `time.Duration`, only `+` and `-` are supported with the following rules: 
+  - A `time.Time` `-` a `time.Time` yields a `time.Duration`.
+  - A `time.Duration` `+` a `time.Time` yields a `time.Time`. 
+  - A `time.Time` `+`  a `time.Duration` yields a `time.Time`.
+  - A `time.Time` `-`  a `time.Duration` yields a `time.Time`.
+  - A `time.Duration` `+` a `time.Duration` yields a `time.Duration`.
+  - A `time.Duration` `-` a `time.Duration` yields a `time.Duration`.
+
 Math Expressions support `Paths` and `Editors` that return supported types.
 Note that `*` and `/` take precedence over `+` and `-`.
+Also note that `time.Time` and `time.Duration` can only be used with `+` and `-`. 
 Operations that share the same level of precedence will be executed in the order that they appear in the Math Expression.
 Math Expressions can be grouped with parentheses to override evaluation precedence.
 Math Expressions that mix `int64` and `float64` will result in an error.

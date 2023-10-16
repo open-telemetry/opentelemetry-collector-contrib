@@ -27,15 +27,18 @@ httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 
 ## Configuration
 
-The following configuration settings are required:
+The following configuration settings are available:
 
-- `endpoint`: The URL of the endpoint to be monitored.
+- `targets` (required): The list of targets to be monitored.
+- `collection_interval` (optional, default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (optional, default = `1s`): defines how long this receiver waits before starting.
 
-The following configuration settings are optional:
+Each target has the following properties:
 
-- `method` (default: `GET`): The method used to call the endpoint.
-- `collection_interval` (default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
-- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `endpoint` (required): the URL to be monitored
+- `method` (optional, default: `GET`): The HTTP method used to call the endpoint
+
+Additionally, each target supports the client configuration options of [confighttp].
 
 ### Example Configuration
 
@@ -47,9 +50,15 @@ receivers:
         method: GET
       - endpoint: http://localhost:8080/health
         method: GET
+      - endpoint: http://localhost:8081/health
+        method: POST
+        headers:
+          test-header: "test-value"
     collection_interval: 10s
 ```
 
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
+
+[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration

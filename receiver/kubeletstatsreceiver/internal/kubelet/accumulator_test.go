@@ -44,12 +44,10 @@ func TestMetadataErrorCases(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							UID: "pod-uid-123",
 						},
-						Status: v1.PodStatus{
-							ContainerStatuses: []v1.ContainerStatus{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
 								{
-									// different container name
-									Name:        "container2",
-									ContainerID: "test-container",
+									Name: "container2",
 								},
 							},
 						},
@@ -202,11 +200,11 @@ func TestMetadataErrorCases(t *testing.T) {
 				metadata:              tt.metadata,
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
-				rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 				mbs: &metadata.MetricsBuilders{
-					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
-					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
-					OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 				},
 			}
 
@@ -229,7 +227,6 @@ func TestNilHandling(t *testing.T) {
 			ContainerMetricGroup: true,
 			VolumeMetricGroup:    true,
 		},
-		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 		mbs: &metadata.MetricsBuilders{
 			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 			PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),

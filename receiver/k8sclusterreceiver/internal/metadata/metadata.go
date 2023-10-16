@@ -98,13 +98,13 @@ func MergeKubernetesMetadataMaps(maps ...map[metadataPkg.ResourceID]*KubernetesM
 
 // GetMetadataUpdate processes metadata updates and returns
 // a map of a delta of metadata mapped to each resource.
-func GetMetadataUpdate(old, new map[metadataPkg.ResourceID]*KubernetesMetadata) []*metadataPkg.MetadataUpdate {
+func GetMetadataUpdate(oldMetadata, newMetadata map[metadataPkg.ResourceID]*KubernetesMetadata) []*metadataPkg.MetadataUpdate {
 	var out []*metadataPkg.MetadataUpdate
 
-	for id, oldMetadata := range old {
+	for id, oldMetadata := range oldMetadata {
 		// if an object with the same id has a previous revision, take a delta
 		// of the metadata.
-		if newMetadata, ok := new[id]; ok {
+		if newMetadata, ok := newMetadata[id]; ok {
 			if metadataDelta := getMetadataDelta(oldMetadata.Metadata, newMetadata.Metadata); metadataDelta != nil {
 				out = append(out, &metadataPkg.MetadataUpdate{
 					ResourceIDKey: oldMetadata.ResourceIDKey,
@@ -117,9 +117,9 @@ func GetMetadataUpdate(old, new map[metadataPkg.ResourceID]*KubernetesMetadata) 
 
 	// In case there are resources in the current revision, that was not in the
 	// previous revision, collect metadata to be added
-	for id, km := range new {
+	for id, km := range newMetadata {
 		// if an id is seen for the first time, all metadata need to be added.
-		if _, ok := old[id]; !ok {
+		if _, ok := oldMetadata[id]; !ok {
 			out = append(out, &metadataPkg.MetadataUpdate{
 				ResourceIDKey: km.ResourceIDKey,
 				ResourceID:    id,

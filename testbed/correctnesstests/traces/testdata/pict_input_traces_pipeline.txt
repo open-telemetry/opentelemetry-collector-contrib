@@ -1,2 +1,2 @@
 Receiver: jaeger, opencensus, otlp, zipkin
-Exporter:  jaeger, opencensus, otlp, zipkin
+Exporter:  opencensus, otlp, zipkin

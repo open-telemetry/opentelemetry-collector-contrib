@@ -14,23 +14,17 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
 			rb.SetHaproxyAddr("haproxy.addr-val")
-			rb.SetHaproxyAlgo("haproxy.algo-val")
-			rb.SetHaproxyIid("haproxy.iid-val")
-			rb.SetHaproxyPid("haproxy.pid-val")
-			rb.SetHaproxySid("haproxy.sid-val")
-			rb.SetHaproxyType("haproxy.type-val")
-			rb.SetHaproxyURL("haproxy.url-val")
-			rb.SetProxyName("proxy_name-val")
-			rb.SetServiceName("service_name-val")
+			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
+			rb.SetHaproxyServiceName("haproxy.service_name-val")
 
 			res := rb.Emit()
-			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return 0
+			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch test {
 			case "default":
-				assert.Equal(t, 7, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 9, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -43,45 +37,15 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "haproxy.addr-val", val.Str())
 			}
-			val, ok = res.Attributes().Get("haproxy.algo")
+			val, ok = res.Attributes().Get("haproxy.proxy_name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "haproxy.algo-val", val.Str())
+				assert.EqualValues(t, "haproxy.proxy_name-val", val.Str())
 			}
-			val, ok = res.Attributes().Get("haproxy.iid")
+			val, ok = res.Attributes().Get("haproxy.service_name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "haproxy.iid-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("haproxy.pid")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "haproxy.pid-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("haproxy.sid")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "haproxy.sid-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("haproxy.type")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "haproxy.type-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("haproxy.url")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "haproxy.url-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("proxy_name")
-			assert.Equal(t, test == "all_set", ok)
-			if ok {
-				assert.EqualValues(t, "proxy_name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("service_name")
-			assert.Equal(t, test == "all_set", ok)
-			if ok {
-				assert.EqualValues(t, "service_name-val", val.Str())
+				assert.EqualValues(t, "haproxy.service_name-val", val.Str())
 			}
 		})
 	}

@@ -461,7 +461,7 @@ type metricContainerCPUPercent struct {
 // init fills container.cpu.percent metric with initial data.
 func (m *metricContainerCPUPercent) init() {
 	m.data.SetName("container.cpu.percent")
-	m.data.SetDescription("Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.")
+	m.data.SetDescription("[DEPRECATED] Use `container.cpu.utilization` metric instead. Percent of CPU used by the container.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -3474,10 +3474,11 @@ func newMetricContainerUptime(cfg MetricConfig) metricContainerUptime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                                        pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                                  int                 // maximum observed number of metrics per resource.
-	metricsBuffer                                    pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                        component.BuildInfo // contains version information
+	config                                           MetricsBuilderConfig // config of the metrics builder.
+	startTime                                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                  int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                    pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                        component.BuildInfo  // contains version information.
 	metricContainerBlockioIoMergedRecursive          metricContainerBlockioIoMergedRecursive
 	metricContainerBlockioIoQueuedRecursive          metricContainerBlockioIoQueuedRecursive
 	metricContainerBlockioIoServiceBytesRecursive    metricContainerBlockioIoServiceBytesRecursive
@@ -3558,13 +3559,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if mbc.Metrics.ContainerCPUPercent.Enabled {
-		settings.Logger.Warn("[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.")
-	}
-	if !mbc.Metrics.ContainerCPUUtilization.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.")
+	if mbc.Metrics.ContainerCPUPercent.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `container.cpu.percent` should not be configured: The metric is deprecated and will be removed in v0.88.0. Please use `container.cpu.utilization` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/dockerstatsreceiver#transition-to-cpu-utilization-metric-name-aligned-with-opentelemetry-specification for more details.")
 	}
 	mb := &MetricsBuilder{
+		config:                                  mbc,
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               settings.BuildInfo,
@@ -3640,6 +3639,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		op(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.

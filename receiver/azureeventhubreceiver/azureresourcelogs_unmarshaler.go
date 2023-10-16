@@ -98,7 +98,7 @@ func (r azureResourceLogsUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog
 	scopeLogs.Scope().SetVersion(r.buildInfo.Version)
 	logRecords := scopeLogs.LogRecords()
 
-	resourceID := ""
+	var resourceID string
 	for _, azureLog := range azureLogs.Records {
 		resourceID = azureLog.ResourceID
 		nanos, err := asTimestamp(azureLog.Time)

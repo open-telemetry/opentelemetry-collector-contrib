@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 	"go.uber.org/zap"
 
@@ -61,7 +60,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	exprStr := strings.TrimPrefix(strVal, "EXPR(")
 	exprStr = strings.TrimSuffix(exprStr, ")")
 
-	compiled, err := expr.Compile(exprStr, expr.AllowUndefinedVariables())
+	compiled, err := helper.ExprCompile(exprStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile expression '%s': %w", c.IfExpr, err)
 	}

@@ -36,8 +36,8 @@ check_collector_versions_correct() {
 
    # Loop through all the module files, checking the collector version
    for mod_file in $mod_files; do
-      if grep -q "$collector_module" "$mod_file"; then
-         mod_line=$(grep -m1 "$collector_module" "$mod_file")
+      if grep -q "$collector_module " "$mod_file"; then
+         mod_line=$(grep -m1 "$collector_module " "$mod_file")
          version=$(echo "$mod_line" | cut -d" " -f2)
 
          # To account for a module on its own 'require' line,

@@ -27,7 +27,6 @@ type riakScraper struct {
 	cfg      *Config
 	settings component.TelemetrySettings
 	client   client
-	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -37,7 +36,6 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 		logger:   logger,
 		cfg:      cfg,
 		settings: settings.TelemetrySettings,
-		rb:       metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
@@ -91,6 +89,7 @@ func (r *riakScraper) collectStats(stat *model.Stats) (pmetric.Metrics, error) {
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexWrites, metadata.AttributeOperationWrite)
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexDeletes, metadata.AttributeOperationDelete)
 
-	r.rb.SetRiakNodeName(stat.Node)
-	return r.mb.Emit(metadata.WithResource(r.rb.Emit())), errors.Combine()
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRiakNodeName(stat.Node)
+	return r.mb.Emit(metadata.WithResource(rb.Emit())), errors.Combine()
 }

@@ -17,19 +17,20 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
 var (
-	errNilLogsConsumer      = errors.New("missing a logs consumer")
-	errMissingEndpoint      = errors.New("missing a receiver endpoint")
-	errInvalidRequestMethod = errors.New("invalid method. Valid method is POST")
-	errInvalidEncodingType  = errors.New("invalid encoding type")
-	errEmptyResponseBody    = errors.New("request body content length is zero")
+	errNilLogsConsumer       = errors.New("missing a logs consumer")
+	errMissingEndpoint       = errors.New("missing a receiver endpoint")
+	errInvalidRequestMethod  = errors.New("invalid method. Valid method is POST")
+	errInvalidEncodingType   = errors.New("invalid encoding type")
+	errEmptyResponseBody     = errors.New("request body content length is zero")
+	errMissingRequiredHeader = errors.New("request was missing required header or incorrect header value")
 )
 
 const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
@@ -40,7 +41,7 @@ type eventReceiver struct {
 	logConsumer consumer.Logs
 	server      *http.Server
 	shutdownWG  sync.WaitGroup
-	obsrecv     *obsreport.Receiver
+	obsrecv     *receiverhelper.ObsReport
 	gzipPool    *sync.Pool
 }
 
@@ -58,7 +59,7 @@ func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consum
 		transport = "https"
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: params,
@@ -151,6 +152,14 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	if r.Method != http.MethodPost {
 		er.failBadReq(ctx, w, http.StatusBadRequest, errInvalidRequestMethod)
 		return
+	}
+
+	if er.cfg.RequiredHeader.Key != "" {
+		requiredHeaderValue := r.Header.Get(er.cfg.RequiredHeader.Key)
+		if requiredHeaderValue != er.cfg.RequiredHeader.Value {
+			er.failBadReq(ctx, w, http.StatusUnauthorized, errMissingRequiredHeader)
+			return
+		}
 	}
 
 	encoding := r.Header.Get("Content-Encoding")

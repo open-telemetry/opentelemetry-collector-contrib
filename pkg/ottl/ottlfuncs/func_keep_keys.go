@@ -13,8 +13,8 @@ import (
 )
 
 type KeepKeysArguments[K any] struct {
-	Target ottl.PMapGetter[K] `ottlarg:"0"`
-	Keys   []string           `ottlarg:"1"`
+	Target ottl.PMapGetter[K]
+	Keys   []string
 }
 
 func NewKeepKeysFactory[K any]() ottl.Factory[K] {

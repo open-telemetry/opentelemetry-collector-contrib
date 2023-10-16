@@ -19,7 +19,7 @@ resourceLogs:
             observedTimeUnixNano: "11651379494838206464"
             severityNumber: 9
             severityText: TEST
-            spanId: 0c2ad924e1771640
+            spanId: 0c2ad924e1771630
             timeUnixNano: "11651379494838206464"
             traceId: ""
         scope: {}

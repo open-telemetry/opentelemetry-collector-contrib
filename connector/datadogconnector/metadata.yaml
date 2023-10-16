@@ -1,0 +1,9 @@
+type: datadog
+
+status:
+  class: connector
+  stability:
+    beta: [traces_to_metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [mx-psi, gbbr, dineshg13]

@@ -49,6 +49,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -79,7 +80,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNtpTimeRootDelayDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

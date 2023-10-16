@@ -119,6 +119,20 @@ func (rb *ResourceBuilder) SetK8sJobUID(val string) {
 	}
 }
 
+// SetK8sKubeletVersion sets provided value as "k8s.kubelet.version" attribute.
+func (rb *ResourceBuilder) SetK8sKubeletVersion(val string) {
+	if rb.config.K8sKubeletVersion.Enabled {
+		rb.res.Attributes().PutStr("k8s.kubelet.version", val)
+	}
+}
+
+// SetK8sKubeproxyVersion sets provided value as "k8s.kubeproxy.version" attribute.
+func (rb *ResourceBuilder) SetK8sKubeproxyVersion(val string) {
+	if rb.config.K8sKubeproxyVersion.Enabled {
+		rb.res.Attributes().PutStr("k8s.kubeproxy.version", val)
+	}
+}
+
 // SetK8sNamespaceName sets provided value as "k8s.namespace.name" attribute.
 func (rb *ResourceBuilder) SetK8sNamespaceName(val string) {
 	if rb.config.K8sNamespaceName.Enabled {
@@ -151,6 +165,13 @@ func (rb *ResourceBuilder) SetK8sNodeUID(val string) {
 func (rb *ResourceBuilder) SetK8sPodName(val string) {
 	if rb.config.K8sPodName.Enabled {
 		rb.res.Attributes().PutStr("k8s.pod.name", val)
+	}
+}
+
+// SetK8sPodQosClass sets provided value as "k8s.pod.qos_class" attribute.
+func (rb *ResourceBuilder) SetK8sPodQosClass(val string) {
+	if rb.config.K8sPodQosClass.Enabled {
+		rb.res.Attributes().PutStr("k8s.pod.qos_class", val)
 	}
 }
 
@@ -214,13 +235,6 @@ func (rb *ResourceBuilder) SetK8sStatefulsetName(val string) {
 func (rb *ResourceBuilder) SetK8sStatefulsetUID(val string) {
 	if rb.config.K8sStatefulsetUID.Enabled {
 		rb.res.Attributes().PutStr("k8s.statefulset.uid", val)
-	}
-}
-
-// SetOpencensusResourcetype sets provided value as "opencensus.resourcetype" attribute.
-func (rb *ResourceBuilder) SetOpencensusResourcetype(val string) {
-	if rb.config.OpencensusResourcetype.Enabled {
-		rb.res.Attributes().PutStr("opencensus.resourcetype", val)
 	}
 }
 

@@ -49,6 +49,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -162,8 +163,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetBigipNodeIPAddress("bigip.node.ip_address-val")
+			rb.SetBigipNodeName("bigip.node.name-val")
+			rb.SetBigipPoolName("bigip.pool.name-val")
+			rb.SetBigipPoolMemberIPAddress("bigip.pool_member.ip_address-val")
+			rb.SetBigipPoolMemberName("bigip.pool_member.name-val")
+			rb.SetBigipVirtualServerDestination("bigip.virtual_server.destination-val")
+			rb.SetBigipVirtualServerName("bigip.virtual_server.name-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

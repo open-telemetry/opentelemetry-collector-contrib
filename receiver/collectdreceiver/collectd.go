@@ -9,17 +9,10 @@ import (
 	"strings"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
-)
-
-const (
-	collectDMetricDerive   = "derive"
-	collectDMetricGauge    = "gauge"
-	collectDMetricCounter  = "counter"
-	collectDMetricAbsolute = "absolute"
 )
 
 type collectDRecord struct {
@@ -38,31 +31,37 @@ type collectDRecord struct {
 	Severity       *string                `json:"severity"`
 }
 
-func (r *collectDRecord) isEvent() bool {
-	return r.Time != nil && r.Severity != nil && r.Message != nil
+type createMetricInfo struct {
+	Name   string
+	DsType *string
+	Val    *json.Number
 }
 
-func (r *collectDRecord) protoTime() *timestamppb.Timestamp {
-	if r.Time == nil {
-		return nil
+func (cdr *collectDRecord) isEvent() bool {
+	return cdr.Time != nil && cdr.Severity != nil && cdr.Message != nil
+}
+
+func (cdr *collectDRecord) protoTime() pcommon.Timestamp {
+	// Return 1970-01-01 00:00:00 +0000 UTC.
+	if cdr.Time == nil {
+		return pcommon.NewTimestampFromTime(time.Unix(0, 0))
 	}
-	ts := time.Unix(0, int64(float64(time.Second)**r.Time))
-	return timestamppb.New(ts)
+	ts := time.Unix(0, int64(float64(time.Second)**cdr.Time))
+	return pcommon.NewTimestampFromTime(ts)
 }
 
-func (r *collectDRecord) startTimestamp(mdType metricspb.MetricDescriptor_Type) *timestamppb.Timestamp {
-	if mdType == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION || mdType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE || mdType == metricspb.MetricDescriptor_CUMULATIVE_INT64 {
-		return timestamppb.New(time.Unix(0, int64((*r.Time-*r.Interval)*float64(time.Second))))
+func (cdr *collectDRecord) startTimestamp(metricType string) pcommon.Timestamp {
+	if metricType == "cumulative" {
+		return pcommon.NewTimestampFromTime(time.Unix(0, int64((*cdr.Time-*cdr.Interval)*float64(time.Second))))
 	}
-	return nil
+	return pcommon.NewTimestampFromTime(time.Unix(0, 0))
 }
 
-func (r *collectDRecord) appendToMetrics(metrics []*metricspb.Metric, defaultLabels map[string]string) ([]*metricspb.Metric, error) {
+func (cdr *collectDRecord) appendToMetrics(scopeMetrics pmetric.ScopeMetrics, defaultLabels map[string]string) error {
 	// Ignore if record is an event instead of data point
-	if r.isEvent() {
+	if cdr.isEvent() {
 		recordEventsReceived()
-		return metrics, nil
-
+		return nil
 	}
 
 	recordMetricsReceived()
@@ -71,125 +70,124 @@ func (r *collectDRecord) appendToMetrics(metrics []*metricspb.Metric, defaultLab
 		labels[k] = v
 	}
 
-	for i := range r.Dsnames {
-		if i < len(r.Dstypes) && i < len(r.Values) && r.Values[i] != nil {
-			dsType, dsName, val := r.Dstypes[i], r.Dsnames[i], r.Values[i]
-			metricName, usedDsName := r.getReasonableMetricName(i, labels)
+	for i := range cdr.Dsnames {
+		if i < len(cdr.Dstypes) && i < len(cdr.Values) && cdr.Values[i] != nil {
+			dsType, dsName, val := cdr.Dstypes[i], cdr.Dsnames[i], cdr.Values[i]
+			metricName, usedDsName := cdr.getReasonableMetricName(i, labels)
+			createMetric := createMetricInfo{
+				Name:   metricName,
+				DsType: dsType,
+				Val:    val,
+			}
 
-			addIfNotNullOrEmpty(labels, "plugin", r.Plugin)
-			parseAndAddLabels(labels, r.PluginInstance, r.Host)
+			addIfNotNullOrEmpty(labels, "plugin", cdr.Plugin)
+			parseAndAddLabels(labels, cdr.PluginInstance, cdr.Host)
 			if !usedDsName {
 				addIfNotNullOrEmpty(labels, "dsname", dsName)
 			}
 
-			metric, err := r.newMetric(metricName, dsType, val, labels)
+			metric, err := cdr.newMetric(createMetric, labels)
 			if err != nil {
-				return metrics, fmt.Errorf("error processing metric %s: %w", sanitize.String(metricName), err)
+				return fmt.Errorf("error processing metric %s: %w", sanitize.String(metricName), err)
 			}
-			metrics = append(metrics, metric)
-
+			newMetric := scopeMetrics.Metrics().AppendEmpty()
+			metric.MoveTo(newMetric)
 		}
 	}
-	return metrics, nil
+	return nil
 }
 
-func (r *collectDRecord) newMetric(name string, dsType *string, val *json.Number, labels map[string]string) (*metricspb.Metric, error) {
-	metric := &metricspb.Metric{}
-	point, isDouble, err := r.newPoint(val)
+// Create new metric, get labels, then setting attribute and metric info
+func (cdr *collectDRecord) newMetric(createMetric createMetricInfo, labels map[string]string) (pmetric.Metric, error) {
+	attributes := setAttributes(labels)
+	metric, err := cdr.setMetric(createMetric, attributes)
 	if err != nil {
-		return metric, fmt.Errorf("error processing metric %s: %w", name, err)
+		return pmetric.Metric{}, fmt.Errorf("error processing metric %s: %w", createMetric.Name, err)
 	}
-
-	lKeys, lValues := labelKeysAndValues(labels)
-	metricType := r.metricType(dsType, isDouble)
-	metric.MetricDescriptor = &metricspb.MetricDescriptor{
-		Name:      name,
-		Type:      metricType,
-		LabelKeys: lKeys,
-	}
-	metric.Timeseries = []*metricspb.TimeSeries{
-		{
-			StartTimestamp: r.startTimestamp(metricType),
-			LabelValues:    lValues,
-			Points:         []*metricspb.Point{point},
-		},
-	}
-
 	return metric, nil
 }
 
-func (r *collectDRecord) metricType(dsType *string, isDouble bool) metricspb.MetricDescriptor_Type {
-	val := ""
-	if dsType != nil {
-		val = *dsType
+func setAttributes(labels map[string]string) pcommon.Map {
+	attributes := pcommon.NewMap()
+	for k, v := range labels {
+		attributes.PutStr(k, v)
 	}
-
-	switch val {
-	case collectDMetricCounter, collectDMetricDerive:
-		return metricCumulative(isDouble)
-
-	// Prometheus collectd exporter just ignores it. We use gauge for it as it seems the
-	// closes type. https://github.com/prometheus/collectd_exporter/blob/master/main.go#L109-L129
-	case collectDMetricGauge, collectDMetricAbsolute:
-		return metricGauge(isDouble)
-	}
-	return metricGauge(isDouble)
+	return attributes
 }
 
-func (r *collectDRecord) newPoint(val *json.Number) (*metricspb.Point, bool, error) {
-	p := &metricspb.Point{
-		Timestamp: r.protoTime(),
+// Set new metric info with name, datapoint, time, attributes
+func (cdr *collectDRecord) setMetric(createMetric createMetricInfo, atr pcommon.Map) (pmetric.Metric, error) {
+	typ := ""
+	metric := pmetric.NewMetric()
+
+	if createMetric.DsType != nil {
+		typ = *createMetric.DsType
 	}
 
-	isDouble := true
-	if v, err := val.Int64(); err == nil {
-		isDouble = false
-		p.Value = &metricspb.Point_Int64Value{Int64Value: v}
+	metric.SetName(createMetric.Name)
+	dataPoint := setDataPoint(typ, metric)
+	dataPoint.SetTimestamp(cdr.protoTime())
+	atr.CopyTo(dataPoint.Attributes())
+
+	if val, err := createMetric.Val.Int64(); err == nil {
+		dataPoint.SetIntValue(val)
+	} else if val, err := createMetric.Val.Float64(); err == nil {
+		dataPoint.SetDoubleValue(val)
 	} else {
-		v, err := val.Float64()
-		if err != nil {
-			return nil, isDouble, fmt.Errorf("value could not be decoded: %w", err)
-		}
-		p.Value = &metricspb.Point_DoubleValue{DoubleValue: v}
+		return pmetric.Metric{}, fmt.Errorf("value could not be decoded: %w", err)
 	}
-	return p, isDouble, nil
+	return metric, nil
+}
+
+// check type to decide metric type and return data point
+func setDataPoint(typ string, metric pmetric.Metric) pmetric.NumberDataPoint {
+	var dataPoint pmetric.NumberDataPoint
+	switch typ {
+	case "derive", "counter":
+		sum := metric.SetEmptySum()
+		sum.SetIsMonotonic(true)
+		dataPoint = sum.DataPoints().AppendEmpty()
+	default:
+		dataPoint = metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	}
+	return dataPoint
 }
 
 // getReasonableMetricName creates metrics names by joining them (if non empty) type.typeinstance
 // if there are more than one dsname append .dsname for the particular uint. if there's only one it
 // becomes a dimension.
-func (r *collectDRecord) getReasonableMetricName(index int, attrs map[string]string) (string, bool) {
+func (cdr *collectDRecord) getReasonableMetricName(index int, attrs map[string]string) (string, bool) {
 	usedDsName := false
 	capacity := 0
-	if r.TypeS != nil {
-		capacity += len(*r.TypeS)
+	if cdr.TypeS != nil {
+		capacity += len(*cdr.TypeS)
 	}
-	if r.TypeInstance != nil {
-		capacity += len(*r.TypeInstance)
+	if cdr.TypeInstance != nil {
+		capacity += len(*cdr.TypeInstance)
 	}
 	parts := make([]byte, 0, capacity)
 
-	if !isNilOrEmpty(r.TypeS) {
-		parts = append(parts, *r.TypeS...)
+	if !isNilOrEmpty(cdr.TypeS) {
+		parts = append(parts, *cdr.TypeS...)
 	}
-	parts = r.pointTypeInstance(attrs, parts)
-	if r.Dsnames != nil && !isNilOrEmpty(r.Dsnames[index]) && len(r.Dsnames) > 1 {
+	parts = cdr.pointTypeInstance(attrs, parts)
+	if cdr.Dsnames != nil && !isNilOrEmpty(cdr.Dsnames[index]) && len(cdr.Dsnames) > 1 {
 		if len(parts) > 0 {
 			parts = append(parts, '.')
 		}
-		parts = append(parts, *r.Dsnames[index]...)
+		parts = append(parts, *cdr.Dsnames[index]...)
 		usedDsName = true
 	}
 	return string(parts), usedDsName
 }
 
 // pointTypeInstance extracts information from the TypeInstance field and appends to the metric name when possible.
-func (r *collectDRecord) pointTypeInstance(attrs map[string]string, parts []byte) []byte {
-	if isNilOrEmpty(r.TypeInstance) {
+func (cdr *collectDRecord) pointTypeInstance(attrs map[string]string, parts []byte) []byte {
+	if isNilOrEmpty(cdr.TypeInstance) {
 		return parts
 	}
 
-	instanceName, extractedAttrs := LabelsFromName(r.TypeInstance)
+	instanceName, extractedAttrs := LabelsFromName(cdr.TypeInstance)
 	if instanceName != "" {
 		if len(parts) > 0 {
 			parts = append(parts, '.')
@@ -274,30 +272,4 @@ func parseNameForLabels(labels map[string]string, key string, val *string) {
 		}
 	}
 	addIfNotNullOrEmpty(labels, key, &instanceName)
-}
-
-func labelKeysAndValues(labels map[string]string) ([]*metricspb.LabelKey, []*metricspb.LabelValue) {
-	keys := make([]*metricspb.LabelKey, len(labels))
-	values := make([]*metricspb.LabelValue, len(labels))
-	i := 0
-	for k, v := range labels {
-		keys[i] = &metricspb.LabelKey{Key: k}
-		values[i] = &metricspb.LabelValue{Value: v, HasValue: true}
-		i++
-	}
-	return keys, values
-}
-
-func metricCumulative(isDouble bool) metricspb.MetricDescriptor_Type {
-	if isDouble {
-		return metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
-	}
-	return metricspb.MetricDescriptor_CUMULATIVE_INT64
-}
-
-func metricGauge(isDouble bool) metricspb.MetricDescriptor_Type {
-	if isDouble {
-		return metricspb.MetricDescriptor_GAUGE_DOUBLE
-	}
-	return metricspb.MetricDescriptor_GAUGE_INT64
 }

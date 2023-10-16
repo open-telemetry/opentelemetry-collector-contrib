@@ -25,7 +25,6 @@ type scraper struct {
 	settings component.TelemetrySettings
 	host     component.Host
 	client   Client
-	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -33,7 +32,6 @@ func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
 	return &scraper{
 		config:   cfg,
 		settings: settings.TelemetrySettings,
-		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
@@ -199,11 +197,12 @@ func (s *scraper) recordNodeInterface(colTime pcommon.Timestamp, nodeProps dm.No
 	s.mb.RecordNsxtNodeNetworkIoDataPoint(colTime, i.stats.RxBytes, metadata.AttributeDirectionReceived)
 	s.mb.RecordNsxtNodeNetworkIoDataPoint(colTime, i.stats.TxBytes, metadata.AttributeDirectionTransmitted)
 
-	s.rb.SetDeviceID(i.iFace.InterfaceId)
-	s.rb.SetNsxtNodeName(nodeProps.Name)
-	s.rb.SetNsxtNodeType(nodeProps.ResourceType)
-	s.rb.SetNsxtNodeID(nodeProps.ID)
-	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetDeviceID(i.iFace.InterfaceId)
+	rb.SetNsxtNodeName(nodeProps.Name)
+	rb.SetNsxtNodeType(nodeProps.ResourceType)
+	rb.SetNsxtNodeID(nodeProps.ID)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *scraper) recordNode(
@@ -226,10 +225,11 @@ func (s *scraper) recordNode(
 	// ensure division by zero is safeguarded
 	s.mb.RecordNsxtNodeFilesystemUtilizationDataPoint(colTime, float64(ss.DiskSpaceUsed)/math.Max(float64(ss.DiskSpaceTotal), 1))
 
-	s.rb.SetNsxtNodeName(info.nodeProps.Name)
-	s.rb.SetNsxtNodeID(info.nodeProps.ID)
-	s.rb.SetNsxtNodeType(info.nodeType)
-	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetNsxtNodeName(info.nodeProps.Name)
+	rb.SetNsxtNodeID(info.nodeProps.ID)
+	rb.SetNsxtNodeType(info.nodeType)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func clusterNodeType(node dm.ClusterNode) string {

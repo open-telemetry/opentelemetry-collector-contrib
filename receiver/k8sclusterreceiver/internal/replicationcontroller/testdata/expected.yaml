@@ -10,9 +10,6 @@ resourceMetrics:
         - key: k8s.replicationcontroller.uid
           value:
             stringValue: test-replicationcontroller-1-uid
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -21,13 +18,13 @@ resourceMetrics:
               dataPoints:
                 - asInt: "2"
             name: k8s.replication_controller.available
-            unit: "1"
+            unit: "{pod}"
           - description: Number of desired pods in this replication_controller
             gauge:
               dataPoints:
                 - asInt: "1"
             name: k8s.replication_controller.desired
-            unit: "1"
+            unit: "{pod}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest

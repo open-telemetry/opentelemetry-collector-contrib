@@ -30,7 +30,7 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 
 	messageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber())
 
-	messageData.Message = logRecord.Body().Str()
+	messageData.Message = logRecord.Body().AsString()
 
 	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
 	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())

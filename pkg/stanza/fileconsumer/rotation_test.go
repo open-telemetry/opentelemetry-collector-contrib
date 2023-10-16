@@ -449,18 +449,94 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	originalFile.Close()
 
 	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
-	err := os.Mkdir(newDir, 0777)
-	require.NoError(t, err)
+	require.NoError(t, os.Mkdir(newDir, 0777))
 	movedFileName := fmt.Sprintf("%s%s", newDir, "newfile.log")
 
-	err = os.Rename(orginalName, movedFileName)
-	require.NoError(t, err)
+	require.NoError(t, os.Rename(orginalName, movedFileName))
 
 	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	require.NoError(t, err)
 	writeString(t, newFile, "testlog3\n")
 
 	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2"), []byte("testlog3")})
+}
+
+// When a file it rotated out of pattern via move/create, we should
+// detect that our old handle is still valid attempt to read from it.
+func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Moving files while open is unsupported on Windows")
+	}
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig()
+	cfg.Include = append(cfg.Include, fmt.Sprintf("%s/*.log1", tempDir))
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+	operator.persister = testutil.NewMockPersister("test")
+
+	originalFile := openTempWithPattern(t, tempDir, "*.log1")
+	originalFileName := originalFile.Name()
+
+	writeString(t, originalFile, "testlog1\n")
+	operator.poll(context.Background())
+	waitForToken(t, emitCalls, []byte("testlog1"))
+
+	// write more log, before next poll() begins
+	writeString(t, originalFile, "testlog2\n")
+
+	// move the file so it no longer matches
+	require.NoError(t, originalFile.Close())
+	require.NoError(t, os.Rename(originalFileName, originalFileName+".old"))
+
+	newFile := openFile(t, originalFileName)
+	_, err := newFile.Write([]byte("testlog4\ntestlog5\n"))
+	require.NoError(t, err)
+
+	// poll again
+	operator.poll(context.Background())
+
+	// expect remaining log from old file as well as all from new file
+	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2"), []byte("testlog4"), []byte("testlog5")})
+}
+
+// When a file it rotated out of pattern via copy/truncate, we should
+// detect that our old handle is stale and not attempt to read from it.
+func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig()
+	cfg.Include = append(cfg.Include, fmt.Sprintf("%s/*.log1", tempDir))
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+	operator.persister = testutil.NewMockPersister("test")
+
+	originalFile := openTempWithPattern(t, tempDir, "*.log1")
+	writeString(t, originalFile, "testlog1\n")
+	operator.poll(context.Background())
+	waitForToken(t, emitCalls, []byte("testlog1"))
+
+	// write more log, before next poll() begins
+	writeString(t, originalFile, "testlog2\n")
+	// copy the file to another file i.e. rotate, out of pattern
+	newFile := openTempWithPattern(t, tempDir, "*.log2")
+	_, err := originalFile.Seek(0, 0)
+	require.NoError(t, err)
+	_, err = io.Copy(newFile, originalFile)
+	require.NoError(t, err)
+
+	_, err = originalFile.Seek(0, 0)
+	require.NoError(t, err)
+	require.NoError(t, originalFile.Truncate(0))
+	_, err = originalFile.Write([]byte("testlog4\ntestlog5\n"))
+	require.NoError(t, err)
+
+	// poll again
+	operator.poll(context.Background())
+
+	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog4"), []byte("testlog5")})
 }
 
 // TruncateThenWrite tests that, after a file has been truncated,

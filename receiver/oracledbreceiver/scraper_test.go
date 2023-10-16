@@ -115,7 +115,6 @@ func TestScraper_Scrape(t *testing.T) {
 
 			scrpr := scraper{
 				logger: zap.NewNop(),
-				rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
 				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
 				dbProviderFunc: func() (*sql.DB, error) {
 					return nil, nil

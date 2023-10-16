@@ -9,16 +9,19 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 const (
-	typeError = "target arg must be of type string, []any, map[string]any, pcommon.Map, pcommon.Slice, or pcommon.Value (of type String, Map, Slice)"
+	typeError = `target arg must be of type string, []any, map[string]any, pcommon.Map, pcommon.Slice, pcommon.Value (of type String, Map, Slice) or a supported slice type from the plog, pmetric or ptrace packages`
 )
 
 type LenArguments[K any] struct {
-	Target ottl.Getter[K] `ottlarg:"0"`
+	Target ottl.Getter[K]
 }
 
 func NewLenFactory[K any]() ottl.Factory[K] {
@@ -57,6 +60,43 @@ func computeLen[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 		case pcommon.Map:
 			return int64(valType.Len()), nil
 		case pcommon.Slice:
+			return int64(valType.Len()), nil
+
+		case plog.LogRecordSlice:
+			return int64(valType.Len()), nil
+		case plog.ResourceLogsSlice:
+			return int64(valType.Len()), nil
+		case plog.ScopeLogsSlice:
+			return int64(valType.Len()), nil
+
+		case pmetric.ExemplarSlice:
+			return int64(valType.Len()), nil
+		case pmetric.ExponentialHistogramDataPointSlice:
+			return int64(valType.Len()), nil
+		case pmetric.HistogramDataPointSlice:
+			return int64(valType.Len()), nil
+		case pmetric.MetricSlice:
+			return int64(valType.Len()), nil
+		case pmetric.NumberDataPointSlice:
+			return int64(valType.Len()), nil
+		case pmetric.ResourceMetricsSlice:
+			return int64(valType.Len()), nil
+		case pmetric.ScopeMetricsSlice:
+			return int64(valType.Len()), nil
+		case pmetric.SummaryDataPointSlice:
+			return int64(valType.Len()), nil
+		case pmetric.SummaryDataPointValueAtQuantileSlice:
+			return int64(valType.Len()), nil
+
+		case ptrace.ResourceSpansSlice:
+			return int64(valType.Len()), nil
+		case ptrace.ScopeSpansSlice:
+			return int64(valType.Len()), nil
+		case ptrace.SpanEventSlice:
+			return int64(valType.Len()), nil
+		case ptrace.SpanLinkSlice:
+			return int64(valType.Len()), nil
+		case ptrace.SpanSlice:
 			return int64(valType.Len()), nil
 		}
 

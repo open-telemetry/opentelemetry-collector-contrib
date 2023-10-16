@@ -12,8 +12,8 @@ import (
 )
 
 type SplitArguments[K any] struct {
-	Target    ottl.StringGetter[K] `ottlarg:"0"`
-	Delimiter string               `ottlarg:"1"`
+	Target    ottl.StringGetter[K]
+	Delimiter string
 }
 
 func NewSplitFactory[K any]() ottl.Factory[K] {

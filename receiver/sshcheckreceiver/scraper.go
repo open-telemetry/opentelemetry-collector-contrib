@@ -24,7 +24,6 @@ type sshcheckScraper struct {
 	*configssh.Client
 	*Config
 	settings component.TelemetrySettings
-	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -125,15 +124,15 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 		}
 	}
 
-	s.rb.SetSSHEndpoint(s.Config.SSHClientSettings.Endpoint)
-	return s.mb.Emit(metadata.WithResource(s.rb.Emit())), nil
+	rb := s.mb.NewResourceBuilder()
+	rb.SetSSHEndpoint(s.Config.SSHClientSettings.Endpoint)
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
 func newScraper(conf *Config, settings receiver.CreateSettings) *sshcheckScraper {
 	return &sshcheckScraper{
 		Config:   conf,
 		settings: settings.TelemetrySettings,
-		rb:       metadata.NewResourceBuilder(conf.MetricsBuilderConfig.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 	}
 }

@@ -24,7 +24,7 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := DefaultConfig()
+	cfg := defaultConfig()
 	return &cfg
 }
 

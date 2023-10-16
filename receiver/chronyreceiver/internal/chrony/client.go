@@ -41,10 +41,6 @@ type client struct {
 
 // New creates a client ready to use with chronyd
 func New(addr string, timeout time.Duration, opts ...clientOption) (Client, error) {
-	if timeout < 1 {
-		return nil, errors.New("timeout must be positive")
-	}
-
 	network, endpoint, err := SplitNetworkEndpoint(addr)
 	if err != nil {
 		return nil, err
@@ -66,9 +62,7 @@ func New(addr string, timeout time.Duration, opts ...clientOption) (Client, erro
 }
 
 func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
-	clk := clock.FromContext(ctx)
-
-	ctx, cancel := clk.TimeoutContext(ctx, c.timeout)
+	ctx, cancel := c.getContext(ctx)
 	defer cancel()
 
 	sock, err := c.dialer(ctx, c.proto, c.addr)
@@ -76,17 +70,14 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 		return nil, err
 	}
 
-	deadline, ok := ctx.Deadline()
-	if !ok {
-		return nil, errors.New("no deadline set")
-	}
-
-	if err = sock.SetDeadline(deadline); err != nil {
-		return nil, err
+	if deadline, ok := ctx.Deadline(); ok {
+		if err = sock.SetDeadline(deadline); err != nil {
+			return nil, err
+		}
 	}
 
 	packet := chrony.NewTrackingPacket()
-	packet.SetSequence(uint32(clk.Now().UnixNano()))
+	packet.SetSequence(uint32(clock.Now(ctx).UnixNano()))
 
 	if err := binary.Write(sock, binary.BigEndian, packet); err != nil {
 		return nil, multierr.Combine(err, sock.Close())
@@ -101,4 +92,11 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	}
 
 	return newTrackingData(data)
+}
+
+func (c *client) getContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	if c.timeout == 0 {
+		return context.WithCancel(ctx)
+	}
+	return clock.TimeoutContext(ctx, c.timeout)
 }

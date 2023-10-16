@@ -51,7 +51,7 @@ func exampleLog(t *testing.T) plog.LogRecord {
 	return buffer
 }
 
-func LogRecordsToLogs(record plog.LogRecord) plog.Logs {
+func logRecordsToLogs(record plog.LogRecord) plog.Logs {
 	logs := plog.NewLogs()
 	logsSlice := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	ls := logsSlice.AppendEmpty()
@@ -144,7 +144,7 @@ func TestSyslogExportSuccess(t *testing.T) {
 	defer test.srv.Close()
 	go func() {
 		buffer := exampleLog(t)
-		logs := LogRecordsToLogs(buffer)
+		logs := logRecordsToLogs(buffer)
 		err := test.exp.pushLogsData(context.Background(), logs)
 		require.NoError(t, err, "could not send message")
 	}()
@@ -162,7 +162,7 @@ func TestSyslogExportFail(t *testing.T) {
 	test := prepareExporterTest(t, createTestConfig(), true)
 	defer test.srv.Close()
 	buffer := exampleLog(t)
-	logs := LogRecordsToLogs(buffer)
+	logs := logRecordsToLogs(buffer)
 	consumerErr := test.exp.pushLogsData(context.Background(), logs)
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)

@@ -37,6 +37,11 @@ func (m *mockMetadata) FQDN() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *mockMetadata) OSDescription(_ context.Context) (string, error) {
+	args := m.MethodCalled("OSDescription")
+	return args.String(0), args.Error(1)
+}
+
 func (m *mockMetadata) OSType() (string, error) {
 	args := m.MethodCalled("OSType")
 	return args.String(0), args.Error(1)
@@ -104,12 +109,14 @@ func allEnabledConfig() metadata.ResourceAttributesConfig {
 	cfg.HostArch.Enabled = true
 	cfg.HostID.Enabled = true
 	cfg.HostIP.Enabled = true
+	cfg.OsDescription.Enabled = true
 	return cfg
 }
 
 func TestDetectFQDNAvailable(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("FQDN").Return("fqdn", nil)
+	md.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
 	md.On("OSType").Return("darwin", nil)
 	md.On("HostID").Return("2", nil)
 	md.On("HostArch").Return("amd64", nil)
@@ -122,11 +129,12 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		conventions.AttributeHostName: "fqdn",
-		conventions.AttributeOSType:   "darwin",
-		conventions.AttributeHostID:   "2",
-		conventions.AttributeHostArch: conventions.AttributeHostArchAMD64,
-		"host.ip":                     testIPsAttribute,
+		conventions.AttributeHostName:      "fqdn",
+		conventions.AttributeOSDescription: "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
+		conventions.AttributeOSType:        "darwin",
+		conventions.AttributeHostID:        "2",
+		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -137,6 +145,7 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname := &mockMetadata{}
 	mdHostname.On("Hostname").Return("hostname", nil)
 	mdHostname.On("FQDN").Return("", errors.New("err"))
+	mdHostname.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
 	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
@@ -160,6 +169,7 @@ func TestEnableHostID(t *testing.T) {
 	mdHostname := &mockMetadata{}
 	mdHostname.On("Hostname").Return("hostname", nil)
 	mdHostname.On("FQDN").Return("", errors.New("err"))
+	mdHostname.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("3", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
@@ -172,11 +182,12 @@ func TestEnableHostID(t *testing.T) {
 	mdHostname.AssertExpectations(t)
 
 	expected := map[string]any{
-		conventions.AttributeHostName: "hostname",
-		conventions.AttributeOSType:   "darwin",
-		conventions.AttributeHostID:   "3",
-		conventions.AttributeHostArch: conventions.AttributeHostArchAMD64,
-		"host.ip":                     testIPsAttribute,
+		conventions.AttributeHostName:      "hostname",
+		conventions.AttributeOSDescription: "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
+		conventions.AttributeOSType:        "darwin",
+		conventions.AttributeHostID:        "3",
+		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -185,6 +196,7 @@ func TestEnableHostID(t *testing.T) {
 func TestUseHostname(t *testing.T) {
 	mdHostname := &mockMetadata{}
 	mdHostname.On("Hostname").Return("hostname", nil)
+	mdHostname.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("1", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
@@ -197,11 +209,12 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.AssertExpectations(t)
 
 	expected := map[string]any{
-		conventions.AttributeHostName: "hostname",
-		conventions.AttributeOSType:   "darwin",
-		conventions.AttributeHostID:   "1",
-		conventions.AttributeHostArch: conventions.AttributeHostArchAMD64,
-		"host.ip":                     testIPsAttribute,
+		conventions.AttributeHostName:      "hostname",
+		conventions.AttributeOSDescription: "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
+		conventions.AttributeOSType:        "darwin",
+		conventions.AttributeHostID:        "1",
+		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -210,6 +223,7 @@ func TestUseHostname(t *testing.T) {
 func TestDetectError(t *testing.T) {
 	// FQDN and hostname fail with 'hostnameSources' set to 'dns'
 	mdFQDN := &mockMetadata{}
+	mdFQDN.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdFQDN.On("OSType").Return("windows", nil)
 	mdFQDN.On("FQDN").Return("", errors.New("err"))
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
@@ -225,6 +239,7 @@ func TestDetectError(t *testing.T) {
 
 	// hostname fail with 'hostnameSources' set to 'os'
 	mdHostname := &mockMetadata{}
+	mdHostname.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdHostname.On("OSType").Return("windows", nil)
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 	mdHostname.On("HostID").Return("", errors.New("err"))
@@ -240,6 +255,7 @@ func TestDetectError(t *testing.T) {
 	// OS type fails
 	mdOSType := &mockMetadata{}
 	mdOSType.On("FQDN").Return("fqdn", nil)
+	mdOSType.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdOSType.On("OSType").Return("", errors.New("err"))
 	mdOSType.On("HostID").Return("1", nil)
 	mdOSType.On("HostArch").Return("amd64", nil)
@@ -254,6 +270,7 @@ func TestDetectError(t *testing.T) {
 	// Host ID fails. All other attributes should be set.
 	mdHostID := &mockMetadata{}
 	mdHostID.On("Hostname").Return("hostname", nil)
+	mdHostID.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdHostID.On("OSType").Return("linux", nil)
 	mdHostID.On("HostID").Return("", errors.New("err"))
 	mdHostID.On("HostArch").Return("arm64", nil)
@@ -264,10 +281,11 @@ func TestDetectError(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	assert.Equal(t, map[string]any{
-		conventions.AttributeHostName: "hostname",
-		conventions.AttributeOSType:   "linux",
-		conventions.AttributeHostArch: conventions.AttributeHostArchARM64,
-		"host.ip":                     testIPsAttribute,
+		conventions.AttributeHostName:      "hostname",
+		conventions.AttributeOSDescription: "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
+		conventions.AttributeOSType:        "linux",
+		conventions.AttributeHostArch:      conventions.AttributeHostArchARM64,
+		"host.ip":                          testIPsAttribute,
 	}, res.Attributes().AsRaw())
 }
 

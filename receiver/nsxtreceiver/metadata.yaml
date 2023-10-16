@@ -61,7 +61,7 @@ metrics:
     unit: "By"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
     attributes: [direction]
@@ -70,7 +70,7 @@ metrics:
     unit: "{packets}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
     attributes: [direction, packet.type]
@@ -93,7 +93,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     enabled: true
     attributes: [disk_state]
   nsxt.node.memory.usage:
@@ -102,7 +102,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     enabled: true
   nsxt.node.memory.cache.usage:
     description: The size of the node's memory cache.
@@ -110,5 +110,5 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     enabled: true

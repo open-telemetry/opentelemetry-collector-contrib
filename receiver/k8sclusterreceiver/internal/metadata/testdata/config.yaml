@@ -55,27 +55,9 @@ all_set:
       enabled: true
     k8s.namespace.phase:
       enabled: true
-    k8s.node.allocatable_cpu:
-      enabled: true
-    k8s.node.allocatable_ephemeral_storage:
-      enabled: true
-    k8s.node.allocatable_memory:
-      enabled: true
-    k8s.node.allocatable_pods:
-      enabled: true
-    k8s.node.allocatable_storage:
-      enabled: true
-    k8s.node.condition_disk_pressure:
-      enabled: true
-    k8s.node.condition_memory_pressure:
-      enabled: true
-    k8s.node.condition_network_unavailable:
-      enabled: true
-    k8s.node.condition_pid_pressure:
-      enabled: true
-    k8s.node.condition_ready:
-      enabled: true
     k8s.pod.phase:
+      enabled: true
+    k8s.pod.status_reason:
       enabled: true
     k8s.replicaset.available:
       enabled: true
@@ -134,6 +116,10 @@ all_set:
       enabled: true
     k8s.job.uid:
       enabled: true
+    k8s.kubelet.version:
+      enabled: true
+    k8s.kubeproxy.version:
+      enabled: true
     k8s.namespace.name:
       enabled: true
     k8s.namespace.uid:
@@ -143,6 +129,8 @@ all_set:
     k8s.node.uid:
       enabled: true
     k8s.pod.name:
+      enabled: true
+    k8s.pod.qos_class:
       enabled: true
     k8s.pod.uid:
       enabled: true
@@ -161,8 +149,6 @@ all_set:
     k8s.statefulset.name:
       enabled: true
     k8s.statefulset.uid:
-      enabled: true
-    opencensus.resourcetype:
       enabled: true
     openshift.clusterquota.name:
       enabled: true
@@ -224,27 +210,9 @@ none_set:
       enabled: false
     k8s.namespace.phase:
       enabled: false
-    k8s.node.allocatable_cpu:
-      enabled: false
-    k8s.node.allocatable_ephemeral_storage:
-      enabled: false
-    k8s.node.allocatable_memory:
-      enabled: false
-    k8s.node.allocatable_pods:
-      enabled: false
-    k8s.node.allocatable_storage:
-      enabled: false
-    k8s.node.condition_disk_pressure:
-      enabled: false
-    k8s.node.condition_memory_pressure:
-      enabled: false
-    k8s.node.condition_network_unavailable:
-      enabled: false
-    k8s.node.condition_pid_pressure:
-      enabled: false
-    k8s.node.condition_ready:
-      enabled: false
     k8s.pod.phase:
+      enabled: false
+    k8s.pod.status_reason:
       enabled: false
     k8s.replicaset.available:
       enabled: false
@@ -303,6 +271,10 @@ none_set:
       enabled: false
     k8s.job.uid:
       enabled: false
+    k8s.kubelet.version:
+      enabled: false
+    k8s.kubeproxy.version:
+      enabled: false
     k8s.namespace.name:
       enabled: false
     k8s.namespace.uid:
@@ -312,6 +284,8 @@ none_set:
     k8s.node.uid:
       enabled: false
     k8s.pod.name:
+      enabled: false
+    k8s.pod.qos_class:
       enabled: false
     k8s.pod.uid:
       enabled: false
@@ -330,8 +304,6 @@ none_set:
     k8s.statefulset.name:
       enabled: false
     k8s.statefulset.uid:
-      enabled: false
-    opencensus.resourcetype:
       enabled: false
     openshift.clusterquota.name:
       enabled: false

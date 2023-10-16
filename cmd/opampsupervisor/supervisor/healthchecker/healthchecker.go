@@ -36,7 +36,7 @@ func (h *HTTPHealthChecker) Check(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("health check on %s returned %d", h.endpoint, resp.StatusCode)
 	}

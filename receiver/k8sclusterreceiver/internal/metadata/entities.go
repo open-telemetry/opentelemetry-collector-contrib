@@ -10,11 +10,11 @@ import (
 )
 
 // GetEntityEvents processes metadata updates and returns entity events that describe the metadata changes.
-func GetEntityEvents(old, new map[metadataPkg.ResourceID]*KubernetesMetadata, timestamp pcommon.Timestamp) metadataPkg.EntityEventsSlice {
+func GetEntityEvents(oldMetadata, newMetadata map[metadataPkg.ResourceID]*KubernetesMetadata, timestamp pcommon.Timestamp) metadataPkg.EntityEventsSlice {
 	out := metadataPkg.NewEntityEventsSlice()
 
-	for id, oldObj := range old {
-		if _, ok := new[id]; !ok {
+	for id, oldObj := range oldMetadata {
+		if _, ok := newMetadata[id]; !ok {
 			// An object was present, but no longer is. Create a "delete" event.
 			entityEvent := out.AppendEmpty()
 			entityEvent.SetTimestamp(timestamp)
@@ -24,7 +24,7 @@ func GetEntityEvents(old, new map[metadataPkg.ResourceID]*KubernetesMetadata, ti
 	}
 
 	// All "new" are current objects. Create "state" events. "old" state does not matter.
-	for _, newObj := range new {
+	for _, newObj := range newMetadata {
 		entityEvent := out.AppendEmpty()
 		entityEvent.SetTimestamp(timestamp)
 		entityEvent.ID().PutStr(newObj.ResourceIDKey, string(newObj.ResourceID))

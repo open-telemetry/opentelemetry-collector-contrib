@@ -11,6 +11,36 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+// AttributePercentile specifies the a value percentile attribute.
+type AttributePercentile int
+
+const (
+	_ AttributePercentile = iota
+	AttributePercentileP50
+	AttributePercentileP99
+	AttributePercentileP999
+)
+
+// String returns the string representation of the AttributePercentile.
+func (av AttributePercentile) String() string {
+	switch av {
+	case AttributePercentileP50:
+		return "p50"
+	case AttributePercentileP99:
+		return "p99"
+	case AttributePercentileP999:
+		return "p99.9"
+	}
+	return ""
+}
+
+// MapAttributePercentile is a helper map of string to AttributePercentile attribute value.
+var MapAttributePercentile = map[string]AttributePercentile{
+	"p50":   AttributePercentileP50,
+	"p99":   AttributePercentileP99,
+	"p99.9": AttributePercentileP999,
+}
+
 // AttributeRole specifies the a value role attribute.
 type AttributeRole int
 
@@ -325,6 +355,58 @@ func (m *metricRedisCmdCalls) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisCmdCalls(cfg MetricConfig) metricRedisCmdCalls {
 	m := metricRedisCmdCalls{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisCmdLatency struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.cmd.latency metric with initial data.
+func (m *metricRedisCmdLatency) init() {
+	m.data.SetName("redis.cmd.latency")
+	m.data.SetDescription("Command execution latency")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricRedisCmdLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cmdAttributeValue string, percentileAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("cmd", cmdAttributeValue)
+	dp.Attributes().PutStr("percentile", percentileAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisCmdLatency) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisCmdLatency) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisCmdLatency(cfg MetricConfig) metricRedisCmdLatency {
+	m := metricRedisCmdLatency{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1749,15 +1831,17 @@ func newMetricRedisUptime(cfg MetricConfig) metricRedisUptime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                                    pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                              int                 // maximum observed number of metrics per resource.
-	metricsBuffer                                pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                    component.BuildInfo // contains version information
+	config                                       MetricsBuilderConfig // config of the metrics builder.
+	startTime                                    pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                              int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                    component.BuildInfo  // contains version information.
 	metricRedisClientsBlocked                    metricRedisClientsBlocked
 	metricRedisClientsConnected                  metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
 	metricRedisClientsMaxOutputBuffer            metricRedisClientsMaxOutputBuffer
 	metricRedisCmdCalls                          metricRedisCmdCalls
+	metricRedisCmdLatency                        metricRedisCmdLatency
 	metricRedisCmdUsec                           metricRedisCmdUsec
 	metricRedisCommands                          metricRedisCommands
 	metricRedisCommandsProcessed                 metricRedisCommandsProcessed
@@ -1800,6 +1884,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                                       mbc,
 		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                pmetric.NewMetrics(),
 		buildInfo:                                    settings.BuildInfo,
@@ -1808,6 +1893,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(mbc.Metrics.RedisClientsMaxInputBuffer),
 		metricRedisClientsMaxOutputBuffer:            newMetricRedisClientsMaxOutputBuffer(mbc.Metrics.RedisClientsMaxOutputBuffer),
 		metricRedisCmdCalls:                          newMetricRedisCmdCalls(mbc.Metrics.RedisCmdCalls),
+		metricRedisCmdLatency:                        newMetricRedisCmdLatency(mbc.Metrics.RedisCmdLatency),
 		metricRedisCmdUsec:                           newMetricRedisCmdUsec(mbc.Metrics.RedisCmdUsec),
 		metricRedisCommands:                          newMetricRedisCommands(mbc.Metrics.RedisCommands),
 		metricRedisCommandsProcessed:                 newMetricRedisCommandsProcessed(mbc.Metrics.RedisCommandsProcessed),
@@ -1841,6 +1927,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		op(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -1897,6 +1988,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricRedisClientsMaxInputBuffer.emit(ils.Metrics())
 	mb.metricRedisClientsMaxOutputBuffer.emit(ils.Metrics())
 	mb.metricRedisCmdCalls.emit(ils.Metrics())
+	mb.metricRedisCmdLatency.emit(ils.Metrics())
 	mb.metricRedisCmdUsec.emit(ils.Metrics())
 	mb.metricRedisCommands.emit(ils.Metrics())
 	mb.metricRedisCommandsProcessed.emit(ils.Metrics())
@@ -1968,6 +2060,11 @@ func (mb *MetricsBuilder) RecordRedisClientsMaxOutputBufferDataPoint(ts pcommon.
 // RecordRedisCmdCallsDataPoint adds a data point to redis.cmd.calls metric.
 func (mb *MetricsBuilder) RecordRedisCmdCallsDataPoint(ts pcommon.Timestamp, val int64, cmdAttributeValue string) {
 	mb.metricRedisCmdCalls.recordDataPoint(mb.startTime, ts, val, cmdAttributeValue)
+}
+
+// RecordRedisCmdLatencyDataPoint adds a data point to redis.cmd.latency metric.
+func (mb *MetricsBuilder) RecordRedisCmdLatencyDataPoint(ts pcommon.Timestamp, val float64, cmdAttributeValue string, percentileAttributeValue AttributePercentile) {
+	mb.metricRedisCmdLatency.recordDataPoint(mb.startTime, ts, val, cmdAttributeValue, percentileAttributeValue.String())
 }
 
 // RecordRedisCmdUsecDataPoint adds a data point to redis.cmd.usec metric.

@@ -14,7 +14,7 @@ import (
 )
 
 type SpanIDArguments[K any] struct {
-	Bytes []byte `ottlarg:"0"`
+	Bytes []byte
 }
 
 func NewSpanIDFactory[K any]() ottl.Factory[K] {

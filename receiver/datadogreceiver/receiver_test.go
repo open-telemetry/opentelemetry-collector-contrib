@@ -22,7 +22,9 @@ import (
 func TestDatadogReceiver_Lifecycle(t *testing.T) {
 
 	factory := NewFactory()
-	ddr, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), factory.CreateDefaultConfig(), consumertest.NewNop())
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Endpoint = "localhost:0"
+	ddr, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())
@@ -34,6 +36,7 @@ func TestDatadogReceiver_Lifecycle(t *testing.T) {
 
 func TestDatadogServer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	dd, err := newDataDogReceiver(
 		cfg,
 		consumertest.NewNop(),
@@ -69,7 +72,7 @@ func TestDatadogServer(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodPost,
-				fmt.Sprintf("http://%s/v0.7/traces", cfg.Endpoint),
+				fmt.Sprintf("http://%s/v0.7/traces", dd.(*datadogReceiver).address),
 				tc.op,
 			)
 			require.NoError(t, err, "Must not error when creating request")

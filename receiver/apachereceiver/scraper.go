@@ -26,7 +26,6 @@ type apacheScraper struct {
 	settings   component.TelemetrySettings
 	cfg        *Config
 	httpClient *http.Client
-	rb         *metadata.ResourceBuilder
 	mb         *metadata.MetricsBuilder
 	serverName string
 	port       string
@@ -41,7 +40,6 @@ func newApacheScraper(
 	a := &apacheScraper{
 		settings:   settings.TelemetrySettings,
 		cfg:        cfg,
-		rb:         metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		serverName: serverName,
 		port:       port,
@@ -129,9 +127,10 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	r.rb.SetApacheServerName(r.serverName)
-	r.rb.SetApacheServerPort(r.port)
-	return r.mb.Emit(metadata.WithResource(r.rb.Emit())), errs.Combine()
+	rb := r.mb.NewResourceBuilder()
+	rb.SetApacheServerName(r.serverName)
+	rb.SetApacheServerPort(r.port)
+	return r.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }
 
 func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {

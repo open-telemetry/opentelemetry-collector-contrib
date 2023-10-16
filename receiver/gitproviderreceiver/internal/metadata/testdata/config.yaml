@@ -1,0 +1,35 @@
+default:
+all_set:
+  metrics:
+    git.repository.branch.count:
+      enabled: true
+    git.repository.branch.time:
+      enabled: true
+    git.repository.contributor.count:
+      enabled: true
+    git.repository.count:
+      enabled: true
+    git.repository.pull_request.time:
+      enabled: true
+  resource_attributes:
+    git.vendor.name:
+      enabled: true
+    organization.name:
+      enabled: true
+none_set:
+  metrics:
+    git.repository.branch.count:
+      enabled: false
+    git.repository.branch.time:
+      enabled: false
+    git.repository.contributor.count:
+      enabled: false
+    git.repository.count:
+      enabled: false
+    git.repository.pull_request.time:
+      enabled: false
+  resource_attributes:
+    git.vendor.name:
+      enabled: false
+    organization.name:
+      enabled: false

@@ -28,59 +28,17 @@ func (rb *ResourceBuilder) SetHaproxyAddr(val string) {
 	}
 }
 
-// SetHaproxyAlgo sets provided value as "haproxy.algo" attribute.
-func (rb *ResourceBuilder) SetHaproxyAlgo(val string) {
-	if rb.config.HaproxyAlgo.Enabled {
-		rb.res.Attributes().PutStr("haproxy.algo", val)
+// SetHaproxyProxyName sets provided value as "haproxy.proxy_name" attribute.
+func (rb *ResourceBuilder) SetHaproxyProxyName(val string) {
+	if rb.config.HaproxyProxyName.Enabled {
+		rb.res.Attributes().PutStr("haproxy.proxy_name", val)
 	}
 }
 
-// SetHaproxyIid sets provided value as "haproxy.iid" attribute.
-func (rb *ResourceBuilder) SetHaproxyIid(val string) {
-	if rb.config.HaproxyIid.Enabled {
-		rb.res.Attributes().PutStr("haproxy.iid", val)
-	}
-}
-
-// SetHaproxyPid sets provided value as "haproxy.pid" attribute.
-func (rb *ResourceBuilder) SetHaproxyPid(val string) {
-	if rb.config.HaproxyPid.Enabled {
-		rb.res.Attributes().PutStr("haproxy.pid", val)
-	}
-}
-
-// SetHaproxySid sets provided value as "haproxy.sid" attribute.
-func (rb *ResourceBuilder) SetHaproxySid(val string) {
-	if rb.config.HaproxySid.Enabled {
-		rb.res.Attributes().PutStr("haproxy.sid", val)
-	}
-}
-
-// SetHaproxyType sets provided value as "haproxy.type" attribute.
-func (rb *ResourceBuilder) SetHaproxyType(val string) {
-	if rb.config.HaproxyType.Enabled {
-		rb.res.Attributes().PutStr("haproxy.type", val)
-	}
-}
-
-// SetHaproxyURL sets provided value as "haproxy.url" attribute.
-func (rb *ResourceBuilder) SetHaproxyURL(val string) {
-	if rb.config.HaproxyURL.Enabled {
-		rb.res.Attributes().PutStr("haproxy.url", val)
-	}
-}
-
-// SetProxyName sets provided value as "proxy_name" attribute.
-func (rb *ResourceBuilder) SetProxyName(val string) {
-	if rb.config.ProxyName.Enabled {
-		rb.res.Attributes().PutStr("proxy_name", val)
-	}
-}
-
-// SetServiceName sets provided value as "service_name" attribute.
-func (rb *ResourceBuilder) SetServiceName(val string) {
-	if rb.config.ServiceName.Enabled {
-		rb.res.Attributes().PutStr("service_name", val)
+// SetHaproxyServiceName sets provided value as "haproxy.service_name" attribute.
+func (rb *ResourceBuilder) SetHaproxyServiceName(val string) {
+	if rb.config.HaproxyServiceName.Enabled {
+		rb.res.Attributes().PutStr("haproxy.service_name", val)
 	}
 }
 

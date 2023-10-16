@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 const (
@@ -46,7 +46,7 @@ var newMetricsReceiver = func(
 		}
 		sc.Version = version
 	}
-	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, sc); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, sc); err != nil {
 		return nil, err
 	}
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))

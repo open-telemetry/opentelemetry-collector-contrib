@@ -207,13 +207,13 @@ var (
 	standardLogTests = []logNameTest{
 		{
 			name:   "emptyFilterInclude",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
 			outLN:  [][]string{inLogNames},
 		},
 		{
 			name:   "includeNilWithResourceAttributes",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs(inLogForResourceTest),
 			outLN: [][]string{
 				{"log1", "log2"},
@@ -221,7 +221,7 @@ var (
 		},
 		{
 			name:   "includeAllWithMissingResourceAttributes",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
+			inc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
 			inLogs: testResourceLogs(inLogForTwoResource),
 			outLN: [][]string{
 				{"log3", "log4"},
@@ -229,13 +229,13 @@ var (
 		},
 		{
 			name:   "emptyFilterExclude",
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
 			outLN:  [][]string{inLogNames},
 		},
 		{
 			name:   "excludeNilWithResourceAttributes",
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs(inLogForResourceTest),
 			outLN: [][]string{
 				{"log1", "log2"},
@@ -243,7 +243,7 @@ var (
 		},
 		{
 			name:   "excludeAllWithMissingResourceAttributes",
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
+			exc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
 			inLogs: testResourceLogs(inLogForTwoResource),
 			outLN: [][]string{
 				{"log3", "log4"},
@@ -251,22 +251,22 @@ var (
 		},
 		{
 			name:   "emptyFilterIncludeAndExclude",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
 			outLN:  [][]string{inLogNames},
 		},
 		{
 			name:   "nilWithResourceAttributesIncludeAndExclude",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{}},
+			inc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{}},
+			exc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{}},
 			inLogs: testResourceLogs([]logWithResource{{logNames: inLogNames}}),
 			outLN:  [][]string{inLogNames},
 		},
 		{
 			name:   "allWithMissingResourceAttributesIncludeAndExclude",
-			inc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
-			exc:    &LogMatchProperties{LogMatchType: Strict, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
+			inc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val2"}}},
+			exc:    &LogMatchProperties{LogMatchType: strictType, ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}}},
 			inLogs: testResourceLogs(inLogForTwoResource),
 			outLN: [][]string{
 				{"log3", "log4"},
@@ -274,7 +274,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpInclude",
-			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val2"}}},
+			inc:    &LogMatchProperties{LogMatchType: regexpType, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val2"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log2"},
@@ -282,7 +282,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpInclude2",
-			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val(2|3)"}}},
+			inc:    &LogMatchProperties{LogMatchType: regexpType, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val(2|3)"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log2"},
@@ -291,7 +291,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpInclude3",
-			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[234]"}}},
+			inc:    &LogMatchProperties{LogMatchType: regexpType, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[234]"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log2"},
@@ -301,7 +301,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpInclude4",
-			inc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val.*"}}},
+			inc:    &LogMatchProperties{LogMatchType: regexpType, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val.*"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log1"},
@@ -312,7 +312,7 @@ var (
 		},
 		{
 			name:   "matchAttributesWithRegexpExclude",
-			exc:    &LogMatchProperties{LogMatchType: Regexp, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[23]"}}},
+			exc:    &LogMatchProperties{LogMatchType: regexpType, ResourceAttributes: []filterconfig.Attribute{{Key: "attr", Value: "attr/val[23]"}}},
 			inLogs: testResourceLogs(inLogForFourResource),
 			outLN: [][]string{
 				{"log1"},
@@ -322,7 +322,7 @@ var (
 		{
 			name: "matchRecordAttributeWithRegexp1",
 			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				RecordAttributes: []filterconfig.Attribute{
 					{
 						Key:   "rec",
@@ -338,7 +338,7 @@ var (
 		{
 			name: "matchRecordAttributeWithRegexp2",
 			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				RecordAttributes: []filterconfig.Attribute{
 					{
 						Key:   "rec",
@@ -354,7 +354,7 @@ var (
 		{
 			name: "matchRecordAttributeWithRegexp2",
 			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				RecordAttributes: []filterconfig.Attribute{
 					{
 						Key:   "rec",
@@ -371,7 +371,7 @@ var (
 		{
 			name: "matchRecordAttributeWithRegexp3",
 			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				RecordAttributes: []filterconfig.Attribute{
 					{
 						Key:   "rec",
@@ -388,7 +388,7 @@ var (
 		{
 			name: "includeRecordSeverityStrict",
 			inc: &LogMatchProperties{
-				LogMatchType:  Strict,
+				LogMatchType:  strictType,
 				SeverityTexts: []string{"INFO", "DEBUG2"},
 			},
 			inLogs: testResourceLogs(inLogForSeverityText),
@@ -400,7 +400,7 @@ var (
 		{
 			name: "includeRecordSeverityRegexp",
 			inc: &LogMatchProperties{
-				LogMatchType:  Regexp,
+				LogMatchType:  regexpType,
 				SeverityTexts: []string{"DEBUG[1-4]?"},
 			},
 			inLogs: testResourceLogs(inLogForSeverityText),
@@ -412,7 +412,7 @@ var (
 		{
 			name: "excludeRecordSeverityStrict",
 			exc: &LogMatchProperties{
-				LogMatchType:  Strict,
+				LogMatchType:  strictType,
 				SeverityTexts: []string{"INFO", "DEBUG"},
 			},
 			inLogs: testResourceLogs(inLogForSeverityText),
@@ -424,7 +424,7 @@ var (
 		{
 			name: "excludeRecordSeverityRegexp",
 			exc: &LogMatchProperties{
-				LogMatchType:  Regexp,
+				LogMatchType:  regexpType,
 				SeverityTexts: []string{"^[DI]"},
 			},
 			inLogs: testResourceLogs(inLogForSeverityText),
@@ -435,7 +435,7 @@ var (
 		{
 			name: "includeRecordBodyStrict",
 			inc: &LogMatchProperties{
-				LogMatchType: Strict,
+				LogMatchType: strictType,
 				LogBodies:    []string{"test1", "test2", "no match"},
 			},
 			inLogs: testResourceLogs(inLogForBody),
@@ -447,7 +447,7 @@ var (
 		{
 			name: "includeRecordBodyRegexp",
 			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				LogBodies:    []string{"^This"},
 			},
 			inLogs: testResourceLogs(inLogForBody),
@@ -459,7 +459,7 @@ var (
 		{
 			name: "excludeRecordBodyStrict",
 			exc: &LogMatchProperties{
-				LogMatchType: Strict,
+				LogMatchType: strictType,
 				LogBodies:    []string{"test1", "test2", "no match"},
 			},
 			inLogs: testResourceLogs(inLogForBody),
@@ -471,7 +471,7 @@ var (
 		{
 			name: "excludeRecordBodyRegexp",
 			exc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				LogBodies:    []string{"^This"},
 			},
 			inLogs: testResourceLogs(inLogForBody),
@@ -483,7 +483,7 @@ var (
 		{
 			name: "includeMinSeverityINFO",
 			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
 					Min: logSeverity("INFO"),
 				},
@@ -497,7 +497,7 @@ var (
 		{
 			name: "includeMinSeverityDEBUG",
 			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
 					Min: logSeverity("DEBUG"),
 				},
@@ -512,7 +512,7 @@ var (
 		{
 			name: "includeMinSeverityFATAL+undefined",
 			inc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
 					Min:            logSeverity("FATAL"),
 					MatchUndefined: true,
@@ -526,7 +526,7 @@ var (
 		{
 			name: "excludeMinSeverityINFO",
 			exc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
 					Min: logSeverity("INFO"),
 				},
@@ -540,7 +540,7 @@ var (
 		{
 			name: "excludeMinSeverityTRACE",
 			exc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
 					Min: logSeverity("TRACE"),
 				},
@@ -553,7 +553,7 @@ var (
 		{
 			name: "excludeMinSeverityINFO+undefined",
 			exc: &LogMatchProperties{
-				LogMatchType: Regexp,
+				LogMatchType: regexpType,
 				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
 					Min:            logSeverity("INFO"),
 					MatchUndefined: true,
@@ -687,11 +687,11 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 }
 
 var (
-	TestLogTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestLogTimestamp = pcommon.NewTimestampFromTime(TestLogTime)
+	testLogTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
+	testLogTimestamp = pcommon.NewTimestampFromTime(testLogTime)
 
-	TestObservedTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestObservedTimestamp = pcommon.NewTimestampFromTime(TestObservedTime)
+	testObservedTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
+	testObservedTimestamp = pcommon.NewTimestampFromTime(testObservedTime)
 
 	logTraceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	logSpanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
@@ -781,8 +781,8 @@ func constructLogs() plog.Logs {
 
 func fillLogOne(log plog.LogRecord) {
 	log.Body().SetStr("operationA")
-	log.SetTimestamp(TestLogTimestamp)
-	log.SetObservedTimestamp(TestObservedTimestamp)
+	log.SetTimestamp(testLogTimestamp)
+	log.SetObservedTimestamp(testObservedTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 	log.SetSeverityNumber(1)
@@ -797,8 +797,8 @@ func fillLogOne(log plog.LogRecord) {
 
 func fillLogTwo(log plog.LogRecord) {
 	log.Body().SetStr("operationB")
-	log.SetTimestamp(TestLogTimestamp)
-	log.SetObservedTimestamp(TestObservedTimestamp)
+	log.SetTimestamp(testLogTimestamp)
+	log.SetObservedTimestamp(testObservedTimestamp)
 	log.Attributes().PutStr("http.method", "get")
 	log.Attributes().PutStr("http.path", "/health")
 	log.Attributes().PutStr("http.url", "http://localhost/health")

@@ -6,21 +6,24 @@ package namespace
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestNamespaceMetrics(t *testing.T) {
-	n := newNamespace("1")
-	m := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), n)
+	n := testutils.NewNamespace("1")
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, n, ts)
+	m := mb.Emit()
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
@@ -32,20 +35,4 @@ func TestNamespaceMetrics(t *testing.T) {
 		pmetrictest.IgnoreScopeMetricsOrder(),
 	),
 	)
-}
-
-func newNamespace(id string) *corev1.Namespace {
-	return &corev1.Namespace{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "test-namespace-" + id,
-			UID:  types.UID("test-namespace-" + id + "-uid"),
-			Labels: map[string]string{
-				"foo":  "bar",
-				"foo1": "",
-			},
-		},
-		Status: corev1.NamespaceStatus{
-			Phase: corev1.NamespaceTerminating,
-		},
-	}
 }

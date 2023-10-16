@@ -40,6 +40,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 
 func buildEventFromSpan(
 	bundle spanBundle,
+	serverHost string,
 ) *add_events.EventBundle {
 	span := bundle.span
 	resource := bundle.resource
@@ -79,6 +80,7 @@ func buildEventFromSpan(
 	event.Attrs = attrs
 	event.Log = "LT"
 	event.Thread = "TT"
+	event.ServerHost = inferServerHost(bundle.resource, attrs, serverHost)
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TT", Name: "traces"},
@@ -131,8 +133,7 @@ type spanBundle struct {
 	scope    pcommon.InstrumentationScope
 }
 
-func buildEventsFromTraces(ld ptrace.Traces) []*add_events.EventBundle {
-	var events []*add_events.EventBundle
+func buildEventsFromTraces(ld ptrace.Traces, serverHost string) []*add_events.EventBundle {
 	var spans = make([]spanBundle, 0)
 
 	// convert spans into events
@@ -150,26 +151,14 @@ func buildEventsFromTraces(ld ptrace.Traces) []*add_events.EventBundle {
 		}
 	}
 
-	for _, span := range spans {
-		events = append(events, buildEventFromSpan(span))
+	events := make([]*add_events.EventBundle, len(spans))
+	for i, span := range spans {
+		events[i] = buildEventFromSpan(span, serverHost)
 	}
 
 	return events
 }
 
 func (e *DatasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
-	return sendBatch(buildEventsFromTraces(ld), e.client)
-}
-
-type TraceAndSpan [24]byte
-
-func (ts TraceAndSpan) split() (traceID pcommon.TraceID, spanID pcommon.SpanID) {
-	copy(traceID[:], ts[:16])
-	copy(spanID[:], ts[16:])
-	return traceID, spanID
-}
-
-func (ts TraceAndSpan) String() string {
-	traceID, spanID := ts.split()
-	return traceID.String() + spanID.String()
+	return sendBatch(buildEventsFromTraces(ld, e.serverHost), e.client)
 }

@@ -5,6 +5,7 @@ package loadbalancingexporter
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -45,9 +46,13 @@ func TestK8sResolve(t *testing.T) {
 				},
 			},
 		}
-		expectInit := []string{
-			"192.168.10.100:8080",
-			"192.168.10.100:9090",
+		var expectInit []string
+		for _, subset := range endpoint.Subsets {
+			for _, address := range subset.Addresses {
+				for _, port := range args.ports {
+					expectInit = append(expectInit, fmt.Sprintf("%s:%d", address.IP, port))
+				}
+			}
 		}
 
 		cl := fake.NewSimpleClientset(endpoint)
@@ -74,7 +79,7 @@ func TestK8sResolve(t *testing.T) {
 		verifyFn   func(*suiteContext, args) error
 	}{
 		{
-			name: "simulate changes to the backend ip address",
+			name: "simulate append the backend ip address",
 			args: args{
 				logger:    zap.NewNop(),
 				service:   "lb",
@@ -106,6 +111,41 @@ func TestK8sResolve(t *testing.T) {
 					"10.10.0.11:9090",
 					"192.168.10.100:8080",
 					"192.168.10.100:9090",
+				}, ctx.resolver.Endpoints(), "resolver failed, endpoints not equal")
+
+				return nil
+			},
+		},
+		{
+			name: "simulate change the backend ip address",
+			args: args{
+				logger:    zap.NewNop(),
+				service:   "lb",
+				namespace: "default",
+				ports:     []int32{4317},
+			},
+			simulateFn: func(suiteCtx *suiteContext, args args) error {
+				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
+				endpoint.Subsets = []corev1.EndpointSubset{
+					{Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11"}}},
+				}
+				patch := client.MergeFrom(exist)
+				data, err := patch.Data(endpoint)
+				if err != nil {
+					return err
+				}
+				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
+					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				return err
+
+			},
+			verifyFn: func(ctx *suiteContext, args args) error {
+				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
+					return err
+				}
+
+				assert.Equal(t, []string{
+					"10.10.0.11:4317",
 				}, ctx.resolver.Endpoints(), "resolver failed, endpoints not equal")
 
 				return nil

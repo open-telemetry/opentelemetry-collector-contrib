@@ -29,6 +29,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
+				ArrayName: "foobar.example.com",
 				Settings: &Settings{
 					ReloadIntervals: &ReloadIntervals{
 						Array:       15 * time.Second,
