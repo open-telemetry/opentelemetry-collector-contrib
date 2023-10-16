@@ -16,6 +16,7 @@ const (
 	collectorHTTPTransport = "http"
 	grpcTransport          = "grpc"
 	failing                = "failing"
+	format                 = "protobuf"
 )
 
 type Receiver struct {
@@ -66,7 +67,7 @@ func consumeMetrics(ctx context.Context, collection *agent.JVMMetricCollection, 
 	pmd := SwMetricsToMetrics(collection)
 	obsreport.StartMetricsOp(ctx)
 	err := nextConsumer.ConsumeMetrics(ctx, pmd)
-	obsreport.EndMetricsOp(ctx,"protobuf",pmd.MetricCount(),err)
+	obsreport.EndMetricsOp(ctx,format,pmd.MetricCount(),err)
 	return err
 
 }
