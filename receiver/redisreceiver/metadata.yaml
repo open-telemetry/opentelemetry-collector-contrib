@@ -15,11 +15,11 @@ resource_attributes:
     type: string
   server.address:
     description: Redis server's address
-    enabled: true
+    enabled: false
     type: string
   server.port:
     description: Redis server's port
-    enabled: true
+    enabled: false
     type: string
 
 attributes:

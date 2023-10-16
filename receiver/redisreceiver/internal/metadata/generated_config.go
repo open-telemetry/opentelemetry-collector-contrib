@@ -186,10 +186,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ServerAddress: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ServerPort: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

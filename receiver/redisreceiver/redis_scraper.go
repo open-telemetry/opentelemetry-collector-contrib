@@ -5,7 +5,6 @@ package redisreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
