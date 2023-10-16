@@ -12,10 +12,11 @@ import (
 )
 
 type ReplacePatternArguments[K any] struct {
-	Target       ottl.GetSetter[K]
-	RegexPattern string
-	Replacement  ottl.StringGetter[K]
-	Function     ottl.Optional[ottl.FunctionGetter[K]]
+	Target            ottl.GetSetter[K]
+	RegexPattern      string
+	Replacement       ottl.StringGetter[K]
+	ReplacementPrefix ottl.Optional[string] // ReplacementPrefix is an optional prefix to add to the replacement value
+	Function          ottl.Optional[ottl.FunctionGetter[K]]
 }
 
 type replacePatternFuncArgs[K any] struct {
@@ -33,10 +34,10 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 		return nil, fmt.Errorf("ReplacePatternFactory args must be of type *ReplacePatternArguments[K]")
 	}
 
-	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function)
+	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.ReplacementPrefix, args.Function)
 }
 
-func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
+func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], replacementPrefix ottl.Optional[string], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)
@@ -73,6 +74,9 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 		}
 		if originalValStr, ok := originalVal.(string); ok {
 			if compiledPattern.MatchString(originalValStr) {
+				if !replacementPrefix.IsEmpty() { // If replacementPrefix is not empty, add it to the replacement value
+					replacementVal = replacementPrefix.Get() + replacementVal
+				}
 				updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
 				err = target.Set(ctx, tCtx, updatedStr)
 				if err != nil {

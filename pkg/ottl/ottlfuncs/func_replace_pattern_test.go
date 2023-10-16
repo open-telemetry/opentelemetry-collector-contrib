@@ -35,25 +35,27 @@ func Test_replacePattern(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		target      ottl.GetSetter[pcommon.Value]
-		pattern     string
-		replacement ottl.StringGetter[pcommon.Value]
-		function    ottl.Optional[ottl.FunctionGetter[pcommon.Value]]
-		want        func(pcommon.Value)
+		name              string
+		target            ottl.GetSetter[pcommon.Value]
+		pattern           string
+		replacement       ottl.StringGetter[pcommon.Value]
+		replacementPrefix ottl.Optional[string]
+		function          ottl.Optional[ottl.FunctionGetter[pcommon.Value]]
+		want              func(pcommon.Value)
 	}{
 		{
 			name:    "replace regex match (with hash function)",
 			target:  target,
-			pattern: `passwd\=[^\s]*(\s?)`,
+			pattern: `passwd\=[^\s]*`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
 				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
 					return "passwd=*** ", nil
 				},
 			},
-			function: optionalArg,
+			replacementPrefix: ottl.NewTestingOptional[string]("passwd="),
+			function:          optionalArg,
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("application 0f2407f2d83337b1f757eb1754a7643ce0e8fba620bc605c54566cd6dfd838beotherarg=notsensitive key1 key2")
+				expectedValue.SetStr("application passwd=0f2407f2d83337b1f757eb1754a7643ce0e8fba620bc605c54566cd6dfd838be otherarg=notsensitive key1 key2")
 			},
 		},
 		{
@@ -65,7 +67,8 @@ func Test_replacePattern(t *testing.T) {
 					return "passwd=*** ", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("application passwd=*** otherarg=notsensitive key1 key2")
 			},
@@ -79,7 +82,8 @@ func Test_replacePattern(t *testing.T) {
 					return "shouldnotbeinoutput", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
 			},
@@ -93,7 +97,8 @@ func Test_replacePattern(t *testing.T) {
 					return "**** ", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("application passwd=sensitivedtata otherarg=notsensitive **** **** ")
 			},
@@ -107,7 +112,8 @@ func Test_replacePattern(t *testing.T) {
 					return "$1:$2", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("application passwd:sensitivedtata otherarg:notsensitive key1 key2")
 			},
@@ -121,7 +127,8 @@ func Test_replacePattern(t *testing.T) {
 					return "passwd=$$$$$$ ", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("application passwd=$$$ otherarg=notsensitive key1 key2")
 			},
@@ -130,7 +137,7 @@ func Test_replacePattern(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
-			exprFunc, err := replacePattern(tt.target, tt.pattern, tt.replacement, tt.function)
+			exprFunc, err := replacePattern(tt.target, tt.pattern, tt.replacement, tt.replacementPrefix, tt.function)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, scenarioValue)
@@ -161,9 +168,10 @@ func Test_replacePattern_bad_input(t *testing.T) {
 			return "{replacement}", nil
 		},
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
-	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, function)
+	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, replacementPrefix, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -188,9 +196,10 @@ func Test_replacePattern_bad_function_input(t *testing.T) {
 			return nil, nil
 		},
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
-	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, function)
+	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, replacementPrefix, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -221,9 +230,10 @@ func Test_replacePattern_bad_function_result(t *testing.T) {
 		},
 		Fact: StandardConverters[interface{}]()["IsString"],
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.NewTestingOptional[ottl.FunctionGetter[interface{}]](ottlValue)
 
-	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, function)
+	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, replacementPrefix, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -247,9 +257,10 @@ func Test_replacePattern_get_nil(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
-	exprFunc, err := replacePattern[interface{}](target, `nomatch\=[^\s]*(\s?)`, replacement, function)
+	exprFunc, err := replacePattern[interface{}](target, `nomatch\=[^\s]*(\s?)`, replacement, replacementPrefix, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)
@@ -273,10 +284,11 @@ func Test_replacePatterns_invalid_pattern(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
 	invalidRegexPattern := "*"
-	_, err := replacePattern[interface{}](target, invalidRegexPattern, replacement, function)
+	_, err := replacePattern[interface{}](target, invalidRegexPattern, replacement, replacementPrefix, function)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }

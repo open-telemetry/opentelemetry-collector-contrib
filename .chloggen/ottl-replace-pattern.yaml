@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add optional Converter parameters to replacement Editors
+note: Add optional parameters to replacement Editors
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [27235]
@@ -21,6 +21,7 @@ subtext: |
   - `replace_all_patterns`
   - `replace_match`
   - `replace_all_matches`
+  An optional replacement prefix argument can also be passed to `replace_pattern` and `replace_all_patterns` to be prepended to the replacement string.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

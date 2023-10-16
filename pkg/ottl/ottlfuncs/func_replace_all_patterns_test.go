@@ -39,13 +39,14 @@ func Test_replaceAllPatterns(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		target      ottl.PMapGetter[pcommon.Map]
-		mode        string
-		pattern     string
-		replacement ottl.StringGetter[pcommon.Map]
-		function    ottl.Optional[ottl.FunctionGetter[pcommon.Map]]
-		want        func(pcommon.Map)
+		name              string
+		target            ottl.PMapGetter[pcommon.Map]
+		mode              string
+		pattern           string
+		replacement       ottl.StringGetter[pcommon.Map]
+		replacementPrefix ottl.Optional[string]
+		function          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]
+		want              func(pcommon.Map)
 	}{
 		{
 			name:    "replace only matches (with hash function)",
@@ -57,7 +58,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "hello {universe}", nil
 				},
 			},
-			function: optionalArg,
+			replacementPrefix: ottl.Optional[string]{},
+			function:          optionalArg,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad world")
 				expectedMap.PutStr("test2", "4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad")
@@ -77,7 +79,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "hello {universe}", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello {universe} world")
 				expectedMap.PutStr("test2", "hello {universe}")
@@ -97,7 +100,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "nothing {matches}", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutStr("test2", "hello")
@@ -117,7 +121,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "**** ", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello **** ")
 				expectedMap.PutStr("test2", "hello")
@@ -137,7 +142,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "foo", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.PutStr("test", "hello world")
@@ -158,7 +164,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "nothing {matches}", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.PutStr("test", "hello world")
@@ -179,7 +186,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "test.", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.PutStr("test.", "hello world")
@@ -200,7 +208,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "world-$1", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.PutStr("test", "hello world")
@@ -221,7 +230,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "test-$1", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutStr("test-2", "hello")
@@ -241,7 +251,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "$$world-$1", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementPrefix: ottl.Optional[string]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.PutStr("test", "hello world")
@@ -258,7 +269,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := replaceAllPatterns[pcommon.Map](tt.target, tt.mode, tt.pattern, tt.replacement, tt.function)
+			exprFunc, err := replaceAllPatterns[pcommon.Map](tt.target, tt.mode, tt.pattern, tt.replacement, tt.replacementPrefix, tt.function)
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -284,9 +295,10 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 			return "{replacement}", nil
 		},
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
-	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexpattern", replacement, function)
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexpattern", replacement, replacementPrefix, function)
 	assert.Nil(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -305,9 +317,10 @@ func Test_replaceAllPatterns_bad_function_input(t *testing.T) {
 			return nil, nil
 		},
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
-	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement, function)
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement, replacementPrefix, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -334,9 +347,10 @@ func Test_replaceAllPatterns_bad_function_result(t *testing.T) {
 		},
 		Fact: StandardConverters[interface{}]()["IsString"],
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.NewTestingOptional[ottl.FunctionGetter[interface{}]](ottlValue)
 
-	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement, function)
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement, replacementPrefix, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -355,9 +369,10 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
-	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement, function)
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement, replacementPrefix, function)
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, nil)
@@ -376,10 +391,11 @@ func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
 	invalidRegexPattern := "*"
-	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, invalidRegexPattern, replacement, function)
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, invalidRegexPattern, replacement, replacementPrefix, function)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 	assert.Nil(t, exprFunc)
@@ -397,10 +413,11 @@ func Test_replaceAllPatterns_invalid_model(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
+	replacementPrefix := ottl.Optional[string]{}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
 	invalidMode := "invalid"
-	exprFunc, err := replaceAllPatterns[interface{}](target, invalidMode, "regex", replacement, function)
+	exprFunc, err := replaceAllPatterns[interface{}](target, invalidMode, "regex", replacement, replacementPrefix, function)
 	assert.Nil(t, exprFunc)
 	assert.Contains(t, err.Error(), "invalid mode")
 }
