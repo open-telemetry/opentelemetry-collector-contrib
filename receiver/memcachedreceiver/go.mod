@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcac
 go 1.20
 
 require (
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.87.0
