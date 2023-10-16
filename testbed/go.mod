@@ -10,10 +10,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.87.0
@@ -22,6 +24,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.87.0
@@ -79,6 +82,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
+	github.com/antonmedv/expr v1.15.3 // indirect
 	github.com/apache/thrift v0.19.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go v1.45.24 // indirect
@@ -146,6 +150,7 @@ require (
 	github.com/hetznercloud/hcloud-go/v2 v2.0.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.8 // indirect
 	github.com/jaegertracing/jaeger v1.48.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -157,6 +162,7 @@ require (
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
+	github.com/leodido/ragel-machinery v0.0.0-20181214104525-299bdde78165 // indirect
 	github.com/linode/linodego v1.19.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -291,6 +297,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signa
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../exporter/splunkhecexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter => ../exporter/syslogexporter
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ../exporter/zipkinexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../internal/common
@@ -329,6 +337,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signa
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../receiver/splunkhecreceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ../receiver/syslogreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver => ../receiver/zipkinreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver => ../testbed/mockdatareceivers/mockawsxrayreceiver
@@ -340,6 +350,10 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../pkg/resourcetotelemetry
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../pkg/stanza
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../extension/storage
 
 retract (
 	v0.76.2
