@@ -58,7 +58,7 @@ func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, no
 		m := sm.Metrics().AppendEmpty()
 		m.SetName(getNodeConditionMetric(nodeConditionTypeValue))
 		m.SetDescription(fmt.Sprintf("%v condition status of the node (true=1, false=0, unknown=-1)", nodeConditionTypeValue))
-		m.SetUnit("1")
+		m.SetUnit("")
 		g := m.SetEmptyGauge()
 		dp := g.DataPoints().AppendEmpty()
 		dp.SetIntValue(nodeConditionValue(node, v1NodeConditionTypeValue))
@@ -95,7 +95,6 @@ func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, no
 
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
-	rb.SetOpencensusResourcetype("k8s")
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 	rb.SetK8sKubeproxyVersion(node.Status.NodeInfo.KubeProxyVersion)
 	rb.Emit().MoveTo(rm.Resource())

@@ -60,5 +60,4 @@ Please see [example configurations](./examples/).
 [syslog_receiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/syslogreceiver
 [filelog_receiver]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver
 [cryptoTLS]: https://github.com/golang/go/blob/518889b35cb07f3e71963f2ccfc0f96ee26a51ce/src/crypto/tls/common.go#L706-L709
-[development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [persistent_queue]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#persistent-queue
