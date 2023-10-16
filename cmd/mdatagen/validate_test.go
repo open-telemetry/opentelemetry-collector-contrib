@@ -116,7 +116,7 @@ func TestValidateMetricDuplicates(t *testing.T) {
 	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, err error) error {
 		if info.Name() == "metadata.yaml" {
 			md, err := loadMetadata(path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			if len(md.Metrics) > 0 {
 				for metricName := range md.Metrics {
 					allMetrics[md.Type] = append(allMetrics[md.Type], string(metricName))
@@ -125,7 +125,7 @@ func TestValidateMetricDuplicates(t *testing.T) {
 		}
 		return nil
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	seen := make(map[string]string)
 	for receiver, metrics := range allMetrics {
