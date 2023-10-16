@@ -207,6 +207,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for k8s_cluster resource attributes.
@@ -232,6 +246,7 @@ type ResourceAttributesConfig struct {
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
 	K8sNodeUID                   ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
 	K8sPodName                   ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
+	K8sPodQosClass               ResourceAttributeConfig `mapstructure:"k8s.pod.qos_class"`
 	K8sPodUID                    ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
 	K8sReplicasetName            ResourceAttributeConfig `mapstructure:"k8s.replicaset.name"`
 	K8sReplicasetUID             ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
@@ -241,7 +256,6 @@ type ResourceAttributesConfig struct {
 	K8sResourcequotaUID          ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
 	K8sStatefulsetName           ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
-	OpencensusResourcetype       ResourceAttributeConfig `mapstructure:"opencensus.resourcetype"`
 	OpenshiftClusterquotaName    ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID     ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
 }
@@ -311,6 +325,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sPodName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sPodQosClass: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		K8sPodUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -336,9 +353,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sStatefulsetUID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		OpencensusResourcetype: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		OpenshiftClusterquotaName: ResourceAttributeConfig{

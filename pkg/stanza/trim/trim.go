@@ -59,3 +59,21 @@ func Trailing(data []byte) []byte {
 func Whitespace(data []byte) []byte {
 	return Leading(Trailing(data))
 }
+
+func ToLength(splitFunc bufio.SplitFunc, maxLength int) bufio.SplitFunc {
+	if maxLength == 0 {
+		return splitFunc
+	}
+	return func(data []byte, atEOF bool) (int, []byte, error) {
+		advance, token, err := splitFunc(data, atEOF)
+		if (advance == 0 && token == nil && err == nil) && len(data) >= maxLength {
+			// No token was found, but we have enough data to return a token of max length.
+			return maxLength, data[:maxLength], nil
+		}
+		if len(token) > maxLength {
+			// A token was found but it is longer than the max length.
+			return maxLength, token[:maxLength], nil
+		}
+		return advance, token, err
+	}
+}

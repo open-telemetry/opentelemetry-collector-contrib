@@ -54,6 +54,7 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
+      - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/instana
       - exporter/kafka
@@ -65,7 +66,6 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
-      - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
@@ -83,7 +83,8 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
-      - extension/encoding
+      - extension/encoding/jaegerencoding
+      - extension/encoding/textencoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
@@ -109,6 +110,7 @@ body:
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
+      - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
       - internal/sharedcomponent
