@@ -4,14 +4,14 @@ go 1.20
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/mongodb-forks/digest v1.0.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.87.0
 	github.com/stretchr/testify v1.8.4
-	go.mongodb.org/atlas v0.33.0
+	go.mongodb.org/atlas v0.34.0
 	go.opentelemetry.io/collector/component v0.87.0
 	go.opentelemetry.io/collector/config/configopaque v0.87.0
 	go.opentelemetry.io/collector/config/configtls v0.87.0
