@@ -48,7 +48,7 @@ jobs:
       - name: Ensure no changes to the CHANGELOG.md or CHANGELOG-API.md
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         run: |
-          if [[ $(git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./CHANGELOG*.md) ]]
+          if [[ $(git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./CHANGELOG-AWS.md) ]]
           then
             echo "CHANGELOG.md and CHANGELOG-API.md should not be directly modified."
             echo "Please add a .yaml file to the ./.chloggen/ directory."
