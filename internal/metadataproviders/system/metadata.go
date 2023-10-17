@@ -64,7 +64,7 @@ type Provider interface {
 	// HostArch returns the host architecture
 	HostArch() (string, error)
 
-	// HostIPv4Addresses returns the host's IPv4 interfaces
+	// HostIPs returns the host's IP interfaces
 	HostIPs() ([]net.IP, error)
 }
 
