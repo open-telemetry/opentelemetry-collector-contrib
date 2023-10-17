@@ -637,7 +637,7 @@ func (p *serviceGraphProcessor) cleanCache() {
 	p.seriesMutex.Unlock()
 }
 
-// spanDurationSec returns the duration of the given span in seconds (legacy ms).
+// spanDuration returns the duration of the given span in seconds (legacy ms).
 func spanDuration(span ptrace.Span) float64 {
 	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
 		return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
