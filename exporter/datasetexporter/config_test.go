@@ -109,13 +109,19 @@ func TestConfigString(t *testing.T) {
 			MaxLifetime: 123,
 			GroupBy:     []string{"field1", "field2"},
 		},
-		TracesSettings: TracesSettings{},
+		TracesSettings: TracesSettings{
+			ExportSeparator:            "TTT",
+			ExportDistinguishingSuffix: "UUU",
+		},
 		LogsSettings: LogsSettings{
-			ExportResourceInfo:   true,
-			ExportResourcePrefix: "AAA",
-			ExportScopeInfo:      true,
-			ExportScopePrefix:    "BBB",
-			ExportSeparator:      "CCC",
+			ExportResourceInfo:             true,
+			ExportResourcePrefix:           "AAA",
+			ExportScopeInfo:                true,
+			ExportScopePrefix:              "BBB",
+			ExportSeparator:                "CCC",
+			ExportDistinguishingSuffix:     "DDD",
+			DecomposeComplexMessageField:   true,
+			DecomposedComplexMessagePrefix: "EEE",
 		},
 		ServerHostSettings: ServerHostSettings{
 			ServerHost:  "foo-bar",
@@ -127,7 +133,7 @@ func TestConfigString(t *testing.T) {
 	}
 
 	assert.Equal(t,
-		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:true ExportResourcePrefix:AAA ExportScopeInfo:true ExportScopePrefix:BBB ExportSeparator:CCC DecomposeComplexMessageField:false}; TracesSettings: {}; ServerHostSettings: {UseHostName:false ServerHost:foo-bar}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
+		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:true ExportResourcePrefix:AAA ExportScopeInfo:true ExportScopePrefix:BBB ExportSeparator:CCC ExportDistinguishingSuffix:DDD DecomposeComplexMessageField:true DecomposedComplexMessagePrefix:EEE}; TracesSettings: {ExportSeparator:TTT ExportDistinguishingSuffix:UUU}; ServerHostSettings: {UseHostName:false ServerHost:foo-bar}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
 		config.String(),
 	)
 }

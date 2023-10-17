@@ -46,11 +46,13 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
 ### Attributes
 
 If exporting of attributes of given type are enabled, then they are exported in following order:
-1. Resource
-2. Scope
-3. Log itself
+1. Body
+2. Resource attributes
+3. Scope attributes
+4. Log attributes
 
-In case of name conflict the later attribute name will be appended with the `export_separator` value. 
+In case of name conflict the later attribute name will be appended with the `export_distinguishing_suffix` value. If the value is empty string then the last value wins.
+
 
 ### Optional Settings
 
@@ -63,11 +65,16 @@ In case of name conflict the later attribute name will be appended with the `exp
   - `retry_shutdown_timeout` (default = 30s): The maximum time for which it will try to send data to the DataSet during shutdown. This value should be shorter than container's grace period.
 - `logs`:
     - `export_resource_info_on_event` (default = false): Include LogRecord resource information (if available) on the DataSet event.
-    - `export_resource_prefix` (default = 'resource.attributes.'): If resource is included then following string will be used as prefix.
+    - `export_resource_prefix` (default = 'resource.attributes.'): If resource is included then the following string will be used as prefix.
     - `export_scope_info_on_event` (default = true): Include LogRecord scope information (if available) on the DataSet event.
-    - `export_scope_prefix` (default = 'scope.attributes.'): If scope is included then following string will be used as prefix.
-    - `export_separator` (default = '_'): When attribute contains some nested structures (maps, arrays) this string is used to separate them during flattening.
+    - `export_scope_prefix` (default = 'scope.attributes.'): If scope is included then the following string will be used as prefix.
+    - `export_separator` (default = '.'): When attribute contains some nested structures (maps, arrays) this string is used to separate them during flattening.
+    - `export_distinguishing_suffix` (default = '_'): If there is a collision between event attributes the following string is used as suffix for distinguishing them.
     - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
+    - `decomposed_complex_message_prefix` (default = 'body.map.'): If complex message field is decomposed then the following string will be used as prefix.
+- `traces`:
+    - `export_separator` (default = '.'): When attribute contains some nested structures (maps, arrays) this string is used to separate them during flattening.
+    - `export_distinguishing_suffix` (default = '_'): If there is a collision between event attributes the following string is used as suffix for distinguishing them.
 - `server_host`:
   - `server_host` (default = ''): Specifies the server host to be used for the events.
   - `use_hostname` (default = true): Determines whether the `hostname` of the node should be used as the server host for the events. When set to `true`, the node's `hostname` is automatically used.

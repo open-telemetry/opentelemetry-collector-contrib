@@ -209,38 +209,63 @@ var testLEventReq = &add_events.Event{
 
 func TestBuildEventFromLog(t *testing.T) {
 	tests := []struct {
-		name     string
-		settings LogsSettings
-		expected add_events.EventAttrs
+		name        string
+		settings    LogsSettings
+		complexBody bool
+		expected    add_events.EventAttrs
 	}{
 		{
-			name:     "Default",
-			settings: newDefaultLogsSettings(),
+			name:        "DefaultSimpleBody",
+			settings:    newDefaultLogsSettings(),
+			complexBody: false,
 			expected: add_events.EventAttrs{
 				"message": "This is a log message",
 
 				"string":                     "stringA",
-				"map_map_empty":              nil,
-				"map_map_string":             "map_stringA",
-				"map_map_map_map_map_string": "map_map_stringA",
-				"slice_0":                    "slice_stringA",
+				"map.map_empty":              nil,
+				"map.map_string":             "map_stringA",
+				"map.map_map.map_map_string": "map_map_stringA",
+				"slice.0":                    "slice_stringA",
 
 				"scope.attributes.string":                     "stringS",
-				"scope.attributes.map_map_empty":              nil,
-				"scope.attributes.map_map_string":             "map_stringS",
-				"scope.attributes.map_map_map_map_map_string": "map_map_stringS",
-				"scope.attributes.slice_0":                    "slice_stringS",
+				"scope.attributes.map.map_empty":              nil,
+				"scope.attributes.map.map_string":             "map_stringS",
+				"scope.attributes.map.map_map.map_map_string": "map_map_stringS",
+				"scope.attributes.slice.0":                    "slice_stringS",
 			},
 		},
 		{
-			name: "Full",
+			name:        "DefaultComplexBody",
+			settings:    newDefaultLogsSettings(),
+			complexBody: true,
+			expected: add_events.EventAttrs{
+				"message": "{\"empty_map\":{},\"empty_slice\":[],\"map\":{\"map_empty\":null,\"map_map\":{\"map_map_string\":\"map_map_stringM\"},\"map_string\":\"map_stringM\"},\"slice\":[\"slice_stringM\"],\"string\":\"stringM\"}",
+
+				"string":                     "stringA",
+				"map.map_empty":              nil,
+				"map.map_string":             "map_stringA",
+				"map.map_map.map_map_string": "map_map_stringA",
+				"slice.0":                    "slice_stringA",
+
+				"scope.attributes.string":                     "stringS",
+				"scope.attributes.map.map_empty":              nil,
+				"scope.attributes.map.map_string":             "map_stringS",
+				"scope.attributes.map.map_map.map_map_string": "map_map_stringS",
+				"scope.attributes.slice.0":                    "slice_stringS",
+			},
+		},
+		{
+			name:        "FullSimpleBody",
+			complexBody: false,
 			settings: LogsSettings{
-				ExportResourceInfo:           true,
-				ExportResourcePrefix:         "__R__",
-				ExportScopeInfo:              true,
-				ExportScopePrefix:            "__S__",
-				ExportSeparator:              ".SEP.",
-				DecomposeComplexMessageField: true,
+				ExportResourceInfo:             true,
+				ExportResourcePrefix:           "__R__",
+				ExportScopeInfo:                true,
+				ExportScopePrefix:              "__S__",
+				ExportSeparator:                ".SEP.",
+				ExportDistinguishingSuffix:     ".SUF.",
+				DecomposeComplexMessageField:   true,
+				DecomposedComplexMessagePrefix: "__M__",
 			},
 			expected: add_events.EventAttrs{
 				"message": "This is a log message",
@@ -267,13 +292,57 @@ func TestBuildEventFromLog(t *testing.T) {
 			},
 		},
 		{
-			name: "Minimal",
+			name:        "FullComplexBody",
+			complexBody: true,
+			settings: LogsSettings{
+				ExportResourceInfo:             true,
+				ExportResourcePrefix:           "__R__",
+				ExportScopeInfo:                true,
+				ExportScopePrefix:              "__S__",
+				ExportSeparator:                ".SEP.",
+				ExportDistinguishingSuffix:     ".SUF.",
+				DecomposeComplexMessageField:   true,
+				DecomposedComplexMessagePrefix: "__M__",
+			},
+			expected: add_events.EventAttrs{
+				"message":                 "{\"empty_map\":{},\"empty_slice\":[],\"map\":{\"map_empty\":null,\"map_map\":{\"map_map_string\":\"map_map_stringM\"},\"map_string\":\"map_stringM\"},\"slice\":[\"slice_stringM\"],\"string\":\"stringM\"}",
+				"__M__string":             "stringM",
+				"__M__map.SEP.map_empty":  nil,
+				"__M__map.SEP.map_string": "map_stringM",
+				"__M__map.SEP.map_map.SEP.map_map_string": "map_map_stringM",
+				"__M__slice.SEP.0":                        "slice_stringM",
+
+				"string":                             "stringA",
+				"map.SEP.map_empty":                  nil,
+				"map.SEP.map_string":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string": "map_map_stringA",
+				"slice.SEP.0":                        "slice_stringA",
+
+				"__S__string":                             "stringS",
+				"__S__map.SEP.map_empty":                  nil,
+				"__S__map.SEP.map_string":                 "map_stringS",
+				"__S__map.SEP.map_map.SEP.map_map_string": "map_map_stringS",
+				"__S__slice.SEP.0":                        "slice_stringS",
+
+				"__R__string":                             "stringR",
+				"__R__map.SEP.map_empty":                  nil,
+				"__R__map.SEP.map_string":                 "map_stringR",
+				"__R__map.SEP.map_map.SEP.map_map_string": "map_map_stringR",
+				"__R__slice.SEP.0":                        "slice_stringR",
+
+				"__R__resource-attr": "resource-attr-val-1",
+			},
+		},
+		{
+			name:        "Minimal",
+			complexBody: false,
 			settings: LogsSettings{
 				ExportResourceInfo:           false,
 				ExportResourcePrefix:         "__R__",
 				ExportScopeInfo:              false,
 				ExportScopePrefix:            "__S__",
 				ExportSeparator:              ".SEP.",
+				ExportDistinguishingSuffix:   ".SUP.",
 				DecomposeComplexMessageField: false,
 			},
 			expected: add_events.EventAttrs{
@@ -287,14 +356,16 @@ func TestBuildEventFromLog(t *testing.T) {
 			},
 		},
 		{
-			name: "EmptyPrefixes",
+			name:        "EmptyPrefixesAndNonEmptySuffixSimpleBody",
+			complexBody: false,
 			settings: LogsSettings{
 				ExportResourceInfo:           true,
 				ExportResourcePrefix:         "",
 				ExportScopeInfo:              true,
 				ExportScopePrefix:            "",
 				ExportSeparator:              ".SEP.",
-				DecomposeComplexMessageField: false,
+				ExportDistinguishingSuffix:   ".SUF.",
+				DecomposeComplexMessageField: true,
 			},
 			expected: add_events.EventAttrs{
 				"message": "This is a log message",
@@ -305,17 +376,110 @@ func TestBuildEventFromLog(t *testing.T) {
 				"map.SEP.map_map.SEP.map_map_string": "map_map_stringR",
 				"slice.SEP.0":                        "slice_stringR",
 
-				"string.SEP.":                             "stringS",
-				"map.SEP.map_empty.SEP.":                  nil,
-				"map.SEP.map_string.SEP.":                 "map_stringS",
-				"map.SEP.map_map.SEP.map_map_string.SEP.": "map_map_stringS",
-				"slice.SEP.0.SEP.":                        "slice_stringS",
+				"string.SUF.":                             "stringS",
+				"map.SEP.map_empty.SUF.":                  nil,
+				"map.SEP.map_string.SUF.":                 "map_stringS",
+				"map.SEP.map_map.SEP.map_map_string.SUF.": "map_map_stringS",
+				"slice.SEP.0.SUF.":                        "slice_stringS",
 
-				"string.SEP..SEP.":                             "stringA",
-				"map.SEP.map_empty.SEP..SEP.":                  nil,
-				"map.SEP.map_string.SEP..SEP.":                 "map_stringA",
-				"map.SEP.map_map.SEP.map_map_string.SEP..SEP.": "map_map_stringA",
-				"slice.SEP.0.SEP..SEP.":                        "slice_stringA",
+				"string.SUF..SUF.":                             "stringA",
+				"map.SEP.map_empty.SUF..SUF.":                  nil,
+				"map.SEP.map_string.SUF..SUF.":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string.SUF..SUF.": "map_map_stringA",
+				"slice.SEP.0.SUF..SUF.":                        "slice_stringA",
+
+				"resource-attr": "resource-attr-val-1",
+			},
+		},
+		{
+			name:        "EmptyPrefixesAndNonEmptySuffixComplexBody",
+			complexBody: true,
+			settings: LogsSettings{
+				ExportResourceInfo:             true,
+				ExportResourcePrefix:           "",
+				ExportScopeInfo:                true,
+				ExportScopePrefix:              "",
+				ExportSeparator:                ".SEP.",
+				ExportDistinguishingSuffix:     ".SUF.",
+				DecomposeComplexMessageField:   true,
+				DecomposedComplexMessagePrefix: "",
+			},
+			expected: add_events.EventAttrs{
+				"message": "{\"empty_map\":{},\"empty_slice\":[],\"map\":{\"map_empty\":null,\"map_map\":{\"map_map_string\":\"map_map_stringM\"},\"map_string\":\"map_stringM\"},\"slice\":[\"slice_stringM\"],\"string\":\"stringM\"}",
+
+				"string":                             "stringM",
+				"map.SEP.map_empty":                  nil,
+				"map.SEP.map_string":                 "map_stringM",
+				"map.SEP.map_map.SEP.map_map_string": "map_map_stringM",
+				"slice.SEP.0":                        "slice_stringM",
+
+				"string.SUF.":                             "stringR",
+				"map.SEP.map_empty.SUF.":                  nil,
+				"map.SEP.map_string.SUF.":                 "map_stringR",
+				"map.SEP.map_map.SEP.map_map_string.SUF.": "map_map_stringR",
+				"slice.SEP.0.SUF.":                        "slice_stringR",
+
+				"string.SUF..SUF.":                             "stringS",
+				"map.SEP.map_empty.SUF..SUF.":                  nil,
+				"map.SEP.map_string.SUF..SUF.":                 "map_stringS",
+				"map.SEP.map_map.SEP.map_map_string.SUF..SUF.": "map_map_stringS",
+				"slice.SEP.0.SUF..SUF.":                        "slice_stringS",
+
+				"string.SUF..SUF..SUF.":                             "stringA",
+				"map.SEP.map_empty.SUF..SUF..SUF.":                  nil,
+				"map.SEP.map_string.SUF..SUF..SUF.":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string.SUF..SUF..SUF.": "map_map_stringA",
+				"slice.SEP.0.SUF..SUF..SUF.":                        "slice_stringA",
+
+				"resource-attr": "resource-attr-val-1",
+			},
+		},
+		{
+			name:        "EmptyPrefixesAndEmptySuffixSimpleBody",
+			complexBody: false,
+			settings: LogsSettings{
+				ExportResourceInfo:             true,
+				ExportResourcePrefix:           "",
+				ExportScopeInfo:                true,
+				ExportScopePrefix:              "",
+				ExportSeparator:                ".SEP.",
+				ExportDistinguishingSuffix:     "",
+				DecomposeComplexMessageField:   true,
+				DecomposedComplexMessagePrefix: "",
+			},
+			expected: add_events.EventAttrs{
+				"message": "This is a log message",
+
+				"string":                             "stringA",
+				"map.SEP.map_empty":                  nil,
+				"map.SEP.map_string":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string": "map_map_stringA",
+				"slice.SEP.0":                        "slice_stringA",
+
+				"resource-attr": "resource-attr-val-1",
+			},
+		},
+		{
+			name:        "EmptyPrefixesAndEmptySuffixSimpleBody",
+			complexBody: true,
+			settings: LogsSettings{
+				ExportResourceInfo:             true,
+				ExportResourcePrefix:           "",
+				ExportScopeInfo:                true,
+				ExportScopePrefix:              "",
+				ExportSeparator:                ".SEP.",
+				ExportDistinguishingSuffix:     "",
+				DecomposeComplexMessageField:   true,
+				DecomposedComplexMessagePrefix: "",
+			},
+			expected: add_events.EventAttrs{
+				"message": "{\"empty_map\":{},\"empty_slice\":[],\"map\":{\"map_empty\":null,\"map_map\":{\"map_map_string\":\"map_map_stringM\"},\"map_string\":\"map_stringM\"},\"slice\":[\"slice_stringM\"],\"string\":\"stringM\"}",
+
+				"string":                             "stringA",
+				"map.SEP.map_empty":                  nil,
+				"map.SEP.map_string":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string": "map_map_stringA",
+				"slice.SEP.0":                        "slice_stringA",
 
 				"resource-attr": "resource-attr-val-1",
 			},
@@ -333,7 +497,13 @@ func TestBuildEventFromLog(t *testing.T) {
 			fillAttributes(scope.Attributes(), false, "S")
 			fillAttributes(ld.Attributes(), false, "A")
 			ld.SetTimestamp(testdata.TestLogTimestamp)
-			ld.Body().SetStr("This is a log message")
+
+			if tt.complexBody {
+				m := ld.Body().SetEmptyMap()
+				fillAttributes(m, false, "M")
+			} else {
+				ld.Body().SetStr("This is a log message")
+			}
 
 			expected := &add_events.EventBundle{
 				Event: &add_events.Event{
@@ -547,10 +717,15 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryShutdownTimeout: time.Minute,
 		},
 		LogsSettings: LogsSettings{
-			ExportResourceInfo: true,
-			ExportScopeInfo:    true,
+			ExportResourceInfo:   true,
+			ExportResourcePrefix: "R#",
+			ExportScopeInfo:      true,
+			ExportScopePrefix:    "S#",
+			ExportSeparator:      "#",
 		},
-		TracesSettings: TracesSettings{},
+		TracesSettings: TracesSettings{
+			ExportSeparator: "?",
+		},
 		ServerHostSettings: ServerHostSettings{
 			ServerHost: testServerHost,
 		},
@@ -573,9 +748,9 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	lr4.ResourceLogs().At(0).Resource().Attributes().PutStr("host.name", "serverHostFromResourceHost")
 	// set all possible values
 	lr5 := testdata.GenerateLogsOneLogRecord()
-	fillAttributes(lr5.ResourceLogs().At(0).Resource().Attributes(), true, "A")
+	fillAttributes(lr5.ResourceLogs().At(0).Resource().Attributes(), true, "R")
 	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(), true, "S")
-	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(), true, "R")
+	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(), true, "A")
 
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty()
@@ -628,7 +803,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 							"trace_id":                    "08040201000000000000000000000000",
 							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
 
-							"resource.attributes.resource-attr": "resource-attr-val-1",
+							"R#resource-attr": "resource-attr-val-1",
 						},
 					},
 					{
@@ -646,8 +821,8 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 							"trace_id":                    "08040201000000000000000000000000",
 							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
 
-							"resource.attributes.resource-attr": "resource-attr-val-1",
-							"resource.attributes.serverHost":    "serverHostFromResource",
+							"R#resource-attr": "resource-attr-val-1",
+							"R#serverHost":    "serverHostFromResource",
 						},
 					},
 					{
@@ -665,9 +840,9 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 							"trace_id":                    "08040201000000000000000000000000",
 							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
 
-							"resource.attributes.resource-attr": "resource-attr-val-1",
-							"resource.attributes.host.name":     "serverHostFromResourceHost",
-							"resource.attributes.serverHost":    "serverHostFromResourceServer",
+							"R#resource-attr": "resource-attr-val-1",
+							"R#host.name":     "serverHostFromResourceHost",
+							"R#serverHost":    "serverHostFromResourceServer",
 						},
 					},
 					{
@@ -685,8 +860,8 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 							"trace_id":                    "08040201000000000000000000000000",
 							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
 
-							"resource.attributes.resource-attr": "resource-attr-val-1",
-							"resource.attributes.host.name":     "serverHostFromResourceHost",
+							"R#resource-attr": "resource-attr-val-1",
+							"R#host.name":     "serverHostFromResourceHost",
 						},
 					},
 					{
@@ -704,34 +879,37 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 							"trace_id":                    "08040201000000000000000000000000",
 							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
 
-							"string":         "string",
-							"double":         2.0,
-							"bool":           true,
-							"empty":          nil,
-							"int":            float64(3),
-							"map_map_empty":  nil,
-							"map_map_string": "map_string",
-							"slice_0":        "slice_string",
+							"string":                     "stringA",
+							"double":                     2.0,
+							"bool":                       true,
+							"empty":                      nil,
+							"int":                        float64(3),
+							"map#map_empty":              nil,
+							"map#map_string":             "map_stringA",
+							"map#map_map#map_map_string": "map_map_stringA",
+							"slice#0":                    "slice_stringA",
 
-							"scope.attributes.string":         "string",
-							"scope.attributes.double":         2.0,
-							"scope.attributes.bool":           true,
-							"scope.attributes.empty":          nil,
-							"scope.attributes.int":            float64(3),
-							"scope.attributes.map.map_empty":  nil,
-							"scope.attributes.map.map_string": "map_string",
-							"scope.attributes.slice.0":        "slice_string",
+							"S#string":                     "stringS",
+							"S#double":                     2.0,
+							"S#bool":                       true,
+							"S#empty":                      nil,
+							"S#int":                        float64(3),
+							"S#map#map_empty":              nil,
+							"S#map#map_string":             "map_stringS",
+							"S#map#map_map#map_map_string": "map_map_stringS",
+							"S#slice#0":                    "slice_stringS",
 
-							"resource.attributes.string":         "string",
-							"resource.attributes.double":         2.0,
-							"resource.attributes.bool":           true,
-							"resource.attributes.empty":          nil,
-							"resource.attributes.int":            float64(3),
-							"resource.attributes.map.map_empty":  nil,
-							"resource.attributes.map.map_string": "map_string",
-							"resource.attributes.slice.0":        "slice_string",
+							"R#string":                     "stringR",
+							"R#double":                     2.0,
+							"R#bool":                       true,
+							"R#empty":                      nil,
+							"R#int":                        float64(3),
+							"R#map#map_empty":              nil,
+							"R#map#map_string":             "map_stringR",
+							"R#map#map_map#map_map_string": "map_map_stringR",
+							"R#slice#0":                    "slice_stringR",
 
-							"resource.attributes.resource-attr": "resource-attr-val-1",
+							"R#resource-attr": "resource-attr-val-1",
 						},
 					},
 				},

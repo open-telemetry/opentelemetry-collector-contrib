@@ -154,6 +154,7 @@ func TestBuildEventFromSpanOne(t *testing.T) {
 			traces.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
 		},
 		testServerHost,
+		newDefaultTracesSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -205,6 +206,7 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 			rss.Scope(),
 		},
 		testServerHost,
+		newDefaultTracesSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -245,15 +247,16 @@ func TestBuildEventsFromSpanAttributesDifferentTypes(t *testing.T) {
 				"status_message": "",
 				"resource_name":  "",
 				"resource_type":  "process",
-				"string":         "string",
+				"string":         "stringA",
 				"double":         2.0,
 				"bool":           true,
 				"empty":          nil,
 				"int":            int64(3),
 
-				"map_map_empty":  nil,
-				"map_map_string": "map_string",
-				"slice_0":        "slice_string",
+				"map.map_empty":              nil,
+				"map.map_string":             "map_stringA",
+				"map.map_map.map_map_string": "map_map_stringA",
+				"slice.0":                    "slice_stringA",
 			},
 			ServerHost: testServerHost,
 		},
@@ -267,6 +270,7 @@ func TestBuildEventsFromSpanAttributesDifferentTypes(t *testing.T) {
 			rss.Scope(),
 		},
 		testServerHost,
+		newDefaultTracesSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -276,7 +280,7 @@ func TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent(t *testing.T)
 	traces := testdata.GenerateTracesTwoSpansSameResourceOneDifferent()
 	traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("serverHost", "")
 	traces.ResourceSpans().At(1).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("serverHost", "valServerHost")
-	was := buildEventsFromTraces(traces, testServerHost)
+	was := buildEventsFromTraces(traces, testServerHost, newDefaultTracesSettings())
 
 	expected := []*add_events.EventBundle{
 		{
@@ -497,7 +501,7 @@ func generateSimpleEvent(
 
 func TestBuildEventsFromTracesTrees(t *testing.T) {
 	traces := generateTracesTreesAndOrphans()
-	was := buildEventsFromTraces(traces, testServerHost)
+	was := buildEventsFromTraces(traces, testServerHost, newDefaultTracesSettings())
 
 	statusUnset := ptrace.NewStatus()
 	statusError := ptrace.NewStatus()
