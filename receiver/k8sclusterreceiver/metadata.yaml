@@ -402,7 +402,7 @@ metrics:
   k8s.resource_quota.hard_limit:
     enabled: true
     description: The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
-    unit: 1
+    unit: "{resource}"
     gauge:
       value_type: int
     attributes:
@@ -410,7 +410,7 @@ metrics:
   k8s.resource_quota.used:
     enabled: true
     description: The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
-    unit: 1
+    unit: "{resource}"
     gauge:
       value_type: int
     attributes:
@@ -447,7 +447,7 @@ metrics:
   openshift.clusterquota.limit:
     enabled: true
     description: The configured upper limit for a particular resource.
-    unit: "1"
+    unit: "{resource}"
     gauge:
       value_type: int
     attributes:
@@ -455,7 +455,7 @@ metrics:
   openshift.clusterquota.used:
     enabled: true
     description: The usage for a particular resource with a configured limit.
-    unit: "1"
+    unit: "{resource}"
     gauge:
       value_type: int
     attributes:
@@ -463,7 +463,7 @@ metrics:
   openshift.appliedclusterquota.limit:
     enabled: true
     description: The upper limit for a particular resource in a specific namespace.
-    unit: "1"
+    unit: "{resource}"
     gauge:
       value_type: int
     attributes:
@@ -472,7 +472,7 @@ metrics:
   openshift.appliedclusterquota.used:
     enabled: true
     description: The usage for a particular resource in a specific namespace.
-    unit: "1"
+    unit: "{resource}"
     gauge:
       value_type: int
     attributes:
