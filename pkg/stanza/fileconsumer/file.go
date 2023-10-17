@@ -118,6 +118,9 @@ func (m *Manager) poll(ctx context.Context) {
 		matches = matches[m.maxBatchFiles:]
 	}
 	m.consume(ctx, matches)
+
+	// Any new files that appear should be consumed entirely
+	m.readerFactory.FromBeginning = true
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
@@ -144,9 +147,6 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		}(r)
 	}
 	wg.Wait()
-
-	// Any new files that appear should be consumed entirely
-	m.readerFactory.FromBeginning = true
 
 	m.roller.roll(ctx, readers)
 	m.saveCurrent(readers)
