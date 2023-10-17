@@ -58,6 +58,9 @@ type Config struct {
 
 	// Exemplars defines the configuration for exemplars.
 	Exemplars ExemplarsConfig `mapstructure:"exemplars"`
+
+	// Events defines the configuration for events section of spans.
+	Events Event `mapstructure:"events"`
 }
 
 type HistogramConfig struct {
@@ -78,6 +81,13 @@ type ExponentialHistogramConfig struct {
 type ExplicitHistogramConfig struct {
 	// Buckets is the list of durations representing explicit histogram buckets.
 	Buckets []time.Duration `mapstructure:"buckets"`
+}
+
+type Event struct {
+	// Enabled is a flag to enable events.
+	Enabled bool `mapstructure:"enabled"`
+	// Dimensions defines the list of dimensions to be added to events metric
+	Dimensions []Dimension `mapstructure:"dimensions"`
 }
 
 var _ component.ConfigValidator = (*Config)(nil)
