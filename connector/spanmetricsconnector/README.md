@@ -102,6 +102,9 @@ The following settings can be optionally configured:
 - `metrics_flush_interval` (default: `15s`): Defines the flush interval of the generated metrics.
 - `exemplars`:  Use to configure how to attach exemplars to histograms
   - `enabled` (default: `false`): enabling will add spans as Exemplars.
+- `events`: Use to configure if events metric should be enabled. events_total metric can be configured when you want to get the metrics for different attributes configured as Events for a span.
+  - `enabled`: (default: `false`): enabling will add events metric
+  - `dimensions`: the list of event attributes for a span that needs to be added as dimensions to events metric 
 
 ## Examples
 
@@ -132,7 +135,12 @@ connectors:
     exclude_dimensions: ['status.code']
     dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
-    metrics_flush_interval: 15s 
+    metrics_flush_interval: 15s
+    events:
+      enabled: true
+      dimensions:
+        - name: exception.type
+        - name: exception.message
 
 service:
   pipelines:
