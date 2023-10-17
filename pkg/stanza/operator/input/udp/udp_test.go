@@ -18,11 +18,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func udpInputTest(input []byte, expected []string) func(t *testing.T) {
+func udpInputTest(input []byte, expected []string, cfg *Config) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewConfigWithID("test_input")
-		cfg.ListenAddress = ":0"
-
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 
@@ -138,10 +135,17 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 }
 
 func TestInput(t *testing.T) {
-	t.Run("Simple", udpInputTest([]byte("message1"), []string{"message1"}))
-	t.Run("TrailingNewlines", udpInputTest([]byte("message1\n"), []string{"message1"}))
-	t.Run("TrailingCRNewlines", udpInputTest([]byte("message1\r\n"), []string{"message1"}))
-	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}))
+	cfg := NewConfigWithID("test_input")
+	cfg.ListenAddress = ":0"
+
+	t.Run("Simple", udpInputTest([]byte("message1"), []string{"message1"}, cfg))
+	t.Run("TrailingNewlines", udpInputTest([]byte("message1\n"), []string{"message1"}, cfg))
+	t.Run("TrailingCRNewlines", udpInputTest([]byte("message1\r\n"), []string{"message1"}, cfg))
+	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}, cfg))
+
+	cfg.AsyncConfig = NewAsyncConfig()
+	cfg.AsyncConfig.Readers = 2
+	t.Run("SimpleAsync", udpInputTest([]byte("message1"), []string{"message1"}, cfg))
 }
 
 func TestInputAttributes(t *testing.T) {
