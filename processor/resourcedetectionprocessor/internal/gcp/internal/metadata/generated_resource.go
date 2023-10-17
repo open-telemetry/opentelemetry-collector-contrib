@@ -63,6 +63,13 @@ func (rb *ResourceBuilder) SetFaasID(val string) {
 	}
 }
 
+// SetFaasInstance sets provided value as "faas.instance" attribute.
+func (rb *ResourceBuilder) SetFaasInstance(val string) {
+	if rb.config.FaasInstance.Enabled {
+		rb.res.Attributes().PutStr("faas.instance", val)
+	}
+}
+
 // SetFaasName sets provided value as "faas.name" attribute.
 func (rb *ResourceBuilder) SetFaasName(val string) {
 	if rb.config.FaasName.Enabled {
@@ -88,6 +95,20 @@ func (rb *ResourceBuilder) SetGcpCloudRunJobExecution(val string) {
 func (rb *ResourceBuilder) SetGcpCloudRunJobTaskIndex(val string) {
 	if rb.config.GcpCloudRunJobTaskIndex.Enabled {
 		rb.res.Attributes().PutStr("gcp.cloud_run.job.task_index", val)
+	}
+}
+
+// SetGcpGceInstanceHostname sets provided value as "gcp.gce.instance.hostname" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceHostname(val string) {
+	if rb.config.GcpGceInstanceHostname.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance.hostname", val)
+	}
+}
+
+// SetGcpGceInstanceName sets provided value as "gcp.gce.instance.name" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceName(val string) {
+	if rb.config.GcpGceInstanceName.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance.name", val)
 	}
 }
 

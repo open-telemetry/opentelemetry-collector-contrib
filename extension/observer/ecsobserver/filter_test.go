@@ -29,7 +29,7 @@ func TestFilter(t *testing.T) {
 		f := newTestTaskFilter(t, cfgTaskDefOnly)
 		res, err := f.filter(nil)
 		require.NoError(t, err)
-		assert.Nil(t, res)
+		assert.Empty(t, res)
 	})
 
 	emptyTask := &taskAnnotated{

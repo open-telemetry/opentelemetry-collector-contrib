@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -24,8 +26,10 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultCfg := newDefaultConfig()
-	defaultCfg.(*Config).Endpoint = "https://opensearch.example.com:9200"
+	sampleEndpoint := "https://opensearch.example.com:9200"
+	sampleCfg := withDefaultConfig(func(config *Config) {
+		config.Endpoint = sampleEndpoint
+	})
 	maxIdleConns := 100
 	idleConnTimeout := 90 * time.Second
 
@@ -35,17 +39,17 @@ func TestLoadConfig(t *testing.T) {
 		configValidateAssert assert.ErrorAssertionFunc
 	}{
 		{
-			id:                   component.NewIDWithName(typeStr, ""),
-			expected:             defaultCfg,
+			id:                   component.NewIDWithName(metadata.Type, ""),
+			expected:             sampleCfg,
 			configValidateAssert: assert.NoError,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "trace"),
+			id: component.NewIDWithName(metadata.Type, "trace"),
 			expected: &Config{
 				Dataset:   "ngnix",
 				Namespace: "eu",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://opensearch.example.com:9200",
+					Endpoint: sampleEndpoint,
 					Timeout:  2 * time.Minute,
 					Headers: map[string]configopaque.String{
 						"myheader": "test",
@@ -65,6 +69,28 @@ func TestLoadConfig(t *testing.T) {
 			},
 			configValidateAssert: assert.NoError,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "empty_dataset"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.Dataset = ""
+				config.Namespace = "eu"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(t, err, errDatasetNoValue.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "empty_namespace"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.Dataset = "ngnix"
+				config.Namespace = ""
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(t, err, errNamespaceNoValue.Error())
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -81,4 +107,14 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+// withDefaultConfig create a new default configuration
+// and applies provided functions to it.
+func withDefaultConfig(fns ...func(*Config)) *Config {
+	cfg := newDefaultConfig().(*Config)
+	for _, fn := range fns {
+		fn(cfg)
+	}
+	return cfg
 }

@@ -61,6 +61,7 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 	e1 := []testExpectation{
 		assertMetricPresent("http_connected",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -79,6 +80,7 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 			}),
 		assertMetricPresent("foo_gauge_total",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -97,6 +99,7 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 			}),
 		assertMetricPresent("http_connection_duration",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit("s"),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -115,6 +118,7 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 			}),
 		assertMetricPresent("foo_gauge",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit("s"),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{

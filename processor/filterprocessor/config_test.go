@@ -99,7 +99,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 func TestLoadingConfigStrictLogs(t *testing.T) {
 
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		ResourceAttributes: []filterconfig.Attribute{
 			{
 				Key:   "should_include",
@@ -109,7 +109,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		ResourceAttributes: []filterconfig.Attribute{
 			{
 				Key:   "should_exclude",
@@ -131,7 +131,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: &LogMatchProperties{
-						LogMatchType: Strict,
+						LogMatchType: strictType,
 					},
 				},
 			},
@@ -182,12 +182,12 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType:  Strict,
+		LogMatchType:  strictType,
 		SeverityTexts: []string{"INFO"},
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType:  Strict,
+		LogMatchType:  strictType,
 		SeverityTexts: []string{"DEBUG", "DEBUG2", "DEBUG3", "DEBUG4"},
 	}
 
@@ -244,12 +244,12 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 // TestLoadingConfigSeverityLogsRegexp tests loading testdata/config_logs_severity_regexp.yaml
 func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType:  Regexp,
+		LogMatchType:  regexpType,
 		SeverityTexts: []string{"INFO[2-4]?"},
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType:  Regexp,
+		LogMatchType:  regexpType,
 		SeverityTexts: []string{"DEBUG[2-4]?"},
 	}
 
@@ -307,12 +307,12 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		LogBodies:    []string{"This is an important event"},
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		LogBodies:    []string{"This event is not important"},
 	}
 
@@ -370,12 +370,12 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType: Regexp,
+		LogMatchType: regexpType,
 		LogBodies:    []string{"^IMPORTANT:"},
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType: Regexp,
+		LogMatchType: regexpType,
 		LogBodies:    []string{"^MINOR:"},
 	}
 

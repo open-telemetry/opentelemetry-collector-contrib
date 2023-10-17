@@ -29,7 +29,6 @@ type aerospikeReceiver struct {
 	consumer      consumer.Metrics
 	clientFactory clientFactoryFunc
 	client        Aerospike
-	rb            *metadata.ResourceBuilder
 	mb            *metadata.MetricsBuilder
 	logger        *zap.SugaredLogger
 }
@@ -83,7 +82,6 @@ func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer 
 				nodeGetterFactory,
 			)
 		},
-		rb: metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
 	}, nil
 }
@@ -168,8 +166,9 @@ func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timesta
 		}
 	}
 
-	r.rb.SetAerospikeNodeName(info["node"])
-	r.mb.EmitForResource(metadata.WithResource(r.rb.Emit()))
+	rb := r.mb.NewResourceBuilder()
+	rb.SetAerospikeNodeName(info["node"])
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	r.logger.Debug("finished emitNode")
 }
 
@@ -388,9 +387,10 @@ func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Ti
 		}
 	}
 
-	r.rb.SetAerospikeNamespace(info["name"])
-	r.rb.SetAerospikeNodeName(info["node"])
-	r.mb.EmitForResource(metadata.WithResource(r.rb.Emit()))
+	rb := r.mb.NewResourceBuilder()
+	rb.SetAerospikeNamespace(info["name"])
+	rb.SetAerospikeNodeName(info["node"])
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	r.logger.Debug("finished emitNamespace")
 }
 

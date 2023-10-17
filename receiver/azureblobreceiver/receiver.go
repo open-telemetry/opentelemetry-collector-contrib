@@ -9,10 +9,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
@@ -35,7 +35,7 @@ type blobReceiver struct {
 	tracesUnmarshaler  ptrace.Unmarshaler
 	nextLogsConsumer   consumer.Logs
 	nextTracesConsumer consumer.Traces
-	obsrecv            *obsreport.Receiver
+	obsrecv            *receiverhelper.ObsReport
 }
 
 func (b *blobReceiver) Start(ctx context.Context, _ component.Host) error {
@@ -97,7 +97,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 
 // Returns a new instance of the log receiver
 func newReceiver(set receiver.CreateSettings, blobEventHandler blobEventHandler) (component.Component, error) {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "event",
 		ReceiverCreateSettings: set,

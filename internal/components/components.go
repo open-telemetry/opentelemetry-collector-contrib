@@ -8,6 +8,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/batchmemlimitprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/scrubbingprocessor"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -43,8 +44,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
@@ -52,7 +51,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
@@ -155,7 +153,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
@@ -274,7 +271,6 @@ func Components() (otelcol.Factories, error) {
 		otlpreceiver.NewFactory(),
 		podmanreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
-		prometheusexecreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		pulsarreceiver.NewFactory(),
 		purefareceiver.NewFactory(),
@@ -326,6 +322,7 @@ func Components() (otelcol.Factories, error) {
 		coralogixexporter.NewFactory(),
 		datadogexporter.NewFactory(),
 		datasetexporter.NewFactory(),
+		debugexporter.NewFactory(),
 		dynatraceexporter.NewFactory(),
 		elasticsearchexporter.NewFactory(),
 		f5cloudexporter.NewFactory(),
@@ -335,8 +332,6 @@ func Components() (otelcol.Factories, error) {
 		googlecloudpubsubexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
 		instanaexporter.NewFactory(),
-		jaegerexporter.NewFactory(),
-		jaegerthrifthttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		loggingexporter.NewFactory(),
@@ -348,7 +343,6 @@ func Components() (otelcol.Factories, error) {
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 		opsrampotlpexporter.NewFactory(),
-		parquetexporter.NewFactory(),
 		prometheusexporter.NewFactory(),
 		prometheusremotewriteexporter.NewFactory(),
 		pulsarexporter.NewFactory(),

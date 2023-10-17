@@ -97,7 +97,7 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 			case <-hbter.hbDoneChan:
 				return
 			case <-ticker.C:
-				err := pushLogFn(context.Background(), generateHeartbeatLog(config.HecToOtelAttrs, buildInfo))
+				err := hbter.sendHeartbeat(config, buildInfo, pushLogFn)
 				if config.Telemetry.Enabled {
 					observe(heartbeatsSent, heartbeatsFailed, tagMutators, err)
 				}
@@ -109,6 +109,10 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 
 func (h *heartbeater) shutdown() {
 	close(h.hbDoneChan)
+}
+
+func (h *heartbeater) sendHeartbeat(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error) error {
+	return pushLogFn(context.Background(), generateHeartbeatLog(config.HecToOtelAttrs, buildInfo))
 }
 
 // there is only use case for open census metrics recording for now. Extend to use open telemetry in the future.

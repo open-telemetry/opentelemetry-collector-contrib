@@ -49,6 +49,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -97,8 +98,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordProcessThreadsDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetProcessCommand("process.command-val")
+			rb.SetProcessCommandLine("process.command_line-val")
+			rb.SetProcessExecutableName("process.executable.name-val")
+			rb.SetProcessExecutablePath("process.executable.path-val")
+			rb.SetProcessOwner("process.owner-val")
+			rb.SetProcessParentPid(18)
+			rb.SetProcessPid(11)
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

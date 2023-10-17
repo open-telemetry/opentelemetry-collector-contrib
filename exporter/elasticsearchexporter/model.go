@@ -75,7 +75,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	document.AddAttributes("Attributes", span.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
 	document.AddEvents("Events", span.Events())
-	document.AddInt("Duration", DurationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
+	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 
 	if m.dedup {
 		document.Dedup()
@@ -102,8 +102,8 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	return string(linkArrayBytes)
 }
 
-// DurationAsMicroseconds calculate span duration through end - start nanoseconds and converts time.Time to microseconds,
+// durationAsMicroseconds calculate span duration through end - start nanoseconds and converts time.Time to microseconds,
 // which is the format the Duration field is stored in the Span.
-func DurationAsMicroseconds(start, end time.Time) int64 {
+func durationAsMicroseconds(start, end time.Time) int64 {
 	return (end.UnixNano() - start.UnixNano()) / 1000
 }

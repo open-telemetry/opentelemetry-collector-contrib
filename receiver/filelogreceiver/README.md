@@ -60,7 +60,7 @@ Note that _by default_, no logs will be read from a file that is not actively be
 
 ### Operators
 
-Each operator performs a simple responsibility, such as parsing a timestamp or JSON. Chain together operators to process logs into a desired format.
+Each [operator](../../pkg/stanza/docs/operators/README.md#what-is-an-operator) performs a simple responsibility, such as parsing a timestamp or JSON. Chain together operators to process logs into a desired format.
 
 - Every operator has a `type`.
 - Every operator can be given a unique `id`. If you use the same type of operator more than once in a pipeline, you must specify an `id`. Otherwise, the `id` defaults to the value of `type`.
@@ -73,6 +73,8 @@ If set, the `multiline` configuration block instructs the `file_input` operator 
 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
+
+The `omit_pattern` setting can be used to omit the start/end pattern from each entry.
 
 ### Supported encodings
 

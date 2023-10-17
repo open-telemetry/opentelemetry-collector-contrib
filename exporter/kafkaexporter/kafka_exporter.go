@@ -8,13 +8,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
@@ -140,7 +142,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 		c.Version = version
 	}
 
-	if err := ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 

@@ -4,11 +4,7 @@
 package deployment // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	appsv1 "k8s.io/api/apps/v1"
 
@@ -32,17 +28,15 @@ func Transform(deployment *appsv1.Deployment) *appsv1.Deployment {
 	}
 }
 
-func GetMetrics(set receiver.CreateSettings, dep *appsv1.Deployment) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
+func RecordMetrics(mb *imetadata.MetricsBuilder, dep *appsv1.Deployment, ts pcommon.Timestamp) {
 	mb.RecordK8sDeploymentDesiredDataPoint(ts, int64(*dep.Spec.Replicas))
 	mb.RecordK8sDeploymentAvailableDataPoint(ts, int64(dep.Status.AvailableReplicas))
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sDeploymentName(dep.Name)
 	rb.SetK8sDeploymentUID(string(dep.UID))
 	rb.SetK8sNamespaceName(dep.Namespace)
 	rb.SetOpencensusResourcetype("k8s")
-	return mb.Emit(imetadata.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(dep *appsv1.Deployment) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

@@ -302,10 +302,10 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 }
 
 func getBucketBoundsData(values []float64) []bucketBoundsData {
-	var b []bucketBoundsData
+	b := make([]bucketBoundsData, len(values))
 
-	for _, value := range values {
-		b = append(b, bucketBoundsData{sig: lb1Sig, bound: value})
+	for i, value := range values {
+		b[i] = bucketBoundsData{sig: lb1Sig, bound: value}
 	}
 
 	return b

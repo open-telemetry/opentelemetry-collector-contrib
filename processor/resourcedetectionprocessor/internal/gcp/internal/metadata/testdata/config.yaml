@@ -13,6 +13,8 @@ all_set:
       enabled: true
     faas.id:
       enabled: true
+    faas.instance:
+      enabled: true
     faas.name:
       enabled: true
     faas.version:
@@ -20,6 +22,10 @@ all_set:
     gcp.cloud_run.job.execution:
       enabled: true
     gcp.cloud_run.job.task_index:
+      enabled: true
+    gcp.gce.instance.hostname:
+      enabled: true
+    gcp.gce.instance.name:
       enabled: true
     host.id:
       enabled: true
@@ -43,6 +49,8 @@ none_set:
       enabled: false
     faas.id:
       enabled: false
+    faas.instance:
+      enabled: false
     faas.name:
       enabled: false
     faas.version:
@@ -50,6 +58,10 @@ none_set:
     gcp.cloud_run.job.execution:
       enabled: false
     gcp.cloud_run.job.task_index:
+      enabled: false
+    gcp.gce.instance.hostname:
+      enabled: false
+    gcp.gce.instance.name:
       enabled: false
     host.id:
       enabled: false

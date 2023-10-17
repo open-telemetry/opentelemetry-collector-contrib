@@ -49,6 +49,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -118,8 +119,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordZookeeperZnodeCountDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetServerState("server.state-val")
+			rb.SetZkVersion("zk.version-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

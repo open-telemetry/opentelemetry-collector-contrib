@@ -65,6 +65,7 @@ func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context,
 
 	// This is a lot of repeated code, but since there is no single parent superclass
 	// between metric data types, we can't use polymorphism.
+	//exhaustive:enforce
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := m.Gauge().DataPoints()

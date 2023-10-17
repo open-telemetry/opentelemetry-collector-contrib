@@ -49,6 +49,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -102,8 +103,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordIisUptimeDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetIisApplicationPool("iis.application_pool-val")
+			rb.SetIisSite("iis.site-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

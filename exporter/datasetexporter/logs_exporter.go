@@ -166,7 +166,8 @@ func buildEventFromLog(
 	log plog.LogRecord,
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
-	settings LogsSettings,
+	serverHost string,
+	logSettings LogsSettings,
 ) *add_events.EventBundle {
 	attrs := make(map[string]interface{})
 	event := add_events.Event{}
@@ -180,7 +181,7 @@ func buildEventFromLog(
 	}
 
 	if body := log.Body().AsString(); body != "" {
-		attrs["message"] = buildBody(settings, attrs, log.Body())
+		attrs["message"] = buildBody(logSettings, attrs, log.Body())
 	}
 
 	if dropped := log.DroppedAttributesCount(); dropped > 0 {
@@ -210,22 +211,23 @@ func buildEventFromLog(
 		}
 	}
 
-	updateWithPrefixedValues(attrs, "attributes.", ".", log.Attributes().AsRaw(), 0)
-
-	if settings.ExportResourceInfo {
+	if logSettings.ExportResourceInfo {
 		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
 	}
 
-	if settings.ExportScopeInfo {
+	if logSettings.ExportScopeInfo {
 		if scope.Name() != "" {
 			attrs["scope.name"] = scope.Name()
 		}
 		updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
 	}
 
+	updateWithPrefixedValues(attrs, "", "_", log.Attributes().AsRaw(), 0)
+
 	event.Attrs = attrs
 	event.Log = "LL"
 	event.Thread = "TL"
+	event.ServerHost = inferServerHost(resource, attrs, serverHost)
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TL", Name: "logs"},
@@ -245,7 +247,16 @@ func (e *DatasetExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
 				logRecord := logRecords.At(k)
-				events = append(events, buildEventFromLog(logRecord, resource, scope, e.exporterCfg.logsSettings))
+				events = append(
+					events,
+					buildEventFromLog(
+						logRecord,
+						resource,
+						scope,
+						e.serverHost,
+						e.exporterCfg.logsSettings,
+					),
+				)
 			}
 		}
 	}

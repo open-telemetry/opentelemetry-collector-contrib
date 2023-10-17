@@ -17,7 +17,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     attributes: [state]
 

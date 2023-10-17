@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 type AutoCommit struct {
@@ -29,6 +30,11 @@ type MessageMarking struct {
 	// Note: this can block the entire partition in case a message processing returns
 	// a permanent error.
 	OnError bool `mapstructure:"on_error"`
+}
+
+type HeaderExtraction struct {
+	ExtractHeaders bool     `mapstructure:"extract_headers"`
+	Headers        []string `mapstructure:"headers"`
 }
 
 // Config defines configuration for Kafka receiver.
@@ -53,13 +59,16 @@ type Config struct {
 	// Client, and shared by the Producer/Consumer.
 	Metadata kafkaexporter.Metadata `mapstructure:"metadata"`
 
-	Authentication kafkaexporter.Authentication `mapstructure:"auth"`
+	Authentication kafka.Authentication `mapstructure:"auth"`
 
 	// Controls the auto-commit functionality
 	AutoCommit AutoCommit `mapstructure:"autocommit"`
 
 	// Controls the way the messages are marked as consumed
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
+
+	// Extract headers from kafka records
+	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
 }
 
 const (

@@ -18,7 +18,7 @@ Available to the expressions are a few special variables:
 ### Add a label from an environment variable
 
 ```yaml
-- type: metadata
-  attributes:
-    stack: 'EXPR(env("STACK"))'
+- type: add
+  field: attributes.stack
+  value: 'EXPR(env("STACK"))'
 ```

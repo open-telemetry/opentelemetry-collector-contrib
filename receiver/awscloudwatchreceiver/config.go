@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.uber.org/multierr"
 )
 
 var (
@@ -76,7 +75,7 @@ func (c *Config) Validate() error {
 	}
 
 	var errs error
-	errs = multierr.Append(errs, c.validateLogsConfig())
+	errs = errors.Join(errs, c.validateLogsConfig())
 	return errs
 }
 

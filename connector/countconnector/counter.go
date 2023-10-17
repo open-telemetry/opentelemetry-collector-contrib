@@ -5,11 +5,11 @@ package countconnector // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
@@ -36,7 +36,7 @@ type attrCounter struct {
 }
 
 func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) error {
-	var errors error
+	var multiError error
 	for name, md := range c.metricDefs {
 		countAttrs := pcommon.NewMap()
 		for _, attr := range md.attrs {
@@ -54,17 +54,17 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 
 		// No conditions, so match all.
 		if md.condition == nil {
-			errors = multierr.Append(errors, c.increment(name, countAttrs))
+			multiError = errors.Join(multiError, c.increment(name, countAttrs))
 			continue
 		}
 
 		if match, err := md.condition.Eval(ctx, tCtx); err != nil {
-			errors = multierr.Append(errors, err)
+			multiError = errors.Join(multiError, err)
 		} else if match {
-			errors = multierr.Append(errors, c.increment(name, countAttrs))
+			multiError = errors.Join(multiError, c.increment(name, countAttrs))
 		}
 	}
-	return errors
+	return multiError
 }
 
 func (c *counter[K]) increment(metricName string, attrs pcommon.Map) error {

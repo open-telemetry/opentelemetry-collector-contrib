@@ -57,6 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -277,8 +278,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerUptimeDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetContainerCommandLine("container.command_line-val")
+			rb.SetContainerHostname("container.hostname-val")
+			rb.SetContainerID("container.id-val")
+			rb.SetContainerImageID("container.image.id-val")
+			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerName("container.name-val")
+			rb.SetContainerRuntime("container.runtime-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

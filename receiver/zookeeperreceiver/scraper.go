@@ -77,15 +77,12 @@ func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
 }
 
 func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	var ctxWithTimeout context.Context
-	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
-
-	responseMntr, err := z.runCommand(ctxWithTimeout, "mntr")
+	responseMntr, err := z.runCommand(ctx, "mntr")
 	if err != nil {
 		return pmetric.NewMetrics(), err
 	}
 
-	responseRuok, err := z.runCommand(ctxWithTimeout, "ruok")
+	responseRuok, err := z.runCommand(ctx, "ruok")
 	if err != nil {
 		return pmetric.NewMetrics(), err
 	}

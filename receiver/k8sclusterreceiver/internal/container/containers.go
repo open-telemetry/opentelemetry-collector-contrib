@@ -4,11 +4,7 @@
 package container // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -31,11 +27,9 @@ const (
 	containerStatusTerminated = "terminated"
 )
 
-// GetSpecMetrics metricizes values from the container spec.
+// RecordSpecMetrics metricizes values from the container spec.
 // This includes values like resource requests and limits.
-func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1.Pod) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
+func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev1.Container, pod *corev1.Pod, ts pcommon.Timestamp) {
 	for k, r := range c.Resources.Requests {
 		//exhaustive:ignore
 		switch k {
@@ -48,7 +42,7 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 		case corev1.ResourceEphemeralStorage:
 			mb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, r.Value())
 		default:
-			set.Logger.Debug("unsupported request type", zap.Any("type", k))
+			logger.Debug("unsupported request type", zap.Any("type", k))
 		}
 	}
 	for k, l := range c.Resources.Limits {
@@ -63,7 +57,7 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 		case corev1.ResourceEphemeralStorage:
 			mb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, l.Value())
 		default:
-			set.Logger.Debug("unsupported request type", zap.Any("type", k))
+			logger.Debug("unsupported request type", zap.Any("type", k))
 		}
 	}
 	var containerID string
@@ -78,7 +72,7 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 		}
 	}
 
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sPodUID(string(pod.UID))
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sNodeName(pod.Spec.NodeName)
@@ -88,12 +82,12 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 	rb.SetK8sContainerName(c.Name)
 	image, err := docker.ParseImageName(imageStr)
 	if err != nil {
-		docker.LogParseError(err, imageStr, set.Logger)
+		docker.LogParseError(err, imageStr, logger)
 	} else {
 		rb.SetContainerImageName(image.Repository)
 		rb.SetContainerImageTag(image.Tag)
 	}
-	return mb.Emit(imetadata.WithResource(rb.Emit()))
+	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(cs corev1.ContainerStatus) *metadata.KubernetesMetadata {

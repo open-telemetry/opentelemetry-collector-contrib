@@ -35,8 +35,8 @@ type kubletScraper struct {
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 	cachedVolumeSource    map[string]v1.PersistentVolumeSource
-	rb                    *metadata.ResourceBuilder
 	mbs                   *metadata.MetricsBuilders
+	needsResources        bool
 }
 
 func newKubletScraper(
@@ -53,13 +53,20 @@ func newKubletScraper(
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeSource:    make(map[string]v1.PersistentVolumeSource),
-		rb:                    metadata.NewResourceBuilder(metricsConfig.ResourceAttributes),
 		mbs: &metadata.MetricsBuilders{
 			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set),
 			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set),
 			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set),
 			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
+		needsResources: metricsConfig.Metrics.K8sPodCPULimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodCPURequestUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerCPULimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerCPURequestUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodMemoryLimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
 	}
 	return scraperhelper.NewScraper(metadata.Type, ks.scrape)
 }
@@ -73,7 +80,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	var podsMetadata *v1.PodList
 	// fetch metadata only when extra metadata labels are needed
-	if len(r.extraMetadataLabels) > 0 {
+	if len(r.extraMetadataLabels) > 0 || r.needsResources {
 		podsMetadata, err = r.metadataProvider.Pods()
 		if err != nil {
 			r.logger.Error("call to /pods endpoint failed", zap.Error(err))
@@ -82,7 +89,8 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.detailedPVCLabelsSetter())
-	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.rb, r.mbs)
+
+	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mbs)
 	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())

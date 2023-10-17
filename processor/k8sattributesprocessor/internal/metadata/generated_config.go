@@ -2,9 +2,25 @@
 
 package metadata
 
+import "go.opentelemetry.io/collector/confmap"
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for k8sattributes resource attributes.
@@ -12,6 +28,7 @@ type ResourceAttributesConfig struct {
 	ContainerID        ResourceAttributeConfig `mapstructure:"container.id"`
 	ContainerImageName ResourceAttributeConfig `mapstructure:"container.image.name"`
 	ContainerImageTag  ResourceAttributeConfig `mapstructure:"container.image.tag"`
+	K8sClusterUID      ResourceAttributeConfig `mapstructure:"k8s.cluster.uid"`
 	K8sContainerName   ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sCronjobName     ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
 	K8sDaemonsetName   ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
@@ -42,6 +59,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		ContainerImageTag: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sClusterUID: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: false,

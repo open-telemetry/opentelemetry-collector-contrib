@@ -39,7 +39,6 @@ type receiver struct {
 	config   *Config
 	settings rcvr.CreateSettings
 	client   *docker.Client
-	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -47,7 +46,6 @@ func newReceiver(set rcvr.CreateSettings, config *Config) *receiver {
 	return &receiver{
 		config:   config,
 		settings: set,
-		rb:       metadata.NewResourceBuilder(config.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
 }
@@ -125,14 +123,15 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	}
 
 	// Always-present resource attrs + the user-configured resource attrs
-	r.rb.SetContainerRuntime("docker")
-	r.rb.SetContainerHostname(container.Config.Hostname)
-	r.rb.SetContainerID(container.ID)
-	r.rb.SetContainerImageName(container.Config.Image)
-	r.rb.SetContainerName(strings.TrimPrefix(container.Name, "/"))
-	r.rb.SetContainerImageID(container.Image)
-	r.rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
-	resource := r.rb.Emit()
+	rb := r.mb.NewResourceBuilder()
+	rb.SetContainerRuntime("docker")
+	rb.SetContainerHostname(container.Config.Hostname)
+	rb.SetContainerID(container.ID)
+	rb.SetContainerImageName(container.Config.Image)
+	rb.SetContainerName(strings.TrimPrefix(container.Name, "/"))
+	rb.SetContainerImageID(container.Image)
+	rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
+	resource := rb.Emit()
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {

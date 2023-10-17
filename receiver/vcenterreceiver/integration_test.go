@@ -45,7 +45,7 @@ func TestIntegration(t *testing.T) {
 			client.finder = find.NewFinder(c)
 			// Performance metrics rely on time based publishing so this is inherently flaky for an
 			// integration test, so setting the performance manager to nil to not attempt to compare
-			// performance metrcs. Coverage for this is encompassed in ./scraper_test.go
+			// performance metrics. Coverage for this is encompassed in ./scraper_test.go
 			client.pm = nil
 			return client
 		}
@@ -69,6 +69,8 @@ func TestIntegration(t *testing.T) {
 			scraperinttest.WithCompareOptions(
 				pmetrictest.IgnoreResourceAttributeValue("vcenter.host.name"),
 				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreMetricValues(),
 			),

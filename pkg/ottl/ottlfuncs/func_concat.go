@@ -12,8 +12,8 @@ import (
 )
 
 type ConcatArguments[K any] struct {
-	Vals      []ottl.StringLikeGetter[K] `ottlarg:"0"`
-	Delimiter string                     `ottlarg:"1"`
+	Vals      []ottl.StringLikeGetter[K]
+	Delimiter string
 }
 
 func NewConcatFactory[K any]() ottl.Factory[K] {

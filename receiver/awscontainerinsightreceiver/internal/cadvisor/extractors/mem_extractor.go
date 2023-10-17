@@ -64,6 +64,10 @@ func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInf
 	return metrics
 }
 
+func (m *MemMetricExtractor) Shutdown() error {
+	return m.rateCalculator.Shutdown()
+}
+
 func NewMemMetricExtractor(logger *zap.Logger) *MemMetricExtractor {
 	return &MemMetricExtractor{
 		logger:         logger,

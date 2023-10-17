@@ -49,6 +49,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -102,8 +103,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersStateBusy)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetApacheServerName("apache.server.name-val")
+			rb.SetApacheServerPort("apache.server.port-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

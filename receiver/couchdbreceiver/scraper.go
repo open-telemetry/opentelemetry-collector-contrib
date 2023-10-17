@@ -23,7 +23,6 @@ type couchdbScraper struct {
 	client   client
 	config   *Config
 	settings component.TelemetrySettings
-	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -31,7 +30,6 @@ func newCouchdbScraper(settings receiver.CreateSettings, config *Config) *couchd
 	return &couchdbScraper{
 		settings: settings.TelemetrySettings,
 		config:   config,
-		rb:       metadata.NewResourceBuilder(config.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 }
@@ -73,6 +71,7 @@ func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats, errs)
 	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errs)
 
-	c.rb.SetCouchdbNodeName(c.config.Endpoint)
-	return c.mb.Emit(metadata.WithResource(c.rb.Emit())), errs.Combine()
+	rb := c.mb.NewResourceBuilder()
+	rb.SetCouchdbNodeName(c.config.Endpoint)
+	return c.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }

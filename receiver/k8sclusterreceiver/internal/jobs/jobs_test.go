@@ -6,9 +6,11 @@ package jobs
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,13 +18,17 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestJobMetrics(t *testing.T) {
 	j := testutils.NewJob("1")
 
-	m := GetMetrics(receivertest.NewNopCreateSettings(), j)
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, j, ts)
+	m := mb.Emit()
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
@@ -34,10 +40,12 @@ func TestJobMetrics(t *testing.T) {
 		pmetrictest.IgnoreScopeMetricsOrder(),
 	),
 	)
+
 	// Test with nil values.
 	j.Spec.Completions = nil
 	j.Spec.Parallelism = nil
-	m = GetMetrics(receivertest.NewNopCreateSettings(), j)
+	RecordMetrics(mb, j, ts)
+	m = mb.Emit()
 	expected, err = golden.ReadMetrics(filepath.Join("testdata", "expected_empty.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,

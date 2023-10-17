@@ -52,7 +52,7 @@ func newApacheSparkClient(cfg *Config, host component.Host, settings component.T
 	}, nil
 }
 
-// Get issues an authorized Get requests to the specified url.
+// Get issues an authorized Get requests to the specified URL.
 func (c *apacheSparkClient) Get(path string) ([]byte, error) {
 	req, err := c.buildReq(path)
 	if err != nil {

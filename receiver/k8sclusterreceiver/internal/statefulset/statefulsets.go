@@ -4,11 +4,7 @@
 package statefulset // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -39,22 +35,20 @@ func Transform(statefulset *appsv1.StatefulSet) *appsv1.StatefulSet {
 	}
 }
 
-func GetMetrics(set receiver.CreateSettings, ss *appsv1.StatefulSet) pmetric.Metrics {
+func RecordMetrics(mb *imetadata.MetricsBuilder, ss *appsv1.StatefulSet, ts pcommon.Timestamp) {
 	if ss.Spec.Replicas == nil {
-		return pmetric.NewMetrics()
+		return
 	}
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
 	mb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, int64(*ss.Spec.Replicas))
 	mb.RecordK8sStatefulsetReadyPodsDataPoint(ts, int64(ss.Status.ReadyReplicas))
 	mb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, int64(ss.Status.CurrentReplicas))
 	mb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, int64(ss.Status.UpdatedReplicas))
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sStatefulsetUID(string(ss.UID))
 	rb.SetK8sStatefulsetName(ss.Name)
 	rb.SetK8sNamespaceName(ss.Namespace)
 	rb.SetOpencensusResourcetype("k8s")
-	return mb.Emit(imetadata.WithResource(rb.Emit()))
+	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(ss *appsv1.StatefulSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

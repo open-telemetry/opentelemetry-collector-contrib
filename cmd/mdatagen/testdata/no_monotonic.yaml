@@ -19,4 +19,4 @@ metrics:
     unit: s
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative

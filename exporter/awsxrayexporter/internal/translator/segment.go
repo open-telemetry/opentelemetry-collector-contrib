@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -46,6 +47,8 @@ var (
 )
 
 const (
+	// defaultMetadataNamespace is used for non-namespaced non-indexed attributes.
+	defaultMetadataNamespace = "default"
 	// defaultSpanName will be used if there are no valid xray characters in the span name
 	defaultSegmentName = "span"
 	// maxSegmentNameLength the maximum length of a Segment name
@@ -62,8 +65,8 @@ var (
 )
 
 // MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (string, error) {
-	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames)
+func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (string, error) {
+	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
 	if err != nil {
 		return "", err
 	}
@@ -77,7 +80,7 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
-func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (*awsxray.Segment, error) {
+func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (*awsxray.Segment, error) {
 	var segmentType string
 
 	storeResource := true
@@ -89,7 +92,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	// convert trace id
-	traceID, err := convertToAmazonTraceID(span.TraceID())
+	traceID, err := convertToAmazonTraceID(span.TraceID(), skipTimestampValidation)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +110,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
 		additionalAttrs                                    = addSpecialAttributes(sqlfiltered, indexedAttrs, attributes)
 		user, annotations, metadata                        = makeXRayAttributes(additionalAttrs, resource, storeResource, indexedAttrs, indexAllAttrs)
-		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links())
+		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links(), skipTimestampValidation)
 		name                                               string
 		namespace                                          string
 	)
@@ -295,7 +298,7 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 //   - For example, 10:00AM December 2nd, 2016 PST in epoch time is 1480615200 seconds,
 //     or 58406520 in hexadecimal.
 //   - A 96-bit identifier for the trace, globally unique, in 24 hexadecimal digits.
-func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
+func convertToAmazonTraceID(traceID pcommon.TraceID, skipTimestampValidation bool) (string, error) {
 	const (
 		// maxAge of 28 days.  AWS has a 30 day limit, let's be conservative rather than
 		// hit the limit
@@ -313,13 +316,16 @@ func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
 		b            = [4]byte{}
 	)
 
-	// If AWS traceID originally came from AWS, no problem.  However, if oc generated
-	// the traceID, then the epoch may be outside the accepted AWS range of within the
-	// past 30 days.
-	//
-	// In that case, we return invalid traceid error
-	if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
-		return "", fmt.Errorf("invalid xray traceid: %s", traceID)
+	// If feature gate is enabled, skip the timestamp validation logic
+	if !skipTimestampValidation {
+		// If AWS traceID originally came from AWS, no problem.  However, if oc generated
+		// the traceID, then the epoch may be outside the accepted AWS range of within the
+		// past 30 days.
+		//
+		// In that case, we return invalid traceid error
+		if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
+			return "", fmt.Errorf("invalid xray traceid: %s", traceID)
+		}
 	}
 
 	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))
@@ -418,13 +424,29 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		}
 	} else {
 		for key, value := range attributes {
-			if indexedKeys[key] {
+			switch {
+			case indexedKeys[key]:
 				key = fixAnnotationKey(key)
 				annoVal := annotationValue(value)
 				if annoVal != nil {
 					annotations[key] = annoVal
 				}
-			} else {
+			case strings.HasPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix) && value.Type() == pcommon.ValueTypeStr:
+				namespace := strings.TrimPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix)
+				var metaVal map[string]interface{}
+				err := json.Unmarshal([]byte(value.Str()), &metaVal)
+				switch {
+				case err != nil:
+					// if unable to unmarshal, keep the original key/value
+					defaultMetadata[key] = value.Str()
+				case strings.EqualFold(namespace, defaultMetadataNamespace):
+					for k, v := range metaVal {
+						defaultMetadata[k] = v
+					}
+				default:
+					metadata[namespace] = metaVal
+				}
+			default:
 				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
@@ -434,7 +456,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 	}
 
 	if len(defaultMetadata) > 0 {
-		metadata["default"] = defaultMetadata
+		metadata[defaultMetadataNamespace] = defaultMetadata
 	}
 
 	return user, annotations, metadata

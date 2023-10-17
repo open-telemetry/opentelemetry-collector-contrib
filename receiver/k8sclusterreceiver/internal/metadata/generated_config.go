@@ -52,17 +52,8 @@ type MetricsConfig struct {
 	K8sJobMaxParallelPods               MetricConfig `mapstructure:"k8s.job.max_parallel_pods"`
 	K8sJobSuccessfulPods                MetricConfig `mapstructure:"k8s.job.successful_pods"`
 	K8sNamespacePhase                   MetricConfig `mapstructure:"k8s.namespace.phase"`
-	K8sNodeAllocatableCPU               MetricConfig `mapstructure:"k8s.node.allocatable_cpu"`
-	K8sNodeAllocatableEphemeralStorage  MetricConfig `mapstructure:"k8s.node.allocatable_ephemeral_storage"`
-	K8sNodeAllocatableMemory            MetricConfig `mapstructure:"k8s.node.allocatable_memory"`
-	K8sNodeAllocatablePods              MetricConfig `mapstructure:"k8s.node.allocatable_pods"`
-	K8sNodeAllocatableStorage           MetricConfig `mapstructure:"k8s.node.allocatable_storage"`
-	K8sNodeConditionDiskPressure        MetricConfig `mapstructure:"k8s.node.condition_disk_pressure"`
-	K8sNodeConditionMemoryPressure      MetricConfig `mapstructure:"k8s.node.condition_memory_pressure"`
-	K8sNodeConditionNetworkUnavailable  MetricConfig `mapstructure:"k8s.node.condition_network_unavailable"`
-	K8sNodeConditionPidPressure         MetricConfig `mapstructure:"k8s.node.condition_pid_pressure"`
-	K8sNodeConditionReady               MetricConfig `mapstructure:"k8s.node.condition_ready"`
 	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
+	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
 	K8sReplicasetAvailable              MetricConfig `mapstructure:"k8s.replicaset.available"`
 	K8sReplicasetDesired                MetricConfig `mapstructure:"k8s.replicaset.desired"`
 	K8sReplicationControllerAvailable   MetricConfig `mapstructure:"k8s.replication_controller.available"`
@@ -162,38 +153,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNamespacePhase: MetricConfig{
 			Enabled: true,
 		},
-		K8sNodeAllocatableCPU: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeAllocatableEphemeralStorage: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeAllocatableMemory: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeAllocatablePods: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeAllocatableStorage: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeConditionDiskPressure: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeConditionMemoryPressure: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeConditionNetworkUnavailable: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeConditionPidPressure: MetricConfig{
-			Enabled: true,
-		},
-		K8sNodeConditionReady: MetricConfig{
-			Enabled: true,
-		},
 		K8sPodPhase: MetricConfig{
 			Enabled: true,
+		},
+		K8sPodStatusReason: MetricConfig{
+			Enabled: false,
 		},
 		K8sReplicasetAvailable: MetricConfig{
 			Enabled: true,
@@ -243,6 +207,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for k8s_cluster resource attributes.
@@ -261,6 +239,8 @@ type ResourceAttributesConfig struct {
 	K8sHpaUID                    ResourceAttributeConfig `mapstructure:"k8s.hpa.uid"`
 	K8sJobName                   ResourceAttributeConfig `mapstructure:"k8s.job.name"`
 	K8sJobUID                    ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
+	K8sKubeletVersion            ResourceAttributeConfig `mapstructure:"k8s.kubelet.version"`
+	K8sKubeproxyVersion          ResourceAttributeConfig `mapstructure:"k8s.kubeproxy.version"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sNamespaceUID              ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
@@ -324,6 +304,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sJobUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sKubeletVersion: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sKubeproxyVersion: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		K8sNamespaceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -367,7 +353,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		OpencensusResourcetype: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		OpenshiftClusterquotaName: ResourceAttributeConfig{
 			Enabled: true,

@@ -9,8 +9,6 @@ import (
 
 // define metric names, attribute names, metric types, and units for both EKS and ECS Container Insights
 const (
-	GoPSUtilProcDirEnv = "HOST_PROC"
-
 	// We assume 50 micro-seconds is the minimal gap between two collected data sample to be valid to calculate delta
 	MinTimeDiff = 50 * time.Microsecond
 

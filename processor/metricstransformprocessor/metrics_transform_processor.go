@@ -23,8 +23,8 @@ type internalTransform struct {
 	Action              ConfigAction
 	NewName             string
 	GroupResourceLabels map[string]string
-	AggregationType     AggregationType
-	SubmatchCase        SubmatchCase
+	AggregationType     aggregationType
+	SubmatchCase        submatchCase
 	Operations          []internalOperation
 }
 
@@ -79,11 +79,11 @@ func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []inter
 	}
 }
 
-func replaceCaseOfSubmatch(replacement SubmatchCase, submatch string) string {
+func replaceCaseOfSubmatch(replacement submatchCase, submatch string) string {
 	switch replacement {
-	case Lower:
+	case lower:
 		return strings.ToLower(submatch)
-	case Upper:
+	case upper:
 		return strings.ToUpper(submatch)
 	}
 

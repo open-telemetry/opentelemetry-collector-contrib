@@ -18,9 +18,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -352,8 +352,8 @@ func TestAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	assert.Equal(t, errNoJobInstance, err)
 }
 
-func nopObsRecv(t *testing.T) *obsreport.Receiver {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+func nopObsRecv(t *testing.T) *receiverhelper.ObsReport {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.NewID("prometheus"),
 		Transport:              transport,
 		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
@@ -1218,6 +1218,20 @@ func TestMetricBuilderHistogram(t *testing.T) {
 			},
 			wants: func() []pmetric.Metrics {
 				md0 := pmetric.NewMetrics()
+				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("hist_test")
+				hist0 := m0.SetEmptyHistogram()
+				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt0 := hist0.DataPoints().AppendEmpty()
+				pt0.SetCount(3)
+				pt0.SetSum(100)
+				pt0.BucketCounts().FromRaw([]uint64{3, 0})
+				pt0.ExplicitBounds().FromRaw([]float64{20})
+				pt0.SetTimestamp(tsNanos)
+				pt0.SetStartTimestamp(startTimestamp)
+				pt0.Attributes().PutStr("foo", "bar")
+
 				return []pmetric.Metrics{md0}
 			},
 		},
@@ -1256,13 +1270,27 @@ func TestMetricBuilderHistogram(t *testing.T) {
 			inputs: []*testScrapedPage{
 				{
 					pts: []*testDataPoint{
-						createDataPoint("hist_test_sum", 99, nil),
-						createDataPoint("hist_test_count", 10, nil),
+						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+						createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
 					},
 				},
 			},
 			wants: func() []pmetric.Metrics {
-				return []pmetric.Metrics{pmetric.NewMetrics()}
+				md0 := pmetric.NewMetrics()
+				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("hist_test")
+				hist0 := m0.SetEmptyHistogram()
+				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt0 := hist0.DataPoints().AppendEmpty()
+				pt0.SetCount(10)
+				pt0.SetSum(99)
+				pt0.BucketCounts().FromRaw([]uint64{10})
+				pt0.SetTimestamp(tsNanos)
+				pt0.SetStartTimestamp(startTimestamp)
+				pt0.Attributes().PutStr("foo", "bar")
+
+				return []pmetric.Metrics{md0}
 			},
 		},
 		{

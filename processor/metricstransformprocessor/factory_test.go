@@ -46,62 +46,62 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_newname.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert),
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", newNameFieldName, actionFieldName, Insert),
 		},
 		{
 			configName:   "config_invalid_group.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", GroupResourceLabelsFieldName, ActionFieldName, Group),
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", groupResourceLabelsFieldName, actionFieldName, Group),
 		},
 		{
 			configName:   "config_invalid_action.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", ActionFieldName, actions),
+			errorMessage: fmt.Sprintf("%q must be in %q", actionFieldName, actions),
 		},
 		{
 			configName:   "config_invalid_include.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", IncludeFieldName),
+			errorMessage: fmt.Sprintf("missing required field %q", includeFieldName),
 		},
 		{
 			configName:   "config_invalid_matchtype.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", MatchTypeFieldName, matchTypes),
+			errorMessage: fmt.Sprintf("%q must be in %q", matchTypeFieldName, matchTypes),
 		},
 		{
 			configName:   "config_invalid_label.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, LabelFieldName, ActionFieldName, UpdateLabel),
+			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, labelFieldName, actionFieldName, updateLabel),
 		},
 		{
 			configName:   "config_invalid_scale.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, ScaleFieldName, ActionFieldName, ScaleValue),
+			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, scaleFieldName, actionFieldName, scaleValue),
 		},
 		{
 			configName:   "config_invalid_regexp.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q, error parsing regexp: missing closing ]: `[\\da`", IncludeFieldName),
+			errorMessage: fmt.Sprintf("%q, error parsing regexp: missing closing ]: `[\\da`", includeFieldName),
 		},
 		{
 			configName:   "config_invalid_aggregationtype.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", AggregationTypeFieldName, aggregationTypes),
+			errorMessage: fmt.Sprintf("%q must be in %q", aggregationTypeFieldName, aggregationTypes),
 		},
 		{
 			configName:   "config_invalid_operation_action.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, ActionFieldName, operationActions),
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, actionFieldName, operationActions),
 		},
 		{
 			configName:   "config_invalid_operation_aggregationtype.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, AggregationTypeFieldName, aggregationTypes),
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, aggregationTypeFieldName, aggregationTypes),
 		},
 		{
 			configName:   "config_invalid_submatchcase.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, submatchCases),
+			errorMessage: fmt.Sprintf("%q must be in %q", submatchCaseFieldName, submatchCases),
 		},
 	}
 
@@ -146,16 +146,16 @@ func TestCreateProcessors(t *testing.T) {
 
 func TestFactory_validateConfiguration(t *testing.T) {
 	v1 := Config{
-		Transforms: []Transform{
+		Transforms: []transform{
 			{
 				MetricIncludeFilter: FilterConfig{
 					Include:   "mymetric",
-					MatchType: StrictMatchType,
+					MatchType: strictMatchType,
 				},
 				Action: Update,
 				Operations: []Operation{
 					{
-						Action:   AddLabel,
+						Action:   addLabel,
 						NewValue: "bar",
 					},
 				},
@@ -166,16 +166,16 @@ func TestFactory_validateConfiguration(t *testing.T) {
 	assert.Equal(t, "operation 1: missing required field \"new_label\" while \"action\" is add_label", err.Error())
 
 	v2 := Config{
-		Transforms: []Transform{
+		Transforms: []transform{
 			{
 				MetricIncludeFilter: FilterConfig{
 					Include:   "mymetric",
-					MatchType: StrictMatchType,
+					MatchType: strictMatchType,
 				},
 				Action: Update,
 				Operations: []Operation{
 					{
-						Action:   AddLabel,
+						Action:   addLabel,
 						NewLabel: "foo",
 					},
 				},
@@ -192,22 +192,22 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 
-	oCfg.Transforms = []Transform{
+	oCfg.Transforms = []transform{
 		{
 			MetricIncludeFilter: FilterConfig{
 				Include:   "name",
-				MatchType: StrictMatchType,
+				MatchType: strictMatchType,
 			},
 			Action:  Update,
 			NewName: "new-name",
 			Operations: []Operation{
 				{
-					Action:   AddLabel,
+					Action:   addLabel,
 					NewLabel: "new-label",
 					NewValue: "new-value {{version}}",
 				},
 				{
-					Action:   UpdateLabel,
+					Action:   updateLabel,
 					Label:    "label",
 					NewLabel: "new-label",
 					ValueActions: []ValueAction{
@@ -218,16 +218,16 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 					},
 				},
 				{
-					Action:          AggregateLabels,
+					Action:          aggregateLabels,
 					LabelSet:        []string{"label1", "label2"},
-					AggregationType: Sum,
+					AggregationType: sum,
 				},
 				{
-					Action:           AggregateLabelValues,
+					Action:           aggregateLabelValues,
 					Label:            "label",
 					AggregatedValues: []string{"value1", "value2"},
 					NewValue:         "new-value",
-					AggregationType:  Sum,
+					AggregationType:  sum,
 				},
 			},
 		},
@@ -241,14 +241,14 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 			Operations: []internalOperation{
 				{
 					configOperation: Operation{
-						Action:   AddLabel,
+						Action:   addLabel,
 						NewLabel: "new-label",
 						NewValue: "new-value v0.0.1",
 					},
 				},
 				{
 					configOperation: Operation{
-						Action:   UpdateLabel,
+						Action:   updateLabel,
 						Label:    "label",
 						NewLabel: "new-label",
 						ValueActions: []ValueAction{
@@ -262,9 +262,9 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 				},
 				{
 					configOperation: Operation{
-						Action:          AggregateLabels,
+						Action:          aggregateLabels,
 						LabelSet:        []string{"label1", "label2"},
-						AggregationType: Sum,
+						AggregationType: sum,
 					},
 					labelSetMap: map[string]bool{
 						"label1": true,
@@ -273,11 +273,11 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 				},
 				{
 					configOperation: Operation{
-						Action:           AggregateLabelValues,
+						Action:           aggregateLabelValues,
 						Label:            "label",
 						AggregatedValues: []string{"value1", "value2"},
 						NewValue:         "new-value",
-						AggregationType:  Sum,
+						AggregationType:  sum,
 					},
 					aggregatedValuesSet: map[string]bool{
 						"value1": true,

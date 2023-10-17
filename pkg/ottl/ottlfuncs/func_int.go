@@ -11,7 +11,7 @@ import (
 )
 
 type IntArguments[K any] struct {
-	Target ottl.IntLikeGetter[K] `ottlarg:"0"`
+	Target ottl.IntLikeGetter[K]
 }
 
 func NewIntFactory[K any]() ottl.Factory[K] {

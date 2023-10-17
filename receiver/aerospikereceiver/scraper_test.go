@@ -138,7 +138,6 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiver := &aerospikeReceiver{
 		clientFactory: clientFactory,
-		rb:            metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 		logger:        logger.Sugar(),
 		config: &Config{
