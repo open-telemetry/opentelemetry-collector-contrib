@@ -44,7 +44,7 @@ func TestDefaultBehaviors(t *testing.T) {
 	tempName := filepath.Base(temp.Name())
 	writeString(t, temp, " testlog1 \n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -82,7 +82,7 @@ See this issue for details: https://github.com/census-instrumentation/opencensus
 	operator, _ := buildTestManager(t, cfg)
 
 	_ = openTemp(t, tempDir)
-	err := operator.Start(testutil.NewMockPersister("test"))
+	err := operator.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, operator.Stop())
@@ -107,7 +107,7 @@ func TestAddFileFields(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -159,7 +159,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 	resolved, err := filepath.Abs(realPath)
 	require.NoError(t, err)
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -229,7 +229,7 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	// Populate data
 	writeString(t, file1, "testlog\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -318,7 +318,7 @@ func TestReadExistingLogs(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -387,7 +387,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			bytesWritten, err := temp.Write(tc.input)
 			require.Greater(t, bytesWritten, 0)
 			require.NoError(t, err)
-			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+			require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 			defer func() {
 				require.NoError(t, operator.Stop())
 			}()
@@ -471,7 +471,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			bytesWritten, err := temp.Write(tc.input)
 			require.Greater(t, bytesWritten, 0)
 			require.NoError(t, err)
-			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+			require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 			defer func() {
 				require.NoError(t, operator.Stop())
 			}()
@@ -490,7 +490,7 @@ func TestReadNewLogs(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	// Poll once so we know this isn't a new file
 	operator.poll(context.Background())
@@ -518,7 +518,7 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	// Start with a file with an entry in it, and expect that entry
 	// to come through when we poll for the first time
@@ -542,7 +542,7 @@ func TestStartAtEnd(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n")
@@ -570,7 +570,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	operator.poll(context.Background())
 	temp := openTemp(t, tempDir)
@@ -595,7 +595,7 @@ func TestNoNewline(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -616,7 +616,7 @@ func TestEmptyLine(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n\ntestlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -639,7 +639,7 @@ func TestMultipleEmpty(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "\n\ntestlog1\n\n\ntestlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -666,7 +666,7 @@ func TestLeadingEmpty(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "\ntestlog1\ntestlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -686,7 +686,7 @@ func TestSplitWrite(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1")
@@ -706,7 +706,7 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp := openTemp(t, tempDir)
 	temp2 := openTemp(t, tempDir)
@@ -734,7 +734,7 @@ func TestDecodeBufferIsResized(t *testing.T) {
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -760,7 +760,7 @@ func TestMultiFileSimple(t *testing.T) {
 	writeString(t, temp1, "testlog1\n")
 	writeString(t, temp2, "testlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -792,7 +792,7 @@ func TestMultiFileSort(t *testing.T) {
 	writeString(t, temp1, "testlog1\n")
 	writeString(t, temp2, "testlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -826,7 +826,7 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 	writeString(t, temp1, "testlog1\n")
 	writeString(t, temp2, "testlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -867,7 +867,7 @@ func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
 		}(temp, i)
 	}
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -896,7 +896,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -941,7 +941,7 @@ func TestRestartOffsets(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = tc.startAt
 
-			persister := testutil.NewMockPersister("test")
+			persister := testutil.NewUnscopedMockPersister()
 
 			logFile := openTemp(t, tempDir)
 
@@ -989,7 +989,7 @@ func TestManyLogsDelivered(t *testing.T) {
 	}
 
 	// Start the operator
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -1027,7 +1027,7 @@ func TestFileBatching(t *testing.T) {
 	cfg.MaxBatches = maxBatches
 	emitCalls := make(chan *emitParams, files*linesPerFile)
 	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	core, observedLogs := observer.New(zap.DebugLevel)
 	operator.SugaredLogger = zap.New(core).Sugar()
@@ -1111,7 +1111,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 
 	operator, emitChan := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temps := make([]*os.File, 0, initFiles+moreFiles)
 	for i := 0; i < initFiles; i++ {
@@ -1388,7 +1388,7 @@ func TestEncodings(t *testing.T) {
 			_, err := temp.Write(tc.contents)
 			require.NoError(t, err)
 
-			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+			require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 			defer func() {
 				require.NoError(t, operator.Stop())
 			}()
@@ -1433,7 +1433,7 @@ func TestDeleteAfterRead(t *testing.T) {
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, totalLines)
 	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 	operator.poll(context.Background())
 	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, totalLines)...)
 
@@ -1464,7 +1464,7 @@ func TestMaxBatching(t *testing.T) {
 	cfg.MaxBatches = maxBatches
 	emitCalls := make(chan *emitParams, files*linesPerFile)
 	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	core, observedLogs := observer.New(zap.DebugLevel)
 	operator.SugaredLogger = zap.New(core).Sugar()
@@ -1551,7 +1551,7 @@ func TestReadExistingLogsWithHeader(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "#headerField: headerValue\ntestlog\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -1580,7 +1580,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, longFileLines+1)
 	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	shortFile := openTemp(t, tempDir)
 	_, err := shortFile.WriteString(string(shortFileLine) + "\n")
@@ -1725,7 +1725,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	cfg.FingerprintSize = 18
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	// Both of they will be include
 	file1 := openTempWithPattern(t, tempDir, "*.log1")
