@@ -95,7 +95,6 @@ func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, no
 
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
-	rb.SetOpencensusResourcetype("k8s")
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 	rb.SetK8sKubeproxyVersion(node.Status.NodeInfo.KubeProxyVersion)
 	rb.Emit().MoveTo(rm.Resource())

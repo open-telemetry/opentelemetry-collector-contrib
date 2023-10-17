@@ -27,12 +27,14 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	queueSettings := exporterhelper.NewDefaultQueueSettings()
+	// For backwards compatibilitiy, we default to 1 consumer
+	queueSettings.NumConsumers = 1
+
 	return &Config{
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
-		},
+		QueueSettings:      queueSettings,
 	}
 }
 
