@@ -174,6 +174,13 @@ func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
 	}
 }
 
+// AddInstrumentationScope converts and adds span instrumentation scope to the document.
+func (doc *Document) AddInstrumentationScope(key string, scope pcommon.InstrumentationScope) {
+	doc.AddString(flattenKey(key, "name"), scope.Name())
+	doc.AddString(flattenKey(key, "version"), scope.Version())
+	doc.fields = appendAttributeFields(doc.fields, flattenKey(key, "attributes"), scope.Attributes())
+}
+
 // Sort sorts all fields in the document by key name.
 func (doc *Document) Sort() {
 	sort.SliceStable(doc.fields, func(i, j int) bool {

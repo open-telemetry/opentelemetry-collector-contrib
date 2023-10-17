@@ -404,8 +404,9 @@ func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string
 func mustSendLogsWithAttributes(t *testing.T, exporter *elasticsearchLogsExporter, attrMp map[string]string, resMp map[string]string) {
 	logs := newLogsWithAttributeAndResourceMap(attrMp, resMp)
 	resSpans := logs.ResourceLogs().At(0)
+	scope := resSpans.ScopeLogs().At(0).Scope()
 	logRecords := resSpans.ScopeLogs().At(0).LogRecords().At(0)
 
-	err := exporter.pushLogRecord(context.TODO(), resSpans.Resource(), logRecords)
+	err := exporter.pushLogRecord(context.TODO(), resSpans.Resource(), scope, logRecords)
 	require.NoError(t, err)
 }
