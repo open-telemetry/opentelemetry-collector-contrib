@@ -34,7 +34,7 @@ func udpInputTest(input []byte, expected []string, cfg *Config) func(t *testing.
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = udpInput.Start(testutil.NewMockPersister("test"))
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, udpInput.Stop(), "expected to stop udp input operator without error")
@@ -85,7 +85,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = udpInput.Start(testutil.NewMockPersister("test"))
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, udpInput.Stop(), "expected to stop udp input operator without error")
@@ -190,7 +190,7 @@ func TestFailToBind(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = udpInput.Start(testutil.NewMockPersister("test"))
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
 		return udpInput, err
 	}
 
@@ -215,7 +215,7 @@ func BenchmarkUDPInput(b *testing.B) {
 	udpInput := op.(*Input)
 	udpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
 
-	err = udpInput.Start(testutil.NewMockPersister("test"))
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(b, err)
 
 	done := make(chan struct{})
