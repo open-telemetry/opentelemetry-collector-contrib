@@ -80,12 +80,13 @@ type DimensionClientOptions struct {
 	MaxIdleConns        int
 	MaxIdleConnsPerHost int
 	IdleConnTimeout     time.Duration
+	Timeout             time.Duration
 }
 
 // NewDimensionClient returns a new client
 func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *DimensionClient {
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: options.Timeout,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
