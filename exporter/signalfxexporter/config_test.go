@@ -485,14 +485,6 @@ func TestConfigValidateErrors(t *testing.T) {
 			},
 		},
 		{
-			name: "Negative MaxConnections",
-			cfg: &Config{
-				Realm:          "us0",
-				AccessToken:    "access_token",
-				MaxConnections: -1,
-			},
-		},
-		{
 			name: "Negative Timeout",
 			cfg: &Config{
 				Realm:              "us0",

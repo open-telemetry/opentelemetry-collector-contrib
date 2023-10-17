@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxra
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.45.24
-	github.com/google/go-cmp v0.5.9
+	github.com/aws/aws-sdk-go v1.45.26
+	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.3.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.87.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.87.0
@@ -39,7 +39,8 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.5.0 // indirect
+	github.com/knadh/koanf/maps v0.1.1 // indirect
+	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
