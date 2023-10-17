@@ -147,24 +147,9 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 	}
 
-	processorCount := 0
-	expectedProcessors := map[component.Type]struct{}{}
-	for proc := range procFactories {
-		expectedProcessors[proc] = struct{}{}
-	}
+	assert.Equal(t, len(procFactories), len(tests), "All processors must be added to lifecycle tests")
 	for _, tt := range tests {
-		_, ok := procFactories[tt.processor]
-		if !ok {
-			// not part of the distro, skipping.
-			continue
-		}
-		delete(expectedProcessors, tt.processor)
-
-		tt := tt
-		processorCount++
 		t.Run(string(tt.processor), func(t *testing.T) {
-			t.Parallel()
-
 			factory := procFactories[tt.processor]
 			assert.Equal(t, tt.processor, factory.Type())
 
@@ -179,7 +164,6 @@ func TestDefaultProcessors(t *testing.T) {
 			})
 		})
 	}
-	assert.Len(t, procFactories, processorCount, "All processors must be added to lifecycle tests", expectedProcessors)
 }
 
 // getProcessorConfigFn is used customize the configuration passed to the verification.
