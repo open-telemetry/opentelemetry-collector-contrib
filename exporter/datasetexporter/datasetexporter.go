@@ -112,6 +112,7 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 			}
 		}
 	}
+
 	st := reflect.TypeOf(source)
 	if st == nil {
 		update()
