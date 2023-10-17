@@ -205,7 +205,9 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 				var err error
 				var l int
 				if c.config.ExportRaw {
-					_, err = buf.Write([]byte(logRecord.Body().AsString() + "\n"))
+					b := []byte(logRecord.Body().AsString() + "\n")
+					l = len(b)
+					_, err = buf.Write(b)
 				} else {
 					// Parsing log record to Splunk event.
 					event := mapLogRecordToSplunkEvent(rl.Resource(), logRecord, c.config)
