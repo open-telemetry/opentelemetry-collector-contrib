@@ -122,12 +122,10 @@ func TestConnectorShutdown(t *testing.T) {
 }
 
 func TestProcessorConsume(t *testing.T) {
-	// set virtual node feature
-	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), true)
-
 	for _, tc := range []struct {
 		name          string
 		cfg           Config
+		gates         []*featuregate.Gate
 		sampleTraces  ptrace.Traces
 		verifyMetrics func(t *testing.T, md pmetric.Metrics)
 	}{
@@ -141,6 +139,7 @@ func TestProcessorConsume(t *testing.T) {
 					TTL:      time.Nanosecond,
 				},
 			}, sampleTraces: buildSampleTrace(t, "val"),
+			gates:         []*featuregate.Gate{virtualNodeFeatureGate},
 			verifyMetrics: verifyHappyCaseMetrics,
 		},
 		{
@@ -153,6 +152,7 @@ func TestProcessorConsume(t *testing.T) {
 					TTL:      time.Nanosecond,
 				},
 			},
+			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
 			sampleTraces: incompleteClientTraces(),
 			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
 				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("server")
@@ -170,6 +170,7 @@ func TestProcessorConsume(t *testing.T) {
 					TTL:      time.Nanosecond,
 				},
 			},
+			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
 			sampleTraces: incompleteServerTraces(false),
 			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
 				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("client")
@@ -187,13 +188,32 @@ func TestProcessorConsume(t *testing.T) {
 					TTL:      time.Nanosecond,
 				},
 			},
+			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
 			sampleTraces: incompleteServerTraces(true),
 			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
 				assert.Equal(t, 0, md.MetricCount())
 			},
 		},
+		{
+			name: "complete traces with legacy latency metrics",
+			cfg: Config{
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			}, sampleTraces: buildSampleTrace(t, "val"),
+			gates:         []*featuregate.Gate{virtualNodeFeatureGate, legacyLatencyUnitMsFeatureGate},
+			verifyMetrics: verifyHappyCaseMetricsWithDuration(1000),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// Set feature gates
+			for _, gate := range tc.gates {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+			}
+
 			// Prepare
 			p := newProcessor(zaptest.NewLogger(t), &tc.cfg)
 			p.tracesConsumer = consumertest.NewNop()
@@ -222,11 +242,13 @@ func TestProcessorConsume(t *testing.T) {
 
 			// Shutdown the processor
 			assert.NoError(t, p.Shutdown(context.Background()))
+
+			// Unset feature gates
+			for _, gate := range tc.gates {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+			}
 		})
 	}
-
-	// unset virtual node feature
-	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), false)
 }
 
 func TestConnectorConsume(t *testing.T) {
@@ -257,27 +279,33 @@ func TestConnectorConsume(t *testing.T) {
 }
 
 func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
-	assert.Equal(t, 3, md.MetricCount())
+	verifyHappyCaseMetricsWithDuration(1)(t, md)
+}
 
-	rms := md.ResourceMetrics()
-	assert.Equal(t, 1, rms.Len())
+func verifyHappyCaseMetricsWithDuration(durationSum float64) func(t *testing.T, md pmetric.Metrics) {
+	return func(t *testing.T, md pmetric.Metrics) {
+		assert.Equal(t, 3, md.MetricCount())
 
-	sms := rms.At(0).ScopeMetrics()
-	assert.Equal(t, 1, sms.Len())
+		rms := md.ResourceMetrics()
+		assert.Equal(t, 1, rms.Len())
 
-	ms := sms.At(0).Metrics()
-	assert.Equal(t, 3, ms.Len())
+		sms := rms.At(0).ScopeMetrics()
+		assert.Equal(t, 1, sms.Len())
 
-	mCount := ms.At(0)
-	verifyCount(t, mCount)
+		ms := sms.At(0).Metrics()
+		assert.Equal(t, 3, ms.Len())
 
-	mServerDuration := ms.At(1)
-	assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
-	verifyDuration(t, mServerDuration)
+		mCount := ms.At(0)
+		verifyCount(t, mCount)
 
-	mClientDuration := ms.At(2)
-	assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
-	verifyDuration(t, mClientDuration)
+		mServerDuration := ms.At(1)
+		assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
+		verifyDuration(t, mServerDuration, durationSum)
+
+		mClientDuration := ms.At(2)
+		assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
+		verifyDuration(t, mClientDuration, durationSum)
+	}
 }
 
 func verifyCount(t *testing.T, m pmetric.Metric) {
@@ -300,13 +328,13 @@ func verifyCount(t *testing.T, m pmetric.Metric) {
 	verifyAttr(t, attributes, "client_some-attribute", "val")
 }
 
-func verifyDuration(t *testing.T, m pmetric.Metric) {
+func verifyDuration(t *testing.T, m pmetric.Metric, durationSum float64) {
 	assert.Equal(t, pmetric.MetricTypeHistogram, m.Type())
 	dps := m.Histogram().DataPoints()
 	assert.Equal(t, 1, dps.Len())
 
 	dp := dps.At(0)
-	assert.Equal(t, float64(1), dp.Sum()) // Duration: 1sec
+	assert.Equal(t, durationSum, dp.Sum()) // Duration: 1sec
 	assert.Equal(t, uint64(1), dp.Count())
 	buckets := pcommon.NewUInt64Slice()
 	buckets.FromRaw([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
