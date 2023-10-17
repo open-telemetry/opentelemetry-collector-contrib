@@ -5,7 +5,9 @@ package ptracetest // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bytes"
+	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
@@ -123,6 +125,50 @@ func sortSpanSlices(ts ptrace.Traces) {
 				}
 				return a.EndTimestamp() < b.EndTimestamp()
 			})
+		}
+	}
+}
+
+// IgnoreStartTimestamp is a CompareTracesOption that clears StartTimestamp fields on all spans.
+func IgnoreStartTimestamp() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		now := pcommon.NewTimestampFromTime(time.Now())
+		maskStartTimestamp(expected, now)
+		maskStartTimestamp(actual, now)
+	})
+}
+
+func maskStartTimestamp(traces ptrace.Traces, ts pcommon.Timestamp) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				span.SetStartTimestamp(ts)
+			}
+		}
+	}
+}
+
+// IgnoreEndTimestamp is a CompareTracesOption that clears EndTimestamp fields on all spans.
+func IgnoreEndTimestamp() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		now := pcommon.NewTimestampFromTime(time.Now())
+		maskEndTimestamp(expected, now)
+		maskEndTimestamp(actual, now)
+	})
+}
+
+func maskEndTimestamp(traces ptrace.Traces, ts pcommon.Timestamp) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				span.SetEndTimestamp(ts)
+			}
 		}
 	}
 }
