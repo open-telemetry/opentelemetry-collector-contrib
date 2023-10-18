@@ -411,8 +411,11 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryMaxElapsedTime:  time.Hour,
 			RetryShutdownTimeout: time.Minute,
 		},
-		LogsSettings:   newDefaultLogsSettings(),
-		TracesSettings: newDefaultTracesSettings(),
+		LogsSettings: LogsSettings{
+			ExportResourceInfo: true,
+			ExportScopeInfo:    true,
+		},
+		TracesSettings: TracesSettings{},
 		ServerHostSettings: ServerHostSettings{
 			ServerHost: testServerHost,
 		},
@@ -433,16 +436,24 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	// set attribute host.name in the resource attribute
 	lr4 := testdata.GenerateLogsOneLogRecord()
 	lr4.ResourceLogs().At(0).Resource().Attributes().PutStr("host.name", "serverHostFromResourceHost")
+	// set all possible values
+	lr5 := testdata.GenerateLogsOneLogRecord()
+	fillAttributes(lr5.ResourceLogs().At(0).Resource().Attributes())
+	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes())
+	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes())
 
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty()
 	ld.ResourceLogs().AppendEmpty()
 	ld.ResourceLogs().AppendEmpty()
 	ld.ResourceLogs().AppendEmpty()
+	ld.ResourceLogs().AppendEmpty()
+
 	lr1.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(0))
 	lr2.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(1))
 	lr3.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(2))
 	lr4.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(3))
+	lr5.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(4))
 
 	logs, err := createLogsExporter(context.Background(), createSettings, config)
 	if assert.NoError(t, err) {
@@ -467,7 +478,24 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 				Session:     addRequest.Session,
 				SessionInfo: addRequest.SessionInfo,
 				Events: []*add_events.Event{
-					testLEventReq,
+					{
+						Thread: testLEventReq.Thread,
+						Log:    testLEventReq.Log,
+						Sev:    testLEventReq.Sev,
+						Ts:     testLEventReq.Ts,
+						Attrs: map[string]interface{}{
+							add_events.AttrOrigServerHost: testServerHost,
+							"app":                         "server",
+							"instance_num":                float64(1),
+							"dropped_attributes_count":    float64(1),
+							"message":                     "This is a log message",
+							"span_id":                     "0102040800000000",
+							"trace_id":                    "08040201000000000000000000000000",
+							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+
+							"resource.attributes.resource-attr": "resource-attr-val-1",
+						},
+					},
 					{
 						Thread: testLEventReq.Thread,
 						Log:    testLEventReq.Log,
@@ -482,6 +510,9 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 							"span_id":                     "0102040800000000",
 							"trace_id":                    "08040201000000000000000000000000",
 							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+
+							"resource.attributes.resource-attr": "resource-attr-val-1",
+							"resource.attributes.serverHost":    "serverHostFromResource",
 						},
 					},
 					{
@@ -498,6 +529,10 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 							"span_id":                     "0102040800000000",
 							"trace_id":                    "08040201000000000000000000000000",
 							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+
+							"resource.attributes.resource-attr": "resource-attr-val-1",
+							"resource.attributes.host.name":     "serverHostFromResourceHost",
+							"resource.attributes.serverHost":    "serverHostFromResourceServer",
 						},
 					},
 					{
@@ -514,6 +549,54 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 							"span_id":                     "0102040800000000",
 							"trace_id":                    "08040201000000000000000000000000",
 							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+
+							"resource.attributes.resource-attr": "resource-attr-val-1",
+							"resource.attributes.host.name":     "serverHostFromResourceHost",
+						},
+					},
+					{
+						Thread: testLEventReq.Thread,
+						Log:    testLEventReq.Log,
+						Sev:    testLEventReq.Sev,
+						Ts:     testLEventReq.Ts,
+						Attrs: map[string]interface{}{
+							add_events.AttrOrigServerHost: testServerHost,
+							"app":                         "server",
+							"instance_num":                float64(1),
+							"dropped_attributes_count":    float64(1),
+							"message":                     "This is a log message",
+							"span_id":                     "0102040800000000",
+							"trace_id":                    "08040201000000000000000000000000",
+							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+
+							"string":         "string",
+							"double":         2.0,
+							"bool":           true,
+							"empty":          nil,
+							"int":            float64(3),
+							"map_map_empty":  nil,
+							"map_map_string": "map_string",
+							"slice_0":        "slice_string",
+
+							"scope.attributes.string":         "string",
+							"scope.attributes.double":         2.0,
+							"scope.attributes.bool":           true,
+							"scope.attributes.empty":          nil,
+							"scope.attributes.int":            float64(3),
+							"scope.attributes.map.map_empty":  nil,
+							"scope.attributes.map.map_string": "map_string",
+							"scope.attributes.slice.0":        "slice_string",
+
+							"resource.attributes.string":         "string",
+							"resource.attributes.double":         2.0,
+							"resource.attributes.bool":           true,
+							"resource.attributes.empty":          nil,
+							"resource.attributes.int":            float64(3),
+							"resource.attributes.map.map_empty":  nil,
+							"resource.attributes.map.map_string": "map_string",
+							"resource.attributes.slice.0":        "slice_string",
+
+							"resource.attributes.resource-attr": "resource-attr-val-1",
 						},
 					},
 				},
