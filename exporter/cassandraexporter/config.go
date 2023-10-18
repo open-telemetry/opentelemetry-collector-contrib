@@ -11,6 +11,7 @@ type Config struct {
 	LogsTable   string      `mapstructure:"logs_table"`
 	Replication Replication `mapstructure:"replication"`
 	Compression Compression `mapstructure:"compression"`
+	Auth        Auth        `mapstructure:"auth"`
 }
 
 type Replication struct {
@@ -20,4 +21,9 @@ type Replication struct {
 
 type Compression struct {
 	Algorithm string `mapstructure:"algorithm"`
+}
+
+type Auth struct {
+	UserName string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
