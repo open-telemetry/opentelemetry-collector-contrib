@@ -320,6 +320,24 @@ func TestMatcher(t *testing.T) {
 			expected: []string{"err.d.log"},
 		},
 		{
+			name:    "Alphabetical Sorting - Top 2",
+			files:   []string{"err.a.log", "err.d.log", "err.b.log", "err.c.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
+				TopN:  2,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeAlphabetical,
+						RegexKey:  "value",
+						Ascending: false,
+					},
+				},
+			},
+			expected: []string{"err.d.log", "err.c.log"},
+		},
+		{
 			name:    "Alphabetical Sorting Ascending",
 			files:   []string{"err.b.log", "err.a.log", "err.c.log", "err.d.log"},
 			include: []string{"err.*.log"},
@@ -335,6 +353,45 @@ func TestMatcher(t *testing.T) {
 				},
 			},
 			expected: []string{"err.a.log"},
+		},
+		{
+			name: "Multiple Sorting - timestamp priority sort - Top 4",
+			files: []string{
+				"err.b.1.2023020601.log",
+				"err.b.2.2023020601.log",
+				"err.a.1.2023020601.log",
+				"err.a.2.2023020601.log",
+				"err.b.1.2023020602.log",
+				"err.a.2.2023020602.log",
+				"err.b.2.2023020602.log",
+				"err.a.1.2023020602.log",
+			},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				TopN:  4,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeAlphabetical,
+						RegexKey:  "alpha",
+						Ascending: false,
+					},
+					{
+						SortType:  sortTypeNumeric,
+						RegexKey:  "number",
+						Ascending: false,
+					},
+					{
+						SortType:  sortTypeTimestamp,
+						RegexKey:  "time",
+						Ascending: false,
+						Location:  "UTC",
+						Layout:    `%Y%m%d%H`,
+					},
+				},
+			},
+			expected: []string{"err.b.2.2023020602.log", "err.a.2.2023020602.log", "err.b.1.2023020602.log", "err.a.1.2023020602.log"},
 		},
 		{
 			name: "Multiple Sorting - timestamp priority sort",
