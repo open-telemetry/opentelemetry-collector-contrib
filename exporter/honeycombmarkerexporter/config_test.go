@@ -48,28 +48,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("honeycomb", "color_no_type"),
-			expected: &Config{
-				APIKey: "test-apikey",
-				APIURL: "https://api.testhost.io",
-				Markers: []Marker{
-					{
-						Color:        "green",
-						MessageField: "test message",
-						URLField:     "https://api.testhost.io",
-						Rules: Rules{
-							ResourceConditions: []string{
-								`IsMatch(attributes["test"], ".*")`,
-							},
-							LogConditions: []string{
-								`body == "test"`,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
 		},
 		{
