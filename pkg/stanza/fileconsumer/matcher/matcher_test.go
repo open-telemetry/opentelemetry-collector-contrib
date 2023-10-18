@@ -99,6 +99,23 @@ func TestNew(t *testing.T) {
 			expectedErr: "compile regex: error parsing regexp: missing closing ]: `[a-z`",
 		},
 		{
+			name: "TopN is negative",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					Regex: "[a-z]",
+					TopN:  -1,
+					SortBy: []Sort{
+						{
+							SortType: "numeric",
+							RegexKey: "key",
+						},
+					},
+				},
+			},
+			expectedErr: "`top_n` must be a positive integer",
+		},
+		{
 			name: "SortTypeEmpty",
 			criteria: Criteria{
 				Include: []string{"*.log"},

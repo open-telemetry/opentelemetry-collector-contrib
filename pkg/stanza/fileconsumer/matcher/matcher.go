@@ -67,6 +67,10 @@ func New(c Criteria) (*Matcher, error) {
 		return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
 	}
 
+	if c.OrderingCriteria.TopN < 0 {
+		return nil, fmt.Errorf("`top_n` must be a positive integer")
+	}
+
 	if c.OrderingCriteria.TopN == 0 {
 		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
 	}
