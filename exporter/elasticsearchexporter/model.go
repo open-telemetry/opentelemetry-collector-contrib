@@ -17,7 +17,7 @@ import (
 )
 
 type mappingModel interface {
-	encodeLog(pcommon.Resource, plog.LogRecord) ([]byte, error)
+	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
 	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
 }
 
@@ -38,7 +38,7 @@ const (
 	attributeField = "attribute"
 )
 
-func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord) ([]byte, error) {
+func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) ([]byte, error) {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTraceID("TraceId", record.TraceID())
@@ -49,6 +49,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	document.AddAttribute("Body", record.Body())
 	document.AddAttributes("Attributes", record.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
+	document.AddAttributes("Scope", scopeToAttributes(scope))
 
 	if m.dedup {
 		document.Dedup()
