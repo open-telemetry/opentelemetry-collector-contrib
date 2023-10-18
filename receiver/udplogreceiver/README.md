@@ -24,7 +24,7 @@ Receives logs over UDP.
 | `attributes`              | {}                   | A map of `key: value` pairs to add to the entry's attributes                                                       |
 | `one_log_per_packet`      | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance.                                                 |
 | `resource`                | {}                   | A map of `key: value` pairs to add to the entry's resource                                                         |
-| `add_attributes`          | false                | Adds `net.*` attributes according to [semantic convention][hhttps://github.com/open-telemetry/semantic-conventions/blob/cee22ec91448808ebcfa53df689c800c7171c9e1/docs/general/attributes.md#other-network-attributes] |
+| `add_attributes`          | false                | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/semantic-conventions/blob/cee22ec91448808ebcfa53df689c800c7171c9e1/docs/general/attributes.md#other-network-attributes] |
 | `multiline`               |                      | A `multiline` configuration block. See below for details                                                           |
 | `encoding`                | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `operators`               | []                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
@@ -78,7 +78,9 @@ If set, the `async` configuration block instructs the `udp_input` operator to re
 
 | Field                                   | Default              | Description |
 | ---                                     | ---                  | ---         |
-| `readers`                               | 1                    | Concurrency level - Determines how many go routines read from UDP port (and process logs before sending downstream). |
+| `readers`                               | 1                    | Concurrency level - Determines how many go routines read from UDP port and push to channel (to be handled by processors). |
+| `processors`                            | 1                    | Concurrency level - Determines how many go routines read from channel (pushed by readers) and process logs before sending downstream. |
+| `max_queue_length`                      | 100                  | Determines max length of channel being used by async reader routines. When channel reaches max number, reader routine will block until channel has room. |
 
 ## Example Configurations
 
