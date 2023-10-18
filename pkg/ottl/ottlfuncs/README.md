@@ -165,7 +165,7 @@ Examples:
 
 ### replace_all_patterns
 
-`replace_all_patterns(target, mode, regex, replacement, replacementPrefix, function)`
+`replace_all_patterns(target, mode, regex, replacement, replacementFormat, function)`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
@@ -175,7 +175,7 @@ The `replace_all_patterns` function replaces any segments in a string value or k
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
-The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementPrefix` is an optional string argument to prefix a `replacement` string with.
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement.
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching regex pattern with the hash value of `replacement`.
 
@@ -188,8 +188,8 @@ Examples:
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", "k8s.)`
-- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", "k8s.", SHA256)`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", "k8s.%s")`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", "k8s.%s", SHA256)`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -217,7 +217,7 @@ Examples:
 
 ### replace_pattern
 
-`replace_pattern(target, regex, replacement, replacementPrefix, function)`
+`replace_pattern(target, regex, replacement, replacementFormat, function)`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
@@ -225,7 +225,7 @@ The `replace_pattern` function allows replacing all string sections that match a
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
-The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementPrefix` is an optional string argument to prefix a `replacement` string with.
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement.
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces a matching regex pattern with the hash value of `replacement`.
 
@@ -237,7 +237,7 @@ Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
 - `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "$$1.", "k8s.", SHA256)`
+- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "$$1.", "k8s.%s", SHA256)`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
