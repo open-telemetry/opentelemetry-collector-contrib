@@ -267,6 +267,46 @@ func TestMatcher(t *testing.T) {
 			expected: []string{"err.2023020612.log"},
 		},
 		{
+			name:    "TopN > number of files",
+			files:   []string{"err.2023020611.log", "err.2023020612.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				TopN:  3,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeTimestamp,
+						RegexKey:  "value",
+						Ascending: false,
+						Location:  "UTC",
+						Layout:    `%Y%m%d%H`,
+					},
+				},
+			},
+			expected: []string{"err.2023020612.log", "err.2023020611.log"},
+		},
+		{
+			name:    "TopN == number of files",
+			files:   []string{"err.2023020611.log", "err.2023020612.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				TopN:  2,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeTimestamp,
+						RegexKey:  "value",
+						Ascending: false,
+						Location:  "UTC",
+						Layout:    `%Y%m%d%H`,
+					},
+				},
+			},
+			expected: []string{"err.2023020612.log", "err.2023020611.log"},
+		},
+		{
 			name:    "Timestamp Sorting Ascending",
 			files:   []string{"err.2023020612.log", "err.2023020611.log", "err.2023020609.log", "err.2023020610.log"},
 			include: []string{"err.*.log"},
