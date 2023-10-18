@@ -68,7 +68,7 @@ func New(c Criteria) (*Matcher, error) {
 	}
 
 	if c.OrderingCriteria.TopN < 0 {
-		return nil, fmt.Errorf("`top_n` must be a positive integer")
+		return nil, fmt.Errorf("'top_n' must be a positive integer")
 	}
 
 	if c.OrderingCriteria.TopN == 0 {

@@ -113,7 +113,7 @@ func TestNew(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "`top_n` must be a positive integer",
+			expectedErr: "'top_n' must be a positive integer",
 		},
 		{
 			name: "SortTypeEmpty",
