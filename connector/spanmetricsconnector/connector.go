@@ -343,10 +343,17 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if p.events.Enabled {
 					for l := 0; l < span.Events().Len(); l++ {
 						event := span.Events().At(l)
-						eKey := p.buildKey(serviceName, span, p.eDimensions, event.Attributes())
+						eDimensions := append(p.dimensions, p.eDimensions...)
+
+						rscAndEventAttrs := pcommon.NewMap()
+						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
+						resourceAttr.CopyTo(rscAndEventAttrs)
+						event.Attributes().CopyTo(rscAndEventAttrs)
+
+						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
 						eAttributes, ok := p.metricKeyToDimensions.Get(eKey)
 						if !ok {
-							eAttributes = p.buildAttributes(serviceName, span, event.Attributes(), p.eDimensions)
+							eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions)
 							p.metricKeyToDimensions.Add(eKey, eAttributes)
 						}
 						e := events.GetOrCreate(eKey, eAttributes)
@@ -428,10 +435,10 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 
 // buildKey builds the metric key from the service name and span metadata such as name, kind, status_code and
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
-// or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
+// or resource/event attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) metrics.Key {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
 		concatDimensionValue(p.keyBuf, serviceName, false)
@@ -447,7 +454,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	}
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+		if v, ok := getDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
 			concatDimensionValue(p.keyBuf, v.AsString(), true)
 		}
 	}
