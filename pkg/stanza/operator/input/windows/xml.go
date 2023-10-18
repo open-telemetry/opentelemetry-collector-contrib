@@ -4,6 +4,7 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"time"
@@ -31,6 +32,7 @@ type EventXML struct {
 	Security         *Security        `xml:"System>Security"`
 	Execution        *Execution       `xml:"System>Execution"`
 	EventData        []EventDataEntry `xml:"EventData>Data"`
+	UserData         *AnyXML          `xml:"UserData"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
@@ -135,6 +137,10 @@ func (e *EventXML) parseBody() map[string]interface{} {
 		body["execution"] = e.Execution.asMap()
 	}
 
+	if e.UserData != nil {
+		body["user_data"] = e.UserData.asMap()
+	}
+
 	return body
 }
 
@@ -194,6 +200,77 @@ type Provider struct {
 type EventDataEntry struct {
 	Name  string `xml:"Name,attr"`
 	Value string `xml:",chardata"`
+}
+
+type AnyXML struct {
+	tag        string
+	attributes map[string]string
+	chardata   string
+	children   []AnyXML
+}
+
+func (u *AnyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	u.tag = start.Name.Local
+
+	u.attributes = make(map[string]string, len(start.Attr))
+	for _, attr := range start.Attr {
+		u.attributes[attr.Name.Local] = attr.Value
+	}
+
+	for {
+		// We'll iterate over every token,
+		// adding children elements and character data as we continue.
+		anyToken, err := d.Token()
+		if err != nil {
+			return fmt.Errorf("token: %w", err)
+		}
+
+		switch t := anyToken.(type) {
+		case xml.StartElement:
+			child := AnyXML{}
+			err := d.DecodeElement(&child, &t)
+			if err != nil {
+				return fmt.Errorf("decode start element: %w", err)
+			}
+			u.children = append(u.children, child)
+		case xml.EndElement:
+			// End element means we've reached the end of parsing
+			return nil
+		case xml.CharData:
+			// Strip leading/trailing spaces to ignore newlines and
+			// indentation in formatted XML
+			u.chardata += string(bytes.TrimSpace([]byte(t)))
+		case xml.Comment: // ignore comments
+		case xml.ProcInst: // ignore processing instructions
+		case xml.Directive: // ignore directives
+		default:
+			return fmt.Errorf("unexpected token type %t", t)
+		}
+	}
+}
+
+func (u AnyXML) asMap() map[string]any {
+	m := make(map[string]any, 4)
+
+	m["tag"] = u.tag
+
+	if len(u.attributes) > 0 {
+		m["attributes"] = u.attributes
+	}
+
+	if len(u.chardata) > 0 {
+		m["chardata"] = u.chardata
+	}
+
+	if len(u.children) > 0 {
+		childMaps := make([]map[string]any, len(u.children))
+		for _, child := range u.children {
+			childMaps = append(childMaps, child.asMap())
+		}
+		m["children"] = append(childMaps, childMaps...)
+	}
+
+	return m
 }
 
 // Security contains info pertaining to the user triggering the event.
