@@ -131,10 +131,11 @@ func Test_NewPRWExporter(t *testing.T) {
 // Test_Start checks if the client is properly created as expected.
 func Test_Start(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings: exporterhelper.TimeoutSettings{},
-		RetrySettings:   exporterhelper.RetrySettings{},
-		Namespace:       "",
-		ExternalLabels:  map[string]string{},
+		TimeoutSettings:   exporterhelper.TimeoutSettings{},
+		RetrySettings:     exporterhelper.RetrySettings{},
+		MaxBatchSizeBytes: 3000000,
+		Namespace:         "",
+		ExternalLabels:    map[string]string{},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
@@ -344,6 +345,12 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = endpoint.String()
 	cfg.RemoteWriteQueue.NumConsumers = 1
+	cfg.RetrySettings = exporterhelper.RetrySettings{
+		Enabled:         true,
+		InitialInterval: 100 * time.Millisecond, // Shorter initial interval
+		MaxInterval:     1 * time.Second,        // Shorter max interval
+		MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
+	}
 
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -684,7 +691,8 @@ func Test_PushMetrics(t *testing.T) {
 							ReadBufferSize:  0,
 							WriteBufferSize: 512 * 1024,
 						},
-						RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+						MaxBatchSizeBytes: 3000000,
+						RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
 						TargetInfo: &TargetInfo{
 							Enabled: true,
 						},
@@ -1009,6 +1017,9 @@ func TestRetryOn5xx(t *testing.T) {
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
 		client:      http.DefaultClient,
+		retrySettings: exporterhelper.RetrySettings{
+			Enabled: true,
+		},
 	}
 
 	ctx := context.Background()
@@ -1039,6 +1050,9 @@ func TestNoRetryOn4xx(t *testing.T) {
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
 		client:      http.DefaultClient,
+		retrySettings: exporterhelper.RetrySettings{
+			Enabled: true,
+		},
 	}
 
 	ctx := context.Background()

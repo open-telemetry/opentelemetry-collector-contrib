@@ -264,8 +264,9 @@ func NewPodStatusWithContainer(containerName, containerID string) *corev1.PodSta
 
 func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID string) *corev1.PodStatus {
 	return &corev1.PodStatus{
-		Phase:  corev1.PodFailed,
-		Reason: "Evicted",
+		Phase:    corev1.PodFailed,
+		QOSClass: corev1.PodQOSBestEffort,
+		Reason:   "Evicted",
 		ContainerStatuses: []corev1.ContainerStatus{
 			{
 				Name:         containerName,

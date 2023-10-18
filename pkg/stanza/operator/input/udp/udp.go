@@ -58,6 +58,17 @@ type Config struct {
 	BaseConfig         `mapstructure:",squash"`
 }
 
+type AsyncConfig struct {
+	Readers int `mapstructure:"readers,omitempty"`
+}
+
+// NewAsyncConfig creates a new AsyncConfig with default values.
+func NewAsyncConfig() *AsyncConfig {
+	return &AsyncConfig{
+		Readers: 1,
+	}
+}
+
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
 	ListenAddress   string       `mapstructure:"listen_address,omitempty"`
@@ -66,6 +77,7 @@ type BaseConfig struct {
 	Encoding        string       `mapstructure:"encoding,omitempty"`
 	SplitConfig     split.Config `mapstructure:"multiline,omitempty"`
 	TrimConfig      trim.Config  `mapstructure:",squash"`
+	AsyncConfig     *AsyncConfig `mapstructure:"async,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -101,6 +113,14 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		resolver = helper.NewIPResolver()
 	}
 
+	if c.AsyncConfig == nil {
+		c.AsyncConfig = NewAsyncConfig()
+	}
+
+	if c.AsyncConfig.Readers <= 0 {
+		return nil, fmt.Errorf("async readers must be greater than 0")
+	}
+
 	udpInput := &Input{
 		InputOperator:   inputOperator,
 		address:         address,
@@ -110,6 +130,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		splitFunc:       splitFunc,
 		resolver:        resolver,
 		OneLogPerPacket: c.OneLogPerPacket,
+		AsyncConfig:     c.AsyncConfig,
 	}
 	return udpInput, nil
 }
@@ -121,6 +142,7 @@ type Input struct {
 	address         *net.UDPAddr
 	addAttributes   bool
 	OneLogPerPacket bool
+	AsyncConfig     *AsyncConfig
 
 	connection net.PacketConn
 	cancel     context.CancelFunc
@@ -148,44 +170,47 @@ func (u *Input) Start(_ operator.Persister) error {
 
 // goHandleMessages will handle messages from a udp connection.
 func (u *Input) goHandleMessages(ctx context.Context) {
-	u.wg.Add(1)
+	for i := 0; i < u.AsyncConfig.Readers; i++ {
+		u.wg.Add(1)
+		go u.readAndProcessMessages(ctx)
+	}
+}
 
-	go func() {
-		defer u.wg.Done()
+func (u *Input) readAndProcessMessages(ctx context.Context) {
+	defer u.wg.Done()
 
-		dec := decode.New(u.encoding)
-		buf := make([]byte, 0, MaxUDPSize)
-		for {
-			message, remoteAddr, err := u.readMessage()
-			if err != nil {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					u.Errorw("Failed reading messages", zap.Error(err))
-				}
-				break
+	dec := decode.New(u.encoding)
+	buf := make([]byte, 0, MaxUDPSize)
+	for {
+		message, remoteAddr, err := u.readMessage()
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				u.Errorw("Failed reading messages", zap.Error(err))
 			}
-
-			if u.OneLogPerPacket {
-				log := truncateMaxLog(message)
-				u.handleMessage(ctx, remoteAddr, dec, log)
-				continue
-			}
-
-			scanner := bufio.NewScanner(bytes.NewReader(message))
-			scanner.Buffer(buf, MaxUDPSize)
-
-			scanner.Split(u.splitFunc)
-
-			for scanner.Scan() {
-				u.handleMessage(ctx, remoteAddr, dec, scanner.Bytes())
-			}
-			if err := scanner.Err(); err != nil {
-				u.Errorw("Scanner error", zap.Error(err))
-			}
+			break
 		}
-	}()
+
+		if u.OneLogPerPacket {
+			log := truncateMaxLog(message)
+			u.handleMessage(ctx, remoteAddr, dec, log)
+			continue
+		}
+
+		scanner := bufio.NewScanner(bytes.NewReader(message))
+		scanner.Buffer(buf, MaxUDPSize)
+
+		scanner.Split(u.splitFunc)
+
+		for scanner.Scan() {
+			u.handleMessage(ctx, remoteAddr, dec, scanner.Bytes())
+		}
+		if err := scanner.Err(); err != nil {
+			u.Errorw("Scanner error", zap.Error(err))
+		}
+	}
 }
 
 func truncateMaxLog(data []byte) (token []byte) {

@@ -29,8 +29,8 @@ func TestFormatRFC5424(t *testing.T) {
 		"version":       1,
 	}
 
-	expected := "<165>1 2003-08-24T05:14:15-07:00 192.0.2.1 myproc 8710 - - It's time to make the do-nuts."
-	timeObj1, err := time.Parse(time.RFC3339, "2003-08-24T05:14:15.000003-07:00")
+	expected := "<165>1 2003-08-24T05:14:15.000003-07:00 192.0.2.1 myproc 8710 - - It's time to make the do-nuts."
+	timeObj1, err := time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
 	assert.Equal(t, expected, s.formatMsg(msg, timeObj1))
 	assert.Nil(t, err)
 
@@ -47,8 +47,8 @@ func TestFormatRFC5424(t *testing.T) {
 		"version":       1,
 	}
 
-	expected2 := "<165>1 2003-10-11T22:14:15Z mymachine.example.com evntslog 111 ID47 - BOMAn application event log entry..."
-	timeObj2, err := time.Parse(time.RFC3339, "2003-10-11T22:14:15.003Z")
+	expected2 := "<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog 111 ID47 - BOMAn application event log entry..."
+	timeObj2, err := time.Parse(time.RFC3339Nano, "2003-10-11T22:14:15.003Z")
 	assert.Nil(t, err)
 	assert.Equal(t, expected2, s.formatMsg(msg2, timeObj2))
 
@@ -72,9 +72,9 @@ func TestFormatRFC5424(t *testing.T) {
 		},
 	}
 
-	expectedForm := "\\<165\\>1 2003-08-24T05:14:15-07:00 192\\.0\\.2\\.1 myproc 8710 - " +
+	expectedForm := "\\<165\\>1 2003-08-24T05:14:15.000003-07:00 192\\.0\\.2\\.1 myproc 8710 - " +
 		"\\[\\S+ \\S+ \\S+ \\S+ \\S+\\] It's time to make the do-nuts\\."
-	timeObj3, err := time.Parse(time.RFC3339, "2003-08-24T05:14:15.000003-07:00")
+	timeObj3, err := time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
 	assert.Nil(t, err)
 	formattedMsg := s.formatMsg(msg3, timeObj3)
 	matched, err := regexp.MatchString(expectedForm, formattedMsg)
@@ -87,8 +87,8 @@ func TestFormatRFC5424(t *testing.T) {
 
 	// Test defaults
 	msg4 := map[string]any{}
-	expected = "<165>1 2003-08-24T05:14:15-07:00 - - - - -"
-	timeObj1, err = time.Parse(time.RFC3339, "2003-08-24T05:14:15.000003-07:00")
+	expected = "<165>1 2003-08-24T05:14:15.000003-07:00 - - - - -"
+	timeObj1, err = time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
 	assert.Equal(t, expected, s.formatMsg(msg4, timeObj1))
 	assert.Nil(t, err)
 
@@ -112,9 +112,9 @@ func TestFormatRFC5424(t *testing.T) {
 		},
 	}
 
-	expectedForm = "\\<165\\>1 2003-08-24T05:14:15-07:00 192\\.0\\.2\\.1 myproc 8710 - " +
+	expectedForm = "\\<165\\>1 2003-08-24T05:14:15.000003-07:00 192\\.0\\.2\\.1 myproc 8710 - " +
 		"\\[\\S+ \\S+ \\S+ \\S+ \\S+\\] It's time to make the do-nuts\\."
-	timeObj5, err := time.Parse(time.RFC3339, "2003-08-24T05:14:15.000003-07:00")
+	timeObj5, err := time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
 	assert.Nil(t, err)
 	formattedMsg = s.formatMsg(msg5, timeObj5)
 	matched, err = regexp.MatchString(expectedForm, formattedMsg)
@@ -130,10 +130,25 @@ func TestFormatRFC3164(t *testing.T) {
 
 	s := sender{protocol: protocolRFC3164Str}
 
+	msg := map[string]interface{}{
+		"message":  "'su root' failed for lonvick on /dev/pts/8",
+		"hostname": "mymachine",
+		"appname":  "su",
+		"priority": int64(34),
+		"facility": int64(4),
+	}
+
+	expected := "<34>Aug 24 05:14:15 mymachine su: 'su root' failed for lonvick on /dev/pts/8"
+	timeObj1, err := time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
+	assert.Equal(t, expected, s.formatMsg(msg, timeObj1))
+	assert.Nil(t, err)
+
 	// Test defaults
-	msg4 := map[string]any{}
-	expected := "<165>Aug 24 05:14:15 -"
-	timeObj1, err := time.Parse(time.RFC3339, "2003-08-24T05:14:15.000003-07:00")
+	msg4 := map[string]interface{}{
+		"message": "-",
+	}
+	expected = "<165>Aug 24 05:14:15 - -"
+	timeObj1, err = time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
 	assert.Equal(t, expected, s.formatMsg(msg4, timeObj1))
 	assert.Nil(t, err)
 }
