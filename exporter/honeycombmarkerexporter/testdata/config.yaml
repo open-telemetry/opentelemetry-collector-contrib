@@ -11,19 +11,6 @@ honeycomb:
         log_conditions:
           - body == "test"
 
-honeycomb/color_no_type:
-  api_key: "test-apikey"
-  api_url: "https://api.testhost.io"
-  markers:
-    - color: "green"
-      message_field: "test message"
-      url_field: "https://api.testhost.io"
-      rules:
-        resource_conditions:
-          - IsMatch(attributes["test"], ".*")
-        log_conditions:
-          - body == "test"
-
 honeycomb/bad_syntax_log:
   api_key: "test-apikey"
   api_url: "https://api.testhost.io"
@@ -40,7 +27,7 @@ honeycomb/no_conditions:
   api_key: "test-apikey"
   api_url: "https://api.testhost.io"
   markers:
-    - color: "green"
+    - type: "test-apikey"
       message_field: "test message"
       url_field: "https://api.testhost.io"
       rules:

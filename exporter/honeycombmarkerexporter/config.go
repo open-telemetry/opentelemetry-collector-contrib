@@ -5,6 +5,8 @@ package honeycombmarkerexporter // import "github.com/open-telemetry/opentelemet
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -27,11 +29,8 @@ type Config struct {
 }
 
 type Marker struct {
-	// Type defines the type of Marker.  Markers with the same type appear in Honeycomb with the same color
+	// Type defines the type of Marker.
 	Type string `mapstructure:"type"`
-
-	// Color is the color of the Marker. Will only be used if the Type does not already exist.
-	Color string `mapstructure:"color"`
 
 	// MessageField is the attribute that will be used as the message.
 	// If necessary the value will be converted to a string.
@@ -51,6 +50,11 @@ type Rules struct {
 
 	// LogConditions is the list of ottllog conditions that determine a match
 	LogConditions []string `mapstructure:"log_conditions"`
+
+	//
+	logBoolExpr expr.BoolExpr[ottllog.TransformContext]
+	//
+	resourceBoolExpr expr.BoolExpr[ottllog.TransformContext]
 }
 
 var defaultCfg = createDefaultConfig().(*Config)

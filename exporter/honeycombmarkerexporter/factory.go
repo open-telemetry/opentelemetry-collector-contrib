@@ -5,7 +5,6 @@ package honeycombmarkerexporter // import "github.com/open-telemetry/opentelemet
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,12 +35,15 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	exporter := newLogsExporter(set.Logger, cf)
+	logsExp, err := newHoneycombLogsExporter(set.Logger, cf)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
-		exporter.exportLogs,
+		logsExp.exportMarkers,
 	)
 }
