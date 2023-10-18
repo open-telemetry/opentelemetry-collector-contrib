@@ -343,7 +343,8 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if p.events.Enabled {
 					for l := 0; l < span.Events().Len(); l++ {
 						event := span.Events().At(l)
-						eDimensions := append(p.dimensions, p.eDimensions...)
+						eDimensions := p.dimensions
+						eDimensions = append(eDimensions, p.eDimensions...)
 
 						rscAndEventAttrs := pcommon.NewMap()
 						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
