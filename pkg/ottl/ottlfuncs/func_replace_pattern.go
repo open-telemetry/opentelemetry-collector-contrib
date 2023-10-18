@@ -16,7 +16,7 @@ type ReplacePatternArguments[K any] struct {
 	Target            ottl.GetSetter[K]
 	RegexPattern      string
 	Replacement       ottl.StringGetter[K]
-	ReplacementPrefix ottl.Optional[string] // ReplacementPrefix is an optional prefix to add to the replacement value
+	ReplacementFormat ottl.Optional[string] // ReplacementPrefix is an optional prefix to add to the replacement value
 	Function          ottl.Optional[ottl.FunctionGetter[K]]
 }
 
@@ -35,7 +35,7 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 		return nil, fmt.Errorf("ReplacePatternFactory args must be of type *ReplacePatternArguments[K]")
 	}
 
-	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.ReplacementPrefix, args.Function)
+	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.ReplacementFormat, args.Function)
 }
 
 func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string) (string, error) {

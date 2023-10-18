@@ -23,7 +23,7 @@ type ReplaceAllPatternsArguments[K any] struct {
 	Mode              string
 	RegexPattern      string
 	Replacement       ottl.StringGetter[K]
-	ReplacementPrefix ottl.Optional[string]
+	ReplacementFormat ottl.Optional[string]
 	Function          ottl.Optional[ottl.FunctionGetter[K]]
 }
 
@@ -38,10 +38,10 @@ func createReplaceAllPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 		return nil, fmt.Errorf("ReplaceAllPatternsFactory args must be of type *ReplaceAllPatternsArguments[K]")
 	}
 
-	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement, args.ReplacementPrefix, args.Function)
+	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement, args.ReplacementFormat, args.Function)
 }
 
-func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement ottl.StringGetter[K], replacementPrefix ottl.Optional[string], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
+func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement ottl.StringGetter[K], replacementFormat ottl.Optional[string], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_all_patterns is not a valid pattern: %w", err)
