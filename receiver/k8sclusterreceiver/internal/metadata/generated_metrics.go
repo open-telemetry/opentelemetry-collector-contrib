@@ -1639,7 +1639,7 @@ type metricK8sResourceQuotaHardLimit struct {
 func (m *metricK8sResourceQuotaHardLimit) init() {
 	m.data.SetName("k8s.resource_quota.hard_limit")
 	m.data.SetDescription("The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1690,7 +1690,7 @@ type metricK8sResourceQuotaUsed struct {
 func (m *metricK8sResourceQuotaUsed) init() {
 	m.data.SetName("k8s.resource_quota.used")
 	m.data.SetDescription("The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1937,7 +1937,7 @@ type metricOpenshiftAppliedclusterquotaLimit struct {
 func (m *metricOpenshiftAppliedclusterquotaLimit) init() {
 	m.data.SetName("openshift.appliedclusterquota.limit")
 	m.data.SetDescription("The upper limit for a particular resource in a specific namespace.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1989,7 +1989,7 @@ type metricOpenshiftAppliedclusterquotaUsed struct {
 func (m *metricOpenshiftAppliedclusterquotaUsed) init() {
 	m.data.SetName("openshift.appliedclusterquota.used")
 	m.data.SetDescription("The usage for a particular resource in a specific namespace.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2041,7 +2041,7 @@ type metricOpenshiftClusterquotaLimit struct {
 func (m *metricOpenshiftClusterquotaLimit) init() {
 	m.data.SetName("openshift.clusterquota.limit")
 	m.data.SetDescription("The configured upper limit for a particular resource.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2092,7 +2092,7 @@ type metricOpenshiftClusterquotaUsed struct {
 func (m *metricOpenshiftClusterquotaUsed) init() {
 	m.data.SetName("openshift.clusterquota.used")
 	m.data.SetDescription("The usage for a particular resource with a configured limit.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2197,9 +2197,6 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if mbc.ResourceAttributes.OpencensusResourcetype.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] `opencensus.resourcetype` should not be configured: This resource_attribute is deprecated and will be removed soon.")
-	}
 	mb := &MetricsBuilder{
 		config:                                  mbc,
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),

@@ -49,6 +49,26 @@ func TestCompareTraces(t *testing.T) {
 			withOptions: nil,
 		},
 		{
+			name: "ignore-start-timestamp",
+			compareOptions: []CompareTracesOption{
+				IgnoreStartTimestamp(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": start timestamp doesn't match expected: 11651379494838206464, actual: 0"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-end-timestamp",
+			compareOptions: []CompareTracesOption{
+				IgnoreEndTimestamp(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": end timestamp doesn't match expected: 11651379494838206464, actual: 0"),
+			),
+			withOptions: nil,
+		},
+		{
 			name: "resourcespans-amount-unequal",
 			withoutOptions: multierr.Combine(
 				errors.New("number of resources doesn't match expected: 1, actual: 2"),
