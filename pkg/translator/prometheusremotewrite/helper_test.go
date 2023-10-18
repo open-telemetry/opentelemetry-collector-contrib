@@ -746,13 +746,15 @@ func TestAddScopeInfo(t *testing.T) {
 			}(),
 			func() pcommon.InstrumentationScope {
 				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("scope_name_foo")
+				scope.SetVersion("scope_version_bar")
 				scope.Attributes().PutStr("foo", "bar")
 				return scope
 			}(),
 			Settings{},
 			testdata.TestMetricStartTimestamp,
 			map[string]*prompb.TimeSeries{
-				"info-__name__-otel_scope_info-foo-bar-instance-127.0.0.1:8080-job-prometheus": {
+				"info-__name__-otel_scope_info-foo-bar-instance-127.0.0.1:8080-job-prometheus-otel_scope_name-scope_name_foo-otel_scope_version-scope_version_bar": {
 					Labels: []prompb.Label{
 						{
 							Name:  "__name__",
@@ -769,6 +771,14 @@ func TestAddScopeInfo(t *testing.T) {
 						{
 							Name:  "job",
 							Value: "prometheus",
+						},
+						{
+							Name:  "otel_scope_name",
+							Value: "scope_name_foo",
+						},
+						{
+							Name:  "otel_scope_version",
+							Value: "scope_version_bar",
 						},
 					},
 					Samples: []prompb.Sample{
