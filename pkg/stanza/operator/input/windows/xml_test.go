@@ -324,17 +324,49 @@ func TestUnmarshalWithUserData(t *testing.T) {
 			ProcessID: 1472,
 			ThreadID:  7784,
 		},
-		UserData: &UserData{
-			RawXML: `
-    <LogFileCleared xmlns="http://manifests.microsoft.com/win/2004/08/windows/eventlog">
-      <SubjectUserSid>S-1-5-21-1148437859-4135665037-1195073887-1000</SubjectUserSid>
-      <SubjectUserName>test_user</SubjectUserName>
-      <SubjectDomainName>TEST</SubjectDomainName>
-      <SubjectLogonId>0xa8bb72</SubjectLogonId>
-      <ClientProcessId>4536</ClientProcessId>
-      <ClientProcessStartKey>17732923532772643</ClientProcessStartKey>
-    </LogFileCleared>
-  `,
+		UserData: &AnyXML{
+			tag:        "UserData",
+			attributes: map[string]string{},
+			children: []AnyXML{
+				{
+					tag: "LogFileCleared",
+					attributes: map[string]string{
+						"xmlns": "http://manifests.microsoft.com/win/2004/08/windows/eventlog",
+					},
+					children: []AnyXML{
+						{
+							tag:        "SubjectUserSid",
+							attributes: map[string]string{},
+							chardata:   "S-1-5-21-1148437859-4135665037-1195073887-1000",
+						},
+						{
+							tag:        "SubjectUserName",
+							attributes: map[string]string{},
+							chardata:   "test_user",
+						},
+						{
+							tag:        "SubjectDomainName",
+							attributes: map[string]string{},
+							chardata:   "TEST",
+						},
+						{
+							tag:        "SubjectLogonId",
+							attributes: map[string]string{},
+							chardata:   "0xa8bb72",
+						},
+						{
+							tag:        "ClientProcessId",
+							attributes: map[string]string{},
+							chardata:   "4536",
+						},
+						{
+							tag:        "ClientProcessStartKey",
+							attributes: map[string]string{},
+							chardata:   "17732923532772643",
+						},
+					},
+				},
+			},
 		},
 	}
 
