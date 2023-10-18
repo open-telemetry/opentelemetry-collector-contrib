@@ -122,7 +122,8 @@ Use the below commands to create a `ClusterRole` with required permissions and a
 Following config will work for collecting pods and events only. You need to add
 appropriate rule for collecting other objects.
 
-When using watch mode without specifying a `resource_version` you must also specify `list` verb so that the receiver has permission to do its initial list. 
+When using watch mode you must also specify `list` verb so that the receiver has permission to do its initial list if no
+`resource_version` was supplied or a list to recover from [410 Gone scenarios](https://kubernetes.io/docs/reference/using-api/api-concepts/#410-gone-responses). 
 
 ```bash
 <<EOF | kubectl apply -f -

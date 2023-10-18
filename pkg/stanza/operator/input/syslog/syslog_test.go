@@ -17,8 +17,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize/tokenizetest"
 )
 
 var (
@@ -49,8 +49,8 @@ var (
 				"msg_id":   "ID52020",
 				"priority": 86,
 				"proc_id":  "23108",
-				"structured_data": map[string]map[string]string{
-					"SecureAuth@27389": {
+				"structured_data": map[string]interface{}{
+					"SecureAuth@27389": map[string]interface{}{
 						"PEN":             "27389",
 						"Realm":           "SecureAuth0",
 						"UserHostAddress": "192.168.2.132",
@@ -182,77 +182,57 @@ func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 }
 
 func TestOctetFramingSplitFunc(t *testing.T) {
-	testCases := []tokenizetest.TestCase{
+	testCases := []struct {
+		name  string
+		input []byte
+		steps []splittest.Step
+	}{
 		{
-			Name:  "OneLogSimple",
-			Input: []byte(`17 my log LOGEND 123`),
-			ExpectedTokens: []string{
-				`17 my log LOGEND 123`,
+			name:  "OneLogSimple",
+			input: []byte(`17 my log LOGEND 123`),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`17 my log LOGEND 123`),
 			},
 		},
 		{
-			Name:  "TwoLogsSimple",
-			Input: []byte(`17 my log LOGEND 12317 my log LOGEND 123`),
-			ExpectedTokens: []string{
-				`17 my log LOGEND 123`,
-				`17 my log LOGEND 123`,
+			name:  "TwoLogsSimple",
+			input: []byte(`17 my log LOGEND 12317 my log LOGEND 123`),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`17 my log LOGEND 123`),
+				splittest.ExpectToken(`17 my log LOGEND 123`),
 			},
 		},
 		{
-			Name:  "NoMatches",
-			Input: []byte(`no matches in it`),
-			ExpectedTokens: []string{
-				`no matches in it`,
+			name:  "NoMatches",
+			input: []byte(`no matches in it`),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`no matches in it`),
 			},
 		},
 		{
-			Name:  "NonMatchesAfter",
-			Input: []byte(`17 my log LOGEND 123my log LOGEND 12317 my log LOGEND 123`),
-			ExpectedTokens: []string{
-				`17 my log LOGEND 123`,
-				`my log LOGEND 12317 my log LOGEND 123`,
+			name:  "NonMatchesAfter",
+			input: []byte(`17 my log LOGEND 123my log LOGEND 12317 my log LOGEND 123`),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`17 my log LOGEND 123`),
+				splittest.ExpectToken(`my log LOGEND 12317 my log LOGEND 123`),
 			},
 		},
 		{
-			Name: "HugeLog100",
-			Input: func() []byte {
-				newRaw := tokenizetest.GenerateBytes(100)
-				newRaw = append([]byte(`100 `), newRaw...)
+			name: "HugeLog10000",
+			input: func() []byte {
+				newRaw := splittest.GenerateBytes(10000)
+				newRaw = append([]byte(`10000 `), newRaw...)
 				return newRaw
 			}(),
-			ExpectedTokens: []string{
-				`100 ` + string(tokenizetest.GenerateBytes(100)),
-			},
-		},
-		{
-			Name: "maxCapacity",
-			Input: func() []byte {
-				newRaw := tokenizetest.GenerateBytes(4091)
-				newRaw = append([]byte(`4091 `), newRaw...)
-				return newRaw
-			}(),
-			ExpectedTokens: []string{
-				`4091 ` + string(tokenizetest.GenerateBytes(4091)),
-			},
-		},
-		{
-			Name: "over capacity",
-			Input: func() []byte {
-				newRaw := tokenizetest.GenerateBytes(4092)
-				newRaw = append([]byte(`5000 `), newRaw...)
-				return newRaw
-			}(),
-			ExpectedTokens: []string{
-				`5000 ` + string(tokenizetest.GenerateBytes(4091)),
-				`j`,
+			steps: []splittest.Step{
+				splittest.ExpectToken(`10000 ` + string(splittest.GenerateBytes(10000))),
 			},
 		},
 	}
+
 	for _, tc := range testCases {
-		splitFunc, err := OctetMultiLineBuilder(nil)
+		splitFunc, err := OctetSplitFuncBuilder(nil)
 		require.NoError(t, err)
-		t.Run(tc.Name, tc.Run(splitFunc))
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
 }
-
-// TODO refactor test dependency away from internal?

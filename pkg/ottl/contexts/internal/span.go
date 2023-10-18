@@ -82,6 +82,10 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 		return accessStartTimeUnixNano[K](), nil
 	case "end_time_unix_nano":
 		return accessEndTimeUnixNano[K](), nil
+	case "start_time":
+		return accessStartTime[K](), nil
+	case "end_time":
+		return accessEndTime[K](), nil
 	case "attributes":
 		mapKeys := path[0].Keys
 		if mapKeys == nil {
@@ -382,6 +386,34 @@ func accessEndTimeUnixNano[K SpanContext]() ottl.StandardGetSetter[K] {
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if i, ok := val.(int64); ok {
 				tCtx.GetSpan().SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
+			}
+			return nil
+		},
+	}
+}
+
+func accessStartTime[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().StartTimestamp().AsTime(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if i, ok := val.(time.Time); ok {
+				tCtx.GetSpan().SetStartTimestamp(pcommon.NewTimestampFromTime(i))
+			}
+			return nil
+		},
+	}
+}
+
+func accessEndTime[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().EndTimestamp().AsTime(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if i, ok := val.(time.Time); ok {
+				tCtx.GetSpan().SetEndTimestamp(pcommon.NewTimestampFromTime(i))
 			}
 			return nil
 		},

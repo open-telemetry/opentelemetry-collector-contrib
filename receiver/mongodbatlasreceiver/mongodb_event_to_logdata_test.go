@@ -18,7 +18,7 @@ import (
 )
 
 func TestMongoeventToLogData4_4(t *testing.T) {
-	mongoevent := GetTestEvent4_4()
+	mongoevent := getTestEvent4_4()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
@@ -56,7 +56,7 @@ func TestMongoeventToLogData4_4(t *testing.T) {
 }
 
 func TestMongoeventToLogData4_2(t *testing.T) {
-	mongoevent := GetTestEvent4_2()
+	mongoevent := getTestEvent4_2()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
@@ -92,7 +92,7 @@ func TestMongoeventToLogData4_2(t *testing.T) {
 }
 
 func TestUnknownSeverity(t *testing.T) {
-	mongoevent := GetTestEvent4_4()
+	mongoevent := getTestEvent4_4()
 	mongoevent.Severity = "Unknown"
 	pc := ProjectContext{
 		orgName: "Org",
@@ -108,7 +108,7 @@ func TestUnknownSeverity(t *testing.T) {
 }
 
 func TestMongoEventToAuditLogData5_0(t *testing.T) {
-	mongoevent := GetTestAuditEvent5_0()
+	mongoevent := getTestAuditEvent5_0()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
@@ -165,7 +165,7 @@ func TestMongoEventToAuditLogData5_0(t *testing.T) {
 }
 
 func TestMongoEventToAuditLogData4_2(t *testing.T) {
-	mongoevent := GetTestAuditEvent4_2()
+	mongoevent := getTestAuditEvent4_2()
 	pc := ProjectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
@@ -218,7 +218,7 @@ func TestMongoEventToAuditLogData4_2(t *testing.T) {
 	assert.Equal(t, "RAW MESSAGE", lr.Body().Str())
 }
 
-func GetTestEvent4_4() model.LogEntry {
+func getTestEvent4_4() model.LogEntry {
 	return model.LogEntry{
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-12T18:10:27.215+00:00",
@@ -233,7 +233,7 @@ func GetTestEvent4_4() model.LogEntry {
 	}
 }
 
-func GetTestEvent4_2() model.LogEntry {
+func getTestEvent4_2() model.LogEntry {
 	return model.LogEntry{
 		Severity:  "I",
 		Component: "NETWORK",
@@ -246,7 +246,7 @@ func GetTestEvent4_2() model.LogEntry {
 	}
 }
 
-func GetTestAuditEvent5_0() model.AuditLog {
+func getTestAuditEvent5_0() model.AuditLog {
 	return model.AuditLog{
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-16T15:26:52.563+00:00",
@@ -288,7 +288,7 @@ func GetTestAuditEvent5_0() model.AuditLog {
 	}
 }
 
-func GetTestAuditEvent4_2() model.AuditLog {
+func getTestAuditEvent4_2() model.AuditLog {
 	return model.AuditLog{
 		Timestamp: model.LogTimestamp{
 			Date: "2022-09-16T15:26:52.563+0000",

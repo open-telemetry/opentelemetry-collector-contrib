@@ -2,9 +2,25 @@
 
 package metadata
 
+import "go.opentelemetry.io/collector/confmap"
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/gcp resource attributes.
@@ -15,6 +31,7 @@ type ResourceAttributesConfig struct {
 	CloudProvider           ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	CloudRegion             ResourceAttributeConfig `mapstructure:"cloud.region"`
 	FaasID                  ResourceAttributeConfig `mapstructure:"faas.id"`
+	FaasInstance            ResourceAttributeConfig `mapstructure:"faas.instance"`
 	FaasName                ResourceAttributeConfig `mapstructure:"faas.name"`
 	FaasVersion             ResourceAttributeConfig `mapstructure:"faas.version"`
 	GcpCloudRunJobExecution ResourceAttributeConfig `mapstructure:"gcp.cloud_run.job.execution"`
@@ -45,6 +62,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		FaasID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		FaasInstance: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		FaasName: ResourceAttributeConfig{

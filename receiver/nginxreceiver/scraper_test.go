@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
@@ -38,36 +37,6 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-		pmetrictest.IgnoreTimestamp(),
-		pmetrictest.IgnoreMetricsOrder()))
-}
-
-func TestScraperWithConnectionsAsGauge(t *testing.T) {
-	nginxMock := newMockServer(t)
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = nginxMock.URL + "/status"
-	require.NoError(t, component.ValidateConfig(cfg))
-
-	require.NoError(t, featuregate.GlobalRegistry().Set(connectionsAsSum, false))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(connectionsAsSum, true))
-	}()
-
-	scraper := newNginxScraper(receivertest.NewNopCreateSettings(), cfg)
-
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	actualMetrics, err := scraper.scrape(context.Background())
-	require.NoError(t, err)
-
-	expectedFile := filepath.Join("testdata", "scraper", "expected_with_connections_as_gauge.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 

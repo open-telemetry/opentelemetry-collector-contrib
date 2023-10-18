@@ -29,6 +29,7 @@ func TestFactory(t *testing.T) {
 		require.Equal(t, expected, cfg.Directory)
 	}
 	require.Equal(t, time.Second, cfg.Timeout)
+	require.Equal(t, false, cfg.FSync)
 
 	tests := []struct {
 		name           string

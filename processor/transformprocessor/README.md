@@ -356,7 +356,7 @@ transform:
         - set(attributes["body"], body)
 ``` 
 
-### Comnbine two attributes
+### Combine two attributes
 Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined. 
 ```yaml
 transform:
@@ -403,6 +403,27 @@ transform:
         # To access nested maps you can chain index ([]) operations.
         # If nested or attr3 do no exist in cache then nothing happens.
         - set(attributes["nested.attr3"], cache["nested"]["attr3"])
+```
+
+### Get Severity of an Unstructured Log Body
+
+Given the following unstructured log body
+
+```txt
+[2023-09-22 07:38:22,570] INFO [Something]: some interesting log
+```
+
+You can find the severity using IsMatch:
+
+```yaml
+transform:
+  error_mode: ignore
+  log_statements:
+    - context: log
+      statements:
+        - set(severity_number, SEVERITY_NUMBER_INFO) where IsString(body) and IsMatch(body, "\\sINFO\\s")
+        - set(severity_number, SEVERITY_NUMBER_WARN) where IsString(body) and IsMatch(body, "\\sWARN\\s")
+        - set(severity_number, SEVERITY_NUMBER_ERROR) where IsString(body) and IsMatch(body, "\\sERROR\\s")
 ```
 
 ## Contributing

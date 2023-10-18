@@ -14,8 +14,8 @@ import (
 )
 
 type convertGaugeToSumArguments struct {
-	StringAggTemp string `ottlarg:"0"`
-	Monotonic     bool   `ottlarg:"1"`
+	StringAggTemp string
+	Monotonic     bool
 }
 
 func newConvertGaugeToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
