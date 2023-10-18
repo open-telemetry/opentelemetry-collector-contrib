@@ -64,7 +64,7 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 				if lidBytes == nil && lsp.samplingSource != "" {
 					if value, ok := l.Attributes().Get(lsp.samplingSource); ok {
 						tagPolicyValue = lsp.samplingSource
-						lidBytes = value.Bytes().AsRaw()
+						lidBytes = getBytesFromValue(value)
 					}
 				}
 				priority := lsp.scaledSamplingRate
@@ -101,4 +101,11 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 		return ld, processorhelper.ErrSkipProcessingData
 	}
 	return ld, nil
+}
+
+func getBytesFromValue(value pcommon.Value) []byte {
+	if value.Type() == pcommon.ValueTypeBytes {
+		return value.Bytes().AsRaw()
+	}
+	return []byte(value.AsString())
 }

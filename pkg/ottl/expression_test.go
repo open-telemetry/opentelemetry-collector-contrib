@@ -703,7 +703,7 @@ func Test_FunctionGetter(t *testing.T) {
 		Function    FunctionGetter[any]
 	}
 	type FuncArgs struct {
-		Input StringGetter[any] `ottlarg:"0"`
+		Input StringGetter[any]
 	}
 	tests := []struct {
 		name             string
@@ -720,7 +720,7 @@ func Test_FunctionGetter(t *testing.T) {
 					return "str", nil
 				},
 			},
-			function: StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["SHA256"]},
+			function: StandardFunctionGetter[any]{FCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, Fact: functions["SHA256"]},
 			want:     "anything",
 			valid:    true,
 		},
@@ -731,7 +731,7 @@ func Test_FunctionGetter(t *testing.T) {
 					return nil, nil
 				},
 			},
-			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["SHA250"]},
+			function:         StandardFunctionGetter[any]{FCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, Fact: functions["SHA250"]},
 			want:             "anything",
 			valid:            false,
 			expectedErrorMsg: "undefined function",
@@ -743,7 +743,7 @@ func Test_FunctionGetter(t *testing.T) {
 					return nil, nil
 				},
 			},
-			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["test_arg_mismatch"]},
+			function:         StandardFunctionGetter[any]{FCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, Fact: functions["test_arg_mismatch"]},
 			want:             "anything",
 			valid:            false,
 			expectedErrorMsg: "incorrect number of arguments. Expected: 4 Received: 1",
@@ -755,7 +755,7 @@ func Test_FunctionGetter(t *testing.T) {
 					return nil, nil
 				},
 			},
-			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["cannot_create_function"]},
+			function:         StandardFunctionGetter[any]{FCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, Fact: functions["cannot_create_function"]},
 			want:             "anything",
 			valid:            false,
 			expectedErrorMsg: "couldn't create function: error",

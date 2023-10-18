@@ -7,9 +7,6 @@ resourceMetrics:
         - key: k8s.namespace.uid
           value:
             stringValue: 3604b135-20f2-404b-9c1a-175ef649793e
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -19,7 +16,7 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -31,9 +28,6 @@ resourceMetrics:
         - key: k8s.namespace.uid
           value:
             stringValue: 414da07d-33d0-4043-ae7c-d6b264d134e5
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -43,7 +37,7 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -55,9 +49,6 @@ resourceMetrics:
         - key: k8s.namespace.uid
           value:
             stringValue: 7516afba-1597-49e3-8569-9732b7b94865
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -67,7 +58,7 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -79,9 +70,6 @@ resourceMetrics:
         - key: k8s.namespace.uid
           value:
             stringValue: 8dd32894-d0ff-4cff-bd75-b818c20fc72b
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -91,7 +79,7 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -103,9 +91,6 @@ resourceMetrics:
         - key: k8s.namespace.uid
           value:
             stringValue: caa467a2-d3e8-4e66-8b76-a155464bac79
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -115,7 +100,7 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -127,9 +112,6 @@ resourceMetrics:
         - key: k8s.node.uid
           value:
             stringValue: afd51338-8dbe-4234-aed3-0d1a9b3ee38e
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -139,7 +121,7 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.node.condition_ready
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -154,9 +136,6 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -166,28 +145,28 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.current_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.desired_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod
             gauge:
               dataPoints:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.misscheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.ready_nodes
-            unit: "1"
+            unit: "{node}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -202,9 +181,6 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -214,28 +190,28 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.current_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.desired_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod
             gauge:
               dataPoints:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.misscheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.ready_nodes
-            unit: "1"
+            unit: "{node}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -250,9 +226,6 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -284,9 +257,6 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: local-path-storage
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -318,9 +288,6 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: default
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -352,9 +319,6 @@ resourceMetrics:
         - key: k8s.replicaset.uid
           value:
             stringValue: fafc728a-82c7-49d6-a816-6bff81a191b4
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -364,14 +328,14 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.available
-            unit: "1"
+            unit: "{pod}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -386,9 +350,6 @@ resourceMetrics:
         - key: k8s.replicaset.uid
           value:
             stringValue: 8477bceb-33de-4072-9bb1-fbc762defdda
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -398,14 +359,14 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
             gauge:
               dataPoints:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.available
-            unit: "1"
+            unit: "{pod}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -420,9 +381,6 @@ resourceMetrics:
         - key: k8s.replicaset.uid
           value:
             stringValue: 59e21dbf-09e1-4053-851d-90aad70bfb01
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -432,14 +390,14 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.available
-            unit: "1"
+            unit: "{pod}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -457,9 +415,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5e4d1b29-35e5-4ff6-9779-b02921adcace
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -469,7 +424,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -487,9 +442,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: ebd4da01-4a19-4ed8-bb2b-a75fa9c66160
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -499,7 +451,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -517,9 +469,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 2c672907-5d69-4f91-85e0-f1792164cadc
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -529,7 +478,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -547,9 +496,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 16463557-8966-458d-b356-54f16895a1dd
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -559,7 +505,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -577,9 +523,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 9405ca8b-7b7d-4271-80d1-41901f84c9e8
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -589,7 +532,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -607,9 +550,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 4ce29152-4749-43a7-89b4-b8265bf35b09
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -619,7 +559,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -637,9 +577,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5ebe0d65-e661-4e6b-a053-a3a22adec893
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -649,7 +586,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -667,9 +604,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 38e3c8d5-0c3e-465f-8a79-4117dbcd7607
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -679,7 +613,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -697,9 +631,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: d966df8b-e9d3-41d5-9b25-6c1a5ec9d3dc
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -709,7 +640,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -727,9 +658,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 22a22d93-0ec2-4c90-91b1-29a0b3ea9173
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -739,7 +667,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -769,9 +697,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 16463557-8966-458d-b356-54f16895a1dd
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -781,14 +706,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
@@ -832,9 +757,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 9405ca8b-7b7d-4271-80d1-41901f84c9e8
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -844,14 +766,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
@@ -909,9 +831,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 4ce29152-4749-43a7-89b4-b8265bf35b09
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -921,14 +840,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
@@ -965,9 +884,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: d966df8b-e9d3-41d5-9b25-6c1a5ec9d3dc
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -977,14 +893,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
@@ -1021,9 +937,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5ebe0d65-e661-4e6b-a053-a3a22adec893
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -1033,14 +946,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
@@ -1077,9 +990,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 38e3c8d5-0c3e-465f-8a79-4117dbcd7607
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -1089,14 +999,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -1126,9 +1036,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: ebd4da01-4a19-4ed8-bb2b-a75fa9c66160
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -1138,14 +1045,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
@@ -1196,9 +1103,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5e4d1b29-35e5-4ff6-9779-b02921adcace
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -1208,14 +1112,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
@@ -1273,9 +1177,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 22a22d93-0ec2-4c90-91b1-29a0b3ea9173
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -1285,14 +1186,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -1322,9 +1223,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 2c672907-5d69-4f91-85e0-f1792164cadc
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -1334,14 +1232,14 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-            unit: "1"
+            unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:

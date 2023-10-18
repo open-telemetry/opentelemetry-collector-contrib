@@ -23,6 +23,7 @@ const (
 	source     = "source"
 	sourcetype = "sourcetype"
 	host       = "host"
+	queryTime  = "time"
 )
 
 var (
@@ -76,9 +77,10 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 }
 
 // splunkHecRawToLogData transforms raw splunk event into log
-func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, int, error) {
+func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCustomizer func(pcommon.Resource), config *Config, timestamp pcommon.Timestamp) (plog.Logs, int, error) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
+
 	appendSplunkMetadata(rl, config.HecToOtelAttrs, query.Get(host), query.Get(source), query.Get(sourcetype), query.Get(index))
 	if resourceCustomizer != nil {
 		resourceCustomizer(rl.Resource())
@@ -91,12 +93,14 @@ func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCusto
 		}
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(string(b))
+		logRecord.SetTimestamp(timestamp)
 	} else {
 		sc := bufio.NewScanner(bodyReader)
 		for sc.Scan() {
 			logRecord := sl.LogRecords().AppendEmpty()
 			logLine := sc.Text()
 			logRecord.Body().SetStr(logLine)
+			logRecord.SetTimestamp(timestamp)
 		}
 	}
 

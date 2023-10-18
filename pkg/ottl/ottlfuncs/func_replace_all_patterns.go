@@ -23,6 +23,11 @@ type ReplaceAllPatternsArguments[K any] struct {
 	Mode         string
 	RegexPattern string
 	Replacement  ottl.StringGetter[K]
+	Function     ottl.Optional[ottl.FunctionGetter[K]]
+}
+
+type replaceAllPatternFuncArgs[K any] struct {
+	Input ottl.StringGetter[K]
 }
 
 func NewReplaceAllPatternsFactory[K any]() ottl.Factory[K] {
@@ -36,10 +41,10 @@ func createReplaceAllPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 		return nil, fmt.Errorf("ReplaceAllPatternsFactory args must be of type *ReplaceAllPatternsArguments[K]")
 	}
 
-	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement)
+	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement, args.Function)
 }
 
-func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_all_patterns is not a valid pattern: %w", err)
@@ -50,12 +55,30 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
+		var replacementVal string
 		if err != nil {
 			return nil, err
 		}
-		replacementVal, err := replacement.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
+		if fn.IsEmpty() {
+			replacementVal, err = replacement.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			fnVal := fn.Get()
+			replacementExpr, errNew := fnVal.Get(&replaceAllPatternFuncArgs[K]{Input: replacement})
+			if errNew != nil {
+				return nil, errNew
+			}
+			replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+			if errNew != nil {
+				return nil, errNew
+			}
+			replacementValStr, ok := replacementValRaw.(string)
+			if !ok {
+				return nil, fmt.Errorf("replacement value is not a string")
+			}
+			replacementVal = replacementValStr
 		}
 		updated := pcommon.NewMap()
 		updated.EnsureCapacity(val.Len())

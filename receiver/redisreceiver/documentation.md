@@ -292,6 +292,21 @@ Total number of calls for a command
 | ---- | ----------- | ------ |
 | cmd | Redis command name | Any Str |
 
+### redis.cmd.latency
+
+Command execution latency
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cmd | Redis command name | Any Str |
+| percentile | Percentile | Str: ``p50``, ``p99``, ``p99.9`` |
+
 ### redis.cmd.usec
 
 Total time for all executions of this command

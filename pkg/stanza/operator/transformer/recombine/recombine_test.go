@@ -477,7 +477,7 @@ func TestTransformer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			op, err := tc.config.Build(testutil.Logger(t))
 			require.NoError(t, err)
-			require.NoError(t, op.Start(testutil.NewMockPersister("test")))
+			require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
 			recombine := op.(*Transformer)
 
 			fake := testutil.NewFakeOutput(t)

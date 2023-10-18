@@ -125,9 +125,6 @@ func enabledAttributes() (attributes []string) {
 // If no fields explicitly provided, the defaults are pulled from metadata.yaml.
 func withExtractMetadata(fields ...string) option {
 	return func(p *kubernetesprocessor) error {
-		if len(fields) == 0 {
-			fields = enabledAttributes()
-		}
 		for _, field := range fields {
 			switch field {
 			case conventions.AttributeK8SNamespaceName:
