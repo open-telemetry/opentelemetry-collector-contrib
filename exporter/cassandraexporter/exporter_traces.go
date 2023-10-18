@@ -24,6 +24,12 @@ type tracesExporter struct {
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
 	cluster := gocql.NewCluster(cfg.DSN)
+	if cfg.Auth.UserName != "" && cfg.Auth.Password != "" {
+		cluster.Authenticator = gocql.PasswordAuthenticator{
+			Username: cfg.Auth.UserName,
+			Password: cfg.Auth.Password,
+		}
+	}
 	session, err := cluster.CreateSession()
 	cluster.Keyspace = cfg.Keyspace
 	cluster.Consistency = gocql.Quorum
