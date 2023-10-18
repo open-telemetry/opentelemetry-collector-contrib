@@ -77,7 +77,10 @@ func TestDefaultExporters(t *testing.T) {
 		{
 			exporter: "awscloudwatchlogs",
 			getConfigFn: func() component.Config {
-				return expFactories["awscloudwatchlogs"].CreateDefaultConfig()
+				cfg := expFactories["awscloudwatchlogs"].CreateDefaultConfig().(*awscloudwatchlogsexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.Region = "local"
+				return cfg
 			},
 			skipLifecycle: true,
 		},
@@ -207,15 +210,6 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Project = "otel-testing"
 				cfg.Logstore = "otel-data"
-				return cfg
-			},
-		},
-		{
-			exporter: "awscloudwatch",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["awscloudwatch"].CreateDefaultConfig().(*awscloudwatchlogsexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				cfg.Region = "local"
 				return cfg
 			},
 		},
@@ -454,20 +448,8 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	exporterCount := 0
-	expectedExporters := map[component.Type]struct{}{}
-	for k := range expFactories {
-		expectedExporters[k] = struct{}{}
-	}
+	assert.Equal(t, len(expFactories), len(tests), "All user configurable components must be added to the lifecycle test")
 	for _, tt := range tests {
-		_, ok := expFactories[tt.exporter]
-		if !ok {
-			// not part of the distro, skipping.
-			continue
-		}
-		tt := tt
-		exporterCount++
-		delete(expectedExporters, tt.exporter)
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			factory := expFactories[tt.exporter]
 			assert.Equal(t, tt.exporter, factory.Type())
@@ -482,7 +464,6 @@ func TestDefaultExporters(t *testing.T) {
 			})
 		})
 	}
-	assert.Len(t, expFactories, exporterCount, "All user configurable components must be added to the lifecycle test", expectedExporters)
 }
 
 // GetExporterConfigFn is used customize the configuration passed to the verification.

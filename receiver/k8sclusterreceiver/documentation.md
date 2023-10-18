@@ -274,7 +274,7 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -288,7 +288,7 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -334,7 +334,7 @@ The upper limit for a particular resource in a specific namespace.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -349,7 +349,7 @@ The usage for a particular resource in a specific namespace.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -364,7 +364,7 @@ The configured upper limit for a particular resource.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -378,7 +378,7 @@ The usage for a particular resource with a configured limit.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -429,6 +429,7 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.node.name | The k8s node name. | Any Str | true |
 | k8s.node.uid | The k8s node uid. | Any Str | true |
 | k8s.pod.name | The k8s pod name. | Any Str | true |
+| k8s.pod.qos_class | The k8s pod qos class name. One of Guaranteed, Burstable, BestEffort. | Any Str | false |
 | k8s.pod.uid | The k8s pod uid. | Any Str | true |
 | k8s.replicaset.name | The k8s replicaset name | Any Str | true |
 | k8s.replicaset.uid | The k8s replicaset uid | Any Str | true |
@@ -438,6 +439,5 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |
-| opencensus.resourcetype | The OpenCensus resource type. | Any Str | false |
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |
