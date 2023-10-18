@@ -27,6 +27,10 @@ const (
 
 	// Maximum UDP packet size
 	MaxUDPSize = 64 * 1024
+
+	defaultReaders        = 1
+	defaultProcessors     = 1
+	defaultMaxQueueLength = 100
 )
 
 func init() {
@@ -110,13 +114,13 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	if c.AsyncConfig != nil {
 		if c.AsyncConfig.Readers <= 0 {
-			c.AsyncConfig.Readers = 1
+			c.AsyncConfig.Readers = defaultReaders
 		}
 		if c.AsyncConfig.Processors <= 0 {
-			c.AsyncConfig.Processors = 1
+			c.AsyncConfig.Processors = defaultProcessors
 		}
 		if c.AsyncConfig.MaxQueueLength <= 0 {
-			c.AsyncConfig.MaxQueueLength = 100
+			c.AsyncConfig.MaxQueueLength = defaultMaxQueueLength
 		}
 	}
 
@@ -130,11 +134,10 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		resolver:        resolver,
 		OneLogPerPacket: c.OneLogPerPacket,
 		AsyncConfig:     c.AsyncConfig,
-		messageQueue:    nil,
 	}
 
 	if c.AsyncConfig != nil {
-		udpInput.messageQueue = make(chan MessageAndAddr, c.AsyncConfig.MaxQueueLength)
+		udpInput.messageQueue = make(chan messageAndAddress, c.AsyncConfig.MaxQueueLength)
 	}
 	return udpInput, nil
 }
@@ -156,11 +159,11 @@ type Input struct {
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
 
-	messageQueue chan MessageAndAddr
+	messageQueue chan messageAndAddress
 	stopOnce     sync.Once
 }
 
-type MessageAndAddr struct {
+type messageAndAddress struct {
 	Message    []byte
 	RemoteAddr net.Addr
 }
@@ -255,7 +258,7 @@ func (u *Input) readMessagesAsync(ctx context.Context) {
 			break
 		}
 
-		messageAndAddr := MessageAndAddr{
+		messageAndAddr := messageAndAddress{
 			Message:    message,
 			RemoteAddr: remoteAddr,
 		}

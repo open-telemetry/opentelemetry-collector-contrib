@@ -56,7 +56,7 @@ If set, the `async` configuration block instructs the `udp_input` operator to re
 | ---                                     | ---                  | ---         |
 | `readers`                               | 1                    | Concurrency level - Determines how many go routines read from UDP port and push to channel (to be handled by processors). |
 | `processors`                            | 1                    | Concurrency level - Determines how many go routines read from channel (pushed by readers) and process logs before sending downstream. |
-| `max_queue_length`                      | 100                  | Determines max length of channel being used by async reader routines. When channel reaches max number, reader routine will block until channel has room. |
+| `max_queue_length`                      | 100                  | Determines max number of messages which may be waiting for a processor. While the queue is full, the readers will wait until there's room (readers will not drop messages, but they will not read additional incoming messages during that period). |
 
 ### Example Configurations
 
