@@ -90,7 +90,7 @@ func (c *connectorImp) Capabilities() consumer.Capabilities {
 func (c *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	c.agent.Ingest(ctx, traces)
 	if c.tracesConsumer != nil {
-		c.tracesConsumer.ConsumeTraces(ctx, traces)
+		return c.tracesConsumer.ConsumeTraces(ctx, traces)
 	}
 	return nil
 }
