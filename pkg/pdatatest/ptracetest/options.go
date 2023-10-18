@@ -129,6 +129,28 @@ func sortSpanSlices(ts ptrace.Traces) {
 	}
 }
 
+// IgnoreSpanID is a CompareTracesOption that clears SpanID fields on all spans.
+func IgnoreSpanID() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		spanID := pcommon.NewSpanIDEmpty()
+		maskSpanID(expected, spanID)
+		maskSpanID(actual, spanID)
+	})
+}
+
+func maskSpanID(traces ptrace.Traces, spanID pcommon.SpanID) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				span.SetSpanID(spanID)
+			}
+		}
+	}
+}
+
 // IgnoreStartTimestamp is a CompareTracesOption that clears StartTimestamp fields on all spans.
 func IgnoreStartTimestamp() CompareTracesOption {
 	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
