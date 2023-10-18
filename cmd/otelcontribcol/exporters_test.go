@@ -49,6 +49,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
@@ -60,6 +61,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestDefaultExporters(t *testing.T) {
@@ -70,9 +72,10 @@ func TestDefaultExporters(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		getConfigFn   getExporterConfigFn
-		exporter      component.Type
-		skipLifecycle bool
+		getConfigFn      getExporterConfigFn
+		exporter         component.Type
+		skipLifecycle    bool
+		expectConsumeErr bool
 	}{
 		{
 			exporter: "awscloudwatchlogs",
@@ -80,12 +83,16 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["awscloudwatchlogs"].CreateDefaultConfig().(*awscloudwatchlogsexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
-			skipLifecycle: true,
+			expectConsumeErr: true,
 		},
 		{
-			exporter: "awss3",
+			exporter:         "awss3",
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "file",
@@ -102,8 +109,12 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Brokers = []string{"invalid:9092"}
 				// this disables contacting the broker so we can successfully create the exporter
 				cfg.Metadata.Full = false
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "debug",
@@ -118,8 +129,12 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 				}
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "otlp",
@@ -128,16 +143,24 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 				}
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "otlphttp",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "prometheus",
@@ -149,6 +172,14 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "prometheusremotewrite",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["prometheusremotewrite"].CreateDefaultConfig().(*prometheusremotewriteexporter.Config)
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.RemoteWriteQueue.Enabled = false
+				cfg.RetrySettings.Enabled = false
+				return cfg
+			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "pulsar",
@@ -164,8 +195,12 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["sapm"].CreateDefaultConfig().(*sapmexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "signalfx",
@@ -174,8 +209,12 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.AccessToken = "my_fake_token"
 				cfg.IngestURL = "http://" + endpoint
 				cfg.APIURL = "http://" + endpoint
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "splunk_hec",
@@ -183,16 +222,24 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["splunk_hec"].CreateDefaultConfig().(*splunkhecexporter.Config)
 				cfg.Token = "my_fake_token"
 				cfg.Endpoint = "http://" + endpoint
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "zipkin",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["zipkin"].CreateDefaultConfig().(*zipkinexporter.Config)
 				cfg.Endpoint = endpoint
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "awskinesis",
@@ -221,6 +268,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Region = "local"
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "awsxray",
@@ -230,6 +278,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Region = "local"
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "azuredataexplorer",
@@ -259,6 +308,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "clickhouse",
@@ -285,16 +335,24 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Traces.Endpoint = endpoint
 				cfg.Logs.Endpoint = endpoint
 				cfg.Metrics.Endpoint = endpoint
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "datadog",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["datadog"].CreateDefaultConfig().(*datadogexporter.Config)
 				cfg.API.Key = "cutedogsgotoheaven"
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "dataset",
@@ -302,8 +360,13 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["dataset"].CreateDefaultConfig().(*datasetexporter.Config)
 				cfg.DatasetURL = "https://" + endpoint
 				cfg.APIKey = "secret-key"
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
+			skipLifecycle:    true, // shutdown fails if there is buffered data
 		},
 		{
 			exporter: "dynatrace",
@@ -311,14 +374,20 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["dynatrace"].CreateDefaultConfig().(*dtconf.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.APIToken = "dynamictracing"
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "elasticsearch",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
 				cfg.Endpoints = []string{"http://" + endpoint}
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
 				return cfg
 			},
 		},
@@ -329,7 +398,9 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Source = "magic-source"
 				cfg.AuthConfig.CredentialFile = filepath.Join(t.TempDir(), "random.file")
-
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -351,6 +422,9 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -363,6 +437,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.AgentKey = "Key1"
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "loadbalancing",
@@ -371,11 +446,15 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Resolver = loadbalancingexporter.ResolverSettings{Static: &loadbalancingexporter.StaticResolver{Hostnames: []string{"127.0.0.1"}}}
 				return cfg
 			},
+			expectConsumeErr: true, // the exporter requires traces with service.name resource attribute
 		},
 		{
 			exporter: "logicmonitor",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["logicmonitor"].CreateDefaultConfig().(*logicmonitorexporter.Config)
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -385,22 +464,33 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["logzio"].CreateDefaultConfig().(*logzioexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "loki",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["loki"].CreateDefaultConfig().(*lokiexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "mezmo",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["mezmo"].CreateDefaultConfig().(*mezmoexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
 		},
@@ -416,6 +506,9 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "skywalking",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -425,9 +518,12 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["sumologic"].CreateDefaultConfig().(*sumologicexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
-
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "tanzuobservability",
@@ -435,16 +531,20 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["tanzuobservability"].CreateDefaultConfig().(*tanzuobservabilityexporter.Config)
 				cfg.Traces.Endpoint = "http://" + endpoint
 				cfg.Metrics.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "tencentcloud_logservice",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["tencentcloud_logservice"].CreateDefaultConfig().(*tencentcloudlogserviceexporter.Config)
-
 				return cfg
 			},
+			expectConsumeErr: true,
 		},
 	}
 
@@ -460,7 +560,7 @@ func TestDefaultExporters(t *testing.T) {
 				if tt.skipLifecycle {
 					t.SkipNow()
 				}
-				verifyExporterLifecycle(t, factory, tt.getConfigFn)
+				verifyExporterLifecycle(t, factory, tt.getConfigFn, tt.expectConsumeErr)
 			})
 		})
 	}
@@ -474,7 +574,7 @@ type getExporterConfigFn func() component.Config
 // verifyExporterLifecycle is used to test if an exporter type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn getExporterConfigFn) {
+func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn getExporterConfigFn, expectErr bool) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
 	expCreateSettings := exportertest.NewNopCreateSettings()
@@ -502,6 +602,20 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 			exps = append(exps, exp)
 		}
 		for _, exp := range exps {
+			var err error
+			assert.NotPanics(t, func() {
+				switch e := exp.(type) {
+				case exporter.Logs:
+					err = e.ConsumeLogs(ctx, testdata.GenerateLogsManyLogRecordsSameResource(2))
+				case exporter.Metrics:
+					err = e.ConsumeMetrics(ctx, testdata.GenerateMetricsTwoMetrics())
+				case exporter.Traces:
+					err = e.ConsumeTraces(ctx, testdata.GenerateTracesTwoSpansSameResource())
+				}
+			})
+			if !expectErr {
+				assert.NoError(t, err)
+			}
 			assert.NoError(t, exp.Shutdown(ctx))
 		}
 	}
