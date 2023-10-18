@@ -28,6 +28,8 @@ import (
 const (
 	caFile             = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 	collectionInterval = 60 * time.Second
+	// needs to start with "containerInsightsKubeAPIServerScraper" for histogram deltas in the emf exporter
+	jobName = "containerInsightsKubeAPIServerScraper"
 )
 
 var (
@@ -45,9 +47,9 @@ var (
 		"^apiserver_requested_deprecated_apis$",
 		"^apiserver_storage_list_duration_seconds_(bucket|sum|count)$",
 		"^apiserver_storage_objects$",
-		"^apiserver_storage_db_total_size_in_bytes_(bucket|sum|count)$",
-		"^apiserver_storage_size_bytes_(bucket|sum|count)$",
-		"^etcd_db_total_size_in_bytes_(bucket|sum|count)$",
+		"^apiserver_storage_db_total_size_in_bytes$",
+		"^apiserver_storage_size_bytes$",
+		"^etcd_db_total_size_in_bytes$",
 		"^etcd_request_duration_seconds_(bucket|sum|count)$",
 		"^rest_client_request_duration_seconds_(bucket|sum|count)$",
 		"^rest_client_requests_total$",
@@ -104,7 +106,7 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 		},
 		ScrapeInterval:  model.Duration(collectionInterval),
 		ScrapeTimeout:   model.Duration(collectionInterval),
-		JobName:         fmt.Sprintf("%s/%s", "containerInsightsKubeAPIServerScraper", opts.Endpoint),
+		JobName:         fmt.Sprintf("%s/%s", jobName, opts.Endpoint),
 		HonorTimestamps: true,
 		Scheme:          "https",
 		MetricsPath:     "/metrics",

@@ -5,6 +5,7 @@ package awsemfexporter
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"sort"
 	"testing"
@@ -22,7 +23,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
+const defaultNumberOfTestMetrics = 3
+
 func createTestResourceMetrics() pmetric.ResourceMetrics {
+	return createTestResourceMetricsHelper(defaultNumberOfTestMetrics)
+}
+
+func createTestResourceMetricsHelper(numMetrics int) pmetric.ResourceMetrics {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
 	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "myServiceName")
@@ -79,7 +86,7 @@ func createTestResourceMetrics() pmetric.ResourceMetrics {
 	q2.SetQuantile(1)
 	q2.SetValue(5)
 
-	for i := 0; i < 2; i++ {
+	for i := 1; i < numMetrics; i++ {
 		m = sm.Metrics().AppendEmpty()
 		m.SetName("spanCounter")
 		m.SetDescription("Counting all the spans")
@@ -268,6 +275,10 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceNamespace)
 	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceName)
 
+	// need to have 1 more metric than the default because the first is not going to be retained because it is a delta metric
+	containerInsightMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
+	containerInsightMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKubeAPIServerScraper")
+
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
 			value: float64(1),
@@ -304,6 +315,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		counterLabels     map[string]string
 		timerLabels       map[string]string
 		expectedNamespace string
+		expectedReceiver  string
 	}{
 		{
 			"w/ instrumentation library and namespace",
@@ -318,6 +330,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName":            "testSpan",
 			},
 			"myServiceNS/myServiceName",
+			"prometheus",
 		},
 		{
 			"w/o instrumentation library, w/ namespace",
@@ -330,6 +343,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName": "testSpan",
 			},
 			"myServiceNS/myServiceName",
+			prometheusReceiver,
 		},
 		{
 			"w/o instrumentation library and namespace",
@@ -342,20 +356,43 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName": "testSpan",
 			},
 			defaultNamespace,
+			prometheusReceiver,
+		},
+		{
+			"container insights receiver",
+			containerInsightMetric,
+			map[string]string{
+				"isItAnError": "false",
+				"spanName":    "testSpan",
+			},
+			map[string]string{
+				(oTellibDimensionKey): "cloudwatch-lib",
+				"spanName":            "testSpan",
+			},
+			"myServiceNS/containerInsightsKubeAPIServerScraper",
+			containerInsightsReceiver,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
 			assert.Nil(t, err)
 			assert.NotNil(t, groupedMetrics)
-			assert.Equal(t, 3, len(groupedMetrics))
+			assert.Equal(t, defaultNumberOfTestMetrics, len(groupedMetrics))
 
 			for _, v := range groupedMetrics {
 				assert.Equal(t, tc.expectedNamespace, v.metadata.namespace)
+				assert.Equal(t, tc.expectedReceiver, v.metadata.receiver)
+
+				for _, metric := range v.metrics {
+					if mv, ok := metric.value.(float64); ok {
+						// round the metrics, the floats can get off by a very small amount
+						metric.value = math.Round(mv*100000) / 100000
+					}
+				}
+
 				switch {
 				case v.metadata.metricDataType == pmetric.MetricTypeSum:
 					assert.Equal(t, 2, len(v.metrics))

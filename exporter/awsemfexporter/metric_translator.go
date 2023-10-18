@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -27,6 +28,7 @@ const (
 	singleDimensionRollupOnly    = "SingleDimensionRollupOnly"
 
 	prometheusReceiver        = "prometheus"
+	containerInsightsReceiver = "awscontainerinsight"
 	attributeReceiver         = "receiver"
 	fieldPrometheusMetricType = "prom_metric_type"
 )
@@ -124,6 +126,14 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
 		metricReceiver = receiver.Str()
 	}
+
+	if serviceName, ok := rm.Resource().Attributes().Get("service.name"); ok {
+		if strings.HasPrefix(serviceName.Str(), "containerInsightsKubeAPIServerScraper") {
+			// the prometheus metrics that come from the container insight receiver need to be clearly tagged as coming from container insights
+			metricReceiver = containerInsightsReceiver
+		}
+	}
+
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		if ilm.Scope().Name() != "" {

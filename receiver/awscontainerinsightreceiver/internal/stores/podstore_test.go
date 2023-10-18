@@ -720,7 +720,6 @@ func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
-	//assert.Equal(t, "Waiting", metric.GetTag(ci.ContainerStatus))
 	assert.Equal(t, 2, metric.GetField(ci.MetricName(ci.TypePod, ci.StatusContainerWaiting)))
 	assert.Equal(t, 2, metric.GetField(ci.MetricName(ci.TypePod, ci.StatusContainerWaitingReasonCrashLoopBackOff)))
 	// sparse metrics

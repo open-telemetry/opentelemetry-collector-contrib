@@ -198,7 +198,7 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 		},
 		ScrapeInterval:  cfg.ScrapeConfigs[0].ScrapeInterval,
 		ScrapeTimeout:   cfg.ScrapeConfigs[0].ScrapeInterval,
-		JobName:         fmt.Sprintf("%s/%s", "containerInsightsKubeAPIServerScraper", cfg.ScrapeConfigs[0].MetricsPath),
+		JobName:         fmt.Sprintf("%s/%s", jobName, cfg.ScrapeConfigs[0].MetricsPath),
 		HonorTimestamps: true,
 		Scheme:          "http",
 		MetricsPath:     cfg.ScrapeConfigs[0].MetricsPath,
@@ -268,4 +268,9 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	assert.True(t, *consumer.httpConnected)
 	assert.True(t, *consumer.relabeled)
 	assert.False(t, *consumer.rpcDurationTotal) // this will get filtered out by our metric relabel config
+}
+
+func TestPrometheusScraperJobName(t *testing.T) {
+	// needs to start with containerInsights
+	assert.True(t, strings.HasPrefix(jobName, "containerInsightsKubeAPIServerScraper"))
 }

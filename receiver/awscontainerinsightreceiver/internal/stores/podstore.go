@@ -608,11 +608,7 @@ func (p *PodStore) addPodContainerStatusMetrics(metric CIMetric, pod *corev1.Pod
 			reason := containerStatus.State.Waiting.Reason
 			if reason != "" {
 				if val, ok := ci.WaitingReasonLookup[reason]; ok {
-					if _, foundStatus := possibleStatuses[val]; foundStatus {
-						possibleStatuses[val]++
-					} else {
-						possibleStatuses[val] = 1
-					}
+					possibleStatuses[val]++
 				}
 			}
 		case containerStatus.State.Terminated != nil:
@@ -624,11 +620,7 @@ func (p *PodStore) addPodContainerStatusMetrics(metric CIMetric, pod *corev1.Pod
 
 		if containerStatus.LastTerminationState.Terminated != nil && containerStatus.LastTerminationState.Terminated.Reason != "" {
 			if strings.Contains(containerStatus.LastTerminationState.Terminated.Reason, "OOMKilled") {
-				if _, foundStatus := possibleStatuses[ci.StatusContainerTerminatedReasonOOMKilled]; foundStatus {
-					possibleStatuses[ci.StatusContainerTerminatedReasonOOMKilled]++
-				} else {
-					possibleStatuses[ci.StatusContainerTerminatedReasonOOMKilled] = 1
-				}
+				possibleStatuses[ci.StatusContainerTerminatedReasonOOMKilled]++
 			}
 		}
 	}
