@@ -9,4 +9,5 @@ import (
 const (
 	Type                     = "datadog"
 	TracesToMetricsStability = component.StabilityLevelBeta
+	TracesToTracesStability  = component.StabilityLevelBeta
 )
