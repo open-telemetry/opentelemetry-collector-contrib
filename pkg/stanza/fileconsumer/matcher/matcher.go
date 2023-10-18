@@ -142,10 +142,9 @@ func (m Matcher) MatchFiles() ([]string, error) {
 		return result, errors.Join(err, errs)
 	}
 
-	numFiles := m.topN
-	if len(result) < numFiles {
-		numFiles = len(result)
+	if len(result) <= m.topN {
+		return result, errors.Join(err, errs)
 	}
 
-	return result[:numFiles], errors.Join(err, errs)
+	return result[:m.topN], errors.Join(err, errs)
 }
