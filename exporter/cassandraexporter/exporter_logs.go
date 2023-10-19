@@ -28,7 +28,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	if cfg.Auth.UserName != "" && cfg.Auth.Password != "" {
 		cluster.Authenticator = gocql.PasswordAuthenticator{
 			Username: cfg.Auth.UserName,
-			Password: cfg.Auth.Password,
+			Password: string(cfg.Auth.Password),
 		}
 	}
 	session, err := cluster.CreateSession()
