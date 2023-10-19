@@ -272,6 +272,140 @@ func TestParseBodyFullExecution(t *testing.T) {
 	require.Equal(t, expected, xml.parseBody())
 }
 
+func TestParseBodyUserData(t *testing.T) {
+	xml := EventXML{
+		EventID: EventID{
+			ID:         1,
+			Qualifiers: 2,
+		},
+		Provider: Provider{
+			Name:            "provider",
+			GUID:            "guid",
+			EventSourceName: "event source",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2020-07-30T01:01:01.123456789Z",
+		},
+		Computer:         "computer",
+		Channel:          "application",
+		RecordID:         1,
+		Level:            "Information",
+		Message:          "message",
+		Task:             "task",
+		Opcode:           "opcode",
+		Keywords:         []string{"keyword"},
+		RenderedLevel:    "rendered_level",
+		RenderedTask:     "rendered_task",
+		RenderedOpcode:   "rendered_opcode",
+		RenderedKeywords: []string{"RenderedKeywords"},
+		UserData: &AnyXML{
+			tag:        "UserData",
+			attributes: map[string]string{},
+			children: []AnyXML{
+				{
+					tag: "LogFileCleared",
+					attributes: map[string]string{
+						"xmlns": "http://manifests.microsoft.com/win/2004/08/windows/eventlog",
+					},
+					children: []AnyXML{
+						{
+							tag:        "SubjectUserSid",
+							attributes: map[string]string{},
+							chardata:   "S-1-5-21-1148437859-4135665037-1195073887-1000",
+						},
+						{
+							tag:        "SubjectUserName",
+							attributes: map[string]string{},
+							chardata:   "test_user",
+						},
+						{
+							tag:        "SubjectDomainName",
+							attributes: map[string]string{},
+							chardata:   "TEST",
+						},
+						{
+							tag:        "SubjectLogonId",
+							attributes: map[string]string{},
+							chardata:   "0xa8bb72",
+						},
+						{
+							tag:        "ClientProcessId",
+							attributes: map[string]string{},
+							chardata:   "4536",
+						},
+						{
+							tag:        "ClientProcessStartKey",
+							attributes: map[string]string{},
+							chardata:   "17732923532772643",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	expected := map[string]interface{}{
+		"event_id": map[string]interface{}{
+			"id":         uint32(1),
+			"qualifiers": uint16(2),
+		},
+		"provider": map[string]interface{}{
+			"name":         "provider",
+			"guid":         "guid",
+			"event_source": "event source",
+		},
+		"system_time": "2020-07-30T01:01:01.123456789Z",
+		"computer":    "computer",
+		"channel":     "application",
+		"record_id":   uint64(1),
+		"level":       "rendered_level",
+		"message":     "message",
+		"task":        "rendered_task",
+		"opcode":      "rendered_opcode",
+		"keywords":    []string{"RenderedKeywords"},
+		"event_data":  map[string]interface{}{},
+		"user_data": map[string]any{
+			"tag": "UserData",
+			"children": []map[string]any{
+				{
+					"tag": "LogFileCleared",
+					"attributes": map[string]string{
+						"xmlns": "http://manifests.microsoft.com/win/2004/08/windows/eventlog",
+					},
+					"children": []map[string]any{
+						{
+							"tag":      "SubjectUserSid",
+							"chardata": "S-1-5-21-1148437859-4135665037-1195073887-1000",
+						},
+						{
+							"tag":      "SubjectUserName",
+							"chardata": "test_user",
+						},
+						{
+							"tag":      "SubjectDomainName",
+							"chardata": "TEST",
+						},
+						{
+							"tag":      "SubjectLogonId",
+							"chardata": "0xa8bb72",
+						},
+						{
+							"tag":      "ClientProcessId",
+							"chardata": "4536",
+						},
+						{
+							"tag":      "ClientProcessStartKey",
+							"chardata": "17732923532772643",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	require.Equal(t, expected, xml.parseBody())
+}
+
 func TestParseNoRendered(t *testing.T) {
 	xml := EventXML{
 		EventID: EventID{

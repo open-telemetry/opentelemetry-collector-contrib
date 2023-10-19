@@ -263,11 +263,11 @@ func (u AnyXML) asMap() map[string]any {
 	}
 
 	if len(u.children) > 0 {
-		childMaps := make([]map[string]any, len(u.children))
+		childMaps := make([]map[string]any, 0, len(u.children))
 		for _, child := range u.children {
 			childMaps = append(childMaps, child.asMap())
 		}
-		m["children"] = append(childMaps, childMaps...)
+		m["children"] = childMaps
 	}
 
 	return m
