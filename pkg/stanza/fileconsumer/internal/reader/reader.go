@@ -42,7 +42,7 @@ type Metadata struct {
 type Reader struct {
 	*Config
 	*Metadata
-	FileName      string
+	fileName      string
 	logger        *zap.SugaredLogger
 	file          *os.File
 	lineSplitFunc bufio.SplitFunc
@@ -138,8 +138,8 @@ func (r *Reader) finalizeHeader() {
 // Delete will close and delete the file
 func (r *Reader) delete() {
 	r.Close()
-	if err := os.Remove(r.FileName); err != nil {
-		r.logger.Errorf("could not delete %s", r.FileName)
+	if err := os.Remove(r.fileName); err != nil {
+		r.logger.Errorf("could not delete %s", r.fileName)
 	}
 }
 
@@ -188,6 +188,10 @@ func min0(a, b int) int {
 	return b
 }
 
+func (r *Reader) NameEquals(other *Reader) bool {
+	return r.fileName == other.fileName
+}
+
 // ValidateOrClose returns true if the reader still has a valid file handle, false otherwise.
 // If false is returned, the file handle should be considered closed.
 //
@@ -201,14 +205,14 @@ func (r *Reader) ValidateOrClose() bool {
 	}
 	refreshedFingerprint, err := fingerprint.New(r.file, r.FingerprintSize)
 	if err != nil {
-		r.logger.Debugw("Closing unreadable file", zap.Error(err), zap.String(attrs.LogFileName, r.FileName))
+		r.logger.Debugw("Closing unreadable file", zap.Error(err), zap.String(attrs.LogFileName, r.fileName))
 		r.Close()
 		return false
 	}
 	if refreshedFingerprint.StartsWith(r.Fingerprint) {
 		return true
 	}
-	r.logger.Debugw("Closing truncated file", zap.String(attrs.LogFileName, r.FileName))
+	r.logger.Debugw("Closing truncated file", zap.String(attrs.LogFileName, r.fileName))
 	r.Close()
 	return false
 }

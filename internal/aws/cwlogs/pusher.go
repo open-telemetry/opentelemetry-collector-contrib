@@ -23,8 +23,6 @@ const (
 	perEventHeaderBytes    = 26
 	maxRequestPayloadBytes = 1024 * 1024 * 1
 
-	minPusherIntervalMs = 200 // 5 TPS
-
 	truncatedSuffix = "[Truncated...]"
 
 	eventTimestampLimitInPast  = 14 * 24 * time.Hour // None of the log events in the batch can be older than 14 days
@@ -40,8 +38,8 @@ type Event struct {
 	InputLogEvent *cloudwatchlogs.InputLogEvent
 	// The time which log generated.
 	GeneratedTime time.Time
-	LogGroupName  string
-	LogStreamName string
+	// Identify what is the stream of destination of this event
+	StreamKey
 }
 
 // NewEvent creates a new log event
@@ -55,7 +53,8 @@ func NewEvent(timestampMs int64, message string) *Event {
 	return event
 }
 
-type PusherKey struct {
+// Uniquely identify a cloudwatch logs stream
+type StreamKey struct {
 	LogGroupName  string
 	LogStreamName string
 }
@@ -111,7 +110,7 @@ type eventBatch struct {
 }
 
 // Create a new log event batch if needed.
-func newEventBatch(key PusherKey) *eventBatch {
+func newEventBatch(key StreamKey) *eventBatch {
 	return &eventBatch{
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
 			LogGroupName:  aws.String(key.LogGroupName),
@@ -187,20 +186,17 @@ type logPusher struct {
 	// log stream name of the current logPusher
 	logStreamName *string
 
-	batchUpdateLock sync.Mutex
-	logEventBatch   *eventBatch
+	logEventBatch *eventBatch
 
-	pushLock         sync.Mutex
-	streamToken      string // no init value
 	svcStructuredLog Client
 	retryCnt         int
 }
 
 // NewPusher creates a logPusher instance
-func NewPusher(pusherKey PusherKey, retryCnt int,
+func NewPusher(streamKey StreamKey, retryCnt int,
 	svcStructuredLog Client, logger *zap.Logger) Pusher {
 
-	pusher := newLogPusher(pusherKey, svcStructuredLog, logger)
+	pusher := newLogPusher(streamKey, svcStructuredLog, logger)
 
 	pusher.retryCnt = defaultRetryCount
 	if retryCnt > 0 {
@@ -211,15 +207,15 @@ func NewPusher(pusherKey PusherKey, retryCnt int,
 }
 
 // Only create a logPusher, but not start the instance.
-func newLogPusher(pusherKey PusherKey,
+func newLogPusher(streamKey StreamKey,
 	svcStructuredLog Client, logger *zap.Logger) *logPusher {
 	pusher := &logPusher{
-		logGroupName:     aws.String(pusherKey.LogGroupName),
-		logStreamName:    aws.String(pusherKey.LogStreamName),
+		logGroupName:     aws.String(streamKey.LogGroupName),
+		logStreamName:    aws.String(streamKey.LogStreamName),
 		svcStructuredLog: svcStructuredLog,
 		logger:           logger,
 	}
-	pusher.logEventBatch = newEventBatch(pusherKey)
+	pusher.logEventBatch = newEventBatch(streamKey)
 
 	return pusher
 }
@@ -254,8 +250,6 @@ func (p *logPusher) ForceFlush() error {
 }
 
 func (p *logPusher) pushEventBatch(req interface{}) error {
-	p.pushLock.Lock()
-	defer p.pushLock.Unlock()
 
 	// http://docs.aws.amazon.com/goto/SdkForGoV1/logs-2014-03-28/PutLogEvents
 	// The log events in the batch must be in chronological ordered by their
@@ -265,44 +259,19 @@ func (p *logPusher) pushEventBatch(req interface{}) error {
 	logEventBatch.sortLogEvents()
 	putLogEventsInput := logEventBatch.putLogEventsInput
 
-	if p.streamToken == "" {
-		var err error
-		// log part and retry logic are already done inside the CreateStream
-		// when the error is not nil, the stream token is "", which is handled in the below logic.
-		p.streamToken, err = p.svcStructuredLog.CreateStream(p.logGroupName, p.logStreamName)
-		// TODO Known issue: createStream will fail if the corresponding logGroup and logStream has been created.
-		// The retry mechanism helps get the first stream token, yet the first batch will be sent twice in this situation.
-		if err != nil {
-			p.logger.Warn("Failed to create stream token", zap.Error(err))
-		}
-	}
-
-	if p.streamToken != "" {
-		putLogEventsInput.SequenceToken = aws.String(p.streamToken)
-	}
-
 	startTime := time.Now()
 
-	var tmpToken *string
-	var err error
-	tmpToken, err = p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
+	err := p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
 
 	if err != nil {
 		return err
 	}
 
-	p.logger.Info("logpusher: publish log events successfully.",
+	p.logger.Debug("logpusher: publish log events successfully.",
 		zap.Int("NumOfLogEvents", len(putLogEventsInput.LogEvents)),
 		zap.Float64("LogEventsSize", float64(logEventBatch.byteTotal)/float64(1024)),
 		zap.Int64("Time", time.Since(startTime).Nanoseconds()/int64(time.Millisecond)))
 
-	if tmpToken != nil {
-		p.streamToken = *tmpToken
-	}
-	diff := time.Since(startTime)
-	if timeLeft := minPusherIntervalMs*time.Millisecond - diff; timeLeft > 0 {
-		time.Sleep(timeLeft)
-	}
 	return nil
 }
 
@@ -311,14 +280,11 @@ func (p *logPusher) addLogEvent(logEvent *Event) *eventBatch {
 		return nil
 	}
 
-	p.batchUpdateLock.Lock()
-	defer p.batchUpdateLock.Unlock()
-
 	var prevBatch *eventBatch
 	currentBatch := p.logEventBatch
 	if currentBatch.exceedsLimit(logEvent.eventPayloadBytes()) || !currentBatch.isActive(logEvent.InputLogEvent.Timestamp) {
 		prevBatch = currentBatch
-		currentBatch = newEventBatch(PusherKey{
+		currentBatch = newEventBatch(StreamKey{
 			LogGroupName:  *p.logGroupName,
 			LogStreamName: *p.logStreamName,
 		})
@@ -330,17 +296,126 @@ func (p *logPusher) addLogEvent(logEvent *Event) *eventBatch {
 }
 
 func (p *logPusher) renewEventBatch() *eventBatch {
-	p.batchUpdateLock.Lock()
-	defer p.batchUpdateLock.Unlock()
 
 	var prevBatch *eventBatch
 	if len(p.logEventBatch.putLogEventsInput.LogEvents) > 0 {
 		prevBatch = p.logEventBatch
-		p.logEventBatch = newEventBatch(PusherKey{
+		p.logEventBatch = newEventBatch(StreamKey{
 			LogGroupName:  *p.logGroupName,
 			LogStreamName: *p.logStreamName,
 		})
 	}
 
 	return prevBatch
+}
+
+// A Pusher that is able to send events to multiple streams.
+type multiStreamPusher struct {
+	logStreamManager LogStreamManager
+	client           Client
+	pusherMap        map[StreamKey]Pusher
+	logger           *zap.Logger
+}
+
+func newMultiStreamPusher(logStreamManager LogStreamManager, client Client, logger *zap.Logger) *multiStreamPusher {
+	return &multiStreamPusher{
+		logStreamManager: logStreamManager,
+		client:           client,
+		logger:           logger,
+		pusherMap:        make(map[StreamKey]Pusher),
+	}
+}
+
+func (m *multiStreamPusher) AddLogEntry(event *Event) error {
+	if err := m.logStreamManager.InitStream(event.StreamKey); err != nil {
+		return err
+	}
+
+	var pusher Pusher
+	var ok bool
+
+	if pusher, ok = m.pusherMap[event.StreamKey]; !ok {
+		pusher = NewPusher(event.StreamKey, 1, m.client, m.logger)
+		m.pusherMap[event.StreamKey] = pusher
+	}
+
+	return pusher.AddLogEntry(event)
+}
+
+func (m *multiStreamPusher) ForceFlush() error {
+	var errs []error
+
+	for _, val := range m.pusherMap {
+		err := val.ForceFlush()
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) != 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
+}
+
+// Factory for a Pusher that has capability of sending events to multiple log streams
+type MultiStreamPusherFactory interface {
+	CreateMultiStreamPusher() Pusher
+}
+
+type multiStreamPusherFactory struct {
+	logStreamManager LogStreamManager
+	logger           *zap.Logger
+	client           Client
+}
+
+// Creates a new MultiStreamPusherFactory
+func NewMultiStreamPusherFactory(logStreamManager LogStreamManager, client Client, logger *zap.Logger) MultiStreamPusherFactory {
+	return &multiStreamPusherFactory{
+		logStreamManager: logStreamManager,
+		client:           client,
+		logger:           logger,
+	}
+}
+
+// Factory method to create a Pusher that has support to sending events to multiple log streams
+func (msf *multiStreamPusherFactory) CreateMultiStreamPusher() Pusher {
+	return newMultiStreamPusher(msf.logStreamManager, msf.client, msf.logger)
+}
+
+// Manages the creation of streams
+type LogStreamManager interface {
+	// Initialize a stream so that it can receive logs
+	// This will make sure that the stream exists and if it does not exist,
+	// It will create one. Implementations of this method MUST be safe for concurrent use.
+	InitStream(streamKey StreamKey) error
+}
+
+type logStreamManager struct {
+	logStreamMutex sync.Mutex
+	streams        map[StreamKey]bool
+	client         Client
+}
+
+func NewLogStreamManager(svcStructuredLog Client) LogStreamManager {
+	return &logStreamManager{
+		client:  svcStructuredLog,
+		streams: make(map[StreamKey]bool),
+	}
+}
+
+func (lsm *logStreamManager) InitStream(streamKey StreamKey) error {
+	if _, ok := lsm.streams[streamKey]; !ok {
+		lsm.logStreamMutex.Lock()
+		defer lsm.logStreamMutex.Unlock()
+
+		if _, ok := lsm.streams[streamKey]; !ok {
+			err := lsm.client.CreateStream(&streamKey.LogGroupName, &streamKey.LogStreamName)
+			lsm.streams[streamKey] = true
+			return err
+		}
+	}
+	return nil
+	// does not do anything if stream already exists
 }

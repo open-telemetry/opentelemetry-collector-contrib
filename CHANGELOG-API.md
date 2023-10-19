@@ -7,6 +7,19 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.87.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/kafka, receiver/kafka, receiver/kafkametrics`: Move configuration parts to an internal pkg (#27093)
+- `pulsarexporter`: Do not export function WithTracesMarshalers, add test for that and pass checkapi (#26304)
+- `pulsarreceiver`: Do not export the functions `WithLogsUnmarshalers`, `WithMetricsUnmarshalers`, `WithTracesUnmarshalers`, add tests and pass checkapi. (#26304)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: allows adding warning section to resource_attribute configuration (#19174)
+- `mdatagen`: allow setting empty metric units (#27089)
+
 ## v0.86.0
 
 ### 🛑 Breaking changes 🛑

@@ -316,7 +316,7 @@ type metricK8sContainerReady struct {
 func (m *metricK8sContainerReady) init() {
 	m.data.SetName("k8s.container.ready")
 	m.data.SetDescription("Whether a container has passed its readiness probe (0 for no, 1 for yes)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1296,7 +1296,7 @@ type metricK8sNamespacePhase struct {
 func (m *metricK8sNamespacePhase) init() {
 	m.data.SetName("k8s.namespace.phase")
 	m.data.SetDescription("The current phase of namespaces (1 for active and 0 for terminating)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1345,7 +1345,7 @@ type metricK8sPodPhase struct {
 func (m *metricK8sPodPhase) init() {
 	m.data.SetName("k8s.pod.phase")
 	m.data.SetDescription("Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1394,7 +1394,7 @@ type metricK8sPodStatusReason struct {
 func (m *metricK8sPodStatusReason) init() {
 	m.data.SetName("k8s.pod.status_reason")
 	m.data.SetDescription("Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1639,7 +1639,7 @@ type metricK8sResourceQuotaHardLimit struct {
 func (m *metricK8sResourceQuotaHardLimit) init() {
 	m.data.SetName("k8s.resource_quota.hard_limit")
 	m.data.SetDescription("The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1690,7 +1690,7 @@ type metricK8sResourceQuotaUsed struct {
 func (m *metricK8sResourceQuotaUsed) init() {
 	m.data.SetName("k8s.resource_quota.used")
 	m.data.SetDescription("The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1937,7 +1937,7 @@ type metricOpenshiftAppliedclusterquotaLimit struct {
 func (m *metricOpenshiftAppliedclusterquotaLimit) init() {
 	m.data.SetName("openshift.appliedclusterquota.limit")
 	m.data.SetDescription("The upper limit for a particular resource in a specific namespace.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1989,7 +1989,7 @@ type metricOpenshiftAppliedclusterquotaUsed struct {
 func (m *metricOpenshiftAppliedclusterquotaUsed) init() {
 	m.data.SetName("openshift.appliedclusterquota.used")
 	m.data.SetDescription("The usage for a particular resource in a specific namespace.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2041,7 +2041,7 @@ type metricOpenshiftClusterquotaLimit struct {
 func (m *metricOpenshiftClusterquotaLimit) init() {
 	m.data.SetName("openshift.clusterquota.limit")
 	m.data.SetDescription("The configured upper limit for a particular resource.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2092,7 +2092,7 @@ type metricOpenshiftClusterquotaUsed struct {
 func (m *metricOpenshiftClusterquotaUsed) init() {
 	m.data.SetName("openshift.clusterquota.used")
 	m.data.SetDescription("The usage for a particular resource with a configured limit.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
