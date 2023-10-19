@@ -12,7 +12,6 @@ require (
 	go.opentelemetry.io/collector/consumer v0.87.1-0.20231017160804-ec0725874313
 	go.opentelemetry.io/collector/exporter v0.87.1-0.20231017160804-ec0725874313
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016.0.20231017160804-ec0725874313
-	go.uber.org/multierr v1.11.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
