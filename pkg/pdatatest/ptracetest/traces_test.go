@@ -69,6 +69,16 @@ func TestCompareTraces(t *testing.T) {
 			withOptions: nil,
 		},
 		{
+			name: "ignore-traceid",
+			compareOptions: []CompareTracesOption{
+				IgnoreTraceID(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": trace ID doesn't match expected: 8c8b1765a7b0acf0b66aa4623fcb7bd5, actual: "),
+			),
+			withOptions: nil,
+		},
+		{
 			name: "resourcespans-amount-unequal",
 			withoutOptions: multierr.Combine(
 				errors.New("number of resources doesn't match expected: 1, actual: 2"),
