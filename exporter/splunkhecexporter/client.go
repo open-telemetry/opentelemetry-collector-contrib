@@ -244,6 +244,8 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 							" content length %d bytes", l, c.config.MaxContentLengthLogs)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
+				// flush exited before resetting the buffer of the stream.
+				jsonStream.Reset(buf)
 				permanentErrors = append(permanentErrors,
 					consumererror.NewPermanent(fmt.Errorf("error writing the event: %w", err)))
 			}
@@ -299,6 +301,8 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 							" content length %d bytes", jsonStream.Buffered(), c.config.MaxContentLengthMetrics)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
+				// flush exited before resetting the buffer of the stream.
+				jsonStream.Reset(buf)
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
 					"error writing the event: %w", err)))
 			}
@@ -345,6 +349,8 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffe
 				done:   i+1 != len(events),
 			}, permanentErrors
 		} else if err != nil {
+			// flush exited before resetting the buffer of the stream.
+			jsonStream.Reset(buf)
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
 				"error writing the event: %w", err)))
 		}
@@ -398,6 +404,8 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 							" content length %d bytes", l, c.config.MaxContentLengthTraces)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
+				// flush exited before resetting the buffer of the stream.
+				jsonStream.Reset(buf)
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
 					"error writing the event: %w", err)))
 			}
