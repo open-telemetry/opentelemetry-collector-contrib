@@ -13,7 +13,7 @@
     <Execution ProcessID="1472" ThreadID="7784" />
     <Channel>Security</Channel>
     <Computer>test.example.com</Computer>
-    <Security UserID="test_user" />
+    <Security UserID="S-1-5-18" />
   </System>
   <UserData>
     <LogFileCleared xmlns="http://manifests.microsoft.com/win/2004/08/windows/eventlog">

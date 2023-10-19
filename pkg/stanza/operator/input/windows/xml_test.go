@@ -388,7 +388,7 @@ func TestUnmarshalWithUserData(t *testing.T) {
 		Opcode:   "0",
 		Keywords: []string{"0x4020000000000000"},
 		Security: &Security{
-			UserID: "test_user",
+			UserID: "S-1-5-18",
 		},
 		Execution: &Execution{
 			ProcessID: 1472,
