@@ -41,9 +41,9 @@ func TestUnmarshalConfig(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	cfg := &Config{
-			Server: &OpAMPServer{
-				WS: &OpAMPWebsocket{},
-			},
+		Server: &OpAMPServer{
+			WS: &OpAMPWebsocket{},
+		},
 	}
 	err := cfg.Validate()
 	assert.Equal(t, "opamp server websocket endpoint must be provided", err.Error())
