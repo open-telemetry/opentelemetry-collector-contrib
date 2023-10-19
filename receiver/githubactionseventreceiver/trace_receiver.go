@@ -230,7 +230,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		attrs.PutStr("scm.git.branch", e.WorkflowRun.HeadBranch)
 		attrs.PutStr("scm.git.sha", e.WorkflowRun.HeadSha)
 
-		if e.WorkflowRun.PullRequests != nil {
+		if len(e.WorkflowRun.PullRequests) > 0 {
 			var prUrls []string
 			for _, pr := range e.WorkflowRun.PullRequests {
 				prUrls = append(prUrls, pr.URL)
