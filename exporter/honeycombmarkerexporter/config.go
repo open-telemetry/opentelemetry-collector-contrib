@@ -45,16 +45,11 @@ type Marker struct {
 }
 
 type Rules struct {
-	// ResourceConditions is the list of ottlresource conditions that determine a match
-	ResourceConditions []string `mapstructure:"resource_conditions"`
-
 	// LogConditions is the list of ottllog conditions that determine a match
 	LogConditions []string `mapstructure:"log_conditions"`
 
 	//
 	logBoolExpr expr.BoolExpr[ottllog.TransformContext]
-	//
-	resourceBoolExpr expr.BoolExpr[ottllog.TransformContext]
 }
 
 var defaultCfg = createDefaultConfig().(*Config)
@@ -70,16 +65,11 @@ func (cfg *Config) Validate() error {
 
 	if len(cfg.Markers) != 0 {
 		for _, m := range cfg.Markers {
-			if len(m.Rules.ResourceConditions) == 0 && len(m.Rules.LogConditions) == 0 {
+			if len(m.Rules.LogConditions) == 0 {
 				return fmt.Errorf("no rules supplied for Marker %v", m)
 			}
 
-			_, err := filterottl.NewBoolExprForResource(m.Rules.ResourceConditions, filterottl.StandardResourceFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-			if err != nil {
-				return err
-			}
-
-			_, err = filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+			_, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 			if err != nil {
 				return err
 			}
