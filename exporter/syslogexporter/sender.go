@@ -186,17 +186,24 @@ func populateDefaults(msg map[string]any, msgProperties []string) {
 }
 
 func (s *sender) formatRFC3164(msg map[string]any, timestamp time.Time) string {
-	msgProperties := []string{priority, hostname, message}
+	msgProperties := []string{priority, hostname, message, app}
 	populateDefaults(msg, msgProperties)
 	timestampString := timestamp.Format("Jan 02 15:04:05")
-	return fmt.Sprintf("<%d>%s %s%s", msg[priority], timestampString, msg[hostname], formatMessagePart(msg[message]))
+	appname := ""
+	if msg[app] != emptyValue {
+		appname = msg[app].(string) + ":"
+	}
+	if appname != "" && message != emptyMessage {
+		appname += " "
+	}
+	return fmt.Sprintf("<%d>%s %s %s%s", msg[priority], timestampString, msg[hostname], appname, msg[message])
 }
 
 func (s *sender) formatRFC5424(msg map[string]any, timestamp time.Time) string {
 	msgProperties := []string{priority, version, hostname, app, pid, msgID, message, structuredData}
 	populateDefaults(msg, msgProperties)
 	s.addStructuredData(msg)
-	timestampString := timestamp.Format(time.RFC3339)
+	timestampString := timestamp.Format(time.RFC3339Nano)
 
 	return fmt.Sprintf("<%d>%d %s %s %s %s %s %s%s", msg[priority], msg[version], timestampString, msg[hostname], msg[app], msg[pid], msg[msgID], msg[structuredData], formatMessagePart(msg[message]))
 }

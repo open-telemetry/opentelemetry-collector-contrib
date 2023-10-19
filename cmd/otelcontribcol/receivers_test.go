@@ -169,10 +169,6 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true,
 		},
 		{
-			receiver:     "dotnet_diagnostics",
-			skipLifecyle: true, // Requires a running .NET process to examine
-		},
-		{
 			receiver: "elasticsearch",
 		},
 		{
@@ -327,10 +323,6 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "prometheus_exec",
-			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
-		},
-		{
 			receiver:     "pulsar",
 			skipLifecyle: true, // TODO It requires a running pulsar instance to start successfully.
 		},
@@ -354,9 +346,6 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "sapm",
-		},
-		{
-			receiver: "saphana",
 		},
 		{
 			receiver: "signalfx",
@@ -464,15 +453,8 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 	}
 
-	receiverCount := 0
+	assert.Equal(t, len(rcvrFactories), len(tests), "All receivers must be added to the lifecycle suite")
 	for _, tt := range tests {
-		_, ok := rcvrFactories[tt.receiver]
-		if !ok {
-			// not part of the distro, skipping.
-			continue
-		}
-		tt := tt
-		receiverCount++
 		t.Run(string(tt.receiver), func(t *testing.T) {
 			factory := rcvrFactories[tt.receiver]
 			assert.Equal(t, tt.receiver, factory.Type())
@@ -486,10 +468,8 @@ func TestDefaultReceivers(t *testing.T) {
 				}
 				verifyReceiverLifecycle(t, factory, tt.getConfigFn)
 			})
-
 		})
 	}
-	assert.Len(t, rcvrFactories, receiverCount, "All receivers must be added to the lifecycle suite")
 }
 
 // getReceiverConfigFn is used customize the configuration passed to the verification.
