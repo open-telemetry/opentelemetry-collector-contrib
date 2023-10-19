@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package cassandraexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
+import "go.opentelemetry.io/collector/config/configopaque"
 
 type Config struct {
 	DSN         string      `mapstructure:"dsn"`
@@ -24,6 +25,6 @@ type Compression struct {
 }
 
 type Auth struct {
-	UserName string `mapstructure:"username"`
+	UserName string              `mapstructure:"username"`
 	Password configopaque.String `mapstructure:"password"`
 }
