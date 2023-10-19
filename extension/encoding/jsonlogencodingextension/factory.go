@@ -22,7 +22,7 @@ func NewFactory() extension.Factory {
 }
 
 func createExtension(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
-	return &jsonExtension{}, nil
+	return &jsonLogExtension{}, nil
 }
 
 func createDefaultConfig() component.Config {

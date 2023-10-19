@@ -12,7 +12,7 @@ import (
 )
 
 func TestExtension_Start_Shutdown(t *testing.T) {
-	j := &jsonExtension{}
+	j := &jsonLogExtension{}
 	err := j.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	err = j.Shutdown(context.Background())

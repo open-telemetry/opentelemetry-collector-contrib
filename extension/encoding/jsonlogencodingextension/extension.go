@@ -14,10 +14,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type jsonExtension struct {
+type jsonLogExtension struct {
 }
 
-func (e *jsonExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
+func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
 	var raw map[string]any
 	switch logRecord.Type() {
@@ -34,7 +34,7 @@ func (e *jsonExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 
 }
 
-func (e *jsonExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	p := plog.NewLogs()
 
 	// get json logs from the buffer
@@ -54,10 +54,10 @@ func (e *jsonExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return p, nil
 }
 
-func (e *jsonExtension) Start(_ context.Context, _ component.Host) error {
+func (e *jsonLogExtension) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e *jsonExtension) Shutdown(_ context.Context) error {
+func (e *jsonLogExtension) Shutdown(_ context.Context) error {
 	return nil
 }
