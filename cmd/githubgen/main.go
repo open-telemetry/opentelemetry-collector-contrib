@@ -376,7 +376,11 @@ LOOP:
 }
 
 func getGithubMembers() (map[string]struct{}, error) {
-	client := github.NewTokenClient(context.Background(), os.Getenv("GITHUB_TOKEN"))
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	if githubToken == "" {
+		return nil, fmt.Errorf("Set the environment variable `GITHUB_TOKEN` to a PAT token to authenticate")
+	}
+	client := github.NewTokenClient(context.Background(), githubToken)
 	var allUsers []*github.User
 	pageIndex := 0
 	for {
