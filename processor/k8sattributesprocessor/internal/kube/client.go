@@ -230,7 +230,7 @@ func (c *WatchClient) handlePodUpdate(_, newPod interface{}) {
 
 func (c *WatchClient) handlePodDelete(obj interface{}) {
 	observability.RecordPodDeleted()
-	if pod, ok := obj.(*api_v1.Pod); ok {
+	if pod, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Pod); ok {
 		c.forgetPod(pod)
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
@@ -259,7 +259,7 @@ func (c *WatchClient) handleNamespaceUpdate(_, newNamespace interface{}) {
 
 func (c *WatchClient) handleNamespaceDelete(obj interface{}) {
 	observability.RecordNamespaceDeleted()
-	if namespace, ok := obj.(*api_v1.Namespace); ok {
+	if namespace, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Namespace); ok {
 		c.m.Lock()
 		if ns, ok := c.Namespaces[namespace.Name]; ok {
 			// When a namespace is deleted all the pods(and other k8s objects in that namespace) in that namespace are deleted before it.
@@ -859,7 +859,7 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newRS interface{}) {
 
 func (c *WatchClient) handleReplicaSetDelete(obj interface{}) {
 	observability.RecordReplicaSetDeleted()
-	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
+	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.ReplicaSet); ok {
 		c.m.Lock()
 		key := string(replicaset.UID)
 		delete(c.ReplicaSets, key)
@@ -914,4 +914,14 @@ func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
 		return replicaset, ok
 	}
 	return nil, false
+}
+
+// ignoreDeletedFinalStateUnknown returns the object wrapped in
+// DeletedFinalStateUnknown. Useful in OnDelete resource event handlers that do
+// not need the additional context.
+func ignoreDeletedFinalStateUnknown(obj interface{}) interface{} {
+	if obj, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+		return obj.Obj
+	}
+	return obj
 }
