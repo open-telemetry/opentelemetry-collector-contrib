@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"testing"
@@ -321,4 +322,34 @@ func (tc *TestCase) logStatsOnce() {
 		tc.agentProc.GetResourceConsumption(),
 		tc.LoadGenerator.GetStats(),
 		tc.MockBackend.GetStats())
+}
+
+// Used to search for text in agent.log
+// It can be used to verify if we've hit QueuedRetry sender or memory limitter
+func (tc *TestCase) SearchText(text string) bool {
+	cmd := exec.Command("cat", tc.composeTestResultFileName("agent.log"))
+	grep := exec.Command("grep", "-E", text)
+
+	pipe, err := cmd.StdoutPipe()
+	defer pipe.Close()
+	grep.Stdin = pipe
+
+	if err != nil {
+		log.Printf("Error while searching %s in %s", text, tc.composeTestResultFileName("agent.log"))
+		return false
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Print("Error while executing command: ", err.Error())
+		return false
+	}
+
+	res, _ := grep.Output()
+	if string(res) != "" {
+		return true
+	} else {
+		return false
+	}
+
 }
