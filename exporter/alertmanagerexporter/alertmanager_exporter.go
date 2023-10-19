@@ -5,12 +5,9 @@ package alertmanagerexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"net/http"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-
-	// "go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -18,29 +15,21 @@ import (
 
 type alertmanagerExporter struct {
 	config            *Config
-	client            *http.Client
 	tracesMarshaler   ptrace.Marshaler
 	settings          component.TelemetrySettings
 	endpoint          string
-	generatorUrl      string
+	generatorURL      string
 	defaultSeverity   string
 	severityAttribute string
 }
 
-type alertmanagerEvent struct {
-	spanEvent ptrace.SpanEvent
-	traceID   string
-	spanID    string
-	severity  string
-}
-
-func (s *alertmanagerExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+func (s *alertmanagerExporter) pushTraces(_ context.Context, _ ptrace.Traces) error {
 
 	// To Be Implemented
 	return nil
 }
 
-func (s *alertmanagerExporter) start(_ context.Context, host component.Host) error {
+func (s *alertmanagerExporter) start(_ context.Context, _ component.Host) error {
 
 	// To Be Implemented
 	return nil
@@ -58,7 +47,7 @@ func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) *aler
 		settings:          set,
 		tracesMarshaler:   &ptrace.JSONMarshaler{},
 		endpoint:          cfg.HTTPClientSettings.Endpoint,
-		generatorUrl:      cfg.GeneratorURL,
+		generatorURL:      cfg.GeneratorURL,
 		defaultSeverity:   cfg.DefaultSeverity,
 		severityAttribute: cfg.SeverityAttribute,
 	}

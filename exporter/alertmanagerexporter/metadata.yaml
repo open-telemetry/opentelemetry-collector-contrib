@@ -5,3 +5,5 @@ status:
   stability:
     development: [traces]
   distributions: [contrib]
+  codeowners:
+    active: [jpkrohling, sokoide, mcube8]

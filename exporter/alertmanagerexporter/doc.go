@@ -4,4 +4,4 @@
 //go:generate mdatagen metadata.yaml
 
 // Package alertmanagerexporter exports spanevents as alerts to Prometheus Alertmanager
-package alertmanagerexporter
+package alertmanagerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter"
