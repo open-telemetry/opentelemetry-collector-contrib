@@ -606,11 +606,23 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 			assert.NotPanics(t, func() {
 				switch e := exp.(type) {
 				case exporter.Logs:
-					err = e.ConsumeLogs(ctx, testdata.GenerateLogsManyLogRecordsSameResource(2))
+					logs := testdata.GenerateLogsManyLogRecordsSameResource(2)
+					if !e.Capabilities().MutatesData {
+						logs.MarkReadOnly()
+					}
+					err = e.ConsumeLogs(ctx, logs)
 				case exporter.Metrics:
-					err = e.ConsumeMetrics(ctx, testdata.GenerateMetricsTwoMetrics())
+					metrics := testdata.GenerateMetricsTwoMetrics()
+					if !e.Capabilities().MutatesData {
+						metrics.MarkReadOnly()
+					}
+					err = e.ConsumeMetrics(ctx, metrics)
 				case exporter.Traces:
-					err = e.ConsumeTraces(ctx, testdata.GenerateTracesTwoSpansSameResource())
+					traces := testdata.GenerateTracesTwoSpansSameResource()
+					if !e.Capabilities().MutatesData {
+						traces.MarkReadOnly()
+					}
+					err = e.ConsumeTraces(ctx, traces)
 				}
 			})
 			if !expectErr {
