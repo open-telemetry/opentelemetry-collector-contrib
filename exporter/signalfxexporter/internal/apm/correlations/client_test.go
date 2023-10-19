@@ -149,7 +149,7 @@ func setup(t *testing.T) (CorrelationClient, chan *request, *atomic.Value, *atom
 			MaxRetries:      4,
 			LogUpdates:      true,
 			RetryDelay:      0 * time.Second,
-			CleanupInterval: 5 * time.Second,
+			CleanupInterval: 1 * time.Minute,
 		},
 		AccessToken: "",
 		URL:         serverURL,
