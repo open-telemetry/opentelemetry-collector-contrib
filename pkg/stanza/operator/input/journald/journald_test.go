@@ -72,7 +72,7 @@ func TestInputJournald(t *testing.T) {
 		return &fakeJournaldCmd{}
 	}
 
-	err = op.Start(testutil.NewMockPersister("test"))
+	err = op.Start(testutil.NewUnscopedMockPersister())
 	assert.EqualError(t, err, "journalctl command exited")
 	defer func() {
 		require.NoError(t, op.Stop())
@@ -246,7 +246,7 @@ func TestInputJournaldError(t *testing.T) {
 		}
 	}
 
-	err = op.Start(testutil.NewMockPersister("test"))
+	err = op.Start(testutil.NewUnscopedMockPersister())
 	assert.EqualError(t, err, "journalctl command failed (<nil>): stderr output\n")
 	defer func() {
 		require.NoError(t, op.Stop())
