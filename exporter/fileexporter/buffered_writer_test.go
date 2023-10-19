@@ -5,6 +5,7 @@ package fileexporter
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/multierr"
 )
 
 const (
@@ -83,7 +83,7 @@ func BenchmarkWriter(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					_, err = w.Write(payload)
 				}
-				errBenchmark = multierr.Combine(err, w.Close())
+				errBenchmark = errors.Join(err, w.Close())
 			})
 		}
 	}
