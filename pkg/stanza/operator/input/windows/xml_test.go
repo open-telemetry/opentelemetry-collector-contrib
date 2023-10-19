@@ -116,6 +116,76 @@ func TestParseBody(t *testing.T) {
 	require.Equal(t, expected, xml.parseBody())
 }
 
+func TestParseBodySecurityExecution(t *testing.T) {
+	xml := EventXML{
+		EventID: EventID{
+			ID:         1,
+			Qualifiers: 2,
+		},
+		Provider: Provider{
+			Name:            "provider",
+			GUID:            "guid",
+			EventSourceName: "event source",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2020-07-30T01:01:01.123456789Z",
+		},
+		Computer: "computer",
+		Channel:  "application",
+		RecordID: 1,
+		Level:    "Information",
+		Message:  "message",
+		Task:     "task",
+		Opcode:   "opcode",
+		Keywords: []string{"keyword"},
+		EventData: []EventDataEntry{
+			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
+		},
+		Execution: &Execution{
+			ProcessID: 13,
+			ThreadID:  102,
+		},
+		Security: &Security{
+			UserID: "my-user-id",
+		},
+		RenderedLevel:    "rendered_level",
+		RenderedTask:     "rendered_task",
+		RenderedOpcode:   "rendered_opcode",
+		RenderedKeywords: []string{"RenderedKeywords"},
+	}
+
+	expected := map[string]interface{}{
+		"event_id": map[string]interface{}{
+			"id":         uint32(1),
+			"qualifiers": uint16(2),
+		},
+		"provider": map[string]interface{}{
+			"name":         "provider",
+			"guid":         "guid",
+			"event_source": "event source",
+		},
+		"system_time": "2020-07-30T01:01:01.123456789Z",
+		"computer":    "computer",
+		"channel":     "application",
+		"record_id":   uint64(1),
+		"level":       "rendered_level",
+		"message":     "message",
+		"task":        "rendered_task",
+		"opcode":      "rendered_opcode",
+		"keywords":    []string{"RenderedKeywords"},
+		"execution": map[string]any{
+			"process_id": uint(13),
+			"thread_id":  uint(102),
+		},
+		"security": map[string]any{
+			"user_id": "my-user-id",
+		},
+		"event_data": map[string]interface{}{"name": "value", "another_name": "another_value"},
+	}
+
+	require.Equal(t, expected, xml.parseBody())
+}
+
 func TestParseNoRendered(t *testing.T) {
 	xml := EventXML{
 		EventID: EventID{
@@ -252,7 +322,7 @@ func TestInvalidUnmarshal(t *testing.T) {
 	require.Error(t, err)
 
 }
-func TestUnmarshal(t *testing.T) {
+func TestUnmarshalWithEventData(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
 	require.NoError(t, err)
 
@@ -260,7 +330,6 @@ func TestUnmarshal(t *testing.T) {
 	require.NoError(t, err)
 
 	xml := EventXML{
-		Namespace: "http://schemas.microsoft.com/win/2004/08/events/event",
 		EventID: EventID{
 			ID:         16384,
 			Qualifiers: 16384,
@@ -300,7 +369,6 @@ func TestUnmarshalWithUserData(t *testing.T) {
 	require.NoError(t, err)
 
 	xml := EventXML{
-		Namespace: "http://schemas.microsoft.com/win/2004/08/events/event",
 		EventID: EventID{
 			ID: 1102,
 		},
@@ -319,54 +387,12 @@ func TestUnmarshalWithUserData(t *testing.T) {
 		Task:     "104",
 		Opcode:   "0",
 		Keywords: []string{"0x4020000000000000"},
-		Security: &Security{},
+		Security: &Security{
+			UserID: "test_user",
+		},
 		Execution: &Execution{
 			ProcessID: 1472,
 			ThreadID:  7784,
-		},
-		UserData: &AnyXML{
-			tag:        "UserData",
-			attributes: map[string]string{},
-			children: []AnyXML{
-				{
-					tag: "LogFileCleared",
-					attributes: map[string]string{
-						"xmlns": "http://manifests.microsoft.com/win/2004/08/windows/eventlog",
-					},
-					children: []AnyXML{
-						{
-							tag:        "SubjectUserSid",
-							attributes: map[string]string{},
-							chardata:   "S-1-5-21-1148437859-4135665037-1195073887-1000",
-						},
-						{
-							tag:        "SubjectUserName",
-							attributes: map[string]string{},
-							chardata:   "test_user",
-						},
-						{
-							tag:        "SubjectDomainName",
-							attributes: map[string]string{},
-							chardata:   "TEST",
-						},
-						{
-							tag:        "SubjectLogonId",
-							attributes: map[string]string{},
-							chardata:   "0xa8bb72",
-						},
-						{
-							tag:        "ClientProcessId",
-							attributes: map[string]string{},
-							chardata:   "4536",
-						},
-						{
-							tag:        "ClientProcessStartKey",
-							attributes: map[string]string{},
-							chardata:   "17732923532772643",
-						},
-					},
-				},
-			},
 		},
 	}
 
