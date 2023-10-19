@@ -172,3 +172,25 @@ func maskEndTimestamp(traces ptrace.Traces, ts pcommon.Timestamp) {
 		}
 	}
 }
+
+// IgnoreTraceID is a CompareTracesOption that clears TraceID fields on all spans.
+func IgnoreTraceID() CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		traceID := pcommon.NewTraceIDEmpty()
+		maskTraceID(expected, traceID)
+		maskTraceID(actual, traceID)
+	})
+}
+
+func maskTraceID(traces ptrace.Traces, traceID pcommon.TraceID) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				span.SetTraceID(traceID)
+			}
+		}
+	}
+}
