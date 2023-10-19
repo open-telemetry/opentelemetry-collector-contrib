@@ -143,8 +143,11 @@ func TestInput(t *testing.T) {
 	t.Run("TrailingCRNewlines", udpInputTest([]byte("message1\r\n"), []string{"message1"}, cfg))
 	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}, cfg))
 
-	cfg.AsyncConfig = NewAsyncConfig()
-	cfg.AsyncConfig.Readers = 2
+	cfg.AsyncConfig = &AsyncConfig{
+		Readers:        2,
+		Processors:     2,
+		MaxQueueLength: 100,
+	}
 	t.Run("SimpleAsync", udpInputTest([]byte("message1"), []string{"message1"}, cfg))
 }
 
