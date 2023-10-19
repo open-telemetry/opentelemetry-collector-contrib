@@ -49,6 +49,16 @@ func TestCompareTraces(t *testing.T) {
 			withOptions: nil,
 		},
 		{
+			name: "ignore-spanid",
+			compareOptions: []CompareTracesOption{
+				IgnoreSpanID(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": span ID doesn't match expected: fd0da883bb27cd6b, actual: "),
+			),
+			withOptions: nil,
+		},
+		{
 			name: "ignore-start-timestamp",
 			compareOptions: []CompareTracesOption{
 				IgnoreStartTimestamp(),
