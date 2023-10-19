@@ -3,7 +3,7 @@ WORKDIR /src
 ADD . /src
 RUN make otelcontribcol
 
-FROM  486234852809.dkr.ecr.us-east-1.amazonaws.com/base:xenial
+FROM 486234852809.dkr.ecr.us-east-1.amazonaws.com/base:focal
 USER root
 
 RUN clean-apt install make \

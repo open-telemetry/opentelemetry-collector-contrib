@@ -66,6 +66,8 @@ config:
         http:
           endpoint: 0.0.0.0:4318
   exporters:
+    # Disable debug exporter until we pull change that adds it from upstream
+    debug: null
     logging:
       verbosity: detailed
     datadog:
