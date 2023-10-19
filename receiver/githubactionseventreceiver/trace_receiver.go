@@ -168,6 +168,8 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 		span.Status().SetCode(ptrace.StatusCodeUnset)
 	}
 
+	span.Status().SetMessage(job.Conclusion)
+
 	return span.SpanID()
 }
 
@@ -181,13 +183,18 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		attrs.PutStr("service.name", serviceName)
 
 		attrs.PutStr("ci.system", "github")
-		attrs.PutStr("ci.actor", e.Repository.Owner.Login)
+
+		attrs.PutStr("ci.actor.login", e.Repository.Owner.Login)
+		attrs.PutStr("ci.actor.sender", e.Sender.Login)
 
 		attrs.PutStr("ci.github.html_url", e.WorkflowJob.HTMLURL)
 		attrs.PutStr("ci.github.job", e.WorkflowJob.Name)
 		attrs.PutInt("ci.github.run_id", e.WorkflowJob.RunID)
 		attrs.PutInt("ci.github.run_attempt", int64(e.WorkflowJob.RunAttempt))
+
+		attrs.PutStr("ci.github.runner.group_name", e.WorkflowJob.RunnerGroupName)
 		attrs.PutStr("ci.github.runner.name", e.WorkflowJob.RunnerName)
+
 		attrs.PutStr("ci.github.workflow", e.WorkflowJob.WorkflowName)
 
 		attrs.PutStr("scm.system", "git")
@@ -201,18 +208,36 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		attrs.PutStr("service.name", serviceName)
 
 		attrs.PutStr("ci.system", "github")
-		attrs.PutStr("ci.actor", e.WorkflowRun.Repository.Owner.Login)
+
+		attrs.PutStr("ci.github.actor.login", e.WorkflowRun.Actor.Login)
+		attrs.PutStr("ci.github.actor.sender", e.Sender.Login)
+		attrs.PutStr("ci.github.actor.triggering", e.WorkflowRun.TriggeringActor.Login)
 
 		attrs.PutStr("ci.github.display_title", e.WorkflowRun.DisplayTitle)
 		attrs.PutStr("ci.github.html_url", e.WorkflowRun.HTMLURL)
+
+		if e.WorkflowRun.PreviousAttemptURL != "" {
+			attrs.PutStr("ci.github.previous_attempt_url", e.WorkflowRun.PreviousAttemptURL)
+		}
+
 		attrs.PutInt("ci.github.run_id", e.WorkflowRun.ID)
 		attrs.PutInt("ci.github.run_attempt", int64(e.WorkflowRun.RunAttempt))
+
 		attrs.PutStr("ci.github.workflow", e.WorkflowRun.Name)
 		attrs.PutStr("ci.github.workflow_path", e.WorkflowRun.Path)
 
 		attrs.PutStr("scm.system", "git")
 		attrs.PutStr("scm.git.branch", e.WorkflowRun.HeadBranch)
 		attrs.PutStr("scm.git.sha", e.WorkflowRun.HeadSha)
+
+		if e.WorkflowRun.PullRequests != nil {
+			var prUrls []string
+			for _, pr := range e.WorkflowRun.PullRequests {
+				prUrls = append(prUrls, pr.URL)
+			}
+			attrs.PutStr("scm.git.pull_requests.url", strings.Join(prUrls, ";"))
+		}
+
 		attrs.PutStr("scm.git.repo", e.Repository.FullName)
 
 	default:
