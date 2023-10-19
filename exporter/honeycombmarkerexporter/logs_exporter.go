@@ -6,16 +6,15 @@ package honeycombmarkerexporter // import "github.com/open-telemetry/opentelemet
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/component"
 	"net/http"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"go.uber.org/zap"
@@ -25,91 +24,82 @@ type honeycombLogsExporter struct {
 	logger  *zap.Logger
 	markers []Marker
 	client  *http.Client
+	APIURL  string
 }
 
-//// ties marker and associated conditions
-//type marker struct { //rename
-//	marker Marker
-
-//}
-
-func newHoneycombLogsExporter(logger *zap.Logger, config *Config) (*honeycombLogsExporter, error) {
+func newHoneycombLogsExporter(set component.TelemetrySettings, config *Config) (*honeycombLogsExporter, error) {
 	if config == nil {
 		return nil, fmt.Errorf("unable to create honeycombLogsExporter without config")
 	}
-	for _, m := range config.Markers {
-		matchLogConditions, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
-		if err != nil {
-			return nil, fmt.Errorf("failed to compare log conditions: %w", err)
-		}
 
-		matchResourceConditions, err := filterottl.NewBoolExprForLog(m.Rules.ResourceConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+	for _, m := range config.Markers {
+		matchLogConditions, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, set)
 		if err != nil {
-			return nil, fmt.Errorf("failed to compare resource conditions: %w", err)
+			return nil, fmt.Errorf("failed to parse log conditions: %w", err)
 		}
 
 		m.Rules.logBoolExpr = matchLogConditions
-		m.Rules.resourceBoolExpr = matchResourceConditions
-
 	}
 	logsExp := &honeycombLogsExporter{
-		logger:  logger,
+		logger:  set.Logger,
 		markers: config.Markers,
+		APIURL:  config.APIURL,
 	}
 	return logsExp, nil
 }
 
-func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, pl plog.Logs) error {
+func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs) error {
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rlogs := ld.ResourceLogs().At(i)
+		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
+			slogs := rlogs.ScopeLogs().At(j)
+			logs := slogs.LogRecords()
+			for k := 0; k < logs.Len(); k++ {
+				logRecord := logs.At(k)
+				tCtx := ottllog.NewTransformContext(logRecord, slogs.Scope(), rlogs.Resource())
+				for _, m := range e.markers {
+					match, err := m.Rules.logBoolExpr.Eval(ctx, tCtx)
+					if err != nil {
+						return err
+					}
+					if match {
+						err := e.sendMarker(ctx, m, logRecord)
+						if err != nil {
+							return err
+						}
+					}
+				}
 
-	// if any log or resource condition matches, send marker
-	//for _, cond := range e.matchedLogConditions {
-	//	logResult, err := cond.Eval(ctx, ottllog.NewTransformContext(plog.NewLogRecord(), pcommon.NewInstrumentationScope(), pcommon.NewResource()))
-	//	if err != nil {
-	//		return fmt.Errorf("failed to evaluate log conditions: %w", err)
-	//	}
-	//
-	//	if logResult {
-	//		headers := map[string]string{}
-	//		//requestBody, err := json.Marshal(map[string]string{
-	//		//	"type": marker.Type,
-	//		//})
-	//
-	//		if err != nil {
-	//			return fmt.Errorf("failed to create request body: %w", err)
-	//		}
-	//
-	//		err = e.sendMarker(ctx, m.URLField, headers, requestBody)
-	//		if err != nil {
-	//			return fmt.Errorf("failed to send Marker: %w", err)
-	//		}
-	//	}
-	//}
-
-	resourceResult, err := e.matchedResourceConditions.Eval(ctx, ottllog.NewTransformContext(plog.NewLogRecord(), pcommon.NewInstrumentationScope(), pcommon.NewResource()))
-	if err != nil {
-		return fmt.Errorf("failed to evaluate resource conditions: %w", err)
-	}
-
-	if logResult || resourceResult {
-
+			}
+		}
 	}
 	return nil
 }
 
-func (e *honeycombLogsExporter) sendMarker(ctx context.Context, url string, header map[string]string, request []byte) error {
-	url = strings.TrimSuffix(url, "/") + "/bundle"
-	//e.settings.Logger.Debug("Preparing to make HTTP request", zap.String("url", url))
+func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, logRecord plog.LogRecord) error {
+	requestMap := map[string]string{
+		"type": marker.Type,
+	}
+
+	messageField, found := logRecord.Attributes().Get(marker.MessageField)
+	if found {
+		requestMap["messageField"] = messageField.AsString()
+	}
+
+	URLField, found := logRecord.Attributes().Get(marker.URLField)
+	if found {
+		requestMap["URLField"] = URLField.AsString()
+	}
+
+	request, err := json.Marshal(requestMap)
+
+	url := strings.TrimSuffix(e.APIURL, "/") + "/bundle"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
-		return consumererror.NewPermanent(err)
+		return err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	//req.Header.Set("User-Agent", e.userAgent)
-
-	for name, value := range header {
-		req.Header.Set(name, value)
-	}
 
 	resp, err := e.client.Do(req)
 	if err != nil {
@@ -118,12 +108,11 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, url string, head
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 400 && resp.StatusCode <= 499 {
-		return consumererror.NewPermanent(fmt.Errorf("error when sending payload to %s: %s",
-			url, resp.Status))
+	if err != nil {
+		return err
 	}
-	if resp.StatusCode >= 500 && resp.StatusCode <= 599 {
-		return fmt.Errorf("error when sending payload to %s: %s", url, resp.Status)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("failed with %s and message: %s", resp.Status, resp.Body)
 	}
 
 	return nil

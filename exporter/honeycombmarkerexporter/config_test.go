@@ -36,9 +36,6 @@ func TestLoadConfig(t *testing.T) {
 						MessageField: "test message",
 						URLField:     "https://api.testhost.io",
 						Rules: Rules{
-							ResourceConditions: []string{
-								`IsMatch(attributes["test"], ".*")`,
-							},
 							LogConditions: []string{
 								`body == "test"`,
 							},
