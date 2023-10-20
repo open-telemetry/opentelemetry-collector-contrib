@@ -50,10 +50,7 @@ func (f *Factory) Copy(old *Reader, newFile *os.File) (*Reader, error) {
 		Offset:          old.Offset,
 		FileAttributes:  util.MapCopy(old.FileAttributes),
 		HeaderFinalized: old.HeaderFinalized,
-		FlushState: &flush.State{
-			LastDataChange: old.FlushState.LastDataChange,
-			LastDataLength: old.FlushState.LastDataLength,
-		},
+		FlushState:      old.FlushState.Copy(),
 	})
 }
 
@@ -71,12 +68,8 @@ func (f *Factory) build(file *os.File, m *Metadata) (r *Reader, err error) {
 		decoder:  decode.New(f.Encoding),
 	}
 
-	if m.FlushState == nil {
-		r.lineSplitFunc = trim.WithFunc(trim.ToLength(f.SplitFunc, f.Config.MaxLogSize), f.TrimFunc)
-	} else {
-		flushFunc := m.FlushState.Func(f.SplitFunc, f.Config.FlushTimeout)
-		r.lineSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.Config.MaxLogSize), f.TrimFunc)
-	}
+	flushFunc := m.FlushState.Func(f.SplitFunc, f.Config.FlushTimeout)
+	r.lineSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.Config.MaxLogSize), f.TrimFunc)
 
 	if !f.FromBeginning {
 		if err = r.offsetToEnd(); err != nil {
