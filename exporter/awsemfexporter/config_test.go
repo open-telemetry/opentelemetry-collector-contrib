@@ -314,3 +314,70 @@ func TestNoDimensionRollupFeatureGate(t *testing.T) {
 	assert.Equal(t, cfg.(*Config).DimensionRollupOption, "NoDimensionRollup")
 	_ = featuregate.GlobalRegistry().Set("awsemf.nodimrollupdefault", false)
 }
+
+func TestIsEnhancedContainerInsights(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.EnhancedContainerInsights = true
+	cfg.DisableMetricExtraction = false
+	assert.False(t, cfg.IsEnhancedContainerInsights())
+	cfg.EnhancedContainerInsights = false
+	assert.False(t, cfg.IsEnhancedContainerInsights())
+	cfg.EnhancedContainerInsights = true
+	cfg.DisableMetricExtraction = true
+	assert.False(t, cfg.IsEnhancedContainerInsights())
+}
+
+func TestIsPulseApmEnabled(t *testing.T) {
+	tests := []struct {
+		name            string
+		metricNameSpace string
+		logGroupName    string
+		expectedResult  bool
+	}{
+		{
+			"validPulseEMF",
+			"AWS/APM",
+			"/aws/apm/eks",
+			true,
+		},
+		{
+			"invalidPulseLogsGroup",
+			"AWS/APM",
+			"/nonaws/apm/eks",
+			false,
+		},
+		{
+			"invalidPulseMetricNamespace",
+			"NonAWS/APM",
+			"/aws/apm/eks",
+			false,
+		},
+		{
+			"invalidPulseEMF",
+			"NonAWS/APM",
+			"/nonaws/apm/eks",
+			false,
+		},
+		{
+			"defaultConfig",
+			"",
+			"",
+			false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			if len(tc.metricNameSpace) > 0 {
+				cfg.Namespace = tc.metricNameSpace
+			}
+			if len(tc.logGroupName) > 0 {
+				cfg.LogGroupName = tc.logGroupName
+			}
+
+			assert.Equal(t, cfg.IsPulseApmEnabled(), tc.expectedResult)
+		})
+	}
+}

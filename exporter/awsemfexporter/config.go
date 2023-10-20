@@ -4,6 +4,8 @@
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
+	"strings"
+
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -142,7 +144,23 @@ func (config *Config) Validate() error {
 	}
 
 	return cwlogs.ValidateTagsInput(config.Tags)
+}
 
+func (config *Config) IsEnhancedContainerInsights() bool {
+	return false // temporarily disable, also need to rename _config to config
+	// return config.EnhancedContainerInsights && !config.DisableMetricExtraction
+}
+
+func (config *Config) IsPulseApmEnabled() bool {
+	if config.LogGroupName == "" || config.Namespace == "" {
+		return false
+	}
+
+	if config.Namespace == pulseMetricNamespace && strings.HasPrefix(config.LogGroupName, pulseLogGroupNamePrefix) {
+		return true
+	}
+
+	return false
 }
 
 func newEMFSupportedUnits() map[string]interface{} {
