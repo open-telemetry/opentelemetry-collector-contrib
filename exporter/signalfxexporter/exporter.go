@@ -152,6 +152,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,
 			MaxIdleConnsPerHost: se.config.DimensionClient.MaxIdleConnsPerHost,
 			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
+			Timeout:             se.config.DimensionClient.Timeout,
 		})
 	dimClient.Start()
 
