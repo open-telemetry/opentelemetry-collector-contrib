@@ -6,10 +6,9 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
 )
 
 func NewFactory() extension.Factory {
