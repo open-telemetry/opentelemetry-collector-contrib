@@ -102,9 +102,9 @@ The following settings can be optionally configured:
 - `metrics_flush_interval` (default: `15s`): Defines the flush interval of the generated metrics.
 - `exemplars`:  Use to configure how to attach exemplars to histograms
   - `enabled` (default: `false`): enabling will add spans as Exemplars.
-- `events`: Use to configure if events metric should be enabled. events_total metric can be configured when you want to get the metrics for different attributes configured as Events for a span.
-  - `enabled`: (default: `false`): enabling will add events metric
-  - `dimensions`: the list of event attributes for a span that needs to be added as dimensions to events metric 
+- `events`: Use to configure the events metric.
+  - `enabled`: (default: `false`): enabling will add the events metric.
+  - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the events metric, which will be included _on top of_ the common and configured `dimensions` for span and resource attributes.
 
 ## Examples
 
