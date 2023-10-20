@@ -92,11 +92,23 @@ func TestLoadConfig(t *testing.T) {
 					RetryMaxElapsedTime:  23 * time.Second,
 					RetryShutdownTimeout: 24 * time.Second,
 				},
-				TracesSettings: TracesSettings{},
+				TracesSettings: TracesSettings{
+					exportSettings: exportSettings{
+						ExportSeparator:            "_Y_",
+						ExportDistinguishingSuffix: "_T_",
+					},
+				},
 				LogsSettings: LogsSettings{
-					ExportResourceInfo:           true,
-					ExportScopeInfo:              true,
-					DecomposeComplexMessageField: true,
+					ExportResourceInfo:             true,
+					ExportResourcePrefix:           "_resource_",
+					ExportScopeInfo:                true,
+					ExportScopePrefix:              "_scope_",
+					DecomposeComplexMessageField:   true,
+					DecomposedComplexMessagePrefix: "_body_",
+					exportSettings: exportSettings{
+						ExportSeparator:            "_X_",
+						ExportDistinguishingSuffix: "_L_",
+					},
 				},
 				ServerHostSettings: ServerHostSettings{
 					UseHostName: false,
@@ -148,7 +160,7 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:false ExportScopeInfo:false DecomposeComplexMessageField:false}; TracesSettings: {}; ServerHostSettings: {UseHostName:false ServerHost:}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:false ExportResourcePrefix: ExportScopeInfo:false ExportScopePrefix: DecomposeComplexMessageField:false DecomposedComplexMessagePrefix: exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; TracesSettings: {exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; ServerHostSettings: {UseHostName:false ServerHost:}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",
