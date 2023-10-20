@@ -122,7 +122,7 @@ func eventToTraces(event interface{}, config *Config, logger *zap.Logger) (ptrac
 		}
 	default:
 		logger.Error("unknown event type, dropping payload")
-		return ptrace.Traces{}, fmt.Errorf("unknown event type, dropping payload")
+		return ptrace.Traces{}, fmt.Errorf("unknown event type")
 	}
 
 	return traces, nil
@@ -233,7 +233,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		if len(e.WorkflowRun.PullRequests) > 0 {
 			var prUrls []string
 			for _, pr := range e.WorkflowRun.PullRequests {
-				prUrls = append(prUrls, pr.URL)
+				prUrls = append(prUrls, convertPRURL(pr.URL))
 			}
 			attrs.PutStr("scm.git.pull_requests.url", strings.Join(prUrls, ";"))
 		}
@@ -243,6 +243,12 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 	default:
 		logger.Error("unknown event type")
 	}
+}
+
+func convertPRURL(apiURL string) string {
+	apiURL = strings.Replace(apiURL, "/repos", "", 1)
+	apiURL = strings.Replace(apiURL, "/pulls", "/pull", 1)
+	return strings.Replace(apiURL, "api.", "", 1)
 }
 
 func createRootSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent, traceID pcommon.TraceID, logger *zap.Logger) (pcommon.SpanID, error) {
