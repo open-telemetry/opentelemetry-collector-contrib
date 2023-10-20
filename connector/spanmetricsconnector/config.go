@@ -86,7 +86,7 @@ type ExplicitHistogramConfig struct {
 type Event struct {
 	// Enabled is a flag to enable events.
 	Enabled bool `mapstructure:"enabled"`
-	// Dimensions defines the list of dimensions to be added to events metric
+	// Dimensions defines the list of dimensions to add to the events metric.
 	Dimensions []Dimension `mapstructure:"dimensions"`
 }
 
