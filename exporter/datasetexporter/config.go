@@ -17,23 +17,37 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const tracesExportSeparatorDefault = "."
-const tracesExportDistinguishingSuffix = "_"
+const exportSeparatorDefault = "."
+const exportDistinguishingSuffix = "_"
 
-type TracesSettings struct {
+// exportSettings configures separator and distinguishing suffixes for all exported fields
+type exportSettings struct {
 	// ExportSeparator is separator used when flattening exported attributes
 	// Default value: .
 	ExportSeparator string `mapstructure:"export_separator"`
+
 	// ExportDistinguishingSuffix is suffix used to be appended to the end of attribute name in case of collision
 	// Default value: _
 	ExportDistinguishingSuffix string `mapstructure:"export_distinguishing_suffix"`
 }
 
+// newDefaultExportSettings returns the default settings for exportSettings.
+func newDefaultExportSettings() exportSettings {
+	return exportSettings{
+		ExportSeparator:            exportSeparatorDefault,
+		ExportDistinguishingSuffix: exportDistinguishingSuffix,
+	}
+}
+
+type TracesSettings struct {
+	// exportSettings configures separator and distinguishing suffixes for all exported fields
+	exportSettings `mapstructure:",squash"`
+}
+
 // newDefaultTracesSettings returns the default settings for TracesSettings.
 func newDefaultTracesSettings() TracesSettings {
 	return TracesSettings{
-		ExportSeparator:            tracesExportSeparatorDefault,
-		ExportDistinguishingSuffix: tracesExportDistinguishingSuffix,
+		exportSettings: newDefaultExportSettings(),
 	}
 }
 
@@ -41,8 +55,6 @@ const logsExportResourceInfoDefault = false
 const logsExportResourcePrefixDefault = "resource.attributes."
 const logsExportScopeInfoDefault = true
 const logsExportScopePrefixDefault = "scope.attributes."
-const logsExportSeparatorDefault = "."
-const logsExportDistinguishingSuffix = "_"
 const logsDecomposeComplexMessageFieldDefault = false
 const logsDecomposedComplexMessageFieldPrefixDefault = "body.map."
 
@@ -65,14 +77,6 @@ type LogsSettings struct {
 	// Default value: scope.attributes.
 	ExportScopePrefix string `mapstructure:"export_scope_prefix"`
 
-	// ExportSeparator is separator used when flattening exported attributes
-	// Default value: .
-	ExportSeparator string `mapstructure:"export_separator"`
-
-	// ExportDistinguishingSuffix is suffix used to be appended to the end of attribute name in case of collision
-	// Default value: _
-	ExportDistinguishingSuffix string `mapstructure:"export_distinguishing_suffix"`
-
 	// DecomposeComplexMessageField is an optional flag to signal that message / body of complex types (e.g. a map) should be
 	// decomposed / deconstructed into multiple fields. This is usually done outside of the main DataSet integration on the
 	// client side (e.g. as part of the attribute processor or similar) or on the server side (DataSet server side JSON parser
@@ -82,6 +86,9 @@ type LogsSettings struct {
 	// DecomposedComplexMessagePrefix is prefix for the decomposed complex message (see DecomposeComplexMessageField).
 	// Default value: body.map.
 	DecomposedComplexMessagePrefix string `mapstructure:"decomposed_complex_message_prefix"`
+
+	// exportSettings configures separator and distinguishing suffixes for all exported fields
+	exportSettings `mapstructure:",squash"`
 }
 
 // newDefaultLogsSettings returns the default settings for LogsSettings.
@@ -91,10 +98,9 @@ func newDefaultLogsSettings() LogsSettings {
 		ExportResourcePrefix:           logsExportResourcePrefixDefault,
 		ExportScopeInfo:                logsExportScopeInfoDefault,
 		ExportScopePrefix:              logsExportScopePrefixDefault,
-		ExportSeparator:                logsExportSeparatorDefault,
-		ExportDistinguishingSuffix:     logsExportDistinguishingSuffix,
 		DecomposeComplexMessageField:   logsDecomposeComplexMessageFieldDefault,
 		DecomposedComplexMessagePrefix: logsDecomposedComplexMessageFieldPrefixDefault,
+		exportSettings:                 newDefaultExportSettings(),
 	}
 }
 

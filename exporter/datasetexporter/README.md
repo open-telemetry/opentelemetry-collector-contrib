@@ -76,10 +76,11 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
 
 Enabled attributes are exported in the order:
 
-1. Body
-2. Resource attributes
-3. Scope attributes
-4. Log attributes
+1. Log properties
+2. Body
+3. Resource attributes
+4. Scope attributes
+5. Log attributes
 
 If there is a name conflict, the `export_distinguishing_suffix` value is appended to the later attribute's name. If the `export_distinguishing_suffix` value is an empty string, then the value from the last attribute is used.
 
