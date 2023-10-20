@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -69,6 +70,17 @@ func newLogsExporter(
 }
 
 func (se *syslogexporter) pushLogsData(_ context.Context, logs plog.Logs) error {
+	batchMessages := strings.ToLower(se.config.Network) == "tcp"
+	var err error
+	if batchMessages {
+		err = se.exportBatch(logs)
+	} else {
+		err = se.exportNonBatch(logs)
+	}
+	return err
+}
+
+func (se *syslogexporter) exportBatch(logs plog.Logs) error {
 	var payload strings.Builder
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		resourceLogs := logs.ResourceLogs().At(i)
@@ -93,5 +105,41 @@ func (se *syslogexporter) pushLogsData(_ context.Context, logs plog.Logs) error 
 			return consumererror.NewLogs(err, logs)
 		}
 	}
+	return nil
+}
+
+func (se *syslogexporter) exportNonBatch(logs plog.Logs) error {
+	sender, err := connect(se.logger, se.config, se.tlsConfig)
+	if err != nil {
+		return consumererror.NewLogs(err, logs)
+	}
+	defer sender.close()
+
+	errs := []error{}
+	droppedLogs := plog.NewLogs()
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		resourceLogs := logs.ResourceLogs().At(i)
+		droppedResourceLogs := droppedLogs.ResourceLogs().AppendEmpty()
+		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
+			scopeLogs := resourceLogs.ScopeLogs().At(j)
+			droppedScopeLogs := droppedResourceLogs.ScopeLogs().AppendEmpty()
+			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
+				logRecord := scopeLogs.LogRecords().At(k)
+				formatted := se.formatter.format(logRecord)
+				err = sender.Write(formatted)
+				if err != nil {
+					errs = append(errs, err)
+					droppedLogRecord := droppedScopeLogs.LogRecords().AppendEmpty()
+					logRecord.CopyTo(droppedLogRecord)
+				}
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		errs = deduplicateErrors(errs)
+		return consumererror.NewLogs(multierr.Combine(errs...), droppedLogs)
+	}
+
 	return nil
 }
