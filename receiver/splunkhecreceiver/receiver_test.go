@@ -176,7 +176,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			req:  httptest.NewRequest("PUT", "http://localhost/foo", nil),
 			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseInvalidMethod, body)
+				assert.Equal(t, "Only \"POST\" method is supported", body)
 			},
 		},
 		{
@@ -205,7 +205,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusUnsupportedMediaType, status)
-				assert.Equal(t, responseInvalidEncoding, body)
+				assert.Equal(t, `"Content-Encoding" must be "gzip" or empty`, body)
 			},
 		},
 		{
@@ -227,7 +227,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseNoData, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(5), "text": "No data"}, body)
 			},
 		},
 		{
@@ -344,7 +344,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseErrGzipReader, body)
+				assert.Equal(t, `Error on gzip body`, body)
 			},
 		},
 	}
@@ -935,7 +935,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			req:  httptest.NewRequest("PUT", "http://localhost/foo", nil),
 			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseInvalidMethod, body)
+				assert.Equal(t, `Only "POST" method is supported`, body)
 			},
 		},
 		{
@@ -958,7 +958,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusUnsupportedMediaType, status)
-				assert.Equal(t, responseInvalidEncoding, body)
+				assert.Equal(t, `"Content-Encoding" must be "gzip" or empty`, body)
 			},
 		},
 		{
@@ -969,7 +969,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseNoData, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(5), "text": "No data"}, body)
 			},
 		},
 
@@ -1027,7 +1027,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseErrGzipReader, body)
+				assert.Equal(t, `Error on gzip body`, body)
 			},
 		},
 		{
