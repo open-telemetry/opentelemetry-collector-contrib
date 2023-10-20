@@ -68,6 +68,5 @@ retract (
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go => cloud.google.com/go v0.110.2
 
-
 // IMPORTANT NOTE: Do not add local replace statements. This will break go install.
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27855.
