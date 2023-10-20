@@ -221,23 +221,23 @@ func (e Execution) asMap() map[string]any {
 	}
 
 	if e.ProcessorID != nil {
-		result["processor_id"] = e.ProcessorID
+		result["processor_id"] = *e.ProcessorID
 	}
 
 	if e.SessionID != nil {
-		result["session_id"] = e.SessionID
+		result["session_id"] = *e.SessionID
 	}
 
 	if e.KernelTime != nil {
-		result["kernel_time"] = e.KernelTime
+		result["kernel_time"] = *e.KernelTime
 	}
 
 	if e.UserTime != nil {
-		result["user_time"] = e.UserTime
+		result["user_time"] = *e.UserTime
 	}
 
 	if e.ProcessorTime != nil {
-		result["processor_time"] = e.ProcessorTime
+		result["processor_time"] = *e.ProcessorTime
 	}
 
 	return result

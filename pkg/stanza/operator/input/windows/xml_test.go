@@ -186,6 +186,92 @@ func TestParseBodySecurityExecution(t *testing.T) {
 	require.Equal(t, expected, xml.parseBody())
 }
 
+func TestParseBodyFullExecution(t *testing.T) {
+	processorID := uint(3)
+	sessionID := uint(2)
+	kernelTime := uint(3)
+	userTime := uint(100)
+	processorTime := uint(200)
+
+	xml := EventXML{
+		EventID: EventID{
+			ID:         1,
+			Qualifiers: 2,
+		},
+		Provider: Provider{
+			Name:            "provider",
+			GUID:            "guid",
+			EventSourceName: "event source",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2020-07-30T01:01:01.123456789Z",
+		},
+		Computer: "computer",
+		Channel:  "application",
+		RecordID: 1,
+		Level:    "Information",
+		Message:  "message",
+		Task:     "task",
+		Opcode:   "opcode",
+		Keywords: []string{"keyword"},
+		EventData: []EventDataEntry{
+			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
+		},
+		Execution: &Execution{
+			ProcessID:     13,
+			ThreadID:      102,
+			ProcessorID:   &processorID,
+			SessionID:     &sessionID,
+			KernelTime:    &kernelTime,
+			UserTime:      &userTime,
+			ProcessorTime: &processorTime,
+		},
+		Security: &Security{
+			UserID: "my-user-id",
+		},
+		RenderedLevel:    "rendered_level",
+		RenderedTask:     "rendered_task",
+		RenderedOpcode:   "rendered_opcode",
+		RenderedKeywords: []string{"RenderedKeywords"},
+	}
+
+	expected := map[string]interface{}{
+		"event_id": map[string]interface{}{
+			"id":         uint32(1),
+			"qualifiers": uint16(2),
+		},
+		"provider": map[string]interface{}{
+			"name":         "provider",
+			"guid":         "guid",
+			"event_source": "event source",
+		},
+		"system_time": "2020-07-30T01:01:01.123456789Z",
+		"computer":    "computer",
+		"channel":     "application",
+		"record_id":   uint64(1),
+		"level":       "rendered_level",
+		"message":     "message",
+		"task":        "rendered_task",
+		"opcode":      "rendered_opcode",
+		"keywords":    []string{"RenderedKeywords"},
+		"execution": map[string]any{
+			"process_id":     uint(13),
+			"thread_id":      uint(102),
+			"processor_id":   processorID,
+			"session_id":     sessionID,
+			"kernel_time":    kernelTime,
+			"user_time":      userTime,
+			"processor_time": processorTime,
+		},
+		"security": map[string]any{
+			"user_id": "my-user-id",
+		},
+		"event_data": map[string]interface{}{"name": "value", "another_name": "another_value"},
+	}
+
+	require.Equal(t, expected, xml.parseBody())
+}
+
 func TestParseNoRendered(t *testing.T) {
 	xml := EventXML{
 		EventID: EventID{
