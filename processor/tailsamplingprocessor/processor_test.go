@@ -1013,3 +1013,37 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
 }
+
+func BenchmarkSampling(b *testing.B) {
+	traceIds, batches := generateIdsAndBatches(128)
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIds)),
+		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              testPolicy,
+	}
+
+	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
+	tsp := sp.(*tailSamplingSpanProcessor)
+	require.NoError(b, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(b, tsp.Shutdown(context.Background()))
+	}()
+	metrics := &policyMetrics{}
+	sampleBatches := make([]*sampling.TraceData, 0, len(batches))
+
+	for i := 0; i < len(batches); i++ {
+		sampleBatches = append(sampleBatches, &sampling.TraceData{
+			Decisions:   []sampling.Decision{sampling.Pending},
+			ArrivalTime: time.Now(),
+			//SpanCount:       spanCount,
+			ReceivedBatches: ptrace.NewTraces(),
+		})
+	}
+
+	for i := 0; i < b.N; i++ {
+		for i, id := range traceIds {
+			_, _ = tsp.makeDecision(id, sampleBatches[i], metrics)
+		}
+	}
+}
