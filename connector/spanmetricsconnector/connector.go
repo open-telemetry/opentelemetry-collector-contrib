@@ -68,7 +68,7 @@ type connectorImp struct {
 
 	shutdownOnce sync.Once
 
-	// Addition event dimensions to add to events metric
+	// Event dimensions to add to the events metric.
 	eDimensions []dimension
 
 	events Event
