@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/google/go-github/v53 v53.2.0
-	go.opentelemetry.io/collector/confmap v0.87.0
+	go.opentelemetry.io/collector/confmap v0.87.1-0.20231017160804-ec0725874313
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -19,7 +19,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0016 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0016.0.20231017160804-ec0725874313 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/net v0.17.0 // indirect

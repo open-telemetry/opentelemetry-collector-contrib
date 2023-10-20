@@ -274,7 +274,7 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -288,7 +288,7 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -334,7 +334,7 @@ The upper limit for a particular resource in a specific namespace.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -349,7 +349,7 @@ The usage for a particular resource in a specific namespace.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -364,7 +364,7 @@ The configured upper limit for a particular resource.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -378,7 +378,7 @@ The usage for a particular resource with a configured limit.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
