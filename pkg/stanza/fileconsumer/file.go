@@ -110,6 +110,7 @@ func (m *Manager) poll(ctx context.Context) {
 	if err != nil {
 		m.Debugf("finding files: %v", err)
 	}
+	m.Debugf("matched files", zap.Strings("paths", matches))
 
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])

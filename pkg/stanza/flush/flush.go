@@ -8,24 +8,19 @@ import (
 	"time"
 )
 
-// WithPeriod wraps a bufio.SplitFunc with a timer.
+type State struct {
+	LastDataChange time.Time
+	LastDataLength int
+}
+
+// Func wraps a bufio.SplitFunc with a timer.
 // When the timer expires, an incomplete token may be returned.
 // The timer will reset any time the data parameter changes.
-func WithPeriod(splitFunc bufio.SplitFunc, period time.Duration) bufio.SplitFunc {
+func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.SplitFunc {
 	if period <= 0 {
 		return splitFunc
 	}
-	f := &flusher{lastDataChange: time.Now(), forcePeriod: period}
-	return f.splitFunc(splitFunc)
-}
 
-type flusher struct {
-	forcePeriod        time.Duration
-	lastDataChange     time.Time
-	previousDataLength int
-}
-
-func (f *flusher) splitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (int, []byte, error) {
 		advance, token, err := splitFunc(data, atEOF)
 
@@ -36,31 +31,37 @@ func (f *flusher) splitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
 
 		// If there's a token, return it
 		if token != nil {
-			f.lastDataChange = time.Now()
-			f.previousDataLength = 0
+			s.LastDataChange = time.Now()
+			s.LastDataLength = 0
 			return advance, token, err
 		}
 
 		// Can't flush something from nothing
 		if atEOF && len(data) == 0 {
-			f.previousDataLength = 0
+			s.LastDataLength = 0
 			return 0, nil, nil
 		}
 
 		// Flush timed out
-		if time.Since(f.lastDataChange) > f.forcePeriod {
-			f.lastDataChange = time.Now()
-			f.previousDataLength = 0
+		if time.Since(s.LastDataChange) > period {
+			s.LastDataChange = time.Now()
+			s.LastDataLength = 0
 			return len(data), data, nil
 		}
 
 		// We're seeing new data so postpone the next flush
-		if len(data) > f.previousDataLength {
-			f.lastDataChange = time.Now()
-			f.previousDataLength = len(data)
+		if len(data) > s.LastDataLength {
+			s.LastDataChange = time.Now()
+			s.LastDataLength = len(data)
 		}
 
 		// Ask for more data
 		return 0, nil, nil
 	}
+}
+
+// Deprecated: [v0.88.0] Use WithFunc instead.
+func WithPeriod(splitFunc bufio.SplitFunc, period time.Duration) bufio.SplitFunc {
+	s := &State{LastDataChange: time.Now()}
+	return s.Func(splitFunc, period)
 }
