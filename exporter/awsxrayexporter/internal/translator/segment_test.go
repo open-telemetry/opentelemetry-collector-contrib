@@ -1333,6 +1333,39 @@ func TestLocalRootClient(t *testing.T) {
 	assert.Equal(t, segments[0].EndTime, segments[1].EndTime)
 }
 
+func TestLocalRootClientAwsServiceMetrics(t *testing.T) {
+	spanName := "SQS ReceiveMessage"
+	resource := getBasicResource()
+
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	attributes[awsSpanKind] = "LOCAL_ROOT"
+	attributes[conventions.AttributeRPCSystem] = "aws-api"
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeRPCService] = "SQS"
+	attributes[awsRemoteService] = "AWS.SDK.SQS"
+
+	span := constructClientSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	spanLink := span.Links().AppendEmpty()
+	spanLink.SetTraceID(newTraceID())
+	spanLink.SetSpanID(newSegmentID())
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Equal(t, 2, len(segments))
+	assert.Nil(t, err)
+
+	subsegment := segments[0]
+
+	assert.Equal(t, "subsegment", *subsegment.Type)
+	assert.Equal(t, "SQS", *subsegment.Name)
+	assert.Equal(t, "aws", *subsegment.Namespace)
+}
+
 func TestLocalRootProducer(t *testing.T) {
 	spanName := "destination operation"
 	resource := getBasicResource()
