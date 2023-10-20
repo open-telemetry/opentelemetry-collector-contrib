@@ -34,7 +34,7 @@ func udpInputTest(input []byte, expected []string, cfg *Config) func(t *testing.
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = udpInput.Start(testutil.NewMockPersister("test"))
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, udpInput.Stop(), "expected to stop udp input operator without error")
@@ -85,7 +85,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = udpInput.Start(testutil.NewMockPersister("test"))
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, udpInput.Stop(), "expected to stop udp input operator without error")
@@ -143,8 +143,11 @@ func TestInput(t *testing.T) {
 	t.Run("TrailingCRNewlines", udpInputTest([]byte("message1\r\n"), []string{"message1"}, cfg))
 	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}, cfg))
 
-	cfg.AsyncConfig = NewAsyncConfig()
-	cfg.AsyncConfig.Readers = 2
+	cfg.AsyncConfig = &AsyncConfig{
+		Readers:        2,
+		Processors:     2,
+		MaxQueueLength: 100,
+	}
 	t.Run("SimpleAsync", udpInputTest([]byte("message1"), []string{"message1"}, cfg))
 }
 
@@ -190,7 +193,7 @@ func TestFailToBind(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = udpInput.Start(testutil.NewMockPersister("test"))
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
 		return udpInput, err
 	}
 
@@ -215,7 +218,7 @@ func BenchmarkUDPInput(b *testing.B) {
 	udpInput := op.(*Input)
 	udpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
 
-	err = udpInput.Start(testutil.NewMockPersister("test"))
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(b, err)
 
 	done := make(chan struct{})

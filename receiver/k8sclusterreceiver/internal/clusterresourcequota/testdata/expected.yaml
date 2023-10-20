@@ -19,7 +19,7 @@ resourceMetrics:
                       value:
                         stringValue: requests.cpu
             name: openshift.clusterquota.limit
-            unit: "1"
+            unit: "{resource}"
           - description: The usage for a particular resource with a configured limit.
             gauge:
               dataPoints:
@@ -29,7 +29,7 @@ resourceMetrics:
                       value:
                         stringValue: requests.cpu
             name: openshift.clusterquota.used
-            unit: "1"
+            unit: "{resource}"
           - description: The upper limit for a particular resource in a specific namespace.
             gauge:
               dataPoints:
@@ -50,7 +50,7 @@ resourceMetrics:
                       value:
                         stringValue: "ns2"
             name: openshift.appliedclusterquota.limit
-            unit: "1"
+            unit: "{resource}"
           - description: The usage for a particular resource in a specific namespace.
             gauge:
               dataPoints:
@@ -72,7 +72,7 @@ resourceMetrics:
                       value:
                         stringValue: "ns2"
             name: openshift.appliedclusterquota.used
-            unit: "1"
+            unit: "{resource}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest

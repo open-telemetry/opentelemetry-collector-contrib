@@ -27,13 +27,13 @@ supported.
 The following configuration options are required:
 
 - `access_token` (no default): The access token is the authentication token
-  provided by SignalFx. The SignalFx access token can be obtained from the
-  web app. For details on how to do so please refer the documentation [here](https://docs.signalfx.com/en/latest/admin-guide/tokens.html#access-tokens).
+  provided by Splunk Observability Cloud. The access token can be obtained from the
+  web app. For details on how to do so please refer the documentation [here](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html).
 - Either `realm` or both `api_url` and `ingest_url`. Both `api_url` and
   `ingest_url` take precedence over `realm`.
   - `realm` (no default): SignalFx realm where the data will be received.
-  - `api_url` (no default): Destination to which SignalFx [properties and
-    tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata)
+  - `api_url` (no default): Destination to which [properties and
+    tags](https://docs.splunk.com/observability/en/metrics-and-metadata/metrics-finder-metadata-catalog.html)
     are sent. If `realm` is set, this option is derived and will be
     `https://api.{realm}.signalfx.com`. If a value is explicitly set, the
     value of `realm` will not be used in determining `api_url`. The explicit
