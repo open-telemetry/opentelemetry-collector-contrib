@@ -8,12 +8,7 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/mdatagen"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/opampsupervisor"
+    directory: "/cmd/configschema"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -169,6 +164,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/googlemanagedprometheusexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/honeycombmarkerexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"

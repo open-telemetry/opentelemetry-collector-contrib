@@ -22,7 +22,7 @@ resourceMetrics:
                       value:
                         stringValue: requests.cpu
             name: k8s.resource_quota.hard_limit
-            unit: "1"
+            unit: "{resource}"
           - description: The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
             gauge:
               dataPoints:
@@ -32,7 +32,7 @@ resourceMetrics:
                       value:
                         stringValue: requests.cpu
             name: k8s.resource_quota.used
-            unit: "1"
+            unit: "{resource}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
