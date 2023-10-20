@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awsmiddleware // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsmiddleware"
+package awsmiddleware // import "github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 
 import (
 	"encoding"
@@ -85,20 +85,19 @@ type handlerConfig interface {
 // RequestHandler allows for custom processing of requests.
 type RequestHandler interface {
 	handlerConfig
-	HandleRequest(r *http.Request)
+	HandleRequest(id string, r *http.Request)
 }
 
 // ResponseHandler allows for custom processing of responses.
 type ResponseHandler interface {
 	handlerConfig
-	HandleResponse(r *http.Response)
+	HandleResponse(id string, r *http.Response)
 }
 
 // Middleware defines the request and response handlers to be configured
 // on AWS Clients.
 type Middleware interface {
-	RequestHandlers() []RequestHandler
-	ResponseHandlers() []ResponseHandler
+	Handlers() ([]RequestHandler, []ResponseHandler)
 }
 
 // Extension is an extension that implements Middleware.
@@ -107,17 +106,31 @@ type Extension interface {
 	Middleware
 }
 
+// Configurer provides functions for applying request/response handlers
+// to the AWS SDKs.
+type Configurer struct {
+	requestHandlers  []RequestHandler
+	responseHandlers []ResponseHandler
+}
+
+// newConfigurer sets the request/response handlers.
+func newConfigurer(requestHandlers []RequestHandler, responseHandlers []ResponseHandler) *Configurer {
+	return &Configurer{requestHandlers: requestHandlers, responseHandlers: responseHandlers}
+}
+
 // ConfigureSDKv1 adds middleware to the AWS SDK v1. Request handlers are added to the
-// Build handler list and response handlers are added to the Unmarshal handler list.
-func ConfigureSDKv1(mw Middleware, handlers *request.Handlers) error {
+// Build handler list and response handlers are added to the ValidateResponse handler list.
+// Build will only be run once per request, but if there are errors, ValidateResponse will
+// be run again for each configured retry.
+func (c Configurer) ConfigureSDKv1(handlers *request.Handlers) error {
 	var errs error
-	for _, handler := range mw.RequestHandlers() {
+	for _, handler := range c.requestHandlers {
 		if err := appendHandler(&handlers.Build, namedRequestHandler(handler), handler.Position()); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("%w (%q): %w", errInvalidHandler, handler.ID(), err))
 		}
 	}
-	for _, handler := range mw.ResponseHandlers() {
-		if err := appendHandler(&handlers.Unmarshal, namedResponseHandler(handler), handler.Position()); err != nil {
+	for _, handler := range c.responseHandlers {
+		if err := appendHandler(&handlers.ValidateResponse, namedResponseHandler(handler), handler.Position()); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("%w (%q): %w", errInvalidHandler, handler.ID(), err))
 		}
 	}
@@ -126,9 +139,9 @@ func ConfigureSDKv1(mw Middleware, handlers *request.Handlers) error {
 
 // ConfigureSDKv2 adds middleware to the AWS SDK v2. Request handlers are added to the
 // Build step and response handlers are added to the Deserialize step.
-func ConfigureSDKv2(mw Middleware, config *aws.Config) error {
+func (c Configurer) ConfigureSDKv2(config *aws.Config) error {
 	var errs error
-	for _, handler := range mw.RequestHandlers() {
+	for _, handler := range c.requestHandlers {
 		relativePosition, err := toRelativePosition(handler.Position())
 		if err != nil {
 			errs = errors.Join(errs, fmt.Errorf("%w (%q): %w", errInvalidHandler, handler.ID(), err))
@@ -136,7 +149,7 @@ func ConfigureSDKv2(mw Middleware, config *aws.Config) error {
 		}
 		config.APIOptions = append(config.APIOptions, withBuildOption(&requestMiddleware{RequestHandler: handler}, relativePosition))
 	}
-	for _, handler := range mw.ResponseHandlers() {
+	for _, handler := range c.responseHandlers {
 		relativePosition, err := toRelativePosition(handler.Position())
 		if err != nil {
 			errs = errors.Join(errs, fmt.Errorf("%w (%q): %w", errInvalidHandler, handler.ID(), err))

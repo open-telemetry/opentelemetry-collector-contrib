@@ -13,6 +13,7 @@ exporter/lokiexporter
 exporter/pulsarexporter
 exporter/sentryexporter
 exporter/sumologicexporter
+extension/awsmiddleware
 extension/observer/ecsobserver
 extension/observer
 extension/observer/k8sobserver

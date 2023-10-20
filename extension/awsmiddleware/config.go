@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awsmiddleware // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsmiddleware"
+package awsmiddleware // import "github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 
 import (
 	"fmt"
@@ -9,19 +9,25 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Config defines the configuration for an AWS Middleware extension.
-type Config struct {
-	// MiddlewareID is the ID of the Middleware extension.
-	MiddlewareID component.ID `mapstructure:"middleware"`
-}
+type ID = component.ID
 
-// GetMiddleware retrieves the extension implementing Middleware based on the MiddlewareID.
-func (c Config) GetMiddleware(extensions map[component.ID]component.Component) (Middleware, error) {
-	if ext, found := extensions[c.MiddlewareID]; found {
-		if mw, ok := ext.(Middleware); ok {
-			return mw, nil
+// getMiddleware retrieves the extension implementing Middleware based on the middlewareID.
+func getMiddleware(extensions map[component.ID]component.Component, middlewareID ID) (Middleware, error) {
+	if extension, found := extensions[middlewareID]; found {
+		if middleware, ok := extension.(Middleware); ok {
+			return middleware, nil
 		}
 		return nil, errNotMiddleware
 	}
-	return nil, fmt.Errorf("failed to resolve AWS client handler %q: %w", c.MiddlewareID, errNotFound)
+	return nil, fmt.Errorf("failed to resolve AWS middleware %q: %w", middlewareID, errNotFound)
+}
+
+// GetConfigurer retrieves the extension implementing Middleware based on the middlewareID and
+// wraps it in a Configurer.
+func GetConfigurer(extensions map[component.ID]component.Component, middlewareID ID) (*Configurer, error) {
+	middleware, err := getMiddleware(extensions, middlewareID)
+	if err != nil {
+		return nil, err
+	}
+	return newConfigurer(middleware.Handlers()), nil
 }
