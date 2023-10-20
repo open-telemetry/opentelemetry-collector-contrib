@@ -86,6 +86,10 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 	return newCloudWatchLogClient(client, logRetention, tags, logger)
 }
 
+func (client *Client) Handlers() *request.Handlers {
+	return &client.svc.(*cloudwatchlogs.CloudWatchLogs).Handlers
+}
+
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
 // if necessary.
 func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error) {

@@ -11,7 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -89,6 +91,30 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.True(t, sink.HasRecording())
 	got := sink.Rotate()
 	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
+}
+
+func TestMiddleware(t *testing.T) {
+	id := component.NewID("test")
+	cfg := generateConfig(t)
+	cfg.MiddlewareID = &id
+	handler := new(awsmiddleware.MockHandler)
+	handler.On("ID").Return("test")
+	handler.On("Position").Return(awsmiddleware.After)
+	handler.On("HandleRequest", mock.Anything, mock.Anything)
+	handler.On("HandleResponse", mock.Anything, mock.Anything)
+	middleware := new(awsmiddleware.MockMiddlewareExtension)
+	middleware.On("Handlers").Return([]awsmiddleware.RequestHandler{handler}, []awsmiddleware.ResponseHandler{handler})
+	extensions := map[component.ID]component.Component{id: middleware}
+	traceExporter := initializeTracesExporter(t, cfg, telemetrytest.NewNopRegistry())
+	host := new(awsmiddleware.MockExtensionsHost)
+	host.On("GetExtensions").Return(extensions)
+	ctx := context.Background()
+	assert.NoError(t, traceExporter.Start(ctx, host))
+	td := constructSpanData()
+	err := traceExporter.ConsumeTraces(ctx, td)
+	assert.Error(t, err)
+	handler.AssertCalled(t, "HandleRequest", mock.Anything, mock.Anything)
+	handler.AssertCalled(t, "HandleResponse", mock.Anything, mock.Anything)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {

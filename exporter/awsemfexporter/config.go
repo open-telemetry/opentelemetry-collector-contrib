@@ -97,6 +97,9 @@ type Config struct {
 	// Otherwise, sending metrics as Embedded Metric Format version 0 (without "_aws")
 	Version string `mapstructure:"version"`
 
+	// MiddlewareID is an ID for an extension that can be used to configure the AWS client.
+	MiddlewareID *component.ID `mapstructure:"middleware,omitempty"`
+
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger
 }

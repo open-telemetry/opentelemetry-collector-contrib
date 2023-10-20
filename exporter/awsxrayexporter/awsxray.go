@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"go.opentelemetry.io/collector/component"
@@ -84,8 +85,11 @@ func newTracesExporter(
 			}
 			return err
 		},
-		exporterhelper.WithStart(func(context.Context, component.Host) error {
+		exporterhelper.WithStart(func(_ context.Context, host component.Host) error {
 			sender.Start()
+			if cfg.MiddlewareID != nil {
+				awsmiddleware.TryConfigureSDKv1(logger, host.GetExtensions(), *cfg.MiddlewareID, xrayClient.Handlers())
+			}
 			return nil
 		}),
 		exporterhelper.WithShutdown(func(context.Context) error {

@@ -679,14 +679,13 @@ func TestUserAgent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, session, tc.userAgentOption)
-			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
 
-			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
+			req := request.New(aws.Config{}, metadata.ClientInfo{}, *cwlog.Handlers(), nil, &request.Operation{
 				HTTPMethod: "GET",
 				HTTPPath:   "/",
 			}, nil, nil)
 
-			logClient.Handlers.Build.Run(req)
+			cwlog.Handlers().Build.Run(req)
 			assert.Contains(t, req.HTTPRequest.UserAgent(), tc.expectedUserAgentStr)
 		})
 	}

@@ -9,10 +9,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
@@ -347,4 +349,37 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.Equal(t, settings.Logger, expCfg.logger)
+}
+
+func TestMiddleware(t *testing.T) {
+	id := component.NewID("test")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = 0
+	expCfg.MiddlewareID = &id
+	handler := new(awsmiddleware.MockHandler)
+	handler.On("ID").Return("test")
+	handler.On("Position").Return(awsmiddleware.After)
+	handler.On("HandleRequest", mock.Anything, mock.Anything)
+	handler.On("HandleResponse", mock.Anything, mock.Anything)
+	middleware := new(awsmiddleware.MockMiddlewareExtension)
+	middleware.On("Handlers").Return([]awsmiddleware.RequestHandler{handler}, []awsmiddleware.ResponseHandler{handler})
+	extensions := map[component.ID]component.Component{id: middleware}
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+	host := new(awsmiddleware.MockExtensionsHost)
+	host.On("GetExtensions").Return(extensions)
+	assert.NoError(t, exp.start(ctx, host))
+	md := generateTestMetrics(testMetric{
+		metricNames:  []string{"metric_1", "metric_2"},
+		metricValues: [][]float64{{100}, {4}},
+	})
+	require.Error(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
+	handler.AssertCalled(t, "HandleRequest", mock.Anything, mock.Anything)
+	handler.AssertCalled(t, "HandleResponse", mock.Anything, mock.Anything)
 }

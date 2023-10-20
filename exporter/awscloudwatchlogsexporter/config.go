@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
@@ -45,8 +44,6 @@ type Config struct {
 	// because only QueueSize is user-settable due to how AWS CloudWatch API works
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
 
-	logger *zap.Logger
-
 	awsutil.AWSSessionSettings `mapstructure:",squash"`
 
 	// Export raw log string instead of log wrapper
@@ -56,6 +53,9 @@ type Config struct {
 	// Only allow emf logs
 	// If this is true raw log must also be true
 	EmfOnly bool `mapstructure:"emf_only,omitempty"`
+
+	// MiddlewareID is an ID for an extension that can be used to configure the AWS client.
+	MiddlewareID *component.ID `mapstructure:"middleware,omitempty"`
 }
 
 type QueueSettings struct {

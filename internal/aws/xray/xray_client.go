@@ -30,10 +30,16 @@ type XRayClient interface {
 	PutTraceSegments(input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error)
 	// PutTelemetryRecords makes PutTelemetryRecords api call on X-Ray client.
 	PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error)
+	// Handlers exposes the X-Ray client handlers.
+	Handlers() *request.Handlers
 }
 
 type xrayClient struct {
 	xRay *xray.XRay
+}
+
+func (c *xrayClient) Handlers() *request.Handlers {
+	return &c.xRay.Handlers
 }
 
 // PutTraceSegments makes PutTraceSegments api call on X-Ray client.

@@ -10,8 +10,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -175,7 +177,6 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 }
 
 func (emf *emfExporter) getPusher(key cwlogs.PusherKey) cwlogs.Pusher {
-
 	var ok bool
 	if _, ok = emf.pusherMap[key]; !ok {
 		emf.pusherMap[key] = cwlogs.NewPusher(key, emf.retryCnt, *emf.svcStructuredLog, emf.config.logger)
@@ -192,6 +193,13 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 		pushers = append(pushers, pusher)
 	}
 	return pushers
+}
+
+func (emf *emfExporter) start(_ context.Context, host component.Host) error {
+	if emf.config.MiddlewareID != nil {
+		awsmiddleware.TryConfigureSDKv1(emf.config.logger, host.GetExtensions(), *emf.config.MiddlewareID, emf.svcStructuredLog.Handlers())
+	}
+	return nil
 }
 
 // shutdown stops the exporter and is invoked during shutdown.

@@ -4,6 +4,8 @@
 package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 
 import (
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
@@ -24,6 +26,9 @@ type Config struct {
 	LogGroupNames []string `mapstructure:"aws_log_groups"`
 	// TelemetryConfig contains the options for telemetry collection.
 	TelemetryConfig telemetry.Config `mapstructure:"telemetry,omitempty"`
+	// MiddlewareID is an ID for an extension that can be used to configure the
+	// AWS client.
+	MiddlewareID *component.ID `mapstructure:"middleware,omitempty"`
 
 	// skipTimestampValidation if enabled, will skip timestamp validation logic on the trace ID
 	skipTimestampValidation bool
