@@ -252,7 +252,7 @@ func TestConnectorConsume(t *testing.T) {
 	assert.NoError(t, err)
 	verifyHappyCaseMetrics(t, md)
 
-	// Shutdown the conn
+	// Shutdown the connector
 	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
