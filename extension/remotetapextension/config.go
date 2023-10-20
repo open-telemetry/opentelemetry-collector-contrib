@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package remoteobserverextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/remoteobserverextension"
+package remotetapextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension"
 
 import (
 	"go.opentelemetry.io/collector/component"

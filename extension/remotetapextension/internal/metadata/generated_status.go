@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type               = "remoteobserver"
+	Type               = "remotetap"
 	ExtensionStability = component.StabilityLevelDevelopment
 )

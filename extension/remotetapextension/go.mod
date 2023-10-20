@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/remoteobserverextension
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension
 
 go 1.20
 

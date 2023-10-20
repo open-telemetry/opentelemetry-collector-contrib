@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package main // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/remoteobserverextension/main"
+package main // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension/main"
 
 import (
 	"context"
@@ -13,12 +13,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/remoteobserverextension"
 )
 
 func main() {
-	f := remoteobserverextension.NewFactory()
+	f := remotetapextension.NewFactory()
 	cs := extensiontest.NewNopCreateSettings()
 	var err error
 	cs.Logger, err = zap.NewDevelopment()
