@@ -24,18 +24,10 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	cluster := gocql.NewCluster(cfg.DSN)
-	if cfg.Auth.UserName != "" && cfg.Auth.Password != "" {
-		cluster.Authenticator = gocql.PasswordAuthenticator{
-			Username: cfg.Auth.UserName,
-			Password: string(cfg.Auth.Password),
-		}
-	}
-	session, err := cluster.CreateSession()
+	cluster := newCluster(cfg)
 	cluster.Keyspace = cfg.Keyspace
-	cluster.Consistency = gocql.Quorum
-	cluster.Port = cfg.Port
 
+	session, err := cluster.CreateSession()
 	if err != nil {
 		return nil, err
 	}
@@ -45,9 +37,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 
 func initializeLogKernel(cfg *Config) error {
 	ctx := context.Background()
-	cluster := gocql.NewCluster(cfg.DSN)
-	cluster.Consistency = gocql.Quorum
-	cluster.Port = cfg.Port
+	cluster := newCluster(cfg)
 
 	session, err := cluster.CreateSession()
 	if err != nil {
@@ -66,6 +56,19 @@ func initializeLogKernel(cfg *Config) error {
 	}
 
 	return nil
+}
+
+func newCluster(cfg *Config) *gocql.ClusterConfig {
+	cluster := gocql.NewCluster(cfg.DSN)
+	if cfg.Auth.UserName != "" && cfg.Auth.Password != "" {
+		cluster.Authenticator = gocql.PasswordAuthenticator{
+			Username: cfg.Auth.UserName,
+			Password: string(cfg.Auth.Password),
+		}
+	}
+	cluster.Consistency = gocql.Quorum
+	cluster.Port = cfg.Port
+	return cluster
 }
 
 func (e *logsExporter) Start(_ context.Context, _ component.Host) error {
