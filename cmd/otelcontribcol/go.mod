@@ -86,7 +86,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.88.0
@@ -1113,7 +1113,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webho
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver => ../../extension/observer/ecsobserver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor => ../../processor/remoteobserverprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor => ../../processor/remotetapprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor => ../../processor/sumologicprocessor
 
