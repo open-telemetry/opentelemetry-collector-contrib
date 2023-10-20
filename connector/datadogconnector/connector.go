@@ -18,7 +18,8 @@ import (
 
 // connectorImp is the schema for connector
 type connectorImp struct {
-	metricsConsumer consumer.Metrics // the next component in the pipeline to ingest data after connector
+	metricsConsumer consumer.Metrics // the next component in the pipeline to ingest metrics after connector
+	tracesConsumer  consumer.Traces  // the next component in the pipeline to ingest traces after connector
 	logger          *zap.Logger
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
@@ -40,7 +41,7 @@ type connectorImp struct {
 var _ component.Component = (*connectorImp)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // function to create a new connector
-func newConnector(logger *zap.Logger, _ component.Config, nextConsumer consumer.Metrics) (*connectorImp, error) {
+func newConnector(logger *zap.Logger, _ component.Config, metricsConsumer consumer.Metrics, tracesConsumer consumer.Traces) (*connectorImp, error) {
 	logger.Info("Building datadog connector")
 
 	in := make(chan *pb.StatsPayload, 100)
@@ -55,7 +56,8 @@ func newConnector(logger *zap.Logger, _ component.Config, nextConsumer consumer.
 		agent:           datadog.NewAgent(ctx, in),
 		translator:      trans,
 		in:              in,
-		metricsConsumer: nextConsumer,
+		metricsConsumer: metricsConsumer,
+		tracesConsumer:  tracesConsumer,
 		exit:            make(chan struct{}),
 	}, nil
 }
@@ -64,7 +66,9 @@ func newConnector(logger *zap.Logger, _ component.Config, nextConsumer consumer.
 func (c *connectorImp) Start(_ context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.agent.Start()
-	go c.run()
+	if c.metricsConsumer != nil {
+		go c.run()
+	}
 	return nil
 }
 
@@ -85,6 +89,9 @@ func (c *connectorImp) Capabilities() consumer.Capabilities {
 
 func (c *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	c.agent.Ingest(ctx, traces)
+	if c.tracesConsumer != nil {
+		return c.tracesConsumer.ConsumeTraces(ctx, traces)
+	}
 	return nil
 }
 

@@ -27,13 +27,13 @@ supported.
 The following configuration options are required:
 
 - `access_token` (no default): The access token is the authentication token
-  provided by SignalFx. The SignalFx access token can be obtained from the
-  web app. For details on how to do so please refer the documentation [here](https://docs.signalfx.com/en/latest/admin-guide/tokens.html#access-tokens).
+  provided by Splunk Observability Cloud. The access token can be obtained from the
+  web app. For details on how to do so please refer the documentation [here](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html).
 - Either `realm` or both `api_url` and `ingest_url`. Both `api_url` and
   `ingest_url` take precedence over `realm`.
   - `realm` (no default): SignalFx realm where the data will be received.
-  - `api_url` (no default): Destination to which SignalFx [properties and
-    tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata)
+  - `api_url` (no default): Destination to which [properties and
+    tags](https://docs.splunk.com/observability/en/metrics-and-metadata/metrics-finder-metadata-catalog.html)
     are sent. If `realm` is set, this option is derived and will be
     `https://api.{realm}.signalfx.com`. If a value is explicitly set, the
     value of `realm` will not be used in determining `api_url`. The explicit
@@ -118,6 +118,7 @@ The following configuration options can also be configured:
   - `max_idle_conns_per_host` (default = 20): The maximum idle HTTP connections the client can keep open per host.
   - `max_conns_per_host` (default = 20): The maximum total number of connections the client can keep open per host.
   - `idle_conn_timeout` (default = 30s): The maximum amount of time an idle connection will remain open before closing itself.
+  - `timeout` (default = 10s): Amount of time to wait for the dimension HTTP request to complete.
 - `nonalphanumeric_dimension_chars`: (default = `"_-."`) A string of characters 
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
