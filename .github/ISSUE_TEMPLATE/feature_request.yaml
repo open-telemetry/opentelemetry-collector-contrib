@@ -78,6 +78,7 @@ body:
       - extension/basicauth
       - extension/bearertokenauth
       - extension/encoding/jaegerencoding
+      - extension/encoding/jsonlogencoding
       - extension/encoding/textencoding
       - extension/headerssetter
       - extension/healthcheck
