@@ -6,10 +6,8 @@ package githubactionseventreceiver
 import (
 	"context"
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -245,6 +243,14 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 	}
 }
 
+func checkDuplicateStepNames(steps []Step) map[string]int {
+	nameCount := make(map[string]int)
+	for _, step := range steps {
+		nameCount[step.Name]++
+	}
+	return nameCount
+}
+
 func convertPRURL(apiURL string) string {
 	apiURL = strings.Replace(apiURL, "/repos", "", 1)
 	apiURL = strings.Replace(apiURL, "/pulls", "/pull", 1)
@@ -282,12 +288,20 @@ func createRootSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent,
 	return rootSpanID, nil
 }
 
-func createSpan(scopeSpans ptrace.ScopeSpans, step Step, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger) pcommon.SpanID {
+func createSpan(scopeSpans ptrace.ScopeSpans, step Step, job WorkflowJob, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger, stepNumber ...int) pcommon.SpanID {
 	logger.Info("Processing span", zap.String("step_name", step.Name))
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
-	span.SetSpanID(generateSpanID())
+
+	var spanID pcommon.SpanID
+	if len(stepNumber) > 0 && stepNumber[0] > 0 {
+		spanID, _ = generateStepSpanID(job.RunID, job.RunAttempt, job.Name, step.Name, stepNumber[0])
+	} else {
+		spanID, _ = generateStepSpanID(job.RunID, job.RunAttempt, job.Name, step.Name)
+	}
+	span.SetSpanID(spanID)
+
 	setSpanTimes(span, step.StartedAt, step.CompletedAt)
 	span.SetName(step.Name)
 	span.SetKind(ptrace.SpanKindServer)
@@ -356,15 +370,39 @@ func generateServiceName(config *Config, fullName string) string {
 	return fmt.Sprintf("%s%s%s", config.ServiceNamePrefix, formattedName, config.ServiceNameSuffix)
 }
 
-func generateSpanID() pcommon.SpanID {
+// func generateSpanID() pcommon.SpanID {
+// 	var spanID pcommon.SpanID
+// 	binary.Read(rand.Reader, binary.BigEndian, &spanID)
+// 	return spanID
+// }
+
+func generateStepSpanID(runID int64, runAttempt int, jobName, stepName string, stepNumber ...int) (pcommon.SpanID, error) {
+	var input string
+	if len(stepNumber) > 0 && stepNumber[0] > 0 {
+		input = fmt.Sprintf("%d%d%s%s%d", runID, runAttempt, jobName, stepName, stepNumber[0])
+	} else {
+		input = fmt.Sprintf("%d%d%s%s", runID, runAttempt, jobName, stepName)
+	}
+	hash := sha256.Sum256([]byte(input))
+	spanIDHex := hex.EncodeToString(hash[:])
+
 	var spanID pcommon.SpanID
-	binary.Read(rand.Reader, binary.BigEndian, &spanID)
-	return spanID
+	_, err := hex.Decode(spanID[:], []byte(spanIDHex[16:32]))
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+
+	return spanID, nil
 }
 
 func processSteps(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger) {
-	for _, step := range steps {
-		createSpan(scopeSpans, step, traceID, parentSpanID, logger)
+	nameCount := checkDuplicateStepNames(steps)
+	for index, step := range steps {
+		if nameCount[step.Name] > 1 {
+			createSpan(scopeSpans, step, job, traceID, parentSpanID, logger, index+1) // Pass step number if duplicate names exist
+		} else {
+			createSpan(scopeSpans, step, job, traceID, parentSpanID, logger)
+		}
 	}
 }
 
