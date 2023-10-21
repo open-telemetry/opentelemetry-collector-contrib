@@ -1449,6 +1449,238 @@ func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func Test_StandardBoolGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardBoolGetter[interface{}]
+		want             bool
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "primitive bool type",
+			getter: StandardBoolGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "ValueTypeBool type",
+			getter: StandardBoolGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueBool(true), nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardBoolGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected bool but got int",
+		},
+		{
+			name: "nil",
+			getter: StandardBoolGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected bool but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardBoolGetter_WrappedError(t *testing.T) {
+	getter := StandardBoolGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
+func Test_StandardBoolLikeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           BoolLikeGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "string type true",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "true", nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "string type false",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "false", nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "int type",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 0, nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "float64 type",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return float64(0.0), nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type int",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueInt(int64(0))
+					return v, nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type string",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueStr("false")
+					return v, nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type bool",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueBool(true)
+					return v, nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type double",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueDouble(float64(0.0))
+					return v, nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "nil",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			want:  nil,
+			valid: true,
+		},
+		{
+			name: "invalid type",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return []byte{}, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: []uint8",
+		},
+		{
+			name: "invalid pcommon.value type",
+			getter: StandardBoolLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueMap()
+					return v, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported value type: Map",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				if tt.want == nil {
+					assert.Nil(t, val)
+				} else {
+					assert.Equal(t, tt.want, *val)
+				}
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardBoolLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
 func Test_StandardPMapGetter(t *testing.T) {
 	tests := []struct {
 		name             string
