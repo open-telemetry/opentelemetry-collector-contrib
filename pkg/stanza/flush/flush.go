@@ -13,11 +13,21 @@ type State struct {
 	LastDataLength int
 }
 
+func (s *State) Copy() *State {
+	if s == nil {
+		return nil
+	}
+	return &State{
+		LastDataChange: s.LastDataChange,
+		LastDataLength: s.LastDataLength,
+	}
+}
+
 // Func wraps a bufio.SplitFunc with a timer.
 // When the timer expires, an incomplete token may be returned.
 // The timer will reset any time the data parameter changes.
 func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.SplitFunc {
-	if period <= 0 {
+	if s == nil || period <= 0 {
 		return splitFunc
 	}
 
