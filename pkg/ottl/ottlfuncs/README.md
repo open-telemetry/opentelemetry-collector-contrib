@@ -297,6 +297,7 @@ Available Converters:
 - [Double](#double)
 - [Duration](#duration)
 - [Int](#int)
+- [IsBool](#isbool)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
@@ -479,6 +480,32 @@ Examples:
 
 
 - `Int("2.0")`
+
+### IsBool
+
+`IsBool(value)`
+
+The `IsBool` Converter evaluates whether the given `value` is a boolean or not.
+
+Specifically, it will return `true` if the provided `value` is one of the following:
+
+1. A Go's native `bool` type.
+2. A `pcommon.ValueTypeBool`.
+
+Otherwise, it will return `false`.
+
+Examples:
+
+- `IsBool(false)`
+
+
+- `IsBool(pcommon.NewValueBool(false))`
+
+
+- `IsBool(42)`
+
+
+- `IsBool(attributes["any key"])`
 
 ### IsMap
 
