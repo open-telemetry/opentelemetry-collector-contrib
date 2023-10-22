@@ -30,12 +30,26 @@ type DataReceiver interface {
 
 	// ProtocolName returns exporterType name to use in collector config pipeline.
 	ProtocolName() string
+
+	WithRetry(string)
+	WithQueue(string)
 }
 
 // DataReceiverBase implement basic functions needed by all receivers.
 type DataReceiverBase struct {
 	// Port on which to listen.
 	Port int
+
+	Retry        string
+	SendingQueue string
+}
+
+func (base *DataReceiverBase) WithRetry(retry string) {
+	base.Retry = retry
+}
+
+func (base *DataReceiverBase) WithQueue(sendingQueue string) {
+	base.SendingQueue = sendingQueue
 }
 
 // TODO: Move these constants.
@@ -53,8 +67,6 @@ type BaseOTLPDataReceiver struct {
 	metricsReceiver receiver.Metrics
 	logReceiver     receiver.Logs
 	compression     string
-	retry           string
-	sendingQueue    string
 }
 
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
@@ -93,16 +105,6 @@ func (bor *BaseOTLPDataReceiver) WithCompression(compression string) *BaseOTLPDa
 	return bor
 }
 
-func (bor *BaseOTLPDataReceiver) WithRetry(retry string) *BaseOTLPDataReceiver {
-	bor.retry = retry
-	return bor
-}
-
-func (bor *BaseOTLPDataReceiver) WithQueue(sendingQueue string) *BaseOTLPDataReceiver {
-	bor.sendingQueue = sendingQueue
-	return bor
-}
-
 func (bor *BaseOTLPDataReceiver) Stop() error {
 	if err := bor.traceReceiver.Shutdown(context.Background()); err != nil {
 		return err
@@ -129,7 +131,7 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
     %s
     %s
     tls:
-      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue)
+      insecure: true`, bor.exporterType, addr, bor.Retry, bor.SendingQueue)
 	comp := "none"
 	if bor.compression != "" {
 		comp = bor.compression

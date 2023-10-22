@@ -53,7 +53,9 @@ func (zr *zipkinDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   zipkin:
     endpoint: http://127.0.0.1:%d/api/v2/spans
-    format: json`, zr.Port)
+    format: json
+    %s
+    %s`, zr.Port, zr.Retry, zr.SendingQueue)
 }
 
 func (zr *zipkinDataReceiver) ProtocolName() string {
