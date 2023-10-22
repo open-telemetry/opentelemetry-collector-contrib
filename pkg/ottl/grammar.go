@@ -189,14 +189,15 @@ func (c *comparison) checkForCustomError() error {
 
 // editor represents the function call of a statement.
 type editor struct {
-	Function  string  `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
-	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
+	Function  string     `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
+	Arguments []argument `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 	// If keys are matched return an error
 	Keys []Key `parser:"( @@ )*"`
 }
 
 func (i *editor) checkForCustomError() error {
 	var err error
+
 	for _, arg := range i.Arguments {
 		err = arg.checkForCustomError()
 		if err != nil {
@@ -211,9 +212,18 @@ func (i *editor) checkForCustomError() error {
 
 // converter represents a converter function call.
 type converter struct {
-	Function  string  `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
-	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
-	Keys      []Key   `parser:"( @@ )*"`
+	Function  string     `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
+	Arguments []argument `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
+	Keys      []Key      `parser:"( @@ )*"`
+}
+
+type argument struct {
+	Name  string `parser:"(@(Lowercase(Uppercase | Lowercase)*) Equal)?"`
+	Value value  `parser:"@@"`
+}
+
+func (a *argument) checkForCustomError() error {
+	return a.Value.checkForCustomError()
 }
 
 // value represents a part of a parsed statement which is resolved to a value of some sort. This can be a telemetry path
@@ -424,6 +434,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
+		{Name: `Equal`, Pattern: `=[^=]`},
 		{Name: `OpNot`, Pattern: `\b(not)\b`},
 		{Name: `OpOr`, Pattern: `\b(or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},

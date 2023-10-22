@@ -164,8 +164,8 @@ receivers:
 exporters:
   prometheusremotewrite:
     endpoint: http://localhost:9090/api/v1/write
-     target_info:
-       enabled: true
+    target_info:
+      enabled: true
 
 connectors:
   spanmetrics:

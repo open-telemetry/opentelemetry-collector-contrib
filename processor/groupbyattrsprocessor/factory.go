@@ -27,7 +27,7 @@ var once sync.Once
 func NewFactory() processor.Factory {
 	once.Do(func() {
 		// TODO: as with other -contrib factories registering metrics, this is causing the error being ignored
-		_ = view.Register(MetricViews()...)
+		_ = view.Register(metricViews()...)
 	})
 
 	return processor.NewFactory(

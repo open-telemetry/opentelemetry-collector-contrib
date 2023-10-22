@@ -14,7 +14,7 @@ import (
 )
 
 type extractCountMetricArguments struct {
-	Monotonic bool `ottlarg:"0"`
+	Monotonic bool
 }
 
 func newExtractCountMetricFactory() ottl.Factory[ottlmetric.TransformContext] {

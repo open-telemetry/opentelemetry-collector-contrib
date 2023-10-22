@@ -202,6 +202,58 @@ func newMetricOptionalMetric(cfg MetricConfig) metricOptionalMetric {
 	return m
 }
 
+type metricOptionalMetricEmptyUnit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills optional.metric.empty_unit metric with initial data.
+func (m *metricOptionalMetricEmptyUnit) init() {
+	m.data.SetName("optional.metric.empty_unit")
+	m.data.SetDescription("[DEPRECATED] Gauge double metric disabled by default.")
+	m.data.SetUnit("")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("string_attr", stringAttrAttributeValue)
+	dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOptionalMetricEmptyUnit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOptionalMetricEmptyUnit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOptionalMetricEmptyUnit(cfg MetricConfig) metricOptionalMetricEmptyUnit {
+	m := metricOptionalMetricEmptyUnit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -213,6 +265,7 @@ type MetricsBuilder struct {
 	metricDefaultMetric            metricDefaultMetric
 	metricDefaultMetricToBeRemoved metricDefaultMetricToBeRemoved
 	metricOptionalMetric           metricOptionalMetric
+	metricOptionalMetricEmptyUnit  metricOptionalMetricEmptyUnit
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -235,6 +288,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	if mbc.Metrics.OptionalMetric.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] `optional.metric` should not be configured: This metric is deprecated and will be removed soon.")
 	}
+	if mbc.Metrics.OptionalMetricEmptyUnit.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `optional.metric.empty_unit` should not be configured: This metric is deprecated and will be removed soon.")
+	}
+	if !mbc.ResourceAttributes.StringResourceAttrDisableWarning.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.")
+	}
+	if mbc.ResourceAttributes.StringResourceAttrRemoveWarning.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `string.resource.attr_remove_warning` should not be configured: This resource_attribute is deprecated and will be removed soon.")
+	}
+	if mbc.ResourceAttributes.StringResourceAttrToBeRemoved.Enabled {
+		settings.Logger.Warn("[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.")
+	}
 	mb := &MetricsBuilder{
 		config:                         mbc,
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
@@ -243,6 +308,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricDefaultMetric:            newMetricDefaultMetric(mbc.Metrics.DefaultMetric),
 		metricDefaultMetricToBeRemoved: newMetricDefaultMetricToBeRemoved(mbc.Metrics.DefaultMetricToBeRemoved),
 		metricOptionalMetric:           newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
+		metricOptionalMetricEmptyUnit:  newMetricOptionalMetricEmptyUnit(mbc.Metrics.OptionalMetricEmptyUnit),
 	}
 	for _, op := range options {
 		op(mb)
@@ -308,6 +374,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricDefaultMetric.emit(ils.Metrics())
 	mb.metricDefaultMetricToBeRemoved.emit(ils.Metrics())
 	mb.metricOptionalMetric.emit(ils.Metrics())
+	mb.metricOptionalMetricEmptyUnit.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(rm)
@@ -341,6 +408,11 @@ func (mb *MetricsBuilder) RecordDefaultMetricToBeRemovedDataPoint(ts pcommon.Tim
 // RecordOptionalMetricDataPoint adds a data point to optional.metric metric.
 func (mb *MetricsBuilder) RecordOptionalMetricDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
 	mb.metricOptionalMetric.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
+}
+
+// RecordOptionalMetricEmptyUnitDataPoint adds a data point to optional.metric.empty_unit metric.
+func (mb *MetricsBuilder) RecordOptionalMetricEmptyUnitDataPoint(ts pcommon.Timestamp, val float64, stringAttrAttributeValue string, booleanAttrAttributeValue bool) {
+	mb.metricOptionalMetricEmptyUnit.recordDataPoint(mb.startTime, ts, val, stringAttrAttributeValue, booleanAttrAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

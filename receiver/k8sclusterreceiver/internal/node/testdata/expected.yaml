@@ -7,9 +7,6 @@ resourceMetrics:
         - key: k8s.node.uid
           value:
             stringValue: test-node-1-uid
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -42,37 +39,37 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
             name: k8s.node.condition_disk_pressure
-            unit: "1"
+            unit: ""
           - description: MemoryPressure condition status of the node (true=1, false=0, unknown=-1)
             gauge:
               dataPoints:
                 - asInt: "0"
             name: k8s.node.condition_memory_pressure
-            unit: "1"
+            unit: ""
           - description: NetworkUnavailable condition status of the node (true=1, false=0, unknown=-1)
             gauge:
               dataPoints:
                 - asInt: "0"
             name: k8s.node.condition_network_unavailable
-            unit: "1"
+            unit: ""
           - description: PIDPressure condition status of the node (true=1, false=0, unknown=-1)
             gauge:
               dataPoints:
                 - asInt: "0"
             name: k8s.node.condition_pid_pressure
-            unit: "1"
+            unit: ""
           - description: Ready condition status of the node (true=1, false=0, unknown=-1)
             gauge:
               dataPoints:
                 - asInt: "1"
             name: k8s.node.condition_ready
-            unit: "1"
+            unit: ""
           - description: OutOfDisk condition status of the node (true=1, false=0, unknown=-1)
             gauge:
               dataPoints:
                 - asInt: "-1"
             name: k8s.node.condition_out_of_disk
-            unit: "1"
+            unit: ""
           - description: Amount of hugepages-1Gi allocatable on the node
             gauge:
               dataPoints:
