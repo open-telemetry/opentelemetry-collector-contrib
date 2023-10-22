@@ -56,11 +56,11 @@ The following settings can be optionally configured:
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
   - `tls`
     - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `cert_file`: path to the TLS cert to use for TLS required connections. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `key_file`: path to the TLS key to use for TLS required connections. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `insecure` (default = false): Disable verifying the server's certificate
       chain and host name (`InsecureSkipVerify` in the tls config)
     - `server_name_override`: ServerName indicates the name of the server requested by the client

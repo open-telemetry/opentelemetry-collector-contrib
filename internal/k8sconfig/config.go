@@ -54,6 +54,9 @@ type APIConfig struct {
 	// token provided to the agent pod), or `kubeConfig` to use credentials
 	// from `~/.kube/config`.
 	AuthType AuthType `mapstructure:"auth_type"`
+
+	// When using auth_type `kubeConfig`, override the current context.
+	Context string `mapstructure:"context"`
 }
 
 // Validate validates the K8s API config
@@ -85,6 +88,9 @@ func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	case AuthTypeKubeConfig:
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 		configOverrides := &clientcmd.ConfigOverrides{}
+		if apiConf.Context != "" {
+			configOverrides.CurrentContext = apiConf.Context
+		}
 		authConf, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 			loadingRules, configOverrides).ClientConfig()
 

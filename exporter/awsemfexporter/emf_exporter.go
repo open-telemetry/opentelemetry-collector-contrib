@@ -29,7 +29,7 @@ const (
 )
 
 type emfExporter struct {
-	pusherMap        map[cwlogs.PusherKey]cwlogs.Pusher
+	pusherMap        map[cwlogs.StreamKey]cwlogs.Pusher
 	svcStructuredLog *cwlogs.Client
 	config           *Config
 
@@ -68,7 +68,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		metricTranslator: newMetricTranslator(*config),
 		retryCnt:         *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
-		pusherMap:        map[cwlogs.PusherKey]cwlogs.Pusher{},
+		pusherMap:        map[cwlogs.StreamKey]cwlogs.Pusher{},
 	}
 
 	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
@@ -105,8 +105,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	}
 
 	for _, groupedMetric := range groupedMetrics {
-		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, emf.config)
-		putLogEvent, err := translateCWMetricToEMF(cWMetric, emf.config)
+		putLogEvent, err := translateGroupedMetricToEmf(groupedMetric, emf.config, defaultLogStream)
 		if err != nil {
 			return err
 		}
@@ -118,16 +117,8 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 				fmt.Println(*putLogEvent.InputLogEvent.Message)
 			}
 		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-			logGroup := groupedMetric.metadata.logGroup
-			logStream := groupedMetric.metadata.logStream
-			if logStream == "" {
-				logStream = defaultLogStream
-			}
 
-			emfPusher := emf.getPusher(cwlogs.PusherKey{
-				LogGroupName:  logGroup,
-				LogStreamName: logStream,
-			})
+			emfPusher := emf.getPusher(putLogEvent.StreamKey)
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
 				if returnError != nil {
@@ -156,7 +147,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	return nil
 }
 
-func (emf *emfExporter) getPusher(key cwlogs.PusherKey) cwlogs.Pusher {
+func (emf *emfExporter) getPusher(key cwlogs.StreamKey) cwlogs.Pusher {
 
 	var ok bool
 	if _, ok = emf.pusherMap[key]; !ok {

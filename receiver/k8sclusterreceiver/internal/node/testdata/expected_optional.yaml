@@ -13,9 +13,6 @@ resourceMetrics:
         - key: k8s.kubeproxy.version
           value:
             stringValue: v1.25.3
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
