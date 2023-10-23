@@ -266,7 +266,7 @@ func TestProcessor_MetricsFlushInterval(t *testing.T) {
 			MaxItems: 10,
 			TTL:      time.Nanosecond,
 		},
-		MetricsFlushInterval: 3 * time.Second,
+		MetricsFlushInterval: 2 * time.Second,
 	})
 	p.tracesConsumer = consumertest.NewNop()
 
@@ -285,10 +285,9 @@ func TestProcessor_MetricsFlushInterval(t *testing.T) {
 
 	// Metrics are not immediately flushed
 	assert.Len(t, metricsExporter.md, 0)
-	time.Sleep(time.Second * 5)
 
-	// Metrics are flushed after 5 seconds
-	assert.Len(t, metricsExporter.md, 1)
+	// Metrics are flushed after 2 seconds
+	assert.Eventuallyf(t, func() bool { return len(metricsExporter.md) == 1 }, 5*time.Second, 100*time.Millisecond, "metrics are not flushed")
 	verifyHappyCaseMetrics(t, metricsExporter.md[0])
 
 	// Shutdown the processor
