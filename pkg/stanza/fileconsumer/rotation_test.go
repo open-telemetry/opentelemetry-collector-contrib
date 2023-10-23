@@ -633,31 +633,33 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	operator, emitCalls := buildTestManager(t, cfg)
 	persister := testutil.NewUnscopedMockPersister()
 
-	log1 := tokenWithLength(1000)
-	log2 := tokenWithLength(1000)
+	log1 := tokenWithLength(1001)
+	log2 := tokenWithLength(1002)
+	log3 := tokenWithLength(1003)
 
 	temp := openTemp(t, tempDir)
+	tempName := temp.Name()
 	writeString(t, temp, string(log1)+"\n")
-	require.NoError(t, temp.Close())
 
-	// Start the operator
+	// Run the operator to read the first log
 	require.NoError(t, operator.Start(persister))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
 	waitForToken(t, emitCalls, log1)
-
-	// Stop the operator, then rename and write a new log
 	require.NoError(t, operator.Stop())
 
-	err := os.Rename(temp.Name(), fmt.Sprintf("%s2", temp.Name()))
-	require.NoError(t, err)
-
-	temp = reopenTemp(t, temp.Name())
-	require.NoError(t, err)
+	// Write one more log to the original file
 	writeString(t, temp, string(log2)+"\n")
+	require.NoError(t, temp.Close())
+
+	// Rename the file and open another file in the same location
+	require.NoError(t, os.Rename(tempName, fmt.Sprintf("%s2", tempName)))
+
+	// Write a different log to the new file
+	temp2 := reopenTemp(t, tempName)
+	writeString(t, temp2, string(log3)+"\n")
 
 	// Expect the message written to the new log to come through
-	require.NoError(t, operator.Start(persister))
-	waitForToken(t, emitCalls, log2)
+	operator2, emitCalls2 := buildTestManager(t, cfg)
+	require.NoError(t, operator2.Start(persister))
+	waitForTokens(t, emitCalls2, log2, log3)
+	require.NoError(t, operator2.Stop())
 }
