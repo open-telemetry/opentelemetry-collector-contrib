@@ -714,13 +714,13 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	writeString(t, temp3, "testlog2\n")
 	operator.poll(context.Background())
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog1"), []byte("testlog2")})
+	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
 
 	writeString(t, temp2, "testlog3\n")
 	writeString(t, temp4, "testlog4\n")
 	operator.poll(context.Background())
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog3"), []byte("testlog4")})
+	waitForTokens(t, emitCalls, []byte("testlog3"), []byte("testlog4"))
 }
 
 func TestDecodeBufferIsResized(t *testing.T) {
@@ -762,7 +762,7 @@ func TestMultiFileSimple(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog1"), []byte("testlog2")})
+	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
 }
 
 func TestMultiFileSort(t *testing.T) {
@@ -794,7 +794,7 @@ func TestMultiFileSort(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2")})
+	waitForTokens(t, emitCalls, []byte("testlog2"))
 	expectNoTokens(t, emitCalls)
 }
 
@@ -828,7 +828,7 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2")})
+	waitForTokens(t, emitCalls, []byte("testlog2"))
 	expectNoTokens(t, emitCalls)
 }
 
@@ -869,7 +869,7 @@ func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -914,7 +914,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 		}(temp, i)
 	}
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -1110,7 +1110,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 
 	// Poll again and expect one line from each file.
 	operator.poll(context.Background())
-	waitForTokens(t, emitChan, expectedTokens)
+	waitForTokens(t, emitChan, expectedTokens...)
 }
 
 func TestFileReader_FingerprintUpdated(t *testing.T) {
@@ -1358,7 +1358,7 @@ func TestEncodings(t *testing.T) {
 				require.NoError(t, operator.Stop())
 			}()
 
-			waitForTokens(t, emitCalls, tc.expected)
+			waitForTokens(t, emitCalls, tc.expected...)
 		})
 	}
 }
@@ -1684,6 +1684,6 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.poll(context.Background())
 	// We should have updated the offset for one of the files, so the second file should now
 	// be ingested from the beginning
-	waitForTokens(t, emitCalls, [][]byte{[]byte(content), []byte(newContent1), []byte(newContent)})
+	waitForTokens(t, emitCalls, []byte(content), []byte(newContent1), []byte(newContent))
 	operator.wg.Wait()
 }
