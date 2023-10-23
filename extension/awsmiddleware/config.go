@@ -27,5 +27,5 @@ func GetConfigurer(extensions map[component.ID]component.Component, middlewareID
 	if err != nil {
 		return nil, err
 	}
-	return newConfigurer(middleware.Handlers()), nil
+	return NewConfigurer(middleware.Handlers()), nil
 }

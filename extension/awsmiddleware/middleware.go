@@ -115,8 +115,8 @@ type Configurer struct {
 	responseHandlers []ResponseHandler
 }
 
-// newConfigurer sets the request/response handlers.
-func newConfigurer(requestHandlers []RequestHandler, responseHandlers []ResponseHandler) *Configurer {
+// NewConfigurer sets the request/response handlers.
+func NewConfigurer(requestHandlers []RequestHandler, responseHandlers []ResponseHandler) *Configurer {
 	return &Configurer{requestHandlers: requestHandlers, responseHandlers: responseHandlers}
 }
 
