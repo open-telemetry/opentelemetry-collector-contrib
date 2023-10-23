@@ -9,14 +9,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.87.0
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/component v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/confmap v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/consumer v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0016.0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016.0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/processor v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/receiver v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector v0.88.0
+	go.opentelemetry.io/collector/component v0.88.0
+	go.opentelemetry.io/collector/confmap v0.88.0
+	go.opentelemetry.io/collector/consumer v0.88.0
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017
+	go.opentelemetry.io/collector/processor v0.88.0
+	go.opentelemetry.io/collector/receiver v0.88.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/semconv v0.87.1-0.20231023033326-37116a25be8d
 	go.uber.org/multierr v1.11.0
@@ -78,10 +78,10 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.87.1-0.20231023033326-37116a25be8d // indirect
 	go.opentelemetry.io/collector/config/confignet v0.87.1-0.20231023033326-37116a25be8d // indirect
 	go.opentelemetry.io/collector/config/configopaque v0.87.1-0.20231023033326-37116a25be8d // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.87.1-0.20231023033326-37116a25be8d // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.88.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.87.1-0.20231023033326-37116a25be8d // indirect
 	go.opentelemetry.io/collector/config/internal v0.87.1-0.20231023033326-37116a25be8d // indirect
-	go.opentelemetry.io/collector/extension v0.87.1-0.20231023033326-37116a25be8d // indirect
+	go.opentelemetry.io/collector/extension v0.88.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.87.1-0.20231023033326-37116a25be8d // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.45.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
