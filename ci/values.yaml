@@ -9,6 +9,7 @@ resources:
   limits:
     cpu: 512m
     memory: 2Gi
+useGOMEMLIMIT: true
 presets:
   logsCollection:
     enabled: true

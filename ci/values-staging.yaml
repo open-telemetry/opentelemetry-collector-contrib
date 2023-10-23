@@ -3,4 +3,3 @@ nodeSelector:
 presets:
   logsCollection:
     enabled: false
-useGOMEMLIMIT: true
