@@ -34,19 +34,19 @@ require (
 	go.opentelemetry.io/collector/component v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/connector v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/exporter v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/exporter/debugexporter v0.87.1-0.20231017160804-ec0725874313
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.87.1-0.20231017160804-ec0725874313
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.87.1-0.20231017160804-ec0725874313
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.87.1-0.20231017160804-ec0725874313
+	go.opentelemetry.io/collector/exporter/debugexporter v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/extension v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/extension/ballastextension v0.87.1-0.20231017160804-ec0725874313
-	go.opentelemetry.io/collector/extension/zpagesextension v0.87.1-0.20231017160804-ec0725874313
+	go.opentelemetry.io/collector/extension/ballastextension v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/extension/zpagesextension v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/otelcol v0.87.1-0.20231017160804-ec0725874313
 	go.opentelemetry.io/collector/processor v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/processor/batchprocessor v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.87.1-0.20231017160804-ec0725874313
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/receiver v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.87.1-0.20231017160804-ec0725874313
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.87.1-0.20231023033326-37116a25be8d
 	golang.org/x/sys v0.13.0
 )
 
