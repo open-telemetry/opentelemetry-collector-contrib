@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/confmap v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/exporter v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016.0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017
 	go.opentelemetry.io/collector/receiver v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/semconv v0.87.1-0.20231023033326-37116a25be8d
 	go.uber.org/zap v1.26.0
