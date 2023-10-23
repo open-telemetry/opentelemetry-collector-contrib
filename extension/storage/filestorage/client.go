@@ -37,17 +37,17 @@ type fileStorageClient struct {
 	closed          bool
 }
 
-func bboltOptions(timeout time.Duration) *bbolt.Options {
+func bboltOptions(timeout time.Duration, fSync bool) *bbolt.Options {
 	return &bbolt.Options{
 		Timeout:        timeout,
-		NoSync:         true,
+		NoSync:         !fSync,
 		NoFreelistSync: true,
 		FreelistType:   bbolt.FreelistMapType,
 	}
 }
 
-func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compactionCfg *CompactionConfig) (*fileStorageClient, error) {
-	options := bboltOptions(timeout)
+func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compactionCfg *CompactionConfig, fSync bool) (*fileStorageClient, error) {
+	options := bboltOptions(timeout, fSync)
 	db, err := bbolt.Open(filePath, 0600, options)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	}()
 
 	// use temporary file as compaction target
-	options := bboltOptions(timeout)
+	options := bboltOptions(timeout, false)
 
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()

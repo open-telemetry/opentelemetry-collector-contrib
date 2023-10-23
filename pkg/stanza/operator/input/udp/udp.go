@@ -27,6 +27,10 @@ const (
 
 	// Maximum UDP packet size
 	MaxUDPSize = 64 * 1024
+
+	defaultReaders        = 1
+	defaultProcessors     = 1
+	defaultMaxQueueLength = 100
 )
 
 func init() {
@@ -58,6 +62,12 @@ type Config struct {
 	BaseConfig         `mapstructure:",squash"`
 }
 
+type AsyncConfig struct {
+	Readers        int `mapstructure:"readers,omitempty"`
+	Processors     int `mapstructure:"processors,omitempty"`
+	MaxQueueLength int `mapstructure:"max_queue_length,omitempty"`
+}
+
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
 	ListenAddress   string       `mapstructure:"listen_address,omitempty"`
@@ -66,6 +76,7 @@ type BaseConfig struct {
 	Encoding        string       `mapstructure:"encoding,omitempty"`
 	SplitConfig     split.Config `mapstructure:"multiline,omitempty"`
 	TrimConfig      trim.Config  `mapstructure:",squash"`
+	AsyncConfig     *AsyncConfig `mapstructure:"async,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -101,6 +112,18 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		resolver = helper.NewIPResolver()
 	}
 
+	if c.AsyncConfig != nil {
+		if c.AsyncConfig.Readers <= 0 {
+			c.AsyncConfig.Readers = defaultReaders
+		}
+		if c.AsyncConfig.Processors <= 0 {
+			c.AsyncConfig.Processors = defaultProcessors
+		}
+		if c.AsyncConfig.MaxQueueLength <= 0 {
+			c.AsyncConfig.MaxQueueLength = defaultMaxQueueLength
+		}
+	}
+
 	udpInput := &Input{
 		InputOperator:   inputOperator,
 		address:         address,
@@ -110,6 +133,11 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		splitFunc:       splitFunc,
 		resolver:        resolver,
 		OneLogPerPacket: c.OneLogPerPacket,
+		AsyncConfig:     c.AsyncConfig,
+	}
+
+	if c.AsyncConfig != nil {
+		udpInput.messageQueue = make(chan messageAndAddress, c.AsyncConfig.MaxQueueLength)
 	}
 	return udpInput, nil
 }
@@ -121,6 +149,7 @@ type Input struct {
 	address         *net.UDPAddr
 	addAttributes   bool
 	OneLogPerPacket bool
+	AsyncConfig     *AsyncConfig
 
 	connection net.PacketConn
 	cancel     context.CancelFunc
@@ -129,6 +158,14 @@ type Input struct {
 	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
+
+	messageQueue chan messageAndAddress
+	stopOnce     sync.Once
+}
+
+type messageAndAddress struct {
+	Message    []byte
+	RemoteAddr net.Addr
 }
 
 // Start will start listening for messages on a socket.
@@ -148,44 +185,104 @@ func (u *Input) Start(_ operator.Persister) error {
 
 // goHandleMessages will handle messages from a udp connection.
 func (u *Input) goHandleMessages(ctx context.Context) {
-	u.wg.Add(1)
+	if u.AsyncConfig == nil {
+		u.wg.Add(1)
+		go u.readAndProcessMessages(ctx)
+		return
+	}
 
-	go func() {
-		defer u.wg.Done()
+	for i := 0; i < u.AsyncConfig.Readers; i++ {
+		u.wg.Add(1)
+		go u.readMessagesAsync(ctx)
+	}
 
-		dec := decode.New(u.encoding)
-		buf := make([]byte, 0, MaxUDPSize)
-		for {
-			message, remoteAddr, err := u.readMessage()
-			if err != nil {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					u.Errorw("Failed reading messages", zap.Error(err))
-				}
-				break
+	for i := 0; i < u.AsyncConfig.Processors; i++ {
+		u.wg.Add(1)
+		go u.processMessagesAsync(ctx)
+	}
+}
+
+func (u *Input) readAndProcessMessages(ctx context.Context) {
+	defer u.wg.Done()
+
+	dec := decode.New(u.encoding)
+	buf := make([]byte, 0, MaxUDPSize)
+	for {
+		message, remoteAddr, err := u.readMessage()
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				u.Errorw("Failed reading messages", zap.Error(err))
 			}
-
-			if u.OneLogPerPacket {
-				log := truncateMaxLog(message)
-				u.handleMessage(ctx, remoteAddr, dec, log)
-				continue
-			}
-
-			scanner := bufio.NewScanner(bytes.NewReader(message))
-			scanner.Buffer(buf, MaxUDPSize)
-
-			scanner.Split(u.splitFunc)
-
-			for scanner.Scan() {
-				u.handleMessage(ctx, remoteAddr, dec, scanner.Bytes())
-			}
-			if err := scanner.Err(); err != nil {
-				u.Errorw("Scanner error", zap.Error(err))
-			}
+			break
 		}
-	}()
+
+		u.processMessage(ctx, message, remoteAddr, dec, buf)
+	}
+}
+
+func (u *Input) processMessage(ctx context.Context, message []byte, remoteAddr net.Addr, dec *decode.Decoder, buf []byte) {
+	if u.OneLogPerPacket {
+		log := truncateMaxLog(message)
+		u.handleMessage(ctx, remoteAddr, dec, log)
+		return
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(message))
+	scanner.Buffer(buf, MaxUDPSize)
+
+	scanner.Split(u.splitFunc)
+
+	for scanner.Scan() {
+		u.handleMessage(ctx, remoteAddr, dec, scanner.Bytes())
+	}
+	if err := scanner.Err(); err != nil {
+		u.Errorw("Scanner error", zap.Error(err))
+	}
+}
+
+func (u *Input) readMessagesAsync(ctx context.Context) {
+	defer u.wg.Done()
+
+	for {
+		message, remoteAddr, err := u.readMessage()
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				u.Errorw("Failed reading messages", zap.Error(err))
+			}
+			break
+		}
+
+		messageAndAddr := messageAndAddress{
+			Message:    message,
+			RemoteAddr: remoteAddr,
+		}
+
+		// Send the message to the message queue for processing
+		u.messageQueue <- messageAndAddr
+	}
+}
+
+func (u *Input) processMessagesAsync(ctx context.Context) {
+	defer u.wg.Done()
+
+	dec := decode.New(u.encoding)
+	buf := make([]byte, 0, MaxUDPSize)
+
+	for {
+		// Read a message from the message queue.
+		messageAndAddr, ok := <-u.messageQueue
+		if !ok {
+			return // Channel closed, exit the goroutine.
+		}
+
+		u.processMessage(ctx, messageAndAddr.Message, messageAndAddr.RemoteAddr, dec, buf)
+	}
 }
 
 func truncateMaxLog(data []byte) (token []byte) {
@@ -249,18 +346,24 @@ func (u *Input) readMessage() ([]byte, net.Addr, error) {
 
 // Stop will stop listening for udp messages.
 func (u *Input) Stop() error {
-	if u.cancel == nil {
-		return nil
-	}
-	u.cancel()
-	if u.connection != nil {
-		if err := u.connection.Close(); err != nil {
-			u.Errorf("failed to close UDP connection: %s", err)
+	u.stopOnce.Do(func() {
+		if u.AsyncConfig != nil {
+			close(u.messageQueue)
 		}
-	}
-	u.wg.Wait()
-	if u.resolver != nil {
-		u.resolver.Stop()
-	}
+
+		if u.cancel == nil {
+			return
+		}
+		u.cancel()
+		if u.connection != nil {
+			if err := u.connection.Close(); err != nil {
+				u.Errorf("failed to close UDP connection: %s", err)
+			}
+		}
+		u.wg.Wait()
+		if u.resolver != nil {
+			u.resolver.Stop()
+		}
+	})
 	return nil
 }

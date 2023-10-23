@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-func newReceiver(
+func newMetricsReceiver(
 	_ context.Context,
 	settings receiver.CreateSettings,
 	config *Config,

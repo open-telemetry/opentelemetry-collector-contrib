@@ -10,12 +10,12 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: test-pod-1
+        - key: k8s.pod.qos_class
+          value:
+            stringValue: BestEffort
         - key: k8s.pod.uid
           value:
             stringValue: test-pod-1-uid
-        - key: opencensus.resourcetype
-          value:
-            stringValue: k8s
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -60,9 +60,6 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: test-pod-1-uid
-        - key: opencensus.resourcetype
-          value:
-            stringValue: container
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:

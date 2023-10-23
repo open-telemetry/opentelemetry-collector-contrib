@@ -154,6 +154,7 @@ func TestBuildEventFromSpanOne(t *testing.T) {
 			traces.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
 		},
 		testServerHost,
+		newDefaultTracesSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -205,16 +206,233 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 			rss.Scope(),
 		},
 		testServerHost,
+		newDefaultTracesSettings(),
 	)
 
 	assert.Equal(t, expected, was)
+}
+
+func TestBuildEventsFromSpanAttributesDifferentTypes(t *testing.T) {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rss := rs.ScopeSpans().AppendEmpty()
+	span := rss.Spans().AppendEmpty()
+	fillAttributes(span.Attributes(), true, "A")
+	fillAttributes(rss.Scope().Attributes(), true, "S")
+	fillAttributes(rs.Resource().Attributes(), true, "R")
+
+	// sBytes := span.Attributes().PutEmptyBytes("bytes")
+	// sBytes.Append('a')
+	expected := &add_events.EventBundle{
+		Event: &add_events.Event{
+			Thread: "TT",
+			Log:    "LT",
+			Sev:    9,
+			Ts:     "0",
+			Attrs: map[string]interface{}{
+				"sca:schemVer": 1,
+				"sca:schema":   "tracing",
+				"sca:type":     "span",
+
+				"name": "",
+				"kind": "unspecified",
+
+				"start_time_unix_nano": "0",
+				"end_time_unix_nano":   "0",
+				"duration_nano":        "0",
+
+				"span_id":        "",
+				"trace_id":       "",
+				"status_code":    "unset",
+				"status_message": "",
+				"resource_name":  "",
+				"resource_type":  "process",
+
+				"name_":    "filled_nameA",
+				"span_id_": "filled_span_idA",
+
+				"string": "stringA",
+				"double": 2.0,
+				"bool":   true,
+				"empty":  nil,
+				"int":    int64(3),
+
+				"map.map_empty":              nil,
+				"map.map_string":             "map_stringA",
+				"map.map_map.map_map_string": "map_map_stringA",
+				"slice.0":                    "slice_stringA",
+			},
+			ServerHost: testServerHost,
+		},
+		Thread: testTThread,
+		Log:    testTLog,
+	}
+	was := buildEventFromSpan(
+		spanBundle{
+			span,
+			rs.Resource(),
+			rss.Scope(),
+		},
+		testServerHost,
+		newDefaultTracesSettings(),
+	)
+
+	assert.Equal(t, expected, was)
+}
+
+func TestBuildEventFromSpan(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings TracesSettings
+		expected add_events.EventAttrs
+	}{
+		{
+			name:     "Default",
+			settings: newDefaultTracesSettings(),
+			expected: add_events.EventAttrs{
+				"sca:schemVer": 1,
+				"sca:schema":   "tracing",
+				"sca:type":     "span",
+
+				"name": "",
+				"kind": "unspecified",
+
+				"start_time_unix_nano": "0",
+				"end_time_unix_nano":   "0",
+				"duration_nano":        "0",
+
+				"span_id":        "0101010101010101",
+				"trace_id":       "",
+				"status_code":    "unset",
+				"status_message": "",
+				"resource_name":  "",
+				"resource_type":  "process",
+				"name_":          "filled_nameA",
+				"span_id_":       "filled_span_idA",
+
+				"string":                     "stringA",
+				"map.map_empty":              nil,
+				"map.map_string":             "map_stringA",
+				"map.map_map.map_map_string": "map_map_stringA",
+				"slice.0":                    "slice_stringA",
+			},
+		},
+		{
+			name: "Custom",
+			settings: TracesSettings{
+				exportSettings{
+					ExportSeparator:            ".SEP.",
+					ExportDistinguishingSuffix: ".SUF.",
+				},
+			},
+			expected: add_events.EventAttrs{
+				"sca:schemVer": 1,
+				"sca:schema":   "tracing",
+				"sca:type":     "span",
+
+				"name": "",
+				"kind": "unspecified",
+
+				"start_time_unix_nano": "0",
+				"end_time_unix_nano":   "0",
+				"duration_nano":        "0",
+
+				"span_id":        "0101010101010101",
+				"trace_id":       "",
+				"status_code":    "unset",
+				"status_message": "",
+				"resource_name":  "",
+				"resource_type":  "process",
+				"name.SUF.":      "filled_nameA",
+				"span_id.SUF.":   "filled_span_idA",
+
+				"string":                             "stringA",
+				"map.SEP.map_empty":                  nil,
+				"map.SEP.map_string":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string": "map_map_stringA",
+				"slice.SEP.0":                        "slice_stringA",
+			},
+		},
+		{
+			name: "EmptySuffix",
+			settings: TracesSettings{
+				exportSettings{
+					ExportSeparator:            ".SEP.",
+					ExportDistinguishingSuffix: "",
+				},
+			},
+			expected: add_events.EventAttrs{
+				"sca:schemVer": 1,
+				"sca:schema":   "tracing",
+				"sca:type":     "span",
+
+				"name": "filled_nameA",
+				"kind": "unspecified",
+
+				"start_time_unix_nano": "0",
+				"end_time_unix_nano":   "0",
+				"duration_nano":        "0",
+
+				"span_id":        "filled_span_idA",
+				"trace_id":       "",
+				"status_code":    "unset",
+				"status_message": "",
+				"resource_name":  "",
+				"resource_type":  "process",
+
+				"string":                             "stringA",
+				"map.SEP.map_empty":                  nil,
+				"map.SEP.map_string":                 "map_stringA",
+				"map.SEP.map_map.SEP.map_map_string": "map_map_stringA",
+				"slice.SEP.0":                        "slice_stringA",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := ptrace.NewTraces()
+			rs := td.ResourceSpans().AppendEmpty()
+			rss := rs.ScopeSpans().AppendEmpty()
+			span := rss.Spans().AppendEmpty()
+			span.SetSpanID([8]byte{1, 1, 1, 1, 1, 1, 1, 1})
+			fillAttributes(span.Attributes(), false, "A")
+			fillAttributes(rss.Scope().Attributes(), false, "S")
+			fillAttributes(rs.Resource().Attributes(), false, "R")
+
+			expected := &add_events.EventBundle{
+				Event: &add_events.Event{
+					Thread:     "TT",
+					Log:        "LT",
+					Sev:        9,
+					Ts:         "0",
+					Attrs:      tt.expected,
+					ServerHost: testServerHost,
+				},
+				Thread: testTThread,
+				Log:    testTLog,
+			}
+
+			was := buildEventFromSpan(
+				spanBundle{
+					span,
+					rs.Resource(),
+					rss.Scope(),
+				},
+				testServerHost,
+				tt.settings,
+			)
+
+			assert.Equal(t, expected, was)
+		})
+	}
 }
 
 func TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent(t *testing.T) {
 	traces := testdata.GenerateTracesTwoSpansSameResourceOneDifferent()
 	traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("serverHost", "")
 	traces.ResourceSpans().At(1).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("serverHost", "valServerHost")
-	was := buildEventsFromTraces(traces, testServerHost)
+	was := buildEventsFromTraces(traces, testServerHost, newDefaultTracesSettings())
 
 	expected := []*add_events.EventBundle{
 		{
@@ -435,7 +653,7 @@ func generateSimpleEvent(
 
 func TestBuildEventsFromTracesTrees(t *testing.T) {
 	traces := generateTracesTreesAndOrphans()
-	was := buildEventsFromTraces(traces, testServerHost)
+	was := buildEventsFromTraces(traces, testServerHost, newDefaultTracesSettings())
 
 	statusUnset := ptrace.NewStatus()
 	statusError := ptrace.NewStatus()
