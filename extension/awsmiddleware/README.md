@@ -1,8 +1,8 @@
 # AWS Middleware
 
 An AWS middleware extension provides request and/or response handlers that can be configured on AWS SDK v1/v2 clients.
-Other components can configure their AWS SDK clients using `awsmiddleware.GetConfigurer` and the `ConfigureSDKv1` and
-`ConfigureSDKv2` functions available on the `Configurer`.
+Other components can configure their AWS SDK clients using `awsmiddleware.GetConfigurer` and passing the `SDKv1` or `SDKv2`
+options into the `Configure` function available on the `Configurer`.
 
 The `awsmiddleware.Extension` interface extends `component.Extension` by adding the following method:
 ```

@@ -5,7 +5,6 @@ package awsmiddleware
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +13,7 @@ import (
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	awsv1 "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/awstesting"
 	s3v1 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/stretchr/testify/assert"
@@ -114,19 +114,24 @@ func TestInvalidHandlers(t *testing.T) {
 	middleware := new(MockMiddlewareExtension)
 	middleware.On("Handlers").Return([]RequestHandler{handler}, []ResponseHandler{handler})
 	c := newConfigurer(middleware.Handlers())
-	// v1
-	client := awstesting.NewClient()
-	err := c.ConfigureSDKv1(&client.Handlers)
+	testCases := []SDKVersion{SDKv1(&request.Handlers{}), SDKv2(&awsv2.Config{})}
+	for _, testCase := range testCases {
+		err := c.Configure(testCase)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, errInvalidHandler)
+		assert.ErrorIs(t, err, errUnsupportedPosition)
+		handler.AssertNotCalled(t, "HandleRequest", mock.Anything, mock.Anything)
+		handler.AssertNotCalled(t, "HandleResponse", mock.Anything, mock.Anything)
+	}
+}
+
+func TestConfigureUnsupported(t *testing.T) {
+	type unsupportedVersion struct {
+		SDKVersion
+	}
+	err := newConfigurer(nil, nil).Configure(unsupportedVersion{})
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, errInvalidHandler))
-	assert.True(t, errors.Is(err, errUnsupportedPosition))
-	// v2
-	err = c.ConfigureSDKv2(&awsv2.Config{})
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, errInvalidHandler))
-	assert.True(t, errors.Is(err, errUnsupportedPosition))
-	handler.AssertNotCalled(t, "HandleRequest", mock.Anything, mock.Anything)
-	handler.AssertNotCalled(t, "HandleResponse", mock.Anything, mock.Anything)
+	assert.ErrorIs(t, err, errUnsupportedVersion)
 }
 
 func TestAppendOrder(t *testing.T) {
@@ -193,7 +198,7 @@ func TestAppendOrder(t *testing.T) {
 				DisableSSL: awsv1.Bool(true),
 				Endpoint:   awsv1.String(server.URL),
 			})
-			assert.NoError(t, c.ConfigureSDKv1(&client.Handlers))
+			assert.NoError(t, c.Configure(SDKv1(&client.Handlers)))
 			s3v1Client := &s3v1.S3{Client: client}
 			_, err := s3v1Client.ListBuckets(&s3v1.ListBucketsInput{})
 			require.NoError(t, err)
@@ -201,7 +206,7 @@ func TestAppendOrder(t *testing.T) {
 			recorder.order = nil
 			// v2
 			cfg := awsv2.Config{Region: "us-east-1"}
-			assert.NoError(t, c.ConfigureSDKv2(&cfg))
+			assert.NoError(t, c.Configure(SDKv2(&cfg)))
 			s3v2Client := s3v2.NewFromConfig(cfg, func(options *s3v2.Options) {
 				options.BaseEndpoint = awsv2.String(server.URL)
 			})
@@ -212,7 +217,7 @@ func TestAppendOrder(t *testing.T) {
 	}
 }
 
-func TestConfigureSDKv1(t *testing.T) {
+func TestRoundTripSDKv1(t *testing.T) {
 	middleware, recorder, server := setup(t)
 	defer server.Close()
 	client := awstesting.NewClient(&awsv1.Config{
@@ -223,7 +228,7 @@ func TestConfigureSDKv1(t *testing.T) {
 	})
 	require.Equal(t, 3, client.Handlers.Build.Len())
 	require.Equal(t, 1, client.Handlers.ValidateResponse.Len())
-	assert.NoError(t, newConfigurer(middleware.Handlers()).ConfigureSDKv1(&client.Handlers))
+	assert.NoError(t, newConfigurer(middleware.Handlers()).Configure(SDKv1(&client.Handlers)))
 	assert.Equal(t, 5, client.Handlers.Build.Len())
 	assert.Equal(t, 2, client.Handlers.ValidateResponse.Len())
 	s3Client := &s3v1.S3{Client: client}
@@ -234,11 +239,11 @@ func TestConfigureSDKv1(t *testing.T) {
 	assert.Equal(t, recorder.requestIDs, recorder.responseIDs)
 }
 
-func TestConfigureSDKv2(t *testing.T) {
+func TestRoundTripSDKv2(t *testing.T) {
 	middleware, recorder, server := setup(t)
 	defer server.Close()
-	cfg := awsv2.Config{Region: "us-east-1", RetryMaxAttempts: 0}
-	assert.NoError(t, newConfigurer(middleware.Handlers()).ConfigureSDKv2(&cfg))
+	cfg := awsv2.Config{Region: "mock-region", RetryMaxAttempts: 0}
+	assert.NoError(t, newConfigurer(middleware.Handlers()).Configure(SDKv2(&cfg)))
 	s3Client := s3v2.NewFromConfig(cfg, func(options *s3v2.Options) {
 		options.BaseEndpoint = awsv2.String(server.URL)
 	})

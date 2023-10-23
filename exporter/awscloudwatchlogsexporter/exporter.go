@@ -146,7 +146,7 @@ func (e *exporter) getLogPusher(pusherKey cwlogs.PusherKey) cwlogs.Pusher {
 
 func (e *exporter) start(_ context.Context, host component.Host) error {
 	if e.Config.MiddlewareID != nil {
-		awsmiddleware.TryConfigureSDKv1(e.logger, host.GetExtensions(), *e.Config.MiddlewareID, e.svcStructuredLog.Handlers())
+		awsmiddleware.TryConfigure(e.logger, host, *e.Config.MiddlewareID, awsmiddleware.SDKv1(e.svcStructuredLog.Handlers()))
 	}
 	pusherKey := cwlogs.PusherKey{
 		LogGroupName:  e.Config.LogGroupName,

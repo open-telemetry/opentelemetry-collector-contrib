@@ -20,6 +20,7 @@ var (
 	errNotMiddleware       = errors.New("extension is not an AWS middleware")
 	errInvalidHandler      = errors.New("invalid handler")
 	errUnsupportedPosition = errors.New("unsupported position")
+	errUnsupportedVersion  = errors.New("unsupported SDK version")
 )
 
 // HandlerPosition is the relative position of a handler used during insertion.
@@ -118,11 +119,23 @@ func newConfigurer(requestHandlers []RequestHandler, responseHandlers []Response
 	return &Configurer{requestHandlers: requestHandlers, responseHandlers: responseHandlers}
 }
 
-// ConfigureSDKv1 adds middleware to the AWS SDK v1. Request handlers are added to the
+// Configure configures the handlers on the provided AWS SDK.
+func (c Configurer) Configure(sdkVersion SDKVersion) error {
+	switch v := sdkVersion.(type) {
+	case sdkVersion1:
+		return c.configureSDKv1(v.handlers)
+	case sdkVersion2:
+		return c.configureSDKv2(v.cfg)
+	default:
+		return fmt.Errorf("%w: %T", errUnsupportedVersion, v)
+	}
+}
+
+// configureSDKv1 adds middleware to the AWS SDK v1. Request handlers are added to the
 // Build handler list and response handlers are added to the ValidateResponse handler list.
 // Build will only be run once per request, but if there are errors, ValidateResponse will
 // be run again for each configured retry.
-func (c Configurer) ConfigureSDKv1(handlers *request.Handlers) error {
+func (c Configurer) configureSDKv1(handlers *request.Handlers) error {
 	var errs error
 	for _, handler := range c.requestHandlers {
 		if err := appendHandler(&handlers.Build, namedRequestHandler(handler), handler.Position()); err != nil {
@@ -137,9 +150,9 @@ func (c Configurer) ConfigureSDKv1(handlers *request.Handlers) error {
 	return errs
 }
 
-// ConfigureSDKv2 adds middleware to the AWS SDK v2. Request handlers are added to the
+// configureSDKv2 adds middleware to the AWS SDK v2. Request handlers are added to the
 // Build step and response handlers are added to the Deserialize step.
-func (c Configurer) ConfigureSDKv2(config *aws.Config) error {
+func (c Configurer) configureSDKv2(config *aws.Config) error {
 	var errs error
 	for _, handler := range c.requestHandlers {
 		relativePosition, err := toRelativePosition(handler.Position())
@@ -160,7 +173,7 @@ func (c Configurer) ConfigureSDKv2(config *aws.Config) error {
 	return errs
 }
 
-// addHandlerToList adds the handler to the list based on the position.
+// appendHandler adds the handler to the list based on the position.
 func appendHandler(handlerList *request.HandlerList, handler request.NamedHandler, position HandlerPosition) error {
 	relativePosition, err := toRelativePosition(position)
 	if err != nil {

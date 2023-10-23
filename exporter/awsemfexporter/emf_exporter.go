@@ -197,7 +197,7 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 
 func (emf *emfExporter) start(_ context.Context, host component.Host) error {
 	if emf.config.MiddlewareID != nil {
-		awsmiddleware.TryConfigureSDKv1(emf.config.logger, host.GetExtensions(), *emf.config.MiddlewareID, emf.svcStructuredLog.Handlers())
+		awsmiddleware.TryConfigure(emf.config.logger, host, *emf.config.MiddlewareID, awsmiddleware.SDKv1(emf.svcStructuredLog.Handlers()))
 	}
 	return nil
 }

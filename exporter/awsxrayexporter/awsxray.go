@@ -88,7 +88,7 @@ func newTracesExporter(
 		exporterhelper.WithStart(func(_ context.Context, host component.Host) error {
 			sender.Start()
 			if cfg.MiddlewareID != nil {
-				awsmiddleware.TryConfigureSDKv1(logger, host.GetExtensions(), *cfg.MiddlewareID, xrayClient.Handlers())
+				awsmiddleware.TryConfigure(logger, host, *cfg.MiddlewareID, awsmiddleware.SDKv1(xrayClient.Handlers()))
 			}
 			return nil
 		}),
