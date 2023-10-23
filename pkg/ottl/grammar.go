@@ -6,7 +6,6 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"encoding/hex"
 	"fmt"
-	"strings"
 
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -144,9 +143,8 @@ var compareOpTable = map[string]compareOp{
 
 // Capture is how the parser converts an operator string to a compareOp.
 func (c *compareOp) Capture(values []string) error {
-	op, ok := compareOpTable[strings.Join(values, "")]
+	op, ok := compareOpTable[values[0]]
 	if !ok {
-
 		return fmt.Errorf("'%s' is not a valid operator", values[0])
 	}
 	*c = op
@@ -176,7 +174,7 @@ func (c *compareOp) String() string {
 // comparison represents an optional boolean condition.
 type comparison struct {
 	Left  value     `parser:"@@"`
-	Op    compareOp `parser:"@(OpComparison | Equal Equal)"`
+	Op    compareOp `parser:"@OpComparison"`
 	Right value     `parser:"@@"`
 }
 
@@ -220,7 +218,7 @@ type converter struct {
 }
 
 type argument struct {
-	Name  string `parser:"(@(Lowercase(Uppercase | Lowercase)*) Equal (?! Equal))?"`
+	Name  string `parser:"(@(Lowercase(Uppercase | Lowercase)*) Equal)?"`
 	Value value  `parser:"@@"`
 }
 
@@ -436,14 +434,14 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
-		{Name: `Equal`, Pattern: `=`},
 		{Name: `OpNot`, Pattern: `\b(not)\b`},
 		{Name: `OpOr`, Pattern: `\b(or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
-		{Name: `OpComparison`, Pattern: `!=|>=|<=|>|<`},
+		{Name: `OpComparison`, Pattern: `==|!=|>=|<=|>|<`},
 		{Name: `OpAddSub`, Pattern: `\+|\-`},
 		{Name: `OpMultDiv`, Pattern: `\/|\*`},
 		{Name: `Boolean`, Pattern: `\b(true|false)\b`},
+		{Name: `Equal`, Pattern: `=`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
