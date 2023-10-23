@@ -7,7 +7,7 @@ require (
 	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/config/configopaque v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/config/configopaque v0.88.0
 	go.opentelemetry.io/collector/confmap v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/extension v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/extension/auth v0.87.1-0.20231023033326-37116a25be8d
