@@ -7,7 +7,7 @@ require (
 	github.com/tg123/go-htpasswd v1.2.1
 	go.opentelemetry.io/collector v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/component v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/config/configopaque v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/config/configopaque v0.88.0
 	go.opentelemetry.io/collector/confmap v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/extension v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/extension/auth v0.87.1-0.20231023033326-37116a25be8d
