@@ -98,7 +98,7 @@ type metricContainerCPUUsage struct {
 func (m *metricContainerCPUUsage) init() {
 	m.data.SetName("container.cpu.usage")
 	m.data.SetDescription("Container CPU usage")
-	m.data.SetUnit("1")
+	m.data.SetUnit("nanoseconds")
 	m.data.SetEmptyGauge()
 }
 
@@ -935,7 +935,7 @@ type metricK8sNodeCPUUsage struct {
 func (m *metricK8sNodeCPUUsage) init() {
 	m.data.SetName("k8s.node.cpu.usage")
 	m.data.SetDescription("Node CPU usage")
-	m.data.SetUnit("1")
+	m.data.SetUnit("nanoseconds")
 	m.data.SetEmptyGauge()
 }
 
@@ -1684,7 +1684,7 @@ type metricK8sPodCPUUsage struct {
 func (m *metricK8sPodCPUUsage) init() {
 	m.data.SetName("k8s.pod.cpu.usage")
 	m.data.SetDescription("Pod CPU usage")
-	m.data.SetUnit("1")
+	m.data.SetUnit("nanoseconds")
 	m.data.SetEmptyGauge()
 }
 

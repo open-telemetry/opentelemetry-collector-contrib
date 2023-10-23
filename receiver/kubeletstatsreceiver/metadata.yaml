@@ -84,7 +84,7 @@ metrics:
   k8s.node.cpu.usage:
     enabled: false
     description: "Node CPU usage"
-    unit: 1
+    unit: nanoseconds
     gauge:
       value_type: double
     attributes: []
@@ -199,7 +199,7 @@ metrics:
   k8s.pod.cpu.usage:
     enabled: false
     description: "Pod CPU usage"
-    unit: 1
+    unit: nanoseconds
     gauge:
       value_type: double
     attributes: [ ]
@@ -342,7 +342,7 @@ metrics:
   container.cpu.usage:
     enabled: false
     description: "Container CPU usage"
-    unit: 1
+    unit: nanoseconds
     gauge:
       value_type: double
     attributes: [ ]
