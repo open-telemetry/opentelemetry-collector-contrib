@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.767
 	go.opentelemetry.io/collector/component v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/config/configopaque v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/config/configopaque v0.88.0
 	go.opentelemetry.io/collector/confmap v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/exporter v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016.0.20231023033326-37116a25be8d
