@@ -26,9 +26,9 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(NewTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(NewMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(NewLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(newTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(newMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(newLogsExporter, metadata.LogsStability),
 	)
 }
 
@@ -49,7 +49,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func NewTracesExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Traces, error) {
+func newTracesExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Traces, error) {
 	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func NewTracesExporter(ctx context.Context, params exporter.CreateSettings, conf
 	)
 }
 
-func NewMetricsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Metrics, error) {
+func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Metrics, error) {
 	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func NewMetricsExporter(ctx context.Context, params exporter.CreateSettings, con
 	)
 }
 
-func NewLogsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Logs, error) {
+func newLogsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Logs, error) {
 	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err

@@ -423,7 +423,7 @@ func BenchmarkSpansWithAttributesUnmarshal(b *testing.B) {
 	}
 }
 
-func generateSpanWithAttributes(len int) *octrace.Span {
+func generateSpanWithAttributes(length int) *octrace.Span {
 	startTime := timestamppb.New(testdata.TestSpanStartTime)
 	endTime := timestamppb.New(testdata.TestSpanEndTime)
 	ocSpan2 := &octrace.Span{
@@ -435,9 +435,9 @@ func generateSpanWithAttributes(len int) *octrace.Span {
 		},
 	}
 
-	ocSpan2.Attributes.AttributeMap = make(map[string]*octrace.AttributeValue, len)
+	ocSpan2.Attributes.AttributeMap = make(map[string]*octrace.AttributeValue, length)
 	ocAttr := ocSpan2.Attributes.AttributeMap
-	for i := 0; i < len; i++ {
+	for i := 0; i < length; i++ {
 		ocAttr["span-link-attr_"+strconv.Itoa(i)] = &octrace.AttributeValue{
 			Value: &octrace.AttributeValue_StringValue{
 				StringValue: &octrace.TruncatableString{Value: "span-link-attr-val"},

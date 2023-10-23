@@ -212,14 +212,16 @@ func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val str
 
 // recordCmdLatencyMetrics record latency metrics of a particular Redis command.
 // 'cmd' is the Redis command, 'val' is the values string (e.g. "p50=1.003,p99=1.003,p99.9=1.003).
+// Latency values in the values string are expressed in microseconds.
 func (rs *redisScraper) recordCmdLatencyMetrics(ts pcommon.Timestamp, cmd, val string) {
 	latencies, err := parseLatencyStats(val)
 	if err != nil {
 		return
 	}
 
-	for percentile, latency := range latencies {
+	for percentile, usecs := range latencies {
 		if percentileAttr, ok := metadata.MapAttributePercentile[percentile]; ok {
+			latency := usecs / 1e6 // metric is in seconds
 			rs.mb.RecordRedisCmdLatencyDataPoint(ts, latency, cmd, percentileAttr)
 		}
 	}

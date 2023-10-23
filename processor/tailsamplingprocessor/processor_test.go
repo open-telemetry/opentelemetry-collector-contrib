@@ -798,6 +798,35 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 }
 
+func TestSubSecondDecisionTime(t *testing.T) {
+	// prepare
+	msp := new(consumertest.TracesSink)
+
+	tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), msp, Config{
+		DecisionWait: 500 * time.Millisecond,
+		NumTraces:    uint64(50000),
+		PolicyCfgs:   testPolicy,
+	})
+	require.NoError(t, err)
+
+	// speed up the test a bit
+	tsp.(*tailSamplingSpanProcessor).tickerFrequency = 10 * time.Millisecond
+
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
+	// test
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), simpleTraces()))
+
+	// verify
+	require.Eventually(t, func() bool {
+		return len(msp.AllTraces()) == 1
+	}, time.Second, 10*time.Millisecond)
+
+}
+
 func TestPolicyLoggerAddsPolicyName(t *testing.T) {
 	// prepare
 	zc, logs := observer.New(zap.DebugLevel)
@@ -820,6 +849,29 @@ func TestPolicyLoggerAddsPolicyName(t *testing.T) {
 	// verify
 	assert.Len(t, logs.All(), 1)
 	assert.Equal(t, AlwaysSample, logs.All()[0].ContextMap()["policy"])
+}
+
+func TestDuplicatePolicyName(t *testing.T) {
+	// prepare
+	set := componenttest.NewNopTelemetrySettings()
+	msp := new(consumertest.TracesSink)
+
+	alwaysSample := sharedPolicyCfg{
+		Name: "always_sample",
+		Type: AlwaysSample,
+	}
+
+	_, err := newTracesProcessor(context.Background(), set, msp, Config{
+		DecisionWait: 500 * time.Millisecond,
+		NumTraces:    uint64(50000),
+		PolicyCfgs: []PolicyCfg{
+			{sharedPolicyCfg: alwaysSample},
+			{sharedPolicyCfg: alwaysSample},
+		},
+	})
+
+	// verify
+	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
 }
 
 func collectSpanIds(trace ptrace.Traces) []pcommon.SpanID {

@@ -51,6 +51,7 @@ Tails and parses logs from files.
 | `retry_on_failure.max_interval`     | `30s`                                | Upper bound on retry backoff [interval](#time-parameters). Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                        |
 | `retry_on_failure.max_elapsed_time` | `5m`                                 | Maximum amount of [time](#time-parameters) (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.     
 | `ordering_criteria.regex`     |                                      | Regular expression used for sorting, should contain a named capture groups that are to be used in `regex_key`.                                                                                                                               |
+| `ordering_criteria.top_n`     | 1 | The number of files to track when using file ordering. The top N files are tracked after applying the ordering criteria. |
 | `ordering_criteria.sort_by.sort_type` |                                      | Type of sorting to be performed (e.g., `numeric`, `alphabetical`, `timestamp`)                                                                                                                                                                                  |
 | `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the location of the timestamp of the file.                                                                                                                                                               |
 | `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
@@ -73,6 +74,8 @@ If set, the `multiline` configuration block instructs the `file_input` operator 
 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
+
+The `omit_pattern` setting can be used to omit the start/end pattern from each entry.
 
 ### Supported encodings
 

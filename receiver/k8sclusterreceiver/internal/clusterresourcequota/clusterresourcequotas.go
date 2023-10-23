@@ -40,7 +40,6 @@ func RecordMetrics(mb *metadata.MetricsBuilder, crq *quotav1.ClusterResourceQuot
 	rb := mb.NewResourceBuilder()
 	rb.SetOpenshiftClusterquotaName(crq.Name)
 	rb.SetOpenshiftClusterquotaUID(string(crq.UID))
-	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

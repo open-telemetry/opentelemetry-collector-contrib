@@ -64,6 +64,9 @@ The following settings can be optionally configured:
   - `enabled` (default = false): If `enabled` is `true`, a `_created` metric is
     exported for Summary, Histogram, and Monotonic Sum metric points if
     `StartTimeUnixNano` is set.
+- `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of
+  samples to be sent to the remote write endpoint. If the batch size is larger
+  than this value, it will be split into multiple batches.
 
 Example:
 
@@ -122,12 +125,11 @@ This is not a common pattern, and we recommend copying the most common resource 
 processor:
   transform:
     metric_statements:
-      - context: metric
+      - context: datapoint
         statements:
-        - set(attributes["namespace"], resource.attributes["k8s_namespace_name"])
+        - set(attributes["namespace"], resource.attributes["k8s.namespace.name"])
         - set(attributes["container"], resource.attributes["k8s.container.name"])
         - set(attributes["pod"], resource.attributes["k8s.pod.name"])
-        - set(attributes["cluster"], resource.attributes["k8s.cluster.name"])
 ```
 
 After this, grouping or selecting becomes as simple as:

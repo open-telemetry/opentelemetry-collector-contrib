@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
-          go-version: ~1.20.8
+          go-version: ~1.20.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -56,7 +56,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
-          go-version: ~1.20.8
+          go-version: ~1.20.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -76,6 +76,10 @@ jobs:
           node_image: kindest/node:${{ matrix.k8s-version }}
           kubectl_version: ${{ matrix.k8s-version }}
           cluster_name: kind
+          config: ./.github/workflows/configs/e2e-kind-config.yaml
+      - name: Fix kubelet TLS server certificates
+        run: |
+          kubectl get csr -o=jsonpath='{range.items[?(@.spec.signerName=="kubernetes.io/kubelet-serving")]}{.metadata.name}{" "}{end}' | xargs kubectl certificate approve
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -95,4 +99,11 @@ jobs:
         run: |    
           cd processor/k8sattributesprocessor
           go test -v --tags=e2e
-
+      - name: run receiver/kubeletstatsreceiver e2e tests
+        run: |
+          cd receiver/kubeletstatsreceiver
+          go test -v --tags=e2e
+      - name: run receiver/k8sobjectsreceiver e2e tests
+        run: |
+          cd receiver/k8sobjectsreceiver
+          go test -v --tags=e2e

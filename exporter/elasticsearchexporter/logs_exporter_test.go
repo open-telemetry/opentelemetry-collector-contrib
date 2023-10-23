@@ -403,9 +403,12 @@ func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string
 // send trace with span & resource attributes
 func mustSendLogsWithAttributes(t *testing.T, exporter *elasticsearchLogsExporter, attrMp map[string]string, resMp map[string]string) {
 	logs := newLogsWithAttributeAndResourceMap(attrMp, resMp)
-	resSpans := logs.ResourceLogs().At(0)
-	logRecords := resSpans.ScopeLogs().At(0).LogRecords().At(0)
+	resLogs := logs.ResourceLogs().At(0)
+	logRecords := resLogs.ScopeLogs().At(0).LogRecords().At(0)
 
-	err := exporter.pushLogRecord(context.TODO(), resSpans.Resource(), logRecords)
+	scopeLogs := resLogs.ScopeLogs().AppendEmpty()
+	scope := scopeLogs.Scope()
+
+	err := exporter.pushLogRecord(context.TODO(), resLogs.Resource(), logRecords, scope)
 	require.NoError(t, err)
 }

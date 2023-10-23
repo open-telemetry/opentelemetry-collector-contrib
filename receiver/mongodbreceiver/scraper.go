@@ -21,6 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
+var unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
+
 type mongodbScraper struct {
 	logger       *zap.Logger
 	config       *Config
@@ -30,17 +32,16 @@ type mongodbScraper struct {
 }
 
 func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongodbScraper {
-	v, _ := version.NewVersion("0.0")
 	return &mongodbScraper{
 		logger:       settings.Logger,
 		config:       config,
 		mb:           metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		mongoVersion: v,
+		mongoVersion: unknownVersion(),
 	}
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
-	c, err := NewClient(ctx, s.config, s.logger)
+	c, err := newClient(ctx, s.config, s.logger)
 	if err != nil {
 		return fmt.Errorf("create mongo client: %w", err)
 	}
@@ -60,7 +61,7 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), errors.New("no client was initialized before calling scrape")
 	}
 
-	if s.mongoVersion == nil {
+	if s.mongoVersion.Equal(unknownVersion()) {
 		version, err := s.client.GetVersion(ctx)
 		if err == nil {
 			s.mongoVersion = version

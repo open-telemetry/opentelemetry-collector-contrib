@@ -32,7 +32,7 @@ var (
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() processor.Factory {
 	// TODO: find a more appropriate way to get this done, as we are swallowing the error here
-	_ = view.Register(MetricViews()...)
+	_ = view.Register(metricViews()...)
 
 	return processor.NewFactory(
 		metadata.Type,
