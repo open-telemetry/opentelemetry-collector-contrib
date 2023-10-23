@@ -74,6 +74,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: 20,
 					MaxConnsPerHost:     20,
 					IdleConnTimeout:     30 * time.Second,
+					Timeout:             10 * time.Second,
 				},
 				TranslationRules:    nil,
 				ExcludeMetrics:      nil,
@@ -140,6 +141,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: 10,
 					MaxConnsPerHost:     10000,
 					IdleConnTimeout:     2 * time.Hour,
+					Timeout:             20 * time.Second,
 				},
 				TranslationRules: []translation.Rule{
 					{

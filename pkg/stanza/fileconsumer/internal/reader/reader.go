@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 )
 
 type Config struct {
@@ -29,6 +31,7 @@ type Config struct {
 	IncludeFileNameResolved bool
 	IncludeFilePathResolved bool
 	DeleteAtEOF             bool
+	FlushTimeout            time.Duration
 }
 
 type Metadata struct {
@@ -36,6 +39,7 @@ type Metadata struct {
 	Offset          int64
 	FileAttributes  map[string]any
 	HeaderFinalized bool
+	FlushState      *flush.State
 }
 
 // Reader manages a single file

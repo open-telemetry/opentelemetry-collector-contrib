@@ -72,7 +72,7 @@ func buildBody(settings LogsSettings, attrs map[string]interface{}, value pcommo
 	// (e.g. attribute processor or similar) or on the server (DataSet server side JSON parser
 	// for the message field).
 	if settings.DecomposeComplexMessageField && value.Type() == pcommon.ValueTypeMap {
-		updateWithPrefixedValues(attrs, "body.map.", ".", value.Map().AsRaw(), 0)
+		updateWithPrefixedValues(attrs, settings.DecomposedComplexMessagePrefix, settings.ExportSeparator, settings.ExportDistinguishingSuffix, value.Map().AsRaw(), 0)
 	}
 
 	return message
@@ -212,17 +212,17 @@ func buildEventFromLog(
 	}
 
 	if logSettings.ExportResourceInfo {
-		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
+		updateWithPrefixedValues(attrs, logSettings.ExportResourcePrefix, logSettings.ExportSeparator, logSettings.ExportDistinguishingSuffix, resource.Attributes().AsRaw(), 0)
 	}
 
 	if logSettings.ExportScopeInfo {
 		if scope.Name() != "" {
 			attrs["scope.name"] = scope.Name()
 		}
-		updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
+		updateWithPrefixedValues(attrs, logSettings.ExportScopePrefix, logSettings.ExportSeparator, logSettings.ExportDistinguishingSuffix, scope.Attributes().AsRaw(), 0)
 	}
 
-	updateWithPrefixedValues(attrs, "", "_", log.Attributes().AsRaw(), 0)
+	updateWithPrefixedValues(attrs, "", logSettings.ExportSeparator, logSettings.ExportDistinguishingSuffix, log.Attributes().AsRaw(), 0)
 
 	event.Attrs = attrs
 	event.Log = "LL"

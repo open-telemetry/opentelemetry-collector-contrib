@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
@@ -134,7 +135,13 @@ func TestFactorySplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		factory := NewFactory(tc.baseFunc, tc.trimFunc, tc.flushPeriod, tc.maxLength)
-		t.Run(tc.name, splittest.New(factory.SplitFunc(), tc.input, tc.steps...))
+		var splitFunc bufio.SplitFunc
+		if tc.flushPeriod > 0 {
+			s := &flush.State{LastDataChange: time.Now()}
+			splitFunc = Func(s.Func(tc.baseFunc, tc.flushPeriod), tc.maxLength, tc.trimFunc)
+		} else {
+			splitFunc = Func(tc.baseFunc, tc.maxLength, tc.trimFunc)
+		}
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
 }
