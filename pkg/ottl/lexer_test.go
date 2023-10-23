@@ -38,7 +38,8 @@ func Test_lexer(t *testing.T) {
 		}},
 		{"basic_equality", "3==4.9", false, []result{
 			{"Int", "3"},
-			{"OpComparison", "=="},
+			{"Equal", "="},
+			{"Equal", "="},
 			{"Float", "4.9"},
 		}},
 		{"basic_inequality", "3!=4.9", false, []result{
