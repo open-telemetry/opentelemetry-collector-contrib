@@ -102,6 +102,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
 
+// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
+replace cloud.google.com/go => cloud.google.com/go v0.110.9
+
 retract (
 	v0.76.2
 	v0.76.1

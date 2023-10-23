@@ -102,3 +102,6 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
+replace cloud.google.com/go => cloud.google.com/go v0.110.9
