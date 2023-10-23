@@ -11,7 +11,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.25.0
 	go.opentelemetry.io/collector/component v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/config/confignet v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/config/configopaque v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/config/configopaque v0.88.0
 	go.opentelemetry.io/collector/config/configtls v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/confmap v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/consumer v0.87.1-0.20231023033326-37116a25be8d
