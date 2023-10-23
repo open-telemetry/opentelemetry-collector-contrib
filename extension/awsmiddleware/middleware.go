@@ -4,6 +4,7 @@
 package awsmiddleware // import "github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 
 import (
+	"context"
 	"encoding"
 	"errors"
 	"fmt"
@@ -86,13 +87,13 @@ type handlerConfig interface {
 // RequestHandler allows for custom processing of requests.
 type RequestHandler interface {
 	handlerConfig
-	HandleRequest(id string, r *http.Request)
+	HandleRequest(ctx context.Context, r *http.Request)
 }
 
 // ResponseHandler allows for custom processing of responses.
 type ResponseHandler interface {
 	handlerConfig
-	HandleResponse(id string, r *http.Response)
+	HandleResponse(ctx context.Context, r *http.Response)
 }
 
 // Middleware defines the request and response handlers to be configured

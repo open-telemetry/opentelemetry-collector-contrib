@@ -9,10 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-type ID = component.ID
-
 // getMiddleware retrieves the extension implementing Middleware based on the middlewareID.
-func getMiddleware(extensions map[component.ID]component.Component, middlewareID ID) (Middleware, error) {
+func getMiddleware(extensions map[component.ID]component.Component, middlewareID component.ID) (Middleware, error) {
 	if extension, found := extensions[middlewareID]; found {
 		if middleware, ok := extension.(Middleware); ok {
 			return middleware, nil
@@ -24,7 +22,7 @@ func getMiddleware(extensions map[component.ID]component.Component, middlewareID
 
 // GetConfigurer retrieves the extension implementing Middleware based on the middlewareID and
 // wraps it in a Configurer.
-func GetConfigurer(extensions map[component.ID]component.Component, middlewareID ID) (*Configurer, error) {
+func GetConfigurer(extensions map[component.ID]component.Component, middlewareID component.ID) (*Configurer, error) {
 	middleware, err := getMiddleware(extensions, middlewareID)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@
 package awsmiddleware // import "github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/stretchr/testify/mock"
@@ -53,12 +54,12 @@ func (m *MockHandler) Position() HandlerPosition {
 	return args.Get(0).(HandlerPosition)
 }
 
-func (m *MockHandler) HandleRequest(id string, r *http.Request) {
-	m.Called(id, r)
+func (m *MockHandler) HandleRequest(ctx context.Context, r *http.Request) {
+	m.Called(ctx, r)
 }
 
-func (m *MockHandler) HandleResponse(id string, r *http.Response) {
-	m.Called(id, r)
+func (m *MockHandler) HandleResponse(ctx context.Context, r *http.Response) {
+	m.Called(ctx, r)
 }
 
 // MockExtensionsHost only mocks the GetExtensions function.

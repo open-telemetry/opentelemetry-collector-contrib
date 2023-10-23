@@ -13,18 +13,20 @@ The `awsmiddleware.RequestHandler` interface contains the following methods:
 ```
 ID() string
 Position() HandlerPosition
-HandleRequest(id string, r *http.Request)
+HandleRequest(ctx context.Context, r *http.Request)
 ```
 
 The `awsmiddleware.ResponseHandler` interface contains the following methods:
 ```
 ID() string
 Position() HandlerPosition
-HandleResponse(id string, r *http.Response)
+HandleResponse(ctx context.Context, r *http.Response)
 ```
 
 - `ID` uniquely identifies a handler. Middleware will fail if there is clashing 
 - `Position` determines whether the handler is appended to the front or back of the existing list. Insertion is done
 in the order of the handlers provided.
 - `HandleRequest/Response` provides a hook to handle the request/response before and after they've been sent along
-with an attached request ID.
+with the context.
+
+There are a functions available that can be used to extract metadata from the context.

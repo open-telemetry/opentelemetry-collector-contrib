@@ -29,12 +29,13 @@ const (
 type testHandler struct {
 	id             string
 	position       HandlerPosition
-	handleRequest  func(id string, r *http.Request)
-	handleResponse func(id string, r *http.Response)
+	handleRequest  func(ctx context.Context, r *http.Request)
+	handleResponse func(ctx context.Context, r *http.Response)
 	start          time.Time
 	end            time.Time
 	requestIDs     []string
 	responseIDs    []string
+	operations     []string
 }
 
 var _ RequestHandler = (*testHandler)(nil)
@@ -48,19 +49,21 @@ func (t *testHandler) Position() HandlerPosition {
 	return t.position
 }
 
-func (t *testHandler) HandleRequest(id string, r *http.Request) {
+func (t *testHandler) HandleRequest(ctx context.Context, r *http.Request) {
 	t.start = time.Now()
-	t.requestIDs = append(t.requestIDs, id)
+	t.requestIDs = append(t.requestIDs, GetRequestID(ctx))
+	t.operations = append(t.operations, GetOperationName(ctx))
 	if t.handleRequest != nil {
-		t.handleRequest(id, r)
+		t.handleRequest(ctx, r)
 	}
 }
 
-func (t *testHandler) HandleResponse(id string, r *http.Response) {
+func (t *testHandler) HandleResponse(ctx context.Context, r *http.Response) {
 	t.end = time.Now()
-	t.responseIDs = append(t.responseIDs, id)
+	t.responseIDs = append(t.responseIDs, GetRequestID(ctx))
+	t.operations = append(t.operations, GetOperationName(ctx))
 	if t.handleResponse != nil {
-		t.handleResponse(id, r)
+		t.handleResponse(ctx, r)
 	}
 }
 
@@ -72,8 +75,8 @@ type recordOrder struct {
 	order []string
 }
 
-func (ro *recordOrder) Handle(id string) func(string, *http.Request) {
-	return func(string, *http.Request) {
+func (ro *recordOrder) Handle(id string) func(context.Context, *http.Request) {
+	return func(context.Context, *http.Request) {
 		ro.order = append(ro.order, id)
 	}
 }
@@ -237,6 +240,9 @@ func TestRoundTripSDKv1(t *testing.T) {
 	assert.NotNil(t, output)
 	assert.GreaterOrEqual(t, recorder.Latency(), testLatency)
 	assert.Equal(t, recorder.requestIDs, recorder.responseIDs)
+	for _, operation := range recorder.operations {
+		assert.Equal(t, "ListBuckets", operation)
+	}
 }
 
 func TestRoundTripSDKv2(t *testing.T) {
@@ -252,13 +258,16 @@ func TestRoundTripSDKv2(t *testing.T) {
 	assert.NotNil(t, output)
 	assert.GreaterOrEqual(t, recorder.Latency(), testLatency)
 	assert.Equal(t, recorder.requestIDs, recorder.responseIDs)
+	for _, operation := range recorder.operations {
+		assert.Equal(t, "ListBuckets", operation)
+	}
 }
 
 func userAgentHandler() RequestHandler {
 	return &testHandler{
 		id:       "test.UserAgent",
 		position: Before,
-		handleRequest: func(_ string, r *http.Request) {
+		handleRequest: func(_ context.Context, r *http.Request) {
 			r.Header.Set("User-Agent", testUserAgent)
 		},
 	}
