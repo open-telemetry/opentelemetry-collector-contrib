@@ -210,7 +210,7 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 
 	for alr, elr := range matchingLogRecords {
 		errPrefix := fmt.Sprintf(`log record "%v"`, elr.Attributes().AsRaw())
-		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareLogRecord(alr, elr)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareLogRecord(elr, alr)))
 	}
 	return errs
 }

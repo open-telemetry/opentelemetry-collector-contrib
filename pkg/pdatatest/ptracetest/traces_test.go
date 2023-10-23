@@ -49,6 +49,56 @@ func TestCompareTraces(t *testing.T) {
 			withOptions: nil,
 		},
 		{
+			name: "ignore-spanid",
+			compareOptions: []CompareTracesOption{
+				IgnoreSpanID(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": span ID doesn't match expected: fd0da883bb27cd6b, actual: "),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-attribute-value",
+			compareOptions: []CompareTracesOption{
+				IgnoreSpanAttributeValue("testKey2"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": attributes don't match expected: map[testKey2:teststringvalue2], actual: map[testKey2:unpredictable]"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-start-timestamp",
+			compareOptions: []CompareTracesOption{
+				IgnoreStartTimestamp(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": start timestamp doesn't match expected: 11651379494838206464, actual: 0"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-end-timestamp",
+			compareOptions: []CompareTracesOption{
+				IgnoreEndTimestamp(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": end timestamp doesn't match expected: 11651379494838206464, actual: 0"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-traceid",
+			compareOptions: []CompareTracesOption{
+				IgnoreTraceID(),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": trace ID doesn't match expected: 8c8b1765a7b0acf0b66aa4623fcb7bd5, actual: "),
+			),
+			withOptions: nil,
+		},
+		{
 			name: "resourcespans-amount-unequal",
 			withoutOptions: multierr.Combine(
 				errors.New("number of resources doesn't match expected: 1, actual: 2"),
