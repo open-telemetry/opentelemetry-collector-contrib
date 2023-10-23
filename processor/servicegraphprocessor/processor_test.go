@@ -6,6 +6,7 @@ package servicegraphprocessor
 import (
 	"context"
 	"crypto/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -284,11 +285,11 @@ func TestProcessor_MetricsFlushInterval(t *testing.T) {
 	assert.NoError(t, p.ConsumeTraces(context.Background(), buildSampleTrace(t, "val")))
 
 	// Metrics are not immediately flushed
-	assert.Len(t, metricsExporter.md, 0)
+	assert.Len(t, metricsExporter.getMetrics(), 0)
 
 	// Metrics are flushed after 2 seconds
-	assert.Eventuallyf(t, func() bool { return len(metricsExporter.md) == 1 }, 5*time.Second, 100*time.Millisecond, "metrics are not flushed")
-	verifyHappyCaseMetrics(t, metricsExporter.md[0])
+	assert.Eventuallyf(t, func() bool { return len(metricsExporter.getMetrics()) == 1 }, 5*time.Second, 100*time.Millisecond, "metrics are not flushed")
+	verifyHappyCaseMetrics(t, metricsExporter.getMetrics()[0])
 
 	// Shutdown the processor
 	assert.NoError(t, p.Shutdown(context.Background()))
@@ -492,7 +493,8 @@ func newMockMetricsExporter() *mockMetricsExporter {
 }
 
 type mockMetricsExporter struct {
-	md []pmetric.Metrics
+	mtx sync.Mutex
+	md  []pmetric.Metrics
 }
 
 func (m *mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
@@ -502,8 +504,16 @@ func (m *mockMetricsExporter) Shutdown(context.Context) error { return nil }
 func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 
 func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
 	m.md = append(m.md, md)
 	return nil
+}
+
+func (m *mockMetricsExporter) getMetrics() []pmetric.Metrics {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	return m.md
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
