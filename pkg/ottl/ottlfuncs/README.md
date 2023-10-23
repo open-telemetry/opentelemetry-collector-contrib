@@ -314,6 +314,7 @@ Available Converters:
 - [IsDouble](#isdouble)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
+- [IsList](#islist)
 - [IsString](#isstring)
 - [Len](#len)
 - [Log](#log)
@@ -596,6 +597,22 @@ Examples:
 
 
 - `IsMatch("string", ".*ring")`
+
+### IsList
+
+`IsList(value)`
+
+The `IsList` Converter returns true if the given value is a slice.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `slice[]` or a `pcommon.ValueTypeSlice` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsList(body)`
+
+- `IsList(attributes["maybe a slice"])`
 
 ### IsString
 

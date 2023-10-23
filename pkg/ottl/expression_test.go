@@ -1682,6 +1682,89 @@ func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func Test_StandardPSliceGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardPSliceGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "pcommon.Slice type",
+			getter: StandardPSliceGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewSlice(), nil
+				},
+			},
+			want:  pcommon.NewSlice(),
+			valid: true,
+		},
+		{
+			name: "pcommon.Map type",
+			getter: StandardPSliceGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewMap(), nil
+				},
+			},
+			expectedErrorMsg: "expected pcommon.Slice but got pcommon.Map",
+			valid:            false,
+		},
+		{
+			name: "map[string]any type",
+			getter: StandardPSliceGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return make(map[string]any), nil
+				},
+			},
+			expectedErrorMsg: "expected pcommon.Slice but got map[string]interface {}",
+			valid:            false,
+		},
+		{
+			name: "ValueTypeMap type",
+			getter: StandardPSliceGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueMap(), nil
+				},
+			},
+			expectedErrorMsg: "expected pcommon.Slice but got Map",
+			valid:            false,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardPSliceGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected pcommon.Slice but got bool",
+		},
+		{
+			name: "nil",
+			getter: StandardPSliceGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected pcommon.Slice but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
 func Test_StandardPMapGetter(t *testing.T) {
 	tests := []struct {
 		name             string
