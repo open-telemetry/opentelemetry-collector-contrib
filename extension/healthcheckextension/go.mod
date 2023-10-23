@@ -8,7 +8,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/config/confighttp v0.87.1-0.20231023033326-37116a25be8d
-	go.opentelemetry.io/collector/config/configtls v0.87.1-0.20231023033326-37116a25be8d
+	go.opentelemetry.io/collector/config/configtls v0.88.0
 	go.opentelemetry.io/collector/confmap v0.87.1-0.20231023033326-37116a25be8d
 	go.opentelemetry.io/collector/extension v0.87.1-0.20231023033326-37116a25be8d
 	go.uber.org/zap v1.26.0
@@ -35,7 +35,7 @@ require (
 	go.opentelemetry.io/collector v0.87.1-0.20231023033326-37116a25be8d // indirect
 	go.opentelemetry.io/collector/config/configauth v0.87.1-0.20231023033326-37116a25be8d // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.87.1-0.20231023033326-37116a25be8d // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.87.1-0.20231023033326-37116a25be8d // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.88.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.87.1-0.20231023033326-37116a25be8d // indirect
 	go.opentelemetry.io/collector/config/internal v0.87.1-0.20231023033326-37116a25be8d // indirect
 	go.opentelemetry.io/collector/extension/auth v0.87.1-0.20231023033326-37116a25be8d // indirect
