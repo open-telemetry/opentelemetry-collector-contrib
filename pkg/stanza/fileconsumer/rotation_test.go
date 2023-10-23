@@ -75,7 +75,7 @@ func TestMultiFileRotate(t *testing.T) {
 		}(temp, i)
 	}
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -133,7 +133,7 @@ func TestMultiFileRotateSlow(t *testing.T) {
 		}(fileNum)
 	}
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -195,7 +195,7 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 		}(fileNum)
 	}
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -458,7 +458,7 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	require.NoError(t, err)
 	writeString(t, newFile, "testlog3\n")
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2"), []byte("testlog3")})
+	waitForTokens(t, emitCalls, []byte("testlog2"), []byte("testlog3"))
 }
 
 // When a file it rotated out of pattern via move/create, we should
@@ -498,7 +498,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	operator.poll(context.Background())
 
 	// expect remaining log from old file as well as all from new file
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2"), []byte("testlog4"), []byte("testlog5")})
+	waitForTokens(t, emitCalls, []byte("testlog2"), []byte("testlog4"), []byte("testlog5"))
 }
 
 // When a file it rotated out of pattern via copy/truncate, we should
@@ -536,7 +536,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	// poll again
 	operator.poll(context.Background())
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog4"), []byte("testlog5")})
+	waitForTokens(t, emitCalls, []byte("testlog4"), []byte("testlog5"))
 }
 
 // TruncateThenWrite tests that, after a file has been truncated,
@@ -618,7 +618,7 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 
 	// Expect both messages to come through
 	operator.poll(context.Background())
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog3"), []byte("testlog4")})
+	waitForTokens(t, emitCalls, []byte("testlog3"), []byte("testlog4"))
 }
 
 func TestFileMovedWhileOff_BigFiles(t *testing.T) {
