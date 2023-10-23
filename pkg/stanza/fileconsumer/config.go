@@ -18,7 +18,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -113,9 +112,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 		trimFunc = c.TrimConfig.Func()
 	}
 
-	// Ensure that splitter is buildable
-	factory := splitter.NewFactory(splitFunc, trimFunc, c.FlushPeriod, int(c.MaxLogSize))
-	return c.buildManager(logger, emit, factory)
+	return c.buildManager(logger, emit, splitFunc, trimFunc)
 }
 
 // BuildWithSplitFunc will build a file input operator with customized splitFunc function
@@ -123,13 +120,10 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
-
-	// Ensure that splitter is buildable
-	factory := splitter.NewFactory(splitFunc, c.TrimConfig.Func(), c.FlushPeriod, int(c.MaxLogSize))
-	return c.buildManager(logger, emit, factory)
+	return c.buildManager(logger, emit, splitFunc, c.TrimConfig.Func())
 }
 
-func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitter.Factory) (*Manager, error) {
+func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc, trimFunc trim.Func) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -175,11 +169,13 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 				IncludeFileNameResolved: c.IncludeFileNameResolved,
 				IncludeFilePathResolved: c.IncludeFilePathResolved,
 				DeleteAtEOF:             c.DeleteAfterRead,
+				FlushTimeout:            c.FlushPeriod,
 			},
-			FromBeginning:   startAtBeginning,
-			SplitterFactory: factory,
-			Encoding:        enc,
-			HeaderConfig:    hCfg,
+			FromBeginning: startAtBeginning,
+			Encoding:      enc,
+			SplitFunc:     splitFunc,
+			TrimFunc:      trimFunc,
+			HeaderConfig:  hCfg,
 		},
 		fileMatcher:   fileMatcher,
 		roller:        newRoller(),
