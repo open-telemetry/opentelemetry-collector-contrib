@@ -41,6 +41,8 @@ const (
 	MetricV2Endpoint       = "/api/v2/series"
 	SketchesMetricEndpoint = "/api/beta/sketches"
 	MetadataEndpoint       = "/intake"
+	TraceEndpoint          = "/api/v0.2/traces"
+	APMStatsEndpoint       = "/api/v0.2/stats"
 )
 
 // DatadogServerMock mocks a Datadog backend server
@@ -85,6 +87,19 @@ func (rec *HTTPRequestRecorder) HandlerFunc() (string, http.HandlerFunc) {
 	return rec.Pattern, func(w http.ResponseWriter, r *http.Request) {
 		rec.Header = r.Header
 		rec.ByteBody, _ = io.ReadAll(r.Body)
+	}
+}
+
+// HTTPRequestRecorderWithChan puts all incoming HTTP request bytes to the given channel.
+type HTTPRequestRecorderWithChan struct {
+	Pattern string
+	ReqChan chan []byte
+}
+
+func (rec *HTTPRequestRecorderWithChan) HandlerFunc() (string, http.HandlerFunc) {
+	return rec.Pattern, func(w http.ResponseWriter, r *http.Request) {
+		bytesBody, _ := io.ReadAll(r.Body)
+		rec.ReqChan <- bytesBody
 	}
 }
 
