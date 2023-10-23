@@ -13,19 +13,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
-type detectLostFiles struct {
-	oldReaders []*reader.Reader
-}
-
-func newRoller() roller {
-	return &detectLostFiles{oldReaders: []*reader.Reader{}}
-}
-
-func (r *detectLostFiles) readLostFiles(ctx context.Context, newReaders []*reader.Reader) {
+func (m *Manager) readLostFiles(ctx context.Context, newReaders []*reader.Reader) {
 	// Detect files that have been rotated out of matching pattern
-	lostReaders := make([]*reader.Reader, 0, len(r.oldReaders))
+	lostReaders := make([]*reader.Reader, 0, len(m.previousPollFiles))
 OUTER:
-	for _, oldReader := range r.oldReaders {
+	for _, oldReader := range m.previousPollFiles {
 		for _, newReader := range newReaders {
 			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
 				continue OUTER
@@ -55,18 +47,4 @@ OUTER:
 		}(lostReader)
 	}
 	lostWG.Wait()
-}
-
-func (r *detectLostFiles) roll(_ context.Context, newReaders []*reader.Reader) {
-	for _, oldReader := range r.oldReaders {
-		oldReader.Close()
-	}
-
-	r.oldReaders = newReaders
-}
-
-func (r *detectLostFiles) cleanup() {
-	for _, oldReader := range r.oldReaders {
-		oldReader.Close()
-	}
 }

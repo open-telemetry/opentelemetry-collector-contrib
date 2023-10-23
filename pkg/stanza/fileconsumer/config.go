@@ -177,13 +177,13 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 			TrimFunc:      trimFunc,
 			HeaderConfig:  hCfg,
 		},
-		fileMatcher:   fileMatcher,
-		roller:        newRoller(),
-		pollInterval:  c.PollInterval,
-		maxBatchFiles: c.MaxConcurrentFiles / 2,
-		maxBatches:    c.MaxBatches,
-		knownFiles:    make([]*reader.Reader, 0, 10*c.MaxConcurrentFiles),
-		seenPaths:     make(map[string]struct{}, 100),
+		fileMatcher:       fileMatcher,
+		pollInterval:      c.PollInterval,
+		maxBatchFiles:     c.MaxConcurrentFiles / 2,
+		maxBatches:        c.MaxBatches,
+		previousPollFiles: make([]*reader.Reader, 0, c.MaxConcurrentFiles/2),
+		knownFiles:        make([]*reader.Reader, 0, 10*c.MaxConcurrentFiles),
+		seenPaths:         make(map[string]struct{}, 100),
 	}, nil
 }
 
