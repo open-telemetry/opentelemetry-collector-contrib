@@ -28,7 +28,7 @@ The following settings are optional:
 - `timeout` `sending_queue` and `retry_on_failure` settings as provided by [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
 - [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
-- `generator_url` is the source of the alerts to be used in Alertmanager's payload and can be set to the URL of the opentelemetry collector if required
+- `generator_url` is the source of the alerts to be used in Alertmanager's payload. The default value is <http://example.com/otelcol>, and can be set to the URL of the opentelemetry collector. 
 - `severity_attribute`is the spanevent Attribute name which can be used instead of default severity string in Alert payload
    eg: If severity_attribute is set to "foo" and the SpanEvent has an attribute called foo, foo's attribute value will be used as the severity value for that particular Alert generated from the SpanEvent.
 

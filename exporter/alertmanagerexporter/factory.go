@@ -17,12 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr   = "alertmanager"
-	stability = component.StabilityLevelAlpha
-)
-
 // NewFactory creates a factory for Alertmanager exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
