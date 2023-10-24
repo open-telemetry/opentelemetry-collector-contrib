@@ -12,19 +12,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"go.opentelemetry.io/collector/component"
-	"net/http"
-	"strings"
-
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"go.uber.org/zap"
+	"net/http"
 )
 
 type honeycombLogsExporter struct {
-	logger  *zap.Logger
-	markers []Marker
-	client  *http.Client
-	APIURL  string
+	set      component.TelemetrySettings
+	markers  []Marker
+	client   *http.Client
+	config   *Config
+	cancelFn func()
 }
 
 func newHoneycombLogsExporter(set component.TelemetrySettings, config *Config) (*honeycombLogsExporter, error) {
@@ -32,18 +29,18 @@ func newHoneycombLogsExporter(set component.TelemetrySettings, config *Config) (
 		return nil, fmt.Errorf("unable to create honeycombLogsExporter without config")
 	}
 
-	for _, m := range config.Markers {
+	for i, m := range config.Markers {
 		matchLogConditions, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, set)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse log conditions: %w", err)
 		}
 
-		m.Rules.logBoolExpr = matchLogConditions
+		config.Markers[i].Rules.logBoolExpr = matchLogConditions
 	}
 	logsExp := &honeycombLogsExporter{
-		logger:  set.Logger,
+		set:     set,
 		markers: config.Markers,
-		APIURL:  config.APIURL,
+		config:  config,
 	}
 	return logsExp, nil
 }
@@ -81,19 +78,19 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 		"type": marker.Type,
 	}
 
-	messageField, found := logRecord.Attributes().Get(marker.MessageField)
+	messageValue, found := logRecord.Attributes().Get(marker.MessageKey)
 	if found {
-		requestMap["messageField"] = messageField.AsString()
+		requestMap["message"] = messageValue.AsString()
 	}
 
-	URLField, found := logRecord.Attributes().Get(marker.URLField)
+	URLValue, found := logRecord.Attributes().Get(marker.URLKey)
 	if found {
-		requestMap["URLField"] = URLField.AsString()
+		requestMap["url"] = URLValue.AsString()
 	}
 
 	request, err := json.Marshal(requestMap)
 
-	url := strings.TrimSuffix(e.APIURL, "/") + "/bundle"
+	url := fmt.Sprintf("%s/1/markers/%s", e.config.APIURL, e.config.DatasetSlug)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
 		return err
@@ -114,6 +111,18 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("failed with %s and message: %s", resp.Status, resp.Body)
 	}
+
+	return nil
+}
+
+func (e *honeycombLogsExporter) start(_ context.Context, host component.Host) (err error) {
+	client, err := e.config.HTTPClientSettings.ToClient(host, e.set)
+
+	if err != nil {
+		return err
+	}
+
+	e.client = client
 
 	return nil
 }

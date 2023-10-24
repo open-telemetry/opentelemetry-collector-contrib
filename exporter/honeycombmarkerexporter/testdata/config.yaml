@@ -3,8 +3,8 @@ honeycomb:
   api_url: "https://api.testhost.io"
   markers:
     - type: "fooType"
-      message_field: "test message"
-      url_field: "https://api.testhost.io"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
       rules:
         resource_conditions:
           - IsMatch(attributes["test"], ".*")
@@ -16,8 +16,8 @@ honeycomb/bad_syntax_log:
   api_url: "https://api.testhost.io"
   markers:
     - type: "fooType"
-      message_field: "test message"
-      url_field: "https://api.testhost.io"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
       rules:
         log_conditions:
           - body == "test"
@@ -28,8 +28,8 @@ honeycomb/no_conditions:
   api_url: "https://api.testhost.io"
   markers:
     - type: "test-apikey"
-      message_field: "test message"
-      url_field: "https://api.testhost.io"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
       rules:
 
 honeycomb/no_api_key:
@@ -37,8 +37,8 @@ honeycomb/no_api_key:
   api_url: "https://api.testhost.io"
   markers:
     - type: "fooType"
-      message_field: "test message"
-      url_field: "https://api.testhost.io"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
       rules:
         resource_conditions:
           - IsMatch(attributes["test"], ".*")
@@ -50,8 +50,8 @@ honeycomb/no_api_url:
   api_url: ""
   markers:
     - type: "fooType"
-      message_field: "test message"
-      url_field: "https://api.testhost.io"
+      message_key: "test message"
+      url_key: "https://api.testhost.io"
       rules:
         resource_conditions:
           - IsMatch(attributes["test"], ".*")

@@ -5,15 +5,16 @@ package honeycombmarkerexporter // import "github.com/open-telemetry/opentelemet
 
 import (
 	"fmt"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 // Config defines configuration for the Honeycomb Marker exporter.
@@ -26,19 +27,24 @@ type Config struct {
 
 	// Markers is the list of markers to create
 	Markers []Marker `mapstructure:"markers"`
+
+	// DatasetSlug is the endpoint that specifies the Honeycomb environment
+	DatasetSlug string `mapstructure:"datasetslug"`
+
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
 
 type Marker struct {
 	// Type defines the type of Marker.
 	Type string `mapstructure:"type"`
 
-	// MessageField is the attribute that will be used as the message.
+	// MessageKey is the attribute that will be used as the message.
 	// If necessary the value will be converted to a string.
-	MessageField string `mapstructure:"message_field"`
+	MessageKey string `mapstructure:"message_key"`
 
-	// URLField is the attribute that will be used as the url.
+	// URLKey is the attribute that will be used as the url.
 	// If necessary the value will be converted to a string.
-	URLField string `mapstructure:"url_field"`
+	URLKey string `mapstructure:"url_key"`
 
 	// Rules are the OTTL rules that determine when a piece of telemetry should be turned into a Marker
 	Rules Rules `mapstructure:"rules"`

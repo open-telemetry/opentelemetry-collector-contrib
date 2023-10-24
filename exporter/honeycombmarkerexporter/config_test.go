@@ -32,9 +32,9 @@ func TestLoadConfig(t *testing.T) {
 				APIURL: "https://api.testhost.io",
 				Markers: []Marker{
 					{
-						Type:         "fooType",
-						MessageField: "test message",
-						URLField:     "https://api.testhost.io",
+						Type:       "fooType",
+						MessageKey: "test message",
+						URLKey:     "https://api.testhost.io",
 						Rules: Rules{
 							LogConditions: []string{
 								`body == "test"`,
