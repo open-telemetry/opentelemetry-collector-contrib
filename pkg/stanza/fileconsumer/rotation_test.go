@@ -365,6 +365,10 @@ func TestMoveFile(t *testing.T) {
 	temp1.Close()
 
 	operator.poll(context.Background())
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
 	waitForToken(t, emitCalls, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
@@ -393,6 +397,10 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	temp1.Close()
 
 	operator.poll(context.Background())
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
 	waitForToken(t, emitCalls, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
@@ -549,7 +557,12 @@ func TestTruncateThenWrite(t *testing.T) {
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
 	operator.poll(context.Background())
-	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte("testlog2"))
 
 	require.NoError(t, temp1.Truncate(0))
 	_, err := temp1.Seek(0, 0)
@@ -581,7 +594,12 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
 	operator.poll(context.Background())
-	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte("testlog2"))
 	operator.wg.Wait() // wait for all goroutines to finish
 
 	// Copy the first file to a new file, and add another log
