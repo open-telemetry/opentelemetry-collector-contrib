@@ -79,11 +79,8 @@ See this issue for details: https://github.com/census-instrumentation/opencensus
 	operator, _ := buildTestManager(t, cfg)
 
 	_ = openTemp(t, tempDir)
-	err := operator.Start(testutil.NewUnscopedMockPersister())
-	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, operator.Stop())
 }
 
 // AddFields tests that the `log.file.name` and `log.file.path` fields are included
@@ -491,9 +488,6 @@ func TestReadNewLogs(t *testing.T) {
 
 	// Poll once so we know this isn't a new file
 	operator.poll(context.Background())
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
 
 	// Create a new file
 	temp := openTemp(t, tempDir)
@@ -1583,14 +1577,13 @@ func TestHeaderPersistance(t *testing.T) {
 	writeString(t, temp, "#headerField: headerValue\nlog line\n")
 
 	persister := testutil.NewUnscopedMockPersister()
-	require.NoError(t, op1.Start(persister))
 
+	require.NoError(t, op1.Start(persister))
 	waitForTokenWithAttributes(t, emitCalls1, []byte("log line"), map[string]any{
 		"header_key":      "headerField",
 		"header_value":    "headerValue",
 		attrs.LogFileName: filepath.Base(temp.Name()),
 	})
-
 	require.NoError(t, op1.Stop())
 
 	writeString(t, temp, "log line 2\n")
@@ -1598,13 +1591,11 @@ func TestHeaderPersistance(t *testing.T) {
 	op2, emitCalls2 := buildTestManager(t, cfg)
 
 	require.NoError(t, op2.Start(persister))
-
 	waitForTokenWithAttributes(t, emitCalls2, []byte("log line 2"), map[string]any{
 		"header_key":      "headerField",
 		"header_value":    "headerValue",
 		attrs.LogFileName: filepath.Base(temp.Name()),
 	})
-
 	require.NoError(t, op2.Stop())
 }
 
@@ -1626,12 +1617,10 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	writeString(t, temp, "|headerField1: headerValue1\n")
 
 	persister := testutil.NewUnscopedMockPersister()
+
+	// Start and stop the operator, ensuring that at least one poll cycle occurs in between
 	require.NoError(t, op1.Start(persister))
-
-	// The operator will poll at fixed time intervals, but we just want to make sure at least
-	// one poll operation occurs between now and when we stop.
-	op1.poll(context.Background())
-
+	time.Sleep(2 * cfg1.PollInterval)
 	require.NoError(t, op1.Stop())
 
 	writeString(t, temp, "|headerField2: headerValue2\nlog line\n")
@@ -1643,13 +1632,11 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	op2, emitCalls := buildTestManager(t, cfg2)
 
 	require.NoError(t, op2.Start(persister))
-
 	waitForTokenWithAttributes(t, emitCalls, []byte("log line"), map[string]any{
 		"header_value_1":  "headerValue1",
 		"header_value_2":  "headerValue2",
 		attrs.LogFileName: filepath.Base(temp.Name()),
 	})
-
 	require.NoError(t, op2.Stop())
 }
 
