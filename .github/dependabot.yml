@@ -8,17 +8,7 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/opampsupervisor"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/otelcontribcol"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/oteltestbedcol"
+    directory: "/cmd/githubgen"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -314,6 +304,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/encoding/jaegerencodingextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/extension/encoding/jsonlogencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
