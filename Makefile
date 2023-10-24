@@ -288,6 +288,22 @@ chlog-preview: $(CHLOGGEN)
 chlog-update: $(CHLOGGEN)
 	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
+.PHONY: chlog-new-aws
+chlog-new-aws: $(CHLOGGEN)
+	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG_AWS) --filename $(FILENAME)
+
+.PHONY: chlog-validate-aws
+chlog-validate-aws: $(CHLOGGEN)
+	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG_AWS)
+
+.PHONY: chlog-preview-aws
+chlog-preview-aws: $(CHLOGGEN)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG_AWS) --dry
+
+.PHONY: chlog-update-aws
+chlog-update-aws: $(CHLOGGEN)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG_AWS) --version `date +'%y.%m.%d %H:%M:%S'`
+
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
 	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol

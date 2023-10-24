@@ -1,0 +1,48 @@
+name: Update changelog
+
+on:
+  pull_request:
+    types:
+      - closed
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the
+      # updated CHANGELOG-AWS.md back to the repository.
+      # https://github.blog/changelog/2023-02-02-github-actions-updating-the-default-github_token-permissions-to-read-only/
+      contents: write
+    steps:
+      - name: Checkout action
+        uses: actions/checkout@v3
+      - name : checkout
+        run : |
+          git config --global user.name 'Github Action'
+          git config --global user.email 'action@github.com'
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: ~1.21.1
+          cache: false
+      - name: make update changelog
+        run: make chlog-update-aws
+      - name: switching from HTTPS to SSH
+        run: git remote set-url origin https://github.com/amazon-contributing/opentelemetry-collector-contrib.git
+      - name: check for changes
+        run: |
+          git branch
+          git status
+      - name: stage changed files
+        run: git add ./CHANGELOG-AWS.md
+      - name: commit changed files
+        run: |
+          git config --global user.name 'Github Action'
+          git config --global user.email 'action@github.com'
+          git commit -m "Auto updating changelog-aws.md"
+      - name: pull from master
+        run: |
+          git remote -v
+          git pull
+      - name: push code to aws-cwa-dev
+        run: git push origin aws-cwa-dev

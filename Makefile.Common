@@ -35,6 +35,7 @@ TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.
 TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
 TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
 CHLOGGEN_CONFIG  := .chloggen/config.yaml
+CHLOGGEN_CONFIG_AWS  := .chloggen-aws/config.yaml
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
