@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.88.0
 	go.opentelemetry.io/collector/component v0.88.0
-	go.opentelemetry.io/collector/extension v0.87.1-0.20231017160804-ec0725874313
+	go.opentelemetry.io/collector/extension v0.88.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017
 )
 
