@@ -191,7 +191,7 @@ func waitForTokenWithAttributes(t *testing.T, c chan *emitParams, expected []byt
 	}
 }
 
-func waitForTokens(t *testing.T, c chan *emitParams, expected [][]byte) {
+func waitForTokens(t *testing.T, c chan *emitParams, expected ...[]byte) {
 	actual := make([][]byte, 0, len(expected))
 LOOP:
 	for {

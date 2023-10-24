@@ -13,19 +13,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
-type detectLostFiles struct {
-	oldReaders []*reader.Reader
-}
-
-func newRoller() roller {
-	return &detectLostFiles{oldReaders: []*reader.Reader{}}
-}
-
-func (r *detectLostFiles) readLostFiles(ctx context.Context, newReaders []*reader.Reader) {
+func (m *Manager) readLostFiles(ctx context.Context, newReaders []*reader.Reader) {
 	// Detect files that have been rotated out of matching pattern
-	lostReaders := make([]*reader.Reader, 0, len(r.oldReaders))
+	lostReaders := make([]*reader.Reader, 0, len(m.previousPollFiles))
 OUTER:
-	for _, oldReader := range r.oldReaders {
+	for _, oldReader := range m.previousPollFiles {
 		for _, newReader := range newReaders {
 			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
 				continue OUTER
@@ -38,8 +30,8 @@ OUTER:
 			// At this point, we know that the file has been rotated. However, we do not know
 			// if it was moved or truncated. If truncated, then both handles point to the same
 			// file, in which case we should only read from it using the new reader. We can use
-			// the ValidateOrClose method to establish that the file has not been truncated.
-			if !oldReader.ValidateOrClose() {
+			// the Validate method to ensure that the file has not been truncated.
+			if !oldReader.Validate() {
 				continue OUTER
 			}
 		}
@@ -55,18 +47,4 @@ OUTER:
 		}(lostReader)
 	}
 	lostWG.Wait()
-}
-
-func (r *detectLostFiles) roll(_ context.Context, newReaders []*reader.Reader) {
-	for _, oldReader := range r.oldReaders {
-		oldReader.Close()
-	}
-
-	r.oldReaders = newReaders
-}
-
-func (r *detectLostFiles) cleanup() {
-	for _, oldReader := range r.oldReaders {
-		oldReader.Close()
-	}
 }
