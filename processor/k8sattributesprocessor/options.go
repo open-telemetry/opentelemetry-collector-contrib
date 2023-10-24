@@ -216,6 +216,8 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
 			} else if a.From == kube.MetadataFromNamespace {
 				name = fmt.Sprintf("k8s.namespace.%s.%s", fieldType, a.Key)
+			} else if a.From == kube.MetadataFromNode {
+				name = fmt.Sprintf("k8s.node.%s.%s", fieldType, a.Key)
 			}
 		}
 

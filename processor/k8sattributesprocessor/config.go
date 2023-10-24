@@ -57,7 +57,7 @@ func (cfg *Config) Validate() error {
 		}
 
 		switch f.From {
-		case "", kube.MetadataFromPod, kube.MetadataFromNamespace:
+		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode:
 		default:
 			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace", f.From)
 		}
