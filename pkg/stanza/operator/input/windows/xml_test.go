@@ -143,8 +143,8 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
+		EventData: EventData{
+			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
 		Execution: &Execution{
 			ProcessID: 13,
@@ -185,7 +185,12 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		"security": map[string]any{
 			"user_id": "my-user-id",
 		},
-		"event_data": map[string]interface{}{"name": "value", "another_name": "another_value"},
+		"event_data": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"name": "value"},
+				map[string]interface{}{"another_name": "another_value"},
+			},
+		},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
@@ -219,8 +224,8 @@ func TestParseBodyFullExecution(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
+		EventData: EventData{
+			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
 		Execution: &Execution{
 			ProcessID:     13,
@@ -271,7 +276,12 @@ func TestParseBodyFullExecution(t *testing.T) {
 		"security": map[string]any{
 			"user_id": "my-user-id",
 		},
-		"event_data": map[string]interface{}{"name": "value", "another_name": "another_value"},
+		"event_data": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"name": "value"},
+				map[string]interface{}{"another_name": "another_value"},
+			},
+		},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
@@ -461,6 +471,8 @@ func TestUnmarshalWithEventData(t *testing.T) {
 		Message:  "",
 		Task:     "0",
 		Opcode:   "0",
+		Execution: &Execution{},
+		Security: &Security{},
 		EventData: EventData{
 			Data: []Data{
 				{Name: "Time", Value: "2022-04-28T19:48:52Z"},
