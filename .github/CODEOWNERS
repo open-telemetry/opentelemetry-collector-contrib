@@ -90,7 +90,7 @@ exporter/zipkinexporter/                                                @open-te
 extension/asapauthextension/                                            @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                                           @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin @frzifus
-extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123 @frzifus
+extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/encoding/jaegerencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/                            @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
 extension/encoding/textencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
