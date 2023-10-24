@@ -6,6 +6,7 @@ package servicegraphprocessor
 import (
 	"context"
 	"crypto/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -140,7 +141,8 @@ func TestProcessorConsume(t *testing.T) {
 					MaxItems: 10,
 					TTL:      time.Nanosecond,
 				},
-			}, sampleTraces: buildSampleTrace(t, "val"),
+			},
+			sampleTraces:  buildSampleTrace(t, "val"),
 			verifyMetrics: verifyHappyCaseMetrics,
 		},
 		{
@@ -252,8 +254,45 @@ func TestConnectorConsume(t *testing.T) {
 	assert.NoError(t, err)
 	verifyHappyCaseMetrics(t, md)
 
-	// Shutdown the conn
+	// Shutdown the connector
 	assert.NoError(t, conn.Shutdown(context.Background()))
+}
+
+func TestProcessor_MetricsFlushInterval(t *testing.T) {
+	// Prepare
+	p := newProcessor(zaptest.NewLogger(t), &Config{
+		MetricsExporter: "mock",
+		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Store: StoreConfig{
+			MaxItems: 10,
+			TTL:      time.Nanosecond,
+		},
+		MetricsFlushInterval: 2 * time.Second,
+	})
+	p.tracesConsumer = consumertest.NewNop()
+
+	metricsExporter := newMockMetricsExporter()
+	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("mock"): metricsExporter,
+		},
+	})
+
+	// Start processor
+	assert.NoError(t, p.Start(context.Background(), mHost))
+
+	// Push traces
+	assert.NoError(t, p.ConsumeTraces(context.Background(), buildSampleTrace(t, "val")))
+
+	// Metrics are not immediately flushed
+	assert.Len(t, metricsExporter.getMetrics(), 0)
+
+	// Metrics are flushed after 2 seconds
+	assert.Eventuallyf(t, func() bool { return len(metricsExporter.getMetrics()) == 1 }, 5*time.Second, 100*time.Millisecond, "metrics are not flushed")
+	verifyHappyCaseMetrics(t, metricsExporter.getMetrics()[0])
+
+	// Shutdown the processor
+	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
 func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
@@ -449,11 +488,14 @@ func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]compon
 
 var _ exporter.Metrics = (*mockMetricsExporter)(nil)
 
-func newMockMetricsExporter() exporter.Metrics {
+func newMockMetricsExporter() *mockMetricsExporter {
 	return &mockMetricsExporter{}
 }
 
-type mockMetricsExporter struct{}
+type mockMetricsExporter struct {
+	mtx sync.Mutex
+	md  []pmetric.Metrics
+}
 
 func (m *mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
 
@@ -461,8 +503,17 @@ func (m *mockMetricsExporter) Shutdown(context.Context) error { return nil }
 
 func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 
-func (m *mockMetricsExporter) ConsumeMetrics(context.Context, pmetric.Metrics) error {
+func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	m.md = append(m.md, md)
 	return nil
+}
+
+func (m *mockMetricsExporter) getMetrics() []pmetric.Metrics {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	return m.md
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
