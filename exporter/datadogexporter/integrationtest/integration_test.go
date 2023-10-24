@@ -67,38 +67,44 @@ func TestIntegration(t *testing.T) {
 
 	// 4. Validate traces and APM stats from the mock server
 	var spans []*pb.Span
-	tracesBytes := <-tracesRec.ReqChan
-	gz := getGzipReader(t, tracesBytes)
-	slurp, err := io.ReadAll(gz)
-	require.NoError(t, err)
-	var traces pb.AgentPayload
-	require.NoError(t, proto.Unmarshal(slurp, &traces))
-	for _, tps := range traces.TracerPayloads {
-		for _, chunks := range tps.Chunks {
-			spans = append(spans, chunks.Spans...)
-			for _, span := range chunks.Spans {
-				assert.Equal(t, span.Meta["_dd.stats_computed"], "true")
-			}
-		}
-	}
-
 	var stats []*pb.ClientGroupedStats
-	apmstatsBytes := <-apmstatsRec.ReqChan
-	gz = getGzipReader(t, apmstatsBytes)
-	var spl pb.StatsPayload
-	require.NoError(t, msgp.Decode(gz, &spl))
-	for _, csps := range spl.Stats {
-		for _, csbs := range csps.Stats {
-			stats = append(stats, csbs.Stats...)
-			for _, stat := range csbs.Stats {
-				assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
-				assert.Equal(t, stat.Hits, uint64(1))
-				assert.Equal(t, stat.TopLevelHits, uint64(1))
-			}
-		}
-	}
 
 	// 5 sampled spans + APM stats on 10 spans are sent to datadog exporter
+	for len(spans) < 5 || len(stats) < 10 {
+		select {
+		case tracesBytes := <-tracesRec.ReqChan:
+			gz := getGzipReader(t, tracesBytes)
+			slurp, err := io.ReadAll(gz)
+			require.NoError(t, err)
+			var traces pb.AgentPayload
+			require.NoError(t, proto.Unmarshal(slurp, &traces))
+			for _, tps := range traces.TracerPayloads {
+				for _, chunks := range tps.Chunks {
+					spans = append(spans, chunks.Spans...)
+					for _, span := range chunks.Spans {
+						assert.Equal(t, span.Meta["_dd.stats_computed"], "true")
+					}
+				}
+			}
+
+		case apmstatsBytes := <-apmstatsRec.ReqChan:
+			gz := getGzipReader(t, apmstatsBytes)
+			var spl pb.StatsPayload
+			require.NoError(t, msgp.Decode(gz, &spl))
+			for _, csps := range spl.Stats {
+				for _, csbs := range csps.Stats {
+					stats = append(stats, csbs.Stats...)
+					for _, stat := range csbs.Stats {
+						assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
+						assert.Equal(t, stat.Hits, uint64(1))
+						assert.Equal(t, stat.TopLevelHits, uint64(1))
+					}
+				}
+			}
+		}
+	}
+
+	// Verify we don't receive more than the expected numbers
 	assert.Len(t, spans, 5)
 	assert.Len(t, stats, 10)
 }
