@@ -7,6 +7,83 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.88.0
+
+### 🛑 Breaking changes 🛑
+
+- `k8sclusterreceiver`: Remove opencensus.resourcetype resource attribute (#26487)
+- `splunkhecexporter`: Remove `max_connections` configuration setting. (#27610)
+  use max_idle_conns or max_idle_conns_per_host instead.
+  
+- `signalfxexporter`: Remove `max_connections` configuration setting. (#27610)
+  use max_idle_conns or max_idle_conns_per_host instead.
+  
+
+### 🚩 Deprecations 🚩
+
+- `dockerstatsreceiver`: cpu.container.percent metric will be deprecated in v0.79.0 in favor of container.cpu.utilization (#21807)
+  The metric `container.cpu.percentage` is now disabled by default and will be removed in v0.88.0.
+  As a replacement, the following metric is now enabled by default: `container.cpu.utilization`.
+  For details, see the [docs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/dockerstatsreceiver#transition-to-cpu-utilization-metric-name-aligned-with-opentelemetry-specification).
+  
+- `parquetexporter`: Remove the parquet exporter (#27284)
+
+### 🚀 New components 🚀
+
+- `encoding/jsonlogencodingextension`: Add a new extension to support JSON encoding (only logs) (#6272)
+- `honeycombmarkerexporter`: This component will export markers to be consumed by the Honeycomb Markers API to highlight user events (#26653)
+- `zipkinencodingextension`: Introduce zipkin encoding extension. (#6272)
+
+### 💡 Enhancements 💡
+
+- `datasetexporter`: Make export of resources and scopes more flexible (#27651, #27649)
+- `pkg/stanza`: Add option to run udp logs receiver (and stanza udp input operator) concurrently to reduce data-loss during high-scale scenarios (#27613)
+- `receiver/prometheus`: Warn instead of failing when users rename using metric_relabel_configs in the prometheus receiver (#5001)
+- `awscloudwatchlogsexporter/awsemfexporter`: Reduce noisy logs emitted by CloudWatch Logs Pusher. (#27774)
+  The Collector logger will now write successful CloudWatch API writes at the Debug level instead of Info level.
+- `k8sobjectsreceiver`: Move k8sobjectsreceiver from Alpha stability to Beta stability for logs. (#27635)
+- `datadogconnector`: Allow datadogconnector to be used as a traces-to-traces connector (#27846)
+- `doubleconverter`: Adding a double converter into pkg/ottl (#22056)
+- `syslogreceiver`: validate protocol name (#27581)
+- `elasticsearchexporter`: add missing scope info in span attributes (#27282)
+- `entension/storage/filestorage`: Add support for setting bbolt fsync option (#20266)
+- `filelogreceiver`: Add a new "top_n" option to specify the number of files to track when using ordering criteria (#23788)
+- `azuredataexplorerexporter`: Added exporter helper config support for Azure Data Explorer exporter (#24329)
+- `k8sclusterreceiver`: add optional k8s.pod.qos_class resource attribute (#27483)
+- `pkg/stanza`: Log warning, instead of error, when Windows Event Log publisher metadata is not available and cache the successfully retrieved ones. (#27658)
+- `pkg/ottl`: Add optional Converter parameters to replacement Editors (#27235)
+  Functions to modify matched text during replacement can now be passed as optional arguments to the following Editors:
+  - `replace_pattern`
+  - `replace_all_patterns`
+  - `replace_match`
+  - `replace_all_matches`
+  
+- `awscloudwatchlogsexporter`: Improve the performance of the awscloudwatchlogsexporter (#26692)
+  Improve the performance by adding support to multiple consumers and removing locks and limiters that are no longer
+  necessary.
+  
+- `pkg/pdatatest`: support ignore timestamps in span comparisons for pdatatest (#27688)
+- `prometheusremotewriteexporter`: addition of `max_batch_size_bytes` configurable parameter, to allow users to adjust it based on the capabilities of their specific remote storage (#21911)
+- `pkg/pdatatest`: support ignore span attribute value in span comparisons for ptracetest (#27689)
+- `pkg/pdatatest`: support ignore span ID in span comparisons for ptracetest (#27685)
+- `pkg/pdatatest`: support ignore trace ID in span comparisons for ptracetest (#27687)
+- `pkg/stanza`: When async is enabled for udp receiver, separate logic into readers (only read logs from udp port and push to channel), and processors (read logs from channel and process; decode, split, add attributes, and push downstream), allowing to change concurrency level for both readers and processors separately. (#27613)
+- `signalfxexporter`: Add an option to control the dimension client timeout (#27815)
+- `signalfxexporter`: Add the build version to the user agent of the SignalFx exporter (#16841)
+- `splunkentreceiver`: Users can now use auth settings and basicauth extension to connect to their Splunk enterprise deployments (#27026)
+
+### 🧰 Bug fixes 🧰
+
+- `datasetexporter`: Do not crash on NPE when any of the attributes contains null value. (#27648)
+- `syslog`: add integration tests and fix related bugs (#21245)
+- `processor/resourcedetection`: Don't parse the field `cpuInfo.Model` if it's blank. (#27678)
+- `k8sclusterreceiver`: Change clusterquota and resourcequota metrics to use {resource} unit (#10553)
+- `cmd/telemetrygen`: Fix `go install` for telemetrygen (#27855)
+- `pkg/ottl`: Fix bug where named parameters needed a space after the equal sign (`=`). (#28511)
+- `filelogreceiver`: Fix issue where batching of files could result in ignoring start_at setting. (#27773)
+- `prometheusremotewrite`: Fix remote write exporter not respecting retrySettings.enabled flag (#27592)
+- `redactionprocessor`: Fix mask when multiple patterns exist (#27646)
+
 ## v0.87.0
 
 ### 🛑 Breaking changes 🛑
