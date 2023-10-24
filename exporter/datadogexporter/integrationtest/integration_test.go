@@ -156,7 +156,7 @@ receivers:
 processors:
   batch:
     send_batch_size: 10
-    timeout: 1s
+    timeout: 10s
   tail_sampling:
     decision_wait: 1s
     policies: [
@@ -194,7 +194,7 @@ service:
     traces/2: # this pipeline uses sampling
       receivers: [datadog/connector]
       processors: [tail_sampling, batch]
-      exporters: [datadog]
+      exporters: [datadog, logging]
     metrics:
       receivers: [datadog/connector]
       processors: [batch]
@@ -226,11 +226,11 @@ service:
 			Version:     "tests",
 		},
 		// Remove LoggingOptions below if you want to see the output of logging exporter.
-		LoggingOptions: []zap.Option{
-			zap.WrapCore(func(zapcore.Core) zapcore.Core {
-				return zapcore.NewNopCore()
-			}),
-		},
+		// LoggingOptions: []zap.Option{
+		// 	zap.WrapCore(func(zapcore.Core) zapcore.Core {
+		// 		return zapcore.NewNopCore()
+		// 	}),
+		// },
 	}
 
 	app, err := otelcol.NewCollector(appSettings)
