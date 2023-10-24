@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.45.26
+	github.com/aws/aws-sdk-go v1.46.2
 	github.com/google/cadvisor v0.47.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.88.0
@@ -20,9 +20,9 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017
 	go.opentelemetry.io/collector/receiver v0.88.0
 	go.uber.org/zap v1.26.0
-	k8s.io/api v0.28.2
-	k8s.io/apimachinery v0.28.2
-	k8s.io/client-go v0.28.2
+	k8s.io/api v0.28.3
+	k8s.io/apimachinery v0.28.3
+	k8s.io/client-go v0.28.3
 	k8s.io/klog v1.0.0
 )
 
@@ -45,7 +45,7 @@ require (
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/frankban/quicktest v1.14.0 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -66,13 +66,13 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
-	github.com/klauspost/compress v1.17.1 // indirect
+	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
+	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
@@ -94,7 +94,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.44.0 // indirect
+	github.com/prometheus/common v0.45.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
