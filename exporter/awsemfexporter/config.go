@@ -154,12 +154,12 @@ func (config *Config) IsEnhancedContainerInsights() bool {
 	// return config.EnhancedContainerInsights && !config.DisableMetricExtraction
 }
 
-func (config *Config) IsPulseApmEnabled() bool {
+func (config *Config) IsAppSignalsEnabled() bool {
 	if config.LogGroupName == "" || config.Namespace == "" {
 		return false
 	}
 
-	if config.Namespace == pulseMetricNamespace && strings.HasPrefix(config.LogGroupName, pulseLogGroupNamePrefix) {
+	if config.Namespace == appSignalsMetricNamespace && strings.HasPrefix(config.LogGroupName, appSignalsLogGroupNamePrefix) {
 		return true
 	}
 

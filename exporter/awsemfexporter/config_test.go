@@ -328,7 +328,7 @@ func TestIsEnhancedContainerInsights(t *testing.T) {
 	assert.False(t, cfg.IsEnhancedContainerInsights())
 }
 
-func TestIsPulseApmEnabled(t *testing.T) {
+func TestIsAppSignalsEnabled(t *testing.T) {
 	tests := []struct {
 		name            string
 		metricNameSpace string
@@ -336,27 +336,27 @@ func TestIsPulseApmEnabled(t *testing.T) {
 		expectedResult  bool
 	}{
 		{
-			"validPulseEMF",
-			"AWS/APM",
-			"/aws/apm/eks",
+			"validAppSignalsEMF",
+			"AppSignals",
+			"/aws/appsignals/eks",
 			true,
 		},
 		{
-			"invalidPulseLogsGroup",
-			"AWS/APM",
-			"/nonaws/apm/eks",
+			"invalidAppSignalsLogsGroup",
+			"AppSignals",
+			"/nonaws/appsignals/eks",
 			false,
 		},
 		{
-			"invalidPulseMetricNamespace",
-			"NonAWS/APM",
-			"/aws/apm/eks",
+			"invalidAppSignalsMetricNamespace",
+			"NonAppSignals",
+			"/aws/appsignals/eks",
 			false,
 		},
 		{
-			"invalidPulseEMF",
-			"NonAWS/APM",
-			"/nonaws/apm/eks",
+			"invalidAppSignalsEMF",
+			"NonAppSignals",
+			"/nonaws/appsignals/eks",
 			false,
 		},
 		{
@@ -377,7 +377,7 @@ func TestIsPulseApmEnabled(t *testing.T) {
 				cfg.LogGroupName = tc.logGroupName
 			}
 
-			assert.Equal(t, cfg.IsPulseApmEnabled(), tc.expectedResult)
+			assert.Equal(t, cfg.IsAppSignalsEnabled(), tc.expectedResult)
 		})
 	}
 }

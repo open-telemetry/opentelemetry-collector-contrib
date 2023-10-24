@@ -596,10 +596,10 @@ func TestUserAgent(t *testing.T) {
 			"opentelemetry-collector-contrib/1.0",
 		},
 		{
-			"emptyLogGroupPulse",
+			"emptyLogGroupAppSignals",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"",
-			WithEnabledPulseApm(false),
+			WithEnabledAppSignals(false),
 			"opentelemetry-collector-contrib/1.0",
 		},
 		{
@@ -610,10 +610,10 @@ func TestUserAgent(t *testing.T) {
 			"test-collector-contrib/1.0",
 		},
 		{
-			"buildInfoCommandUsedPulse",
+			"buildInfoCommandUsedAppSignals",
 			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
 			"",
-			WithEnabledPulseApm(false),
+			WithEnabledAppSignals(false),
 			"test-collector-contrib/1.0",
 		},
 		{
@@ -660,17 +660,17 @@ func TestUserAgent(t *testing.T) {
 			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
 		},
 		{
-			"validPulseEMFEnabled",
+			"validAppSignalsEMFEnabled",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
-			"/aws/apm",
-			WithEnabledPulseApm(true),
-			"opentelemetry-collector-contrib/1.0 (Pulse)",
+			"/aws/appsignals",
+			WithEnabledAppSignals(true),
+			"opentelemetry-collector-contrib/1.0 (AppSignals)",
 		},
 		{
-			"PulseEMFNotEnabled",
+			"AppSignalsEMFNotEnabled",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
-			"/aws/apm",
-			WithEnabledPulseApm(false),
+			"/aws/appsignals",
+			WithEnabledAppSignals(false),
 			"opentelemetry-collector-contrib/1.0",
 		},
 	}

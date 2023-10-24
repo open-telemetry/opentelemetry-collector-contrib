@@ -43,7 +43,7 @@ type UserAgentOption func(*UserAgentFlag)
 
 type UserAgentFlag struct {
 	isEnhancedContainerInsights bool
-	isPulseApm                  bool
+	isAppSignals                bool
 }
 
 func WithEnabledContainerInsights(flag bool) UserAgentOption {
@@ -52,9 +52,9 @@ func WithEnabledContainerInsights(flag bool) UserAgentOption {
 	}
 }
 
-func WithEnabledPulseApm(flag bool) UserAgentOption {
+func WithEnabledAppSignals(flag bool) UserAgentOption {
 	return func(ua *UserAgentFlag) {
-		ua.isPulseApm = flag
+		ua.isAppSignals = flag
 	}
 }
 
@@ -76,7 +76,7 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 	// Loop through each option
 	option := &UserAgentFlag{
 		isEnhancedContainerInsights: false,
-		isPulseApm:                  false,
+		isAppSignals:                false,
 	}
 	for _, opt := range opts {
 		opt(option)
@@ -229,8 +229,8 @@ func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName st
 		extraStr = "EnhancedEKSContainerInsights"
 	case containerInsightsRegexPattern.MatchString(logGroupName):
 		extraStr = "ContainerInsights"
-	case userAgentFlag.isPulseApm:
-		extraStr = "Pulse"
+	case userAgentFlag.isAppSignals:
+		extraStr = "AppSignals"
 	}
 
 	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, extraStr)
