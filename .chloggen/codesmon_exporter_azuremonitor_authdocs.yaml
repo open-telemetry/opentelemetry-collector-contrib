@@ -1,16 +1,16 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: 'enhancement'
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: splunkentreceiver
+component: azuremonitorexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Users can now use auth settings and basicauth extension to connect to their Splunk enterprise deployments"
+note: Added documentation to describe how to use with the AAD Auth Proxy and enable AAD based authentication.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [27026]
+issues: [24451]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
@@ -25,4 +25,3 @@ subtext:
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
 change_logs: [user]
-
