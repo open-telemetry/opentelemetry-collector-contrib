@@ -13,7 +13,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -80,24 +84,31 @@ func TestScraper(t *testing.T) {
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
 
 	cfg := &Config{
-		Username:          "admin",
-		Password:          "securityFirst",
-		MaxSearchWaitTime: 11 * time.Second,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: ts.URL,
+			Auth: &configauth.Authentication{
+				AuthenticatorID: component.NewID("basicauth/client"),
+			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
+			Timeout:            11 * time.Second,
 		},
 		MetricsBuilderConfig: metricsettings,
 	}
 
-	require.NoError(t, cfg.Validate())
+	host := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.NewID("basicauth/client"): auth.NewClient(),
+		},
+	}
 
 	scraper := newSplunkMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
-	client := newSplunkEntClient(cfg)
-	scraper.splunkClient = &client
+	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	scraper.splunkClient = client
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)

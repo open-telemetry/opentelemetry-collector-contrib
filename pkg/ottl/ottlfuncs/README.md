@@ -294,6 +294,7 @@ Available Converters:
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
 - [Hours](#hours)
+- [Double](#double)
 - [Duration](#duration)
 - [Int](#int)
 - [IsMap](#ismap)
@@ -364,6 +365,29 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### Double
+
+The `Double` Converter converts an inputted `value` into a double.
+
+The returned type is float64.
+
+The input `value` types:
+* float64. returns the `value` without changes.
+* string. Tries to parse a double from string. If it fails then nil will be returned.
+* bool. If `value` is true, then the function will return 1 otherwise 0.
+* int64. The function converts the integer to a double.
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Double(attributes["http.status_code"])`
+
+
+- `Double("2.0")`
 
 ### Duration
 
