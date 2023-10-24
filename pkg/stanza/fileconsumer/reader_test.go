@@ -22,6 +22,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
+func TestCopyReaderWithoutFlusher(t *testing.T) {
+	f, _ := testReaderFactory(t, split.Config{}, defaultMaxLogSize, 0)
+
+	temp := openTemp(t, t.TempDir())
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+
+	// A copy of the reader should not panic
+	_, err = f.Copy(r, temp)
+	assert.NoError(t, err)
+}
+
 func TestPersistFlusher(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
 	f, emitChan := testReaderFactory(t, split.Config{}, defaultMaxLogSize, flushPeriod)
