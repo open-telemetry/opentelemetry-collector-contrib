@@ -134,6 +134,8 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 		}
 	}
 
+	go p.metricFlushLoop(p.config.MetricsFlushInterval)
+
 	go p.cacheLoop(p.config.CacheLoop)
 
 	go p.storeExpirationLoop(p.config.StoreExpirationLoop)
@@ -144,6 +146,41 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 		p.logger.Info("Started servicegraphprocessor")
 	}
 	return nil
+}
+
+func (p *serviceGraphProcessor) metricFlushLoop(flushInterval time.Duration) {
+	if flushInterval <= 0 {
+		return
+	}
+
+	ticker := time.NewTicker(flushInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := p.flushMetrics(context.Background()); err != nil {
+				p.logger.Error("failed to flush metrics", zap.Error(err))
+			}
+		case <-p.shutdownCh:
+			return
+		}
+	}
+}
+
+func (p *serviceGraphProcessor) flushMetrics(ctx context.Context) error {
+	md, err := p.buildMetrics()
+	if err != nil {
+		return fmt.Errorf("failed to build metrics: %w", err)
+	}
+
+	// Skip empty metrics.
+	if md.MetricCount() == 0 {
+		return nil
+	}
+
+	// Firstly, export md to avoid being impacted by downstream trace serviceGraphProcessor errors/latency.
+	return p.metricsConsumer.ConsumeMetrics(ctx, md)
 }
 
 func (p *serviceGraphProcessor) Shutdown(_ context.Context) error {
@@ -165,29 +202,17 @@ func (p *serviceGraphProcessor) ConsumeTraces(ctx context.Context, td ptrace.Tra
 		return fmt.Errorf("failed to aggregate metrics: %w", err)
 	}
 
-	md, err := p.buildMetrics()
-	if err != nil {
-		return fmt.Errorf("failed to build metrics: %w", err)
+	// If metricsFlushInterval is not set, flush metrics immediately.
+	if p.config.MetricsFlushInterval <= 0 {
+		if err := p.flushMetrics(ctx); err != nil {
+			// Not return error here to avoid impacting traces.
+			p.logger.Error("failed to flush metrics", zap.Error(err))
+		}
 	}
 
-	// Skip empty metrics.
-	if md.MetricCount() == 0 {
-		if p.tracesConsumer != nil {
-			return p.tracesConsumer.ConsumeTraces(ctx, td)
-		}
+	if p.tracesConsumer == nil { // True if p is a connector
 		return nil
 	}
-
-	// true when p is a connector
-	if p.tracesConsumer == nil {
-		return p.metricsConsumer.ConsumeMetrics(ctx, md)
-	}
-
-	// Firstly, export md to avoid being impacted by downstream trace serviceGraphProcessor errors/latency.
-	if err := p.metricsConsumer.ConsumeMetrics(ctx, md); err != nil {
-		return err
-	}
-
 	return p.tracesConsumer.ConsumeTraces(ctx, td)
 }
 
