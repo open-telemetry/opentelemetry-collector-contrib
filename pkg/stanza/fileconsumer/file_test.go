@@ -79,11 +79,8 @@ See this issue for details: https://github.com/census-instrumentation/opencensus
 	operator, _ := buildTestManager(t, cfg)
 
 	_ = openTemp(t, tempDir)
-	err := operator.Start(testutil.NewUnscopedMockPersister())
-	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, operator.Stop())
 }
 
 // AddFields tests that the `log.file.name` and `log.file.path` fields are included
@@ -491,9 +488,6 @@ func TestReadNewLogs(t *testing.T) {
 
 	// Poll once so we know this isn't a new file
 	operator.poll(context.Background())
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
 
 	// Create a new file
 	temp := openTemp(t, tempDir)
@@ -714,13 +708,13 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	writeString(t, temp3, "testlog2\n")
 	operator.poll(context.Background())
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog1"), []byte("testlog2")})
+	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
 
 	writeString(t, temp2, "testlog3\n")
 	writeString(t, temp4, "testlog4\n")
 	operator.poll(context.Background())
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog3"), []byte("testlog4")})
+	waitForTokens(t, emitCalls, []byte("testlog3"), []byte("testlog4"))
 }
 
 func TestDecodeBufferIsResized(t *testing.T) {
@@ -762,7 +756,7 @@ func TestMultiFileSimple(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog1"), []byte("testlog2")})
+	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
 }
 
 func TestMultiFileSort(t *testing.T) {
@@ -794,7 +788,7 @@ func TestMultiFileSort(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2")})
+	waitForTokens(t, emitCalls, []byte("testlog2"))
 	expectNoTokens(t, emitCalls)
 }
 
@@ -828,7 +822,7 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2")})
+	waitForTokens(t, emitCalls, []byte("testlog2"))
 	expectNoTokens(t, emitCalls)
 }
 
@@ -869,7 +863,7 @@ func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -914,7 +908,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 		}(temp, i)
 	}
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -1110,7 +1104,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 
 	// Poll again and expect one line from each file.
 	operator.poll(context.Background())
-	waitForTokens(t, emitChan, expectedTokens)
+	waitForTokens(t, emitChan, expectedTokens...)
 }
 
 func TestFileReader_FingerprintUpdated(t *testing.T) {
@@ -1358,7 +1352,7 @@ func TestEncodings(t *testing.T) {
 				require.NoError(t, operator.Stop())
 			}()
 
-			waitForTokens(t, emitCalls, tc.expected)
+			waitForTokens(t, emitCalls, tc.expected...)
 		})
 	}
 }
@@ -1583,14 +1577,13 @@ func TestHeaderPersistance(t *testing.T) {
 	writeString(t, temp, "#headerField: headerValue\nlog line\n")
 
 	persister := testutil.NewUnscopedMockPersister()
-	require.NoError(t, op1.Start(persister))
 
+	require.NoError(t, op1.Start(persister))
 	waitForTokenWithAttributes(t, emitCalls1, []byte("log line"), map[string]any{
 		"header_key":      "headerField",
 		"header_value":    "headerValue",
 		attrs.LogFileName: filepath.Base(temp.Name()),
 	})
-
 	require.NoError(t, op1.Stop())
 
 	writeString(t, temp, "log line 2\n")
@@ -1598,13 +1591,11 @@ func TestHeaderPersistance(t *testing.T) {
 	op2, emitCalls2 := buildTestManager(t, cfg)
 
 	require.NoError(t, op2.Start(persister))
-
 	waitForTokenWithAttributes(t, emitCalls2, []byte("log line 2"), map[string]any{
 		"header_key":      "headerField",
 		"header_value":    "headerValue",
 		attrs.LogFileName: filepath.Base(temp.Name()),
 	})
-
 	require.NoError(t, op2.Stop())
 }
 
@@ -1626,12 +1617,10 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	writeString(t, temp, "|headerField1: headerValue1\n")
 
 	persister := testutil.NewUnscopedMockPersister()
+
+	// Start and stop the operator, ensuring that at least one poll cycle occurs in between
 	require.NoError(t, op1.Start(persister))
-
-	// The operator will poll at fixed time intervals, but we just want to make sure at least
-	// one poll operation occurs between now and when we stop.
-	op1.poll(context.Background())
-
+	time.Sleep(2 * cfg1.PollInterval)
 	require.NoError(t, op1.Stop())
 
 	writeString(t, temp, "|headerField2: headerValue2\nlog line\n")
@@ -1643,13 +1632,11 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	op2, emitCalls := buildTestManager(t, cfg2)
 
 	require.NoError(t, op2.Start(persister))
-
 	waitForTokenWithAttributes(t, emitCalls, []byte("log line"), map[string]any{
 		"header_value_1":  "headerValue1",
 		"header_value_2":  "headerValue2",
 		attrs.LogFileName: filepath.Base(temp.Name()),
 	})
-
 	require.NoError(t, op2.Stop())
 }
 
@@ -1684,6 +1671,6 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.poll(context.Background())
 	// We should have updated the offset for one of the files, so the second file should now
 	// be ingested from the beginning
-	waitForTokens(t, emitCalls, [][]byte{[]byte(content), []byte(newContent1), []byte(newContent)})
+	waitForTokens(t, emitCalls, []byte(content), []byte(newContent1), []byte(newContent))
 	operator.wg.Wait()
 }
