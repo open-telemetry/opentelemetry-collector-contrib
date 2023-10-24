@@ -67,16 +67,20 @@ func (m *Manager) Start(persister operator.Persister) error {
 	return nil
 }
 
-// Stop will stop the file monitoring process
-func (m *Manager) Stop() error {
-	m.cancel()
-	m.wg.Wait()
+func (m *Manager) closeFiles() {
 	for _, r := range m.previousPollFiles {
 		r.Close()
 	}
 	for _, r := range m.knownFiles {
 		r.Close()
 	}
+}
+
+// Stop will stop the file monitoring process
+func (m *Manager) Stop() error {
+	m.cancel()
+	m.wg.Wait()
+	m.closeFiles()
 	m.cancel = nil
 	return nil
 }
