@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				GeneratorURL:      "otelcol:55681",
+				GeneratorURL:      "http://example.com/otelcol",
 				DefaultSeverity:   "info",
 				SeverityAttribute: "foo",
 				TimeoutSettings: exporterhelper.TimeoutSettings{

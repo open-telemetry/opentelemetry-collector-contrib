@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter/internal/metadata"
 )
 
 const (
@@ -24,14 +26,14 @@ const (
 // NewFactory creates a factory for Alertmanager exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		GeneratorURL:    "otelcol:55681",
+		GeneratorURL:    "http://example.com/otelcol",
 		DefaultSeverity: "info",
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),

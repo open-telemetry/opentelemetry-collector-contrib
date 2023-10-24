@@ -1,7 +1,7 @@
 alertmanager:
 alertmanager/2:
   endpoint: "a.new.alertmanager.target:9093"
-  generator_url: "otelcol:55681"
+  generator_url: "http://example.com/otelcol"
   severity: "info"
   severity_attribute: "foo"
   tls:
