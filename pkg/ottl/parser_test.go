@@ -1059,6 +1059,24 @@ func Test_parse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:      "editor with named arg",
+			statement: `set(name="foo")`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "set",
+					Arguments: []argument{
+						{
+							Name: "name",
+							Value: value{
+								String: ottltest.Strp("foo"),
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {
