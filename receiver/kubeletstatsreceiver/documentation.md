@@ -392,7 +392,7 @@ Container CPU usage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| nanoseconds | Gauge | Double |
+| s | Gauge | Double |
 
 ### container.uptime
 
@@ -440,7 +440,7 @@ Node CPU usage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| nanoseconds | Gauge | Double |
+| s | Gauge | Double |
 
 ### k8s.node.uptime
 
@@ -456,7 +456,7 @@ Pod CPU usage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| nanoseconds | Gauge | Double |
+| s | Gauge | Double |
 
 ### k8s.pod.cpu_limit_utilization
 

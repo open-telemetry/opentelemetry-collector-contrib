@@ -49,16 +49,16 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.configSet == testSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.configSet == testSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `k8s.node.cpu.utilization`: WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `k8s.node.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.configSet == testSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `k8s.pod.cpu.utilization`: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `k8s.pod.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 
@@ -335,7 +335,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Container CPU usage", ms.At(i).Description())
-					assert.Equal(t, "nanoseconds", ms.At(i).Unit())
+					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -543,7 +543,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Node CPU usage", ms.At(i).Description())
-					assert.Equal(t, "nanoseconds", ms.At(i).Unit())
+					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -743,7 +743,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Pod CPU usage", ms.At(i).Description())
-					assert.Equal(t, "nanoseconds", ms.At(i).Unit())
+					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

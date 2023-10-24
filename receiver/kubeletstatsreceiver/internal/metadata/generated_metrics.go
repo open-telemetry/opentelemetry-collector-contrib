@@ -98,7 +98,7 @@ type metricContainerCPUUsage struct {
 func (m *metricContainerCPUUsage) init() {
 	m.data.SetName("container.cpu.usage")
 	m.data.SetDescription("Container CPU usage")
-	m.data.SetUnit("nanoseconds")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
 
@@ -935,7 +935,7 @@ type metricK8sNodeCPUUsage struct {
 func (m *metricK8sNodeCPUUsage) init() {
 	m.data.SetName("k8s.node.cpu.usage")
 	m.data.SetDescription("Node CPU usage")
-	m.data.SetUnit("nanoseconds")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
 
@@ -1684,7 +1684,7 @@ type metricK8sPodCPUUsage struct {
 func (m *metricK8sPodCPUUsage) init() {
 	m.data.SetName("k8s.pod.cpu.usage")
 	m.data.SetDescription("Pod CPU usage")
-	m.data.SetUnit("nanoseconds")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 }
 
@@ -2890,14 +2890,14 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if !mbc.Metrics.ContainerCPUUtilization.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead.")
+	if mbc.Metrics.ContainerCPUUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `container.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead.")
 	}
-	if !mbc.Metrics.K8sNodeCPUUtilization.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `k8s.node.cpu.utilization`: WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.")
+	if mbc.Metrics.K8sNodeCPUUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `k8s.node.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.")
 	}
-	if !mbc.Metrics.K8sPodCPUUtilization.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `k8s.pod.cpu.utilization`: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.")
+	if mbc.Metrics.K8sPodCPUUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `k8s.pod.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.")
 	}
 	mb := &MetricsBuilder{
 		config:                                     mbc,

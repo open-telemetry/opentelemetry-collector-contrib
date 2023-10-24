@@ -84,7 +84,7 @@ metrics:
   k8s.node.cpu.usage:
     enabled: false
     description: "Node CPU usage"
-    unit: nanoseconds
+    unit: s
     gauge:
       value_type: double
     attributes: []
@@ -92,7 +92,7 @@ metrics:
     enabled: true
     description: "Node CPU utilization"
     warnings:
-      if_enabled_not_set: "WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead."
+      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead."
     unit: 1
     gauge:
       value_type: double
@@ -199,7 +199,7 @@ metrics:
   k8s.pod.cpu.usage:
     enabled: false
     description: "Pod CPU usage"
-    unit: nanoseconds
+    unit: s
     gauge:
       value_type: double
     attributes: [ ]
@@ -207,7 +207,7 @@ metrics:
     enabled: true
     description: "Pod CPU utilization"
     warnings:
-      if_enabled_not_set: "This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead."
+      if_enabled: "This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead."
     unit: 1
     gauge:
       value_type: double
@@ -342,7 +342,7 @@ metrics:
   container.cpu.usage:
     enabled: false
     description: "Container CPU usage"
-    unit: nanoseconds
+    unit: s
     gauge:
       value_type: double
     attributes: [ ]
@@ -350,7 +350,7 @@ metrics:
     enabled: true
     description: "Container CPU utilization"
     warnings:
-      if_enabled_not_set: "WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead."
+      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead."
     unit: 1
     gauge:
       value_type: double
