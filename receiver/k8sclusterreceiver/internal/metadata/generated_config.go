@@ -52,6 +52,7 @@ type MetricsConfig struct {
 	K8sJobMaxParallelPods               MetricConfig `mapstructure:"k8s.job.max_parallel_pods"`
 	K8sJobSuccessfulPods                MetricConfig `mapstructure:"k8s.job.successful_pods"`
 	K8sNamespacePhase                   MetricConfig `mapstructure:"k8s.namespace.phase"`
+	K8sNodeCondition                    MetricConfig `mapstructure:"k8s.node.condition"`
 	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
 	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
 	K8sReplicasetAvailable              MetricConfig `mapstructure:"k8s.replicaset.available"`
@@ -152,6 +153,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sNamespacePhase: MetricConfig{
 			Enabled: true,
+		},
+		K8sNodeCondition: MetricConfig{
+			Enabled: false,
 		},
 		K8sPodPhase: MetricConfig{
 			Enabled: true,
