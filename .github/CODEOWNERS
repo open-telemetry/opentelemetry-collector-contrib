@@ -145,6 +145,7 @@ pkg/translator/prometheusremotewrite/                                   @open-te
 pkg/translator/signalfx/                                                @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/translator/zipkin/                                                  @open-telemetry/collector-contrib-approvers @MovieStoreGuy @astencel-sumo @crobert-1
 pkg/winperfcounters/                                                    @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @BinaryFissionGames
+
 processor/attributesprocessor/                                          @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                                   @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/datadogprocessor/                                             @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
