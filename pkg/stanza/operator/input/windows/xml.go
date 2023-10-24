@@ -13,23 +13,23 @@ import (
 
 // EventXML is the rendered xml of an event.
 type EventXML struct {
-	EventID          EventID          `xml:"System>EventID"`
-	Provider         Provider         `xml:"System>Provider"`
-	Computer         string           `xml:"System>Computer"`
-	Channel          string           `xml:"System>Channel"`
-	RecordID         uint64           `xml:"System>EventRecordID"`
-	TimeCreated      TimeCreated      `xml:"System>TimeCreated"`
-	Message          string           `xml:"RenderingInfo>Message"`
-	RenderedLevel    string           `xml:"RenderingInfo>Level"`
-	Level            string           `xml:"System>Level"`
-	RenderedTask     string           `xml:"RenderingInfo>Task"`
-	Task             string           `xml:"System>Task"`
-	RenderedOpcode   string           `xml:"RenderingInfo>Opcode"`
-	Opcode           string           `xml:"System>Opcode"`
-	RenderedKeywords []string         `xml:"RenderingInfo>Keywords>Keyword"`
-	Keywords         []string         `xml:"System>Keywords"`
-	Security         *Security        `xml:"System>Security"`
-	Execution        *Execution       `xml:"System>Execution"`
+	EventID          EventID     `xml:"System>EventID"`
+	Provider         Provider    `xml:"System>Provider"`
+	Computer         string      `xml:"System>Computer"`
+	Channel          string      `xml:"System>Channel"`
+	RecordID         uint64      `xml:"System>EventRecordID"`
+	TimeCreated      TimeCreated `xml:"System>TimeCreated"`
+	Message          string      `xml:"RenderingInfo>Message"`
+	RenderedLevel    string      `xml:"RenderingInfo>Level"`
+	Level            string      `xml:"System>Level"`
+	RenderedTask     string      `xml:"RenderingInfo>Task"`
+	Task             string      `xml:"System>Task"`
+	RenderedOpcode   string      `xml:"RenderingInfo>Opcode"`
+	Opcode           string      `xml:"System>Opcode"`
+	RenderedKeywords []string    `xml:"RenderingInfo>Keywords>Keyword"`
+	Keywords         []string    `xml:"System>Keywords"`
+	Security         *Security   `xml:"System>Security"`
+	Execution        *Execution  `xml:"System>Execution"`
 	EventData        EventData   `xml:"EventData"`
 }
 

@@ -464,15 +464,15 @@ func TestUnmarshalWithEventData(t *testing.T) {
 		TimeCreated: TimeCreated{
 			SystemTime: "2022-04-22T10:20:52.3778625Z",
 		},
-		Computer: "computer",
-		Channel:  "Application",
-		RecordID: 23401,
-		Level:    "4",
-		Message:  "",
-		Task:     "0",
-		Opcode:   "0",
+		Computer:  "computer",
+		Channel:   "Application",
+		RecordID:  23401,
+		Level:     "4",
+		Message:   "",
+		Task:      "0",
+		Opcode:    "0",
 		Execution: &Execution{},
-		Security: &Security{},
+		Security:  &Security{},
 		EventData: EventData{
 			Data: []Data{
 				{Name: "Time", Value: "2022-04-28T19:48:52Z"},
