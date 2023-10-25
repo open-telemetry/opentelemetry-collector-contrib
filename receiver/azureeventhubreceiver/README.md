@@ -26,6 +26,9 @@ Event Hub, transforms them, and pushes them through the collector pipeline.
 ### connection (Required)
 A string describing the connection to an Azure event hub.
 
+### group (Optional)
+The Consumer Group to read from. If empty will default to the default Consumer Group $Default
+
 ### partition (Optional)
 The partition to watch. If empty, it will watch explicitly all partitions.
 
@@ -49,6 +52,7 @@ receivers:
   azureeventhub:
     connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
     partition: foo
+    group: bar
     offset: "1234-5566"
     format: "azure"
 ```
