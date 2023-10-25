@@ -37,15 +37,16 @@ check_collector_versions_correct() {
 
    # Loop through all the module files, checking the collector version
    for mod_file in $mod_files; do
-      sed -i'' "s|$collector_module [^ ]*|$collector_module $collector_mod_version|g" $mod_file
+      sed -i '' "s|$collector_module [^ ]*|$collector_module $collector_mod_version|g" $mod_file
    done
 }
 
 MAIN_MOD_FILE="./go.mod"
 
+
+BETA_MODULE="go.opentelemetry.io/collector"
 # Note space at end of string. This is so it filters for the exact string
 # only and does not return string which contains this string as a substring.
-BETA_MODULE="go.opentelemetry.io/collector"
 BETA_MOD_VERSION=$(get_collector_version "$BETA_MODULE " "$MAIN_MOD_FILE")
 check_collector_versions_correct "$BETA_MODULE" "$BETA_MOD_VERSION"
 for mod in ${beta_modules[@]}; do
@@ -53,8 +54,8 @@ for mod in ${beta_modules[@]}; do
 done
 
 # Check RC modules
-RC_MODULE="go.opentelemetry.io/collector/pdata "
-RC_MOD_VERSION=$(get_collector_version "$RC_MODULE" "$MAIN_MOD_FILE")
+RC_MODULE="go.opentelemetry.io/collector/pdata"
+RC_MOD_VERSION=$(get_collector_version "$RC_MODULE " "$MAIN_MOD_FILE")
 check_collector_versions_correct "$RC_MODULE" "$RC_MOD_VERSION"
 for mod in ${rc_modules[@]}; do
    check_collector_versions_correct "$mod" "$RC_MOD_VERSION"
