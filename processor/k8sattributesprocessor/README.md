@@ -119,8 +119,8 @@ labels:
     key: label2
     regex: field=(?P<value>.+)
     from: pod
-  - tag_name: l3 # extracts value of label from nodes with key `label1` and inserts it as a tag with key `l3`
-    key: label1
+  - tag_name: l3 # extracts value of label from nodes with key `label3` and inserts it as a tag with key `l3`
+    key: label3
     from: node
 ```
 
