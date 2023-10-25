@@ -1,4 +1,4 @@
-package datasetexporter
+package datasetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 
 import (
 	"context"
