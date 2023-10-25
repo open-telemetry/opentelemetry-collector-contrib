@@ -92,6 +92,7 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
 			allContainersMemoryLimitsDefined := true
 			allContainersMemoryRequestsDefined := true
 			for _, container := range pod.Spec.Containers {
+				// nolint G601
 				containerResource := getContainerResources(&container.Resources)
 
 				if allContainersCPULimitsDefined && containerResource.cpuLimit == 0 {

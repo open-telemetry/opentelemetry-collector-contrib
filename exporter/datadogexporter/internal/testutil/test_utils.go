@@ -36,7 +36,7 @@ type DatadogServer struct {
 
 /* #nosec G101 -- This is a false positive, these are API endpoints rather than credentials */
 const (
-	ValidateAPIKeyEndpoint = "/api/v1/validate"
+	ValidateAPIKeyEndpoint = "/api/v1/validate" // nolint G101
 	MetricV1Endpoint       = "/api/v1/series"
 	MetricV2Endpoint       = "/api/v2/series"
 	SketchesMetricEndpoint = "/api/beta/sketches"
