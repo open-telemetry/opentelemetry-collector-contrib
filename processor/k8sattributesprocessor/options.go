@@ -4,9 +4,9 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
-	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
@@ -212,13 +212,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 
 		if name == "" && a.Key != "" {
 			// name for KeyRegex case is set at extraction time/runtime, skipped here
-			if a.From == kube.MetadataFromPod {
-				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
-			} else if a.From == kube.MetadataFromNamespace {
-				name = fmt.Sprintf("k8s.namespace.%s.%s", fieldType, a.Key)
-			} else if a.From == kube.MetadataFromNode {
-				name = fmt.Sprintf("k8s.node.%s.%s", fieldType, a.Key)
-			}
+			name = strings.Join([]string{"k8s", a.From, fieldType, a.Key}, ".")
 		}
 
 		var r *regexp.Regexp
