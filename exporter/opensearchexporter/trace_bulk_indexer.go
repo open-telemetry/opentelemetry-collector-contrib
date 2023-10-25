@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
 )
 
 type traceBulkIndexer struct {
@@ -31,7 +30,7 @@ func newTraceBulkIndexer(dataset string, namespace string) *traceBulkIndexer {
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
-	return multierr.Combine(tbi.errs...)
+	return errors.Join(tbi.errs...)
 }
 
 func (tbi *traceBulkIndexer) start(client *opensearch.Client) error {

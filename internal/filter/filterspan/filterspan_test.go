@@ -32,31 +32,31 @@ func createConfig(matchType filterset.MatchType) *filterset.Config {
 func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	testcases := []struct {
 		name        string
-		property    filterconfig.MatchProperties
+		property    *filterconfig.MatchProperties
 		errorString string
 	}{
 		{
 			name:        "empty_property",
-			property:    filterconfig.MatchProperties{},
+			property:    &filterconfig.MatchProperties{},
 			errorString: filterconfig.ErrMissingRequiredField.Error(),
 		},
 		{
 			name: "empty_service_span_names_and_attributes",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Services: []string{},
 			},
 			errorString: filterconfig.ErrMissingRequiredField.Error(),
 		},
 		{
 			name: "log_properties",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				LogBodies: []string{"log"},
 			},
 			errorString: "log_bodies should not be specified for trace spans",
 		},
 		{
 			name: "invalid_match_type",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:   *createConfig("wrong_match_type"),
 				Services: []string{"abc"},
 			},
@@ -64,14 +64,14 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "missing_match_type",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Services: []string{"abc"},
 			},
 			errorString: "error creating service name filters: unrecognized match_type: '', valid types are: [regexp strict]",
 		},
 		{
 			name: "invalid_regexp_pattern_service",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Regexp),
 				Services: []string{"["},
 			},
@@ -79,7 +79,7 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_span",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				SpanNames: []string{"["},
 			},
@@ -87,7 +87,7 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_strict_span_kind_match",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Strict),
 				SpanKinds: []string{
 					"test_invalid_span_kind",
@@ -99,7 +99,7 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := newExpr(&tc.property)
+			output, err := newExpr(tc.property)
 			assert.Nil(t, output)
 			assert.EqualError(t, err, tc.errorString)
 		})
