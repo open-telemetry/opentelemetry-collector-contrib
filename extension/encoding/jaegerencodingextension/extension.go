@@ -40,7 +40,7 @@ func (e *jaegerExtension) Start(_ context.Context, _ component.Host) error {
 	switch e.config.Protocol {
 	case JaegerProtocolProtobuf:
 		e.unmarshaler = jaegerProtobufTrace{}
-	case JaegerProtocolJson:
+	case JaegerProtocolJSON:
 		e.unmarshaler = jaegerJsonTrace{}
 	default:
 		return fmt.Errorf("unsupported protocol: %q", e.config.Protocol)
