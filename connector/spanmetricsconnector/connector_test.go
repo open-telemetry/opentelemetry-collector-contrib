@@ -1311,24 +1311,26 @@ func TestSpanMetrics_Events(t *testing.T) {
 				ism := rm.ScopeMetrics()
 				for ilmC := 0; ilmC < ism.Len(); ilmC++ {
 					m := ism.At(ilmC).Metrics()
-					if tt.shouldEventMetricExist {
-						assert.Equal(t, m.Len(), 3)
-						for mC := 0; mC < m.Len(); mC++ {
-							metric := m.At(mC)
-							if metric.Name() == "events" {
-								assert.Equal(t, metric.Type(), pmetric.MetricTypeSum)
-								for idp := 0; idp < metric.Sum().DataPoints().Len(); idp++ {
-									attrs := metric.Sum().DataPoints().At(idp).Attributes()
-									assert.Contains(t, attrs.AsRaw(), exceptionTypeAttrName)
-								}
-							}
+
+					if !tt.shouldEventMetricExist {
+						assert.Equal(t, 2, m.Len())
+						continue
+					}
+
+					assert.Equal(t, 3, m.Len())
+					for mC := 0; mC < m.Len(); mC++ {
+						metric := m.At(mC)
+						if metric.Name() != "events" {
+							continue
 						}
-					} else {
-						assert.Equal(t, m.Len(), 2)
+						assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+						for idp := 0; idp < metric.Sum().DataPoints().Len(); idp++ {
+							attrs := metric.Sum().DataPoints().At(idp).Attributes()
+							assert.Contains(t, attrs.AsRaw(), exceptionTypeAttrName)
+						}
 					}
 				}
 			}
-
 		})
 	}
 }
