@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/loggingexporter"
+	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
@@ -134,7 +134,7 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 	factories.Exporters, err = exporter.MakeFactoryMap(
 		[]exporter.Factory{
 			datadogexporter.NewFactory(),
-			loggingexporter.NewFactory(),
+			debugexporter.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)
@@ -154,7 +154,7 @@ receivers:
 processors:
   batch:
     send_batch_size: 10
-    timeout: 10s
+    timeout: 5s
   tail_sampling:
     decision_wait: 1s
     policies: [
@@ -169,7 +169,7 @@ connectors:
   datadog/connector:
 
 exporters:
-  logging:
+  debug:
     verbosity: detailed
   datadog:
     api:
@@ -180,6 +180,7 @@ exporters:
       enabled: false
     traces:
       endpoint: %q
+      trace_buffer: 10
     metrics:
       endpoint: %q
 
@@ -192,11 +193,11 @@ service:
     traces/2: # this pipeline uses sampling
       receivers: [datadog/connector]
       processors: [tail_sampling, batch]
-      exporters: [datadog, logging]
+      exporters: [datadog, debug]
     metrics:
       receivers: [datadog/connector]
       processors: [batch]
-      exporters: [datadog, logging]`, url, url)
+      exporters: [datadog, debug]`, url, url)
 
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.NoError(t, err)
@@ -223,12 +224,6 @@ service:
 			Description: "OpenTelemetry Collector",
 			Version:     "tests",
 		},
-		// Remove LoggingOptions below if you want to see the output of logging exporter.
-		// LoggingOptions: []zap.Option{
-		// 	zap.WrapCore(func(zapcore.Core) zapcore.Core {
-		// 		return zapcore.NewNopCore()
-		// 	}),
-		// },
 	}
 
 	app, err := otelcol.NewCollector(appSettings)
