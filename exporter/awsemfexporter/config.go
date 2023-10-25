@@ -150,8 +150,7 @@ func (config *Config) Validate() error {
 }
 
 func (config *Config) IsEnhancedContainerInsights() bool {
-	return false // temporarily disable, also need to rename _config to config
-	// return config.EnhancedContainerInsights && !config.DisableMetricExtraction
+	return config.EnhancedContainerInsights && !config.DisableMetricExtraction
 }
 
 func (config *Config) IsAppSignalsEnabled() bool {
