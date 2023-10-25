@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-lambda/collector/extension/solarwindsapmsettingsextension
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension
 
 go 1.20
 
