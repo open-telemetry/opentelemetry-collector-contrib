@@ -533,6 +533,41 @@ func TestNamespaceDelete(t *testing.T) {
 	assert.Equal(t, 0, len(c.Namespaces))
 }
 
+func TestNodeDelete(t *testing.T) {
+	c, _ := newTestClient(t)
+	nodeAddAndUpdateTest(t, c, c.handleNodeAdd)
+	assert.Equal(t, 2, len(c.Nodes))
+	assert.Equal(t, "nodeA", c.Nodes["nodeA"].Name)
+
+	// delete empty node
+	c.handleNodeDelete(&api_v1.Node{})
+
+	// delete non-existent node
+	node := &api_v1.Node{}
+	node.Name = "nodeC"
+	c.handleNodeDelete(node)
+	assert.Equal(t, 2, len(c.Nodes))
+	got := c.Nodes["nodeA"]
+	assert.Equal(t, "nodeA", got.Name)
+	// delete non-existent namespace when DeletedFinalStateUnknown
+	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
+	assert.Equal(t, 2, len(c.Nodes))
+	got = c.Nodes["nodeA"]
+	assert.Equal(t, "nodeA", got.Name)
+
+	// delete node A
+	node.Name = "nodeA"
+	c.handleNodeDelete(node)
+	assert.Equal(t, 1, len(c.Nodes))
+	got = c.Nodes["nodeB"]
+	assert.Equal(t, "nodeB", got.Name)
+
+	// delete node B when DeletedFinalStateUnknown
+	node.Name = "nodeB"
+	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
+	assert.Equal(t, 0, len(c.Nodes))
+}
+
 func TestDeleteQueue(t *testing.T) {
 	c, _ := newTestClient(t)
 	podAddAndUpdateTest(t, c, c.handlePodAdd)
