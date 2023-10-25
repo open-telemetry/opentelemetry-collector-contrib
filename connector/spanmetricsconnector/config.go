@@ -98,6 +98,10 @@ func (c Config) Validate() error {
 	if err != nil {
 		return err
 	}
+	err = validateEventDimensions(c.Events.Enabled, c.Events.Dimensions)
+	if err != nil {
+		return err
+	}
 
 	if c.DimensionsCacheSize <= 0 {
 		return fmt.Errorf(
@@ -110,10 +114,6 @@ func (c Config) Validate() error {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
 
-	err = validateEventDimensions(c.Events.Dimensions)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -144,7 +144,10 @@ func validateDimensions(dimensions []Dimension) error {
 }
 
 // validateEventDimensions checks for empty and duplicates for the dimensions configured.
-func validateEventDimensions(dimensions []Dimension) error {
+func validateEventDimensions(enabled bool, dimensions []Dimension) error {
+	if !enabled {
+		return nil
+	}
 	if len(dimensions) == 0 {
 		return fmt.Errorf("no dimensions configured for events")
 	}

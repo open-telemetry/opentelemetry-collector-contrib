@@ -1268,24 +1268,24 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 
 func TestSpanMetrics_Events(t *testing.T) {
 	tests := []struct {
-		name                   string
-		eventsConfig           EventsConfig
-		shouldEventMetricExist bool
+		name                    string
+		eventsConfig            EventsConfig
+		shouldEventsMetricExist bool
 	}{
 		{
-			name:                   "events disabled",
-			eventsConfig:           EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
-			shouldEventMetricExist: false,
+			name:                    "events disabled",
+			eventsConfig:            EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			shouldEventsMetricExist: false,
 		},
 		{
-			name:                   "events without dimensions",
-			eventsConfig:           EventsConfig{Enabled: true, Dimensions: []Dimension{}},
-			shouldEventMetricExist: false,
+			name:                    "events without dimensions",
+			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{}},
+			shouldEventsMetricExist: false,
 		},
 		{
-			name:                   "events with dimensions",
-			eventsConfig:           EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
-			shouldEventMetricExist: true,
+			name:                    "events with dimensions",
+			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			shouldEventsMetricExist: true,
 		},
 	}
 	for _, tt := range tests {
@@ -1311,12 +1311,10 @@ func TestSpanMetrics_Events(t *testing.T) {
 				ism := rm.ScopeMetrics()
 				for ilmC := 0; ilmC < ism.Len(); ilmC++ {
 					m := ism.At(ilmC).Metrics()
-
-					if !tt.shouldEventMetricExist {
+					if !tt.shouldEventsMetricExist {
 						assert.Equal(t, 2, m.Len())
 						continue
 					}
-
 					assert.Equal(t, 3, m.Len())
 					for mC := 0; mC < m.Len(); mC++ {
 						metric := m.At(mC)
