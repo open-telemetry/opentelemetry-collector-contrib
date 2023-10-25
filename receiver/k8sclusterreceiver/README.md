@@ -50,7 +50,7 @@ In addition, metadata of all entities is collected periodically even if no chang
 This setting controls the interval between periodic collections.
 Setting the duration to 0 will disable periodic collection (however will not impact
 metadata collection on changes).
-- `node_conditions_to_report` (default = `[Ready]`): An array of node
+- `node_conditions_to_report` (default = `[]`): Deprecated configuration. Use `k8s.node.condition` metric instead. An array of node
 conditions this receiver should report. See
 [here](https://kubernetes.io/docs/concepts/architecture/nodes/#condition) for
 list of node conditions. The receiver will emit one metric per entry in the
@@ -87,6 +87,8 @@ The full list of settings exposed for this receiver are documented [here](./conf
 with detailed sample configurations [here](./testdata/config.yaml).
 
 ### node_conditions_to_report
+
+This configuration option is deprecated. Please use `k8s.node.condition` metric instead.
 
 For example, with the config below the receiver will emit two metrics
 `k8s.node.condition_ready` and `k8s.node.condition_memory_pressure`, one

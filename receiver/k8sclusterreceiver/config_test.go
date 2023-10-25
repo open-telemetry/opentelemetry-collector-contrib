@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Distribution:               distributionOpenShift,
 				CollectionInterval:         30 * time.Second,
-				NodeConditionTypesToReport: []string{"Ready"},
+				NodeConditionTypesToReport: []string{},
 				APIConfig: k8sconfig.APIConfig{
 					AuthType: k8sconfig.AuthTypeServiceAccount,
 				},

@@ -25,7 +25,7 @@ const (
 	defaultMetadataCollectionInterval = 5 * time.Minute
 )
 
-var defaultNodeConditionsToReport = []string{"Ready"}
+var defaultNodeConditionsToReport = []string{}
 
 func createDefaultConfig() component.Config {
 	return &Config{

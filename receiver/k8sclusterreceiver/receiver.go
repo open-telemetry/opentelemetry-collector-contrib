@@ -43,6 +43,10 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
+	if len(kr.config.NodeConditionTypesToReport) > 0 {
+		kr.settings.Logger.Warn("node_condition_types_to_report is deprecated and will be removed in a future release. Please use k8s.node.condition metric instead.")
+	}
+
 	exporters := host.GetExporters() //nolint:staticcheck
 	if err := kr.resourceWatcher.setupMetadataExporters(
 		exporters[component.DataTypeMetrics], kr.config.MetadataExporters); err != nil {
