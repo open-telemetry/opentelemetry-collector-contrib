@@ -189,8 +189,8 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 
 	nonIdent := []*protobufs.KeyValue{
-		stringKeyValue("os.arch", runtime.GOARCH),
-		stringKeyValue("os.family", runtime.GOOS),
+		stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+		stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 		stringKeyValue(semconv.AttributeHostName, hostname),
 	}
 
