@@ -96,12 +96,14 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:                    "Boot Time Error",
+			config:                  &Config{},
 			bootTimeFunc:            func(context.Context) (uint64, error) { return 0, errors.New("err1") },
 			initializationErr:       "err1",
 			expectConnectionsMetric: true,
 		},
 		{
 			name:                    "IOCounters Error",
+			config:                  &Config{},
 			ioCountersFunc:          func(context.Context, bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
 			expectedErr:             "failed to read network IO stats: err2",
 			expectedErrCount:        networkMetricsLen,
