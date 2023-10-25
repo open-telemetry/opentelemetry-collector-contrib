@@ -23,7 +23,7 @@ import (
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
-		config            Config
+		config            *Config
 		expectedStartTime pcommon.Timestamp
 		initializationErr string
 		mutateScraper     func(*scraper)
@@ -35,15 +35,15 @@ func TestScrape(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:   "Standard",
-			config: Config{MetricsBuilderConfig: config},
+			config: &Config{MetricsBuilderConfig: config},
 		},
 		{
 			name:   "Standard with direction removed",
-			config: Config{MetricsBuilderConfig: config},
+			config: &Config{MetricsBuilderConfig: config},
 		},
 		{
 			name:   "Validate Start Time",
-			config: Config{MetricsBuilderConfig: config},
+			config: &Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
 				s.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 			},
@@ -51,7 +51,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:   "Boot Time Error",
-			config: Config{MetricsBuilderConfig: config},
+			config: &Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
 				s.bootTime = func(context.Context) (uint64, error) { return 0, errors.New("err1") }
 			},
@@ -61,7 +61,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}

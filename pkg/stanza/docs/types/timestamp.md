@@ -17,7 +17,7 @@ If a timestamp block is specified, the parser operator will perform the timestam
 
 ```yaml
 - type: regex_parser
-  regexp: '^Time=(?P<timestamp_field>\d{4}-\d{2}-\d{2}), Host=(?P<host>[^,]+)'
+  regex: '^Time=(?P<timestamp_field>\d{4}-\d{2}-\d{2}), Host=(?P<host>[^,]+)'
   timestamp:
     parse_from: attributes.timestamp_field
     layout_type: strptime

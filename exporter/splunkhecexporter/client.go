@@ -248,6 +248,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
 	defer jsonStreamPool.Put(jsonStream)
 
+	tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
 	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		for j := is.library; j < rm.ScopeMetrics().Len(); j++ {
@@ -259,7 +260,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 
 				// Parsing metric record to Splunk event.
 				events := mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)
-				tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
+				tempBuf.Reset()
 				for _, event := range events {
 					// JSON encoding event and writing to buffer.
 					b, err := marshalEvent(event, c.config.MaxEventSize, jsonStream)
@@ -664,16 +665,6 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 func buildHTTPClient(config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
 	config.HTTPClientSettings.Compression = ""
-	if config.MaxConnections != 0 && (config.MaxIdleConns == nil || config.HTTPClientSettings.MaxIdleConnsPerHost == nil) {
-		telemetrySettings.Logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/splunkhecexporter#advanced-configuration")
-		intMaxConns := int(config.MaxConnections)
-		if config.HTTPClientSettings.MaxIdleConns == nil {
-			config.HTTPClientSettings.MaxIdleConns = &intMaxConns
-		}
-		if config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
-			config.HTTPClientSettings.MaxIdleConnsPerHost = &intMaxConns
-		}
-	}
 	return config.ToClient(host, telemetrySettings)
 }
 
