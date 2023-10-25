@@ -186,6 +186,10 @@ attributes:
     description: the name of the resource on which the quota is applied
     type: string
     enabled: true
+  condition:
+    description: "the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure"
+    type: string
+    enabled: true
 
 metrics:
   k8s.container.cpu_request:
@@ -478,8 +482,15 @@ metrics:
     attributes:
       - k8s.namespace.name
       - resource
-
-  # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled
+  k8s.node.condition:
+    enabled: false
+    description: The condition of a particular Node.
+    unit: "{condition}"
+    gauge:
+      value_type: int
+    attributes:
+      - condition
+  # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled 
   # by node_conditions_to_report config option. By default, only k8s.node.condition_ready is enabled.
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled

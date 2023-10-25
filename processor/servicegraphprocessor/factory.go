@@ -22,9 +22,10 @@ const (
 	connectorStability                    = component.StabilityLevelDevelopment
 	virtualNodeFeatureGateID              = "processor.servicegraph.virtualNode"
 	legacyLatencyMetricNamesFeatureGateID = "processor.servicegraph.legacyLatencyMetricNames"
+	legacyLatencyUnitMs                   = "processor.servicegraph.legacyLatencyUnitMs"
 )
 
-var virtualNodeFeatureGate, legacyMetricNamesFeatureGate *featuregate.Gate
+var virtualNodeFeatureGate, legacyMetricNamesFeatureGate, legacyLatencyUnitMsFeatureGate *featuregate.Gate
 
 func init() {
 	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -39,6 +40,12 @@ func init() {
 		featuregate.StageAlpha, // Alpha because we want it disabled by default.
 		featuregate.WithRegisterDescription("When enabled, processor uses legacy latency metric names."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578"),
+	)
+	legacyLatencyUnitMsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		legacyLatencyUnitMs,
+		featuregate.StageAlpha, // Alpha because we want it disabled by default.
+		featuregate.WithRegisterDescription("When enabled, processor reports latency in milliseconds, instead of seconds."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27488"),
 	)
 }
 
