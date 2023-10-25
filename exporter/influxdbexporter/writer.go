@@ -194,7 +194,7 @@ func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 		return err
 	} else if err = res.Body.Close(); err != nil {
 		return err
-	} else {
+	} else { // nolint indent-error-flow
 		switch res.StatusCode / 100 {
 		case 2: // Success
 			break

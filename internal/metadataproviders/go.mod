@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.45.26
+	github.com/aws/aws-sdk-go v1.46.2
 	github.com/docker/docker v24.0.6+incompatible
 	github.com/hashicorp/consul/api v1.25.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.88.0
@@ -12,9 +12,9 @@ require (
 	go.opentelemetry.io/collector/semconv v0.88.0
 	go.opentelemetry.io/otel v1.19.0
 	go.opentelemetry.io/otel/sdk v1.19.0
-	k8s.io/api v0.28.2
-	k8s.io/apimachinery v0.28.2
-	k8s.io/client-go v0.28.2
+	k8s.io/api v0.28.3
+	k8s.io/apimachinery v0.28.3
+	k8s.io/client-go v0.28.3
 )
 
 require (
