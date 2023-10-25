@@ -60,7 +60,7 @@ type Config struct {
 	Exemplars ExemplarsConfig `mapstructure:"exemplars"`
 
 	// Events defines the configuration for events section of spans.
-	Events Event `mapstructure:"events"`
+	Events EventsConfig `mapstructure:"events"`
 }
 
 type HistogramConfig struct {
