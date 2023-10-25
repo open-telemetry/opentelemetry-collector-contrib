@@ -13,6 +13,7 @@ const statsDelim = "."
 func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	// https://pkg.go.dev/go.opentelemetry.io/otel/metric#example-Meter-Asynchronous_multiple
 
+	client.Logger.Info("AAAAA - reportStatistics - BEGIN")
 	// transfer metrics - BEGIN
 	transferBytesSent, err := meter.Int64ObservableUpDownCounter(
 		"transfer"+statsDelim+"bytesSent",
@@ -289,9 +290,14 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 	// buffers metrics - END
 
+	client.Logger.Info("AAAAA - reportStatistics - REGISTRATION")
+
 	_, err = meter.RegisterCallback(
 		func(_ context.Context, o metric.Observer) error {
+			client.Logger.Info("AAAAA - reportStatistics - CALLBACK BEGIN")
 			stats := client.Statistics()
+
+			client.Logger.Info("AAAAA - reportStatistics - STATS", zap.Bool("stats_is_nil", stats == nil))
 
 			if stats == nil {
 				return nil
@@ -324,6 +330,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 			o.ObserveInt64(buffersProcessed, int64(stats.Buffers.Processed()))
 			o.ObserveInt64(buffersWaiting, int64(stats.Buffers.Waiting()))
 
+			client.Logger.Info("AAAAA - reportStatistics - CALLBACK - END")
 			return nil
 		},
 		// transfer metrics
@@ -351,6 +358,8 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 		buffersProcessed,
 		buffersWaiting,
 	)
+
+	client.Logger.Info("AAAAA - reportStatistics - END", zap.Bool("err_is_nil", err == nil))
 
 	if err != nil {
 		client.Logger.Error(
