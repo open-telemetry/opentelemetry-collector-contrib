@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/valid"
@@ -517,13 +516,15 @@ func (e renameError) Error() string {
 	)
 }
 
-func handleRemovedSettings(configMap *confmap.Conf) (err error) {
+func handleRemovedSettings(configMap *confmap.Conf) error {
+	var errs []error
 	for _, removedErr := range removedSettings {
 		if configMap.IsSet(removedErr.oldName) {
-			err = multierr.Append(err, removedErr)
+			errs = append(errs, removedErr)
 		}
 	}
-	return
+
+	return errors.Join(errs...)
 }
 
 var _ confmap.Unmarshaler = (*Config)(nil)
