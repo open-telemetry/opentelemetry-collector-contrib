@@ -94,6 +94,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 	c.Pods = map[PodIdentifier]*Pod{}
 	c.Namespaces = map[string]*Namespace{}
+	c.Nodes = map[string]*Node{}
 	c.ReplicaSets = map[string]*ReplicaSet{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
