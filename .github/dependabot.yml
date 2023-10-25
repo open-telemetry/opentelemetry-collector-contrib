@@ -8,12 +8,7 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/otelcontribcol"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/oteltestbedcol"
+    directory: "/cmd/githubgen"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -484,6 +479,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/stanza"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/translator/azure"
     schedule:
       interval: "weekly"
       day: "wednesday"
