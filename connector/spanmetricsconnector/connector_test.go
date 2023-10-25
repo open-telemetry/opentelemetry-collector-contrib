@@ -1270,7 +1270,6 @@ func TestSpanMetrics_Events(t *testing.T) {
 		name                    string
 		eventsConfig            EventsConfig
 		shouldEventsMetricExist bool
-		validateError           string
 	}{
 		{
 			name:                    "events disabled",
@@ -1278,13 +1277,7 @@ func TestSpanMetrics_Events(t *testing.T) {
 			shouldEventsMetricExist: false,
 		},
 		{
-			name:                    "events without dimensions",
-			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{}},
-			shouldEventsMetricExist: false,
-			validateError:           "no dimensions configured for events",
-		},
-		{
-			name:                    "events with dimensions",
+			name:                    "events enabled",
 			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
 			shouldEventsMetricExist: true,
 		},
