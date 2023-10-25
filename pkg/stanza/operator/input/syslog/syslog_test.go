@@ -72,15 +72,16 @@ func TestInput(t *testing.T) {
 	cases = append(cases, OctetCase)
 
 	for _, tc := range cases {
+		cfg := tc.Config.BaseConfig
 		if tc.ValidForTCP {
 			t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, NewConfigWithTCP(&tc.Config.BaseConfig), tc)
+				InputTest(t, NewConfigWithTCP(&cfg), tc)
 			})
 		}
 
 		if tc.ValidForUDP {
 			t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, NewConfigWithUDP(&tc.Config.BaseConfig), tc)
+				InputTest(t, NewConfigWithUDP(&cfg), tc)
 			})
 		}
 	}
