@@ -43,8 +43,11 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Encoding = "utf-8"
 					cfg.SplitConfig.LineStartPattern = "ABC"
 					cfg.SplitConfig.LineEndPattern = ""
-					cfg.AsyncConfig = NewAsyncConfig()
-					cfg.AsyncConfig.Readers = 2
+					cfg.AsyncConfig = &AsyncConfig{
+						Readers:        2,
+						Processors:     2,
+						MaxQueueLength: 100,
+					}
 					return cfg
 				}(),
 			},

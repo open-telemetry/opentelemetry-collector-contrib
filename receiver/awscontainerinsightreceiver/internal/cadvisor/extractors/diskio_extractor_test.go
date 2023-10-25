@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
@@ -18,7 +18,7 @@ func TestDiskIOStats(t *testing.T) {
 	result := testutils.LoadContainerInfo(t, "./testdata/PreInfoContainer.json")
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 	// for eks node-level metrics
-	containerType := TypeNode
+	containerType := containerinsight.TypeNode
 	extractor := NewDiskIOMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric
@@ -52,7 +52,7 @@ func TestDiskIOStats(t *testing.T) {
 	AssertContainsTaggedField(t, cMetrics[1], expectedFieldsServiced, expectedTags)
 
 	// for ecs node-level metrics
-	containerType = TypeInstance
+	containerType = containerinsight.TypeInstance
 	require.NoError(t, extractor.Shutdown())
 	extractor = NewDiskIOMetricExtractor(nil)
 
@@ -86,7 +86,7 @@ func TestDiskIOStats(t *testing.T) {
 	AssertContainsTaggedField(t, cMetrics[1], expectedFieldsServiced, expectedTags)
 
 	// for non supported type
-	containerType = TypeContainerDiskIO
+	containerType = containerinsight.TypeContainerDiskIO
 	require.NoError(t, extractor.Shutdown())
 	extractor = NewDiskIOMetricExtractor(nil)
 	defer require.NoError(t, extractor.Shutdown())

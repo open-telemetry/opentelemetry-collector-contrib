@@ -205,7 +205,8 @@ func Test_timeSeriesSignature(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.Type().String(), &tt.lbs))
+			lbs := tt.lbs
+			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.Type().String(), &lbs))
 		})
 	}
 }
