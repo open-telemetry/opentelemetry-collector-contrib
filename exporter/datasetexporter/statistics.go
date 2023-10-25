@@ -1,7 +1,11 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package datasetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 
 import (
 	"context"
+
 	"github.com/scalyr/dataset-go/pkg/client"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
