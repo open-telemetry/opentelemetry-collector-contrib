@@ -586,7 +586,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	ticker := mockClock.NewTicker(time.Nanosecond)
 
 	// Test
-	p := newConnectorImp(t, new(consumertest.MetricsSink), nil, explicitHistogramsConfig, disabledExemplarsConfig, Event{}, cumulative, logger, ticker)
+	p := newConnectorImp(t, new(consumertest.MetricsSink), nil, explicitHistogramsConfig, disabledExemplarsConfig, EventsConfig{}, cumulative, logger, ticker)
 	err := p.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -666,7 +666,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 	}
 	mockClock := clock.NewMock(time.Now())
 	ticker := mockClock.NewTicker(time.Nanosecond)
-	p := newConnectorImp(t, mcon, nil, explicitHistogramsConfig, disabledExemplarsConfig, Event{}, cumulative, logger, ticker)
+	p := newConnectorImp(t, mcon, nil, explicitHistogramsConfig, disabledExemplarsConfig, EventsConfig{}, cumulative, logger, ticker)
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	err := p.Start(ctx, componenttest.NewNopHost())
@@ -828,7 +828,7 @@ func TestConsumeTraces(t *testing.T) {
 			mockClock := clock.NewMock(time.Now())
 			ticker := mockClock.NewTicker(time.Nanosecond)
 
-			p := newConnectorImp(t, mcon, stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, Event{}, tc.aggregationTemporality, zaptest.NewLogger(t), ticker)
+			p := newConnectorImp(t, mcon, stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, EventsConfig{}, tc.aggregationTemporality, zaptest.NewLogger(t), ticker)
 
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
 			err := p.Start(ctx, componenttest.NewNopHost())
@@ -854,7 +854,7 @@ func TestConsumeTraces(t *testing.T) {
 func TestMetricKeyCache(t *testing.T) {
 	mcon := consumertest.NewNop()
 
-	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, Event{}, cumulative, zaptest.NewLogger(t), nil)
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, EventsConfig{}, cumulative, zaptest.NewLogger(t), nil)
 	traces := buildSampleTrace()
 
 	// Test
@@ -885,7 +885,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	// Prepare
 	mcon := consumertest.NewNop()
 
-	conn := newConnectorImp(nil, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, Event{}, cumulative, zaptest.NewLogger(b), nil)
+	conn := newConnectorImp(nil, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, EventsConfig{}, cumulative, zaptest.NewLogger(b), nil)
 
 	traces := buildSampleTrace()
 
@@ -899,7 +899,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 	mcon := consumertest.NewNop()
 	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
-	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, Event{}, cumulative, zaptest.NewLogger(t), nil, excludeDimensions...)
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, EventsConfig{}, cumulative, zaptest.NewLogger(t), nil, excludeDimensions...)
 	traces := buildSampleTrace()
 
 	// Test
@@ -948,7 +948,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 
 }
 
-func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig Event, temporality string, logger *zap.Logger, ticker *clock.Ticker, excludedDimensions ...string) *connectorImp {
+func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig EventsConfig, temporality string, logger *zap.Logger, ticker *clock.Ticker, excludedDimensions ...string) *connectorImp {
 
 	cfg := &Config{
 		AggregationTemporality: temporality,
@@ -1067,7 +1067,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	ticker := mockClock.NewTicker(time.Nanosecond)
 
 	// Note: default dimension key cache size is 2.
-	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, Event{}, cumulative, zaptest.NewLogger(t), ticker)
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, EventsConfig{}, cumulative, zaptest.NewLogger(t), ticker)
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	err := p.Start(ctx, componenttest.NewNopHost())
@@ -1269,22 +1269,22 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 func TestSpanMetrics_Events(t *testing.T) {
 	tests := []struct {
 		name                   string
-		eventsConfig           Event
+		eventsConfig           EventsConfig
 		shouldEventMetricExist bool
 	}{
 		{
 			name:                   "events disabled",
-			eventsConfig:           Event{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			eventsConfig:           EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
 			shouldEventMetricExist: false,
 		},
 		{
 			name:                   "events without dimensions",
-			eventsConfig:           Event{Enabled: true, Dimensions: []Dimension{}},
+			eventsConfig:           EventsConfig{Enabled: true, Dimensions: []Dimension{}},
 			shouldEventMetricExist: false,
 		},
 		{
 			name:                   "events with dimensions",
-			eventsConfig:           Event{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			eventsConfig:           EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
 			shouldEventMetricExist: true,
 		},
 	}
