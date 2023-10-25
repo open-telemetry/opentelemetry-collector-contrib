@@ -209,12 +209,12 @@ type AnyXML struct {
 	children   []AnyXML
 }
 
-func (u *AnyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	u.tag = start.Name.Local
+func (a *AnyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	a.tag = start.Name.Local
 
-	u.attributes = make(map[string]string, len(start.Attr))
+	a.attributes = make(map[string]string, len(start.Attr))
 	for _, attr := range start.Attr {
-		u.attributes[attr.Name.Local] = attr.Value
+		a.attributes[attr.Name.Local] = attr.Value
 	}
 
 	for {
@@ -232,14 +232,14 @@ func (u *AnyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			if err != nil {
 				return fmt.Errorf("decode start element: %w", err)
 			}
-			u.children = append(u.children, child)
+			a.children = append(a.children, child)
 		case xml.EndElement:
 			// End element means we've reached the end of parsing
 			return nil
 		case xml.CharData:
 			// Strip leading/trailing spaces to ignore newlines and
 			// indentation in formatted XML
-			u.chardata += string(bytes.TrimSpace([]byte(t)))
+			a.chardata += string(bytes.TrimSpace([]byte(t)))
 		case xml.Comment: // ignore comments
 		case xml.ProcInst: // ignore processing instructions
 		case xml.Directive: // ignore directives
@@ -249,22 +249,22 @@ func (u *AnyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 }
 
-func (u AnyXML) asMap() map[string]any {
+func (a AnyXML) asMap() map[string]any {
 	m := make(map[string]any, 4)
 
-	m["tag"] = u.tag
+	m["tag"] = a.tag
 
-	if len(u.attributes) > 0 {
-		m["attributes"] = u.attributes
+	if len(a.attributes) > 0 {
+		m["attributes"] = a.attributes
 	}
 
-	if len(u.chardata) > 0 {
-		m["chardata"] = u.chardata
+	if len(a.chardata) > 0 {
+		m["chardata"] = a.chardata
 	}
 
-	if len(u.children) > 0 {
-		childMaps := make([]map[string]any, 0, len(u.children))
-		for _, child := range u.children {
+	if len(a.children) > 0 {
+		childMaps := make([]map[string]any, 0, len(a.children))
+		for _, child := range a.children {
 			childMaps = append(childMaps, child.asMap())
 		}
 		m["children"] = childMaps
