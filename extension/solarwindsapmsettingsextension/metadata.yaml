@@ -1,0 +1,6 @@
+type: solarwindsapmsettings
+
+status:
+  class: extension
+  stability:
+    development: [extension]
