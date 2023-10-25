@@ -101,6 +101,13 @@ func TestValidate(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "With trace_buffer",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{TraceBuffer: 10},
+			},
+		},
 	}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {

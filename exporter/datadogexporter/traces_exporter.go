@@ -194,6 +194,9 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	if v := cfg.Traces.flushInterval; v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}
+	if v := cfg.Traces.TraceBuffer; v > 0 {
+		acfg.TraceBuffer = v
+	}
 	if addr := cfg.Traces.Endpoint; addr != "" {
 		acfg.Endpoints[0].Host = addr
 	}
