@@ -26,15 +26,15 @@ type Manager struct {
 
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
-	roller        roller
 
 	pollInterval  time.Duration
 	persister     operator.Persister
 	maxBatches    int
 	maxBatchFiles int
 
-	knownFiles []*reader.Reader
-	seenPaths  map[string]struct{}
+	previousPollFiles []*reader.Reader
+	knownFiles        []*reader.Reader
+	seenPaths         map[string]struct{}
 
 	currentFps []*fingerprint.Fingerprint
 }
@@ -67,14 +67,20 @@ func (m *Manager) Start(persister operator.Persister) error {
 	return nil
 }
 
+func (m *Manager) closeFiles() {
+	for _, r := range m.previousPollFiles {
+		r.Close()
+	}
+	for _, r := range m.knownFiles {
+		r.Close()
+	}
+}
+
 // Stop will stop the file monitoring process
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
-	m.roller.cleanup()
-	for _, reader := range m.knownFiles {
-		reader.Close()
-	}
+	m.closeFiles()
 	m.cancel = nil
 	return nil
 }
@@ -144,7 +150,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
 	// we do this before reading existing files to ensure we emit older log lines before newer ones
-	m.roller.readLostFiles(ctx, readers)
+	m.readLostFiles(ctx, readers)
 
 	var wg sync.WaitGroup
 	for _, r := range readers {
@@ -156,7 +162,11 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
-	m.roller.roll(ctx, readers)
+	for _, r := range m.previousPollFiles {
+		r.Close()
+	}
+	m.previousPollFiles = readers
+
 	m.saveCurrent(readers)
 
 	rmds := make([]*reader.Metadata, 0, len(readers))
