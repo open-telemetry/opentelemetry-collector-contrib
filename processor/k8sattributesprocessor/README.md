@@ -106,7 +106,7 @@ annotations:
     key: annotation-two
     regex: field=(?P<value>.+)
     from: namespace
-  - tag_name: a3 # extracts value of annotation from nodes with key `annotation-two` with regexp and inserts it as a tag with key `a3`
+  - tag_name: a3 # extracts value of annotation from nodes with key `annotation-three` with regexp and inserts it as a tag with key `a3`
     key: annotation-two
     regex: field=(?P<value>.+)
     from: node
