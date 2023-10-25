@@ -71,7 +71,7 @@ type connectorImp struct {
 	// Event dimensions to add to the events metric.
 	eDimensions []dimension
 
-	events Event
+	events EventsConfig
 }
 
 type resourceMetrics struct {
@@ -256,7 +256,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		}
 
 		events := rawMetrics.events
-		if p.events.Enabled && len(p.events.Dimensions) > 0 {
+		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(p.config.Namespace, metricNameEvents))
 			events.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
@@ -340,7 +340,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				s.Add(1)
 
 				// aggregate events metrics
-				if p.events.Enabled && len(p.events.Dimensions) > 0 {
+				if p.events.Enabled {
 					for l := 0; l < span.Events().Len(); l++ {
 						event := span.Events().At(l)
 						eDimensions := p.dimensions

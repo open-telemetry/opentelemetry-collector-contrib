@@ -83,7 +83,7 @@ type ExplicitHistogramConfig struct {
 	Buckets []time.Duration `mapstructure:"buckets"`
 }
 
-type Event struct {
+type EventsConfig struct {
 	// Enabled is a flag to enable events.
 	Enabled bool `mapstructure:"enabled"`
 	// Dimensions defines the list of dimensions to add to the events metric.
@@ -108,6 +108,11 @@ func (c Config) Validate() error {
 
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
+	}
+
+	err = validateEventDimensions(c.Events.Dimensions)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -136,4 +141,13 @@ func validateDimensions(dimensions []Dimension) error {
 	}
 
 	return nil
+}
+
+// validateEventDimensions checks for empty and duplicates for the dimensions configured.
+func validateEventDimensions(dimensions []Dimension) error {
+	if len(dimensions) == 0 {
+		return fmt.Errorf("no dimensions configured for events")
+	}
+	err := validateDimensions(dimensions)
+	return err
 }
