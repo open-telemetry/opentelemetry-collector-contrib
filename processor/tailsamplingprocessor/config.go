@@ -87,6 +87,7 @@ type AndSubPolicyCfg struct {
 	sharedPolicyCfg `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
+// TraceStateCfg holds the common configuration for trace states.
 type TraceStateCfg struct {
 	// Tag that the filter is going to be matching against.
 	Key string `mapstructure:"key"`
@@ -94,6 +95,7 @@ type TraceStateCfg struct {
 	Values []string `mapstructure:"values"`
 }
 
+// AndCfg holds the common configuration to all and policies.
 type AndCfg struct {
 	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"and_sub_policy"`
 }
