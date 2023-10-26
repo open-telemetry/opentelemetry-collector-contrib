@@ -27,7 +27,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		GeneratorURL:    "http://example.com/otelcol",
+		GeneratorURL:    "opentelemetry-collector",
 		DefaultSeverity: "info",
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),

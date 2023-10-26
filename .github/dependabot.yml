@@ -8,12 +8,12 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/githubgen"
+    directory: "/cmd/otelcontribcol"
     schedule:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/telemetrygen"
+    directory: "/cmd/oteltestbedcol"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -49,6 +49,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/connector/spanmetricsconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/alertmanagerexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -154,11 +159,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/googlemanagedprometheusexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/honeycombmarkerexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -299,11 +299,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/bearertokenauthextension"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/extension/encoding/jaegerencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1064,6 +1059,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/wavefrontreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/webhookeventreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

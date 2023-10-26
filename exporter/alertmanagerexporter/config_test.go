@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				GeneratorURL:      "http://example.com/otelcol",
+				GeneratorURL:      "opentelemetry-collector",
 				DefaultSeverity:   "info",
 				SeverityAttribute: "foo",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
