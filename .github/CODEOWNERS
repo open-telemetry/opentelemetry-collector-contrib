@@ -61,7 +61,7 @@ exporter/fileexporter/                                                  @open-te
 exporter/googlecloudexporter/                                           @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @damemi @psx95
 exporter/googlecloudpubsubexporter/                                     @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/googlemanagedprometheusexporter/                               @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @damemi @psx95
-exporter/honeycombmarkerexporter/                                       @open-telemetry/collector-contrib-approvers @fchikwekwe @TylerHelmuth
+exporter/honeycombmarkerexporter/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @fchikwekwe
 exporter/influxdbexporter/                                              @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/instanaexporter/                                               @open-telemetry/collector-contrib-approvers @jpkrohling @hickeyma
 exporter/kafkaexporter/                                                 @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
@@ -214,7 +214,7 @@ receiver/jaegerreceiver/                                                @open-te
 receiver/jaegerreceiver/internal/jaegerreceiverdeprecated/              @open-telemetry/collector-contrib-approvers @jpkrohling
 receiver/jmxreceiver/                                                   @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/journaldreceiver/                                              @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
-receiver/k8sclusterreceiver/                                            @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth
+receiver/k8sclusterreceiver/                                            @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv
 receiver/k8seventsreceiver/                                             @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth
 receiver/k8sobjectsreceiver/                                            @open-telemetry/collector-contrib-approvers @dmitryax @hvaghani221 @TylerHelmuth
 receiver/kafkametricsreceiver/                                          @open-telemetry/collector-contrib-approvers @dmitryax
