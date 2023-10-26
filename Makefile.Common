@@ -174,7 +174,7 @@ fmt: $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	GOGC=45 $(LINT) run --allow-parallel-runners --verbose --build-tags integration --timeout=30m --path-prefix $(shell basename "$(CURDIR)")
+	GOGC=45 $(LINT) run --allow-parallel-runners --verbose --build-tags integration --timeout=40m --path-prefix $(shell basename "$(CURDIR)")
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
