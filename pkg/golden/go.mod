@@ -1,4 +1,4 @@
-module golden
+module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
 
 go 1.20
 
