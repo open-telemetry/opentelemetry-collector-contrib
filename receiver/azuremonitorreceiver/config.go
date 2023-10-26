@@ -13,6 +13,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
+const (
+	azureCloud           = "AzureCloud"
+	azureGovernmentCloud = "AzureUSGovernment"
+)
+
 var (
 	// Predefined error responses for configuration validation failures
 	errMissingTenantID       = errors.New(`TenantID" is not specified in config`)
@@ -21,9 +26,6 @@ var (
 	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
 	errMissingFedTokenFile   = errors.New(`FederatedTokenFile is not specified in config`)
 	errInvalidCloud          = errors.New(`Cloud" is invalid`)
-
-	azureCloud           = "AzureCloud"
-	azureGovernmentCloud = "AzureUSGovernment"
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
