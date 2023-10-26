@@ -22,10 +22,9 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		APIKey:      "",
-		APIURL:      "api.honeycomb.io:443",
-		Markers:     []Marker{},
-		DatasetSlug: "__all__",
+		APIKey:  "",
+		APIURL:  "api.honeycomb.io:443",
+		Markers: []Marker{},
 	}
 }
 
@@ -47,8 +46,8 @@ func createLogsExporter(
 		cfg,
 		logsExp.exportMarkers,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		//exporterhelper.WithRetry(exporterConfig.RetrySettings),
-		//exporterhelper.WithQueue(exporterConfig.QueueSettings),
+		exporterhelper.WithRetry(cf.RetrySettings),
+		exporterhelper.WithQueue(cf.QueueSettings),
 		exporterhelper.WithStart(logsExp.start),
 	)
 }

@@ -1,13 +1,22 @@
 honeycomb: 
   api_key: "test-apikey"
   api_url: "https://api.testhost.io"
+  sending_queue:
+    enabled: true
+    num_consumers: 10
+    queue_size: 1000
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5000000000
+    randomization_factor: 0.5
+    multiplier: 1.5
+    max_interval: 30000000000
+    max_elapsed_time: 300000000000
   markers:
     - type: "fooType"
       message_key: "test message"
       url_key: "https://api.testhost.io"
       rules:
-        resource_conditions:
-          - IsMatch(attributes["test"], ".*")
         log_conditions:
           - body == "test"
 
@@ -40,8 +49,6 @@ honeycomb/no_api_key:
       message_key: "test message"
       url_key: "https://api.testhost.io"
       rules:
-        resource_conditions:
-          - IsMatch(attributes["test"], ".*")
         log_conditions:
           - body == "test"
 
@@ -53,8 +60,6 @@ honeycomb/no_api_url:
       message_key: "test message"
       url_key: "https://api.testhost.io"
       rules:
-        resource_conditions:
-          - IsMatch(attributes["test"], ".*")
         log_conditions:
           - body == "test"
 

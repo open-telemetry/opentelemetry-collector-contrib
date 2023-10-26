@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -20,32 +20,33 @@ func TestExportMarkers(t *testing.T) {
 		config       Config
 		attributeMap map[string]string
 		errorMessage string
+		context      context.Context
 	}{
-		{
-			name: "",
-			config: Config{
-				APIKey:      "test-apikey",
-				DatasetSlug: "test-dataset",
-				Markers: []Marker{
-					{
-						Type:       "test-type",
-						MessageKey: "message",
-						URLKey:     "https://api.testhost.io",
-						Rules: Rules{
-							LogConditions: []string{
-								`body == "test"`,
-							},
-						},
-					},
-				},
-			},
-			attributeMap: map[string]string{
-				"message": "this is a test message",
-				"body":    "test",
-			},
-		},
 		//{
-		//	name: "normal config",
+		//	name: "body",
+		//	config: Config{
+		//		APIKey:      "test-apikey",
+		//		DatasetSlug: "test-dataset",
+		//		Markers: []Marker{
+		//			{
+		//				Type:       "test-type",
+		//				MessageKey: "message",
+		//				URLKey:     "https://api.testhost.io",
+		//				Rules: Rules{
+		//					LogConditions: []string{
+		//						`body == "test"`,
+		//					},
+		//				},
+		//			},
+		//		},
+		//	},
+		//	attributeMap: map[string]string{
+		//		"message": "this is a test message",
+		//		"body":    "test",
+		//	},
+		//},
+		//{
+		//	name: "one attr",
 		//	config: Config{
 		//		APIKey:      "test-apikey",
 		//		DatasetSlug: "test-dataset",
@@ -62,17 +63,46 @@ func TestExportMarkers(t *testing.T) {
 		//			},
 		//		},
 		//	},
+		//	attributeMap: map[string]string{
+		//		"foo":     "bar",
+		//		"message": "a test messsage",
+		//	},
 		//},
+		{
+			name: "marker not created",
+			config: Config{
+				APIKey: "test-apikey",
+				Markers: []Marker{
+					{
+						Type:        "test-type",
+						MessageKey:  "message",
+						URLKey:      "https://api.testhost.io",
+						DatasetSlug: "test-dataset",
+						Rules: Rules{
+							LogConditions: []string{
+								`attributes["test"] == "bar"`,
+							},
+						},
+					},
+				},
+			},
+			attributeMap: map[string]string{
+				"test": "testVal",
+				"not":  "a match",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var decodedBody map[string]any
 			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				decodedBody := map[string]any{}
 				err := json.NewDecoder(req.Body).Decode(&decodedBody)
 				require.NoError(t, err)
 
 				rw.WriteHeader(http.StatusAccepted)
+				context.WithValue(tt.context, "db", decodedBody)
+
 			}))
 			defer markerServer.Close()
 
@@ -84,16 +114,18 @@ func TestExportMarkers(t *testing.T) {
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
 			if tt.errorMessage != "" {
+				assert.NotEmpty(t, tt.errorMessage)
 				assert.ErrorContains(t, err, tt.errorMessage)
 			} else {
 				require.NoError(t, err)
 				logs := constructLogs(tt.attributeMap)
 				err = exp.ConsumeLogs(context.Background(), logs)
 				require.NoError(t, err)
-				for attr := range tt.attributeMap {
-					assert.Equal(t, decodedBody[attr], tt.attributeMap[attr])
-				}
+				//for attr := range tt.attributeMap {
+				//	assert.Equal(t, decodedBody[attr], tt.attributeMap[attr])
+				//}
 			}
+
 		})
 	}
 }

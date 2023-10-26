@@ -4,6 +4,7 @@
 package honeycombmarkerexporter
 
 import (
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"path/filepath"
 	"testing"
 
@@ -28,8 +29,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName("honeycomb", ""),
 			expected: &Config{
-				APIKey: "test-apikey",
-				APIURL: "https://api.testhost.io",
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				APIKey:        "test-apikey",
+				APIURL:        "https://api.testhost.io",
 				Markers: []Marker{
 					{
 						Type:       "fooType",

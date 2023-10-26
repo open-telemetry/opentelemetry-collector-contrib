@@ -5,6 +5,7 @@ package honeycombmarkerexporter // import "github.com/open-telemetry/opentelemet
 
 import (
 	"fmt"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -28,10 +29,9 @@ type Config struct {
 	// Markers is the list of markers to create
 	Markers []Marker `mapstructure:"markers"`
 
-	// DatasetSlug is the endpoint that specifies the Honeycomb environment
-	DatasetSlug string `mapstructure:"datasetslug"`
-
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 }
 
 type Marker struct {
@@ -48,6 +48,9 @@ type Marker struct {
 
 	// Rules are the OTTL rules that determine when a piece of telemetry should be turned into a Marker
 	Rules Rules `mapstructure:"rules"`
+
+	// DatasetSlug is the endpoint that specifies the Honeycomb environment
+	DatasetSlug string `mapstructure:"datasetslug"`
 }
 
 type Rules struct {
