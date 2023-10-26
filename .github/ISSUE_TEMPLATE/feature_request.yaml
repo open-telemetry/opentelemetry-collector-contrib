@@ -94,6 +94,7 @@ body:
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
       - extension/oidcauth
+      - extension/opamp
       - extension/pprof
       - extension/sigv4auth
       - extension/storage
