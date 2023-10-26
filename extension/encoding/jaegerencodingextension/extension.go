@@ -5,6 +5,7 @@ package jaegerencodingextension // import "github.com/open-telemetry/opentelemet
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -12,6 +13,7 @@ import (
 )
 
 var _ ptrace.Unmarshaler = &jaegerExtension{}
+var _ ptrace.Marshaler = &jaegerExtension{}
 
 type jaegerExtension struct {
 	config      *Config
@@ -20,6 +22,10 @@ type jaegerExtension struct {
 
 func (e *jaegerExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	return e.unmarshaler.UnmarshalTraces(buf)
+}
+
+func (e *jaegerExtension) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
+	return nil, errors.New("Unsupported operation")
 }
 
 func (e *jaegerExtension) Start(_ context.Context, _ component.Host) error {
