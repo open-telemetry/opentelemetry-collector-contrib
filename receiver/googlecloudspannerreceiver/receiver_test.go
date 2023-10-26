@@ -52,7 +52,7 @@ func newMetricsBuilder(throwErrorOnShutdown bool) metadata.MetricsBuilder {
 }
 
 func (b *metricsBuilder) Build([]*metadata.MetricsDataPoint) (pmetric.Metrics, error) {
-	return pmetric.NewMetrics(), nil
+	return pmetric.Metrics{}, nil
 }
 
 func (b *metricsBuilder) Shutdown() error {

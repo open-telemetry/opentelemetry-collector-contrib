@@ -7,7 +7,6 @@ import (
 	"context"
 	"strings"
 
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -42,14 +41,11 @@ func (projectReader *ProjectReader) Read(ctx context.Context) ([]*metadata.Metri
 
 	for _, databaseReader := range projectReader.databaseReaders {
 		dataPoints, readErr := databaseReader.Read(ctx)
-		err = multierr.Append(err, readErr)
 		if readErr == nil {
 			result = append(result, dataPoints...)
+		} else {
+			err = multierr.Append(err, readErr)
 		}
-	}
-
-	if len(result) > 0 && err != nil {
-		err = scrapererror.NewPartialScrapeError(err, len(multierr.Errors(err)))
 	}
 
 	return result, err

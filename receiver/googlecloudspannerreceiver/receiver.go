@@ -50,23 +50,21 @@ func (r *googleCloudSpannerReceiver) Scrape(ctx context.Context) (pmetric.Metric
 
 	for _, projectReader := range r.projectReaders {
 		dataPoints, readErr := projectReader.Read(ctx)
-		err = multierr.Append(err, readErr)
-		if err == nil {
-			allMetricsDataPoints = append(allMetricsDataPoints, dataPoints...)
+		allMetricsDataPoints = append(allMetricsDataPoints, dataPoints...)
+		if readErr != nil {
+			err = multierr.Append(err, readErr)
 		}
 	}
 
-	result, buildErr := r.metricsBuilder.Build(allMetricsDataPoints)
-
+	metrics, buildErr := r.metricsBuilder.Build(allMetricsDataPoints)
 	if buildErr != nil {
 		err = multierr.Append(err, buildErr)
 	}
 
-	if result.MetricCount() > 0 && err != nil {
+	if err != nil && metrics.DataPointCount() > 0 {
 		err = scrapererror.NewPartialScrapeError(err, len(multierr.Errors(err)))
 	}
-
-	return result, err
+	return metrics, err
 }
 
 func (r *googleCloudSpannerReceiver) Start(ctx context.Context, _ component.Host) error {
