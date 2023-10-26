@@ -86,7 +86,7 @@ func TestStabilityTracesOTLP(t *testing.T) {
 func TestStabilityTracesJaegerGRPC(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), ""),
 		datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      40,

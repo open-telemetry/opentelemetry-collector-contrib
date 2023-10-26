@@ -38,8 +38,8 @@ func TestTrace10kSPS(t *testing.T) {
 		resourceSpec testbed.ResourceSpec
 	}{
 		{
-			"JaegerGRPC",
-			datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			"SAPM-JaegerGRPC",
+			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), ""),
 			datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
@@ -403,8 +403,8 @@ func TestTraceAttributesProcessor(t *testing.T) {
 		receiver testbed.DataReceiver
 	}{
 		{
-			"JaegerGRPC",
-			datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			"SAPM-JaegerGRPC",
+			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), ""),
 			datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		},
 		{

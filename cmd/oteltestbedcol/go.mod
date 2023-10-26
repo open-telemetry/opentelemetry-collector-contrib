@@ -6,7 +6,6 @@ go 1.20
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.88.0

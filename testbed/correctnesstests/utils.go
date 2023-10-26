@@ -118,7 +118,7 @@ func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 	case "opencensus":
 		sender = datasenders.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "jaeger":
-		sender = datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+		sender = datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), "")
 	case "zipkin":
 		sender = datasenders.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	default:
