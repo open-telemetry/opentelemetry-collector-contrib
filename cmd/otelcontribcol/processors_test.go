@@ -139,7 +139,7 @@ func TestDefaultProcessors(t *testing.T) {
 			processor: "redaction",
 		},
 		{
-			processor: "remoteobserver",
+			processor: "remotetap",
 			getConfigFn: func() component.Config {
 				cfg := procFactories["remotetap"].CreateDefaultConfig().(*remotetapprocessor.Config)
 				cfg.Endpoint = "localhost:0"
