@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newMockConn(tb testing.TB, handler func(net.Conn) error) net.Conn {
+func newMockConn(tb testing.TB, serverReaderFn, serverWriterFn func(net.Conn) error) net.Conn {
 	client, server := net.Pipe()
 
 	var wg sync.WaitGroup
@@ -32,8 +32,19 @@ func newMockConn(tb testing.TB, handler func(net.Conn) error) net.Conn {
 	go func() {
 		defer wg.Done()
 
-		assert.NoError(tb, binary.Read(server, binary.BigEndian, &requestTrackingContent{}), "Must not error when reading binary data")
-		assert.NoError(tb, handler(server), "Must not error when processing request")
+		if serverReaderFn == nil {
+			serverReaderFn = func(conn net.Conn) error {
+				return binary.Read(conn, binary.BigEndian, &requestTrackingContent{})
+			}
+		}
+		assert.NoError(tb, serverReaderFn(server), "Must not error when reading binary data")
+
+		if serverWriterFn == nil {
+			serverWriterFn = func(conn net.Conn) error {
+				return nil
+			}
+		}
+		assert.NoError(tb, serverWriterFn(server), "Must not error when processing request")
 	}()
 	return client
 }
@@ -74,17 +85,18 @@ func TestGettingTrackingData(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		scenario string
-		handler  func(conn net.Conn) error
-		dialTime time.Duration
-		timeout  time.Duration
-		data     *Tracking
-		err      error
+		scenario       string
+		serverReaderFn func(conn net.Conn) error
+		serverWriterFn func(conn net.Conn) error
+		dialTime       time.Duration
+		timeout        time.Duration
+		data           *Tracking
+		err            error
 	}{
 		{
 			scenario: "Successful read binary from socket",
 			timeout:  10 * time.Second,
-			handler: func(conn net.Conn) error {
+			serverWriterFn: func(conn net.Conn) error {
 				type response struct {
 					ReplyHead
 					replyTrackingContent
@@ -142,7 +154,7 @@ func TestGettingTrackingData(t *testing.T) {
 			scenario: "Timeout waiting for dial",
 			timeout:  10 * time.Millisecond,
 			dialTime: 100 * time.Millisecond,
-			handler: func(conn net.Conn) error {
+			serverReaderFn: func(conn net.Conn) error {
 				return nil
 			},
 			err: os.ErrDeadlineExceeded,
@@ -150,7 +162,7 @@ func TestGettingTrackingData(t *testing.T) {
 		{
 			scenario: "Timeout waiting for response",
 			timeout:  10 * time.Millisecond,
-			handler: func(conn net.Conn) error {
+			serverReaderFn: func(conn net.Conn) error {
 				time.Sleep(100 * time.Millisecond)
 				return nil
 			},
@@ -160,7 +172,7 @@ func TestGettingTrackingData(t *testing.T) {
 			scenario: "Timeout waiting for response because of slow dial",
 			timeout:  100 * time.Millisecond,
 			dialTime: 90 * time.Millisecond,
-			handler: func(conn net.Conn) error {
+			serverWriterFn: func(conn net.Conn) error {
 				time.Sleep(20 * time.Millisecond)
 				return nil
 			},
@@ -169,7 +181,7 @@ func TestGettingTrackingData(t *testing.T) {
 		{
 			scenario: "invalid status returned",
 			timeout:  5 * time.Second,
-			handler: func(conn net.Conn) error {
+			serverWriterFn: func(conn net.Conn) error {
 				resp := &ReplyHead{
 					Version: 6,
 					Status:  1,
@@ -182,7 +194,7 @@ func TestGettingTrackingData(t *testing.T) {
 		{
 			scenario: "invalid status command",
 			timeout:  5 * time.Second,
-			handler: func(conn net.Conn) error {
+			serverWriterFn: func(conn net.Conn) error {
 				resp := &ReplyHead{
 					Version: 6,
 					Status:  successfulRequest,
@@ -205,7 +217,7 @@ func TestGettingTrackingData(t *testing.T) {
 						return nil, os.ErrDeadlineExceeded
 					}
 
-					return newMockConn(t, tc.handler), nil
+					return newMockConn(t, tc.serverReaderFn, tc.serverWriterFn), nil
 				}
 			})
 			require.NoError(t, err, "Must not error when creating client")

@@ -28,6 +28,8 @@ type EventXML struct {
 	Opcode           string           `xml:"System>Opcode"`
 	RenderedKeywords []string         `xml:"RenderingInfo>Keywords>Keyword"`
 	Keywords         []string         `xml:"System>Keywords"`
+	Security         *Security        `xml:"System>Security"`
+	Execution        *Execution       `xml:"System>Execution"`
 	EventData        []EventDataEntry `xml:"EventData>Data"`
 }
 
@@ -118,9 +120,21 @@ func (e *EventXML) parseBody() map[string]interface{} {
 		"keywords":    keywords,
 		"event_data":  parseEventData(e.EventData),
 	}
+
 	if len(details) > 0 {
 		body["details"] = details
 	}
+
+	if e.Security != nil && e.Security.UserID != "" {
+		body["security"] = map[string]any{
+			"user_id": e.Security.UserID,
+		}
+	}
+
+	if e.Execution != nil {
+		body["execution"] = e.Execution.asMap()
+	}
+
 	return body
 }
 
@@ -180,4 +194,51 @@ type Provider struct {
 type EventDataEntry struct {
 	Name  string `xml:"Name,attr"`
 	Value string `xml:",chardata"`
+}
+
+// Security contains info pertaining to the user triggering the event.
+type Security struct {
+	UserID string `xml:"UserID,attr"`
+}
+
+// Execution contains info pertaining to the process that triggered the event.
+type Execution struct {
+	// ProcessID and ThreadID are required on execution info
+	ProcessID uint `xml:"ProcessID,attr"`
+	ThreadID  uint `xml:"ThreadID,attr"`
+	// These remaining fields are all optional for execution info
+	ProcessorID   *uint `xml:"ProcessorID,attr"`
+	SessionID     *uint `xml:"SessionID,attr"`
+	KernelTime    *uint `xml:"KernelTime,attr"`
+	UserTime      *uint `xml:"UserTime,attr"`
+	ProcessorTime *uint `xml:"ProcessorTime,attr"`
+}
+
+func (e Execution) asMap() map[string]any {
+	result := map[string]any{
+		"process_id": e.ProcessID,
+		"thread_id":  e.ThreadID,
+	}
+
+	if e.ProcessorID != nil {
+		result["processor_id"] = *e.ProcessorID
+	}
+
+	if e.SessionID != nil {
+		result["session_id"] = *e.SessionID
+	}
+
+	if e.KernelTime != nil {
+		result["kernel_time"] = *e.KernelTime
+	}
+
+	if e.UserTime != nil {
+		result["user_time"] = *e.UserTime
+	}
+
+	if e.ProcessorTime != nil {
+		result["processor_time"] = *e.ProcessorTime
+	}
+
+	return result
 }
