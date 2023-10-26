@@ -4,7 +4,7 @@ run:
   concurrency: 4
 
   # timeout for analysis, e.g. 30s, 5m, default is 1m
-  timeout: 100m
+  timeout: 20m
 
   # exit code when at least one issue was found, default is 1
   issues-exit-code: 1
@@ -21,7 +21,6 @@ run:
     - local
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
-    - cmd
 
   # default is true. Enables skipping of directories:
   #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
