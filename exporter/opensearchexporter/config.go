@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 )
 
 const (
@@ -46,5 +45,5 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Namespace) == 0 {
 		multiErr = append(multiErr, errNamespaceNoValue)
 	}
-	return multierr.Combine(multiErr...)
+	return errors.Join(multiErr...)
 }
