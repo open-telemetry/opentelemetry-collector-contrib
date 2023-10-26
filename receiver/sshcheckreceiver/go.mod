@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/google/go-cmp v0.6.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.88.0
 	github.com/pkg/sftp v1.13.5
 	github.com/stretchr/testify v1.8.4
@@ -28,10 +29,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 )
 
-require (
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
-)
+require github.com/cespare/xxhash/v2 v2.2.0 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -65,6 +63,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 retract (
 	v0.76.2

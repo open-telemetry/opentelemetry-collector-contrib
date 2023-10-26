@@ -6,6 +6,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.88.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.25.0
@@ -113,3 +114,5 @@ retract (
 
 // see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240
 replace github.com/docker/docker v24.0.4+incompatible => github.com/docker/docker v24.0.5-0.20230719162248-f022632503d1+incompatible
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
