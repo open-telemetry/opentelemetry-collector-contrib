@@ -35,8 +35,7 @@ import (
 )
 
 const (
-	defaultTimeout    = 5 * time.Second
-	eksDefaultTimeout = 11 * time.Second
+	defaultTimeout = 5 * time.Second
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -176,12 +175,6 @@ func (f *factory) getResourceDetectionProcessor(
 	oCfg := cfg.(*Config)
 	if oCfg.Attributes != nil {
 		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
-	}
-
-	for _, detector := range oCfg.Detectors {
-		if detector == eks.TypeStr && oCfg.HTTPClientSettings.Timeout == defaultTimeout {
-			oCfg.HTTPClientSettings.Timeout = eksDefaultTimeout
-		}
 	}
 
 	provider, err := f.getResourceProvider(params, oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
