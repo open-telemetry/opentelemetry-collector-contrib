@@ -6,13 +6,13 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"bytes"
 	"context"
+	"errors"
 
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchutil"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 )
 
 type logBulkIndexer struct {
@@ -34,7 +34,7 @@ func (lbi *logBulkIndexer) start(client *opensearch.Client) error {
 }
 
 func (lbi *logBulkIndexer) joinedError() error {
-	return multierr.Combine(lbi.errs...)
+	return errors.Join(lbi.errs...)
 }
 
 func (lbi *logBulkIndexer) close(ctx context.Context) {
