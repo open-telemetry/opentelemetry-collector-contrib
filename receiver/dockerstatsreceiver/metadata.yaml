@@ -137,19 +137,6 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-  container.cpu.percent:
-    enabled: false
-    description: "[DEPRECATED] Use `container.cpu.utilization` metric instead. Percent of CPU used by the container."
-    unit: "1"
-    warnings:
-      if_configured: >-
-        The metric is deprecated and will be removed in v0.89.0. Please use `container.cpu.utilization` instead. See
-        https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/dockerstatsreceiver#transition-to-cpu-utilization-metric-name-aligned-with-opentelemetry-specification
-        for more details.
-    gauge:
-      value_type: double
-
-
   # Memory
   container.memory.usage.limit:
     enabled: true
