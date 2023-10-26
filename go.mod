@@ -862,8 +862,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experiment
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ./pkg/ottl
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ./pkg/golden
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ./pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ./pkg/pdatautil
