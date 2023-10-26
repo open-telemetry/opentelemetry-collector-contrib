@@ -19,6 +19,11 @@ const (
 )
 
 const (
+	methodRegex = "regex"
+	methodMtime = "mtime"
+)
+
+const (
 	defaultOrderingCriteriaTopN = 1
 )
 
@@ -29,6 +34,7 @@ type Criteria struct {
 }
 
 type OrderingCriteria struct {
+	Method string `mapstructure:"method"`
 	Regex  string `mapstructure:"regex,omitempty"`
 	TopN   int    `mapstructure:"top_n,omitempty"`
 	SortBy []Sort `mapstructure:"sort_by,omitempty"`
@@ -56,15 +62,30 @@ func New(c Criteria) (*Matcher, error) {
 		return nil, fmt.Errorf("exclude: %w", err)
 	}
 
-	if len(c.OrderingCriteria.SortBy) == 0 {
-		return &Matcher{
-			include: c.Include,
-			exclude: c.Exclude,
-		}, nil
-	}
+	var f filter.Filter
+	switch c.OrderingCriteria.Method {
+	case methodMtime:
+		f = filter.NewMTimeFilter()
+	case methodRegex, "": // If no method is specified, defaults to regex
+		// regex type with no SortBy indicates no-op
+		if len(c.OrderingCriteria.SortBy) == 0 {
+			return &Matcher{
+				include: c.Include,
+				exclude: c.Exclude,
+			}, nil
+		}
 
-	if c.OrderingCriteria.Regex == "" {
-		return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
+		if c.OrderingCriteria.Regex == "" {
+			return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
+		}
+
+		var err error
+		f, err = createRegexFilter(c.OrderingCriteria)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("invalid ordering_criteria.method %q", c.OrderingCriteria.Method)
 	}
 
 	if c.OrderingCriteria.TopN < 0 {
@@ -75,13 +96,23 @@ func New(c Criteria) (*Matcher, error) {
 		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
 	}
 
-	regex, err := regexp.Compile(c.OrderingCriteria.Regex)
+	return &Matcher{
+		include: c.Include,
+		exclude: c.Exclude,
+		topN:    c.OrderingCriteria.TopN,
+		f:       f,
+	}, nil
+
+}
+
+func createRegexFilter(oc OrderingCriteria) (filter.Filter, error) {
+	regex, err := regexp.Compile(oc.Regex)
 	if err != nil {
 		return nil, fmt.Errorf("compile regex: %w", err)
 	}
 
-	var filterOpts []filter.Option
-	for _, sc := range c.OrderingCriteria.SortBy {
+	var filterOpts []filter.RegexFilterOption
+	for _, sc := range oc.SortBy {
 		switch sc.SortType {
 		case sortTypeNumeric:
 			f, err := filter.SortNumeric(sc.RegexKey, sc.Ascending)
@@ -106,21 +137,14 @@ func New(c Criteria) (*Matcher, error) {
 		}
 	}
 
-	return &Matcher{
-		include:    c.Include,
-		exclude:    c.Exclude,
-		regex:      regex,
-		topN:       c.OrderingCriteria.TopN,
-		filterOpts: filterOpts,
-	}, nil
+	return filter.NewRegexFilter(regex, filterOpts...), nil
 }
 
 type Matcher struct {
-	include    []string
-	exclude    []string
-	regex      *regexp.Regexp
-	topN       int
-	filterOpts []filter.Option
+	include []string
+	exclude []string
+	topN    int
+	f       filter.Filter
 }
 
 // MatchFiles gets a list of paths given an array of glob patterns to include and exclude
@@ -133,11 +157,12 @@ func (m Matcher) MatchFiles() ([]string, error) {
 	if len(files) == 0 {
 		return files, errors.Join(fmt.Errorf("no files match the configured criteria"), errs)
 	}
-	if len(m.filterOpts) == 0 {
+
+	if m.f == nil || m.f.SkipFiltering() {
 		return files, errs
 	}
 
-	result, err := filter.Filter(files, m.regex, m.filterOpts...)
+	result, err := m.f.Filter(files)
 	if len(result) == 0 {
 		return result, errors.Join(err, errs)
 	}

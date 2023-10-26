@@ -24,7 +24,7 @@ type sortOption struct {
 	compareFunc
 }
 
-func newSortOption(regexKey string, parseFunc parseFunc, compareFunc compareFunc) (Option, error) {
+func newSortOption(regexKey string, parseFunc parseFunc, compareFunc compareFunc) (RegexFilterOption, error) {
 	if regexKey == "" {
 		return nil, fmt.Errorf("regex key must be specified")
 	}
@@ -35,13 +35,13 @@ func newSortOption(regexKey string, parseFunc parseFunc, compareFunc compareFunc
 	}, nil
 }
 
-func (o sortOption) apply(items []*item) ([]*item, error) {
+func (o sortOption) apply(items []*regexItem) ([]*regexItem, error) {
 	// Special case where sort.Slice will not run the 'less' func.
 	// We still need to ensure it parses in order to ensure the file should be included.
 	if len(items) == 1 {
 		_, err := o.parseFunc(items[0].captures[o.regexKey])
 		if err != nil {
-			return []*item{}, err
+			return []*regexItem{}, err
 		}
 		return items, nil
 	}
@@ -76,10 +76,10 @@ func (o sortOption) apply(items []*item) ([]*item, error) {
 	}
 
 	// All items errored, clear the slice
-	return []*item{}, errs
+	return []*regexItem{}, errs
 }
 
-func SortNumeric(regexKey string, ascending bool) (Option, error) {
+func SortNumeric(regexKey string, ascending bool) (RegexFilterOption, error) {
 	return newSortOption(regexKey,
 		func(s string) (any, error) {
 			return strconv.Atoi(s)
@@ -93,7 +93,7 @@ func SortNumeric(regexKey string, ascending bool) (Option, error) {
 	)
 }
 
-func SortAlphabetical(regexKey string, ascending bool) (Option, error) {
+func SortAlphabetical(regexKey string, ascending bool) (RegexFilterOption, error) {
 	return newSortOption(regexKey,
 		func(s string) (any, error) {
 			return s, nil
@@ -107,7 +107,7 @@ func SortAlphabetical(regexKey string, ascending bool) (Option, error) {
 	)
 }
 
-func SortTemporal(regexKey string, ascending bool, layout string, location string) (Option, error) {
+func SortTemporal(regexKey string, ascending bool, layout string, location string) (RegexFilterOption, error) {
 	if layout == "" {
 		return nil, fmt.Errorf("layout must be specified")
 	}

@@ -179,6 +179,25 @@ func TestNew(t *testing.T) {
 			},
 			expectedErr: "timestamp sort: regex key must be specified",
 		},
+		{
+			name: "SortByMtime",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					Method: methodMtime,
+				},
+			},
+		},
+		{
+			name: "InvalidMethod",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					Method: "fake-method",
+				},
+			},
+			expectedErr: `invalid ordering_criteria.method "fake-method"`,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
