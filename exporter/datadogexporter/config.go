@@ -279,6 +279,10 @@ type TracesConfig struct {
 	// If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
 	PeerServiceAggregation bool `mapstructure:"peer_service_aggregation"`
 
+	// TraceBuffer specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
+	// The default value is 0, meaning the Datadog Agent TracerPayloads are unbuffered.
+	TraceBuffer int `mapstructure:"trace_buffer"`
+
 	// flushInterval defines the interval in seconds at which the writer flushes traces
 	// to the intake; used in tests.
 	flushInterval float64

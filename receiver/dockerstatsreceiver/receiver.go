@@ -252,7 +252,6 @@ func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUS
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
 	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
-	r.mb.RecordContainerCPUPercentDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
 		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))
