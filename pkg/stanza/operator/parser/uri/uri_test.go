@@ -498,12 +498,12 @@ func TestBuildParserURL(t *testing.T) {
 func TestURLToMap(t *testing.T) {
 	cases := []struct {
 		name       string
-		inputBody  url.URL
+		inputBody  *url.URL
 		outputBody map[string]interface{}
 	}{
 		{
 			"absolute-uri",
-			url.URL{
+			&url.URL{
 				Scheme:   "https",
 				Host:     "google.com:8443",
 				Path:     "/app",
@@ -524,7 +524,7 @@ func TestURLToMap(t *testing.T) {
 		},
 		{
 			"absolute-uri-simple",
-			url.URL{
+			&url.URL{
 				Scheme: "http",
 				Host:   "google.com",
 			},
@@ -535,7 +535,7 @@ func TestURLToMap(t *testing.T) {
 		},
 		{
 			"path",
-			url.URL{
+			&url.URL{
 				Path:     "/app",
 				RawQuery: "stage=prod&stage=dev",
 			},
@@ -551,7 +551,7 @@ func TestURLToMap(t *testing.T) {
 		},
 		{
 			"path-simple",
-			url.URL{
+			&url.URL{
 				Path: "/app",
 			},
 			map[string]interface{}{
@@ -560,7 +560,7 @@ func TestURLToMap(t *testing.T) {
 		},
 		{
 			"query",
-			url.URL{
+			&url.URL{
 				RawQuery: "stage=prod&stage=dev",
 			},
 			map[string]interface{}{
@@ -577,7 +577,7 @@ func TestURLToMap(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			m := make(map[string]interface{})
-			require.Equal(t, tc.outputBody, urlToMap(&tc.inputBody, m))
+			require.Equal(t, tc.outputBody, urlToMap(tc.inputBody, m))
 		})
 	}
 }

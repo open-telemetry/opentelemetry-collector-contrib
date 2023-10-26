@@ -142,6 +142,7 @@ type DimensionClientConfig struct {
 	MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host"`
 	MaxConnsPerHost     int           `mapstructure:"max_conns_per_host"`
 	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
+	Timeout             time.Duration `mapstructure:"timeout"`
 }
 
 func (cfg *Config) getMetricTranslator(logger *zap.Logger) (*translation.MetricTranslator, error) {

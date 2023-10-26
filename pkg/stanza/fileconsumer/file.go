@@ -26,15 +26,15 @@ type Manager struct {
 
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
-	roller        roller
 
 	pollInterval  time.Duration
 	persister     operator.Persister
 	maxBatches    int
 	maxBatchFiles int
 
-	knownFiles []*reader.Reader
-	seenPaths  map[string]struct{}
+	previousPollFiles []*reader.Reader
+	knownFiles        []*reader.Reader
+	seenPaths         map[string]struct{}
 
 	currentFps []*fingerprint.Fingerprint
 }
@@ -43,17 +43,18 @@ func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 
-	m.persister = persister
-
-	offsets, err := checkpoint.Load(ctx, m.persister)
-	if err != nil {
-		return fmt.Errorf("read known files from database: %w", err)
-	}
-	if len(offsets) > 0 {
-		m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
-		m.readerFactory.FromBeginning = true
-		for _, offset := range offsets {
-			m.knownFiles = append(m.knownFiles, &reader.Reader{Metadata: offset})
+	if persister != nil {
+		m.persister = persister
+		offsets, err := checkpoint.Load(ctx, m.persister)
+		if err != nil {
+			return fmt.Errorf("read known files from database: %w", err)
+		}
+		if len(offsets) > 0 {
+			m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
+			m.readerFactory.FromBeginning = true
+			for _, offset := range offsets {
+				m.knownFiles = append(m.knownFiles, &reader.Reader{Metadata: offset})
+			}
 		}
 	}
 
@@ -67,14 +68,20 @@ func (m *Manager) Start(persister operator.Persister) error {
 	return nil
 }
 
+func (m *Manager) closeFiles() {
+	for _, r := range m.previousPollFiles {
+		r.Close()
+	}
+	for _, r := range m.knownFiles {
+		r.Close()
+	}
+}
+
 // Stop will stop the file monitoring process
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
-	m.roller.cleanup()
-	for _, reader := range m.knownFiles {
-		reader.Close()
-	}
+	m.closeFiles()
 	m.cancel = nil
 	return nil
 }
@@ -110,6 +117,7 @@ func (m *Manager) poll(ctx context.Context) {
 	if err != nil {
 		m.Debugf("finding files: %v", err)
 	}
+	m.Debugf("matched files", zap.Strings("paths", matches))
 
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
@@ -143,7 +151,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
 	// we do this before reading existing files to ensure we emit older log lines before newer ones
-	m.roller.readLostFiles(ctx, readers)
+	m.readLostFiles(ctx, readers)
 
 	var wg sync.WaitGroup
 	for _, r := range readers {
@@ -155,15 +163,21 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
-	m.roller.roll(ctx, readers)
+	for _, r := range m.previousPollFiles {
+		r.Close()
+	}
+	m.previousPollFiles = readers
+
 	m.saveCurrent(readers)
 
-	rmds := make([]*reader.Metadata, 0, len(readers))
-	for _, r := range readers {
-		rmds = append(rmds, r.Metadata)
-	}
-	if err := checkpoint.Save(ctx, m.persister, rmds); err != nil {
-		m.Errorw("save offsets", zap.Error(err))
+	if m.persister != nil {
+		rmds := make([]*reader.Metadata, 0, len(readers))
+		for _, r := range readers {
+			rmds = append(rmds, r.Metadata)
+		}
+		if err := checkpoint.Save(ctx, m.persister, rmds); err != nil {
+			m.Errorw("save offsets", zap.Error(err))
+		}
 	}
 
 	m.clearCurrentFingerprints()

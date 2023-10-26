@@ -15,13 +15,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
+
+func TestCopyReaderWithoutFlusher(t *testing.T) {
+	f, _ := testReaderFactory(t, split.Config{}, defaultMaxLogSize, 0)
+
+	temp := openTemp(t, t.TempDir())
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+
+	// A copy of the reader should not panic
+	_, err = f.Copy(r, temp)
+	assert.NoError(t, err)
+}
 
 func TestPersistFlusher(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
@@ -237,10 +251,12 @@ func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPer
 			FingerprintSize: fingerprint.DefaultSize,
 			MaxLogSize:      maxLogSize,
 			Emit:            testEmitFunc(emitChan),
+			FlushTimeout:    flushPeriod,
 		},
-		FromBeginning:   true,
-		SplitterFactory: splitter.NewFactory(splitFunc, trim.Whitespace, flushPeriod, maxLogSize),
-		Encoding:        enc,
+		FromBeginning: true,
+		Encoding:      enc,
+		SplitFunc:     splitFunc,
+		TrimFunc:      trim.Whitespace,
 	}, emitChan
 }
 

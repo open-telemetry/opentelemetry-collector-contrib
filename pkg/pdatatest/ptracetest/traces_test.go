@@ -59,6 +59,16 @@ func TestCompareTraces(t *testing.T) {
 			withOptions: nil,
 		},
 		{
+			name: "ignore-attribute-value",
+			compareOptions: []CompareTracesOption{
+				IgnoreSpanAttributeValue("testKey2"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": attributes don't match expected: map[testKey2:teststringvalue2], actual: map[testKey2:unpredictable]"),
+			),
+			withOptions: nil,
+		},
+		{
 			name: "ignore-start-timestamp",
 			compareOptions: []CompareTracesOption{
 				IgnoreStartTimestamp(),
