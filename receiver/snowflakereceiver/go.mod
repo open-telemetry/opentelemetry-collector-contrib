@@ -5,8 +5,8 @@ go 1.20
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.87.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.88.0
 	github.com/snowflakedb/gosnowflake v1.6.25
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.0
@@ -58,7 +58,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/asmfmt v1.3.2 // indirect
-	github.com/klauspost/compress v1.17.1 // indirect
+	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -71,7 +71,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.87.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.88.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

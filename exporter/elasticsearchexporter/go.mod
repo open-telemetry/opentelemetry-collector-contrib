@@ -6,8 +6,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/elastic/go-structform v0.0.10
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.87.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.0
 	go.opentelemetry.io/collector/config/configopaque v0.88.0
@@ -21,7 +21,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

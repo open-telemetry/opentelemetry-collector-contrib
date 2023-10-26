@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.87.0
+    version: v0.88.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -34,6 +34,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
@@ -119,6 +120,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus

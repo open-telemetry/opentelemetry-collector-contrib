@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslog
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.87.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.88.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.0
 	go.opentelemetry.io/collector/confmap v0.88.0
@@ -18,7 +18,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect

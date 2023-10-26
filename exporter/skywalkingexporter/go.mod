@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.87.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.0
 	go.opentelemetry.io/collector/config/configgrpc v0.88.0
@@ -22,14 +22,14 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.1 // indirect
+	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect

@@ -5,9 +5,9 @@ go 1.20
 require (
 	github.com/docker/docker v24.0.6+incompatible
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.87.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.87.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.88.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.25.0
 	go.opentelemetry.io/collector/component v0.88.0
@@ -32,7 +32,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.3.1 // indirect
-	github.com/klauspost/compress v1.17.1 // indirect
+	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect

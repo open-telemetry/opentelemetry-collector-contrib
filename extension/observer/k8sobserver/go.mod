@@ -3,16 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.87.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.88.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.0
 	go.opentelemetry.io/collector/confmap v0.88.0
 	go.opentelemetry.io/collector/extension v0.88.0
 	go.uber.org/zap v1.26.0
-	k8s.io/api v0.28.2
-	k8s.io/apimachinery v0.28.2
-	k8s.io/client-go v0.28.2
+	k8s.io/api v0.28.3
+	k8s.io/apimachinery v0.28.3
+	k8s.io/client-go v0.28.3
 )
 
 require (

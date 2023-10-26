@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/jaegertracing/jaeger v1.49.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.87.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.88.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.0
 	go.opentelemetry.io/collector/extension v0.88.0
@@ -25,7 +25,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.87.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.88.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.88.0 // indirect
