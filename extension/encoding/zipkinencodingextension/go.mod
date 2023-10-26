@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.88.0
-	go.opentelemetry.io/collector/component v0.88.0
-	go.opentelemetry.io/collector/extension v0.88.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017
+	go.opentelemetry.io/collector/component v0.88.1-0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/extension v0.88.1-0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017.0.20231026220224-6405e152a2d9
 )
 
 require (
@@ -28,10 +28,10 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.2 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.88.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.88.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017 // indirect
-	go.opentelemetry.io/collector/semconv v0.88.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/confmap v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017.0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/semconv v0.88.1-0.20231026220224-6405e152a2d9 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect

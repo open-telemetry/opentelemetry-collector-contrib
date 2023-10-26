@@ -660,8 +660,8 @@ go.opentelemetry.io/build-tools/issuegenerator v0.12.0 h1:KRP7aSUR9JoqNwv+Pp595v
 go.opentelemetry.io/build-tools/issuegenerator v0.12.0/go.mod h1:G71Og7dZJoIC+MjuY1InQ/oeAOkM1S5Nv6CCnlOdqns=
 go.opentelemetry.io/build-tools/multimod v0.12.0 h1:DKi+A+4EaKrOZDTNDDZz3ijiAduEQDo8j1rzWUaGUHo=
 go.opentelemetry.io/build-tools/multimod v0.12.0/go.mod h1:w03q3WgZs7reoBNnmfdClkKdTIA/IHM8ric5E2jEDD0=
-go.opentelemetry.io/collector/cmd/builder v0.88.0 h1:mqwvY7ORnkBYrdJUkknb0bK9jQy/2JFqtcEw7feISbw=
-go.opentelemetry.io/collector/cmd/builder v0.88.0/go.mod h1:ZKGPtjIXFBQL/STyyG8f0GolDtL0gF5onVQtPoMKC7c=
+go.opentelemetry.io/collector/cmd/builder v0.88.1-0.20231026220224-6405e152a2d9 h1:9C7UAuDUzIkl8PvVoEnJo2mXjSyzSKMN3A9giEISAFQ=
+go.opentelemetry.io/collector/cmd/builder v0.88.1-0.20231026220224-6405e152a2d9/go.mod h1:LR/HpKNGMxTKiwcLMXelLA+g7sHuYXcDL3DbxqvN4eQ=
 go.tmz.dev/musttag v0.7.2 h1:1J6S9ipDbalBSODNT5jCep8dhZyMr4ttnjQagmGYR5s=
 go.tmz.dev/musttag v0.7.2/go.mod h1:m6q5NiiSKMnQYokefa2xGoyoXnrswCbJ0AWYzf4Zs28=
 go.uber.org/goleak v1.2.0 h1:xqgm/S+aQvhWFTtR0XK3Jvg7z8kGV8P4X14IzwN3Eqk=

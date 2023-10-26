@@ -9,19 +9,20 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.88.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.88.0
-	go.opentelemetry.io/collector/confmap v0.88.0
-	go.opentelemetry.io/collector/consumer v0.88.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017
-	go.opentelemetry.io/collector/receiver v0.88.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.88.0
-	go.opentelemetry.io/collector/semconv v0.88.0
+	go.opentelemetry.io/collector/component v0.88.1-0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/confmap v0.88.1-0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/consumer v0.88.1-0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017.0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/receiver v0.88.1-0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.88.1-0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/semconv v0.88.1-0.20231026220224-6405e152a2d9
 	go.uber.org/zap v1.26.0
 	k8s.io/apimachinery v0.28.3
 	k8s.io/client-go v0.28.3
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -70,19 +71,19 @@ require (
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.88.0 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.88.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v0.88.0 // indirect
-	go.opentelemetry.io/collector/config/configgrpc v0.88.0 // indirect
-	go.opentelemetry.io/collector/config/confighttp v0.88.0 // indirect
-	go.opentelemetry.io/collector/config/confignet v0.88.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.88.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.88.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v0.88.0 // indirect
-	go.opentelemetry.io/collector/config/internal v0.88.0 // indirect
-	go.opentelemetry.io/collector/extension v0.88.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.88.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017 // indirect
+	go.opentelemetry.io/collector v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/config/configcompression v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/config/configgrpc v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/config/confighttp v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/config/confignet v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/config/configtls v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/config/internal v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/extension v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.88.1-0.20231026220224-6405e152a2d9 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017.0.20231026220224-6405e152a2d9 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.45.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
 	go.opentelemetry.io/otel v1.19.0 // indirect
@@ -129,8 +130,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8ste
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
-// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-replace cloud.google.com/go => cloud.google.com/go v0.110.7
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
