@@ -14,7 +14,7 @@ import (
 
 type latency struct {
 	logger           *zap.Logger
-	thresholdMs int64
+	thresholdMs      int64
 	upperThresholdMs int64
 }
 
