@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
-	"go.uber.org/multierr"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -91,7 +90,7 @@ func TestConfig_Validate(t *testing.T) {
 				c.S3Uploader.Region = ""
 				return c
 			}(),
-			errExpected: multierr.Append(errors.New("region is required"),
+			errExpected: errors.Join(errors.New("region is required"),
 				errors.New("bucket is required")),
 		},
 		{
@@ -102,7 +101,7 @@ func TestConfig_Validate(t *testing.T) {
 				c.S3Uploader.Region = "foo"
 				return c
 			}(),
-			errExpected: errors.New("bucket is required"),
+			errExpected: errors.Join(errors.New("bucket is required")),
 		},
 		{
 			name: "endpoint and bucket",
@@ -113,7 +112,7 @@ func TestConfig_Validate(t *testing.T) {
 				c.S3Uploader.Region = ""
 				return c
 			}(),
-			errExpected: errors.New("region is required"),
+			errExpected: errors.Join(errors.New("region is required")),
 		},
 	}
 

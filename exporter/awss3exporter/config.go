@@ -5,8 +5,6 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
-
-	"go.uber.org/multierr"
 )
 
 // S3UploaderConfig contains aws s3 uploader related config to controls things
@@ -36,12 +34,12 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	var errs error
+	var errs []error
 	if c.S3Uploader.Region == "" {
-		errs = multierr.Append(errs, errors.New("region is required"))
+		errs = append(errs, errors.New("region is required"))
 	}
 	if c.S3Uploader.S3Bucket == "" {
-		errs = multierr.Append(errs, errors.New("bucket is required"))
+		errs = append(errs, errors.New("bucket is required"))
 	}
-	return errs
+	return errors.Join(errs...)
 }
