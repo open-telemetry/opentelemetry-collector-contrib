@@ -17,8 +17,6 @@ all_set:
       enabled: true
     container.blockio.sectors_recursive:
       enabled: true
-    container.cpu.percent:
-      enabled: true
     container.cpu.throttling_data.periods:
       enabled: true
     container.cpu.throttling_data.throttled_periods:
@@ -167,8 +165,6 @@ none_set:
     container.blockio.io_wait_time_recursive:
       enabled: false
     container.blockio.sectors_recursive:
-      enabled: false
-    container.cpu.percent:
       enabled: false
     container.cpu.throttling_data.periods:
       enabled: false
