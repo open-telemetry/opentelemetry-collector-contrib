@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	sl "github.com/influxdata/go-syslog/v3"
@@ -77,17 +78,21 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
+	proto := strings.ToLower(c.Protocol)
+
 	switch {
-	case c.Protocol == "":
+	case proto == "":
 		return nil, fmt.Errorf("missing field 'protocol'")
-	case c.Protocol != RFC5424 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
+	case proto != RFC5424 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
 		return nil, errors.New("octet_counting and non_transparent_framing are only compatible with protocol rfc5424")
-	case c.Protocol == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
+	case proto == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
 		return nil, errors.New("only one of octet_counting or non_transparent_framing can be enabled")
-	case c.Protocol == RFC5424 && c.NonTransparentFramingTrailer != nil:
+	case proto == RFC5424 && c.NonTransparentFramingTrailer != nil:
 		if *c.NonTransparentFramingTrailer != NULTrailer && *c.NonTransparentFramingTrailer != LFTrailer {
 			return nil, fmt.Errorf("invalid non_transparent_framing_trailer '%s'. Must be either 'LF' or 'NUL'", *c.NonTransparentFramingTrailer)
 		}
+	case proto != RFC5424 && proto != RFC3164:
+		return nil, fmt.Errorf("unsupported protocol version: %s", proto)
 	}
 
 	if c.Location == "" {
@@ -101,7 +106,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	return &Parser{
 		ParserOperator:               parserOperator,
-		protocol:                     c.Protocol,
+		protocol:                     proto,
 		location:                     location,
 		enableOctetCounting:          c.EnableOctetCounting,
 		nonTransparentFramingTrailer: c.NonTransparentFramingTrailer,

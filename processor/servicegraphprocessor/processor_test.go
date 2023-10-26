@@ -6,6 +6,7 @@ package servicegraphprocessor
 import (
 	"context"
 	"crypto/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -122,30 +123,16 @@ func TestConnectorShutdown(t *testing.T) {
 }
 
 func TestProcessorConsume(t *testing.T) {
-	// set virtual node feature
-	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), true)
-
 	for _, tc := range []struct {
 		name          string
-		cfg           Config
+		cfg           *Config
+		gates         []*featuregate.Gate
 		sampleTraces  ptrace.Traces
 		verifyMetrics func(t *testing.T, md pmetric.Metrics)
 	}{
 		{
 			name: "traces with client and server span",
-			cfg: Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
-			}, sampleTraces: buildSampleTrace(t, "val"),
-			verifyMetrics: verifyHappyCaseMetrics,
-		},
-		{
-			name: "incomplete traces with virtual server span",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
@@ -153,6 +140,20 @@ func TestProcessorConsume(t *testing.T) {
 					TTL:      time.Nanosecond,
 				},
 			},
+			sampleTraces:  buildSampleTrace(t, "val"),
+			verifyMetrics: verifyHappyCaseMetrics,
+		},
+		{
+			name: "incomplete traces with virtual server span",
+			cfg: &Config{
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
 			sampleTraces: incompleteClientTraces(),
 			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
 				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("server")
@@ -162,7 +163,7 @@ func TestProcessorConsume(t *testing.T) {
 		},
 		{
 			name: "incomplete traces with virtual client span",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
@@ -170,6 +171,7 @@ func TestProcessorConsume(t *testing.T) {
 					TTL:      time.Nanosecond,
 				},
 			},
+			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
 			sampleTraces: incompleteServerTraces(false),
 			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
 				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("client")
@@ -179,7 +181,7 @@ func TestProcessorConsume(t *testing.T) {
 		},
 		{
 			name: "incomplete traces with client span lost",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
@@ -187,15 +189,34 @@ func TestProcessorConsume(t *testing.T) {
 					TTL:      time.Nanosecond,
 				},
 			},
+			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
 			sampleTraces: incompleteServerTraces(true),
 			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
 				assert.Equal(t, 0, md.MetricCount())
 			},
 		},
+		{
+			name: "complete traces with legacy latency metrics",
+			cfg: &Config{
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			}, sampleTraces: buildSampleTrace(t, "val"),
+			gates:         []*featuregate.Gate{virtualNodeFeatureGate, legacyLatencyUnitMsFeatureGate},
+			verifyMetrics: verifyHappyCaseMetricsWithDuration(1000),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// Set feature gates
+			for _, gate := range tc.gates {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+			}
+
 			// Prepare
-			p := newProcessor(zaptest.NewLogger(t), &tc.cfg)
+			p := newProcessor(zaptest.NewLogger(t), tc.cfg)
 			p.tracesConsumer = consumertest.NewNop()
 
 			metricsExporter := newMockMetricsExporter()
@@ -222,11 +243,13 @@ func TestProcessorConsume(t *testing.T) {
 
 			// Shutdown the processor
 			assert.NoError(t, p.Shutdown(context.Background()))
+
+			// Unset feature gates
+			for _, gate := range tc.gates {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+			}
 		})
 	}
-
-	// unset virtual node feature
-	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), false)
 }
 
 func TestConnectorConsume(t *testing.T) {
@@ -252,32 +275,75 @@ func TestConnectorConsume(t *testing.T) {
 	assert.NoError(t, err)
 	verifyHappyCaseMetrics(t, md)
 
-	// Shutdown the conn
+	// Shutdown the connector
 	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
+func TestProcessor_MetricsFlushInterval(t *testing.T) {
+	// Prepare
+	p := newProcessor(zaptest.NewLogger(t), &Config{
+		MetricsExporter: "mock",
+		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Store: StoreConfig{
+			MaxItems: 10,
+			TTL:      time.Nanosecond,
+		},
+		MetricsFlushInterval: 2 * time.Second,
+	})
+	p.tracesConsumer = consumertest.NewNop()
+
+	metricsExporter := newMockMetricsExporter()
+	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("mock"): metricsExporter,
+		},
+	})
+
+	// Start processor
+	assert.NoError(t, p.Start(context.Background(), mHost))
+
+	// Push traces
+	assert.NoError(t, p.ConsumeTraces(context.Background(), buildSampleTrace(t, "val")))
+
+	// Metrics are not immediately flushed
+	assert.Len(t, metricsExporter.getMetrics(), 0)
+
+	// Metrics are flushed after 2 seconds
+	assert.Eventuallyf(t, func() bool { return len(metricsExporter.getMetrics()) == 1 }, 5*time.Second, 100*time.Millisecond, "metrics are not flushed")
+	verifyHappyCaseMetrics(t, metricsExporter.getMetrics()[0])
+
+	// Shutdown the processor
+	assert.NoError(t, p.Shutdown(context.Background()))
+}
+
 func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
-	assert.Equal(t, 3, md.MetricCount())
+	verifyHappyCaseMetricsWithDuration(1)(t, md)
+}
 
-	rms := md.ResourceMetrics()
-	assert.Equal(t, 1, rms.Len())
+func verifyHappyCaseMetricsWithDuration(durationSum float64) func(t *testing.T, md pmetric.Metrics) {
+	return func(t *testing.T, md pmetric.Metrics) {
+		assert.Equal(t, 3, md.MetricCount())
 
-	sms := rms.At(0).ScopeMetrics()
-	assert.Equal(t, 1, sms.Len())
+		rms := md.ResourceMetrics()
+		assert.Equal(t, 1, rms.Len())
 
-	ms := sms.At(0).Metrics()
-	assert.Equal(t, 3, ms.Len())
+		sms := rms.At(0).ScopeMetrics()
+		assert.Equal(t, 1, sms.Len())
 
-	mCount := ms.At(0)
-	verifyCount(t, mCount)
+		ms := sms.At(0).Metrics()
+		assert.Equal(t, 3, ms.Len())
 
-	mServerDuration := ms.At(1)
-	assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
-	verifyDuration(t, mServerDuration)
+		mCount := ms.At(0)
+		verifyCount(t, mCount)
 
-	mClientDuration := ms.At(2)
-	assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
-	verifyDuration(t, mClientDuration)
+		mServerDuration := ms.At(1)
+		assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
+		verifyDuration(t, mServerDuration, durationSum)
+
+		mClientDuration := ms.At(2)
+		assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
+		verifyDuration(t, mClientDuration, durationSum)
+	}
 }
 
 func verifyCount(t *testing.T, m pmetric.Metric) {
@@ -300,13 +366,13 @@ func verifyCount(t *testing.T, m pmetric.Metric) {
 	verifyAttr(t, attributes, "client_some-attribute", "val")
 }
 
-func verifyDuration(t *testing.T, m pmetric.Metric) {
+func verifyDuration(t *testing.T, m pmetric.Metric, durationSum float64) {
 	assert.Equal(t, pmetric.MetricTypeHistogram, m.Type())
 	dps := m.Histogram().DataPoints()
 	assert.Equal(t, 1, dps.Len())
 
 	dp := dps.At(0)
-	assert.Equal(t, float64(1000), dp.Sum()) // Duration: 1sec
+	assert.Equal(t, durationSum, dp.Sum()) // Duration: 1sec
 	assert.Equal(t, uint64(1), dp.Count())
 	buckets := pcommon.NewUInt64Slice()
 	buckets.FromRaw([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
@@ -449,11 +515,14 @@ func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]compon
 
 var _ exporter.Metrics = (*mockMetricsExporter)(nil)
 
-func newMockMetricsExporter() exporter.Metrics {
+func newMockMetricsExporter() *mockMetricsExporter {
 	return &mockMetricsExporter{}
 }
 
-type mockMetricsExporter struct{}
+type mockMetricsExporter struct {
+	mtx sync.Mutex
+	md  []pmetric.Metrics
+}
 
 func (m *mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
 
@@ -461,8 +530,17 @@ func (m *mockMetricsExporter) Shutdown(context.Context) error { return nil }
 
 func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 
-func (m *mockMetricsExporter) ConsumeMetrics(context.Context, pmetric.Metrics) error {
+func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	m.md = append(m.md, md)
 	return nil
+}
+
+func (m *mockMetricsExporter) getMetrics() []pmetric.Metrics {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	return m.md
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
@@ -475,7 +553,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		reqClientDurationSecondsSum:          make(map[string]float64),
 		reqClientDurationSecondsCount:        make(map[string]uint64),
 		reqClientDurationSecondsBucketCounts: make(map[string][]uint64),
-		reqDurationBounds:                    defaultLatencyHistogramBucketsMs,
+		reqDurationBounds:                    defaultLatencyHistogramBuckets,
 		keyToMetric:                          make(map[string]metricSeries),
 		config: &Config{
 			Dimensions: []string{},

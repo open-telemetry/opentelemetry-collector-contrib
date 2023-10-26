@@ -4,9 +4,7 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -14,6 +12,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
@@ -27,15 +26,15 @@ type Manager struct {
 
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
-	roller        roller
-	persister     operator.Persister
 
 	pollInterval  time.Duration
+	persister     operator.Persister
 	maxBatches    int
 	maxBatchFiles int
 
-	knownFiles []*reader.Reader
-	seenPaths  map[string]struct{}
+	previousPollFiles []*reader.Reader
+	knownFiles        []*reader.Reader
+	seenPaths         map[string]struct{}
 
 	currentFps []*fingerprint.Fingerprint
 }
@@ -43,11 +42,20 @@ type Manager struct {
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
-	m.persister = persister
 
-	// Load offsets from disk
-	if err := m.loadLastPollFiles(ctx); err != nil {
-		return fmt.Errorf("read known files from database: %w", err)
+	if persister != nil {
+		m.persister = persister
+		offsets, err := checkpoint.Load(ctx, m.persister)
+		if err != nil {
+			return fmt.Errorf("read known files from database: %w", err)
+		}
+		if len(offsets) > 0 {
+			m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
+			m.readerFactory.FromBeginning = true
+			for _, offset := range offsets {
+				m.knownFiles = append(m.knownFiles, &reader.Reader{Metadata: offset})
+			}
+		}
 	}
 
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
@@ -60,14 +68,20 @@ func (m *Manager) Start(persister operator.Persister) error {
 	return nil
 }
 
+func (m *Manager) closeFiles() {
+	for _, r := range m.previousPollFiles {
+		r.Close()
+	}
+	for _, r := range m.knownFiles {
+		r.Close()
+	}
+}
+
 // Stop will stop the file monitoring process
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
-	m.roller.cleanup()
-	for _, reader := range m.knownFiles {
-		reader.Close()
-	}
+	m.closeFiles()
 	m.cancel = nil
 	return nil
 }
@@ -103,6 +117,7 @@ func (m *Manager) poll(ctx context.Context) {
 	if err != nil {
 		m.Debugf("finding files: %v", err)
 	}
+	m.Debugf("matched files", zap.Strings("paths", matches))
 
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
@@ -118,6 +133,9 @@ func (m *Manager) poll(ctx context.Context) {
 		matches = matches[m.maxBatchFiles:]
 	}
 	m.consume(ctx, matches)
+
+	// Any new files that appear should be consumed entirely
+	m.readerFactory.FromBeginning = true
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
@@ -133,7 +151,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
 	// we do this before reading existing files to ensure we emit older log lines before newer ones
-	m.roller.readLostFiles(ctx, readers)
+	m.readLostFiles(ctx, readers)
 
 	var wg sync.WaitGroup
 	for _, r := range readers {
@@ -145,12 +163,23 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
-	// Any new files that appear should be consumed entirely
-	m.readerFactory.FromBeginning = true
+	for _, r := range m.previousPollFiles {
+		r.Close()
+	}
+	m.previousPollFiles = readers
 
-	m.roller.roll(ctx, readers)
 	m.saveCurrent(readers)
-	m.syncLastPollFiles(ctx)
+
+	if m.persister != nil {
+		rmds := make([]*reader.Metadata, 0, len(readers))
+		for _, r := range readers {
+			rmds = append(rmds, r.Metadata)
+		}
+		if err := checkpoint.Save(ctx, m.persister, rmds); err != nil {
+			m.Errorw("save offsets", zap.Error(err))
+		}
+	}
+
 	m.clearCurrentFingerprints()
 }
 
@@ -262,81 +291,4 @@ func (m *Manager) findFingerprintMatch(fp *fingerprint.Fingerprint) (*reader.Rea
 		}
 	}
 	return nil, false
-}
-
-const knownFilesKey = "knownFiles"
-
-// syncLastPollFiles syncs the most recent set of files to the database
-func (m *Manager) syncLastPollFiles(ctx context.Context) {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-
-	// Encode the number of known files
-	if err := enc.Encode(len(m.knownFiles)); err != nil {
-		m.Errorw("Failed to encode known files", zap.Error(err))
-		return
-	}
-
-	// Encode each known file
-	for _, fileReader := range m.knownFiles {
-		if err := enc.Encode(fileReader.Metadata); err != nil {
-			m.Errorw("Failed to encode known files", zap.Error(err))
-		}
-	}
-
-	if err := m.persister.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
-		m.Errorw("Failed to sync to database", zap.Error(err))
-	}
-}
-
-// syncLastPollFiles loads the most recent set of files to the database
-func (m *Manager) loadLastPollFiles(ctx context.Context) error {
-	encoded, err := m.persister.Get(ctx, knownFilesKey)
-	if err != nil {
-		return err
-	}
-
-	if encoded == nil {
-		return nil
-	}
-
-	dec := json.NewDecoder(bytes.NewReader(encoded))
-
-	// Decode the number of entries
-	var knownFileCount int
-	if err = dec.Decode(&knownFileCount); err != nil {
-		return fmt.Errorf("decoding file count: %w", err)
-	}
-
-	if knownFileCount > 0 {
-		m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
-		m.readerFactory.FromBeginning = true
-	}
-
-	// Decode each of the known files
-	for i := 0; i < knownFileCount; i++ {
-		rmd := new(reader.Metadata)
-		if err = dec.Decode(rmd); err != nil {
-			return err
-		}
-
-		// Migrate readers that used FileAttributes.HeaderAttributes
-		// This block can be removed in a future release, tentatively v0.90.0
-		if ha, ok := rmd.FileAttributes["HeaderAttributes"]; ok {
-			switch hat := ha.(type) {
-			case map[string]any:
-				for k, v := range hat {
-					rmd.FileAttributes[k] = v
-				}
-				delete(rmd.FileAttributes, "HeaderAttributes")
-			default:
-				m.Errorw("migrate header attributes: unexpected format")
-			}
-		}
-
-		// This reader won't be used for anything other than metadata reference, so just wrap the metadata
-		m.knownFiles = append(m.knownFiles, &reader.Reader{Metadata: rmd})
-	}
-
-	return nil
 }

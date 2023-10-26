@@ -87,10 +87,10 @@ which defines [container.cpu.utilization] as the name for this metric.
 To align the emitted metric names with the OpenTelemetry specification,
 the following process will be followed to phase out the old metrics:
 
-- Between `v0.79.0` and `v0.81.0`, the new metric is introduced and the old metric is marked as deprecated.
+- Between `v0.79.0` and `v0.86.0`, the new metric is introduced and the old metric is marked as deprecated.
   Only the old metric are emitted by default.
-- Between `v0.82.0` and `v0.84.0`, the old metric is disabled and the new one enabled by default.
-- In `v0.85.0` and up, the old metric is removed.
+- In `v0.88.0`, the old metric is disabled and the new one enabled by default.
+- In `v0.89.0` and up, the old metric is removed.
 
 To change the enabled state for the specific metrics, use the standard configuration options that are available for all metrics.
 
