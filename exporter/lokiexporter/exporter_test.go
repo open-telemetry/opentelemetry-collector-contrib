@@ -160,12 +160,12 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 				label string
 			}{
 				"1": {
-					label: `{exporter="OTLP", tenant_id="1"}`,
-					line:  `{"attributes":{"http.status":200}}`,
+					label: `{exporter="OTLP"}`,
+					line:  `{"attributes":{"http.status":200,"tenant.id":"1"}}`,
 				},
 				"2": {
-					label: `{exporter="OTLP", tenant_id="2"}`,
-					line:  `{"attributes":{"http.status":200}}`,
+					label: `{exporter="OTLP"}`,
+					line:  `{"attributes":{"http.status":200,"tenant.id":"2"}}`,
 				},
 			},
 		},
@@ -224,12 +224,12 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 				label string
 			}{
 				"1": {
-					label: `{exporter="OTLP", tenant_id="1"}`,
-					line:  `{"attributes":{"http.status":200}}`,
+					label: `{exporter="OTLP"}`,
+					line:  `{"attributes":{"http.status":200,"tenant.id":"11"},"resources":{"tenant.id":"1"}}`,
 				},
 				"2": {
-					label: `{exporter="OTLP", tenant_id="2"}`,
-					line:  `{"attributes":{"http.status":200}}`,
+					label: `{exporter="OTLP"}`,
+					line:  `{"attributes":{"http.status":200,"tenant.id":"22"},"resources":{"tenant.id":"2"}}`,
 				},
 			},
 		},
