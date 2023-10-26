@@ -19,8 +19,6 @@ all_set:
       enabled: true
     container.cpu.limit:
       enabled: true
-    container.cpu.percent:
-      enabled: true
     container.cpu.shares:
       enabled: true
     container.cpu.throttling_data.periods:
@@ -175,8 +173,6 @@ none_set:
     container.blockio.sectors_recursive:
       enabled: false
     container.cpu.limit:
-      enabled: false
-    container.cpu.percent:
       enabled: false
     container.cpu.shares:
       enabled: false

@@ -306,14 +306,6 @@ This metric is only reported if the container has limits set with -cpus, -cpuset
 | ---- | ----------- | ---------- |
 | {cpus} | Gauge | Double |
 
-### container.cpu.percent
-
-[DEPRECATED] Use `container.cpu.utilization` metric instead. Percent of CPU used by the container.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
 ### container.cpu.shares
 
 CPU shares set for the container.

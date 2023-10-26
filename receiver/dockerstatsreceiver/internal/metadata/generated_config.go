@@ -34,7 +34,6 @@ type MetricsConfig struct {
 	ContainerBlockioIoWaitTimeRecursive        MetricConfig `mapstructure:"container.blockio.io_wait_time_recursive"`
 	ContainerBlockioSectorsRecursive           MetricConfig `mapstructure:"container.blockio.sectors_recursive"`
 	ContainerCPULimit                          MetricConfig `mapstructure:"container.cpu.limit"`
-	ContainerCPUPercent                        MetricConfig `mapstructure:"container.cpu.percent"`
 	ContainerCPUShares                         MetricConfig `mapstructure:"container.cpu.shares"`
 	ContainerCPUThrottlingDataPeriods          MetricConfig `mapstructure:"container.cpu.throttling_data.periods"`
 	ContainerCPUThrottlingDataThrottledPeriods MetricConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
@@ -124,9 +123,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerCPULimit: MetricConfig{
-			Enabled: false,
-		},
-		ContainerCPUPercent: MetricConfig{
 			Enabled: false,
 		},
 		ContainerCPUShares: MetricConfig{

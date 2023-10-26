@@ -44,7 +44,6 @@ var (
 		ContainerBlockioIoWaitTimeRecursive:        metricEnabled,
 		ContainerBlockioSectorsRecursive:           metricEnabled,
 		ContainerCPULimit:                          metricEnabled,
-		ContainerCPUPercent:                        metricEnabled,
 		ContainerCPUShares:                         metricEnabled,
 		ContainerCPUUtilization:                    metricEnabled,
 		ContainerCPUThrottlingDataPeriods:          metricEnabled,
