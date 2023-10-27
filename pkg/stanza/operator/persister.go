@@ -6,33 +6,28 @@ package operator // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
+
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-// Persister is an interface used to persist data
-type Persister interface {
-	Get(context.Context, string) ([]byte, error)
-	Set(context.Context, string, []byte) error
-	Delete(context.Context, string) error
+type ScopedPersister struct {
+	client storage.Client
+	scope  string
 }
 
-type scopedPersister struct {
-	Persister
-	scope string
-}
-
-func NewScopedPersister(s string, p Persister) Persister {
-	return &scopedPersister{
-		Persister: p,
-		scope:     s,
+func NewScopedPersister(s string, client storage.Client) storage.Client {
+	return &ScopedPersister{
+		client: client,
+		scope:  s,
 	}
 }
 
-func (p scopedPersister) Get(ctx context.Context, key string) ([]byte, error) {
-	return p.Persister.Get(ctx, fmt.Sprintf("%s.%s", p.scope, key))
+func (p ScopedPersister) Get(ctx context.Context, key string) ([]byte, error) {
+	return p.client.Get(ctx, fmt.Sprintf("%s.%s", p.scope, key))
 }
-func (p scopedPersister) Set(ctx context.Context, key string, value []byte) error {
-	return p.Persister.Set(ctx, fmt.Sprintf("%s.%s", p.scope, key), value)
+func (p ScopedPersister) Set(ctx context.Context, key string, value []byte) error {
+	return p.client.Set(ctx, fmt.Sprintf("%s.%s", p.scope, key), value)
 }
-func (p scopedPersister) Delete(ctx context.Context, key string) error {
-	return p.Persister.Delete(ctx, fmt.Sprintf("%s.%s", p.scope, key))
+func (p ScopedPersister) Delete(ctx context.Context, key string) error {
+	return p.client.Delete(ctx, fmt.Sprintf("%s.%s", p.scope, key))
 }
