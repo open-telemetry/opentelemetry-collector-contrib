@@ -151,6 +151,5 @@ func validateEventDimensions(enabled bool, dimensions []Dimension) error {
 	if len(dimensions) == 0 {
 		return fmt.Errorf("no dimensions configured for events")
 	}
-	err := validateDimensions(dimensions)
-	return err
+	return validateDimensions(dimensions)
 }
