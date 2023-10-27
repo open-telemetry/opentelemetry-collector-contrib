@@ -54,6 +54,7 @@ type detector struct {
 	utils  detectorUtils
 	logger *zap.Logger
 	err    error
+	ra     metadata.ResourceAttributesConfig
 	rb     *metadata.ResourceBuilder
 }
 
@@ -70,6 +71,7 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 		utils:  utils,
 		logger: set.Logger,
 		err:    err,
+		ra:     cfg.ResourceAttributes,
 		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil
 }
@@ -89,8 +91,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	// The error is unhandled because we want to return successfully detected resources
 	// regardless of an error. The caller will properly handle any error hit while getting
 	// the cluster name.
-	clusterName, err := d.utils.getClusterName(ctx)
-	d.rb.SetK8sClusterName(clusterName)
+	if d.ra.K8sClusterName.Enabled {
+		var clusterName string
+		clusterName, err = d.utils.getClusterName(ctx)
+		d.rb.SetK8sClusterName(clusterName)
+	}
 
 	return d.rb.Emit(), conventions.SchemaURL, err
 }

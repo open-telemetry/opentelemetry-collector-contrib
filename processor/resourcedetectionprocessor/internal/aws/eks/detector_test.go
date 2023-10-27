@@ -55,7 +55,7 @@ func TestEKS(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{conventions.AttributeK8SClusterName: clusterName}, nil)
 	// Call EKS Resource detector to detect resources
-	eksResourceDetector := &detector{utils: detectorUtils, err: nil, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
+	eksResourceDetector := &detector{utils: detectorUtils, err: nil, ra: metadata.DefaultResourceAttributesConfig(), rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
