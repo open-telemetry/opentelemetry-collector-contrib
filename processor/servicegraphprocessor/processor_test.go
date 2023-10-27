@@ -125,14 +125,14 @@ func TestConnectorShutdown(t *testing.T) {
 func TestProcessorConsume(t *testing.T) {
 	for _, tc := range []struct {
 		name          string
-		cfg           Config
+		cfg           *Config
 		gates         []*featuregate.Gate
 		sampleTraces  ptrace.Traces
 		verifyMetrics func(t *testing.T, md pmetric.Metrics)
 	}{
 		{
 			name: "traces with client and server span",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
@@ -145,7 +145,7 @@ func TestProcessorConsume(t *testing.T) {
 		},
 		{
 			name: "incomplete traces with virtual server span",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
@@ -163,7 +163,7 @@ func TestProcessorConsume(t *testing.T) {
 		},
 		{
 			name: "incomplete traces with virtual client span",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
@@ -181,7 +181,7 @@ func TestProcessorConsume(t *testing.T) {
 		},
 		{
 			name: "incomplete traces with client span lost",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
@@ -197,7 +197,7 @@ func TestProcessorConsume(t *testing.T) {
 		},
 		{
 			name: "complete traces with legacy latency metrics",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
@@ -216,7 +216,7 @@ func TestProcessorConsume(t *testing.T) {
 			}
 
 			// Prepare
-			p := newProcessor(zaptest.NewLogger(t), &tc.cfg)
+			p := newProcessor(zaptest.NewLogger(t), tc.cfg)
 			p.tracesConsumer = consumertest.NewNop()
 
 			metricsExporter := newMockMetricsExporter()

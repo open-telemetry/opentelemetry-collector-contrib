@@ -1,20 +1,20 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -34,7 +34,7 @@ var minimumLogRecord = func() plog.LogRecord {
 	return lr
 }()
 
-var maximumLogRecord = func() plog.LogRecord {
+var maximumLogRecord1 = func() plog.LogRecord {
 	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
@@ -56,13 +56,114 @@ var maximumLogRecord = func() plog.LogRecord {
 	lr.Attributes().PutStr(conventions.AttributeCloudRegion, "ukso")
 	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 
-	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", "607964b6-41a5-4e24-a5db-db7aab3b9b34")
+	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
 	m := lr.Attributes().PutEmptyMap(azureProperties)
 	m.PutStr("string", "string")
 	m.PutDouble("int", 429)
 	m.PutDouble("float", 3.14)
 	m.PutBool("bool", false)
 
+	return lr
+}()
+
+var maximumLogRecord2 = func() []plog.LogRecord {
+	sl := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+	lr2 := sl.LogRecords().AppendEmpty()
+
+	ts, _ := asTimestamp("2022-11-11T04:48:29.6767145Z")
+	lr.SetTimestamp(ts)
+	lr.SetSeverityNumber(plog.SeverityNumberWarn)
+	lr.SetSeverityText("Warning")
+	guid := "96317703-2132-4a8d-a5d7-e18d2f486783"
+
+	lr.Attributes().PutStr(azureTenantID, "/TENANT_ID")
+	lr.Attributes().PutStr(azureOperationName, "SecretSet")
+	lr.Attributes().PutStr(azureOperationVersion, "7.0")
+	lr.Attributes().PutStr(azureCategory, "AuditEvent")
+	lr.Attributes().PutStr(azureCorrelationID, guid)
+	lr.Attributes().PutStr(azureResultType, "Success")
+	lr.Attributes().PutStr(azureResultSignature, "Signature")
+	lr.Attributes().PutStr(azureResultDescription, "Description")
+	lr.Attributes().PutInt(azureDuration, 4321)
+	lr.Attributes().PutStr(conventions.AttributeNetSockPeerAddr, "127.0.0.1")
+	lr.Attributes().PutStr(conventions.AttributeCloudRegion, "ukso")
+	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+
+	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
+	m := lr.Attributes().PutEmptyMap(azureProperties)
+	m.PutStr("string", "string")
+	m.PutDouble("int", 924)
+	m.PutDouble("float", 41.3)
+	m.PutBool("bool", true)
+
+	ts, _ = asTimestamp("2022-11-11T04:48:31.6767145Z")
+	lr2.SetTimestamp(ts)
+	lr2.SetSeverityNumber(plog.SeverityNumberWarn)
+	lr2.SetSeverityText("Warning")
+	guid = "4ae807da-39d9-4327-b5b4-0ab685a57f9a"
+
+	lr2.Attributes().PutStr(azureTenantID, "/TENANT_ID")
+	lr2.Attributes().PutStr(azureOperationName, "SecretGet")
+	lr2.Attributes().PutStr(azureOperationVersion, "7.0")
+	lr2.Attributes().PutStr(azureCategory, "AuditEvent")
+	lr2.Attributes().PutStr(azureCorrelationID, guid)
+	lr2.Attributes().PutStr(azureResultType, "Success")
+	lr2.Attributes().PutStr(azureResultSignature, "Signature")
+	lr2.Attributes().PutStr(azureResultDescription, "Description")
+	lr2.Attributes().PutInt(azureDuration, 321)
+	lr2.Attributes().PutStr(conventions.AttributeNetSockPeerAddr, "127.0.0.1")
+	lr2.Attributes().PutStr(conventions.AttributeCloudRegion, "ukso")
+	lr2.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+
+	lr2.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", guid)
+	m = lr2.Attributes().PutEmptyMap(azureProperties)
+	m.PutStr("string", "string")
+	m.PutDouble("int", 925)
+	m.PutDouble("float", 41.4)
+	m.PutBool("bool", false)
+
+	var records []plog.LogRecord
+	return append(records, lr, lr2)
+}()
+
+var badLevelLogRecord = func() plog.LogRecord {
+	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	ts, _ := asTimestamp("2023-10-26T14:22:43.3416357Z")
+	lr.SetTimestamp(ts)
+	lr.SetSeverityNumber(plog.SeverityNumberTrace4)
+	lr.SetSeverityText("4")
+	guid := "128bc026-5ead-40c7-8853-ebb32bc077a3"
+
+	lr.Attributes().PutStr(azureOperationName, "Microsoft.ApiManagement/GatewayLogs")
+	lr.Attributes().PutStr(azureCategory, "GatewayLogs")
+	lr.Attributes().PutStr(azureCorrelationID, guid)
+	lr.Attributes().PutStr(azureResultType, "Succeeded")
+	lr.Attributes().PutInt(azureDuration, 243)
+	lr.Attributes().PutStr(conventions.AttributeNetSockPeerAddr, "13.14.15.16")
+	lr.Attributes().PutStr(conventions.AttributeCloudRegion, "West US")
+	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+
+	m := lr.Attributes().PutEmptyMap(azureProperties)
+	m.PutStr("method", "GET")
+	m.PutStr("url", "https://api.azure-api.net/sessions")
+	m.PutDouble("backendResponseCode", 200)
+	m.PutDouble("responseCode", 200)
+	m.PutDouble("responseSize", 102945)
+	m.PutStr("cache", "none")
+	m.PutDouble("backendTime", 54)
+	m.PutDouble("requestSize", 632)
+	m.PutStr("apiId", "demo-api")
+	m.PutStr("operationId", "GetSessions")
+	m.PutStr("apimSubscriptionId", "master")
+	m.PutDouble("clientTime", 190)
+	m.PutStr("clientProtocol", "HTTP/1.1")
+	m.PutStr("backendProtocol", "HTTP/1.1")
+	m.PutStr("apiRevision", "1")
+	m.PutStr("clientTlsVersion", "1.2")
+	m.PutStr("backendMethod", "GET")
+	m.PutStr("backendUrl", "https://api.azurewebsites.net/sessions")
 	return lr
 }()
 
@@ -89,7 +190,7 @@ func TestAsSeverity(t *testing.T) {
 
 	for input, expected := range tests {
 		t.Run(input, func(t *testing.T) {
-			assert.Equal(t, expected, asSeverity(input))
+			assert.Equal(t, expected, asSeverity(json.Number(input)))
 		})
 	}
 }
@@ -116,8 +217,8 @@ func TestSetIf(t *testing.T) {
 }
 
 func TestExtractRawAttributes(t *testing.T) {
-	badDuration := "invalid"
-	goodDuration := "1234"
+	badDuration := json.Number("invalid")
+	goodDuration := json.Number("1234")
 
 	tenantID := "tenant.id"
 	operationVersion := "operation.version"
@@ -126,7 +227,7 @@ func TestExtractRawAttributes(t *testing.T) {
 	resultDescription := "result.description"
 	callerIPAddress := "127.0.0.1"
 	correlationID := "edb70d1a-eec2-4b4c-b2f4-60e3510160ee"
-	level := "Informational"
+	level := json.Number("Informational")
 	location := "location"
 
 	identity := interface{}("someone")
@@ -221,11 +322,10 @@ func TestExtractRawAttributes(t *testing.T) {
 }
 
 func TestUnmarshalLogs(t *testing.T) {
-
 	expectedMinimum := plog.NewLogs()
 	resourceLogs := expectedMinimum.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("otelcol/azureeventhubreceiver")
+	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	lr := scopeLogs.LogRecords().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
@@ -235,7 +335,7 @@ func TestUnmarshalLogs(t *testing.T) {
 	resourceLogs = expectedMinimum2.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("otelcol/azureeventhubreceiver")
+	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	logRecords := scopeLogs.LogRecords()
 	lr = logRecords.AppendEmpty()
@@ -245,12 +345,31 @@ func TestUnmarshalLogs(t *testing.T) {
 
 	expectedMaximum := plog.NewLogs()
 	resourceLogs = expectedMaximum.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
+	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID-1")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("otelcol/azureeventhubreceiver")
+	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	lr = scopeLogs.LogRecords().AppendEmpty()
-	maximumLogRecord.CopyTo(lr)
+	maximumLogRecord1.CopyTo(lr)
+
+	resourceLogs = expectedMaximum.ResourceLogs().AppendEmpty()
+	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID-2")
+	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
+	lr = scopeLogs.LogRecords().AppendEmpty()
+	lr2 := scopeLogs.LogRecords().AppendEmpty()
+	maximumLogRecord2[0].CopyTo(lr)
+	maximumLogRecord2[1].CopyTo(lr2)
+
+	expectedBadLevel := plog.NewLogs()
+	resourceLogs = expectedBadLevel.ResourceLogs().AppendEmpty()
+	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
+	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
+	lr = scopeLogs.LogRecords().AppendEmpty()
+	badLevelLogRecord.CopyTo(lr)
 
 	tests := []struct {
 		file     string
@@ -268,32 +387,23 @@ func TestUnmarshalLogs(t *testing.T) {
 			file:     "log-maximum.json",
 			expected: expectedMaximum,
 		},
+		{
+			file:     "log-bad-level.json",
+			expected: expectedBadLevel,
+		},
 	}
 
-	sut := newAzureResourceLogsUnmarshaler(testBuildInfo, nil)
-	now := time.Now()
+	sut := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
 			data, err := os.ReadFile(filepath.Join("testdata", tt.file))
 			assert.NoError(t, err)
 			assert.NotNil(t, data)
 
-			event := &eventhub.Event{
-				Data:         data,
-				PartitionKey: nil,
-				Properties:   map[string]interface{}{},
-				ID:           "11234",
-				SystemProperties: &eventhub.SystemProperties{
-					SequenceNumber: nil,
-					EnqueuedTime:   &now,
-					Offset:         nil,
-					PartitionID:    nil,
-					PartitionKey:   nil,
-					Annotations:    nil,
-				},
-			}
-
-			logs, err := sut.UnmarshalLogs(event)
+			logs, err := sut.UnmarshalLogs(data)
 			assert.NoError(t, err)
 
 			assert.NoError(t, plogtest.CompareLogs(tt.expected, logs))
