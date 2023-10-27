@@ -68,6 +68,7 @@ CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
+GENQLIENT		    := $(TOOLS_BIN_DIR)/genqlient
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
