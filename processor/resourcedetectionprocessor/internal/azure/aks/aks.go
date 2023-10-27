@@ -5,7 +5,9 @@ package aks // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -53,6 +55,14 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 	if d.resourceAttributes.CloudPlatform.Enabled {
 		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureAKS)
+
+		if d.resourceAttributes.K8sClusterName.Enabled {
+			m, err := d.provider.Metadata(ctx)
+			if err != nil {
+				return res, "", fmt.Errorf("failed to get IMDS metadata: %w", err)
+			}
+			attrs.PutStr(conventions.AttributeK8SClusterName, parseClusterName(m.ResourceGroupName))
+		}
 	}
 
 	return res, conventions.SchemaURL, nil
@@ -65,4 +75,24 @@ func onK8s() bool {
 func azureMetadataAvailable(ctx context.Context, p azure.Provider) bool {
 	_, err := p.Metadata(ctx)
 	return err == nil
+}
+
+// parseClusterName parses the cluster name from the resource group name.
+// Generally the resource group name will be of the form (MC|mc)_resource-group_cluster-name_location
+// It is possible for the cluster name to have underscores. It is also possible
+// for the user to override the "infrastucture resource group" which will change
+// the format of the resource group name, it can also have underscores. If the
+// cluster name cannot be parsed, the resource group name is returned as it can
+// be used to uniquely identify the cluster. Azure will not allow the user to
+// deploy multiple AKS clusters with the same "infrastructure resource group"
+// name, making the resource group name a reliable way to identify the cluster.
+func parseClusterName(resourceGroup string) string {
+	// Code inspired by https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/internal/hostmetadata/internal/azure/provider.go#L36
+	splitAll := strings.Split(resourceGroup, "_")
+	switch len(splitAll) {
+	case 4:
+		return splitAll[len(splitAll)-2]
+	default:
+		return resourceGroup
+	}
 }

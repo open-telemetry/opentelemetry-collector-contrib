@@ -34,6 +34,8 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	assert.Equal(t, map[string]any{
 		"cloud.provider": "azure",
 		"cloud.platform": "azure_aks",
+		// Cluster name will not be detected if resource grup is not set
+		"k8s.cluster.name": "",
 	}, res.Attributes().AsRaw(), "Resource attrs returned are incorrect")
 }
 
@@ -63,4 +65,30 @@ func mockProvider() *azure.MockProvider {
 	mp := &azure.MockProvider{}
 	mp.On("Metadata").Return(&azure.ComputeMetadata{}, nil)
 	return mp
+}
+
+func TestParseClusterName(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "parses cluster name",
+			input:    "MC_myResourceGroup_myAKSCluster_eastus",
+			expected: "myAKSCluster",
+		},
+		{
+			name:     "returns resource group when cluster name has underscores",
+			input:    "MC_myResourceGroup_my_AKS_Cluster_eastus",
+			expected: "MC_myResourceGroup_my_AKS_Cluster_eastus",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := parseClusterName(tc.input)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }
