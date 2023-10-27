@@ -10,13 +10,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestNew(t *testing.T) {
 	cases := []struct {
-		name        string
-		criteria    Criteria
-		expectedErr string
+		name                    string
+		criteria                Criteria
+		expectedErr             string
+		disableMTimeFeaturegate bool
 	}{
 		{
 			name: "IncludeEmpty",
@@ -189,6 +191,17 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
+			name: "SortByMtimeDisabled",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					Method: methodMtime,
+				},
+			},
+			disableMTimeFeaturegate: true,
+			expectedErr:             `feature gate "filelog.allowOrderByMtime" must be enabled to use mtime method`,
+		},
+		{
 			name: "InvalidMethod",
 			criteria: Criteria{
 				Include: []string{"*.log"},
@@ -201,6 +214,10 @@ func TestNew(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			if !tc.disableMTimeFeaturegate {
+				enableSortByMTimeFeature(t)
+			}
+
 			matcher, err := New(tc.criteria)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
@@ -701,6 +718,7 @@ func TestMatcher(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			enableSortByMTimeFeature(t)
 			cwd, err := os.Getwd()
 			require.NoError(t, err)
 			require.NoError(t, os.Chdir(t.TempDir()))
@@ -730,6 +748,15 @@ func TestMatcher(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			assert.Equal(t, tc.expected, files)
+		})
+	}
+}
+
+func enableSortByMTimeFeature(t *testing.T) {
+	if !allowOrderByMtime.IsEnabled() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(allowOrderByMtime.ID(), true))
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(allowOrderByMtime.ID(), false))
 		})
 	}
 }

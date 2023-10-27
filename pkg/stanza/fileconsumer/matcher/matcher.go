@@ -10,6 +10,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/filter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
+	"go.opentelemetry.io/collector/featuregate"
+)
+
+var allowOrderByMtime = featuregate.GlobalRegistry().MustRegister(
+	"filelog.allowOrderByMtime",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of `ordering_criteria.mode` = `mtime`."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812"),
 )
 
 const (
@@ -65,6 +73,10 @@ func New(c Criteria) (*Matcher, error) {
 	var f filter.Filter
 	switch c.OrderingCriteria.Method {
 	case methodMtime:
+		if !allowOrderByMtime.IsEnabled() {
+			return nil, fmt.Errorf("feature gate %q must be enabled to use mtime method", allowOrderByMtime.ID())
+		}
+
 		f = filter.NewMTimeFilter()
 	case methodRegex, "": // If no method is specified, defaults to regex
 		// regex type with no SortBy indicates no-op
