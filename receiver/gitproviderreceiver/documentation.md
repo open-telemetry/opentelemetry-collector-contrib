@@ -12,49 +12,6 @@ metrics:
     enabled: false
 ```
 
-### git.repository.branch.count
-
-Number of branches that exist in the repository
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The full name of the Git repository | Any Str |
-
-### git.repository.branch.time
-
-Time the branch has existed
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The full name of the Git repository | Any Str |
-| branch.name | The name of the branch in a given repository | Any Str |
-
-### git.repository.contributor.count
-
-Total number of unique contributors to this repository
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The full name of the Git repository | Any Str |
-
 ### git.repository.count
 
 Number of repositories that exist in an organization
@@ -63,24 +20,9 @@ Number of repositories that exist in an organization
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### git.repository.pull_request.time
-
-Time the PR has been open
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The full name of the Git repository | Any Str |
-| branch.name | The name of the branch in a given repository | Any Str |
-
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| git.vendor.name |  | Any Str | true |
+| git.vendor.name | The name of the Git vendor/provider (ie. GitHub / GitLab) | Any Str | true |
 | organization.name | Git Organization or Project Name | Any Str | true |
