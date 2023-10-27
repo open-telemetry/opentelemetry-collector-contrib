@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 func TestUnmarshalJaeger(t *testing.T) {
@@ -44,7 +45,7 @@ func TestUnmarshalJaeger(t *testing.T) {
 			bytes:       protoBytes,
 		},
 		{
-			unmarshaler: jaegerJsonTrace{},
+			unmarshaler: jaegerJSONTrace{},
 			encoding:    "jaeger_json",
 			bytes:       jsonBytes.Bytes(),
 		},
