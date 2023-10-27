@@ -1121,3 +1121,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaeg
 replace github.com/open-telemetry/opentelemetry-collector-contrib => ../..
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ../../receiver/azureeventhubreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
