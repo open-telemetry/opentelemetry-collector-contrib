@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -84,7 +84,7 @@ func NewLogEmitter(logger *zap.SugaredLogger, opts ...emitterOption) *LogEmitter
 }
 
 // Start starts the goroutine(s) required for this operator
-func (e *LogEmitter) Start(_ operator.Persister) error {
+func (e *LogEmitter) Start(_ storage.Client) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
 

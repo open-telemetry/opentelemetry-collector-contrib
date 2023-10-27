@@ -29,7 +29,7 @@ func TestStdin(t *testing.T) {
 	stdin := op.(*Input)
 	stdin.stdin = r
 
-	require.NoError(t, stdin.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, stdin.Start(testutil.NewUnscopedMockStorage()))
 	defer func() {
 		require.NoError(t, stdin.Stop())
 	}()

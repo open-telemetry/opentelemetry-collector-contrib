@@ -18,6 +18,7 @@ import (
 
 	"github.com/jpillora/backoff"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -175,7 +176,7 @@ type Input struct {
 }
 
 // Start will start listening for log entries over tcp.
-func (t *Input) Start(_ operator.Persister) error {
+func (t *Input) Start(_ storage.Client) error {
 	if err := t.configureListener(); err != nil {
 		return fmt.Errorf("failed to listen on interface: %w", err)
 	}

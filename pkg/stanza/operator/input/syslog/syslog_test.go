@@ -96,7 +96,7 @@ func InputTest(t *testing.T, cfg *Config, tc syslog.Case) {
 	p, err := pipeline.NewDirectedPipeline(ops)
 	require.NoError(t, err)
 
-	err = p.Start(testutil.NewUnscopedMockPersister())
+	err = p.Start(testutil.NewUnscopedMockStorage())
 	require.NoError(t, err)
 
 	var conn net.Conn

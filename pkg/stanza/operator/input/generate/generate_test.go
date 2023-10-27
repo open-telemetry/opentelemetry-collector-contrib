@@ -28,7 +28,7 @@ func TestInputGenerate(t *testing.T) {
 	err = op.SetOutputs([]operator.Operator{fake})
 	require.NoError(t, err)
 
-	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, op.Start(testutil.NewUnscopedMockStorage()))
 	defer func() {
 		require.NoError(t, op.Stop())
 	}()

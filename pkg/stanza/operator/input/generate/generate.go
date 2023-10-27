@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -63,7 +64,7 @@ type Input struct {
 }
 
 // Start will start generating log entries.
-func (g *Input) Start(_ operator.Persister) error {
+func (g *Input) Start(_ storage.Client) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	g.cancel = cancel
 

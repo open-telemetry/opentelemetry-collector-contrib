@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph/encoding/dot"
@@ -33,10 +34,10 @@ type DirectedPipeline struct {
 }
 
 // Start will start the operators in a pipeline in reverse topological order
-func (p *DirectedPipeline) Start(persister operator.Persister) error {
+func (p *DirectedPipeline) Start(client storage.Client) error {
 	var err error = alreadyStarted
 	p.startOnce.Do(func() {
-		err = p.start(persister)
+		err = p.start(client)
 	})
 	return err
 }
@@ -50,14 +51,14 @@ func (p *DirectedPipeline) Stop() error {
 	return err
 }
 
-func (p *DirectedPipeline) start(persister operator.Persister) error {
+func (p *DirectedPipeline) start(client storage.Client) error {
 	sortedNodes, _ := topo.Sort(p.Graph)
 	for i := len(sortedNodes) - 1; i >= 0; i-- {
 		op := sortedNodes[i].(OperatorNode).Operator()
 
-		scopedPersister := operator.NewScopedPersister(op.ID(), persister)
+		scopedClient := operator.NewScopedStorage(op.ID(), client)
 		op.Logger().Debug("Starting operator")
-		if err := op.Start(scopedPersister); err != nil {
+		if err := op.Start(scopedClient); err != nil {
 			return err
 		}
 		op.Logger().Debug("Started operator")

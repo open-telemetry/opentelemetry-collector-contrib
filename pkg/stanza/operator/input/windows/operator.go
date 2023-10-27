@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -93,24 +94,24 @@ type Input struct {
 	raw              bool
 	excludeProviders []string
 	pollInterval     time.Duration
-	persister        operator.Persister
+	storageClient    storage.Client
 	publisherCache   publisherCache
 	cancel           context.CancelFunc
 	wg               sync.WaitGroup
 }
 
 // Start will start reading events from a subscription.
-func (e *Input) Start(persister operator.Persister) error {
+func (e *Input) Start(client storage.Client) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
 
-	e.persister = persister
+	e.storageClient = client
 
 	e.bookmark = NewBookmark()
 	offsetXML, err := e.getBookmarkOffset(ctx)
 	if err != nil {
 		e.Errorf("Failed to open bookmark, continuing without previous bookmark: %s", err)
-		e.persister.Delete(ctx, e.channel)
+		e.storageClient.Delete(ctx, e.channel)
 	}
 
 	if offsetXML != "" {
@@ -287,7 +288,7 @@ func (e *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
 
 // getBookmarkXML will get the bookmark xml from the offsets database.
 func (e *Input) getBookmarkOffset(ctx context.Context) (string, error) {
-	bytes, err := e.persister.Get(ctx, e.channel)
+	bytes, err := e.storageClient.Get(ctx, e.channel)
 	return string(bytes), err
 }
 
@@ -304,7 +305,7 @@ func (e *Input) updateBookmarkOffset(ctx context.Context, event Event) {
 		return
 	}
 
-	if err := e.persister.Set(ctx, e.channel, []byte(bookmarkXML)); err != nil {
+	if err := e.storageClient.Set(ctx, e.channel, []byte(bookmarkXML)); err != nil {
 		e.Errorf("failed to set offsets: %s", err)
 		return
 	}

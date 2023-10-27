@@ -11,6 +11,7 @@ import (
 	"os"
 	"sync"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -75,7 +76,7 @@ type Output struct {
 }
 
 // Start will open the output file.
-func (fo *Output) Start(_ operator.Persister) error {
+func (fo *Output) Start(_ storage.Client) error {
 	var err error
 	fo.file, err = os.OpenFile(fo.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
 	if err != nil {

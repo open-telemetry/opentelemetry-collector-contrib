@@ -4,10 +4,10 @@
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 // NewBasicConfig creates a new basic config
@@ -96,7 +96,7 @@ func (p *BasicOperator) Logger() *zap.SugaredLogger {
 }
 
 // Start will start the operator.
-func (p *BasicOperator) Start(_ operator.Persister) error {
+func (p *BasicOperator) Start(_ storage.Client) error {
 	return nil
 }
 

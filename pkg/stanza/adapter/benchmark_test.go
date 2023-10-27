@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
@@ -183,7 +184,7 @@ type Input struct {
 }
 
 // Start will start generating log entries.
-func (b *Input) Start(_ operator.Persister) error {
+func (b *Input) Start(_ storage.Client) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	b.cancel = cancel
 

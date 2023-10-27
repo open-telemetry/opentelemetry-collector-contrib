@@ -11,15 +11,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestLoadNothing(t *testing.T) {
-	reloaded, err := Load(context.Background(), testutil.NewUnscopedMockPersister())
+	reloaded, err := Load(context.Background(), testutil.NewUnscopedMockStorage())
 	assert.NoError(t, err)
 	assert.Equal(t, []*reader.Metadata{}, reloaded)
 }
@@ -99,7 +99,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			p := testutil.NewUnscopedMockPersister()
+			p := testutil.NewUnscopedMockStorage()
 			assert.NoError(t, Save(context.Background(), p, tc.rmds))
 			reloaded, err := Load(context.Background(), p)
 			assert.NoError(t, err)
@@ -114,7 +114,7 @@ type deprecatedMetadata struct {
 }
 
 func TestMigrateHeaderAttributes(t *testing.T) {
-	p := testutil.NewUnscopedMockPersister()
+	p := testutil.NewUnscopedMockStorage()
 	saveDeprecated(t, p, &deprecatedMetadata{
 		Metadata: reader.Metadata{
 			Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
@@ -140,10 +140,10 @@ func TestMigrateHeaderAttributes(t *testing.T) {
 
 }
 
-func saveDeprecated(t *testing.T, persister operator.Persister, dep *deprecatedMetadata) {
+func saveDeprecated(t *testing.T, client storage.Client, dep *deprecatedMetadata) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	require.NoError(t, enc.Encode(1))
 	require.NoError(t, enc.Encode(dep))
-	require.NoError(t, persister.Set(context.Background(), knownFilesKey, buf.Bytes()))
+	require.NoError(t, client.Set(context.Background(), knownFilesKey, buf.Bytes()))
 }

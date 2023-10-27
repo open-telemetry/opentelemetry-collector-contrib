@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -56,19 +57,48 @@ func (p *mockPersister) Delete(_ context.Context, k string) error {
 	return nil
 }
 
-// NewUnscopedMockPersister will return a new persister for testing
-func NewUnscopedMockPersister() operator.Persister {
+func (p *mockPersister) Batch(ctx context.Context, ops ...storage.Operation) error {
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			val, err := p.Get(ctx, op.Key)
+			if err != nil {
+				return err
+			}
+			op.Value = val
+		case storage.Set:
+			if err := p.Set(ctx, op.Key, op.Value); err != nil {
+				return err
+			}
+		case storage.Delete:
+			if err := p.Delete(ctx, op.Key); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (p *mockPersister) Close(_ context.Context) error {
+	p.dataMux.Lock()
+	defer p.dataMux.Unlock()
+	p.data = make(map[string][]byte)
+	return nil
+}
+
+// NewUnscopedMockStorage will return a new persister for testing
+func NewUnscopedMockStorage() storage.Client {
 	data := make(map[string][]byte)
 	return &mockPersister{data: data}
 }
 
-func NewMockPersister(scope string) operator.Persister {
-	return operator.NewScopedPersister(scope, NewUnscopedMockPersister())
+func NewMockStorage(scope string) storage.Client {
+	return operator.NewScopedStorage(scope, NewUnscopedMockStorage())
 }
 
 // NewErrPersister will return a new persister for testing
 // which will return an error if any of the specified keys are used
-func NewErrPersister(errKeys map[string]error) operator.Persister {
+func NewErrPersister(errKeys map[string]error) storage.Client {
 	data := make(map[string][]byte)
 	return &mockPersister{data: data, errKeys: errKeys}
 }

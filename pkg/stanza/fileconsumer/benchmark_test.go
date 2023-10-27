@@ -173,7 +173,7 @@ func BenchmarkFileInput(b *testing.B) {
 			}
 
 			b.ResetTimer()
-			err = op.Start(testutil.NewUnscopedMockPersister())
+			err = op.Start(testutil.NewUnscopedMockStorage())
 			defer func() {
 				require.NoError(b, op.Stop())
 			}()

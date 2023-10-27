@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -47,7 +48,7 @@ func (c *UnstartableConfig) Build(logger *zap.SugaredLogger) (operator.Operator,
 }
 
 // Start will return an error
-func (o *UnstartableOperator) Start(_ operator.Persister) error {
+func (o *UnstartableOperator) Start(_ storage.Client) error {
 	return errors.New("something very unusual happened")
 }
 

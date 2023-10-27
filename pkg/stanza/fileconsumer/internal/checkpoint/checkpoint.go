@@ -10,14 +10,15 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 const knownFilesKey = "knownFiles"
 
 // Save syncs the most recent set of files to the database
-func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata) error {
+func Save(ctx context.Context, client storage.Client, rmds []*reader.Metadata) error {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
@@ -34,7 +35,7 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 		}
 	}
 
-	if err := persister.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
+	if err := client.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
 		errs = append(errs, fmt.Errorf("persist known files: %w", err))
 	}
 
@@ -42,8 +43,8 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 }
 
 // Load loads the most recent set of files to the database
-func Load(ctx context.Context, persister operator.Persister) ([]*reader.Metadata, error) {
-	encoded, err := persister.Get(ctx, knownFilesKey)
+func Load(ctx context.Context, client storage.Client) ([]*reader.Metadata, error) {
+	encoded, err := client.Get(ctx, knownFilesKey)
 	if err != nil {
 		return nil, err
 	}

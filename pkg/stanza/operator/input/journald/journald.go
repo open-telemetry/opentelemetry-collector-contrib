@@ -21,6 +21,7 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -194,10 +195,10 @@ type Input struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persister operator.Persister
-	json      jsoniter.API
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
+	storageClient storage.Client
+	json          jsoniter.API
+	cancel        context.CancelFunc
+	wg            sync.WaitGroup
 }
 
 type cmd interface {
@@ -215,17 +216,17 @@ type failedCommand struct {
 var lastReadCursorKey = "lastReadCursor"
 
 // Start will start generating log entries.
-func (operator *Input) Start(persister operator.Persister) error {
+func (operator *Input) Start(client storage.Client) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	operator.cancel = cancel
 
 	// Start from a cursor if there is a saved offset
-	cursor, err := persister.Get(ctx, lastReadCursorKey)
+	cursor, err := client.Get(ctx, lastReadCursorKey)
 	if err != nil {
 		return fmt.Errorf("failed to get journalctl state: %w", err)
 	}
 
-	operator.persister = persister
+	operator.storageClient = client
 
 	// Start journalctl
 	journal := operator.newCmd(ctx, cursor)
@@ -313,7 +314,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 				operator.Warnw("Failed to parse journal entry", zap.Error(err))
 				continue
 			}
-			if err := operator.persister.Set(ctx, lastReadCursorKey, []byte(cursor)); err != nil {
+			if err := operator.storageClient.Set(ctx, lastReadCursorKey, []byte(cursor)); err != nil {
 				operator.Warnw("Failed to set offset", zap.Error(err))
 			}
 			operator.Write(ctx, entry)

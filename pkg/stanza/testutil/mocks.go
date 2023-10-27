@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -64,7 +65,7 @@ func (f *FakeOutput) SetOutputs(_ []operator.Operator) error { return nil }
 func (f *FakeOutput) SetOutputIDs(_ []string) {}
 
 // Start immediately returns nil for a fake output
-func (f *FakeOutput) Start(_ operator.Persister) error { return nil }
+func (f *FakeOutput) Start(_ storage.Client) error { return nil }
 
 // Stop immediately returns nil for a fake output
 func (f *FakeOutput) Stop() error { return nil }

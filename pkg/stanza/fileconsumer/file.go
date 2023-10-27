@@ -10,13 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 type Manager struct {
@@ -28,7 +28,7 @@ type Manager struct {
 	fileMatcher   *matcher.Matcher
 
 	pollInterval  time.Duration
-	persister     operator.Persister
+	storageClient storage.Client
 	maxBatches    int
 	maxBatchFiles int
 
@@ -39,13 +39,13 @@ type Manager struct {
 	currentFps []*fingerprint.Fingerprint
 }
 
-func (m *Manager) Start(persister operator.Persister) error {
+func (m *Manager) Start(storageClient storage.Client) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 
-	if persister != nil {
-		m.persister = persister
-		offsets, err := checkpoint.Load(ctx, m.persister)
+	if storageClient != nil {
+		m.storageClient = storageClient
+		offsets, err := checkpoint.Load(ctx, m.storageClient)
 		if err != nil {
 			return fmt.Errorf("read known files from database: %w", err)
 		}
@@ -80,8 +80,8 @@ func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
 	m.closePreviousFiles()
-	if m.persister != nil {
-		if err := checkpoint.Save(context.Background(), m.persister, m.knownFiles); err != nil {
+	if m.storageClient != nil {
+		if err := checkpoint.Save(context.Background(), m.storageClient, m.knownFiles); err != nil {
 			m.Errorw("save offsets", zap.Error(err))
 		}
 	}
@@ -139,8 +139,8 @@ func (m *Manager) poll(ctx context.Context) {
 
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.FromBeginning = true
-	if m.persister != nil {
-		if err := checkpoint.Save(context.Background(), m.persister, m.knownFiles); err != nil {
+	if m.storageClient != nil {
+		if err := checkpoint.Save(context.Background(), m.storageClient, m.knownFiles); err != nil {
 			m.Errorw("save offsets", zap.Error(err))
 		}
 	}

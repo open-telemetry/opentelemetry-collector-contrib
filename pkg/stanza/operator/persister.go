@@ -10,24 +10,30 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-type ScopedPersister struct {
+type ScopedStorage struct {
 	client storage.Client
 	scope  string
 }
 
-func NewScopedPersister(s string, client storage.Client) storage.Client {
-	return &ScopedPersister{
+func NewScopedStorage(s string, client storage.Client) storage.Client {
+	return &ScopedStorage{
 		client: client,
 		scope:  s,
 	}
 }
 
-func (p ScopedPersister) Get(ctx context.Context, key string) ([]byte, error) {
+func (p ScopedStorage) Get(ctx context.Context, key string) ([]byte, error) {
 	return p.client.Get(ctx, fmt.Sprintf("%s.%s", p.scope, key))
 }
-func (p ScopedPersister) Set(ctx context.Context, key string, value []byte) error {
+func (p ScopedStorage) Set(ctx context.Context, key string, value []byte) error {
 	return p.client.Set(ctx, fmt.Sprintf("%s.%s", p.scope, key), value)
 }
-func (p ScopedPersister) Delete(ctx context.Context, key string) error {
+func (p ScopedStorage) Delete(ctx context.Context, key string) error {
 	return p.client.Delete(ctx, fmt.Sprintf("%s.%s", p.scope, key))
+}
+func (p ScopedStorage) Batch(ctx context.Context, ops ...storage.Operation) error {
+	return p.client.Batch(ctx, ops...)
+}
+func (p ScopedStorage) Close(ctx context.Context) error {
+	return p.client.Close(ctx)
 }

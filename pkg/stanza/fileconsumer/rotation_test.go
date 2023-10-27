@@ -48,7 +48,7 @@ func TestMultiFileRotate(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockStorage()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -109,7 +109,7 @@ func TestMultiFileRotateSlow(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockStorage()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -163,7 +163,7 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockStorage()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -263,7 +263,7 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 			expected = append(expected, []byte(fmt.Sprintf("%s %3d", baseStr, i)))
 		}
 
-		require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+		require.NoError(t, operator.Start(testutil.NewUnscopedMockStorage()))
 		defer func() {
 			require.NoError(t, operator.Stop())
 		}()
@@ -358,7 +358,7 @@ func TestMoveFile(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.storageClient = testutil.NewUnscopedMockStorage()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\n")
@@ -386,7 +386,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.storageClient = testutil.NewUnscopedMockStorage()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\n")
@@ -431,7 +431,7 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	orginalName := originalFile.Name()
 	writeString(t, originalFile, "testlog1\n")
 
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockStorage()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -466,7 +466,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	cfg.Include = append(cfg.Include, fmt.Sprintf("%s/*.log1", tempDir))
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.storageClient = testutil.NewUnscopedMockStorage()
 
 	originalFile := openTempWithPattern(t, tempDir, "*.log1")
 	originalFileName := originalFile.Name()
@@ -503,7 +503,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	cfg.Include = append(cfg.Include, fmt.Sprintf("%s/*.log1", tempDir))
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.storageClient = testutil.NewUnscopedMockStorage()
 
 	originalFile := openTempWithPattern(t, tempDir, "*.log1")
 	writeString(t, originalFile, "testlog1\n")
@@ -543,7 +543,7 @@ func TestTruncateThenWrite(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.storageClient = testutil.NewUnscopedMockStorage()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
@@ -575,7 +575,7 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.storageClient = testutil.NewUnscopedMockStorage()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
@@ -613,7 +613,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	persister := testutil.NewUnscopedMockPersister()
+	storageClient := testutil.NewUnscopedMockStorage()
 
 	log1 := tokenWithLength(1001)
 	log2 := tokenWithLength(1002)
@@ -624,7 +624,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	writeString(t, temp, string(log1)+"\n")
 
 	// Run the operator to read the first log
-	require.NoError(t, operator.Start(persister))
+	require.NoError(t, operator.Start(storageClient))
 	waitForToken(t, emitCalls, log1)
 	require.NoError(t, operator.Stop())
 
@@ -641,7 +641,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 
 	// Expect the message written to the new log to come through
 	operator2, emitCalls2 := buildTestManager(t, cfg)
-	require.NoError(t, operator2.Start(persister))
+	require.NoError(t, operator2.Start(storageClient))
 	waitForTokens(t, emitCalls2, log2, log3)
 	require.NoError(t, operator2.Stop())
 }

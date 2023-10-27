@@ -7,6 +7,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 	zap "go.uber.org/zap"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 
 	entry "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	operator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -141,11 +142,11 @@ func (_m *Operator) SetOutputs(_a0 []operator.Operator) error {
 }
 
 // Start provides a mock function with given fields: _a0
-func (_m *Operator) Start(_a0 operator.Persister) error {
+func (_m *Operator) Start(_a0 storage.Client) error {
 	ret := _m.Called(_a0)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(operator.Persister) error); ok {
+	if rf, ok := ret.Get(0).(func(storage.Client) error); ok {
 		r0 = rf(_a0)
 	} else {
 		r0 = ret.Error(0)

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"sync"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -169,7 +170,7 @@ type messageAndAddress struct {
 }
 
 // Start will start listening for messages on a socket.
-func (u *Input) Start(_ operator.Persister) error {
+func (u *Input) Start(_ storage.Client) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	u.cancel = cancel
 

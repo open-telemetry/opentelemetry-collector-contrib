@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -25,8 +26,8 @@ type Input struct {
 }
 
 // Start will start the file monitoring process
-func (f *Input) Start(persister operator.Persister) error {
-	return f.fileConsumer.Start(persister)
+func (f *Input) Start(client storage.Client) error {
+	return f.fileConsumer.Start(client)
 }
 
 // Stop will stop the file monitoring process

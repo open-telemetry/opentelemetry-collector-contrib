@@ -6,6 +6,7 @@ package operator // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -19,7 +20,7 @@ type Operator interface {
 	Type() string
 
 	// Start will start the operator.
-	Start(Persister) error
+	Start(storage.Client) error
 	// Stop will stop the operator.
 	Stop() error
 

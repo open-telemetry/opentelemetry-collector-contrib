@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -123,11 +124,11 @@ type Input struct {
 }
 
 // Start will start listening for log entries over tcp or udp.
-func (t *Input) Start(p operator.Persister) error {
+func (t *Input) Start(client storage.Client) error {
 	if t.tcp != nil {
-		return t.tcp.Start(p)
+		return t.tcp.Start(client)
 	}
-	return t.udp.Start(p)
+	return t.udp.Start(client)
 }
 
 // Stop will stop listening for messages.

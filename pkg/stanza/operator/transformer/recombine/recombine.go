@@ -12,6 +12,7 @@ import (
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -161,7 +162,7 @@ type sourceBatch struct {
 	firstEntryObservedTime time.Time
 }
 
-func (r *Transformer) Start(_ operator.Persister) error {
+func (r *Transformer) Start(_ storage.Client) error {
 	go r.flushLoop()
 
 	return nil
