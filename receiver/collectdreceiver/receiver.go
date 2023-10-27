@@ -29,6 +29,7 @@ type collectdReceiver struct {
 	server             *http.Server
 	defaultAttrsPrefix string
 	nextConsumer       consumer.Metrics
+	observability      *observability
 }
 
 // newCollectdReceiver creates the CollectD receiver with the given parameters.
@@ -37,7 +38,8 @@ func newCollectdReceiver(
 	addr string,
 	timeout time.Duration,
 	defaultAttrsPrefix string,
-	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+	nextConsumer consumer.Metrics,
+	telemetrySettings component.TelemetrySettings) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -54,7 +56,9 @@ func newCollectdReceiver(
 		ReadTimeout:  timeout,
 		WriteTimeout: timeout,
 	}
-	return r, nil
+	var err error
+	r.observability, err = initMetrics(telemetrySettings)
+	return r, err
 }
 
 // Start starts an HTTP server that can process CollectD JSON requests.
@@ -74,17 +78,17 @@ func (cdr *collectdReceiver) Shutdown(context.Context) error {
 
 // ServeHTTP acts as the default and only HTTP handler for the CollectD receiver.
 func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	recordRequestReceived()
+	cdr.observability.recordRequestReceived()
 
 	if r.Method != "POST" {
-		recordRequestErrors()
+		cdr.observability.recordRequestErrors()
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		recordRequestErrors()
+		cdr.observability.recordRequestErrors()
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -101,7 +105,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	for _, record := range records {
-		err = record.appendToMetrics(scopeMetrics, defaultAttrs)
+		err = record.appendToMetrics(cdr.observability, scopeMetrics, defaultAttrs)
 		if err != nil {
 			cdr.handleHTTPErr(w, err, "unable to process metrics")
 			return
@@ -132,7 +136,7 @@ func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]str
 		if strings.HasPrefix(key, cdr.defaultAttrsPrefix) {
 			value := params.Get(key)
 			if len(value) == 0 {
-				recordDefaultBlankAttrs()
+				cdr.observability.recordDefaultBlankAttrs()
 				continue
 			}
 			key = key[len(cdr.defaultAttrsPrefix):]
@@ -143,7 +147,7 @@ func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]str
 }
 
 func (cdr *collectdReceiver) handleHTTPErr(w http.ResponseWriter, err error, msg string) {
-	recordRequestErrors()
+	cdr.observability.recordRequestErrors()
 	w.WriteHeader(http.StatusBadRequest)
 	cdr.logger.Error(msg, zap.Error(err))
 	_, err = w.Write([]byte(msg))

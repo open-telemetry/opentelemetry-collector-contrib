@@ -57,14 +57,14 @@ func (cdr *collectDRecord) startTimestamp(metricType string) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(0, 0))
 }
 
-func (cdr *collectDRecord) appendToMetrics(scopeMetrics pmetric.ScopeMetrics, defaultLabels map[string]string) error {
+func (cdr *collectDRecord) appendToMetrics(observability *observability, scopeMetrics pmetric.ScopeMetrics, defaultLabels map[string]string) error {
 	// Ignore if record is an event instead of data point
 	if cdr.isEvent() {
-		recordEventsReceived()
+		observability.recordEventsReceived()
 		return nil
 	}
 
-	recordMetricsReceived()
+	observability.recordMetricsReceived()
 	labels := make(map[string]string, len(defaultLabels))
 	for k, v := range defaultLabels {
 		labels[k] = v

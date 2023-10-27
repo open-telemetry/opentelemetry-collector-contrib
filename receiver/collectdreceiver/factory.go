@@ -58,5 +58,5 @@ func createMetricsReceiver(
 			c.Encoding,
 		)
 	}
-	return newCollectdReceiver(params.Logger, c.Endpoint, c.Timeout, c.AttributesPrefix, nextConsumer)
+	return newCollectdReceiver(params.Logger, c.Endpoint, c.Timeout, c.AttributesPrefix, nextConsumer, params.TelemetrySettings)
 }
