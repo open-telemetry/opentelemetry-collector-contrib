@@ -153,11 +153,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/exporter/honeycombmarkerexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/exporter/influxdbexporter"
     schedule:
       interval: "weekly"
@@ -359,6 +354,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/oidcauthextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/extension/opampextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
