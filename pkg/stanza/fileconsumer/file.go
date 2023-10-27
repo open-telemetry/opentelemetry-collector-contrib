@@ -43,17 +43,18 @@ func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 
-	m.persister = persister
-
-	offsets, err := checkpoint.Load(ctx, m.persister)
-	if err != nil {
-		return fmt.Errorf("read known files from database: %w", err)
-	}
-	if len(offsets) > 0 {
-		m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
-		m.readerFactory.FromBeginning = true
-		for _, offset := range offsets {
-			m.knownFiles = append(m.knownFiles, &reader.Reader{Metadata: offset})
+	if persister != nil {
+		m.persister = persister
+		offsets, err := checkpoint.Load(ctx, m.persister)
+		if err != nil {
+			return fmt.Errorf("read known files from database: %w", err)
+		}
+		if len(offsets) > 0 {
+			m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
+			m.readerFactory.FromBeginning = true
+			for _, offset := range offsets {
+				m.knownFiles = append(m.knownFiles, &reader.Reader{Metadata: offset})
+			}
 		}
 	}
 
@@ -169,12 +170,14 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 
 	m.saveCurrent(readers)
 
-	rmds := make([]*reader.Metadata, 0, len(readers))
-	for _, r := range readers {
-		rmds = append(rmds, r.Metadata)
-	}
-	if err := checkpoint.Save(ctx, m.persister, rmds); err != nil {
-		m.Errorw("save offsets", zap.Error(err))
+	if m.persister != nil {
+		rmds := make([]*reader.Metadata, 0, len(readers))
+		for _, r := range readers {
+			rmds = append(rmds, r.Metadata)
+		}
+		if err := checkpoint.Save(ctx, m.persister, rmds); err != nil {
+			m.Errorw("save offsets", zap.Error(err))
+		}
 	}
 
 	m.clearCurrentFingerprints()

@@ -8,7 +8,12 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/githubgen"
+    directory: "/cmd/otelcontribcol"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/oteltestbedcol"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -299,11 +304,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/bearertokenauthextension"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/extension/encoding/jaegerencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1013,11 +1013,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/receiver/splunkenterprisereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/receiver/splunkhecreceiver"
     schedule:
       interval: "weekly"
@@ -1064,6 +1059,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/wavefrontreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/webhookeventreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
