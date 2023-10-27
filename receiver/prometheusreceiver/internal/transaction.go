@@ -203,9 +203,63 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 	return 0, nil
 }
 
-func (t *transaction) AppendHistogram(_ storage.SeriesRef, _ labels.Labels, _ int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
-	//TODO: implement this func
-	return 0, nil
+func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, _ int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
+	select {
+	case <-t.ctx.Done():
+		return 0, errTransactionAborted
+	default:
+	}
+
+	if len(t.externalLabels) != 0 {
+		ls = append(ls, t.externalLabels...)
+		sort.Sort(ls)
+	}
+
+	if t.isNew {
+		if err := t.initTransaction(ls); err != nil {
+			return 0, err
+		}
+	}
+
+	// Any datapoint with duplicate labels MUST be rejected per:
+	// * https://github.com/open-telemetry/wg-prometheus/issues/44
+	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
+	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
+	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
+		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
+	}
+
+	metricName := ls.Get(model.MetricNameLabel)
+	if metricName == "" {
+		return 0, errMetricNameNotFound
+	}
+
+	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
+	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
+	// But it can also be a staleNaN, which is inserted when the target goes away.
+	// Native histogram: the up metric is generated as a counter so we can assume that
+	// this metric is user defined. Do explicit nothing with up metric to be consistent with Append()
+	// if metricName == scrapeUpMetricName {}
+
+	// For the `target_info` metric we need to convert it to resource attributes.
+	if metricName == targetMetricName {
+		t.AddTargetInfo(ls)
+		return 0, nil
+	}
+
+	// For the `otel_scope_info` metric we need to convert it to scope attributes.
+	if metricName == scopeMetricName {
+		t.addScopeInfo(ls)
+		return 0, nil
+	}
+
+	// curMF := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
+	// err := curMF.addSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, val)
+	// if err != nil {
+	// 	t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+	// }
+
+	return 0, nil // never return errors, as that fails the whole scrape
 }
 
 func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType) uint64 {
