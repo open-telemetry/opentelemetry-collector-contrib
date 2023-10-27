@@ -34,7 +34,6 @@ type Manager struct {
 
 	previousPollFiles []*reader.Reader
 	knownFiles        []*reader.Metadata
-	seenPaths         map[string]struct{}
 
 	currentFps []*fingerprint.Fingerprint
 }
@@ -178,14 +177,6 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
-	if _, ok := m.seenPaths[path]; !ok {
-		if m.readerFactory.FromBeginning {
-			m.Infow("Started watching file", "path", path)
-		} else {
-			m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
-		}
-		m.seenPaths[path] = struct{}{}
-	}
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
 		m.Errorw("Failed to open file", zap.Error(err))
@@ -274,5 +265,6 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
+	m.Infow("Started watching file", "path", file.Name())
 	return m.readerFactory.NewReader(file, fp)
 }
