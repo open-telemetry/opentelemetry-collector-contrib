@@ -91,6 +91,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	// the cluster name.
 	clusterName, err := d.utils.getClusterName(ctx)
 	d.rb.SetK8sClusterName(clusterName)
+
 	return d.rb.Emit(), conventions.SchemaURL, err
 }
 
@@ -133,7 +134,11 @@ func (e eksDetectorUtils) getConfigMap(ctx context.Context, namespace string, na
 }
 
 func (e eksDetectorUtils) getClusterName(ctx context.Context) (string, error) {
-	sess := session.Must(session.NewSession())
+	sess, err := session.NewSession()
+	if err != nil {
+		return "", err
+	}
+
 	ec2Svc := ec2metadata.New(sess)
 	region, err := ec2Svc.Region()
 	if err != nil {

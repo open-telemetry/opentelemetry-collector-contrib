@@ -12,14 +12,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
 )
 
 const (
-	clusterNameKey = "k8s.cluster.name"
-	clusterName    = "my-cluster"
+	clusterName = "my-cluster"
 )
 
 type MockDetectorUtils struct {
@@ -53,7 +53,7 @@ func TestEKS(t *testing.T) {
 	ctx := context.Background()
 
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
-	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{clusterNameKey: clusterName}, nil)
+	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{conventions.AttributeK8SClusterName: clusterName}, nil)
 	// Call EKS Resource detector to detect resources
 	eksResourceDetector := &detector{utils: detectorUtils, err: nil, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	res, _, err := eksResourceDetector.Detect(ctx)

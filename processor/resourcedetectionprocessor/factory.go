@@ -34,10 +34,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
-const (
-	defaultTimeout = 5 * time.Second
-)
-
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 type factory struct {
@@ -101,7 +97,7 @@ func createDefaultConfig() component.Config {
 
 func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
 	httpClientSettings := confighttp.NewDefaultHTTPClientSettings()
-	httpClientSettings.Timeout = defaultTimeout
+	httpClientSettings.Timeout = 5 * time.Second
 	return httpClientSettings
 }
 
@@ -176,7 +172,6 @@ func (f *factory) getResourceDetectionProcessor(
 	if oCfg.Attributes != nil {
 		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
 	}
-
 	provider, err := f.getResourceProvider(params, oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err
