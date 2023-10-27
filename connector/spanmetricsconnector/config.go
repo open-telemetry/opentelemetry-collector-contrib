@@ -98,9 +98,8 @@ func (c Config) Validate() error {
 	if err != nil {
 		return err
 	}
-	err = validateEventDimensions(c.Events.Enabled, c.Events.Dimensions)
-	if err != nil {
-		return err
+	if err = validateEventDimensions(c.Events.Enabled, c.Events.Dimensions); err != nil {
+		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
 
 	if c.DimensionsCacheSize <= 0 {
