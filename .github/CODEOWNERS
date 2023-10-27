@@ -95,6 +95,7 @@ extension/encoding/jaegerencodingextension/                             @open-te
 extension/encoding/jsonlogencodingextension/                            @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
 extension/encoding/textencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/zipkinencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
+extension/encoding/otlpencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/headerssetterextension/                                       @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                                @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
