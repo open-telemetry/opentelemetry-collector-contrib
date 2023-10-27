@@ -90,11 +90,12 @@ exporter/zipkinexporter/                                                @open-te
 extension/asapauthextension/                                            @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                                           @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin @frzifus
-extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123 @frzifus
+extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/encoding/jaegerencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/                            @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
 extension/encoding/textencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/zipkinencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
+extension/encoding/otlpencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/headerssetterextension/                                       @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                                @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
@@ -132,6 +133,7 @@ internal/tools/                                                         @open-te
 pkg/batchperresourceattr/                                               @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                                                     @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/experimentalmetricmetadata/                                         @open-telemetry/collector-contrib-approvers @rmfitzpatrick
+pkg/golden/                                                             @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 pkg/ottl/                                                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/pdatatest/                                                          @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                                          @open-telemetry/collector-contrib-approvers @dmitryax
