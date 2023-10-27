@@ -79,6 +79,7 @@ body:
       - extension/bearertokenauth
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
+      - extension/encoding/otlpencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
       - extension/headerssetter
