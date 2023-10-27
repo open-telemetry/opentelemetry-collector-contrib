@@ -94,11 +94,10 @@ var _ component.ConfigValidator = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (c Config) Validate() error {
-	err := validateDimensions(c.Dimensions)
-	if err != nil {
-		return err
+	if err := validateDimensions(c.Dimensions); err != nil {
+		return fmt.Errorf("failed validating dimensions: %w", err)
 	}
-	if err = validateEventDimensions(c.Events.Enabled, c.Events.Dimensions); err != nil {
+	if err := validateEventDimensions(c.Events.Enabled, c.Events.Dimensions); err != nil {
 		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
 
