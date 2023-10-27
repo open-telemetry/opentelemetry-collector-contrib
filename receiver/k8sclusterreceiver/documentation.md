@@ -396,6 +396,20 @@ metrics:
     enabled: true
 ```
 
+### k8s.node.condition
+
+The condition of a particular Node.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {condition} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str |
+
 ### k8s.pod.status_reason
 
 Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)

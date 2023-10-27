@@ -83,6 +83,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["awscloudwatchlogs"].CreateDefaultConfig().(*awscloudwatchlogsexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
+
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
 				cfg.RetrySettings.Enabled = false
