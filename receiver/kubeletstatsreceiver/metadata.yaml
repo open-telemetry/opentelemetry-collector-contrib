@@ -80,6 +80,19 @@ attributes:
     type: string
     enum: [receive, transmit]
 
+  state:
+    description: State of the container
+    type: string
+    enum: [Terminated, Waiting, Running]
+
+  phase:
+    description: Phase of the pod
+    type: string
+
+  reason:
+    description: Reason for the container or pod state.
+    type: string
+
 metrics:
   k8s.node.cpu.utilization:
     enabled: true
@@ -321,6 +334,17 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
+
+  # Ideally this would be called k8s.pod.phase but this conflicts with the metric from k8sclusterreceiver
+  k8s.pod.state:
+    enabled: false
+    description: "Current phase of the pod"
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [phase, reason]
   container.cpu.utilization:
     enabled: true
     description: "Container CPU utilization"
@@ -437,6 +461,24 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
+  k8s.container.state:
+    enabled: false
+    description: "Current state of the container"
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [state, reason]
+  k8s.container.last_termination_state:
+    enabled: false
+    description: "Last termination state of the container"
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [reason]
   k8s.volume.available:
     enabled: true
     description: "The number of available bytes in the volume."

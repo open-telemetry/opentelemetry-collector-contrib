@@ -5,8 +5,11 @@ package kubelet
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -179,6 +182,53 @@ func TestEmitMetrics(t *testing.T) {
 			require.True(t, found, "expected direction attribute")
 		}
 	}
+}
+
+func TestStateMetrics(t *testing.T) {
+	rc := &fakeRestClient{}
+	statsProvider := NewStatsProvider(rc)
+	summary, _ := statsProvider.StatsSummary()
+
+	metadataProvider := NewMetadataProvider(rc)
+	podsMetadata, _ := metadataProvider.Pods()
+	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
+
+	mgs := map[MetricGroup]bool{
+		ContainerMetricGroup: true,
+		PodMetricGroup:       true,
+	}
+
+	cfg := metadata.MetricsBuilderConfig{
+		Metrics: metadata.MetricsConfig{
+			K8sContainerState:                metadata.MetricConfig{Enabled: true},
+			K8sContainerLastTerminationState: metadata.MetricConfig{Enabled: true},
+			K8sPodState:                      metadata.MetricConfig{Enabled: true},
+		},
+		ResourceAttributes: metadata.ResourceAttributesConfig{
+			K8sContainerName: metadata.ResourceAttributeConfig{Enabled: true},
+			K8sPodName:       metadata.ResourceAttributeConfig{Enabled: true},
+		},
+	}
+
+	mbs := &metadata.MetricsBuilders{
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
+	}
+
+	metrics := pmetric.NewMetrics()
+	for _, metric := range MetricsData(zap.NewNop(), summary, k8sMetadata, mgs, mbs) {
+		metric.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+	}
+
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "state_metrics_expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, metrics,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	))
 }
 
 func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricName string) {

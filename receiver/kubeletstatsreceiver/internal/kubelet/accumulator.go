@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
@@ -97,7 +98,7 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 	}
 
 	rb := a.mbs.ContainerMetricsBuilder.NewResourceBuilder()
-	res, err := getContainerResource(rb, sPod, s, a.metadata)
+	res, err := getContainerResource(rb, sPod.PodRef, s.Name, a.metadata)
 	if err != nil {
 		a.logger.Warn(
 			"failed to fetch container metrics",
@@ -140,4 +141,47 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 	addVolumeMetrics(a.mbs.OtherMetricsBuilder, metadata.K8sVolumeMetrics, s, currentTime)
 
 	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(metadata.WithResource(res)))
+}
+
+func (a *metricDataAccumulator) containerState(pod corev1.Pod, containerStatus corev1.ContainerStatus) {
+	if !a.metricGroupsToCollect[ContainerMetricGroup] {
+		return
+	}
+
+	podRef := stats.PodReference{
+		Name:      pod.Name,
+		Namespace: pod.Namespace,
+		UID:       string(pod.UID),
+	}
+	rb := a.mbs.ContainerMetricsBuilder.NewResourceBuilder()
+	res, err := getContainerResource(rb, podRef, containerStatus.Name, a.metadata)
+	if err != nil {
+		a.logger.Warn(
+			"failed to fetch container metrics",
+			zap.String("pod", podRef.Name),
+			zap.String("container", containerStatus.Name),
+			zap.Error(err))
+		return
+	}
+	currentTime := pcommon.NewTimestampFromTime(a.time)
+
+	addContainerStateMetrics(a.mbs.ContainerMetricsBuilder, &containerStatus, currentTime)
+	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(metadata.WithResource(res)))
+}
+
+func (a *metricDataAccumulator) podState(pod corev1.Pod) {
+	if !a.metricGroupsToCollect[PodMetricGroup] {
+		return
+	}
+
+	rb := a.mbs.PodMetricsBuilder.NewResourceBuilder()
+	rb.SetK8sPodUID(string(pod.UID))
+	rb.SetK8sPodName(pod.Name)
+	rb.SetK8sNamespaceName(pod.Namespace)
+
+	res := rb.Emit()
+	currentTime := pcommon.NewTimestampFromTime(a.time)
+
+	addPodStateMetrics(a.mbs.PodMetricsBuilder, &pod.Status, currentTime)
+	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(metadata.WithResource(res)))
 }

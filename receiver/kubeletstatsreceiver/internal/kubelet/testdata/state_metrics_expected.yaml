@@ -1,0 +1,306 @@
+resourceMetrics:
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: kube-scheduler-minikube
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.pod.state
+      description: Current phase of the pod
+      unit: "1"
+      sum:
+        dataPoints:
+        - attributes:
+          - key: phase
+            value:
+              stringValue: Running
+          - key: reason
+            value:
+              stringValue: ""
+          startTimeUnixNano: "1699816985312283052"
+          timeUnixNano: "1699816985312294194"
+          asInt: "1"
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: kube-scheduler-minikube
+    - key: k8s.container.name
+      value:
+        stringValue: kube-scheduler
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.container.state
+      description: Current state of the container
+      unit: '1'
+      sum:
+        dataPoints:
+        - attributes:
+          - key: state
+            value:
+              stringValue: Running
+          - key: reason
+            value:
+              stringValue: ''
+          startTimeUnixNano: '1699817980302482857'
+          timeUnixNano: '1699817980302484603'
+          asInt: '1'
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: go-hello-world-5456b4b8cd-99vxc
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.pod.state
+      description: Current phase of the pod
+      unit: '1'
+      sum:
+        dataPoints:
+        - attributes:
+          - key: phase
+            value:
+              stringValue: Pending
+          - key: reason
+            value:
+              stringValue: ''
+          startTimeUnixNano: '1699818560999992402'
+          timeUnixNano: '1699818561000002774'
+          asInt: '1'
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: go-hello-world-5456b4b8cd-99vxc
+    - key: k8s.container.name
+      value:
+        stringValue: server
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.container.last_termination_state
+      description: Last termination state of the container
+      unit: '1'
+      sum:
+        dataPoints:
+        - attributes:
+          - key: reason
+            value:
+              stringValue: Error
+          startTimeUnixNano: '1699888449538798642'
+          timeUnixNano: '1699888449538801174'
+          asInt: '1'
+        aggregationTemporality: 2
+    - name: k8s.container.state
+      description: Current state of the container
+      unit: '1'
+      sum:
+        dataPoints:
+        - attributes:
+          - key: state
+            value:
+              stringValue: Waiting
+          - key: reason
+            value:
+              stringValue: ImagePullBackOff
+          startTimeUnixNano: '1699888449538798642'
+          timeUnixNano: '1699888449538801174'
+          asInt: '1'
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: kube-apiserver-minikube
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.pod.state
+      description: Current phase of the pod
+      unit: "1"
+      sum:
+        dataPoints:
+        - attributes:
+          - key: phase
+            value:
+              stringValue: ""
+          - key: reason
+            value:
+              stringValue: ""
+          startTimeUnixNano: "1699816985312283052"
+          timeUnixNano: "1699816985312294194"
+          asInt: "1"
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: coredns-66bff467f8-szddj
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.pod.state
+      description: Current phase of the pod
+      unit: "1"
+      sum:
+        dataPoints:
+        - attributes:
+          - key: phase
+            value:
+              stringValue: ""
+          - key: reason
+            value:
+              stringValue: ""
+          startTimeUnixNano: "1699816985312283052"
+          timeUnixNano: "1699816985312294194"
+          asInt: "1"
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: coredns-66bff467f8-58qvv
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.pod.state
+      description: Current phase of the pod
+      unit: "1"
+      sum:
+        dataPoints:
+        - attributes:
+          - key: phase
+            value:
+              stringValue: ""
+          - key: reason
+            value:
+              stringValue: ""
+          startTimeUnixNano: "1699816985312283052"
+          timeUnixNano: "1699816985312294194"
+          asInt: "1"
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: kube-controller-manager-minikube
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.pod.state
+      description: Current phase of the pod
+      unit: "1"
+      sum:
+        dataPoints:
+        - attributes:
+          - key: phase
+            value:
+              stringValue: ""
+          - key: reason
+            value:
+              stringValue: ""
+          startTimeUnixNano: "1699816985312283052"
+          timeUnixNano: "1699816985312294194"
+          asInt: "1"
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: kube-proxy-v48tf
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.pod.state
+      description: Current phase of the pod
+      unit: "1"
+      sum:
+        dataPoints:
+        - attributes:
+          - key: phase
+            value:
+              stringValue: ""
+          - key: reason
+            value:
+              stringValue: ""
+          startTimeUnixNano: "1699816985312283052"
+          timeUnixNano: "1699816985312294194"
+          asInt: "1"
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: storage-provisioner
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.pod.state
+      description: Current phase of the pod
+      unit: "1"
+      sum:
+        dataPoints:
+        - attributes:
+          - key: phase
+            value:
+              stringValue: ""
+          - key: reason
+            value:
+              stringValue: ""
+          startTimeUnixNano: "1699816985312283052"
+          timeUnixNano: "1699816985312294194"
+          asInt: "1"
+        aggregationTemporality: 2
+- resource:
+    attributes:
+    - key: k8s.pod.name
+      value:
+        stringValue: etcd-minikube
+  scopeMetrics:
+  - scope:
+      name: otelcol/kubeletstatsreceiver
+      version: latest
+    metrics:
+    - name: k8s.pod.state
+      description: Current phase of the pod
+      unit: "1"
+      sum:
+        dataPoints:
+        - attributes:
+          - key: phase
+            value:
+              stringValue: ""
+          - key: reason
+            value:
+              stringValue: ""
+          startTimeUnixNano: "1699816985312283052"
+          timeUnixNano: "1699816985312294194"
+          asInt: "1"
+        aggregationTemporality: 2

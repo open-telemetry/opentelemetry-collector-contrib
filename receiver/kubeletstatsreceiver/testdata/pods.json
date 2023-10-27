@@ -23,10 +23,14 @@
         ]
       },
       "status": {
+        "phase":"Running",
         "containerStatuses": [
           {
             "name": "kube-scheduler",
-            "containerID": "364bd8f13021f326"
+            "containerID": "364bd8f13021f326",
+            "state": {
+              "running": {}
+            }
           }
         ]
       }
@@ -52,10 +56,21 @@
         ]
       },
       "status": {
+        "phase":"Pending",
         "containerStatuses": [
           {
             "name": "server",
-            "containerID": "c3d470faf18eba2b"
+            "containerID": "c3d470faf18eba2b",
+            "state": {
+              "waiting": {
+                "reason": "ImagePullBackOff"
+              }
+            },
+            "lastState": {
+              "terminated": {
+                "reason": "Error"
+              }
+            }
           }
         ]
       }

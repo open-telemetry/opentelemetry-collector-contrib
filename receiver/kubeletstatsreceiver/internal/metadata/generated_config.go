@@ -39,8 +39,10 @@ type MetricsConfig struct {
 	ContainerUptime                      MetricConfig `mapstructure:"container.uptime"`
 	K8sContainerCPULimitUtilization      MetricConfig `mapstructure:"k8s.container.cpu_limit_utilization"`
 	K8sContainerCPURequestUtilization    MetricConfig `mapstructure:"k8s.container.cpu_request_utilization"`
+	K8sContainerLastTerminationState     MetricConfig `mapstructure:"k8s.container.last_termination_state"`
 	K8sContainerMemoryLimitUtilization   MetricConfig `mapstructure:"k8s.container.memory_limit_utilization"`
 	K8sContainerMemoryRequestUtilization MetricConfig `mapstructure:"k8s.container.memory_request_utilization"`
+	K8sContainerState                    MetricConfig `mapstructure:"k8s.container.state"`
 	K8sNodeCPUTime                       MetricConfig `mapstructure:"k8s.node.cpu.time"`
 	K8sNodeCPUUtilization                MetricConfig `mapstructure:"k8s.node.cpu.utilization"`
 	K8sNodeFilesystemAvailable           MetricConfig `mapstructure:"k8s.node.filesystem.available"`
@@ -72,6 +74,7 @@ type MetricsConfig struct {
 	K8sPodMemoryRequestUtilization       MetricConfig `mapstructure:"k8s.pod.memory_request_utilization"`
 	K8sPodNetworkErrors                  MetricConfig `mapstructure:"k8s.pod.network.errors"`
 	K8sPodNetworkIo                      MetricConfig `mapstructure:"k8s.pod.network.io"`
+	K8sPodState                          MetricConfig `mapstructure:"k8s.pod.state"`
 	K8sPodUptime                         MetricConfig `mapstructure:"k8s.pod.uptime"`
 	K8sVolumeAvailable                   MetricConfig `mapstructure:"k8s.volume.available"`
 	K8sVolumeCapacity                    MetricConfig `mapstructure:"k8s.volume.capacity"`
@@ -124,10 +127,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sContainerCPURequestUtilization: MetricConfig{
 			Enabled: false,
 		},
+		K8sContainerLastTerminationState: MetricConfig{
+			Enabled: false,
+		},
 		K8sContainerMemoryLimitUtilization: MetricConfig{
 			Enabled: false,
 		},
 		K8sContainerMemoryRequestUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerState: MetricConfig{
 			Enabled: false,
 		},
 		K8sNodeCPUTime: MetricConfig{
@@ -223,6 +232,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodNetworkIo: MetricConfig{
 			Enabled: true,
 		},
+		K8sPodState: MetricConfig{
+			Enabled: false,
+		},
 		K8sPodUptime: MetricConfig{
 			Enabled: false,
 		},
@@ -247,20 +259,6 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	rac.enabledSetByUser = parser.IsSet("enabled")
-	return nil
 }
 
 // ResourceAttributesConfig provides config for kubeletstats resource attributes.

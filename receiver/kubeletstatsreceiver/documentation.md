@@ -410,6 +410,20 @@ Container cpu utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
+### k8s.container.last_termination_state
+
+Last termination state of the container
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| reason | Reason for the container or pod state. | Any Str |
+
 ### k8s.container.memory_limit_utilization
 
 Container memory utilization as a ratio of the container's limits
@@ -425,6 +439,21 @@ Container memory utilization as a ratio of the container's requests
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
+
+### k8s.container.state
+
+Current state of the container
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | State of the container | Str: ``Terminated``, ``Waiting``, ``Running`` |
+| reason | Reason for the container or pod state. | Any Str |
 
 ### k8s.node.uptime
 
@@ -465,6 +494,21 @@ Pod memory utilization as a ratio of the pod's total container requests. If any 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
+
+### k8s.pod.state
+
+Current phase of the pod
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| phase | Phase of the pod | Any Str |
+| reason | Reason for the container or pod state. | Any Str |
 
 ### k8s.pod.uptime
 

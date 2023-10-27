@@ -12,14 +12,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func getContainerResource(rb *metadata.ResourceBuilder, sPod stats.PodStats, sContainer stats.ContainerStats,
-	k8sMetadata Metadata) (pcommon.Resource, error) {
-	rb.SetK8sPodUID(sPod.PodRef.UID)
-	rb.SetK8sPodName(sPod.PodRef.Name)
-	rb.SetK8sNamespaceName(sPod.PodRef.Namespace)
-	rb.SetK8sContainerName(sContainer.Name)
+func getContainerResource(rb *metadata.ResourceBuilder, podRef stats.PodReference, containerName string, k8sMetadata Metadata) (pcommon.Resource, error) {
+	rb.SetK8sPodUID(podRef.UID)
+	rb.SetK8sPodName(podRef.Name)
+	rb.SetK8sNamespaceName(podRef.Namespace)
+	rb.SetK8sContainerName(containerName)
 
-	err := k8sMetadata.setExtraResources(rb, sPod.PodRef, MetadataLabelContainerID, sContainer.Name)
+	err := k8sMetadata.setExtraResources(rb, podRef, MetadataLabelContainerID, containerName)
 	if err != nil {
 		return rb.Emit(), fmt.Errorf("failed to set extra labels from metadata: %w", err)
 	}

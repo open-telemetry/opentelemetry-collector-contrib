@@ -38,5 +38,16 @@ func MetricsData(
 			acc.volumeStats(podStats, volumeStats)
 		}
 	}
+
+	// We need a separate loop here because /stats/summary does not return pods that are not running
+	if metadata.PodsMetadata != nil {
+		for _, pod := range metadata.PodsMetadata.Items {
+			acc.podState(pod)
+			for _, containerStatus := range pod.Status.ContainerStatuses {
+				acc.containerState(pod, containerStatus)
+			}
+		}
+	}
+
 	return acc.m
 }
