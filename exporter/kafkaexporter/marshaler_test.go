@@ -159,10 +159,11 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		require.NoError(t, err, "Must not error when encoding value")
 		require.NotNil(t, data, "Must have valid data to test")
 
-		err = json.Unmarshal(data, &test.unmarshaled)
+		unmarshaled := test.unmarshaled
+		err = json.Unmarshal(data, &unmarshaled)
 		require.NoError(t, err, "Must not error marshaling expected data")
 
-		assert.Equal(t, test.expectedJSON, test.unmarshaled, "Must match the expected value")
+		assert.Equal(t, test.expectedJSON, unmarshaled, "Must match the expected value")
 
 	}
 }

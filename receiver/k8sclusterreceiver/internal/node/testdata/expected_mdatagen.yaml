@@ -1,0 +1,47 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.node.name
+          value:
+            stringValue: test-node-1
+        - key: k8s.node.uid
+          value:
+            stringValue: test-node-1-uid
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The condition of a particular Node.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: condition
+                      value:
+                        stringValue: "Ready"
+                - asInt: "0"
+                  attributes:
+                    - key: condition
+                      value:
+                        stringValue: "PIDPressure"
+                - asInt: "0"
+                  attributes:
+                    - key: condition
+                      value:
+                        stringValue: "DiskPressure"
+                - asInt: "0"
+                  attributes:
+                    - key: condition
+                      value:
+                        stringValue: "MemoryPressure"
+                - asInt: "0"
+                  attributes:
+                    - key: condition
+                      value:
+                        stringValue: "NetworkUnavailable"
+
+            name: k8s.node.condition
+            unit: "{condition}"
+
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

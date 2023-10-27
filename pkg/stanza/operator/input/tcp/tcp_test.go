@@ -90,7 +90,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, tcpInput.Stop(), "expected to stop tcp input operator without error")
@@ -139,7 +139,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, tcpInput.Stop(), "expected to stop tcp input operator without error")
@@ -225,7 +225,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, tcpInput.Stop(), "expected to stop tcp input operator without error")
@@ -397,7 +397,7 @@ func TestFailToBind(t *testing.T) {
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
-		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		return tcpInput, err
 	}
 
@@ -422,7 +422,7 @@ func BenchmarkTCPInput(b *testing.B) {
 	tcpInput := op.(*Input)
 	tcpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
 
-	err = tcpInput.Start(testutil.NewMockPersister("test"))
+	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(b, err)
 
 	done := make(chan struct{})
