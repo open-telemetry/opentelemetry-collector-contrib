@@ -34,16 +34,16 @@ const (
 
 	responseOK                        = `{"text": "Success", "code": 0}`
 	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
-	responseInvalidMethod             = `Only "POST" method is supported`
-	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
+	responseInvalidMethod             = `"Only \"POST\" method is supported"`
+	responseInvalidEncoding           = `"\"Content-Encoding\" must be \"gzip\" or empty"`
 	responseInvalidDataFormat         = `{"text":"Invalid data format","code":6}`
 	responseErrEventRequired          = `{"text":"Event field is required","code":12}`
 	responseErrEventBlank             = `{"text":"Event field cannot be blank","code":13}`
-	responseErrGzipReader             = "Error on gzip body"
-	responseErrUnmarshalBody          = "Failed to unmarshal message body"
-	responseErrInternalServerError    = "Internal Server Error"
-	responseErrUnsupportedMetricEvent = "Unsupported metric event"
-	responseErrUnsupportedLogEvent    = "Unsupported log event"
+	responseErrGzipReader             = `"Error on gzip body"`
+	responseErrUnmarshalBody          = `"Failed to unmarshal message body"`
+	responseErrInternalServerError    = `"Internal Server Error"`
+	responseErrUnsupportedMetricEvent = `"Unsupported metric event"`
+	responseErrUnsupportedLogEvent    = `"Unsupported log event"`
 	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
 	responseNoData                    = `{"text":"No data","code":5}`
 	// Centralizing some HTTP and related string constants.
@@ -58,18 +58,18 @@ var (
 	errInvalidMethod          = errors.New("invalid http method")
 	errInvalidEncoding        = errors.New("invalid encoding")
 
-	okRespBody                = initJSONResponse(responseOK)
-	eventRequiredRespBody     = initJSONResponse(responseErrEventRequired)
-	eventBlankRespBody        = initJSONResponse(responseErrEventBlank)
-	invalidEncodingRespBody   = initJSONResponse(responseInvalidEncoding)
-	invalidFormatRespBody     = initJSONResponse(responseInvalidDataFormat)
-	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
-	errGzipReaderRespBody     = initJSONResponse(responseErrGzipReader)
-	errUnmarshalBodyRespBody  = initJSONResponse(responseErrUnmarshalBody)
-	errInternalServerError    = initJSONResponse(responseErrInternalServerError)
-	errUnsupportedMetricEvent = initJSONResponse(responseErrUnsupportedMetricEvent)
-	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
-	noDataRespBody            = initJSONResponse(responseNoData)
+	okRespBody                = []byte(responseOK)
+	eventRequiredRespBody     = []byte(responseErrEventRequired)
+	eventBlankRespBody        = []byte(responseErrEventBlank)
+	invalidEncodingRespBody   = []byte(responseInvalidEncoding)
+	invalidFormatRespBody     = []byte(responseInvalidDataFormat)
+	invalidMethodRespBody     = []byte(responseInvalidMethod)
+	errGzipReaderRespBody     = []byte(responseErrGzipReader)
+	errUnmarshalBodyRespBody  = []byte(responseErrUnmarshalBody)
+	errInternalServerError    = []byte(responseErrInternalServerError)
+	errUnsupportedMetricEvent = []byte(responseErrUnsupportedMetricEvent)
+	errUnsupportedLogEvent    = []byte(responseErrUnsupportedLogEvent)
+	noDataRespBody            = []byte(responseNoData)
 )
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
@@ -462,15 +462,6 @@ func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Req
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte(responseHecHealthy))
-}
-
-func initJSONResponse(s string) []byte {
-	respBody, err := jsoniter.Marshal(s)
-	if err != nil {
-		// This is to be used in initialization so panic here is fine.
-		panic(err)
-	}
-	return respBody
 }
 
 func isFlatJSONField(field interface{}) bool {
