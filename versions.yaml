@@ -74,6 +74,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
@@ -86,6 +87,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
@@ -114,6 +116,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry

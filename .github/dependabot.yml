@@ -8,11 +8,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/githubgen"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/cmd/telemetrygen"
     schedule:
       interval: "weekly"
@@ -154,11 +149,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/googlemanagedprometheusexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/honeycombmarkerexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -368,6 +358,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/extension/opampextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/extension/pprofextension"
     schedule:
       interval: "weekly"
@@ -454,6 +449,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/experimentalmetricmetadata"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/golden"
     schedule:
       interval: "weekly"
       day: "wednesday"
