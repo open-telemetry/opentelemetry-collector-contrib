@@ -146,7 +146,7 @@ DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: gendependabot
 gendependabot:
 	cd cmd/githubgen && $(GOCMD) install .
-	githubgen -dependabot
+	githubgen dependabot
 
 
 # Define a delegation target for each module
@@ -402,4 +402,4 @@ genconfigdocs:
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
 	cd cmd/githubgen && $(GOCMD) install .
-	githubgen -issue-templates
+	githubgen issue-templates
