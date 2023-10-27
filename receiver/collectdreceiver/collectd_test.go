@@ -12,9 +12,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -30,11 +30,8 @@ func TestDecodeEvent(t *testing.T) {
 	err = json.Unmarshal(jsonData, &records)
 	require.NoError(t, err)
 
-	o, err := initMetrics(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
 	for _, cdr := range records {
-		err := cdr.appendToMetrics(o, scopeMetrics, map[string]string{})
+		err := cdr.appendToMetrics(zap.NewNop(), scopeMetrics, map[string]string{})
 		assert.NoError(t, err)
 		assert.Equal(t, 0, metrics.MetricCount())
 	}
@@ -49,11 +46,9 @@ func TestDecodeMetrics(t *testing.T) {
 	var records []collectDRecord
 	err = json.Unmarshal(jsonData, &records)
 	require.NoError(t, err)
-	o, err := initMetrics(componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
 
 	for _, cdr := range records {
-		err = cdr.appendToMetrics(o, scopeMemtrics, map[string]string{})
+		err = cdr.appendToMetrics(zap.NewNop(), scopeMemtrics, map[string]string{})
 		assert.NoError(t, err)
 	}
 	assert.Equal(t, 10, metrics.MetricCount())
