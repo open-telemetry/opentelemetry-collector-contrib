@@ -33,7 +33,7 @@ type Manager struct {
 	maxBatchFiles int
 
 	previousPollFiles []*reader.Reader
-	knownFiles        []*reader.Reader
+	knownFiles        []*reader.Metadata
 	seenPaths         map[string]struct{}
 
 	currentFps []*fingerprint.Fingerprint
@@ -52,9 +52,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 		if len(offsets) > 0 {
 			m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
 			m.readerFactory.FromBeginning = true
-			for _, offset := range offsets {
-				m.knownFiles = append(m.knownFiles, &reader.Reader{Metadata: offset})
-			}
+			m.knownFiles = append(m.knownFiles, offsets...)
 		}
 	}
 
@@ -68,12 +66,12 @@ func (m *Manager) Start(persister operator.Persister) error {
 	return nil
 }
 
-func (m *Manager) closeFiles() {
-	for _, r := range m.previousPollFiles {
-		r.Close()
+func (m *Manager) closePreviousFiles() {
+	if forgetNum := len(m.previousPollFiles) + len(m.knownFiles) - cap(m.knownFiles); forgetNum > 0 {
+		m.knownFiles = m.knownFiles[forgetNum:]
 	}
-	for _, r := range m.knownFiles {
-		r.Close()
+	for _, r := range m.previousPollFiles {
+		m.knownFiles = append(m.knownFiles, r.Close())
 	}
 }
 
@@ -81,7 +79,12 @@ func (m *Manager) closeFiles() {
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
-	m.closeFiles()
+	m.closePreviousFiles()
+	if m.persister != nil {
+		if err := checkpoint.Save(context.Background(), m.persister, m.knownFiles); err != nil {
+			m.Errorw("save offsets", zap.Error(err))
+		}
+	}
 	m.cancel = nil
 	return nil
 }
@@ -136,6 +139,11 @@ func (m *Manager) poll(ctx context.Context) {
 
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.FromBeginning = true
+	if m.persister != nil {
+		if err := checkpoint.Save(context.Background(), m.persister, m.knownFiles); err != nil {
+			m.Errorw("save offsets", zap.Error(err))
+		}
+	}
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
@@ -152,7 +160,9 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
 	// we do this before reading existing files to ensure we emit older log lines before newer ones
 	m.readLostFiles(ctx, readers)
+	m.closePreviousFiles()
 
+	// read new readers to end
 	var wg sync.WaitGroup
 	for _, r := range readers {
 		wg.Add(1)
@@ -163,23 +173,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
-	for _, r := range m.previousPollFiles {
-		r.Close()
-	}
 	m.previousPollFiles = readers
-
-	m.saveCurrent(readers)
-
-	if m.persister != nil {
-		rmds := make([]*reader.Metadata, 0, len(readers))
-		for _, r := range readers {
-			rmds = append(rmds, r.Metadata)
-		}
-		if err := checkpoint.Save(ctx, m.persister, rmds); err != nil {
-			m.Errorw("save offsets", zap.Error(err))
-		}
-	}
-
 	m.clearCurrentFingerprints()
 }
 
@@ -257,38 +251,28 @@ func (m *Manager) clearCurrentFingerprints() {
 	m.currentFps = make([]*fingerprint.Fingerprint, 0)
 }
 
-// saveCurrent adds the readers from this polling interval to this list of
-// known files, then increments the generation of all tracked old readers
-// before clearing out readers that have existed for 3 generations.
-func (m *Manager) saveCurrent(readers []*reader.Reader) {
-	forgetNum := len(m.knownFiles) + len(readers) - cap(m.knownFiles)
-	if forgetNum > 0 {
-		m.knownFiles = append(m.knownFiles[forgetNum:], readers...)
-		return
-	}
-	m.knownFiles = append(m.knownFiles, readers...)
-}
-
 func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
-	// Check if the new path has the same fingerprint as an old path
-	if oldReader, ok := m.findFingerprintMatch(fp); ok {
-		return m.readerFactory.Copy(oldReader, file)
+	// Check previous poll cycle for match
+	for i := 0; i < len(m.previousPollFiles); i++ {
+		oldReader := m.previousPollFiles[i]
+		if fp.StartsWith(oldReader.Fingerprint) {
+			// Keep the new reader and discard the old. This ensures that if the file was
+			// copied to another location and truncated, our handle is updated.
+			m.previousPollFiles = append(m.previousPollFiles[:i], m.previousPollFiles[i+1:]...)
+			return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
+		}
+	}
+
+	// Iterate backwards to match newest first
+	for i := len(m.knownFiles) - 1; i >= 0; i-- {
+		oldMetadata := m.knownFiles[i]
+		if fp.StartsWith(oldMetadata.Fingerprint) {
+			// Remove the old metadata from the list. We will keep updating it and save it again later.
+			m.knownFiles = append(m.knownFiles[:i], m.knownFiles[i+1:]...)
+			return m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
+		}
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
 	return m.readerFactory.NewReader(file, fp)
-}
-
-func (m *Manager) findFingerprintMatch(fp *fingerprint.Fingerprint) (*reader.Reader, bool) {
-	// Iterate backwards to match newest first
-	for i := len(m.knownFiles) - 1; i >= 0; i-- {
-		oldReader := m.knownFiles[i]
-		if fp.StartsWith(oldReader.Fingerprint) {
-			// Remove the old reader from the list of known files. We will
-			// add it back in saveCurrent if it is still alive.
-			m.knownFiles = append(m.knownFiles[:i], m.knownFiles[i+1:]...)
-			return oldReader, true
-		}
-	}
-	return nil, false
 }

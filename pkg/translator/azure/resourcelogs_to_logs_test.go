@@ -4,6 +4,7 @@
 package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -126,6 +127,46 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 	return append(records, lr, lr2)
 }()
 
+var badLevelLogRecord = func() plog.LogRecord {
+	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	ts, _ := asTimestamp("2023-10-26T14:22:43.3416357Z")
+	lr.SetTimestamp(ts)
+	lr.SetSeverityNumber(plog.SeverityNumberTrace4)
+	lr.SetSeverityText("4")
+	guid := "128bc026-5ead-40c7-8853-ebb32bc077a3"
+
+	lr.Attributes().PutStr(azureOperationName, "Microsoft.ApiManagement/GatewayLogs")
+	lr.Attributes().PutStr(azureCategory, "GatewayLogs")
+	lr.Attributes().PutStr(azureCorrelationID, guid)
+	lr.Attributes().PutStr(azureResultType, "Succeeded")
+	lr.Attributes().PutInt(azureDuration, 243)
+	lr.Attributes().PutStr(conventions.AttributeNetSockPeerAddr, "13.14.15.16")
+	lr.Attributes().PutStr(conventions.AttributeCloudRegion, "West US")
+	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+
+	m := lr.Attributes().PutEmptyMap(azureProperties)
+	m.PutStr("method", "GET")
+	m.PutStr("url", "https://api.azure-api.net/sessions")
+	m.PutDouble("backendResponseCode", 200)
+	m.PutDouble("responseCode", 200)
+	m.PutDouble("responseSize", 102945)
+	m.PutStr("cache", "none")
+	m.PutDouble("backendTime", 54)
+	m.PutDouble("requestSize", 632)
+	m.PutStr("apiId", "demo-api")
+	m.PutStr("operationId", "GetSessions")
+	m.PutStr("apimSubscriptionId", "master")
+	m.PutDouble("clientTime", 190)
+	m.PutStr("clientProtocol", "HTTP/1.1")
+	m.PutStr("backendProtocol", "HTTP/1.1")
+	m.PutStr("apiRevision", "1")
+	m.PutStr("clientTlsVersion", "1.2")
+	m.PutStr("backendMethod", "GET")
+	m.PutStr("backendUrl", "https://api.azurewebsites.net/sessions")
+	return lr
+}()
+
 func TestAsTimestamp(t *testing.T) {
 	timestamp := "2022-11-11T04:48:27.6767145Z"
 	nanos, err := asTimestamp(timestamp)
@@ -149,7 +190,7 @@ func TestAsSeverity(t *testing.T) {
 
 	for input, expected := range tests {
 		t.Run(input, func(t *testing.T) {
-			assert.Equal(t, expected, asSeverity(input))
+			assert.Equal(t, expected, asSeverity(json.Number(input)))
 		})
 	}
 }
@@ -176,8 +217,8 @@ func TestSetIf(t *testing.T) {
 }
 
 func TestExtractRawAttributes(t *testing.T) {
-	badDuration := "invalid"
-	goodDuration := "1234"
+	badDuration := json.Number("invalid")
+	goodDuration := json.Number("1234")
 
 	tenantID := "tenant.id"
 	operationVersion := "operation.version"
@@ -186,7 +227,7 @@ func TestExtractRawAttributes(t *testing.T) {
 	resultDescription := "result.description"
 	callerIPAddress := "127.0.0.1"
 	correlationID := "edb70d1a-eec2-4b4c-b2f4-60e3510160ee"
-	level := "Informational"
+	level := json.Number("Informational")
 	location := "location"
 
 	identity := interface{}("someone")
@@ -321,6 +362,15 @@ func TestUnmarshalLogs(t *testing.T) {
 	maximumLogRecord2[0].CopyTo(lr)
 	maximumLogRecord2[1].CopyTo(lr2)
 
+	expectedBadLevel := plog.NewLogs()
+	resourceLogs = expectedBadLevel.ResourceLogs().AppendEmpty()
+	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
+	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
+	lr = scopeLogs.LogRecords().AppendEmpty()
+	badLevelLogRecord.CopyTo(lr)
+
 	tests := []struct {
 		file     string
 		expected plog.Logs
@@ -336,6 +386,10 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			file:     "log-maximum.json",
 			expected: expectedMaximum,
+		},
+		{
+			file:     "log-bad-level.json",
+			expected: expectedBadLevel,
 		},
 	}
 

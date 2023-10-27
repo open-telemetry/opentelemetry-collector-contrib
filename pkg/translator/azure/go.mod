@@ -48,6 +48,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pdatatest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
-
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../golden

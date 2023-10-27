@@ -122,6 +122,7 @@ body:
       - pkg/batchperresourceattr
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
+      - pkg/golden
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil

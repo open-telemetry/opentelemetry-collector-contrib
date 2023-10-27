@@ -61,7 +61,7 @@ func Whitespace(data []byte) []byte {
 }
 
 func ToLength(splitFunc bufio.SplitFunc, maxLength int) bufio.SplitFunc {
-	if maxLength == 0 {
+	if maxLength <= 0 {
 		return splitFunc
 	}
 	return func(data []byte, atEOF bool) (int, []byte, error) {
