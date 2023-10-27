@@ -56,9 +56,11 @@ func run(ymlPath string) error {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
 	if md.Status != nil {
-		if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
-			filepath.Join(codeDir, "generated_status.go"), md); err != nil {
-			return err
+		if md.Status.Class != "cmd" && md.Status.Class != "pkg" {
+			if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
+				filepath.Join(codeDir, "generated_status.go"), md); err != nil {
+				return err
+			}
 		}
 
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
