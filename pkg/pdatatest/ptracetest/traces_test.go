@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestCompareTraces(t *testing.T) {
@@ -55,6 +55,16 @@ func TestCompareTraces(t *testing.T) {
 			},
 			withoutOptions: multierr.Combine(
 				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": span ID doesn't match expected: fd0da883bb27cd6b, actual: "),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "ignore-attribute-value",
+			compareOptions: []CompareTracesOption{
+				IgnoreSpanAttributeValue("testKey2"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": attributes don't match expected: map[testKey2:teststringvalue2], actual: map[testKey2:unpredictable]"),
 			),
 			withOptions: nil,
 		},

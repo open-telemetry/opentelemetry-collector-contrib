@@ -78,7 +78,9 @@ body:
       - extension/basicauth
       - extension/bearertokenauth
       - extension/encoding/jaegerencoding
+      - extension/encoding/jsonlogencoding
       - extension/encoding/textencoding
+      - extension/encoding/zipkinencoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
@@ -92,6 +94,7 @@ body:
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
       - extension/oidcauth
+      - extension/opamp
       - extension/pprof
       - extension/sigv4auth
       - extension/storage
@@ -113,11 +116,13 @@ body:
       - pkg/batchperresourceattr
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
+      - pkg/golden
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/stanza
+      - pkg/translator/azure
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
