@@ -17,49 +17,78 @@ Pulsar receiver receives logs, metrics, and traces from Pulsar.
 ## Getting Started
 
 The following settings can be optionally configured:
+
 - `endpoint` (default = pulsar://localhost:6650): The url of pulsar cluster.
-- `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the pulsar topic to consume from.
-- `encoding` (default = otlp_proto): The encoding of the payload sent to pulsar. Available encodings:
-    - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`.
-    - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
-    - `jaeger_json`: the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
-    - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
-    - `zipkin_json`: the payload is deserialized into a list of Zipkin V2 JSON spans.
-    - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
-- `consumer_name`: specifies the consumer name.
+- `trace`
+    - `topic`: The name of the pulsar topic. (default = ``, skip start traces exporter is topic not set)
+    - `encoding`
+        - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`.
+        - `otlp_json`: the payload is json deserialized to `ExportTraceServiceRequest`.
+        - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
+        - `jaeger_json`: the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
+        - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
+        - `zipkin_json`: the payload is deserialized into a list of Zipkin V2 JSON spans.
+        - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
+    - `subscription`:  (default = otlp_subscription): the subscription name of consumer.
+    - `consumer_name`: specifies the consumer name.
+- `metric`
+    - `topic`: The name of the pulsar topic. (default = ``, skip start metrics exporter is topic not set)
+    - `encoding`
+        - `otlp_proto`: the payload is deserialized to `ExportMetricServiceRequest`.
+        - `otlp_json`: the payload is json deserialized to `ExportMetricServiceRequest`.
+    - `subscription`:  (default = otlp_subscription): the subscription name of consumer.
+    - `consumer_name`: specifies the consumer name.
+- `log`
+    - `topic`: The name of the pulsar topic. (default = ``, skip start logs exporter is topic not set)
+    - `encoding`
+        - `otlp_proto`: the payload is deserialized to `ExportLogServiceRequest`.
+        - `otlp_json`: the payload is json deserialized to `ExportLogServiceRequest`.
+    - `subscription`:  (default = otlp_subscription): the subscription name of consumer.
+    - `consumer_name`: specifies the consumer name.
 - `auth`
-  - `tls`
-    - `cert_file`:
-    - `key_file`:
-  - `token`
+    - `tls`
+        - `cert_file`:
+        - `key_file`:
     - `token`
-  - `oauth2`
-    - `issuer_url`:
-    - `client_id`:
-    - `audience`: 
-  - `athenz`
-    - `provider_domain`:
-    - `tenant_domain`:
-    - `tenant_service`:
-    - `private_key`:
-    - `key_id`:
-    - `principal_header`:
-    - `zts_url`:
-- `subscription` (default = otlp_subscription): the subscription name of consumer.
+        - `token`
+    - `oauth2`
+        - `issuer_url`:
+        - `client_id`:
+        - `audience`:
+    - `athenz`
+        - `provider_domain`:
+        - `tenant_domain`:
+        - `tenant_service`:
+        - `private_key`:
+        - `key_id`:
+        - `principal_header`:
+        - `zts_url`:
 - `tls_trust_certs_file_path`: path to the CA cert. For a client this verifies the server certificate. Should
   only be used if `insecure` is set to true.
-- `tls_allow_insecure_connection`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
-
+- `tls_allow_insecure_connection`: configure whether the Pulsar client accept untrusted TLS certificate from broker (
+  default: false)
 
 Example configuration:
+
 ```yaml
 receivers:
   pulsar:
     endpoint: pulsar://localhost:6650
-    topic: otlp-spans
-    subscription: otlp_spans_sub
-    consumer_name: otlp_spans_sub_1
-    encoding: otlp_proto
+    trace:
+      topic: pulsar://public/default/otlp-spans
+      subscription: otlp_spans_sub
+      consumer_name: otlp_spans_sub_1
+      encoding: otlp_proto
+    metric:
+      topic: pulsar://public/default/otlp-metrics
+      subscription: otlp_metrics_sub
+      consumer_name: otlp_metrics_sub_1
+      encoding: otlp_proto
+    log:
+      topic: pulsar://public/default/otlp-logs
+      subscription: otlp_logs_sub
+      consumer_name: otlp_logs_sub_1
+      encoding: otlp_proto
     auth:
       tls:
         cert_file: cert.pem

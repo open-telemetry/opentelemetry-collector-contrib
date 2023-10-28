@@ -4,6 +4,8 @@
 package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -11,6 +13,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
+
+var errUnrecognizedEncoding = errors.New("unrecognized encoding")
 
 // copy from kafka receiver
 
@@ -44,6 +48,7 @@ type LogsUnmarshaler interface {
 // defaultTracesUnmarshalers returns map of supported encodings with TracesUnmarshaler.
 func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 	otlpPb := newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding)
+	otlpJSON := newPdataTracesUnmarshaler(&ptrace.JSONUnmarshaler{}, "otlp_json")
 	jaegerProto := jaegerProtoSpanUnmarshaler{}
 	jaegerJSON := jaegerJSONSpanUnmarshaler{}
 	zipkinProto := newPdataTracesUnmarshaler(zipkinv2.NewProtobufTracesUnmarshaler(false, false), "zipkin_proto")
@@ -51,6 +56,7 @@ func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 	zipkinThrift := newPdataTracesUnmarshaler(zipkinv1.NewThriftTracesUnmarshaler(), "zipkin_thrift")
 	return map[string]TracesUnmarshaler{
 		otlpPb.Encoding():       otlpPb,
+		otlpJSON.Encoding():     otlpJSON,
 		jaegerProto.Encoding():  jaegerProto,
 		jaegerJSON.Encoding():   jaegerJSON,
 		zipkinProto.Encoding():  zipkinProto,
@@ -61,14 +67,18 @@ func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 
 func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
 	otlpPb := newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding)
+	otlpJSON := newPdataMetricsUnmarshaler(&pmetric.JSONUnmarshaler{}, "otlp_json")
 	return map[string]MetricsUnmarshaler{
-		otlpPb.Encoding(): otlpPb,
+		otlpPb.Encoding():   otlpPb,
+		otlpJSON.Encoding(): otlpJSON,
 	}
 }
 
 func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
 	otlpPb := newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding)
+	otlpJSON := newPdataLogsUnmarshaler(&plog.JSONUnmarshaler{}, "otlp_json")
 	return map[string]LogsUnmarshaler{
-		otlpPb.Encoding(): otlpPb,
+		otlpPb.Encoding():   otlpPb,
+		otlpJSON.Encoding(): otlpJSON,
 	}
 }

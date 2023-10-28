@@ -26,11 +26,25 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
-		Topic:                 "otel-pulsar",
-		Endpoint:              "pulsar://localhost:6500",
-		ConsumerName:          "otel-collector",
-		Subscription:          "otel-collector",
-		Encoding:              defaultEncoding,
+		Endpoint: "pulsar://localhost:6500",
+		Trace: ReceiverOption{
+			Topic:        "otel-pulsar",
+			ConsumerName: "otel-collector",
+			Subscription: "otel-collector",
+			Encoding:     defaultEncoding,
+		},
+		Metric: ReceiverOption{
+			Topic:        "otel-pulsar",
+			ConsumerName: "otel-collector",
+			Subscription: "otel-collector",
+			Encoding:     defaultEncoding,
+		},
+		Log: ReceiverOption{
+			Topic:        "otel-pulsar",
+			ConsumerName: "otel-collector",
+			Subscription: "otel-collector",
+			Encoding:     defaultEncoding,
+		},
 		TLSTrustCertsFilePath: "ca.pem",
 		Authentication:        Authentication{TLS: &TLS{CertFile: "cert.pem", KeyFile: "key.pem"}},
 	},

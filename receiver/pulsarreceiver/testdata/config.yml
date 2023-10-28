@@ -1,8 +1,20 @@
 pulsar:
-  topic: otel-pulsar
   endpoint: pulsar://localhost:6500
-  consumer_name: otel-collector
-  subscription: otel-collector
+  trace:
+    topic: otel-pulsar
+    consumer_name: otel-collector
+    subscription: otel-collector
+    encoding: otlp_proto
+  metric:
+    topic: otel-pulsar
+    consumer_name: otel-collector
+    subscription: otel-collector
+    encoding: otlp_proto
+  log:
+    topic: otel-pulsar
+    consumer_name: otel-collector
+    subscription: otel-collector
+    encoding: otlp_proto
   tls_trust_certs_file_path: ca.pem
   tls_allow_insecure_connection: false
   auth:

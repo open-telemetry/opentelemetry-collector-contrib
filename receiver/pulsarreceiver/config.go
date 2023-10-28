@@ -11,18 +11,14 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
+var errMissTopicName = errors.New("miss topic name")
+
 type Config struct {
 	// Configure the service URL for the Pulsar service.
-	Endpoint string `mapstructure:"endpoint"`
-	// The topic of pulsar to consume logs,metrics,traces. (default = "otlp_traces" for traces,
-	// "otlp_metrics" for metrics, "otlp_logs" for logs)
-	Topic string `mapstructure:"topic"`
-	// The Subscription that receiver will be consuming messages from (default "otlp_subscription")
-	Subscription string `mapstructure:"subscription"`
-	// Encoding of the messages (default "otlp_proto")
-	Encoding string `mapstructure:"encoding"`
-	// Name specifies the consumer name.
-	ConsumerName string `mapstructure:"consumer_name"`
+	Endpoint string         `mapstructure:"endpoint"`
+	Trace    ReceiverOption `mapstructure:"trace"`
+	Log      ReceiverOption `mapstructure:"log"`
+	Metric   ReceiverOption `mapstructure:"metric"`
 	// Set the path to the trusted TLS certificate file
 	TLSTrustCertsFilePath string `mapstructure:"tls_trust_certs_file_path"`
 	// Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
@@ -60,6 +56,30 @@ type OAuth2 struct {
 	IssuerURL string `mapstructure:"issuer_url"`
 	ClientID  string `mapstructure:"client_id"`
 	Audience  string `mapstructure:"audience"`
+}
+
+type ReceiverOption struct {
+	// The topic of pulsar to consume logs,metrics,traces. (default = "")
+	Topic string `mapstructure:"topic"`
+	// The Subscription that receiver will be consuming messages from (default "otlp_subscription")
+	Subscription string `mapstructure:"subscription"`
+	// Encoding of the messages (default "otlp_proto")
+	Encoding string `mapstructure:"encoding"`
+	// Name specifies the consumer name.
+	ConsumerName string `mapstructure:"consumer_name"`
+}
+
+func (opt *ReceiverOption) validate() error {
+	if len(opt.Encoding) == 0 {
+		opt.Encoding = defaultEncoding
+	}
+	if len(opt.Topic) == 0 {
+		return errMissTopicName
+	}
+	if len(opt.Subscription) == 0 {
+		opt.Subscription = defaultSubscription
+	}
+	return nil
 }
 
 var _ component.Config = (*Config)(nil)
@@ -118,20 +138,31 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	return options
 }
 
-func (cfg *Config) consumerOptions() (pulsar.ConsumerOptions, error) {
+func (cfg *Config) consumerOptions(option ReceiverOption) pulsar.ConsumerOptions {
 	options := pulsar.ConsumerOptions{
 		Type:             pulsar.Failover,
-		Topic:            cfg.Topic,
-		SubscriptionName: cfg.Subscription,
+		Topic:            option.Topic,
+		SubscriptionName: option.Subscription,
 	}
 
-	if len(cfg.ConsumerName) > 0 {
-		options.Name = cfg.ConsumerName
+	if len(option.ConsumerName) > 0 {
+		options.Name = option.ConsumerName
+	}
+	return options
+}
+
+func (cfg *Config) createConsumer(option ReceiverOption) (pulsar.Client, pulsar.Consumer, error) {
+	client, err := pulsar.NewClient(cfg.clientOptions())
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if options.SubscriptionName == "" || options.Topic == "" {
-		return options, errors.New("topic and subscription is required")
+	consumerOpts := cfg.consumerOptions(option)
+	consumer, err := client.Subscribe(consumerOpts)
+	if err != nil {
+		// Close the client if err happens
+		client.Close()
+		return nil, nil, err
 	}
-
-	return options, nil
+	return client, consumer, nil
 }
