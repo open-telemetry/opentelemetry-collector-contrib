@@ -30,8 +30,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 
-	timeout := rand.Int31n(int32(cfg.Timeout))
-	cluster.Timeout = time.Duration(timeout) * time.Second
+	cluster.Timeout = time.Duration(cfg.Timeout) * time.Second
 
 	if err != nil {
 		return nil, err
