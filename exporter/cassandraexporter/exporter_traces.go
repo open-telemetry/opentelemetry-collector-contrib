@@ -6,7 +6,6 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -45,8 +44,7 @@ func initializeTraceKernel(cfg *Config) error {
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 
-	timeout := rand.Int31n(int32(cfg.Timeout))
-	cluster.Timeout = time.Duration(timeout) * time.Second
+	cluster.Timeout = time.Duration(cfg.Timeout) * time.Second
 
 	session, err := cluster.CreateSession()
 	if err != nil {

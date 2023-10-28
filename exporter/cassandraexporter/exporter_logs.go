@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -46,8 +45,7 @@ func initializeLogKernel(cfg *Config) error {
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 
-	timeout := rand.Int31n(int32(cfg.Timeout))
-	cluster.Timeout = time.Duration(timeout) * time.Second
+	cluster.Timeout = time.Duration(cfg.Timeout) * time.Second
 
 	session, err := cluster.CreateSession()
 	if err != nil {
