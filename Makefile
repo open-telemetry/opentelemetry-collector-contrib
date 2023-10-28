@@ -230,10 +230,6 @@ generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
-.PHONY: genqlient
-genqlient:
-	$(MAKE) for-all CMD="$(GOCMD) genqlient"
-
 .PHONY: mdatagen-test
 mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
