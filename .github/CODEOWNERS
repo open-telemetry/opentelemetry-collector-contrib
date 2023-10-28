@@ -111,6 +111,7 @@ extension/observer/k8sobserver/                                         @open-te
 extension/oidcauthextension/                                            @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/opampextension/                                               @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan
 extension/pprofextension/                                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+extension/remotetapextension/                                           @open-telemetry/collector-contrib-approvers @atoulme
 extension/sigv4authextension/                                           @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
 extension/storage/                                                      @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                                            @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
