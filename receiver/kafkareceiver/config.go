@@ -43,6 +43,10 @@ type Config struct {
 	Brokers []string `mapstructure:"brokers"`
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
+	// Session interval for the Kafka consumer
+	SessionTimeout time.Duration `mapstructure:"session_timeout"`
+	// Heartbeat interval for the Kafka consumer
+	HeartbeatInterval time.Duration `mapstructure:"heartbeat_interval"`
 	// The name of the kafka topic to consume from (default "otlp_spans")
 	Topic string `mapstructure:"topic"`
 	// Encoding of the messages (default "otlp_proto")

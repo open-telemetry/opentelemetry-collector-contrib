@@ -93,6 +93,9 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
 	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
+	c.Consumer.Group.Session.Timeout = config.SessionTimeout
+	c.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
+
 	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
 		c.Consumer.Offsets.Initial = initialOffset
 	} else {
@@ -195,6 +198,9 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
 	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
+	c.Consumer.Group.Session.Timeout = config.SessionTimeout
+	c.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
+
 	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
 		c.Consumer.Offsets.Initial = initialOffset
 	} else {
@@ -292,6 +298,9 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
 	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
+	c.Consumer.Group.Session.Timeout = config.SessionTimeout
+	c.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
+
 	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
 		c.Consumer.Offsets.Initial = initialOffset
 	} else {
