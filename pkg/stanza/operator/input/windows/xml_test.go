@@ -82,8 +82,8 @@ func TestParseBody(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
+		EventData: EventData{
+			Data: []Data{{Name: "1st_name", Value: "value"}, {Name: "2nd_name", Value: "another_value"}},
 		},
 		RenderedLevel:    "rendered_level",
 		RenderedTask:     "rendered_task",
@@ -110,7 +110,12 @@ func TestParseBody(t *testing.T) {
 		"task":        "rendered_task",
 		"opcode":      "rendered_opcode",
 		"keywords":    []string{"RenderedKeywords"},
-		"event_data":  map[string]interface{}{"name": "value", "another_name": "another_value"},
+		"event_data": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"1st_name": "value"},
+				map[string]interface{}{"2nd_name": "another_value"},
+			},
+		},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
@@ -138,8 +143,8 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
+		EventData: EventData{
+			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
 		Execution: &Execution{
 			ProcessID: 13,
@@ -180,7 +185,12 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		"security": map[string]any{
 			"user_id": "my-user-id",
 		},
-		"event_data": map[string]interface{}{"name": "value", "another_name": "another_value"},
+		"event_data": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"name": "value"},
+				map[string]interface{}{"another_name": "another_value"},
+			},
+		},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
@@ -214,8 +224,8 @@ func TestParseBodyFullExecution(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
+		EventData: EventData{
+			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
 		Execution: &Execution{
 			ProcessID:     13,
@@ -266,7 +276,12 @@ func TestParseBodyFullExecution(t *testing.T) {
 		"security": map[string]any{
 			"user_id": "my-user-id",
 		},
-		"event_data": map[string]interface{}{"name": "value", "another_name": "another_value"},
+		"event_data": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"name": "value"},
+				map[string]interface{}{"another_name": "another_value"},
+			},
+		},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
@@ -294,8 +309,8 @@ func TestParseNoRendered(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
+		EventData: EventData{
+			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
 	}
 
@@ -318,7 +333,12 @@ func TestParseNoRendered(t *testing.T) {
 		"task":        "task",
 		"opcode":      "opcode",
 		"keywords":    []string{"keyword"},
-		"event_data":  map[string]interface{}{"name": "value", "another_name": "another_value"},
+		"event_data": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"name": "value"},
+				map[string]interface{}{"another_name": "another_value"},
+			},
+		},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
@@ -346,8 +366,8 @@ func TestParseBodySecurity(t *testing.T) {
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"},
+		EventData: EventData{
+			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
 		RenderedLevel:    "rendered_level",
 		RenderedTask:     "rendered_task",
@@ -374,7 +394,12 @@ func TestParseBodySecurity(t *testing.T) {
 		"task":        "rendered_task",
 		"opcode":      "rendered_opcode",
 		"keywords":    []string{"RenderedKeywords"},
-		"event_data":  map[string]interface{}{"name": "value", "another_name": "another_value"},
+		"event_data": map[string]interface{}{
+			"data": []interface{}{
+				map[string]interface{}{"name": "value"},
+				map[string]interface{}{"another_name": "another_value"},
+			},
+		},
 	}
 
 	require.Equal(t, expected, xml.parseBody())
@@ -382,24 +407,35 @@ func TestParseBodySecurity(t *testing.T) {
 
 func TestParseEventData(t *testing.T) {
 	xmlMap := EventXML{
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"},
+		EventData: EventData{
+			Name:   "EVENT_DATA",
+			Data:   []Data{{Name: "name", Value: "value"}},
+			Binary: "2D20",
 		},
 	}
 
 	parsed := xmlMap.parseBody()
-	expectedMap := map[string]interface{}{"name": "value"}
+	expectedMap := map[string]interface{}{
+		"name": "EVENT_DATA",
+		"data": []interface{}{
+			map[string]interface{}{"name": "value"},
+		},
+		"binary": "2D20",
+	}
 	require.Equal(t, expectedMap, parsed["event_data"])
 
 	xmlMixed := EventXML{
-		EventData: []EventDataEntry{
-			{Name: "name", Value: "value"},
-			{Value: "noname"},
+		EventData: EventData{
+			Data: []Data{{Name: "name", Value: "value"}, {Value: "no_name"}},
 		},
 	}
 
 	parsed = xmlMixed.parseBody()
-	expectedSlice := map[string]interface{}{"name": "value"}
+	expectedSlice := map[string]interface{}{
+		"data": []interface{}{
+			map[string]interface{}{"name": "value"},
+			map[string]interface{}{"": "no_name"}},
+	}
 	require.Equal(t, expectedSlice, parsed["event_data"])
 }
 
@@ -428,16 +464,54 @@ func TestUnmarshalWithEventData(t *testing.T) {
 		TimeCreated: TimeCreated{
 			SystemTime: "2022-04-22T10:20:52.3778625Z",
 		},
+		Computer:  "computer",
+		Channel:   "Application",
+		RecordID:  23401,
+		Level:     "4",
+		Message:   "",
+		Task:      "0",
+		Opcode:    "0",
+		Execution: &Execution{},
+		Security:  &Security{},
+		EventData: EventData{
+			Data: []Data{
+				{Name: "Time", Value: "2022-04-28T19:48:52Z"},
+				{Name: "Source", Value: "RulesEngine"}},
+		},
+		Keywords: []string{"0x80000000000000"},
+	}
+
+	require.Equal(t, xml, event)
+}
+
+func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlWithAnonymousEventDataEntries.xml"))
+	require.NoError(t, err)
+
+	event, err := unmarshalEventXML(data)
+	require.NoError(t, err)
+
+	xml := EventXML{
+		EventID: EventID{
+			ID:         8194,
+			Qualifiers: 0,
+		},
+		Provider: Provider{
+			Name: "VSS",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2023-10-19T21:57:58.0685414Z",
+		},
 		Computer: "computer",
 		Channel:  "Application",
-		RecordID: 23401,
-		Level:    "4",
+		RecordID: 383972,
+		Level:    "2",
 		Message:  "",
 		Task:     "0",
 		Opcode:   "0",
-		EventData: []EventDataEntry{
-			{Name: "Time", Value: "2022-04-28T19:48:52Z"},
-			{Name: "Source", Value: "RulesEngine"},
+		EventData: EventData{
+			Data:   []Data{{Name: "", Value: "1st_value"}, {Name: "", Value: "2nd_value"}},
+			Binary: "2D20",
 		},
 		Keywords:  []string{"0x80000000000000"},
 		Security:  &Security{},
