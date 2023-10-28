@@ -17,7 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
@@ -32,40 +31,27 @@ type Factory struct {
 	TrimFunc      trim.Func
 }
 
-func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
-	m := &Metadata{
-		Fingerprint:    fp,
-		FileAttributes: map[string]any{},
-	}
-	if f.Config.FlushTimeout > 0 {
-		m.FlushState = &flush.State{LastDataChange: time.Now()}
-	}
-	return f.build(file, m)
-}
-
-// copy creates a deep copy of a reader
-func (f *Factory) Copy(old *Reader, newFile *os.File) (*Reader, error) {
-	return f.build(newFile, &Metadata{
-		Fingerprint:     old.Fingerprint.Copy(),
-		Offset:          old.Offset,
-		FileAttributes:  util.MapCopy(old.FileAttributes),
-		HeaderFinalized: old.HeaderFinalized,
-		FlushState:      old.FlushState.Copy(),
-	})
-}
-
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
 	return fingerprint.New(file, f.Config.FingerprintSize)
 }
 
-func (f *Factory) build(file *os.File, m *Metadata) (r *Reader, err error) {
+func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
+	m := &Metadata{Fingerprint: fp, FileAttributes: map[string]any{}}
+	if f.Config.FlushTimeout > 0 {
+		m.FlushState = &flush.State{LastDataChange: time.Now()}
+	}
+	return f.NewReaderFromMetadata(file, m)
+}
+
+func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
 	r = &Reader{
-		Config:   f.Config,
-		Metadata: m,
-		file:     file,
-		fileName: file.Name(),
-		logger:   f.SugaredLogger.With("path", file.Name()),
-		decoder:  decode.New(f.Encoding),
+		Config:        f.Config,
+		Metadata:      m,
+		file:          file,
+		fileName:      file.Name(),
+		logger:        f.SugaredLogger.With("path", file.Name()),
+		decoder:       decode.New(f.Encoding),
+		lineSplitFunc: f.SplitFunc,
 	}
 
 	flushFunc := m.FlushState.Func(f.SplitFunc, f.Config.FlushTimeout)

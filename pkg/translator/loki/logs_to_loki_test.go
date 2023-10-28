@@ -48,10 +48,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="1"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200,"tenant.id":"1"}}`,
 									},
 								}},
 						},
@@ -61,10 +61,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="2"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200,"tenant.id":"2"}}`,
 									},
 								},
 							},
@@ -100,10 +100,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="11"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200},"resources":{"tenant.id":"11"}}`,
 									},
 								}},
 						},
@@ -113,10 +113,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="12"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200},"resources":{"tenant.id":"12"}}`,
 									},
 								},
 							},
@@ -186,10 +186,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="21"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200,"tenant.id":"31"},"resources":{"tenant.id":"21"}}`,
 									},
 								}},
 						},
@@ -199,10 +199,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="22"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200,"tenant.id":"32"},"resources":{"tenant.id":"22"}}`,
 									},
 								},
 							},

@@ -64,7 +64,7 @@ connectors:
 service:
   pipelines:
     traces/in:
-      receivers: [oltp]
+      receivers: [otlp]
       exporters: [routing]
     traces/jaeger:
       receivers: [routing]
