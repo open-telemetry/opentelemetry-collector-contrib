@@ -17,13 +17,13 @@ import (
 func Test_createDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		Endpoint:        defaultBroker,
-		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:                   "",
-		Encoding:                defaultEncoding,
+		TimeoutSettings:         exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:           exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
+		Trace:                   ExporterOption{Encoding: defaultEncoding},
+		Log:                     ExporterOption{Encoding: defaultEncoding},
+		Metric:                  ExporterOption{Encoding: defaultEncoding},
+		Endpoint:                defaultBroker,
 		Authentication:          Authentication{},
 		MaxConnectionsPerBroker: 1,
 		ConnectionTimeout:       5 * time.Second,
@@ -34,9 +34,8 @@ func Test_createDefaultConfig(t *testing.T) {
 func TestWithTracesMarshalers_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
-
-	tracesMarshaler := &customTraceMarshaler{encoding: "unknown"}
-	f := NewFactory(withTracesMarshalers(tracesMarshaler))
+	cfg.Trace.Encoding = "custom"
+	f := NewFactory()
 	r, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	// no available broker
 	require.Error(t, err)
@@ -47,8 +46,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
-	f := pulsarExporterFactory{tracesMarshalers: tracesMarshalers()}
-	r, err := f.createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
@@ -58,8 +56,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
-	mf := pulsarExporterFactory{metricsMarshalers: metricsMarshalers()}
-	mr, err := mf.createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	mr, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
 }
@@ -68,8 +65,7 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
-	mf := pulsarExporterFactory{logsMarshalers: logsMarshalers()}
-	mr, err := mf.createLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	mr, err := createLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
 }

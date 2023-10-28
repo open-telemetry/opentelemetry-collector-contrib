@@ -21,10 +21,12 @@ type Config struct {
 
 	// Endpoint of pulsar broker (default "pulsar://localhost:6650")
 	Endpoint string `mapstructure:"endpoint"`
-	// The name of the pulsar topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
-	Topic string `mapstructure:"topic"`
-	// Encoding of messages (default "otlp_proto")
-	Encoding string `mapstructure:"encoding"`
+	// Trace The topic and data encoding for traces exporting to.
+	Trace ExporterOption `mapstructure:"trace"`
+	// Trace The topic and data encoding for logs exporting to.
+	Log ExporterOption `mapstructure:"log"`
+	// Metric The topic and data encoding for metrics exporting to.
+	Metric ExporterOption `mapstructure:"metric"`
 	// Producer configuration of the Pulsar producer
 	Producer Producer `mapstructure:"producer"`
 	// Set the path to the trusted TLS certificate file
@@ -85,6 +87,14 @@ type Producer struct {
 	DisableBatching                 bool             `mapstructure:"disable_batching"`
 }
 
+// ExporterOption defines the topic and data encoding for trace,metric,log
+type ExporterOption struct {
+	// The name of the pulsar topic to export to (default "")
+	Topic string `mapstructure:"topic"`
+	// Encoding of messages (default "")
+	Encoding string `mapstructure:"encoding"`
+}
+
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
@@ -141,9 +151,9 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	return options
 }
 
-func (cfg *Config) getProducerOptions() pulsar.ProducerOptions {
+func (cfg *Config) getProducerOptions(topic string) pulsar.ProducerOptions {
 	producerOptions := pulsar.ProducerOptions{
-		Topic:                           cfg.Topic,
+		Topic:                           topic,
 		SendTimeout:                     cfg.Timeout,
 		BatcherBuilderType:              cfg.Producer.BatcherBuilderType.ToPulsar(),
 		BatchingMaxMessages:             cfg.Producer.BatchingMaxMessages,
@@ -159,6 +169,27 @@ func (cfg *Config) getProducerOptions() pulsar.ProducerOptions {
 		PartitionsAutoDiscoveryInterval: cfg.Producer.PartitionsAutoDiscoveryInterval,
 	}
 	return producerOptions
+}
+
+func (cfg *Config) createPulsarProducer(topic string) (pulsar.Client, pulsar.Producer, error) {
+	options := cfg.clientOptions()
+
+	client, err := pulsar.NewClient(options)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	producerOptions := cfg.getProducerOptions(topic)
+	producer, err := client.CreateProducer(producerOptions)
+
+	if err != nil {
+		// if create client success but create producer failed, close the client
+		client.Close()
+		return nil, nil, err
+	}
+
+	return client, producer, nil
 }
 
 type BatchBuilderType string

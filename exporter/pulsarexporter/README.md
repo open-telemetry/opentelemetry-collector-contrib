@@ -19,13 +19,23 @@ that blocks and able to batch messages.
 
 The following settings can be optionally configured:
 - `endpoint` (default = pulsar://localhost:6650): The url of pulsar cluster.
-- `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the pulsar topic to export to.
-- `encoding` (default = otlp_proto): The encoding of the traces sent to pulsar. All available encodings:
-    - `otlp_proto`: payload is Protobuf serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs.
-    - `otlp_json`:  ** EXPERIMENTAL ** payload is JSON serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs.
-    - The following encodings are valid *only* for **traces**.
-        - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
-        - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
+- `trace`
+    - `topic` (default = ``): The name of the pulsar topic to export to.
+    - `encoding` (default = otlp_proto): The encoding of the traces sent to pulsar. All available encodings:
+      - `otlp_proto`: payload is Protobuf serialized from `ExportTraceServiceRequest` if set as a traces exporter.
+      - `otlp_json`:  ** EXPERIMENTAL ** payload is JSON serialized from `ExportTraceServiceRequest` if set as a traces exporter.
+      - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
+      - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
+- `log`
+    - `topic` (default = ``): The name of the pulsar topic to export to.
+    - `encoding` (default = otlp_proto): The encoding of the traces sent to pulsar. All available encodings:
+        - `otlp_proto`: payload is Protobuf serialized from `ExportLogsServiceRequest` if set as a logs exporter.
+        - `otlp_json`:  ** EXPERIMENTAL ** payload is JSON serialized from `ExportLogsServiceRequest` if set as a logs exporter.
+- `metric`
+    - `topic` (default = ``): The name of the pulsar topic to export to.
+    - `encoding` (default = otlp_proto): The encoding of the traces sent to pulsar. All available encodings:
+        - `otlp_proto`: payload is Protobuf serialized from `ExportMetricsServiceRequest` if set as a metrics exporter.
+        - `otlp_json`:  ** EXPERIMENTAL ** payload is JSON serialized from `ExportMetricsServiceRequest` if set as a metrics exporter.
 - `auth`
     - `tls`
         - `cert_file`:
@@ -82,8 +92,15 @@ Example configuration:
 exporters:
   pulsar:
     endpoint: pulsar://localhost:6650
-    topic: otlp-spans
-    encoding: otlp_proto
+    trace:
+      topic: pulsar://public/default/otlp_spans
+      encoding: otlp_proto
+    log:
+      topic: pulsar://public/default/otlp_logs
+      encoding: otlp_proto
+    metric:
+      topic: pulsar://public/default/otlp_metrics
+      encoding: otlp_proto
     auth:
       tls:
         cert_file: cert.pem

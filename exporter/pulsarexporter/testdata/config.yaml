@@ -1,7 +1,14 @@
 pulsar:
-  topic: spans
   endpoint: pulsar://localhost:6650
-  encoding: otlp-spans
+  trace:
+    topic: otlp_trace
+    encoding: otlp_proto
+  log:
+    topic: otlp_log
+    encoding: otlp_proto
+  metric:
+    topic: otlp_metric
+    encoding: otlp_proto
   tls_trust_certs_file_path: ca.pem
   auth:
     tls:

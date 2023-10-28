@@ -4,11 +4,15 @@
 package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 
 import (
+	"fmt"
+
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
 // TracesMarshaler marshals traces into Message array.
 type TracesMarshaler interface {
