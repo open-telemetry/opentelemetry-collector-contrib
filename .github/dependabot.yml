@@ -303,6 +303,16 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/extension/encoding/textencodingextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/extension/encoding/zipkinencodingextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/extension/headerssetterextension"
     schedule:
       interval: "weekly"
@@ -449,16 +459,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/experimentalmetricmetadata"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/pkg/golden"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/pkg/ottl"
     schedule:
       interval: "weekly"
       day: "wednesday"
