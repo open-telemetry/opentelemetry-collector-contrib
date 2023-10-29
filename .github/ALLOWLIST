@@ -20,6 +20,7 @@
 
 ## COMMON & SHARED components
 internal/common
+extension/encoding
 
 ## DEPRECATED components
 

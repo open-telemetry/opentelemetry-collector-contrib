@@ -217,6 +217,26 @@ func TestDefaultExtensions(t *testing.T) {
 				return extFactories["jaegerremotesampling"].CreateDefaultConfig().(*jaegerremotesampling.Config)
 			},
 		},
+		{
+			extension:     "otlp_encoding",
+			skipLifecycle: true, // Requires a docker api to interface and validate.
+		},
+		{
+			extension:     "text_encoding",
+			skipLifecycle: true, // Requires a docker api to interface and validate.
+		},
+		{
+			extension:     "jaeger_encoding",
+			skipLifecycle: true, // Requires a docker api to interface and validate.
+		},
+		{
+			extension:     "json_log_encoding",
+			skipLifecycle: true, // Requires a docker api to interface and validate.
+		},
+		{
+			extension:     "zipkin_encoding",
+			skipLifecycle: true, // Requires a docker api to interface and validate.
+		},
 	}
 
 	extensionCount := 0
