@@ -31,7 +31,7 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 		return nil, err
 	}
 	unmarshaler := unmarshalers[option.Encoding]
-	if nil == unmarshaler {
+	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
 

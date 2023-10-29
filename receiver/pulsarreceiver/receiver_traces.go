@@ -31,7 +31,7 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 		return nil, err
 	}
 	unmarshaler := unmarshalers[option.Encoding]
-	if nil == unmarshaler {
+	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
 
@@ -53,14 +53,14 @@ func (c *pulsarTracesReceiver) Start(context.Context, component.Host) error {
 	c.client = client
 	c.consumer = _consumer
 	go func() {
-		if e := consumerTracesLoop(ctx, c); e != nil {
+		if e := consumeTracesLoop(ctx, c); e != nil {
 			c.settings.Logger.Error("consume traces loop occurs an error", zap.Error(e))
 		}
 	}()
 	return err
 }
 
-func consumerTracesLoop(ctx context.Context, c *pulsarTracesReceiver) error {
+func consumeTracesLoop(ctx context.Context, c *pulsarTracesReceiver) error {
 	unmarshaler := c.unmarshaler
 	traceConsumer := c.tracesConsumer
 

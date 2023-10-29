@@ -33,7 +33,7 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 		return nil, err
 	}
 	unmarshaler := unmarshalers[option.Encoding]
-	if nil == unmarshaler {
+	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
 	return &pulsarLogsReceiver{
