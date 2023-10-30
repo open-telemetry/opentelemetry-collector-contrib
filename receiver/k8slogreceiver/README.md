@@ -25,48 +25,21 @@ Two modes of discovery are planned to be supported in the future:
 
 The following settings are common to all discovery modes:
 
-| Field                               | Default            | Description                                                                                                                                                                                                                                                    |
-|-------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `discovery.mode`                    | `daemonset-stdout` | The mode of discovery. Options are `daemonset-stdout`, `daemonset-file` or `sidecar`.                                                                                                                                                                          |
-| `discovery.extract`                 |                    | The rules to extract metadata from pods and containers. TODO default values.                                                                                                                                                                                   |
-| `start_at`                          | `end`              | At startup, where to start reading logs from the file. Options are `beginning` or `end`                                                                                                                                                                        |
-| `force_flush_period`                | `500ms`            | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes `time.Duration` (e.g. `10s`, `1m`, or `500ms`) as value. Zero means waiting for new data forever                                                  |
-| `encoding`                          | `utf-8`            | The encoding of the file being read. See the list of supported encodings below for available options                                                                                                                                                           |
-| `preserve_leading_whitespaces`      | `true`             | Whether to preserve leading whitespaces.                                                                                                                                                                                                                       |
-| `preserve_trailing_whitespaces`     | `false`            | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                      |
-| `include_file_name`                 | `true`             | Whether to add the file name as the attribute `log.file.name`.                                                                                                                                                                                                 |
-| `include_file_path`                 | `true`             | Whether to add the file path as the attribute `log.file.path`.                                                                                                                                                                                                 |
-| `poll_interval`                     | 200ms              | The duration between filesystem polls                                                                                                                                                                                                                          |
-| `max_log_size`                      | `128kb`            | The maximum size of a log entry to read. A log entry will be truncated if it is larger than `max_log_size`. Protects against reading large amounts of data into memory                                                                                         |
-| `max_readers`                       | 1024               | The maximum number of readers running at the same time.                                                                                                                                                                                                        |
-| `attributes`                        | {}                 | A map of `key: value` pairs to add to the entry's attributes                                                                                                                                                                                                   |
-| `resource`                          | {}                 | A map of `key: value` pairs to add to the entry's resource                                                                                                                                                                                                     |
-| `operators`                         | []                 | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details                                                                                                                                    |
-| `storage`                           | none               | The ID of a storage extension to be used to store file checkpoints. File checkpoints allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage checkpoints in memory only. |
-| `retry_on_failure.enabled`          | `false`            | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                                        |
-| `retry_on_failure.initial_interval` | `1 second`         | Time to wait after the first failure before retrying.                                                                                                                                                                                                          |
-| `retry_on_failure.max_interval`     | `30 seconds`       | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                                           |
-| `retry_on_failure.max_elapsed_time` | `5 minutes`        | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                                                  |
+| Field            | Default            | Description                                                                                                      |
+|------------------|--------------------|------------------------------------------------------------------------------------------------------------------|
+| `discovery.mode` | `daemonset-stdout` | The mode of discovery. Only `daemonset-stdout` is supported now. `daemonset-file` and `sidecar` are coming soon. |
+| `extract`        |                    | The rules to extract metadata from pods and containers. TODO default values.                                     |
+| TODO: add fields for reading files similar to filelogreceiver |
 
 When `discovery.mode` is not `sidecar`, there are additional configuration options:
 
-| Field                         | Default          | Description                                                                                                                                      |
-|-------------------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| `discovery.k8s_api.auth_type` | `serviceAccount` | The authentication type of k8s api. Options are `serviceAccount` or `kubeConfig`.                                                                |
-| `discovery.host_root`         | `/host-root`     | The directory which the root of host is mounted on.                                                                                              |
-| `discovery.runtime_apis`      |                  | The runtime apis used to get log file paths. docker and cri are supported now. By default, it will try to automatically detect the runtime apis. |
-| `discovery.node_from_env`     | `KUBE_NODE_NAME` | The environment variable name of node name.                                                                                                      |
-| `discovery.filter`            | []               | The filter used to filter pods and containers. By default, all pods and containers will be collected.                                            |
-
-When `discovery.mode` is not `daemonset-stdout`, there are additional configuration options (will be useful when another mode is supported):
-
-| Field              | Default  | Description                                                                                                                                                                                                                                                     |
-|--------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `include`          | required | A list of file glob patterns that match the file paths to be read.                                                                                                                                                                                              |
-| `exclude`          | []       | A list of file glob patterns to exclude from reading.                                                                                                                                                                                                           |
-| `fingerprint_size` | `1kb`    | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time) |
-
-Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
+| Field                         | Default          | Description                                                                                                                                                   |
+|-------------------------------|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `discovery.k8s_api.auth_type` | `serviceAccount` | The authentication type of k8s api. Options are `serviceAccount` or `kubeConfig`.                                                                             |
+| `discovery.host_root`         | `/host-root`     | The directory which the root of host is mounted on.                                                                                                           |
+| `discovery.runtime_apis`      |                  | The runtime apis used to get log file paths. docker and cri-containerd are supported now. By default, it will try to automatically detect the cri-containerd. |
+| `discovery.node_from_env`     | `KUBE_NODE_NAME` | The environment variable name of node name.                                                                                                                   |
+| `discovery.filter`            | []               | The filter used to filter pods and containers. By default, all pods and containers will be collected.                                                         |
 
 ### Operators
 
@@ -89,7 +62,6 @@ When `discovery.mode` is not `sidecar`, the `discovery.filter` field can be used
 | `containers`  | ValueFilters that filters containers by name.                |
 | `namespaces`  | ValueFilters that filters pods by namespace.                 |
 | `pods`        | ValueFilters that filters pods by name.                      |
-| `uids`        | ValueFilters that filters pods by uid.                       |
 
 #### MapFilter
 
@@ -118,7 +90,6 @@ The `extract` field can be used to extract fields from the log file path. It has
 |---------------|--------------------------------------------------------------------------------------|
 | `metadata`    | A string slice of metadata to extract from the pods and containers.                  |
 | `env`         | A FieldExtractConfig that extracts fields from environment variables of containers.  |
-| `otel_env`    | A FieldExtractConfig that extracts fields from environment variables of otel itself. |
 | `annotations` | A FieldExtractConfig that extracts fields from annotations of pods.                  |
 | `labels`      | A FieldExtractConfig that extracts fields from labels of pods.                       |
 
