@@ -98,8 +98,10 @@ and the OpenTelemetry attributes.
 | time (required)                  | time_unix_nano (field)                 | 
 | identity (optional)              | azure.identity (attribute, nested)     |
 
-Note: JSON does not distinguish between fixed and floating point numbers. All
+Notes:
+* JSON does not distinguish between fixed and floating point numbers. All
 JSON numbers are encoded as doubles.
+* Additionaly the field timestamp can be used instead of time.
 
 For Metrics the Azure Metric Records are an array
 of "records" with the following fields.
