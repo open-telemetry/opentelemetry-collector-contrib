@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type               = "text_encoding"
+	Type               = "remotetap"
 	ExtensionStability = component.StabilityLevelDevelopment
 )
