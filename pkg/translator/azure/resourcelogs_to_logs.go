@@ -47,6 +47,7 @@ type azureRecords struct {
 // https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema
 type azureLogRecord struct {
 	Time              string       `json:"time"`
+	Timestamp         string       `json:"timeStamp"`
 	ResourceID        string       `json:"resourceId"`
 	TenantID          *string      `json:"tenantId"`
 	OperationName     string       `json:"operationName"`
@@ -101,7 +102,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		for i := 0; i < len(logs); i++ {
 			log := logs[i]
-			nanos, err := asTimestamp(log.Time)
+			nanos, err := getTimestamp(log)
 			if err != nil {
 				r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
 				continue
@@ -125,7 +126,19 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return l, nil
 }
 
-// asTimestamp will parse an ISO8601 string into an OpenTelemetry
+func getTimestamp(record azureLogRecord) (pcommon.Timestamp, error) {
+	var s string
+	if record.Time != "" {
+		s = record.Time
+
+	} else if record.Timestamp != "" {
+		s = record.Timestamp
+	}
+
+	return asTimestamp(s)
+}
+
+// getTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
 func asTimestamp(s string) (pcommon.Timestamp, error) {
@@ -133,6 +146,7 @@ func asTimestamp(s string) (pcommon.Timestamp, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return pcommon.Timestamp(t.UnixNano()), nil
 }
 
