@@ -25,6 +25,7 @@ type tcpServer struct {
 	stopChan  chan struct{}
 }
 
+// Ensure that Server is implemented on TCP Server.
 var _ Server = (*tcpServer)(nil)
 
 // NewTCPServer creates a transport.Server using TCP as its transport.
@@ -46,6 +47,7 @@ func NewTCPServer(transport Transport, address string) (Server, error) {
 	return &tsrv, nil
 }
 
+// ListenAndServe starts the server ready to receive metrics.
 func (t *tcpServer) ListenAndServe(nextConsumer consumer.Metrics, reporter Reporter, transferChan chan<- Metric) error {
 	if nextConsumer == nil || reporter == nil {
 		return errNilListenAndServeParameters
@@ -76,6 +78,7 @@ LOOP:
 	return errTCPServerDone
 }
 
+// handleConn is helper that parses the buffer and split it line by line to be parsed upstream.
 func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 	payload := make([]byte, 4096)
 	var remainder []byte
@@ -103,6 +106,7 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 	}
 }
 
+// Close closes the server.
 func (t *tcpServer) Close() error {
 	close(t.stopChan)
 	t.wg.Wait()

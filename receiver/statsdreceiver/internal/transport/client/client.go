@@ -47,7 +47,7 @@ func (s *StatsD) connect() error {
 		}
 	case "tcp":
 		var err error
-		s.Conn, err = net.Dial("tcp", s.address)
+		s.conn, err = net.Dial(s.transport, s.address)
 		if err != nil {
 			return err
 		}

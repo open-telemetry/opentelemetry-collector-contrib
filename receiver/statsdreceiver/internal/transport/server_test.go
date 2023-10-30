@@ -45,11 +45,10 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			trans := Transport(tt.name)
 			addr := tt.getFreeEndpointFn(t, tt.name)
 			testFreeEndpoint(t, tt.name, addr)
 
-			srv, err := tt.buildServerFn(trans, addr)
+			srv, err := tt.buildServerFn(tt.transport, addr)
 			require.NoError(t, err)
 			require.NotNil(t, srv)
 
@@ -67,7 +66,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			runtime.Gosched()
 
-			gc, err := tt.buildClientFn(tt.name, addr)
+			gc, err := tt.buildClientFn(tt.transport.String(), addr)
 			require.NoError(t, err)
 			require.NotNil(t, gc)
 			err = gc.SendMetric(client.Metric{
