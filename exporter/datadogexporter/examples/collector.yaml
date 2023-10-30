@@ -340,6 +340,12 @@ exporters:
       #
       # peer_service_aggregation: true
 
+      ## @param trace_buffer - specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
+      ## If unset, the default value is 0, meaning the Datadog Agent TracerPayloads are unbuffered.
+      ## If you start seeing log messages like `Payload in channel full. Dropped 1 payload.` in the datadog exporter, consider
+      ## setting a higher `trace_buffer` to avoid traces being dropped. 
+      # trace_buffer: 10
+
     ## @param host_metadata - custom object - optional
     ## Host metadata specific configuration.
     ## Host metadata is the information used for populating the infrastructure list, the host map and providing host tags functionality within the Datadog app.
@@ -372,7 +378,7 @@ exporters:
       ##
       ## To attach tags to telemetry signals regardless of the host, use a processor instead.
       #
-      # tags: []
+      # tags: ["team:infra", "<TAG_KEY>:<TAG_VALUE>"]
 
     ## @param logs - custom object - optional
     ## Logs exporter specific configuration.

@@ -99,6 +99,7 @@ func buildTestManager(t testing.TB, cfg *Config, opts ...testManagerOption) (*Ma
 			input.poolLost.StartConsumers(ctx)
 		})
 	}
+	t.Cleanup(func() { input.closePreviousFiles() })
 	return input, tmc.emitChan
 }
 
@@ -199,7 +200,7 @@ func waitForTokenWithAttributes(t *testing.T, c chan *emitParams, expected []byt
 	}
 }
 
-func waitForTokens(t *testing.T, c chan *emitParams, expected [][]byte) {
+func waitForTokens(t *testing.T, c chan *emitParams, expected ...[]byte) {
 	actual := make([][]byte, 0, len(expected))
 LOOP:
 	for {

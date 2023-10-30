@@ -412,6 +412,16 @@ func TestUnmarshal(t *testing.T) {
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
+			{
+				Name: "ordering_criteria_top_n",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria = matcher.OrderingCriteria{
+						TopN: 10,
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
 		},
 	}.Run(t)
 }
@@ -767,7 +777,7 @@ func TestBuildWithHeader(t *testing.T) {
 			},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.NotNil(t, m.readerFactory.headerConfig.SplitFunc)
+				require.NotNil(t, m.readerFactory.HeaderConfig.SplitFunc)
 			},
 		},
 	}

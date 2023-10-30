@@ -17,6 +17,9 @@ type Config struct {
 	Timeout   time.Duration `mapstructure:"timeout,omitempty"`
 
 	Compaction *CompactionConfig `mapstructure:"compaction,omitempty"`
+
+	// FSync specifies that fsync should be called after each database write
+	FSync bool `mapstructure:"fsync,omitempty"`
 }
 
 // CompactionConfig defines configuration for optional file storage compaction.

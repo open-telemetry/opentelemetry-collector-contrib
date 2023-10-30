@@ -300,7 +300,8 @@ func ScenarioTestTraceNoBackend10kSPS(
 
 	tc.Sleep(tc.Duration)
 
-	rss, _, _ := tc.AgentMemoryInfo()
+	rss, _, err := tc.AgentMemoryInfo()
+	require.NoError(t, err)
 	assert.Less(t, configuration.ExpectedMinFinalRAM, rss)
 }
 

@@ -86,38 +86,47 @@ func buildKey(prefix string, separator string, key string, depth int) string {
 	return res
 }
 
-func updateWithPrefixedValuesMap(target map[string]interface{}, prefix string, separator string, source map[string]interface{}, depth int) {
+func updateWithPrefixedValuesMap(target map[string]interface{}, prefix string, separator string, suffix string, source map[string]interface{}, depth int) {
 	for k, v := range source {
 		key := buildKey(prefix, separator, k, depth)
-		updateWithPrefixedValues(target, key, separator, v, depth+1)
+		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValuesArray(target map[string]interface{}, prefix string, separator string, source []interface{}, depth int) {
+func updateWithPrefixedValuesArray(target map[string]interface{}, prefix string, separator string, suffix string, source []interface{}, depth int) {
 	for i, v := range source {
 		key := buildKey(prefix, separator, strconv.FormatInt(int64(i), 10), depth)
-		updateWithPrefixedValues(target, key, separator, v, depth+1)
+		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValues(target map[string]interface{}, prefix string, separator string, source interface{}, depth int) {
-	st := reflect.TypeOf(source)
-	switch st.Kind() {
-	case reflect.Map:
-		updateWithPrefixedValuesMap(target, prefix, separator, source.(map[string]interface{}), depth)
-	case reflect.Array, reflect.Slice:
-		updateWithPrefixedValuesArray(target, prefix, separator, source.([]interface{}), depth)
-	default:
+func updateWithPrefixedValues(target map[string]interface{}, prefix string, separator string, suffix string, source interface{}, depth int) {
+	setValue := func() {
 		for {
+			// now the last value wins
+			// Should the first value win?
 			_, found := target[prefix]
-			if found {
-				prefix += separator
+			if found && len(suffix) > 0 {
+				prefix += suffix
 			} else {
 				target[prefix] = source
 				break
 			}
 		}
+	}
 
+	st := reflect.TypeOf(source)
+	if st == nil {
+		setValue()
+		return
+	}
+	switch st.Kind() {
+	case reflect.Map:
+		updateWithPrefixedValuesMap(target, prefix, separator, suffix, source.(map[string]interface{}), depth)
+	case reflect.Array, reflect.Slice:
+		updateWithPrefixedValuesArray(target, prefix, separator, suffix, source.([]interface{}), depth)
+	default:
+		setValue()
 	}
 }
 

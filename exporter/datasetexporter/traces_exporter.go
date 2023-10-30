@@ -41,6 +41,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 func buildEventFromSpan(
 	bundle spanBundle,
 	serverHost string,
+	settings TracesSettings,
 ) *add_events.EventBundle {
 	span := bundle.span
 	resource := bundle.resource
@@ -74,8 +75,7 @@ func buildEventFromSpan(
 	updateResource(attrs, resource.Attributes().AsRaw())
 
 	// since attributes are overwriting existing keys, they have to be at the end
-	// updateWithPrefixedValues(attrs, "attributes_", "_", span.Attributes().AsRaw(), 0)
-	updateWithPrefixedValues(attrs, "", "_", span.Attributes().AsRaw(), 0)
+	updateWithPrefixedValues(attrs, "", settings.ExportSeparator, settings.ExportDistinguishingSuffix, span.Attributes().AsRaw(), 0)
 
 	event.Attrs = attrs
 	event.Log = "LT"
@@ -133,7 +133,7 @@ type spanBundle struct {
 	scope    pcommon.InstrumentationScope
 }
 
-func buildEventsFromTraces(ld ptrace.Traces, serverHost string) []*add_events.EventBundle {
+func buildEventsFromTraces(ld ptrace.Traces, serverHost string, settings TracesSettings) []*add_events.EventBundle {
 	var spans = make([]spanBundle, 0)
 
 	// convert spans into events
@@ -153,12 +153,12 @@ func buildEventsFromTraces(ld ptrace.Traces, serverHost string) []*add_events.Ev
 
 	events := make([]*add_events.EventBundle, len(spans))
 	for i, span := range spans {
-		events[i] = buildEventFromSpan(span, serverHost)
+		events[i] = buildEventFromSpan(span, serverHost, settings)
 	}
 
 	return events
 }
 
 func (e *DatasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
-	return sendBatch(buildEventsFromTraces(ld, e.serverHost), e.client)
+	return sendBatch(buildEventsFromTraces(ld, e.serverHost, e.exporterCfg.tracesSettings), e.client)
 }

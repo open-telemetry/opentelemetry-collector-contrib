@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net/url"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -17,22 +16,15 @@ import (
 )
 
 var (
-	errBadOrMissingEndpoint = errors.New("Missing a valid endpoint")
-	errMissingUsername      = errors.New("Missing valid username")
-	errMissingPassword      = errors.New("Missing valid password")
-	errBadScheme            = errors.New("Endpoint scheme must be either http or https")
+	errBadOrMissingEndpoint = errors.New("missing a valid endpoint")
+	errBadScheme            = errors.New("endpoint scheme must be either http or https")
+	errMissingAuthExtension = errors.New("auth extension missing from config")
 )
 
 type Config struct {
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	// Username and password with associated with an account with
-	// permission to access the Splunk deployments REST api
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	// default is 60s
-	MaxSearchWaitTime time.Duration `mapstructure:"max_search_wait_time"`
 }
 
 func (cfg *Config) Validate() (errors error) {
@@ -54,12 +46,8 @@ func (cfg *Config) Validate() (errors error) {
 		}
 	}
 
-	if cfg.Username == "" {
-		errors = multierr.Append(errors, errMissingUsername)
-	}
-
-	if cfg.Password == "" {
-		errors = multierr.Append(errors, errMissingPassword)
+	if cfg.HTTPClientSettings.Auth.AuthenticatorID.Name() == "" {
+		errors = multierr.Append(errors, errMissingAuthExtension)
 	}
 
 	return errors

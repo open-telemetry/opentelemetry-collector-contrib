@@ -140,6 +140,20 @@ func BenchmarkFileInput(b *testing.B) {
 				return cfg
 			},
 		},
+		{
+			name: "NoFlush",
+			paths: []string{
+				"file0.log",
+			},
+			config: func() *Config {
+				cfg := NewConfig()
+				cfg.Include = []string{
+					"file*.log",
+				}
+				cfg.FlushPeriod = 0
+				return cfg
+			},
+		},
 	}
 
 	for _, bench := range cases {
@@ -172,7 +186,7 @@ func BenchmarkFileInput(b *testing.B) {
 			}
 
 			b.ResetTimer()
-			err = op.Start(testutil.NewMockPersister("test"))
+			err = op.Start(testutil.NewUnscopedMockPersister())
 			defer func() {
 				require.NoError(b, op.Stop())
 			}()

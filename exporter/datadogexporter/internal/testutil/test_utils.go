@@ -36,11 +36,13 @@ type DatadogServer struct {
 
 /* #nosec G101 -- This is a false positive, these are API endpoints rather than credentials */
 const (
-	ValidateAPIKeyEndpoint = "/api/v1/validate"
+	ValidateAPIKeyEndpoint = "/api/v1/validate" // nolint G101
 	MetricV1Endpoint       = "/api/v1/series"
 	MetricV2Endpoint       = "/api/v2/series"
 	SketchesMetricEndpoint = "/api/beta/sketches"
 	MetadataEndpoint       = "/intake"
+	TraceEndpoint          = "/api/v0.2/traces"
+	APMStatsEndpoint       = "/api/v0.2/stats"
 )
 
 // DatadogServerMock mocks a Datadog backend server
@@ -85,6 +87,19 @@ func (rec *HTTPRequestRecorder) HandlerFunc() (string, http.HandlerFunc) {
 	return rec.Pattern, func(w http.ResponseWriter, r *http.Request) {
 		rec.Header = r.Header
 		rec.ByteBody, _ = io.ReadAll(r.Body)
+	}
+}
+
+// HTTPRequestRecorderWithChan puts all incoming HTTP request bytes to the given channel.
+type HTTPRequestRecorderWithChan struct {
+	Pattern string
+	ReqChan chan []byte
+}
+
+func (rec *HTTPRequestRecorderWithChan) HandlerFunc() (string, http.HandlerFunc) {
+	return rec.Pattern, func(w http.ResponseWriter, r *http.Request) {
+		bytesBody, _ := io.ReadAll(r.Body)
+		rec.ReqChan <- bytesBody
 	}
 }
 

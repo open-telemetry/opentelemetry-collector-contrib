@@ -107,7 +107,7 @@ Emeritus Approvers:
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
 - [Alex Boten](https://github.com/codeboten), Lightstep
-- [Bogdan Drutu](https://github.com/bogdandrutu), Splunk
+- [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
@@ -124,7 +124,7 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 
 ## PRs and Reviews
 
-When creating a PR please following the process [described
+When creating a PR please follow the process [described
 here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#how-to-structure-prs-to-get-expedient-reviews).
 
 News PRs will be automatically associated with the reviewers based on

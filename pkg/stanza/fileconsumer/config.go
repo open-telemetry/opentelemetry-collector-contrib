@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/threadpool"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/trie"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
@@ -102,7 +102,7 @@ type HeaderConfig struct {
 
 // struct used to thread pool
 type readerEnvelope struct {
-	reader  *reader
+	reader  *reader.Reader
 	trieKey *fingerprint.Fingerprint
 }
 
@@ -127,9 +127,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 		trimFunc = c.TrimConfig.Func()
 	}
 
-	// Ensure that splitter is buildable
-	factory := splitter.NewFactory(splitFunc, trimFunc, c.FlushPeriod)
-	return c.buildManager(logger, emit, factory)
+	return c.buildManager(logger, emit, splitFunc, trimFunc)
 }
 
 // BuildWithSplitFunc will build a file input operator with customized splitFunc function
@@ -137,13 +135,10 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
-
-	// Ensure that splitter is buildable
-	factory := splitter.NewFactory(splitFunc, c.TrimConfig.Func(), c.FlushPeriod)
-	return c.buildManager(logger, emit, factory)
+	return c.buildManager(logger, emit, splitFunc, c.TrimConfig.Func())
 }
 
-func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitter.Factory) (*Manager, error) {
+func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc, trimFunc trim.Func) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -178,33 +173,34 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 	manager := &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
-		readerFactory: readerFactory{
+		readerFactory: reader.Factory{
 			SugaredLogger: logger.With("component", "fileconsumer"),
-			readerConfig: &readerConfig{
-				fingerprintSize:         int(c.FingerprintSize),
-				maxLogSize:              int(c.MaxLogSize),
-				emit:                    emit,
-				includeFileName:         c.IncludeFileName,
-				includeFilePath:         c.IncludeFilePath,
-				includeFileNameResolved: c.IncludeFileNameResolved,
-				includeFilePathResolved: c.IncludeFilePathResolved,
+			Config: &reader.Config{
+				FingerprintSize:         int(c.FingerprintSize),
+				MaxLogSize:              int(c.MaxLogSize),
+				Emit:                    emit,
+				IncludeFileName:         c.IncludeFileName,
+				IncludeFilePath:         c.IncludeFilePath,
+				IncludeFileNameResolved: c.IncludeFileNameResolved,
+				IncludeFilePathResolved: c.IncludeFilePathResolved,
+				DeleteAtEOF:             c.DeleteAfterRead,
+				FlushTimeout:            c.FlushPeriod,
 			},
-			fromBeginning:   startAtBeginning,
-			splitterFactory: factory,
-			encoding:        enc,
-			headerConfig:    hCfg,
+			FromBeginning: startAtBeginning,
+			Encoding:      enc,
+			SplitFunc:     splitFunc,
+			TrimFunc:      trimFunc,
+			HeaderConfig:  hCfg,
 		},
-		fileMatcher:     fileMatcher,
-		roller:          newRoller(int(c.FingerprintSize)),
-		pollInterval:    c.PollInterval,
-		maxBatchFiles:   c.MaxConcurrentFiles / 2,
-		maxBatches:      c.MaxBatches,
-		deleteAfterRead: c.DeleteAfterRead,
-		knownFiles:      make([]*reader, 0, 10),
-		seenPaths:       make(map[string]struct{}, 100),
+		fileMatcher:       fileMatcher,
+		pollInterval:      c.PollInterval,
+		maxBatchFiles:     c.MaxConcurrentFiles / 2,
+		maxBatches:        c.MaxBatches,
+		previousPollFiles: make([]*reader.Reader, 0, c.MaxConcurrentFiles/2),
+		knownFiles:        make([]*reader.Metadata, 0, 10*c.MaxConcurrentFiles),
 	}
 	if useThreadPool.IsEnabled() {
-		manager.trie = trie.NewTrie()
+		manager.trie = trie.NewTrie[bool]()
 		manager.pool = threadpool.NewPool(manager.maxBatchFiles, manager.worker)
 		manager.poolLost = threadpool.NewPool(manager.maxBatchFiles, manager.workerLostReaders)
 	}
