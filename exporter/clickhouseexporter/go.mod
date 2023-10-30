@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickh
 go 1.20
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.14.3
+	github.com/ClickHouse/clickhouse-go/v2 v2.15.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
 	github.com/stretchr/testify v1.8.4
@@ -18,7 +18,7 @@ require (
 
 require (
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
-	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.6.1 // indirect
