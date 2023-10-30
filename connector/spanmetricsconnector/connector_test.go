@@ -1342,7 +1342,7 @@ func TestExemplarsForSumMetrics(t *testing.T) {
 					dps := metric.Sum().DataPoints()
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.True(t, dp.Exemplars().Len() > 0)
+						assert.Greater(t, dp.Exemplars().Len(), 0)
 					}
 				}
 			}
