@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package golden // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+package golden // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 
 import (
 	"bytes"
