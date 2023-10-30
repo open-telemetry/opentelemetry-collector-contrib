@@ -69,25 +69,48 @@ func mockProvider() *azure.MockProvider {
 
 func TestParseClusterName(t *testing.T) {
 	cases := []struct {
-		name     string
-		input    string
-		expected string
+		name          string
+		resourceGroup string
+		expected      string
 	}{
 		{
-			name:     "parses cluster name",
-			input:    "MC_myResourceGroup_myAKSCluster_eastus",
-			expected: "myAKSCluster",
+			name:          "Return cluster name",
+			resourceGroup: "MC_myResourceGroup_AKSCluster_eastus",
+			expected:      "AKSCluster",
 		},
 		{
-			name:     "returns resource group when cluster name has underscores",
-			input:    "MC_myResourceGroup_my_AKS_Cluster_eastus",
-			expected: "MC_myResourceGroup_my_AKS_Cluster_eastus",
+			name:          "Return resource group name, resource group contains underscores",
+			resourceGroup: "MC_Resource_Group_AKSCluster_eastus",
+			expected:      "MC_Resource_Group_AKSCluster_eastus",
+		},
+		{
+			name:          "Return resource group name, cluster name contains underscores",
+			resourceGroup: "MC_myResourceGroup_AKS_Cluster_eastus",
+			expected:      "MC_myResourceGroup_AKS_Cluster_eastus",
+		},
+		{
+			name:          "Custom infrastructure resource group name, return resource group name",
+			resourceGroup: "infra-group_name",
+			expected:      "infra-group_name",
+		},
+		{
+			name:          "Custom infrastructure resource group name with four underscores, return resource group name",
+			resourceGroup: "dev_infra_group_name",
+			expected:      "dev_infra_group_name",
+		},
+		// This case is unlikely because it would require the user to create
+		// a custom infrastructure resource group with the MC prefix and the
+		// correct number of underscores.
+		{
+			name:          "Custom infrastructure resource group name with MC prefix",
+			resourceGroup: "MC_group_name_location",
+			expected:      "name",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := parseClusterName(tc.input)
+			actual := parseClusterName(tc.resourceGroup)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
