@@ -283,17 +283,17 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/extension/encoding"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/extension/encoding/jaegerencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/encoding/jsonlogencodingextension"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/extension/encoding/otlpencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"

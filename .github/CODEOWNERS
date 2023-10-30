@@ -91,11 +91,12 @@ extension/asapauthextension/                                            @open-te
 extension/awsproxy/                                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                                           @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin @frzifus
 extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
+extension/encoding/                                                     @open-telemetry/collector-contrib-approvers @atoulme @dao-jun @dmitryax @MovieStoreGuy @VihasMakwana
 extension/encoding/jaegerencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/                            @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
+extension/encoding/otlpencodingextension/                               @open-telemetry/collector-contrib-approvers @dao-jun @VihasMakwana
 extension/encoding/textencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
-extension/encoding/zipkinencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
-extension/encoding/otlpencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
+extension/encoding/zipkinencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/headerssetterextension/                                       @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                                @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
