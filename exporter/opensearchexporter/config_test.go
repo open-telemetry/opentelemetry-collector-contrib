@@ -29,6 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	sampleEndpoint := "https://opensearch.example.com:9200"
 	sampleCfg := withDefaultConfig(func(config *Config) {
 		config.Endpoint = sampleEndpoint
+		config.BulkAction = defaultBulkAction
 	})
 	maxIdleConns := 100
 	idleConnTimeout := 90 * time.Second
@@ -66,6 +67,10 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          1.5,
 					RandomizationFactor: 0.5,
 				},
+				BulkAction: defaultBulkAction,
+				MappingsSettings: MappingsSettings{
+					Mode: "ss4o",
+				},
 			},
 			configValidateAssert: assert.NoError,
 		},
@@ -89,6 +94,16 @@ func TestLoadConfig(t *testing.T) {
 			}),
 			configValidateAssert: func(t assert.TestingT, err error, i ...interface{}) bool {
 				return assert.ErrorContains(t, err, errNamespaceNoValue.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "invalid_bulk_action"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.BulkAction = "delete"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(t, err, errBulkActionInvalid.Error())
 			},
 		},
 	}

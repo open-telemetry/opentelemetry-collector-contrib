@@ -85,6 +85,7 @@ body:
       - extension/bearertokenauth
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
+      - extension/encoding/otlpencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
       - extension/headerssetter
@@ -100,7 +101,9 @@ body:
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
       - extension/oidcauth
+      - extension/opamp
       - extension/pprof
+      - extension/remotetap
       - extension/sigv4auth
       - extension/storage
       - extension/storage/dbstorage
@@ -121,6 +124,7 @@ body:
       - pkg/batchperresourceattr
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
+      - pkg/golden
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil
