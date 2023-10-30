@@ -85,8 +85,6 @@ func (p *azureProviderImpl) Metadata(ctx context.Context) (*ComputeMetadata, err
 		return nil, fmt.Errorf("failed to read Azure IMDS reply: %w", err)
 	}
 
-	fmt.Println(string(respBody))
-
 	var metadata *ComputeMetadata
 	err = json.Unmarshal(respBody, &metadata)
 	if err != nil {
