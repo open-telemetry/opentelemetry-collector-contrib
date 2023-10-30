@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 	mock "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
@@ -122,18 +122,18 @@ func TestScrape_NoClient(t *testing.T) {
 func TestStartFailures_Metrics(t *testing.T) {
 	cases := []struct {
 		desc string
-		cfg  Config
+		cfg  *Config
 		err  error
 	}{
 		{
 			desc: "bad client connect",
-			cfg: Config{
+			cfg: &Config{
 				Endpoint: "http://no-host",
 			},
 		},
 		{
 			desc: "unparsable endpoint",
-			cfg: Config{
+			cfg: &Config{
 				Endpoint: "<protocol>://some-host",
 			},
 		},
@@ -141,7 +141,7 @@ func TestStartFailures_Metrics(t *testing.T) {
 
 	ctx := context.Background()
 	for _, tc := range cases {
-		scraper := newVmwareVcenterScraper(zap.NewNop(), &tc.cfg, receivertest.NewNopCreateSettings())
+		scraper := newVmwareVcenterScraper(zap.NewNop(), tc.cfg, receivertest.NewNopCreateSettings())
 		err := scraper.Start(ctx, nil)
 		if tc.err != nil {
 			require.ErrorContains(t, err, tc.err.Error())
