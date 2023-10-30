@@ -23,7 +23,7 @@ const (
 	defaultClientID          = "otel-collector"
 	defaultGroupID           = defaultClientID
 	defaultInitialOffset     = offsetLatest
-	defaultSessionTimeout    = 45 * time.Second
+	defaultSessionTimeout    = 10 * time.Second
 	defaultHeartbeatInterval = 3 * time.Second
 
 	// default from sarama.NewConfig()
