@@ -10,7 +10,7 @@ component: azuretranslatorpkg
 note: When receiving data from Azure some data does not meet the Common Specifications when sending the timestamp. Allow the attribute timeStamp to be used as an alternative to the standard time.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [8773]
+issues: [28806]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

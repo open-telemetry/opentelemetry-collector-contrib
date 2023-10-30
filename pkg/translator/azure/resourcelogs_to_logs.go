@@ -138,7 +138,7 @@ func getTimestamp(record azureLogRecord) (pcommon.Timestamp, error) {
 	return asTimestamp(s)
 }
 
-// getTimestamp will parse an ISO8601 string into an OpenTelemetry
+// asTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
 func asTimestamp(s string) (pcommon.Timestamp, error) {
