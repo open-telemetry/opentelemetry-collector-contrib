@@ -101,7 +101,7 @@ and the OpenTelemetry attributes.
 Notes:
 * JSON does not distinguish between fixed and floating point numbers. All
 JSON numbers are encoded as doubles.
-* Additionaly the field timestamp can be used instead of time.
+* Additionally the field timestamp can be used instead of time.
 
 For Metrics the Azure Metric Records are an array
 of "records" with the following fields.
