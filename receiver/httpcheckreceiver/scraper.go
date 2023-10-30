@@ -64,7 +64,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			req, err := http.NewRequestWithContext(ctx, h.cfg.Targets[targetIndex].Method, h.cfg.Targets[targetIndex].Endpoint, http.NoBody)
 			if err != nil {
-				h.settings.Logger.Error("failed to create request", zap.Error(err))
+				h.settings.Logger.Error("failed to create request", zap.String("target endpoint", h.cfg.Targets[targetIndex].Endpoint), zap.Error(err))
 				return
 			}
 
@@ -90,7 +90,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			if err == nil && len(h.cfg.Targets[targetIndex].Body) > 0 {
 				if body, err := io.ReadAll(resp.Body); err != nil {
-					h.settings.Logger.Error("failed to read response", zap.Error(err))
+					h.settings.Logger.Error("failed to read response", zap.String("target endpoint", h.cfg.Targets[targetIndex].Endpoint), zap.Error(err))
 				} else {
 					defer resp.Body.Close()
 
