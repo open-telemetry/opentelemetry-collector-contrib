@@ -218,24 +218,19 @@ func TestDefaultExtensions(t *testing.T) {
 			},
 		},
 		{
-			extension:     "otlp_encoding",
-			skipLifecycle: true, // Requires a docker api to interface and validate.
+			extension: "otlp_encoding",
 		},
 		{
-			extension:     "text_encoding",
-			skipLifecycle: true, // Requires a docker api to interface and validate.
+			extension: "text_encoding",
 		},
 		{
-			extension:     "jaeger_encoding",
-			skipLifecycle: true, // Requires a docker api to interface and validate.
+			extension: "jaeger_encoding",
 		},
 		{
-			extension:     "json_log_encoding",
-			skipLifecycle: true, // Requires a docker api to interface and validate.
+			extension: "json_log_encoding",
 		},
 		{
-			extension:     "zipkin_encoding",
-			skipLifecycle: true, // Requires a docker api to interface and validate.
+			extension: "zipkin_encoding",
 		},
 	}
 

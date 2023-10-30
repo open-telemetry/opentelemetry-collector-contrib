@@ -5,6 +5,7 @@ package encoding
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -174,11 +175,16 @@ func TestEncodingStart(t *testing.T) {
 	}
 }
 
-type getEncodingFunc func(map[component.ID]component.Component, component.ID) error
+type marshalUnmarshalFn func(*testing.T, map[component.ID]component.Component, component.ID) error
 
-func getEncoding[T any](extensions map[component.ID]component.Component, id component.ID) error {
-	_, err := GetEncoding[T](extensions, id)
-	return err
+func marshalUnmarshal[T any](t *testing.T, extensions map[component.ID]component.Component, id component.ID) error {
+	ext, ok := extensions[id]
+	require.NotNil(t, ext)
+	require.True(t, ok)
+	if _, ok := ext.(T); !ok {
+		return fmt.Errorf("%s doesn't implement %T", id, (*T)(nil))
+	}
+	return nil
 }
 
 func TestMarshalUnmarshal(t *testing.T) {
@@ -187,7 +193,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 		expectedErr  string
 		id           component.ID
 		getExtension func() (extension.Extension, error)
-		cases        []getEncodingFunc
+		cases        []marshalUnmarshalFn
 	}{
 		{
 			name: "otlp",
@@ -197,13 +203,13 @@ func TestMarshalUnmarshal(t *testing.T) {
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), factory.CreateDefaultConfig())
 			},
 			// Supports logs, traces, metrics
-			cases: []getEncodingFunc{
-				getEncoding[ptrace.Marshaler],
-				getEncoding[pmetric.Marshaler],
-				getEncoding[plog.Marshaler],
-				getEncoding[ptrace.Unmarshaler],
-				getEncoding[pmetric.Unmarshaler],
-				getEncoding[plog.Unmarshaler],
+			cases: []marshalUnmarshalFn{
+				marshalUnmarshal[ptrace.Marshaler],
+				marshalUnmarshal[pmetric.Marshaler],
+				marshalUnmarshal[plog.Marshaler],
+				marshalUnmarshal[ptrace.Unmarshaler],
+				marshalUnmarshal[pmetric.Unmarshaler],
+				marshalUnmarshal[plog.Unmarshaler],
 			},
 		},
 		{
@@ -214,8 +220,8 @@ func TestMarshalUnmarshal(t *testing.T) {
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), factory.CreateDefaultConfig())
 			},
 			// Supports only traces (only unmarshaling)
-			cases: []getEncodingFunc{
-				getEncoding[ptrace.Unmarshaler],
+			cases: []marshalUnmarshalFn{
+				marshalUnmarshal[ptrace.Unmarshaler],
 			},
 		},
 		{
@@ -226,9 +232,9 @@ func TestMarshalUnmarshal(t *testing.T) {
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), factory.CreateDefaultConfig())
 			},
 			// Supports only traces
-			cases: []getEncodingFunc{
-				getEncoding[ptrace.Unmarshaler],
-				getEncoding[ptrace.Marshaler],
+			cases: []marshalUnmarshalFn{
+				marshalUnmarshal[ptrace.Unmarshaler],
+				marshalUnmarshal[ptrace.Marshaler],
 			},
 		},
 		{
@@ -239,12 +245,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), factory.CreateDefaultConfig())
 			},
 			// Supports only traces, should raise error for logs/metrics
-			expectedErr: "extension \"traces/zipkinencoding\" doesn't implement",
-			cases: []getEncodingFunc{
-				getEncoding[plog.Unmarshaler],
-				getEncoding[plog.Marshaler],
-				getEncoding[pmetric.Marshaler],
-				getEncoding[pmetric.Marshaler],
+			expectedErr: "traces/zipkinencoding doesn't implement",
+			cases: []marshalUnmarshalFn{
+				marshalUnmarshal[plog.Unmarshaler],
+				marshalUnmarshal[plog.Marshaler],
+				marshalUnmarshal[pmetric.Marshaler],
+				marshalUnmarshal[pmetric.Marshaler],
 			},
 		},
 		{
@@ -255,9 +261,9 @@ func TestMarshalUnmarshal(t *testing.T) {
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), factory.CreateDefaultConfig())
 			},
 			// Supports only logs
-			cases: []getEncodingFunc{
-				getEncoding[plog.Marshaler],
-				getEncoding[plog.Unmarshaler],
+			cases: []marshalUnmarshalFn{
+				marshalUnmarshal[plog.Marshaler],
+				marshalUnmarshal[plog.Unmarshaler],
 			},
 		},
 		{
@@ -268,12 +274,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), factory.CreateDefaultConfig())
 			},
 			// Supports only logs, should raise error for trace/metrics
-			expectedErr: "extension \"logs/jsonlogencoding\" doesn't implement",
-			cases: []getEncodingFunc{
-				getEncoding[ptrace.Marshaler],
-				getEncoding[ptrace.Unmarshaler],
-				getEncoding[pmetric.Unmarshaler],
-				getEncoding[pmetric.Unmarshaler],
+			expectedErr: "logs/jsonlogencoding doesn't implement",
+			cases: []marshalUnmarshalFn{
+				marshalUnmarshal[ptrace.Marshaler],
+				marshalUnmarshal[ptrace.Unmarshaler],
+				marshalUnmarshal[pmetric.Unmarshaler],
+				marshalUnmarshal[pmetric.Unmarshaler],
 			},
 		},
 		{
@@ -284,9 +290,9 @@ func TestMarshalUnmarshal(t *testing.T) {
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), factory.CreateDefaultConfig())
 			},
 			// Supports only logs
-			cases: []getEncodingFunc{
-				getEncoding[plog.Marshaler],
-				getEncoding[plog.Unmarshaler],
+			cases: []marshalUnmarshalFn{
+				marshalUnmarshal[plog.Marshaler],
+				marshalUnmarshal[plog.Unmarshaler],
 			},
 		},
 		{
@@ -297,12 +303,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), factory.CreateDefaultConfig())
 			},
 			// Supports only logs, should raise error for trace/metrics
-			expectedErr: "extension \"logs/textencoding\" doesn't implement",
-			cases: []getEncodingFunc{
-				getEncoding[ptrace.Marshaler],
-				getEncoding[ptrace.Unmarshaler],
-				getEncoding[pmetric.Unmarshaler],
-				getEncoding[pmetric.Unmarshaler],
+			expectedErr: "logs/textencoding doesn't implement",
+			cases: []marshalUnmarshalFn{
+				marshalUnmarshal[ptrace.Marshaler],
+				marshalUnmarshal[ptrace.Unmarshaler],
+				marshalUnmarshal[pmetric.Unmarshaler],
+				marshalUnmarshal[pmetric.Unmarshaler],
 			},
 		},
 	}
@@ -320,7 +326,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 				require.NoError(t, err)
 			}
 			for _, c := range test.cases {
-				err := c(host.ext, test.id)
+				err := c(t, host.ext, test.id)
 				if test.expectedErr != "" {
 					require.ErrorContains(t, err, test.expectedErr)
 				} else {
