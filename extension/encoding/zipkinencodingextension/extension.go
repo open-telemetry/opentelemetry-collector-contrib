@@ -16,11 +16,12 @@ import (
 )
 
 const (
-	zipkinProtobufEncoding = "zipkin_proto"
-	zipkinJSONEncoding     = "zipkin_json"
-	zipkinThriftEncoding   = "zipkin_thrift"
-	v1                     = "v1"
-	v2                     = "v2"
+	zipkinProtobufEncoding    = "zipkin_proto"
+	zipkinJSONEncoding        = "zipkin_json"
+	zipkinThriftEncoding      = "zipkin_thrift"
+	v1                        = "v1"
+	v2                        = "v2"
+	errInvalidProtocolVersion = "unsupported version: %q and protocol: %q"
 )
 
 var (
@@ -50,7 +51,7 @@ func newExtension(config *Config) (*zipkinExtension, error) {
 				unmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(false, false),
 			}
 		default:
-			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
+			err = fmt.Errorf(errInvalidProtocolVersion, version, protocol)
 		}
 	case zipkinJSONEncoding:
 		switch version {
@@ -76,8 +77,10 @@ func newExtension(config *Config) (*zipkinExtension, error) {
 				unmarshaler: zipkinv1.NewThriftTracesUnmarshaler(),
 			}
 		default:
-			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
+			err = fmt.Errorf(errInvalidProtocolVersion, version, protocol)
 		}
+	default:
+		err = fmt.Errorf(errInvalidProtocolVersion, version, protocol)
 	}
 
 	return ex, err
