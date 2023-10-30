@@ -93,6 +93,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.88.0
@@ -1113,6 +1114,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webho
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver => ../../extension/observer/ecsobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor => ../../processor/remoteobserverprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor => ../../processor/sumologicprocessor
 
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 

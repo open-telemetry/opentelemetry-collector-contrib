@@ -163,6 +163,7 @@ body:
       - processor/servicegraph
       - processor/span
       - processor/spanmetrics
+      - processor/sumologic
       - processor/tailsampling
       - processor/transform
       - receiver/activedirectoryds
