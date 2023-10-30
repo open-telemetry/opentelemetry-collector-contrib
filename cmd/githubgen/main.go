@@ -118,7 +118,8 @@ type DependabotData struct {
 
 func makePriority(status *Status) int {
 	// not an internal component such as pkg/**, and no distributions:
-	if len(status.Distributions) == 0 && status.Class != "" {
+	if (status.Class == "receiver" || status.Class == "processor" || status.Class == "exporter" || status.Class == "connector" || status.Class == "extension" || status.Class == "cmd") &&
+		len(status.Distributions) == 0 && status.Class != "" {
 		return 1
 	}
 	// start with a score of 2
