@@ -8,21 +8,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/otelcontribcol"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/oteltestbedcol"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/telemetrygen"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/confmap/provider/s3provider"
     schedule:
       interval: "weekly"
@@ -163,11 +148,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/exporter/honeycombmarkerexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/exporter/influxdbexporter"
     schedule:
       interval: "weekly"
@@ -304,6 +284,21 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/bearertokenauthextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/extension/encoding/jaegerencodingextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/extension/encoding/jsonlogencodingextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/extension/encoding/otlpencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -454,6 +449,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/experimentalmetricmetadata"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/golden"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1013,6 +1013,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/receiver/splunkenterprisereceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/receiver/splunkhecreceiver"
     schedule:
       interval: "weekly"
@@ -1059,11 +1064,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/wavefrontreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/webhookeventreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
