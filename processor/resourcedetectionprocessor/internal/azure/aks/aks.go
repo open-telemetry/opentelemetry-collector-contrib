@@ -77,22 +77,38 @@ func azureMetadataAvailable(ctx context.Context, p azure.Provider) bool {
 	return err == nil
 }
 
-// parseClusterName parses the cluster name from the resource group name.
-// Generally the resource group name will be of the form (MC|mc)_resource-group_cluster-name_location
-// It is possible for the cluster name to have underscores. It is also possible
-// for the user to override the "infrastucture resource group" which will change
-// the format of the resource group name, it can also have underscores. If the
-// cluster name cannot be parsed, the resource group name is returned as it can
-// be used to uniquely identify the cluster. Azure will not allow the user to
-// deploy multiple AKS clusters with the same "infrastructure resource group"
-// name, making the resource group name a reliable way to identify the cluster.
+// parseClusterName parses the cluster name from the infrastructure
+// resource group name. AKS IMDS returns the resource group name in
+// the following formats:
+//
+// 1. Generated group: MC_<resource group>_<cluster name>_<location>
+//   - Example:
+//   - Resource group: my-resource-group
+//   - Cluster name:   my-cluster
+//   - Location:       eastus
+//   - Generated name: MC_my-resource-group_my-cluster_eastus
+//
+// 2. Custom group: custom-infra-resource-group-name
+//
+// When using the generated infrastructure resource group, the resource
+// group will include the cluster name. If the cluster's resource group
+// or cluster name contains underscores, parsing will fall back on the
+// unparsed infrastructure resource group name.
+//
+// When using a custom infrastructure resource group, the resource group name
+// does not contain the cluster name. The custom infrastructure resource group
+// name is returned instead.
+//
+// It is safe to use the infrastructure resource group name as a unique identifier
+// because Azure will not allow the user to create multiple AKS clusters with the same
+// infrastructure resource group name.
 func parseClusterName(resourceGroup string) string {
 	// Code inspired by https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/internal/hostmetadata/internal/azure/provider.go#L36
 	splitAll := strings.Split(resourceGroup, "_")
-	switch len(splitAll) {
-	case 4:
+
+	if len(splitAll) == 4 && strings.ToLower(splitAll[0]) == "mc" {
 		return splitAll[len(splitAll)-2]
-	default:
-		return resourceGroup
 	}
+
+	return resourceGroup
 }
