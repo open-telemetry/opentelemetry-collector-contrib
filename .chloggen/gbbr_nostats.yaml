@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added the "exporter.datadogexporter.disable_apm_stats" feature gate to disable APM stats computation.
+note: Added the "exporter.datadogexporter.DisableAPMStats" feature gate to disable APM stats computation.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [28615]
