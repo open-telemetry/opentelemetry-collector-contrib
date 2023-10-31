@@ -19,6 +19,8 @@ run:
   skip-dirs:
     - third_party
     - local
+    - cmd/otelcontribcol
+    - cmd/oteltestbedcol
 
   # default is true. Enables skipping of directories:
   #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
@@ -127,8 +129,12 @@ linters-settings:
     explicit-exhaustive-switch: true
     ignore-enum-members: "pmetric.MetricTypeEmpty"
 
+  predeclared:
+    ignore: copy
+
 linters:
   enable:
+    - decorder
     - depguard
     - errcheck
     - errorlint
@@ -141,12 +147,15 @@ linters:
     - gosec
     - govet
     - misspell
+    - predeclared
+    - reassign
     - revive
     - staticcheck
     - tenv
     - unconvert
     - unparam
     - unused
+    - wastedassign
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

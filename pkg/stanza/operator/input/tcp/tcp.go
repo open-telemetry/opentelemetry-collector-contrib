@@ -21,10 +21,11 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const (
@@ -54,7 +55,6 @@ func NewConfigWithID(operatorID string) *Config {
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
 			OneLogPerPacket: false,
-			Multiline:       tokenize.NewMultilineConfig(),
 			Encoding:        "utf-8",
 		},
 	}
@@ -68,26 +68,21 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize                  helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
-	ListenAddress               string                      `mapstructure:"listen_address,omitempty"`
-	TLS                         *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
-	AddAttributes               bool                        `mapstructure:"add_attributes,omitempty"`
-	OneLogPerPacket             bool                        `mapstructure:"one_log_per_packet,omitempty"`
-	Encoding                    string                      `mapstructure:"encoding,omitempty"`
-	Multiline                   tokenize.MultilineConfig    `mapstructure:"multiline,omitempty"`
-	PreserveLeadingWhitespaces  bool                        `mapstructure:"preserve_leading_whitespaces,omitempty"`
-	PreserveTrailingWhitespaces bool                        `mapstructure:"preserve_trailing_whitespaces,omitempty"`
-	MultiLineBuilder            MultiLineBuilderFunc
+	MaxLogSize       helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
+	ListenAddress    string                      `mapstructure:"listen_address,omitempty"`
+	TLS              *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
+	AddAttributes    bool                        `mapstructure:"add_attributes,omitempty"`
+	OneLogPerPacket  bool                        `mapstructure:"one_log_per_packet,omitempty"`
+	Encoding         string                      `mapstructure:"encoding,omitempty"`
+	SplitConfig      split.Config                `mapstructure:"multiline,omitempty"`
+	TrimConfig       trim.Config                 `mapstructure:",squash"`
+	SplitFuncBuilder SplitFuncBuilder
 }
 
-type MultiLineBuilderFunc func(enc encoding.Encoding) (bufio.SplitFunc, error)
+type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
-func (c Config) defaultMultilineBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
-	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
-	if err != nil {
-		return nil, err
-	}
-	return splitFunc, nil
+func (c Config) defaultSplitFuncBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
+	return c.SplitConfig.Func(enc, true, int(c.MaxLogSize))
 }
 
 // Build will build a tcp input operator.
@@ -115,20 +110,21 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	enc, err := decoder.LookupEncoding(c.Encoding)
+	enc, err := decode.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, err
 	}
 
-	if c.MultiLineBuilder == nil {
-		c.MultiLineBuilder = c.defaultMultilineBuilder
+	if c.SplitFuncBuilder == nil {
+		c.SplitFuncBuilder = c.defaultSplitFuncBuilder
 	}
 
-	// Build multiline
-	splitFunc, err := c.MultiLineBuilder(enc)
+	// Build split func
+	splitFunc, err := c.SplitFuncBuilder(enc)
 	if err != nil {
 		return nil, err
 	}
+	splitFunc = trim.WithFunc(splitFunc, c.TrimConfig.Func())
 
 	var resolver *helper.IPResolver
 	if c.AddAttributes {
@@ -263,8 +259,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		defer t.wg.Done()
 		defer cancel()
 
-		dec := decoder.New(t.encoding)
-
+		dec := decode.New(t.encoding)
 		if t.OneLogPerPacket {
 			var buf bytes.Buffer
 			_, err := io.Copy(&buf, conn)
@@ -293,7 +288,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 	}()
 }
 
-func (t *Input) handleMessage(ctx context.Context, conn net.Conn, dec *decoder.Decoder, log []byte) {
+func (t *Input) handleMessage(ctx context.Context, conn net.Conn, dec *decode.Decoder, log []byte) {
 	decoded, err := dec.Decode(log)
 	if err != nil {
 		t.Errorw("Failed to decode data", zap.Error(err))

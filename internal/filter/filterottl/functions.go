@@ -50,28 +50,28 @@ func StandardResourceFuncs() map[string]ottl.Factory[ottlresource.TransformConte
 
 func standardFuncs[K any]() map[string]ottl.Factory[K] {
 	m := ottlfuncs.StandardConverters[K]()
-	f := newDropFactory[K]()
+	f := newMatchFactory[K]()
 	m[f.Name()] = f
 	return m
 }
 
-func newDropFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("drop", nil, createDropFunction[K])
+func newMatchFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("match", nil, createMatchFunction[K])
 }
 
-func createDropFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return dropFn[K]()
+func createMatchFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return matchFn[K]()
 }
 
-func dropFn[K any]() (ottl.ExprFunc[K], error) {
+func matchFn[K any]() (ottl.ExprFunc[K], error) {
 	return func(context.Context, K) (interface{}, error) {
 		return true, nil
 	}, nil
 }
 
 type hasAttributeOnDatapointArguments struct {
-	Key         string `ottlarg:"0"`
-	ExpectedVal string `ottlarg:"1"`
+	Key         string
+	ExpectedVal string
 }
 
 func newHasAttributeOnDatapointFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -95,7 +95,7 @@ func hasAttributeOnDatapoint(key string, expectedVal string) (ottl.ExprFunc[ottl
 }
 
 type hasAttributeKeyOnDatapointArguments struct {
-	Key string `ottlarg:"0"`
+	Key string
 }
 
 func newHasAttributeKeyOnDatapointFactory() ottl.Factory[ottlmetric.TransformContext] {

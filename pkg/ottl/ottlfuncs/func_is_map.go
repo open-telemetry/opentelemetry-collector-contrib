@@ -11,7 +11,7 @@ import (
 )
 
 type IsMapArguments[K any] struct {
-	Target ottl.PMapGetter[K] `ottlarg:"0"`
+	Target ottl.PMapGetter[K]
 }
 
 func NewIsMapFactory[K any]() ottl.Factory[K] {

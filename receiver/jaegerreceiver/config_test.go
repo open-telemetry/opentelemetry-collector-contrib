@@ -78,11 +78,11 @@ func TestLoadConfig(t *testing.T) {
 					},
 					ThriftCompact: &ProtocolUDP{
 						Endpoint:        defaultThriftCompactBindEndpoint,
-						ServerConfigUDP: DefaultServerConfigUDP(),
+						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 					ThriftBinary: &ProtocolUDP{
 						Endpoint:        defaultThriftBinaryBindEndpoint,
-						ServerConfigUDP: DefaultServerConfigUDP(),
+						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 				},
 			},
@@ -99,7 +99,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					ThriftCompact: &ProtocolUDP{
 						Endpoint:        defaultThriftCompactBindEndpoint,
-						ServerConfigUDP: DefaultServerConfigUDP(),
+						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 				},
 			},

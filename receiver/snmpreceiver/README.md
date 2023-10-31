@@ -81,8 +81,9 @@ Resource attribute configurations are used to define what resource attributes wi
 
 | Field Name           | Description                              | Value        |
 | --                   | --                                       | --           |
-| `oid`                  | Required if no `indexed_value_prefix`. This is the column OID in a SNMP table which will use the returned indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
-| `indexed_value_prefix` | Required if no `oid`. This is a string prefix which will be added to the indices of returned metric indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
+| `oid`                  | Required if no `scalar_oid` or `indexed_value_prefix`. This is the column OID in a SNMP table which will use the returned indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
+| `scalar_oid` | Required if no `oid` or `indexed_value_prefix`. This is the scalar OID which will return non-indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string |
+| `indexed_value_prefix` | Required if no `scalar_oid` or `oid`. This is a string prefix which will be added to the indices of returned metric indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
 | `description`          | Definition of what the resource attribute represents  | string       |
 
 #### Attribute Configuration
@@ -125,6 +126,7 @@ Attribute configurations are used to define what resource attributes will be use
 | Field Name  | Description                                                    | Value                       | Default |
 | --          | --                                                             | --                          | --      |
 | `oid`       | The SNMP scalar OID value to grab data from (must end in .0).  | string                      |         |
+| `resource_attributes` | The names of the related resource attribute configurations, allowing scalar oid metrics to be added to resources that have one or more scalar oid resource attributes. Cannot have indexed resource attributes as values. | string[] | | 
 | `attributes` | The names of the related attribute enum configurations as well as the values to attach to this returned SNMP scalar data. This can be used to have a metric config with multiple ScalarOIDs as different datapoints with different attributue values within the same metric | Attribute              |    |
 
 #### ColumnOID Configuration

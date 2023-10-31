@@ -34,10 +34,10 @@ func NewFactory() rcvr.Factory {
 func createDefaultConfig() component.Config {
 	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scs.CollectionInterval = 10 * time.Second
+	scs.Timeout = 5 * time.Second
 	return &Config{
 		ScraperControllerSettings: scs,
 		Endpoint:                  "unix:///var/run/docker.sock",
-		Timeout:                   5 * time.Second,
 		DockerAPIVersion:          defaultDockerAPIVersion,
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}

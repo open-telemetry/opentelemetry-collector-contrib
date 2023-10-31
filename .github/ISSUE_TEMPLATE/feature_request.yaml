@@ -48,11 +48,11 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
+      - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/instana
-      - exporter/jaeger
-      - exporter/jaegerthrifthttp
       - exporter/kafka
+      - exporter/kinetica
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
@@ -60,7 +60,6 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
-      - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
@@ -78,11 +77,15 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
-      - extension/encoding
+      - extension/encoding/jaegerencoding
+      - extension/encoding/jsonlogencoding
+      - extension/encoding/textencoding
+      - extension/encoding/zipkinencoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
       - extension/jaegerremotesampling
+      - extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
@@ -103,6 +106,7 @@ body:
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
+      - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
       - internal/sharedcomponent
@@ -188,6 +192,7 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
+      - receiver/jaeger/internal/jaegerreceiverdeprecated
       - receiver/jmx
       - receiver/journald
       - receiver/k8scluster

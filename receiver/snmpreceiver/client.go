@@ -326,7 +326,7 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
 	// Condense gosnmp data types to our client's simplified data types
 	switch pdu.Type { // nolint:exhaustive
 	// Integer types
-	case gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
+	case gosnmp.Counter64, gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
 		value, err := c.toInt64(pdu.Name, pdu.Value)
 		if err != nil {
 			clientSNMPData.valueType = notSupportedVal
@@ -391,6 +391,8 @@ func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
 	case uint16:
 		return int64(value), nil
 	case uint32:
+		return int64(value), nil
+	case uint64:
 		return int64(value), nil
 	default:
 		return 0, fmt.Errorf("incompatible type while converting OID '%s' data to int64", name)
