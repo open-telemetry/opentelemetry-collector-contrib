@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
@@ -57,14 +58,13 @@ func (cdr *collectDRecord) startTimestamp(metricType string) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(0, 0))
 }
 
-func (cdr *collectDRecord) appendToMetrics(scopeMetrics pmetric.ScopeMetrics, defaultLabels map[string]string) error {
+func (cdr *collectDRecord) appendToMetrics(logger *zap.Logger, scopeMetrics pmetric.ScopeMetrics, defaultLabels map[string]string) error {
 	// Ignore if record is an event instead of data point
 	if cdr.isEvent() {
-		recordEventsReceived()
+		logger.Debug("ignoring log event", zap.String("message", *cdr.Message))
 		return nil
 	}
 
-	recordMetricsReceived()
 	labels := make(map[string]string, len(defaultLabels))
 	for k, v := range defaultLabels {
 		labels[k] = v

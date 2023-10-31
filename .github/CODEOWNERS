@@ -91,10 +91,12 @@ extension/asapauthextension/                                            @open-te
 extension/awsproxy/                                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                                           @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin @frzifus
 extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
+extension/encoding/                                                     @open-telemetry/collector-contrib-approvers @atoulme @dao-jun @dmitryax @MovieStoreGuy @VihasMakwana
 extension/encoding/jaegerencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/                            @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
+extension/encoding/otlpencodingextension/                               @open-telemetry/collector-contrib-approvers @dao-jun @VihasMakwana
 extension/encoding/textencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
-extension/encoding/zipkinencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
+extension/encoding/zipkinencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/headerssetterextension/                                       @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                                @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
@@ -110,6 +112,7 @@ extension/observer/k8sobserver/                                         @open-te
 extension/oidcauthextension/                                            @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/opampextension/                                               @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan
 extension/pprofextension/                                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+extension/remotetapextension/                                           @open-telemetry/collector-contrib-approvers @atoulme
 extension/sigv4authextension/                                           @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
 extension/storage/                                                      @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                                            @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
@@ -132,6 +135,7 @@ internal/tools/                                                         @open-te
 pkg/batchperresourceattr/                                               @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                                                     @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/experimentalmetricmetadata/                                         @open-telemetry/collector-contrib-approvers @rmfitzpatrick
+pkg/golden/                                                             @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 pkg/ottl/                                                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/pdatatest/                                                          @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                                          @open-telemetry/collector-contrib-approvers @dmitryax
@@ -171,6 +175,7 @@ processor/schemaprocessor/                                              @open-te
 processor/servicegraphprocessor/                                        @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 processor/spanmetricsprocessor/                                         @open-telemetry/collector-contrib-approvers @albertteoh
 processor/spanprocessor/                                                @open-telemetry/collector-contrib-approvers @boostchicken
+processor/sumologicprocessor/                                           @open-telemetry/collector-contrib-approvers @astencel-sumo @aboguszewski-sumo @sumo-drosiek
 processor/tailsamplingprocessor/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/transformprocessor/                                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 
