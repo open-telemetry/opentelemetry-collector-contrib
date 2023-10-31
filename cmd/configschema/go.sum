@@ -1508,8 +1508,8 @@ github.com/subosito/gotenv v1.4.2/go.mod h1:ayKnFf/c6rvx/2iiLrJUk1e6plDbT3edrFNG
 github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 h1:kdXcSzyDtseVEc4yCz2qF8ZrQvIDBJLl4S1c3GCXmoI=
 github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
 github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc/go.mod h1:eyZnKCc955uh98WQvzOm0dgAeLnf2O0Rz0LPoC5ze+0=
-github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.776 h1:l8Up99nxHEYGID+6uLjWRDq0GVdepu9EvEzDyotQzcU=
-github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.776/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.777 h1:FyiBWjRY6UYIjghwHqbgiB+uDVTDTiMAho87RZ7TMAg=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.777/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
 github.com/testcontainers/testcontainers-go v0.26.0 h1:uqcYdoOHBy1ca7gKODfBd9uTHVK3a7UL848z09MVZ0c=
 github.com/tg123/go-htpasswd v1.2.1 h1:i4wfsX1KvvkyoMiHZzjS0VzbAPWfxzI8INcZAKtutoU=
 github.com/tg123/go-htpasswd v1.2.1/go.mod h1:erHp1B86KXdwQf1X5ZrLb7erXZnWueEQezb2dql4q58=
@@ -1559,8 +1559,8 @@ github.com/vmihailenco/msgpack/v4 v4.3.12 h1:07s4sz9IReOgdikxLTKNbBdqDMLsjPKXwvC
 github.com/vmihailenco/tagparser v0.1.2 h1:gnjoVuB/kljJ5wICEEOpx98oXMWPLj22G67Vbd1qPqc=
 github.com/vmware/go-vmware-nsxt v0.0.0-20220328155605-f49a14c1ef5f h1:NbC9yOr5At92seXK+kOr2TzU3mIWzcJOVzZasGSuwoU=
 github.com/vmware/go-vmware-nsxt v0.0.0-20220328155605-f49a14c1ef5f/go.mod h1:VEqcmf4Sp7gPB7z05QGyKVmn6xWppr7Nz8cVNvyC80o=
-github.com/vmware/govmomi v0.33.0 h1:fCkDfgyNgAwmHAtEMgqlLIjBsSJqWPk0YYhuAdXBVrE=
-github.com/vmware/govmomi v0.33.0/go.mod h1:QuzWGiEMA/FYlu5JXKjytiORQoxv2hTHdS2lWnIqKMM=
+github.com/vmware/govmomi v0.33.1 h1:qS2VpEBd/WLbzLO5McI6h5o5zaKsrezUxRY5r9jkW8A=
+github.com/vmware/govmomi v0.33.1/go.mod h1:QuzWGiEMA/FYlu5JXKjytiORQoxv2hTHdS2lWnIqKMM=
 github.com/vultr/govultr/v2 v2.17.2 h1:gej/rwr91Puc/tgh+j33p/BLR16UrIPnSr+AIwYWZQs=
 github.com/vultr/govultr/v2 v2.17.2/go.mod h1:ZFOKGWmgjytfyjeyAdhQlSWwTjh2ig+X49cAp50dzXI=
 github.com/wavefronthq/wavefront-sdk-go v0.15.0 h1:po9E3vh/0y7kOx8D9EtFp7kbSLLLKbmu/w/s1xGJAQU=
