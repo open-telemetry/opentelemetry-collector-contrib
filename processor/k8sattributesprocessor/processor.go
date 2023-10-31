@@ -141,6 +141,16 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			}
 		}
 	}
+
+	nodeName := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNodeName)
+	if nodeName != "" {
+		attrsToAdd := kp.getAttributesForPodsNode(nodeName)
+		for key, val := range attrsToAdd {
+			if _, found := resource.Attributes().Get(key); !found {
+				resource.Attributes().PutStr(key, val)
+			}
+		}
+	}
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -213,6 +223,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) m
 		return nil
 	}
 	return ns.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[string]string {
+	node, ok := kp.kc.GetNode(nodeName)
+	if !ok {
+		return nil
+	}
+	return node.Attributes
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int
