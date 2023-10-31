@@ -143,7 +143,7 @@ LOOP:
 				owners += " "
 				owners += "@" + owner
 			}
-			codeowners += fmt.Sprintf("%s/%s @open-telemetry/collector-contrib-approvers%s\n", key, strings.Repeat(" ", data.maxLength-len(key)-1), owners)
+			codeowners += fmt.Sprintf("%s/%s @open-telemetry/collector-contrib-approvers%s\n", key, strings.Repeat(" ", data.maxLength-len(key)), owners)
 		}
 	}
 
