@@ -88,6 +88,18 @@ func TestMetrics(t *testing.T) {
 			"otelsvc/k8s/namespace_deleted",
 			RecordNamespaceDeleted,
 		},
+		{
+			"otelsvc/k8s/node_added",
+			RecordNodeAdded,
+		},
+		{
+			"otelsvc/k8s/node_updated",
+			RecordNodeUpdated,
+		},
+		{
+			"otelsvc/k8s/node_deleted",
+			RecordNodeDeleted,
+		},
 	}
 
 	var (
