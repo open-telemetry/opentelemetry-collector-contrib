@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -33,8 +34,7 @@ type wantedBody struct {
 
 func TestNewReceiver(t *testing.T) {
 	type args struct {
-		addr         string
-		timeout      time.Duration
+		config       *Config
 		attrsPrefix  string
 		nextConsumer consumer.Metrics
 	}
@@ -46,8 +46,11 @@ func TestNewReceiver(t *testing.T) {
 		{
 			name: "nil next Consumer",
 			args: args{
-				addr:        ":0",
-				timeout:     defaultTimeout,
+				config: &Config{
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: ":0",
+					},
+				},
 				attrsPrefix: "default_attr_",
 			},
 			wantErr: component.ErrNilNextConsumer,
@@ -55,8 +58,11 @@ func TestNewReceiver(t *testing.T) {
 		{
 			name: "happy path",
 			args: args{
-				addr:         ":0",
-				timeout:      defaultTimeout,
+				config: &Config{
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: ":0",
+					},
+				},
 				attrsPrefix:  "default_attr_",
 				nextConsumer: consumertest.NewNop(),
 			},
@@ -65,7 +71,7 @@ func TestNewReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newCollectdReceiver(logger, tt.args.addr, time.Second*10, "", tt.args.nextConsumer, receivertest.NewNopCreateSettings())
+			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopCreateSettings())
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -82,7 +88,11 @@ func TestCollectDServer(t *testing.T) {
 		WantData     []pmetric.Metrics
 	}
 
-	var endpoint = "localhost:8081"
+	config := &Config{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: "localhost:8081",
+		},
+	}
 	defaultAttrsPrefix := "dap_"
 
 	wantedRequestBody := wantedBody{
@@ -148,18 +158,18 @@ func TestCollectDServer(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	logger := zap.NewNop()
-	cdr, err := newCollectdReceiver(logger, endpoint, defaultTimeout, defaultAttrsPrefix, sink, receivertest.NewNopCreateSettings())
+	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopCreateSettings())
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
 	require.NoError(t, cdr.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
+	t.Cleanup(func() {
 		err := cdr.Shutdown(context.Background())
 		if err != nil {
 			t.Fatalf("Error stopping metrics reception: %v", err)
 		}
-	}()
+	})
 
 	time.Sleep(time.Second)
 
@@ -168,7 +178,7 @@ func TestCollectDServer(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
 				tt.HTTPMethod,
-				"http://"+endpoint+"?"+tt.QueryParams,
+				"http://"+config.HTTPServerSettings.Endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)
