@@ -42,6 +42,7 @@ type WatchClient struct {
 	kc                 kubernetes.Interface
 	informer           cache.SharedInformer
 	namespaceInformer  cache.SharedInformer
+	nodeInformer       cache.SharedInformer
 	replicasetInformer cache.SharedInformer
 	replicasetRegex    *regexp.Regexp
 	cronJobRegex       *regexp.Regexp
@@ -59,6 +60,10 @@ type WatchClient struct {
 	// A map containing Namespace related data, used to associate them with resources.
 	// Key is namespace name
 	Namespaces map[string]*Namespace
+
+	// A map containing Node related data, used to associate them with resources.
+	// Key is node name
+	Nodes map[string]*Node
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -89,6 +94,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 	c.Pods = map[PodIdentifier]*Pod{}
 	c.Namespaces = map[string]*Namespace{}
+	c.Nodes = map[string]*Node{}
 	c.ReplicaSets = map[string]*ReplicaSet{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
@@ -162,6 +168,10 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		}
 	}
 
+	if c.extractNodeLabelsAnnotations() {
+		c.nodeInformer = newNodeSharedInformer(c.kc, c.Filters.Node)
+	}
+
 	return c, err
 }
 
@@ -197,6 +207,18 @@ func (c *WatchClient) Start() {
 			c.logger.Error("error adding event handler to replicaset informer", zap.Error(err))
 		}
 		go c.replicasetInformer.Run(c.stopCh)
+	}
+
+	if c.nodeInformer != nil {
+		_, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleNodeAdd,
+			UpdateFunc: c.handleNodeUpdate,
+			DeleteFunc: c.handleNodeDelete,
+		})
+		if err != nil {
+			c.logger.Error("error adding event handler to node informer", zap.Error(err))
+		}
+		go c.nodeInformer.Run(c.stopCh)
 	}
 }
 
@@ -273,6 +295,37 @@ func (c *WatchClient) handleNamespaceDelete(obj interface{}) {
 	}
 }
 
+func (c *WatchClient) handleNodeAdd(obj interface{}) {
+	observability.RecordNodeAdded()
+	if node, ok := obj.(*api_v1.Node); ok {
+		c.addOrUpdateNode(node)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Node", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleNodeUpdate(_, newNode interface{}) {
+	observability.RecordNodeUpdated()
+	if node, ok := newNode.(*api_v1.Node); ok {
+		c.addOrUpdateNode(node)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Node", zap.Any("received", newNode))
+	}
+}
+
+func (c *WatchClient) handleNodeDelete(obj interface{}) {
+	observability.RecordNodeDeleted()
+	if node, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Node); ok {
+		c.m.Lock()
+		if n, ok := c.Nodes[node.Name]; ok {
+			delete(c.Nodes, n.Name)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type api_v1.Node", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -335,6 +388,17 @@ func (c *WatchClient) GetNamespace(namespace string) (*Namespace, bool) {
 	c.m.RUnlock()
 	if ok {
 		return ns, ok
+	}
+	return nil, false
+}
+
+// GetNode takes a node name and returns the node object the node name is associated with.
+func (c *WatchClient) GetNode(nodeName string) (*Node, bool) {
+	c.m.RLock()
+	node, ok := c.Nodes[nodeName]
+	c.m.RUnlock()
+	if ok {
+		return node, ok
 	}
 	return nil, false
 }
@@ -614,10 +678,25 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	return tags
 }
 
+func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromNodeMetadata(node.Labels, tags, "k8s.node.labels.%s")
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromNodeMetadata(node.Annotations, tags, "k8s.node.annotations.%s")
+	}
+
+	return tags
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:        pod.Name,
 		Namespace:   pod.GetNamespace(),
+		NodeName:    pod.Spec.NodeName,
 		Address:     pod.Status.PodIP,
 		HostNetwork: pod.Spec.HostNetwork,
 		PodUID:      string(pod.UID),
@@ -830,6 +909,36 @@ func (c *WatchClient) extractNamespaceLabelsAnnotations() bool {
 	}
 
 	return false
+}
+
+func (c *WatchClient) extractNodeLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromNode {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromNode {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *WatchClient) addOrUpdateNode(node *api_v1.Node) {
+	newNode := &Node{
+		Name:    node.Name,
+		NodeUID: string(node.UID),
+	}
+	newNode.Attributes = c.extractNodeAttributes(node)
+
+	c.m.Lock()
+	if node.Name != "" {
+		c.Nodes[node.Name] = newNode
+	}
+	c.m.Unlock()
 }
 
 func needContainerAttributes(rules ExtractionRules) bool {

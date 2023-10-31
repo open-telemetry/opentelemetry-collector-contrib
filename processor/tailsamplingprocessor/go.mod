@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.88.0
@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017.0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/processor v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/otel/trace v1.19.0
-	go.uber.org/goleak v1.2.1
+	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 )
 

@@ -44,7 +44,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	cs receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -58,5 +58,5 @@ func createMetricsReceiver(
 			c.Encoding,
 		)
 	}
-	return newCollectdReceiver(params.Logger, c.Endpoint, c.Timeout, c.AttributesPrefix, nextConsumer)
+	return newCollectdReceiver(cs.Logger, c.Endpoint, c.Timeout, c.AttributesPrefix, nextConsumer, cs)
 }
