@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
@@ -35,9 +34,7 @@ func createDefaultConfig() component.Config {
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultBindEndpoint,
 		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{
-			Timeout: 30 * time.Second,
-		},
+		Timeout:  30 * time.Second,
 		Encoding: defaultEncodingFormat,
 	}
 }

@@ -62,8 +62,8 @@ func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error
 	if err != nil {
 		return err
 	}
-	cdr.server.ReadTimeout = cdr.config.TimeoutSettings.Timeout
-	cdr.server.WriteTimeout = cdr.config.TimeoutSettings.Timeout
+	cdr.server.ReadTimeout = cdr.config.Timeout
+	cdr.server.WriteTimeout = cdr.config.Timeout
 	cdr.obsrecv, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             cdr.createSettings.ID,
 		Transport:              "http",

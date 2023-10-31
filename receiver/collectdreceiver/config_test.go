@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
 )
@@ -37,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "localhost:12345",
 				},
-				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 50 * time.Second},
+				Timeout:          50 * time.Second,
 				AttributesPrefix: "dap_",
 				Encoding:         "command",
 			},
