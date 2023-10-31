@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
@@ -24,8 +25,8 @@ const (
 )
 
 var (
-	_ ptrace.Marshaler   = (*zipkinExtension)(nil)
-	_ ptrace.Unmarshaler = (*zipkinExtension)(nil)
+	_ encoding.TracesMarshalerExtension   = (*zipkinExtension)(nil)
+	_ encoding.TracesUnmarshalerExtension = (*zipkinExtension)(nil)
 )
 
 type zipkinExtension struct {

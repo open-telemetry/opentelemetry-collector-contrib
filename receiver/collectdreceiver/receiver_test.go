@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -64,7 +65,7 @@ func TestNewReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newCollectdReceiver(logger, tt.args.addr, time.Second*10, "", tt.args.nextConsumer)
+			_, err := newCollectdReceiver(logger, tt.args.addr, time.Second*10, "", tt.args.nextConsumer, receivertest.NewNopCreateSettings())
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -147,7 +148,7 @@ func TestCollectDServer(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	logger := zap.NewNop()
-	cdr, err := newCollectdReceiver(logger, endpoint, defaultTimeout, defaultAttrsPrefix, sink)
+	cdr, err := newCollectdReceiver(logger, endpoint, defaultTimeout, defaultAttrsPrefix, sink, receivertest.NewNopCreateSettings())
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
