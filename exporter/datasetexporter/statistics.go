@@ -5,13 +5,15 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
 	"github.com/scalyr/dataset-go/pkg/client"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
-const statsDelim = "."
+const statsDelim = "_"
 
 // reportStatistics provides metrics to the meter based on client.Statistics()
 func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
@@ -295,6 +297,21 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	// buffers metrics - END
 
 	client.Logger.Info("AAAAA - reportStatistics - REGISTRATION")
+
+	simpleCounter, err := meter.Int64UpDownCounter("aaa_SimpleCounter")
+
+	go func() {
+		r := rand.New(rand.NewSource(99))
+		i := int64(0)
+		for {
+			client.Logger.Info("AAAAA - reportStatistics - inc Foo by", zap.Int64("foo", i))
+			simpleCounter.Add(context.Background(), i)
+			time.Sleep(time.Duration(10 * r.Float64() * float64(time.Second.Nanoseconds())))
+			i += 1
+		}
+	}()
+
+	client.Logger.Info("AAAAA - reportStatistics - Add FOO")
 
 	_, err = meter.RegisterCallback(
 		func(_ context.Context, o metric.Observer) error {
