@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -96,7 +97,7 @@ func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer c
 	if segment == nil {
 		return nil
 	}
-	ptd := SkywalkingToTraces(segment)
+	ptd := skywalking.SkywalkingToTraces(segment)
 	return consumer.ConsumeTraces(ctx, ptd)
 }
 
