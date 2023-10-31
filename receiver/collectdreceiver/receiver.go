@@ -58,7 +58,7 @@ func newCollectdReceiver(
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	var err error
-	cdr.server, err = cdr.config.ToServer(host, cdr.createSettings.TelemetrySettings, cdr)
+	cdr.server, err = cdr.config.HTTPServerSettings.ToServer(host, cdr.createSettings.TelemetrySettings, cdr)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error
 	if err != nil {
 		return err
 	}
-	l, err := cdr.config.ToListener()
+	l, err := cdr.config.HTTPServerSettings.ToListener()
 	if err != nil {
 		return err
 	}
