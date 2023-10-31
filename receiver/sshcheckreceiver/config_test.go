@@ -110,7 +110,6 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -124,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "notdefault:1313"
-	expected.Username = "noteault_username"
+	expected.Username = "notdefault_username"
 	expected.Password = "notdefault_password"
 	expected.KeyFile = "notdefault/path/keyfile"
 	expected.CollectionInterval = 10 * time.Second
