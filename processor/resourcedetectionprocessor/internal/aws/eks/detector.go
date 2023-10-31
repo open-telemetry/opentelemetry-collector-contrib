@@ -176,6 +176,10 @@ func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []*ec2.
 	for _, reservation := range reservations {
 		for _, instance := range reservation.Instances {
 			for _, tag := range instance.Tags {
+				if tag.Key == nil {
+					continue
+				}
+
 				if *tag.Key == clusterNameAwsEksTag || *tag.Key == clusterNameEksTag {
 					return *tag.Value
 				} else if strings.HasPrefix(*tag.Key, kubernetesClusterNameTag) {
