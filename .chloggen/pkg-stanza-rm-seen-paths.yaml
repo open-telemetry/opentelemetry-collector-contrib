@@ -1,0 +1,34 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: filelogreceiver
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Change "Started watching file" log behavior
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [28491]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Previously, every unique file path which was found by the receiver would be remembered indefinitely.
+  This list was kept independently of the uniqueness / checkpointing mechanism (which does not rely on the file path).
+  The purpose of this list was to allow us to emit a lot whenever a path was seen for the first time.
+  This removes the separate list and relies instead on the same mechanism as checkpointing. Now, a similar log is emitted
+  any time a file is found which is not currently checkpointed. Because the checkpointing mechanism does not maintain history
+  indefintiely, it is now possible that a log will be emitted for the same file path. This will happen when no file exists at
+  the path for a period of time.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: []

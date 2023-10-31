@@ -50,12 +50,6 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
-	if kp.rules.StartTime {
-		kp.logger.Warn("k8s.pod.start_time value will be changed to use RFC3339 format in v0.83.0. " +
-			"see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/24016 for more information. " +
-			"enable feature-gate k8sattr.rfc3339 to opt into this change.")
-	}
-
 	if !kp.passthroughMode {
 		go kp.kc.Start()
 	}
@@ -141,6 +135,16 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			}
 		}
 	}
+
+	nodeName := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNodeName)
+	if nodeName != "" {
+		attrsToAdd := kp.getAttributesForPodsNode(nodeName)
+		for key, val := range attrsToAdd {
+			if _, found := resource.Attributes().Get(key); !found {
+				resource.Attributes().PutStr(key, val)
+			}
+		}
+	}
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -213,6 +217,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) m
 		return nil
 	}
 	return ns.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[string]string {
+	node, ok := kp.kc.GetNode(nodeName)
+	if !ok {
+		return nil
+	}
+	return node.Attributes
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int
