@@ -51,8 +51,9 @@ func createTracesToMetrics(
 	spanMetricDefs := make(map[string]metricDef[ottlspan.TransformContext], len(c.Spans))
 	for name, info := range c.Spans {
 		md := metricDef[ottlspan.TransformContext]{
-			desc:  info.Description,
-			attrs: info.Attributes,
+			desc:          info.Description,
+			attrs:         info.Attributes,
+			resourceAttrs: info.ResourceAttributes,
 		}
 		if len(info.Conditions) > 0 {
 			// Error checked in Config.Validate()
@@ -156,7 +157,8 @@ func createLogsToMetrics(
 }
 
 type metricDef[K any] struct {
-	condition expr.BoolExpr[K]
-	desc      string
-	attrs     []AttributeConfig
+	condition     expr.BoolExpr[K]
+	desc          string
+	attrs         []AttributeConfig
+	resourceAttrs []AttributeConfig
 }

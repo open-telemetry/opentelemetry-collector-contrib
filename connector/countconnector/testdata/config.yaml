@@ -113,6 +113,32 @@
         description: My log record count by environment.
         attributes:
           - key: env
+  count/resource_attribute:
+    spans:
+      my.span.count:
+        description: My span count by environment.
+        resource_attributes:
+          - key: env
+    spanevents:
+      my.spanevent.count:
+        description: My span event count by environment.
+        resource_attributes:
+          - key: env
+    metrics:
+      my.metric.count:
+        description: My metric count by environment.
+        resource_attributes:
+          - key: env
+    datapoints:
+      my.datapoint.count:
+        description: My data point count by environment.
+        resource_attributes:
+          - key: env
+    logs:
+      my.logrecord.count:
+        description: My log record count by environment.
+        resource_attributes:
+          - key: env
   count/multiple_metrics:
     spans:
       my.span.count:

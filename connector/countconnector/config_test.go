@@ -239,6 +239,51 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "resource_attribute",
+			expect: &Config{
+				Spans: map[string]MetricInfo{
+					"my.span.count": {
+						Description: "My span count by environment.",
+						ResourceAttributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					"my.spanevent.count": {
+						Description: "My span event count by environment.",
+						ResourceAttributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				Metrics: map[string]MetricInfo{
+					"my.metric.count": {
+						Description: "My metric count by environment.",
+						ResourceAttributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					"my.datapoint.count": {
+						Description: "My data point count by environment.",
+						ResourceAttributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				Logs: map[string]MetricInfo{
+					"my.logrecord.count": {
+						Description: "My log record count by environment.",
+						ResourceAttributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "multiple_metrics",
 			expect: &Config{
 				Spans: map[string]MetricInfo{
@@ -462,6 +507,69 @@ func TestConfigErrors(t *testing.T) {
 				},
 			},
 			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL statement", defaultMetricNameLogs),
+		},
+		{
+			name: "repeated_attribute_name_spanevent",
+			input: &Config{
+				SpanEvents: map[string]MetricInfo{
+					defaultMetricNameSpans: {
+						Description: defaultMetricDescSpans,
+						Attributes: []AttributeConfig{
+							{
+								Key: "duplicated_attribute",
+							},
+						},
+						ResourceAttributes: []AttributeConfig{
+							{
+								Key: "duplicated_attribute",
+							},
+						},
+					},
+				},
+			},
+			expect: "attribute key \"duplicated_attribute\" repeated in resource attributes",
+		},
+		{
+			name: "repeated_attribute_name_datapoint",
+			input: &Config{
+				DataPoints: map[string]MetricInfo{
+					defaultMetricNameSpans: {
+						Description: defaultMetricDescSpans,
+						Attributes: []AttributeConfig{
+							{
+								Key: "duplicated_attribute",
+							},
+						},
+						ResourceAttributes: []AttributeConfig{
+							{
+								Key: "duplicated_attribute",
+							},
+						},
+					},
+				},
+			},
+			expect: "attribute key \"duplicated_attribute\" repeated in resource attributes",
+		},
+		{
+			name: "repeated_attribute_name_log",
+			input: &Config{
+				Logs: map[string]MetricInfo{
+					defaultMetricNameSpans: {
+						Description: defaultMetricDescSpans,
+						Attributes: []AttributeConfig{
+							{
+								Key: "duplicated_attribute",
+							},
+						},
+						ResourceAttributes: []AttributeConfig{
+							{
+								Key: "duplicated_attribute",
+							},
+						},
+					},
+				},
+			},
+			expect: "attribute key \"duplicated_attribute\" repeated in resource attributes",
 		},
 	}
 

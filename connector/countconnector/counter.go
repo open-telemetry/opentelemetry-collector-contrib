@@ -35,7 +35,7 @@ type attrCounter struct {
 	count uint64
 }
 
-func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) error {
+func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, resourceAttrs pcommon.Map, tCtx K) error {
 	var multiError error
 	for name, md := range c.metricDefs {
 		countAttrs := pcommon.NewMap()
@@ -46,9 +46,16 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 				countAttrs.PutStr(attr.Key, attr.DefaultValue)
 			}
 		}
+		for _, resourceAttr := range md.resourceAttrs {
+			if attrVal, ok := resourceAttrs.Get(resourceAttr.Key); ok {
+				countAttrs.PutStr(resourceAttr.Key, attrVal.Str())
+			} else if resourceAttr.DefaultValue != "" {
+				countAttrs.PutStr(resourceAttr.Key, resourceAttr.DefaultValue)
+			}
+		}
 
 		// Missing necessary attributes to be counted
-		if countAttrs.Len() != len(md.attrs) {
+		if countAttrs.Len() != (len(md.attrs) + len(md.resourceAttrs)) {
 			continue
 		}
 

@@ -57,12 +57,13 @@ func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 			for k := 0; k < scopeSpan.Spans().Len(); k++ {
 				span := scopeSpan.Spans().At(k)
 				sCtx := ottlspan.NewTransformContext(span, scopeSpan.Scope(), resourceSpan.Resource())
-				multiError = errors.Join(multiError, spansCounter.update(ctx, span.Attributes(), sCtx))
+
+				multiError = errors.Join(multiError, spansCounter.update(ctx, span.Attributes(), resourceSpan.Resource().Attributes(), sCtx))
 
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					eCtx := ottlspanevent.NewTransformContext(event, span, scopeSpan.Scope(), resourceSpan.Resource())
-					multiError = errors.Join(multiError, spanEventsCounter.update(ctx, event.Attributes(), eCtx))
+					multiError = errors.Join(multiError, spanEventsCounter.update(ctx, event.Attributes(), resourceSpan.Resource().Attributes(), eCtx))
 				}
 			}
 		}
@@ -102,7 +103,7 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 				mCtx := ottlmetric.NewTransformContext(metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
-				multiError = errors.Join(multiError, metricsCounter.update(ctx, pcommon.NewMap(), mCtx))
+				multiError = errors.Join(multiError, metricsCounter.update(ctx, pcommon.NewMap(), pcommon.NewMap(), mCtx))
 
 				//exhaustive:enforce
 				switch metric.Type() {
@@ -110,31 +111,31 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 					dps := metric.Gauge().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
 						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
-						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), resourceMetric.Resource().Attributes(), dCtx))
 					}
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
 						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
-						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), resourceMetric.Resource().Attributes(), dCtx))
 					}
 				case pmetric.MetricTypeSummary:
 					dps := metric.Summary().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
 						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
-						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), resourceMetric.Resource().Attributes(), dCtx))
 					}
 				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
 						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
-						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), resourceMetric.Resource().Attributes(), dCtx))
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dps := metric.ExponentialHistogram().DataPoints()
 					for i := 0; i < dps.Len(); i++ {
 						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
-						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+						multiError = errors.Join(multiError, dataPointsCounter.update(ctx, dps.At(i).Attributes(), resourceMetric.Resource().Attributes(), dCtx))
 					}
 				case pmetric.MetricTypeEmpty:
 					multiError = errors.Join(multiError, fmt.Errorf("metric %q: invalid metric type: %v", metric.Name(), metric.Type()))
@@ -177,7 +178,7 @@ func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 				logRecord := scopeLogs.LogRecords().At(k)
 
 				lCtx := ottllog.NewTransformContext(logRecord, scopeLogs.Scope(), resourceLog.Resource())
-				multiError = errors.Join(multiError, counter.update(ctx, logRecord.Attributes(), lCtx))
+				multiError = errors.Join(multiError, counter.update(ctx, logRecord.Attributes(), resourceLog.Resource().Attributes(), lCtx))
 			}
 		}
 

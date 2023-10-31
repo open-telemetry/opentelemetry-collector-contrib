@@ -5,6 +5,7 @@ package countconnector // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -41,9 +42,10 @@ type Config struct {
 
 // MetricInfo for a data type
 type MetricInfo struct {
-	Description string            `mapstructure:"description"`
-	Conditions  []string          `mapstructure:"conditions"`
-	Attributes  []AttributeConfig `mapstructure:"attributes"`
+	Description        string            `mapstructure:"description"`
+	Conditions         []string          `mapstructure:"conditions"`
+	Attributes         []AttributeConfig `mapstructure:"attributes"`
+	ResourceAttributes []AttributeConfig `mapstructure:"resource_attributes"`
 }
 
 type AttributeConfig struct {
@@ -115,6 +117,11 @@ func (i *MetricInfo) validateAttributes() error {
 	for _, attr := range i.Attributes {
 		if attr.Key == "" {
 			return fmt.Errorf("attribute key missing")
+		}
+		if slices.ContainsFunc(i.ResourceAttributes, func(config AttributeConfig) bool {
+			return config.Key == attr.Key
+		}) {
+			return fmt.Errorf("attribute key \"%s\" repeated in resource attributes", attr.Key)
 		}
 	}
 	return nil
