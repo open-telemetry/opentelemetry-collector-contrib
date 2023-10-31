@@ -36,6 +36,7 @@ const (
 
 	metricNameDuration = "duration"
 	metricNameCalls    = "calls"
+	metricNameEvents   = "events"
 
 	defaultUnit = metrics.Milliseconds
 )
@@ -66,11 +67,17 @@ type connectorImp struct {
 	started bool
 
 	shutdownOnce sync.Once
+
+	// Event dimensions to add to the events metric.
+	eDimensions []dimension
+
+	events EventsConfig
 }
 
 type resourceMetrics struct {
 	histograms metrics.HistogramMetrics
 	sums       metrics.SumMetrics
+	events     metrics.SumMetrics
 	attributes pcommon.Map
 }
 
@@ -113,6 +120,8 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		metricKeyToDimensions: metricKeyToDimensionsCache,
 		ticker:                ticker,
 		done:                  make(chan struct{}),
+		eDimensions:           newDimensions(cfg.Events.Dimensions),
+		events:                cfg.Events,
 	}, nil
 }
 
@@ -245,6 +254,13 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 			metric.SetUnit(p.config.Histogram.Unit.String())
 			histograms.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
 		}
+
+		events := rawMetrics.events
+		if p.events.Enabled {
+			metric = sm.Metrics().AppendEmpty()
+			metric.SetName(buildMetricName(p.config.Namespace, metricNameEvents))
+			events.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
+		}
 	}
 
 	return m
@@ -288,6 +304,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 		rm := p.getOrCreateResourceMetrics(resourceAttr)
 		sums := rm.sums
 		histograms := rm.histograms
+		events := rm.events
 
 		unitDivider := unitDivider(p.config.Histogram.Unit)
 		serviceName := serviceAttr.Str()
@@ -308,7 +325,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				attributes, ok := p.metricKeyToDimensions.Get(key)
 				if !ok {
-					attributes = p.buildAttributes(serviceName, span, resourceAttr)
+					attributes = p.buildAttributes(serviceName, span, resourceAttr, p.dimensions)
 					p.metricKeyToDimensions.Add(key, attributes)
 				}
 				if !p.config.Histogram.Disable {
@@ -321,6 +338,29 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				// aggregate sums metrics
 				s := sums.GetOrCreate(key, attributes)
 				s.Add(1)
+
+				// aggregate events metrics
+				if p.events.Enabled {
+					for l := 0; l < span.Events().Len(); l++ {
+						event := span.Events().At(l)
+						eDimensions := p.dimensions
+						eDimensions = append(eDimensions, p.eDimensions...)
+
+						rscAndEventAttrs := pcommon.NewMap()
+						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
+						resourceAttr.CopyTo(rscAndEventAttrs)
+						event.Attributes().CopyTo(rscAndEventAttrs)
+
+						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
+						eAttributes, ok := p.metricKeyToDimensions.Get(eKey)
+						if !ok {
+							eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions)
+							p.metricKeyToDimensions.Add(eKey, eAttributes)
+						}
+						e := events.GetOrCreate(eKey, eAttributes)
+						e.Add(1)
+					}
+				}
 			}
 		}
 	}
@@ -346,6 +386,7 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 		v = &resourceMetrics{
 			histograms: initHistogramMetrics(p.config),
 			sums:       metrics.NewSumMetrics(),
+			events:     metrics.NewSumMetrics(),
 			attributes: attr,
 		}
 		p.resourceMetrics[key] = v
@@ -363,9 +404,9 @@ func contains(elements []string, value string) bool {
 	return false
 }
 
-func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
+func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []dimension) pcommon.Map {
 	attr := pcommon.NewMap()
-	attr.EnsureCapacity(4 + len(p.dimensions))
+	attr.EnsureCapacity(4 + len(dimensions))
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
 		attr.PutStr(serviceNameKey, serviceName)
 	}
@@ -378,7 +419,7 @@ func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, res
 	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	}
-	for _, d := range p.dimensions {
+	for _, d := range dimensions {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			v.CopyTo(attr.PutEmpty(d.name))
 		}
@@ -395,10 +436,10 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 
 // buildKey builds the metric key from the service name and span metadata such as name, kind, status_code and
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
-// or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
+// or resource/event attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) metrics.Key {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
 		concatDimensionValue(p.keyBuf, serviceName, false)
@@ -414,7 +455,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	}
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+		if v, ok := getDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
 			concatDimensionValue(p.keyBuf, v.AsString(), true)
 		}
 	}

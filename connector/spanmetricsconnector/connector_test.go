@@ -42,6 +42,7 @@ const (
 	notInSpanAttrName0     = "shouldBeInMetric"
 	notInSpanAttrName1     = "shouldNotBeInMetric"
 	regionResourceAttrName = "region"
+	exceptionTypeAttrName  = "exception.type"
 	DimensionsCacheSize    = 2
 
 	sampleRegion   = "us-east-1"
@@ -394,6 +395,10 @@ func initSpan(span span, s ptrace.Span) {
 	s.Attributes().PutEmptySlice(arrayAttrName)
 	s.SetTraceID(pcommon.TraceID(span.traceID))
 	s.SetSpanID(pcommon.SpanID(span.spanID))
+
+	e := s.Events().AppendEmpty()
+	e.SetName("exception")
+	e.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
 }
 
 func disabledExemplarsConfig() ExemplarsConfig {
@@ -1256,6 +1261,60 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := initHistogramMetrics(tt.config)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestSpanMetrics_Events(t *testing.T) {
+	tests := []struct {
+		name                    string
+		eventsConfig            EventsConfig
+		shouldEventsMetricExist bool
+	}{
+		{
+			name:                    "events disabled",
+			eventsConfig:            EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			shouldEventsMetricExist: false,
+		},
+		{
+			name:                    "events enabled",
+			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			shouldEventsMetricExist: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.Events = tt.eventsConfig
+			c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+			require.NoError(t, err)
+			err = c.ConsumeTraces(context.Background(), buildSampleTrace())
+			require.NoError(t, err)
+			metrics := c.buildMetrics()
+			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+				rm := metrics.ResourceMetrics().At(i)
+				ism := rm.ScopeMetrics()
+				for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+					m := ism.At(ilmC).Metrics()
+					if !tt.shouldEventsMetricExist {
+						assert.Equal(t, 2, m.Len())
+						continue
+					}
+					assert.Equal(t, 3, m.Len())
+					for mC := 0; mC < m.Len(); mC++ {
+						metric := m.At(mC)
+						if metric.Name() != "events" {
+							continue
+						}
+						assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+						for idp := 0; idp < metric.Sum().DataPoints().Len(); idp++ {
+							attrs := metric.Sum().DataPoints().At(idp).Attributes()
+							assert.Contains(t, attrs.AsRaw(), exceptionTypeAttrName)
+						}
+					}
+				}
+			}
 		})
 	}
 }
