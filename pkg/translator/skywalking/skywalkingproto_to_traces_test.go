@@ -92,7 +92,7 @@ func TestSwProtoToTraces(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			td := SkywalkingToTraces(test.swSpan)
+			td := ProtoToTraces(test.swSpan)
 			assert.Equal(t, 1, td.ResourceSpans().Len())
 			assert.Equal(t, 2, td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
 		})

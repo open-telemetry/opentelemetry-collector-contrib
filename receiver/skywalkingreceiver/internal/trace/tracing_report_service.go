@@ -97,7 +97,7 @@ func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer c
 	if segment == nil {
 		return nil
 	}
-	ptd := skywalking.SkywalkingToTraces(segment)
+	ptd := skywalking.ProtoToTraces(segment)
 	return consumer.ConsumeTraces(ctx, ptd)
 }
 

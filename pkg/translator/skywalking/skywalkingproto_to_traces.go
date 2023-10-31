@@ -40,7 +40,8 @@ var otSpanTagsMapping = map[string]string{
 	"mq.broker":   conventions.AttributeNetPeerName,
 }
 
-func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
+// ProtoToTraces converts multiple skywalking proto batches to internal traces
+func ProtoToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 	traceData := ptrace.NewTraces()
 
 	swSpans := segment.Spans
