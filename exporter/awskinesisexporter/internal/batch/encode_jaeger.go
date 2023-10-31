@@ -4,13 +4,14 @@
 package batch // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 
 import (
+	"errors"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -37,7 +38,7 @@ func (je jaegerEncoder) Traces(td ptrace.Traces) (*Batch, error) {
 
 	bt := New(je.batchOptions...)
 
-	var errs error
+	var errs []error
 	for _, trace := range traces {
 		for _, span := range trace.GetSpans() {
 			if span.Process == nil {
@@ -45,14 +46,14 @@ func (je jaegerEncoder) Traces(td ptrace.Traces) (*Batch, error) {
 			}
 			data, err := proto.Marshal(span)
 			if err != nil {
-				errs = multierr.Append(errs, err)
+				errs = append(errs, err)
 				continue
 			}
-			errs = multierr.Append(errs, bt.AddRecord(data, partitionByTraceID(span)))
+			errs = append(errs, bt.AddRecord(data, partitionByTraceID(span)))
 		}
 	}
 
-	return bt, errs
+	return bt, errors.Join(errs...)
 }
 
 func (jaegerEncoder) Logs(plog.Logs) (*Batch, error)          { return nil, ErrUnsupportedEncoding }
