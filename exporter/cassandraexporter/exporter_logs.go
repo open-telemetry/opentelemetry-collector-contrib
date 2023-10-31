@@ -30,7 +30,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 
-	cluster.Timeout = time.Duration(cfg.Timeout) * time.Second
+	cluster.Timeout = cfg.Timeout * time.Second
 
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func initializeLogKernel(cfg *Config) error {
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 
-	cluster.Timeout = time.Duration(cfg.Timeout) * time.Second
+	cluster.Timeout = cfg.Timeout * time.Second
 
 	session, err := cluster.CreateSession()
 	if err != nil {
