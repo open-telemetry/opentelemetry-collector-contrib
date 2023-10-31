@@ -541,6 +541,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.88.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -958,6 +959,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipki
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../../receiver/signalfxreceiver
 
