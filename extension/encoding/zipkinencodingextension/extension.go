@@ -79,7 +79,7 @@ func newExtension(config *Config) (*zipkinExtension, error) {
 			err = fmt.Errorf("protocol: %q, unsupported version: %q", protocol, version)
 		}
 	default:
-		err = fmt.Errorf("version: %q, unsupported protocol: %q", version, protocol)
+		err = fmt.Errorf("unsupported protocol: %q", protocol)
 	}
 
 	return ex, err
