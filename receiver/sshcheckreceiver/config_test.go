@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -111,24 +110,34 @@ func TestValidate(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
+	// load test config
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	rcvrs, err := cm.Sub("receivers")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	sshconf, err := rcvrs.Sub("sshcheck")
+	require.NoError(t, err)
+	// unmarshal to receiver config
+	actualConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
+	require.True(t, ok)
+	require.NoError(t, sshconf.Unmarshal(actualConfig))
 
-	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "notdefault:1313"
-	expected.Username = "notdefault_username"
-	expected.Password = "notdefault_password"
-	expected.KeyFile = "notdefault/path/keyfile"
-	expected.CollectionInterval = 10 * time.Second
-	expected.KnownHosts = "path/to/colletor_known_hosts"
-	expected.IgnoreHostKey = false
+	// set expected config
+	expectedConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
+	require.True(t, ok)
 
-	require.Equal(t, expected, cfg)
+	expectedConfig.ScraperControllerSettings = scraperhelper.ScraperControllerSettings{
+		InitialDelay:       time.Second,
+		CollectionInterval: 10 * time.Second,
+	}
+	expectedConfig.SSHClientSettings = configssh.SSHClientSettings{
+		Endpoint:      "notdefault:1313",
+		Username:      "notdefault_username",
+		Password:      "notdefault_password",
+		KeyFile:       "notdefault/path/keyfile",
+		KnownHosts:    "path/to/collector_known_hosts",
+		IgnoreHostKey: false,
+		Timeout:       10 * time.Second,
+	}
+	require.Equal(t, expectedConfig, actualConfig)
 }
