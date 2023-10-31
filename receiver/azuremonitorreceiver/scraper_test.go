@@ -195,9 +195,17 @@ func TestAzureScraperScrape(t *testing.T) {
 		ctx context.Context
 	}
 	cfg := createDefaultConfig().(*Config)
+	cfg.SubscriptionID = "testSubscriptionID_x"
+	cfg.TenantID = "testTenantID_x"
+	cfg.ClientID = "testClientID_x"
+	cfg.ClientSecret = "testClientSecret_x"
 	cfg.MaximumNumberOfMetricsInACall = 2
 
 	cfgTagsEnabled := createDefaultConfig().(*Config)
+	cfgTagsEnabled.SubscriptionID = "testSubscriptionID_TagsEnabled"
+	cfgTagsEnabled.TenantID = "testTenantID_TagsEnabled"
+	cfgTagsEnabled.ClientID = "testClientID_TagsEnabled"
+	cfgTagsEnabled.ClientSecret = "testClientSecret_TagsEnabled"
 	cfgTagsEnabled.AppendTagsAsAttributes = true
 	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
 
@@ -229,6 +237,9 @@ func TestAzureScraperScrape(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// validate the config to start
+			require.NoError(t, tt.fields.cfg.Validate())
+
 			settings := receivertest.NewNopCreateSettings()
 
 			armClientMock := &armClientMock{
@@ -264,6 +275,11 @@ func TestAzureScraperScrape(t *testing.T) {
 			}
 
 			expectedFile := filepath.Join("testdata", "expected_metrics", tt.name+".yaml")
+			/* Uncomment stanza below to regenerate the golden files */
+			// if err := golden.WriteMetrics(t, expectedFile, metrics); err != nil {
+			// 	t.Error("failed to write metrics: ", err)
+			// }
+			/* End of stanza */
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 			require.NoError(t, pmetrictest.CompareMetrics(

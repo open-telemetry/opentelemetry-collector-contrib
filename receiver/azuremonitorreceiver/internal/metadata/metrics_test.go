@@ -59,7 +59,7 @@ func TestMetricsBuilder(t *testing.T) {
 			attributes := map[string]*string{}
 			mb.AddDataPoint("resId1", "metric1", "count", "unit", attributes, ts, val1)
 
-			metrics := mb.Emit(WithAzureMonitorSubscriptionID("attr-val"), WithAzureMonitorTenantID("attr-val"))
+			metrics := mb.Emit(WithAzuremonitorSubscriptionID("attr-val"), WithAzuremonitorTenantID("attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -72,15 +72,15 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("azuremonitor.subscription_id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.AzureMonitorSubscriptionID.Enabled, ok)
-			if mb.resourceAttributesSettings.AzureMonitorSubscriptionID.Enabled {
+			assert.Equal(t, mb.config.ResourceAttributes.AzuremonitorSubscriptionID.Enabled, ok)
+			if mb.config.ResourceAttributes.AzuremonitorSubscriptionID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("azuremonitor.tenant_id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.AzureMonitorTenantID.Enabled, ok)
-			if mb.resourceAttributesSettings.AzureMonitorTenantID.Enabled {
+			assert.Equal(t, mb.config.ResourceAttributes.AzuremonitorTenantID.Enabled, ok)
+			if mb.config.ResourceAttributes.AzuremonitorTenantID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

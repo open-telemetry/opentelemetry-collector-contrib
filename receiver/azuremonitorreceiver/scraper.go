@@ -59,6 +59,18 @@ const (
 	tagPrefix              = "tags_"
 )
 
+var (
+	cloudProvider = "azure"
+	rx = regexp.MustCompile(`\/providers\/([^\/]+)\/`)
+	platformMap = map[string]string{
+		"microsoft.compute/virtualmachines": "azure_vm",
+		"microsoft.containerinstance": "azure_container_instances",
+		"microsoft.kubernetes": "azure_aks",
+		// semantic conventions also identifies "azure_app_service",  "azure_functions", and "azure_openshift"
+		// however it's not clear to me how to identify these platforms from the resource
+	}
+)
+
 type azureResource struct {
 	attributes                map[string]*string
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
@@ -192,9 +204,11 @@ func (s *azureScraper) loadCredentials() (err error) {
 
 func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
+	// fetch resources
 	s.getResources(ctx)
 	resourcesIdsWithDefinitions := make(chan string)
 
+	// start producer of resourceIDs
 	go func() {
 		defer close(resourcesIdsWithDefinitions)
 		for resourceID := range s.resources {
@@ -203,6 +217,7 @@ func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}()
 
+	// consume resourceIDs with a sync.WaitGroup
 	var wg sync.WaitGroup
 	for resourceID := range resourcesIdsWithDefinitions {
 		wg.Add(1)
@@ -213,16 +228,14 @@ func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 	wg.Wait()
 
-	return s.mb.Emit(
-		metadata.WithAzureMonitorSubscriptionID(s.cfg.SubscriptionID),
-		metadata.WithAzureMonitorTenantID(s.cfg.TenantID),
-	), nil
+	return s.mb.Emit(), nil
 }
 
 func (s *azureScraper) getResources(ctx context.Context) {
 	if time.Since(s.resourcesUpdated).Seconds() < s.cfg.CacheResources {
 		return
 	}
+	// sets keys of existingResources to all resources in s.resources
 	existingResources := map[string]void{}
 	for id := range s.resources {
 		existingResources[id] = void{}
@@ -234,7 +247,6 @@ func (s *azureScraper) getResources(ctx context.Context) {
 	}
 
 	pager := s.clientResources.NewListPager(opts)
-
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
 		if err != nil {
@@ -251,7 +263,17 @@ func (s *azureScraper) getResources(ctx context.Context) {
 				}
 				if resource.Location != nil {
 					attributes[attributeLocation] = resource.Location
+					attributes["cloud.region"] = resource.Location
 				}
+				attributes["cloud.resource_id"] = resource.ID
+				attributes["cloud.provider"] = &cloudProvider
+				attributes["cloud.account.id"] = &s.cfg.SubscriptionID
+				// we add cloud.platform if we can identify it from the resourceID
+				cloudPlatform := lookupProvider(*resource.ID)
+				if cloudPlatform != "" {
+					attributes["cloud.platform"] = &cloudPlatform
+				}
+
 				s.resources[*resource.ID] = &azureResource{
 					attributes: attributes,
 					tags:       resource.Tags,
@@ -339,6 +361,20 @@ func (s *azureScraper) storeMetricsDefinition(resourceID, name string, composite
 	} else {
 		s.resources[resourceID].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{name}}
 	}
+}
+
+// gets platform
+func lookupPlatform(resourceID string) string {
+	// extract namespace from resourceID
+	s, err := regexp.Compile(`\/providers\/([^\/]+)\/`)
+	if err != nil {
+		return ""
+	}
+	match := s.FindStringSubmatch(strings.ToLower(resourceID))
+	if len(match) == 2 {
+		return match[1]
+	}
+	return ""
 }
 
 func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string) {

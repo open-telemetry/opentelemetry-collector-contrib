@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -19,49 +18,15 @@ import (
 
 const metricsPrefix = "azure_"
 
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// ResourceAttributesSettings provides settings for azuremonitorreceiver metrics.
-type ResourceAttributesSettings struct {
-	AzureMonitorSubscriptionID ResourceAttributeSettings `mapstructure:"azuremonitor.subscription_id"`
-	AzureMonitorTenantID       ResourceAttributeSettings `mapstructure:"azuremonitor.tenant_id"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		AzureMonitorSubscriptionID: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		AzureMonitorTenantID: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
+type SemanticConventionResourceAttribute string
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:              pmetric.NewMetrics(),
-		buildInfo:                  settings.BuildInfo,
-		resourceAttributesSettings: mbc.ResourceAttributes,
-		metrics:                    map[string]*metricAzureAbstract{},
+		config:        mbc,
+		startTime:     pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer: pmetric.NewMetrics(),
+		buildInfo:     settings.BuildInfo,
+		metrics:       map[string]*metricAzureAbstract{},
 	}
 	for _, op := range options {
 		op(mb)
@@ -71,25 +36,25 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		ResourceAttributes: DefaultResourceAttributesSettings(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity            int                 // maximum observed number of metrics per resource.
-	resourceCapacity           int                 // maximum observed number of resource attributes.
-	metricsBuffer              pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                  component.BuildInfo // contains version information
-	resourceAttributesSettings ResourceAttributesSettings
-	metrics                    map[string]*metricAzureAbstract
+	config           MetricsBuilderConfig
+	startTime        pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity  int                 // maximum observed number of metrics per resource.
+	resourceCapacity int                 // maximum observed number of resource attributes.
+	metricsBuffer    pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo        component.BuildInfo // contains version information
+	metrics          map[string]*metricAzureAbstract
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -106,22 +71,67 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
-// WithAzureMonitorSubscriptionID sets provided value as "azuremonitor.subscription_id" attribute for current resource.
-func WithAzureMonitorSubscriptionID(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.AzureMonitorSubscriptionID.Enabled {
+// WithAzuremonitorSubscriptionID sets provided value as "azuremonitor.subscription_id" attribute for current resource.
+func WithAzuremonitorSubscriptionID(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if ras.AzuremonitorSubscriptionID.Enabled {
 			rm.Resource().Attributes().PutStr("azuremonitor.subscription_id", val)
 		}
 	}
 }
 
 // WithAzuremonitorTenantID sets provided value as "azuremonitor.tenant_id" attribute for current resource.
-func WithAzureMonitorTenantID(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.AzureMonitorTenantID.Enabled {
+func WithAzuremonitorTenantID(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if ras.AzuremonitorTenantID.Enabled {
 			rm.Resource().Attributes().PutStr("azuremonitor.tenant_id", val)
+		}
+	}
+}
+
+// WithCloudProvider sets provided value as "cloud.provider" attribute for current resource.
+func WithCloudProvider(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if ras.CloudProvider.Enabled {
+			rm.Resource().Attributes().PutStr("cloud.provider", val)
+		}
+	}
+}
+
+// WithCloudAccountID sets provided value as "cloud.account.id" attribute for current resource.
+func WithCloudAccountID(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if ras.CloudAccountID.Enabled {
+			rm.Resource().Attributes().PutStr("cloud.account.id", val)
+		}
+	}
+}
+
+// WithCloudRegion sets provided value as "cloud.region" attribute for current resource.
+func WithCloudRegion(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if ras.CloudRegion.Enabled {
+			rm.Resource().Attributes().PutStr("cloud.region", val)
+		}
+	}
+}
+
+// WithCloudAvailabilityZone sets provided value as "cloud.availability_zone" attribute for current resource.
+func WithCloudAvailabilityZone(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if ras.CloudAvailabilityZone.Enabled {
+			rm.Resource().Attributes().PutStr("cloud.availability_zone", val)
+		}
+	}
+}
+
+// WithCloudPlatform sets provided value as "cloud.platform" attribute for current resource.
+func WithCloudPlatform(val string) ResourceMetricsOption {
+	return func(ras ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if ras.CloudPlatform.Enabled {
+			rm.Resource().Attributes().PutStr("cloud.platform", val)
 		}
 	}
 }
@@ -141,7 +151,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.EmitAllMetrics(ils)
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.config.ResourceAttributes, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

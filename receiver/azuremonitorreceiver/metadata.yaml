@@ -12,6 +12,34 @@ resource_attributes:
   azuremonitor.tenant_id:
     description: Azure tenant ID
     type: string
+    enabled: true
   azuremonitor.subscription_id:
     description: Azure subscription ID
     type: string
+    enabled: true
+  cloud.account.id:
+    description: The cloud account ID the resource is assigned to.
+    type: string
+    enabled: true
+  cloud.availability_zone:
+    description: Cloud regions often have multiple, isolated locations known as zones to increase availability. Availability zone represents the zone where the resource is running.
+    type: string
+    enabled: false
+  cloud.platform:
+    description: The cloud platform in use.
+    # Semantic Conventions document 6 well known Azure platforms: azure_vm,	azure_container_instances, azure_aks, azure_functions, azure_app_service, azure_openshift,
+    # but we are not limited to them. We can use any string here.
+    type: string
+    enabled: true
+  cloud.provider:
+    description: Name of the cloud provider. Default `azure`.
+    type: string
+    enabled: true
+  cloud.region:
+    description: The geographical region where the resource is running.
+    type: string
+    enabled: true
+  cloud.resource_id:
+    description: Cloud provider-specific native identifier of the monitored cloud resource (e.g. `/subscriptions/<SUBSCIPTION_GUID>/resourceGroups/<RG>/providers/Microsoft.Web/sites/<FUNCAPP>/functions/<FUNC>`)
+    type: string
+    enabled: true

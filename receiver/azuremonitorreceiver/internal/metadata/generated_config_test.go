@@ -27,6 +27,12 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				AzuremonitorSubscriptionID: ResourceAttributeConfig{Enabled: true},
 				AzuremonitorTenantID:       ResourceAttributeConfig{Enabled: true},
+				CloudAccountID:             ResourceAttributeConfig{Enabled: true},
+				CloudAvailabilityZone:      ResourceAttributeConfig{Enabled: true},
+				CloudPlatform:              ResourceAttributeConfig{Enabled: true},
+				CloudProvider:              ResourceAttributeConfig{Enabled: true},
+				CloudRegion:                ResourceAttributeConfig{Enabled: true},
+				CloudResourceID:            ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -34,6 +40,12 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				AzuremonitorSubscriptionID: ResourceAttributeConfig{Enabled: false},
 				AzuremonitorTenantID:       ResourceAttributeConfig{Enabled: false},
+				CloudAccountID:             ResourceAttributeConfig{Enabled: false},
+				CloudAvailabilityZone:      ResourceAttributeConfig{Enabled: false},
+				CloudPlatform:              ResourceAttributeConfig{Enabled: false},
+				CloudProvider:              ResourceAttributeConfig{Enabled: false},
+				CloudRegion:                ResourceAttributeConfig{Enabled: false},
+				CloudResourceID:            ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

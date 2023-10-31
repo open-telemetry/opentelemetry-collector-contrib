@@ -27,15 +27,39 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 type ResourceAttributesConfig struct {
 	AzuremonitorSubscriptionID ResourceAttributeConfig `mapstructure:"azuremonitor.subscription_id"`
 	AzuremonitorTenantID       ResourceAttributeConfig `mapstructure:"azuremonitor.tenant_id"`
+	CloudAccountID             ResourceAttributeConfig `mapstructure:"cloud.account.id"`
+	CloudAvailabilityZone      ResourceAttributeConfig `mapstructure:"cloud.availability_zone"`
+	CloudPlatform              ResourceAttributeConfig `mapstructure:"cloud.platform"`
+	CloudProvider              ResourceAttributeConfig `mapstructure:"cloud.provider"`
+	CloudRegion                ResourceAttributeConfig `mapstructure:"cloud.region"`
+	CloudResourceID            ResourceAttributeConfig `mapstructure:"cloud.resource_id"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		AzuremonitorSubscriptionID: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		AzuremonitorTenantID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CloudAccountID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CloudAvailabilityZone: ResourceAttributeConfig{
 			Enabled: false,
+		},
+		CloudPlatform: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CloudProvider: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CloudRegion: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CloudResourceID: ResourceAttributeConfig{
+			Enabled: true,
 		},
 	}
 }
