@@ -164,6 +164,16 @@ type ReplicaStatusStats struct {
 var _ client = (*mySQLClient)(nil)
 
 func newMySQLClient(conf *Config) client {
+	tls, err := conf.Tls.LoadTLSConfig()
+	tlsConfig := ""
+	if err == nil {
+		if conf.Tls.Insecure {
+			tls = nil
+		} else {
+			mysql.RegisterTLSConfig("custom", tls)
+			tlsConfig = "custom"
+		}
+	}
 	driverConf := mysql.Config{
 		User:                 conf.Username,
 		Passwd:               string(conf.Password),
@@ -171,6 +181,8 @@ func newMySQLClient(conf *Config) client {
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
 		AllowNativePasswords: conf.AllowNativePasswords,
+		TLS:                  tls,
+		TLSConfig:            tlsConfig,
 	}
 	connStr := driverConf.FormatDSN()
 
