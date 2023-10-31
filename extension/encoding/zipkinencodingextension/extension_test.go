@@ -26,5 +26,5 @@ func TestExtension_Err(t *testing.T) {
 	cfg.Protocol = "v3"
 	_, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NotNil(t, err)
-	require.ErrorContains(t, err, "protocol: \"v3\"")
+	require.ErrorContains(t, err, "unsupported protocol: \"v3\"")
 }
