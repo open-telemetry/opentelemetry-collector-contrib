@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/config/confignet v0.88.1-0.20231026220224-6405e152a2d9
