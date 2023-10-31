@@ -8,16 +8,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/githubgen"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/telemetrygen"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/confmap/provider/s3provider"
     schedule:
       interval: "weekly"
@@ -158,11 +148,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/exporter/honeycombmarkerexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/exporter/influxdbexporter"
     schedule:
       interval: "weekly"
@@ -174,11 +159,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/kafkaexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/kineticaexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -303,7 +283,17 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/extension/encoding"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/extension/encoding/jaegerencodingextension"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/extension/encoding/jsonlogencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -454,6 +444,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/experimentalmetricmetadata"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/golden"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -629,6 +624,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/spanprocessor"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/processor/sumologicprocessor"
     schedule:
       interval: "weekly"
       day: "wednesday"

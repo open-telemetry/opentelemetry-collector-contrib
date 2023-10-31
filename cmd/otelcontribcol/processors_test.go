@@ -146,6 +146,9 @@ func TestDefaultProcessors(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			processor: "sumologic",
+		},
 	}
 
 	assert.Equal(t, len(procFactories), len(tests), "All processors must be added to lifecycle tests")
