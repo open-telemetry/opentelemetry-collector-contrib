@@ -11,7 +11,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -19,6 +18,8 @@ import (
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 	v3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking"
 )
 
 const (
