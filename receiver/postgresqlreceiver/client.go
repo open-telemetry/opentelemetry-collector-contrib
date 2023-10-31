@@ -493,9 +493,9 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	query := `SELECT
 	client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
-	extract('epoch' from coalesce(write_lag, '-1 seconds')),
-	extract('epoch' from coalesce(flush_lag, '-1 seconds')),
-	extract('epoch' from coalesce(replay_lag, '-1 seconds'))
+	extract('epoch' from coalesce(write_lag, '-1 seconds'))::integer,
+	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::integer,
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::integer
 	FROM pg_stat_replication;
 	`
 	rows, err := c.client.QueryContext(ctx, query)
@@ -507,7 +507,8 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	var errors error
 	for rows.Next() {
 		var client string
-		var replicationBytes, writeLag, flushLag, replayLag int64
+		var replicationBytes int64
+		var writeLag, flushLag, replayLag int64
 		err = rows.Scan(&client, &replicationBytes, &writeLag, &flushLag, &replayLag)
 		if err != nil {
 			errors = multierr.Append(errors, err)
