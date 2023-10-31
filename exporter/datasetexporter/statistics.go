@@ -15,6 +15,8 @@ import (
 
 const statsDelim = "_"
 
+const metricsPrefix = "datasetexporter" + statsDelim
+
 // reportStatistics provides metrics to the meter based on client.Statistics()
 func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	// https://pkg.go.dev/go.opentelemetry.io/otel/metric#example-Meter-Asynchronous_multiple
@@ -22,7 +24,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	client.Logger.Info("AAAAA - reportStatistics - BEGIN")
 	// transfer metrics - BEGIN
 	transferBytesSent, err := meter.Int64ObservableUpDownCounter(
-		"transfer"+statsDelim+"bytesSent",
+		metricsPrefix+"transfer"+statsDelim+"bytesSent",
 		metric.WithDescription("Amount of sent data"),
 		metric.WithUnit("By"),
 	)
@@ -35,7 +37,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	transferBytesAccepted, err := meter.Int64ObservableUpDownCounter(
-		"transfer"+statsDelim+"bytesAccepted",
+		metricsPrefix+"transfer"+statsDelim+"bytesAccepted",
 		metric.WithDescription("Amount of accepted data"),
 		metric.WithUnit("By"),
 	)
@@ -48,7 +50,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	transferBuffersProcessed, err := meter.Int64ObservableUpDownCounter(
-		"transfer"+statsDelim+"buffersProcessed",
+		metricsPrefix+"transfer"+statsDelim+"buffersProcessed",
 		metric.WithDescription("Amount of processed buffers"),
 		metric.WithUnit("{tot}"),
 	)
@@ -61,7 +63,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	transferAvgBufferBytes, err := meter.Float64ObservableUpDownCounter(
-		"transfer"+statsDelim+"avgBufferBytes",
+		metricsPrefix+"transfer"+statsDelim+"avgBufferBytes",
 		metric.WithDescription("Average size of the buffer"),
 		metric.WithUnit("By"),
 	)
@@ -74,7 +76,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	transferThroughputBpS, err := meter.Float64ObservableUpDownCounter(
-		"transfer"+statsDelim+"throughputBpS",
+		metricsPrefix+"transfer"+statsDelim+"throughputBpS",
 		metric.WithDescription("Throughput"),
 		metric.WithUnit("By/s"),
 	)
@@ -87,7 +89,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	transferSuccessRate, err := meter.Float64ObservableUpDownCounter(
-		"transfer"+statsDelim+"successRate",
+		metricsPrefix+"transfer"+statsDelim+"successRate",
 		metric.WithDescription("Success rate of data transfers"),
 	)
 	if err != nil {
@@ -99,7 +101,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	transferProcessingTime, err := meter.Float64ObservableUpDownCounter(
-		"transfer"+statsDelim+"processingTime",
+		metricsPrefix+"transfer"+statsDelim+"processingTime",
 		metric.WithDescription("Processing time"),
 		metric.WithUnit("s"),
 	)
@@ -114,7 +116,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 
 	// events metrics - BEGIN
 	eventsSuccessRate, err := meter.Float64ObservableUpDownCounter(
-		"events"+statsDelim+"successRate",
+		metricsPrefix+"events"+statsDelim+"successRate",
 		metric.WithDescription("Success rate of events processing"),
 	)
 	if err != nil {
@@ -126,7 +128,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	eventsProcessingTime, err := meter.Float64ObservableUpDownCounter(
-		"events"+statsDelim+"processingTime",
+		metricsPrefix+"events"+statsDelim+"processingTime",
 		metric.WithDescription("Processing time"),
 		metric.WithUnit("s"),
 	)
@@ -139,7 +141,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	eventsBroken, err := meter.Int64ObservableUpDownCounter(
-		"events"+statsDelim+"broken",
+		metricsPrefix+"events"+statsDelim+"broken",
 		metric.WithDescription("Amount of broken events"),
 		metric.WithUnit("{tot}"),
 	)
@@ -152,7 +154,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	eventsDropped, err := meter.Int64ObservableUpDownCounter(
-		"events"+statsDelim+"dropped",
+		metricsPrefix+"events"+statsDelim+"dropped",
 		metric.WithDescription("Amount of dropped events"),
 		metric.WithUnit("{tot}"),
 	)
@@ -165,7 +167,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	eventsEnqueued, err := meter.Int64ObservableUpDownCounter(
-		"events"+statsDelim+"enqueued",
+		metricsPrefix+"events"+statsDelim+"enqueued",
 		metric.WithDescription("Amount of broken events"),
 		metric.WithUnit("{tot}"),
 	)
@@ -178,7 +180,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	eventsProcessed, err := meter.Int64ObservableUpDownCounter(
-		"events"+statsDelim+"dropped",
+		metricsPrefix+"events"+statsDelim+"dropped",
 		metric.WithDescription("Amount of processed events"),
 		metric.WithUnit("{tot}"),
 	)
@@ -191,7 +193,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	eventsWaiting, err := meter.Int64ObservableUpDownCounter(
-		"events"+statsDelim+"waiting",
+		metricsPrefix+"events"+statsDelim+"waiting",
 		metric.WithDescription("Amount of processed events"),
 		metric.WithUnit("{tot}"),
 	)
@@ -206,7 +208,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 
 	// buffers metrics - BEGIN
 	buffersSuccessRate, err := meter.Float64ObservableUpDownCounter(
-		"buffers"+statsDelim+"successRate",
+		metricsPrefix+"buffers"+statsDelim+"successRate",
 		metric.WithDescription("Success rate of buffers processing"),
 	)
 	if err != nil {
@@ -218,7 +220,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	buffersProcessingTime, err := meter.Float64ObservableUpDownCounter(
-		"buffers"+statsDelim+"processingTime",
+		metricsPrefix+"buffers"+statsDelim+"processingTime",
 		metric.WithDescription("Processing time"),
 		metric.WithUnit("s"),
 	)
@@ -231,7 +233,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	buffersBroken, err := meter.Int64ObservableUpDownCounter(
-		"buffers"+statsDelim+"broken",
+		metricsPrefix+"buffers"+statsDelim+"broken",
 		metric.WithDescription("Amount of broken buffers"),
 		metric.WithUnit("{tot}"),
 	)
@@ -244,7 +246,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	buffersDropped, err := meter.Int64ObservableUpDownCounter(
-		"buffers"+statsDelim+"dropped",
+		metricsPrefix+"buffers"+statsDelim+"dropped",
 		metric.WithDescription("Amount of dropped buffers"),
 		metric.WithUnit("{tot}"),
 	)
@@ -257,7 +259,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	buffersEnqueued, err := meter.Int64ObservableUpDownCounter(
-		"buffers"+statsDelim+"enqueued",
+		metricsPrefix+"buffers"+statsDelim+"enqueued",
 		metric.WithDescription("Amount of broken buffers"),
 		metric.WithUnit("{tot}"),
 	)
@@ -270,7 +272,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	buffersProcessed, err := meter.Int64ObservableUpDownCounter(
-		"buffers"+statsDelim+"dropped",
+		metricsPrefix+"buffers"+statsDelim+"dropped",
 		metric.WithDescription("Amount of processed buffers"),
 		metric.WithUnit("{tot}"),
 	)
@@ -283,7 +285,7 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 	}
 
 	buffersWaiting, err := meter.Int64ObservableUpDownCounter(
-		"buffers"+statsDelim+"waiting",
+		metricsPrefix+"buffers"+statsDelim+"waiting",
 		metric.WithDescription("Amount of processed buffers"),
 		metric.WithUnit("{tot}"),
 	)
@@ -298,20 +300,30 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 
 	client.Logger.Info("AAAAA - reportStatistics - REGISTRATION")
 
-	simpleCounter, err := meter.Int64UpDownCounter("aaa_SimpleCounter")
+	simpleCounterLoop, err := meter.Int64UpDownCounter(metricsPrefix + "SimpleCounterLoop")
 
+	i := int64(0)
 	go func() {
 		r := rand.New(rand.NewSource(99))
-		i := int64(0)
 		for {
-			client.Logger.Info("AAAAA - reportStatistics - inc Foo by", zap.Int64("foo", i))
-			simpleCounter.Add(context.Background(), i)
+			if r.Float64() < 0.4 {
+				client.Logger.Info("AAAAA - reportStatistics - SimpleCounter - down by", zap.Int64("foo", i))
+				simpleCounterLoop.Add(context.Background(), -1*i)
+			} else {
+				client.Logger.Info("AAAAA - reportStatistics - SimpleCounter - up by", zap.Int64("foo", i))
+				simpleCounterLoop.Add(context.Background(), i)
+			}
+
 			time.Sleep(time.Duration(10 * r.Float64() * float64(time.Second.Nanoseconds())))
 			i += 1
 		}
 	}()
 
-	client.Logger.Info("AAAAA - reportStatistics - Add FOO")
+	simpleCounterCallback, err := meter.Int64UpDownCounter(metricsPrefix + "SimpleCounterCallback")
+
+	gaugeEventsProcessed, err := meter.Int64ObservableGauge(metricsPrefix + "gauge" + statsDelim + "eventsProcessed")
+
+	client.Logger.Info("AAAAA - reportStatistics - Add Simple")
 
 	_, err = meter.RegisterCallback(
 		func(_ context.Context, o metric.Observer) error {
@@ -323,6 +335,9 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 			if stats == nil {
 				return nil
 			}
+
+			simpleCounterCallback.Add(context.Background(), i)
+			o.ObserveInt64(gaugeEventsProcessed, int64(stats.Events.Processed()))
 
 			// transfer metrics
 			o.ObserveInt64(transferBytesSent, int64(stats.Transfer.BytesSent()))
@@ -354,6 +369,8 @@ func reportStatistics(meter metric.Meter, client *client.DataSetClient) {
 			client.Logger.Info("AAAAA - reportStatistics - CALLBACK - END")
 			return nil
 		},
+		// test
+		gaugeEventsProcessed,
 		// transfer metrics
 		transferBytesSent,
 		transferBytesAccepted,
