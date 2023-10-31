@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.46.3
+	github.com/aws/aws-sdk-go v1.46.7
 	github.com/google/cadvisor v0.47.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.88.0
@@ -60,7 +60,7 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/uuid v1.3.1 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

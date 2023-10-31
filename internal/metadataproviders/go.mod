@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.46.3
+	github.com/aws/aws-sdk-go v1.46.7
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/hashicorp/consul/api v1.25.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.88.0
@@ -37,7 +37,7 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/uuid v1.3.1 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
