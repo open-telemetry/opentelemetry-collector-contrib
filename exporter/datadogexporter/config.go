@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/valid"
@@ -280,6 +279,10 @@ type TracesConfig struct {
 	// If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
 	PeerServiceAggregation bool `mapstructure:"peer_service_aggregation"`
 
+	// TraceBuffer specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
+	// The default value is 0, meaning the Datadog Agent TracerPayloads are unbuffered.
+	TraceBuffer int `mapstructure:"trace_buffer"`
+
 	// flushInterval defines the interval in seconds at which the writer flushes traces
 	// to the intake; used in tests.
 	flushInterval float64
@@ -517,13 +520,15 @@ func (e renameError) Error() string {
 	)
 }
 
-func handleRemovedSettings(configMap *confmap.Conf) (err error) {
+func handleRemovedSettings(configMap *confmap.Conf) error {
+	var errs []error
 	for _, removedErr := range removedSettings {
 		if configMap.IsSet(removedErr.oldName) {
-			err = multierr.Append(err, removedErr)
+			errs = append(errs, removedErr)
 		}
 	}
-	return
+
+	return errors.Join(errs...)
 }
 
 var _ confmap.Unmarshaler = (*Config)(nil)

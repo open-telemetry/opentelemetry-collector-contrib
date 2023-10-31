@@ -219,8 +219,8 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
-	// Retry function for backoff
-	retryFunc := func() error {
+	// executeFunc can be used for backoff and non backoff scenarios.
+	executeFunc := func() error {
 		// Uses proto.Marshal to convert the WriteRequest into bytes array
 		data, err := proto.Marshal(writeReq)
 		if err != nil {
@@ -264,16 +264,21 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 
-	// Use the BackOff instance to retry the func with exponential backoff.
-	err := backoff.Retry(retryFunc, &backoff.ExponentialBackOff{
-		InitialInterval:     prwe.retrySettings.InitialInterval,
-		RandomizationFactor: prwe.retrySettings.RandomizationFactor,
-		Multiplier:          prwe.retrySettings.Multiplier,
-		MaxInterval:         prwe.retrySettings.MaxInterval,
-		MaxElapsedTime:      prwe.retrySettings.MaxElapsedTime,
-		Stop:                backoff.Stop,
-		Clock:               backoff.SystemClock,
-	})
+	var err error
+	if prwe.retrySettings.Enabled {
+		// Use the BackOff instance to retry the func with exponential backoff.
+		err = backoff.Retry(executeFunc, &backoff.ExponentialBackOff{
+			InitialInterval:     prwe.retrySettings.InitialInterval,
+			RandomizationFactor: prwe.retrySettings.RandomizationFactor,
+			Multiplier:          prwe.retrySettings.Multiplier,
+			MaxInterval:         prwe.retrySettings.MaxInterval,
+			MaxElapsedTime:      prwe.retrySettings.MaxElapsedTime,
+			Stop:                backoff.Stop,
+			Clock:               backoff.SystemClock,
+		})
+	} else {
+		err = executeFunc()
+	}
 
 	if err != nil {
 		return consumererror.NewPermanent(err)

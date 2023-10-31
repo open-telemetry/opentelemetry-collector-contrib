@@ -15,7 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
@@ -46,7 +45,7 @@ func TestPersistFlusher(t *testing.T) {
 	expectNoTokensUntil(t, emitChan, 2*flushPeriod)
 
 	// A copy of the reader should remember that we last emitted about 200ms ago.
-	copyReader, err := f.Copy(r, temp)
+	copyReader, err := f.NewReaderFromMetadata(temp, r.Metadata)
 	assert.NoError(t, err)
 
 	// This time, the flusher will kick in and we should emit the unfinished log.
@@ -237,10 +236,12 @@ func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPer
 			FingerprintSize: fingerprint.DefaultSize,
 			MaxLogSize:      maxLogSize,
 			Emit:            testEmitFunc(emitChan),
+			FlushTimeout:    flushPeriod,
 		},
-		FromBeginning:   true,
-		SplitterFactory: splitter.NewFactory(splitFunc, trim.Whitespace, flushPeriod, maxLogSize),
-		Encoding:        enc,
+		FromBeginning: true,
+		Encoding:      enc,
+		SplitFunc:     splitFunc,
+		TrimFunc:      trim.Whitespace,
 	}, emitChan
 }
 
