@@ -98,30 +98,30 @@ The "from" field has only three possible values "pod", "namespace" and "node" an
 A few examples to use this config are as follows:
 
 ```yaml
-annotations:
-  - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
-    key: annotation-one
-    from: pod
-  - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
-    key: annotation-two
-    regex: field=(?P<value>.+)
-    from: namespace
-  - tag_name: a3 # extracts value of annotation from nodes with key `annotation-three` with regexp and inserts it as a tag with key `a3`
-    key: annotation-three
-    regex: field=(?P<value>.+)
-    from: node
-
-labels:
-  - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
-    key: label1
-    from: namespace
-  - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
-    key: label2
-    regex: field=(?P<value>.+)
-    from: pod
-  - tag_name: l3 # extracts value of label from nodes with key `label3` and inserts it as a tag with key `l3`
-    key: label3
-    from: node
+extract:
+  annotations:
+    - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
+      key: annotation-one
+      from: pod
+    - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+      key: annotation-two
+      regex: field=(?P<value>.+)
+      from: namespace
+    - tag_name: a3 # extracts value of annotation from nodes with key `annotation-three` with regexp and inserts it as a tag with key `a3`
+      key: annotation-three
+      regex: field=(?P<value>.+)
+      from: node
+  labels:
+    - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
+      key: label1
+      from: namespace
+    - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
+      key: label2
+      regex: field=(?P<value>.+)
+      from: pod
+    - tag_name: l3 # extracts value of label from nodes with key `label3` and inserts it as a tag with key `l3`
+      key: label3
+      from: node
 ```
 
 ### Config example
@@ -129,27 +129,31 @@ labels:
 ```yaml
 k8sattributes:
 k8sattributes/2:
- auth_type: "serviceAccount"
- passthrough: false
- filter:
-   node_from_env_var: KUBE_NODE_NAME
- extract:
-   metadata:
-     - k8s.pod.name
-     - k8s.pod.uid
-     - k8s.deployment.name
-     - k8s.namespace.name
-     - k8s.node.name
-     - k8s.pod.start_time
- pod_association:
-   - sources:
-       - from: resource_attribute
-         name: k8s.pod.ip
-   - sources:
-       - from: resource_attribute
-         name: k8s.pod.uid
-   - sources:
-       - from: connection
+  auth_type: "serviceAccount"
+  passthrough: false
+  filter:
+    node_from_env_var: KUBE_NODE_NAME
+  extract:
+    metadata:
+      - k8s.pod.name
+      - k8s.pod.uid
+      - k8s.deployment.name
+      - k8s.namespace.name
+      - k8s.node.name
+      - k8s.pod.start_time
+   labels:
+     - tag_name: app.label.component
+       key: app.kubenetes.io/component
+       from: pod
+  pod_association:
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.ip
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.uid
+    - sources:
+        - from: connection
 ```
 
 ## Role-based access control
