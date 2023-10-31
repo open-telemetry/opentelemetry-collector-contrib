@@ -1,16 +1,5 @@
-// Copyright 2022 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
@@ -162,9 +151,9 @@ func (pc *ContainerScraper) inspectAndPersistContainer(ctx context.Context, cid 
 		return nil, false
 	}
 	params.Add("filters", string(jsonFilter))
-	listCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
+	inspectCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
 	defer cancel()
-	container, err := pc.client.list(listCtx, params)
+	container, err := pc.client.list(inspectCtx, params)
 	if len(container) == 1 && err == nil {
 		pc.persistContainer(container[0])
 		return &container[0], true
@@ -183,9 +172,7 @@ func (pc *ContainerScraper) fetchContainerStats(ctx context.Context, c container
 	params.Add("stream", "false")
 	params.Add("containers", c.ID)
 
-	statsCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
-	defer cancel()
-	stats, err := pc.client.stats(statsCtx, params)
+	stats, err := pc.client.stats(ctx, params)
 	if err != nil || len(stats) < 1 {
 		return containerStats{}, err
 	}

@@ -1,4 +1,0 @@
-# TYPE a histogram
-a_count 1
-a_bucket{le=" Inf"} 0
-# EOF

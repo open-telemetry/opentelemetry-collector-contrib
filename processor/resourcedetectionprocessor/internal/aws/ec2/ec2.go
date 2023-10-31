@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 
@@ -31,6 +20,7 @@ import (
 
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/internal/metadata"
 )
 
 const (
@@ -45,6 +35,7 @@ type Detector struct {
 	metadataProvider ec2provider.Provider
 	tagKeyRegexes    []*regexp.Regexp
 	logger           *zap.Logger
+	rb               *metadata.ResourceBuilder
 }
 
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -57,40 +48,41 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 	if err != nil {
 		return nil, err
 	}
+
 	return &Detector{
 		metadataProvider: ec2provider.NewProvider(sess),
 		tagKeyRegexes:    tagKeyRegexes,
 		logger:           set.Logger,
+		rb:               metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
 	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
 		d.logger.Debug("EC2 metadata unavailable", zap.Error(err))
-		return res, "", nil
+		return pcommon.NewResource(), "", nil
 	}
 
 	meta, err := d.metadataProvider.Get(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting identity document: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting identity document: %w", err)
 	}
 
 	hostname, err := d.metadataProvider.Hostname(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting hostname: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
 	}
 
-	attr := res.Attributes()
-	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
-	attr.PutStr(conventions.AttributeCloudRegion, meta.Region)
-	attr.PutStr(conventions.AttributeCloudAccountID, meta.AccountID)
-	attr.PutStr(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
-	attr.PutStr(conventions.AttributeHostID, meta.InstanceID)
-	attr.PutStr(conventions.AttributeHostImageID, meta.ImageID)
-	attr.PutStr(conventions.AttributeHostType, meta.InstanceType)
-	attr.PutStr(conventions.AttributeHostName, hostname)
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEC2)
+	d.rb.SetCloudRegion(meta.Region)
+	d.rb.SetCloudAccountID(meta.AccountID)
+	d.rb.SetCloudAvailabilityZone(meta.AvailabilityZone)
+	d.rb.SetHostID(meta.InstanceID)
+	d.rb.SetHostImageID(meta.ImageID)
+	d.rb.SetHostType(meta.InstanceType)
+	d.rb.SetHostName(hostname)
+	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
 		client := getHTTPClientSettings(ctx, d.logger)
@@ -99,7 +91,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			return res, "", fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 		}
 		for key, val := range tags {
-			attr.PutStr(tagPrefix+key, val)
+			res.Attributes().PutStr(tagPrefix+key, val)
 		}
 	}
 

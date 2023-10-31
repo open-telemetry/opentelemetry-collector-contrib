@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package ec2 contains the AWS EC2 hostname provider
 package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/internal/ec2"
@@ -85,7 +74,7 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 	return
 }
 
-func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
+func (hi *HostInfo) GetHostname(_ *zap.Logger) string {
 	if isDefaultHostname(hi.EC2Hostname) {
 		return hi.InstanceID
 	}
@@ -119,7 +108,7 @@ func (p *Provider) fillHostInfo() {
 	p.once.Do(func() { p.hostInfo = *GetHostInfo(p.logger) })
 }
 
-func (p *Provider) Source(ctx context.Context) (source.Source, error) {
+func (p *Provider) Source(_ context.Context) (source.Source, error) {
 	p.fillHostInfo()
 	if p.hostInfo.InstanceID == "" {
 		return source.Source{}, fmt.Errorf("instance ID is unavailable")

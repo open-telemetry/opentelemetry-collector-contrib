@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package pulsarexporter
 
@@ -40,6 +29,18 @@ func Test_createDefaultConfig(t *testing.T) {
 		ConnectionTimeout:       5 * time.Second,
 		OperationTimeout:        30 * time.Second,
 	})
+}
+
+func TestWithTracesMarshalers_err(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = ""
+
+	tracesMarshaler := &customTraceMarshaler{encoding: "unknown"}
+	f := NewFactory(withTracesMarshalers(tracesMarshaler))
+	r, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	// no available broker
+	require.Error(t, err)
+	assert.Nil(t, r)
 }
 
 func TestCreateTracesExporter_err(t *testing.T) {

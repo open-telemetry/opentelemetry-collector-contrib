@@ -1,0 +1,10 @@
+type: groupbyattrs
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq, sumo]
+  warnings: []
+  codeowners:
+    active: [rnishtala-sumo]

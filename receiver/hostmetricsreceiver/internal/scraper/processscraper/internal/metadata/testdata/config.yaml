@@ -11,6 +11,8 @@ all_set:
       enabled: true
     process.disk.operations:
       enabled: true
+    process.handles:
+      enabled: true
     process.memory.usage:
       enabled: true
     process.memory.utilization:
@@ -51,6 +53,8 @@ none_set:
     process.disk.io:
       enabled: false
     process.disk.operations:
+      enabled: false
+    process.handles:
       enabled: false
     process.memory.usage:
       enabled: false

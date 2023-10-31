@@ -1,0 +1,9 @@
+type: pulsar
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics, traces, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, dao-jun]

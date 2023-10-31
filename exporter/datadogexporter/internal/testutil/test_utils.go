@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package testutil contains the test util functions
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
@@ -23,7 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/sketches-go/ddsketch"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -47,11 +36,13 @@ type DatadogServer struct {
 
 /* #nosec G101 -- This is a false positive, these are API endpoints rather than credentials */
 const (
-	ValidateAPIKeyEndpoint = "/api/v1/validate"
+	ValidateAPIKeyEndpoint = "/api/v1/validate" // nolint G101
 	MetricV1Endpoint       = "/api/v1/series"
 	MetricV2Endpoint       = "/api/v2/series"
 	SketchesMetricEndpoint = "/api/beta/sketches"
 	MetadataEndpoint       = "/intake"
+	TraceEndpoint          = "/api/v0.2/traces"
+	APMStatsEndpoint       = "/api/v0.2/stats"
 )
 
 // DatadogServerMock mocks a Datadog backend server
@@ -99,6 +90,19 @@ func (rec *HTTPRequestRecorder) HandlerFunc() (string, http.HandlerFunc) {
 	}
 }
 
+// HTTPRequestRecorderWithChan puts all incoming HTTP request bytes to the given channel.
+type HTTPRequestRecorderWithChan struct {
+	Pattern string
+	ReqChan chan []byte
+}
+
+func (rec *HTTPRequestRecorderWithChan) HandlerFunc() (string, http.HandlerFunc) {
+	return rec.Pattern, func(w http.ResponseWriter, r *http.Request) {
+		bytesBody, _ := io.ReadAll(r.Body)
+		rec.ReqChan <- bytesBody
+	}
+}
+
 // ValidateAPIKeyEndpointInvalid returns a handler function that returns an invalid API key response
 func ValidateAPIKeyEndpointInvalid() (string, http.HandlerFunc) {
 	return "/api/v1/validate", validateAPIKeyEndpointInvalid
@@ -108,7 +112,7 @@ type validateAPIKeyResponse struct {
 	Valid bool `json:"valid"`
 }
 
-func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
+func validateAPIKeyEndpoint(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: true}
 	resJSON, _ := json.Marshal(res)
 
@@ -119,7 +123,7 @@ func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func validateAPIKeyEndpointInvalid(w http.ResponseWriter, r *http.Request) {
+func validateAPIKeyEndpointInvalid(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: false}
 	resJSON, _ := json.Marshal(res)
 
@@ -134,7 +138,7 @@ type metricsResponse struct {
 	Status string `json:"status"`
 }
 
-func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
+func metricsEndpoint(w http.ResponseWriter, _ *http.Request) {
 	res := metricsResponse{Status: "ok"}
 	resJSON, _ := json.Marshal(res)
 
@@ -146,7 +150,7 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func metricsV2Endpoint(w http.ResponseWriter, r *http.Request) {
+func metricsV2Endpoint(w http.ResponseWriter, _ *http.Request) {
 	res := metricsResponse{Status: "ok"}
 	resJSON, _ := json.Marshal(res)
 
@@ -229,20 +233,20 @@ type MockSourceProvider struct {
 	Src source.Source
 }
 
-func (s *MockSourceProvider) Source(ctx context.Context) (source.Source, error) {
+func (s *MockSourceProvider) Source(_ context.Context) (source.Source, error) {
 	return s.Src, nil
 }
 
 type MockStatsProcessor struct {
-	In []pb.ClientStatsPayload
+	In []*pb.ClientStatsPayload
 }
 
-func (s *MockStatsProcessor) ProcessStats(in pb.ClientStatsPayload, lang, tracerVersion string) {
+func (s *MockStatsProcessor) ProcessStats(in *pb.ClientStatsPayload, _, _ string) {
 	s.In = append(s.In, in)
 }
 
-// StatsPayloads contains a couple of pb.ClientStatsPayloads used for testing.
-var StatsPayloads = []pb.ClientStatsPayload{
+// StatsPayloads contains a couple of *pb.ClientStatsPayloads used for testing.
+var StatsPayloads = []*pb.ClientStatsPayload{
 	{
 		Hostname:         "host",
 		Env:              "prod",
@@ -255,11 +259,11 @@ var StatsPayloads = []pb.ClientStatsPayload{
 		Service:          "mysql",
 		ContainerID:      "abcdef123456",
 		Tags:             []string{"a:b", "c:d"},
-		Stats: []pb.ClientStatsBucket{
+		Stats: []*pb.ClientStatsBucket{
 			{
 				Start:    10,
 				Duration: 1,
-				Stats: []pb.ClientGroupedStats{
+				Stats: []*pb.ClientGroupedStats{
 					{
 						Service:        "kafka",
 						Name:           "queue.add",
@@ -289,11 +293,11 @@ var StatsPayloads = []pb.ClientStatsPayload{
 		Service:          "mysql2",
 		ContainerID:      "abcdef1234562",
 		Tags:             []string{"a:b2", "c:d2"},
-		Stats: []pb.ClientStatsBucket{
+		Stats: []*pb.ClientStatsBucket{
 			{
 				Start:    102,
 				Duration: 12,
-				Stats: []pb.ClientGroupedStats{
+				Stats: []*pb.ClientGroupedStats{
 					{
 						Service:        "kafka2",
 						Name:           "queue.add2",

@@ -1,7 +1,15 @@
-name: basicauthextension
+type: basicauth
 
 status:
-  type: extension
-  stability: beta
-  pipelines: [logs, metrics, traces]
-  distributions: [contrib]
+  class: extension
+  stability:
+    beta: [extension]
+  distributions:
+  - contrib
+  - grafana
+  - observiq
+  - redhat
+  - splunk
+  - sumo
+  codeowners:
+    active: [jpkrohling, svrakitin, frzifus]

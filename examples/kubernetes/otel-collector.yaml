@@ -12,7 +12,7 @@ data:
         exclude:
           # Exclude logs from all containers named otel-collector
           - /var/log/pods/*/otel-collector/*.log
-        start_at: beginning
+        start_at: end
         include_file_path: true
         include_file_name: false
         operators:
@@ -34,7 +34,7 @@ data:
             timestamp:
               parse_from: attributes.time
               layout_type: gotime
-              layout: '2006-01-02T15:04:05.000000000-07:00'
+              layout: '2006-01-02T15:04:05.999999999Z07:00'
           # Parse CRI-Containerd format
           - type: regex_parser
             id: parser-containerd
@@ -50,14 +50,17 @@ data:
             timestamp:
               parse_from: attributes.time
               layout: '%Y-%m-%dT%H:%M:%S.%LZ'
-          - type: move
-            from: attributes.log
-            to: body
           # Extract metadata from file path
           - type: regex_parser
             id: extract_metadata_from_filepath
             regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
             parse_from: attributes["log.file.path"]
+            cache:
+              size: 128  # default maximum amount of Pods per Node is 110
+          # Update body field after finishing all parsing
+          - type: move
+            from: attributes.log
+            to: body
           # Rename attributes
           - type: move
             from: attributes.stream
@@ -92,6 +95,7 @@ data:
             - k8s.namespace.name
             - k8s.node.name
             - k8s.pod.start_time
+            - k8s.cluster.uid
           # Pod labels which can be fetched via K8sattributeprocessor
           labels:
             - tag_name: key1
@@ -109,14 +113,14 @@ data:
           - from: connection
 
     exporters:
-      logging:
-        loglevel: debug
+      debug:
+        verbosity: detailed
     service:
       pipelines:
         logs:
           receivers: [filelog]
           processors: [k8sattributes]
-          exporters: [logging]
+          exporters: [debug]
 
 ---
 apiVersion: apps/v1

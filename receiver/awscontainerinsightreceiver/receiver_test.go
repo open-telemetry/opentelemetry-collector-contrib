@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awscontainerinsightreceiver
 
@@ -28,19 +17,27 @@ import (
 )
 
 // Mock cadvisor
-type MockCadvisor struct {
+type mockCadvisor struct {
 }
 
-func (c *MockCadvisor) GetMetrics() []pmetric.Metrics {
+func (c *mockCadvisor) GetMetrics() []pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	return []pmetric.Metrics{md}
 }
 
-// Mock k8sapiserver
-type MockK8sAPIServer struct {
+func (c *mockCadvisor) Shutdown() error {
+	return nil
 }
 
-func (m *MockK8sAPIServer) GetMetrics() []pmetric.Metrics {
+// Mock k8sapiserver
+type mockK8sAPIServer struct {
+}
+
+func (m *mockK8sAPIServer) Shutdown() error {
+	return nil
+}
+
+func (m *mockK8sAPIServer) GetMetrics() []pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	return []pmetric.Metrics{md}
 }
@@ -92,8 +89,8 @@ func TestCollectData(t *testing.T) {
 	r := metricsReceiver.(*awsContainerInsightReceiver)
 	_ = r.Start(context.Background(), nil)
 	ctx := context.Background()
-	r.k8sapiserver = &MockK8sAPIServer{}
-	r.cadvisor = &MockCadvisor{}
+	r.k8sapiserver = &mockK8sAPIServer{}
+	r.cadvisor = &mockCadvisor{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 
@@ -117,8 +114,8 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
 	_ = r.Start(context.Background(), nil)
-	r.cadvisor = &MockCadvisor{}
-	r.k8sapiserver = &MockK8sAPIServer{}
+	r.cadvisor = &mockCadvisor{}
+	r.k8sapiserver = &mockK8sAPIServer{}
 	ctx := context.Background()
 
 	err = r.collectData(ctx)
@@ -141,7 +138,7 @@ func TestCollectDataWithECS(t *testing.T) {
 	_ = r.Start(context.Background(), nil)
 	ctx := context.Background()
 
-	r.cadvisor = &MockCadvisor{}
+	r.cadvisor = &mockCadvisor{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 

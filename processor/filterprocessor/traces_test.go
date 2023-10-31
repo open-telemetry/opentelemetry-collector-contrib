@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterprocessor
 
@@ -188,11 +177,11 @@ func generateTraces(traces []testTrace) ptrace.Traces {
 }
 
 var (
-	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestSpanStartTimestamp = pcommon.NewTimestampFromTime(TestSpanStartTime)
+	testSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
+	testSpanStartTimestamp = pcommon.NewTimestampFromTime(testSpanStartTime)
 
-	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestSpanEndTimestamp = pcommon.NewTimestampFromTime(TestSpanEndTime)
+	testSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
+	testSpanEndTimestamp = pcommon.NewTimestampFromTime(testSpanEndTime)
 
 	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
@@ -228,7 +217,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			name: "drop everything by dropping all spans",
 			conditions: TraceFilters{
 				SpanConditions: []string{
-					`IsMatch(name, "operation.*") == true`,
+					`IsMatch(name, "operation.*")`,
 				},
 			},
 			filterEverything: true,
@@ -312,8 +301,8 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(spanID2)
 	span.SetTraceID(traceID)
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.SetStartTimestamp(testSpanStartTimestamp)
+	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	span.SetDroppedLinksCount(1)
 	span.SetDroppedEventsCount(1)
@@ -330,8 +319,8 @@ func fillSpanOne(span ptrace.Span) {
 
 func fillSpanTwo(span ptrace.Span) {
 	span.SetName("operationB")
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.SetStartTimestamp(testSpanStartTimestamp)
+	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.Attributes().PutStr("http.method", "get")
 	span.Attributes().PutStr("http.path", "/health")
 	span.Attributes().PutStr("http.url", "http://localhost/health")

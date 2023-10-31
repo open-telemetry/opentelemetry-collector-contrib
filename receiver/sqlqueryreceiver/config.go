@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 
@@ -22,13 +11,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Driver                                  string  `mapstructure:"driver"`
-	DataSource                              string  `mapstructure:"datasource"`
-	Queries                                 []Query `mapstructure:"queries"`
+	Driver                                  string        `mapstructure:"driver"`
+	DataSource                              string        `mapstructure:"datasource"`
+	Queries                                 []Query       `mapstructure:"queries"`
+	StorageID                               *component.ID `mapstructure:"storage"`
 }
 
 func (c Config) Validate() error {
@@ -50,8 +42,11 @@ func (c Config) Validate() error {
 }
 
 type Query struct {
-	SQL     string      `mapstructure:"sql"`
-	Metrics []MetricCfg `mapstructure:"metrics"`
+	SQL                string      `mapstructure:"sql"`
+	Metrics            []MetricCfg `mapstructure:"metrics"`
+	Logs               []LogsCfg   `mapstructure:"logs"`
+	TrackingColumn     string      `mapstructure:"tracking_column"`
+	TrackingStartValue string      `mapstructure:"tracking_start_value"`
 }
 
 func (q Query) Validate() error {
@@ -59,13 +54,30 @@ func (q Query) Validate() error {
 	if q.SQL == "" {
 		errs = multierr.Append(errs, errors.New("'query.sql' cannot be empty"))
 	}
-	if len(q.Metrics) == 0 {
-		errs = multierr.Append(errs, errors.New("'query.metrics' cannot be empty"))
+	if len(q.Logs) == 0 && len(q.Metrics) == 0 {
+		errs = multierr.Append(errs, errors.New("at least one of 'query.logs' and 'query.metrics' must not be empty"))
+	}
+	for _, logs := range q.Logs {
+		if err := logs.Validate(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 	for _, metric := range q.Metrics {
 		if err := metric.Validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
+	}
+	return errs
+}
+
+type LogsCfg struct {
+	BodyColumn string `mapstructure:"body_column"`
+}
+
+func (config LogsCfg) Validate() error {
+	var errs error
+	if config.BodyColumn == "" {
+		errs = multierr.Append(errs, errors.New("'body_column' must not be empty"))
 	}
 	return errs
 }
@@ -81,6 +93,8 @@ type MetricCfg struct {
 	Unit             string            `mapstructure:"unit"`
 	Description      string            `mapstructure:"description"`
 	StaticAttributes map[string]string `mapstructure:"static_attributes"`
+	StartTsColumn    string            `mapstructure:"start_ts_column"`
+	TsColumn         string            `mapstructure:"ts_column"`
 }
 
 func (c MetricCfg) Validate() error {
@@ -158,9 +172,9 @@ func (a MetricAggregation) Validate() error {
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 10 * time.Second
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
+		ScraperControllerSettings: cfg,
 	}
 }

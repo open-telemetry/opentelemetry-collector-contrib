@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package pmetrictest
 
@@ -23,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestCompareMetrics(t *testing.T) {
@@ -316,9 +305,40 @@ func TestCompareMetrics(t *testing.T) {
 			),
 		},
 		{
+			name: "match-one-attribute-value",
+			compareOptions: []CompareMetricsOption{
+				MatchMetricAttributeValue("hostname", "also", "gauge.one", "sum.one"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value A hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value B hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value A hostname:random]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value B hostname:random]`),
+				errors.New(`resource "map[]": scope "": metric "sum.one": missing expected datapoint: map[hostname:also unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "sum.one": unexpected datapoint: map[hostname:also random]`),
+			),
+			withOptions: multierr.Combine(
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value A hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value B hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value A hostname:random]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value B hostname:random]`),
+			),
+		},
+		{
 			name: "ignore-one-resource-attribute",
 			compareOptions: []CompareMetricsOption{
 				IgnoreResourceAttributeValue("node_id"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("missing expected resource: map[node_id:a-different-random-id]"),
+				errors.New("unexpected resource: map[node_id:a-random-id]"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "match-one-resource-attribute",
+			compareOptions: []CompareMetricsOption{
+				MatchResourceAttributeValue("node_id", "random"),
 			},
 			withoutOptions: multierr.Combine(
 				errors.New("missing expected resource: map[node_id:a-different-random-id]"),
@@ -427,10 +447,10 @@ func TestCompareMetrics(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := filepath.Join("testdata", tc.name)
 
-			expected, err := golden.ReadMetrics(filepath.Join(dir, "expected.json"))
+			expected, err := golden.ReadMetrics(filepath.Join(dir, "expected.yaml"))
 			require.NoError(t, err)
 
-			actual, err := golden.ReadMetrics(filepath.Join(dir, "actual.json"))
+			actual, err := golden.ReadMetrics(filepath.Join(dir, "actual.yaml"))
 			require.NoError(t, err)
 
 			err = CompareMetrics(expected, actual)

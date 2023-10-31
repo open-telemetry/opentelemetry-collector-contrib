@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logzioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 
@@ -31,7 +20,7 @@ type hclog2ZapLogger struct {
 	name string
 }
 
-func (l *hclog2ZapLogger) Log(level hclog.Level, msg string, args ...interface{}) {}
+func (l *hclog2ZapLogger) Log(_ hclog.Level, _ string, _ ...interface{}) {}
 
 func (l *hclog2ZapLogger) ImpliedArgs() []interface{} {
 	return nil
@@ -41,12 +30,12 @@ func (l *hclog2ZapLogger) Name() string {
 	return l.name
 }
 
-func (l *hclog2ZapLogger) StandardWriter(opts *hclog.StandardLoggerOptions) io.Writer {
+func (l *hclog2ZapLogger) StandardWriter(_ *hclog.StandardLoggerOptions) io.Writer {
 	return nil
 }
 
 // Trace implementation.
-func (l *hclog2ZapLogger) Trace(msg string, args ...interface{}) {}
+func (l *hclog2ZapLogger) Trace(_ string, _ ...interface{}) {}
 
 // Debug implementation.
 func (l *hclog2ZapLogger) Debug(msg string, args ...interface{}) {
@@ -94,13 +83,13 @@ func (l *hclog2ZapLogger) Named(name string) hclog.Logger {
 }
 
 // ResetNamed implementation.
-func (l *hclog2ZapLogger) ResetNamed(name string) hclog.Logger {
+func (l *hclog2ZapLogger) ResetNamed(_ string) hclog.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
 	return &hclog2ZapLogger{}
 }
 
 // SetLevel implementation.
-func (l *hclog2ZapLogger) SetLevel(level hclog.Level) {
+func (l *hclog2ZapLogger) SetLevel(_ hclog.Level) {
 	// no need to implement that as go-plugin doesn't use this method.
 }
 
@@ -111,7 +100,7 @@ func (l *hclog2ZapLogger) GetLevel() hclog.Level {
 }
 
 // StandardLogger implementation.
-func (l *hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
+func (l *hclog2ZapLogger) StandardLogger(_ *hclog.StandardLoggerOptions) *log.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
 	return log.New(io.Discard, "", 0)
 }

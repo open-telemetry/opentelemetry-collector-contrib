@@ -1,0 +1,13 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: number of bytes committed to memory
+            name: bytes.committed
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 1.94461696e+10
+                  timeUnixNano: "1646862225775600200"
+            unit: By
+        scope: {}

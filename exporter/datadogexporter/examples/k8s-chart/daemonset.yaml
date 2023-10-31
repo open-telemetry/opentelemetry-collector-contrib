@@ -22,7 +22,7 @@ spec:
           command:
             - "/otelcol-contrib"
             - "--config=/conf/otel-agent-config.yaml"
-          image: otel/opentelemetry-collector-contrib:0.61.0
+          image: otel/opentelemetry-collector-contrib:0.77.0
           resources:
             limits:
               cpu: 1
@@ -30,14 +30,6 @@ spec:
             requests:
               cpu: 200m
               memory: 400Mi
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            # The k8s.pod.ip is used to associate pods for k8sattributes
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "k8s.pod.ip=$(POD_IP)"
           ports:
             - containerPort: 4318 # default port for OpenTelemetry HTTP receiver.
               hostPort: 4318
@@ -53,6 +45,16 @@ spec:
             - name: varlibdockercontainers
               mountPath: /var/lib/docker/containers
               readOnly: true
+          env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          # The k8s.pod.ip is used to associate pods with k8sattributes.
+          # It is useful to have in the Collector pod because receiver metrics can also
+          # benefit from the tags.
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: "k8s.pod.ip=$(POD_IP)"
       volumes:
         - name: otlpgen
           hostPath:

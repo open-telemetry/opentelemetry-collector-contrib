@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 
@@ -56,13 +45,16 @@ func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error
 	d := &dockerObserver{
 		logger: logger, config: config,
 		once: &sync.Once{},
+		cancel: func() {
+			// Safe value provided on initialisation
+		},
 	}
 	d.EndpointsWatcher = observer.NewEndpointsWatcher(d, time.Second, logger)
 	return d, nil
 }
 
 // Start will instantiate required components needed by the Docker observer
-func (d *dockerObserver) Start(ctx context.Context, host component.Host) error {
+func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 	dCtx, cancel := context.WithCancel(context.Background())
 	d.cancel = cancel
 	d.ctx = dCtx
@@ -111,7 +103,7 @@ func (d *dockerObserver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (d *dockerObserver) Shutdown(ctx context.Context) error {
+func (d *dockerObserver) Shutdown(_ context.Context) error {
 	d.cancel()
 	return nil
 }
@@ -127,17 +119,16 @@ func (d *dockerObserver) ListEndpoints() []observer.Endpoint {
 // containerEndpoints generates a list of observer.Endpoint given a Docker ContainerJSON.
 // This function will only generate endpoints if a container is in the Running state and not Paused.
 func (d *dockerObserver) containerEndpoints(c *dtypes.ContainerJSON) []observer.Endpoint {
-	var endpoints []observer.Endpoint
 
 	if !c.State.Running || c.State.Running && c.State.Paused {
-		return endpoints
+		return nil
 	}
 
 	knownPorts := map[nat.Port]bool{}
 	for k := range c.Config.ExposedPorts {
 		knownPorts[k] = true
 	}
-
+	endpoints := make([]observer.Endpoint, 0, len(knownPorts))
 	// iterate over exposed ports and try to create endpoints
 	for portObj := range knownPorts {
 		endpoint := d.endpointForPort(portObj, c)

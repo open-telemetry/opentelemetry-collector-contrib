@@ -9,7 +9,6 @@ all_set:
       enabled: true
     nginx.requests:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     nginx.connections_accepted:
@@ -20,4 +19,3 @@ none_set:
       enabled: false
     nginx.requests:
       enabled: false
-  resource_attributes:

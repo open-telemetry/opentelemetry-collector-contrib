@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 
@@ -18,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // PlaintextConfig holds the configuration for the plaintext parser.
@@ -55,6 +44,7 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 	}
 
 	parsedPath.MetricName = parts[0]
+	parsedPath.Attributes = pcommon.NewMap()
 	if len(parts) == 1 {
 		// No tags, no more work here.
 		return nil
@@ -66,8 +56,6 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 	}
 
 	tags := strings.Split(parts[1], ";")
-	keys := make([]*metricspb.LabelKey, 0, len(tags))
-	values := make([]*metricspb.LabelValue, 0, len(tags))
 	for _, tag := range tags {
 		idx := strings.IndexByte(tag, '=')
 		if idx < 1 {
@@ -75,17 +63,10 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 		}
 
 		key := tag[:idx]
-		keys = append(keys, &metricspb.LabelKey{Key: key})
-
 		value := tag[idx+1:] // If value is empty, ie.: tag == "k=", this will return "".
-		values = append(values, &metricspb.LabelValue{
-			Value:    value,
-			HasValue: true,
-		})
+		parsedPath.Attributes.PutStr(key, value)
 	}
 
-	parsedPath.LabelKeys = keys
-	parsedPath.LabelValues = values
 	return nil
 }
 

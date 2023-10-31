@@ -1,24 +1,15 @@
-// Copyright 2022 The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
@@ -49,6 +40,9 @@ type Config struct {
 
 	// Env represents the respective environment value valid to scrape
 	Env string `mapstructure:"env"`
+
+	// ArrayName represents the display name that is appended to the received metrics, as the `host` label if not provided by OpenMetrics output, and to the `fa_array_name` label always.
+	ArrayName string `mapstructure:"fa_array_name"`
 }
 
 type Settings struct {
@@ -64,6 +58,26 @@ type ReloadIntervals struct {
 }
 
 func (c *Config) Validate() error {
-	// TODO(dgoscn): perform config validation
-	return nil
+	var errs error
+
+	if c.ArrayName == "" {
+		errs = multierr.Append(errs, errors.New("the array's pretty name as 'fa_array_name' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Array == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'array' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Hosts == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'hosts' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Directories == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'directories' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Pods == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'pods' must be provided"))
+	}
+	if c.Settings.ReloadIntervals.Volumes == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'volumes' must be provided"))
+	}
+
+	return errs
 }

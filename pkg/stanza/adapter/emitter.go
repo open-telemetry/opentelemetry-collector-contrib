@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
@@ -44,9 +33,37 @@ var (
 	defaultMaxBatchSize  uint = 100
 )
 
+type emitterOption interface {
+	apply(*LogEmitter)
+}
+
+func withMaxBatchSize(maxBatchSize uint) emitterOption {
+	return maxBatchSizeOption{maxBatchSize}
+}
+
+type maxBatchSizeOption struct {
+	maxBatchSize uint
+}
+
+func (o maxBatchSizeOption) apply(e *LogEmitter) {
+	e.maxBatchSize = o.maxBatchSize
+}
+
+func withFlushInterval(flushInterval time.Duration) emitterOption {
+	return flushIntervalOption{flushInterval}
+}
+
+type flushIntervalOption struct {
+	flushInterval time.Duration
+}
+
+func (o flushIntervalOption) apply(e *LogEmitter) {
+	e.flushInterval = o.flushInterval
+}
+
 // NewLogEmitter creates a new receiver output
-func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
-	return &LogEmitter{
+func NewLogEmitter(logger *zap.SugaredLogger, opts ...emitterOption) *LogEmitter {
+	e := &LogEmitter{
 		OutputOperator: helper.OutputOperator{
 			BasicOperator: helper.BasicOperator{
 				OperatorID:    "log_emitter",
@@ -60,6 +77,10 @@ func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
 		flushInterval: defaultFlushInterval,
 		cancel:        func() {},
 	}
+	for _, opt := range opts {
+		opt.apply(e)
+	}
+	return e
 }
 
 // Start starts the goroutine(s) required for this operator

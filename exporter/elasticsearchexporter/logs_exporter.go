@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 // Package elasticsearchexporter contains an opentelemetry-collector exporter
 // for Elasticsearch.
@@ -18,19 +7,20 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
 type elasticsearchLogsExporter struct {
 	logger *zap.Logger
 
-	index       string
-	maxAttempts int
+	index        string
+	dynamicIndex bool
+	maxAttempts  int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -61,8 +51,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
-	// TODO: Apply encoding and field mapping settings.
-	model := &encodeModel{dedup: true, dedot: false}
+	model := &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
 
 	indexStr := cfg.LogsIndex
 	if cfg.Index != "" {
@@ -72,9 +61,11 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		logger:      logger,
 		client:      client,
 		bulkIndexer: bulkIndexer,
-		index:       indexStr,
-		maxAttempts: maxAttempts,
-		model:       model,
+
+		index:        indexStr,
+		dynamicIndex: cfg.LogsDynamicIndex.Enabled,
+		maxAttempts:  maxAttempts,
+		model:        model,
 	}
 	return esLogsExp, nil
 }
@@ -92,9 +83,10 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 		resource := rl.Resource()
 		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
+			scope := ills.At(j).Scope()
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, resource, logs.At(k)); err != nil {
+				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -105,13 +97,21 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 		}
 	}
 
-	return multierr.Combine(errs...)
+	return errors.Join(errs...)
 }
 
-func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord) error {
-	document, err := e.model.encodeLog(resource, record)
+func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
+	fIndex := e.index
+	if e.dynamicIndex {
+		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, record)
+		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, record)
+
+		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
+	document, err := e.model.encodeLog(resource, record, scope)
 	if err != nil {
 		return fmt.Errorf("Failed to encode log event: %w", err)
 	}
-	return pushDocuments(ctx, e.logger, e.index, document, e.bulkIndexer, e.maxAttempts)
+	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts)
 }

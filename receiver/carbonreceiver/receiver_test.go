@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package carbonreceiver
 
@@ -29,11 +18,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
 )
 
@@ -182,17 +171,28 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 	tests := []struct {
 		name     string
 		configFn func() *Config
-		clientFn func(t *testing.T) *client.Graphite
+		clientFn func(t *testing.T) func(client.Metric) error
 	}{
 		{
 			name: "default_config",
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
 			},
-			clientFn: func(t *testing.T) *client.Graphite {
+			clientFn: func(t *testing.T) func(client.Metric) error {
 				c, err := client.NewGraphite(client.TCP, addr)
 				require.NoError(t, err)
-				return c
+				return c.SendMetric
+			},
+		},
+		{
+			name: "tcp_reconnect",
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+			clientFn: func(t *testing.T) func(client.Metric) error {
+				c, err := client.NewGraphite(client.TCP, addr)
+				require.NoError(t, err)
+				return c.SputterThenSendMetric
 			},
 		},
 		{
@@ -202,10 +202,10 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 				cfg.Transport = "udp"
 				return cfg
 			},
-			clientFn: func(t *testing.T) *client.Graphite {
+			clientFn: func(t *testing.T) func(client.Metric) error {
 				c, err := client.NewGraphite(client.UDP, addr)
 				require.NoError(t, err)
-				return c
+				return c.SendMetric
 			},
 		},
 	}
@@ -214,11 +214,16 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.Endpoint = addr
 			sink := new(consumertest.MetricsSink)
-			rcv, err := New(receivertest.NewNopCreateSettings(), *cfg, sink)
+			recorder := tracetest.NewSpanRecorder()
+			rt := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
+			cs := receivertest.NewNopCreateSettings()
+			cs.TracerProvider = rt
+			rcv, err := New(cs, *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
 
-			mr := transport.NewMockReporter(1)
+			mr, err := newReporter(cs)
+			require.NoError(t, err)
 			r.reporter = mr
 
 			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -235,18 +240,21 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 				Value:     1.23,
 				Timestamp: ts,
 			}
-			err = snd.SendMetric(carbonMetric)
+
+			err = snd(carbonMetric)
 			require.NoError(t, err)
 
-			mr.WaitAllOnMetricsProcessedCalls()
+			require.Eventually(t, func() bool {
+				return len(recorder.Ended()) == 1
+			}, 30*time.Second, 100*time.Millisecond)
 
 			mdd := sink.AllMetrics()
 			require.Len(t, mdd, 1)
-			_, _, metrics := internaldata.ResourceMetricsToOC(mdd[0].ResourceMetrics().At(0))
-			require.Len(t, metrics, 1)
-			assert.Equal(t, carbonMetric.Name, metrics[0].GetMetricDescriptor().GetName())
-			tss := metrics[0].GetTimeseries()
-			require.Equal(t, 1, len(tss))
+			require.Equal(t, 1, mdd[0].MetricCount())
+			m := mdd[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+			assert.Equal(t, carbonMetric.Name, m.Name())
+			require.Equal(t, 1, m.Gauge().DataPoints().Len())
+			require.Equal(t, len(recorder.Ended()), len(recorder.Started()))
 		})
 	}
 }

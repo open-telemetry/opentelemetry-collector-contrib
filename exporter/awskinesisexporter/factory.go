@@ -1,16 +1,7 @@
-// Copyright 2019 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
 
 package awskinesisexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 
@@ -22,14 +13,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "awskinesis"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
-
 	defaultEncoding    = "otlp"
 	defaultCompression = "none"
 )
@@ -37,11 +24,11 @@ const (
 // NewFactory creates a factory for Kinesis exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(NewTracesExporter, stability),
-		exporter.WithMetrics(NewMetricsExporter, stability),
-		exporter.WithLogs(NewLogsExporter, stability),
+		exporter.WithTraces(newTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(newMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(newLogsExporter, metadata.LogsStability),
 	)
 }
 
@@ -62,7 +49,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func NewTracesExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Traces, error) {
+func newTracesExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Traces, error) {
 	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
@@ -80,7 +67,7 @@ func NewTracesExporter(ctx context.Context, params exporter.CreateSettings, conf
 	)
 }
 
-func NewMetricsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Metrics, error) {
+func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Metrics, error) {
 	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
@@ -98,7 +85,7 @@ func NewMetricsExporter(ctx context.Context, params exporter.CreateSettings, con
 	)
 }
 
-func NewLogsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Logs, error) {
+func newLogsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Logs, error) {
 	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err

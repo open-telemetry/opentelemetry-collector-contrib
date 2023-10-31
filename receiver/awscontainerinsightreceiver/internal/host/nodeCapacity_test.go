@@ -1,20 +1,10 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package host
 
 import (
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -42,28 +32,20 @@ func TestNodeCapacity(t *testing.T) {
 			return nil, nil
 		}
 	}
-	setEnvOption := func(nc *nodeCapacity) {
-		nc.osSetenv = func(key, value string) error {
-			return errors.New("error")
-		}
-	}
-	nc, err = newNodeCapacity(zap.NewNop(), lstatOption, setEnvOption)
-	assert.Nil(t, nc)
-	assert.NotNil(t, err)
 
 	// can't parse cpu and mem info
-	setEnvOption = func(nc *nodeCapacity) {
+	setEnvOption := func(nc *nodeCapacity) {
 		nc.osSetenv = func(key, value string) error {
 			return nil
 		}
 	}
 	virtualMemOption := func(nc *nodeCapacity) {
-		nc.virtualMemory = func() (*mem.VirtualMemoryStat, error) {
+		nc.virtualMemory = func(ctx context.Context) (*mem.VirtualMemoryStat, error) {
 			return nil, errors.New("error")
 		}
 	}
 	cpuInfoOption := func(nc *nodeCapacity) {
-		nc.cpuInfo = func() ([]cpu.InfoStat, error) {
+		nc.cpuInfo = func(ctx context.Context) ([]cpu.InfoStat, error) {
 			return nil, errors.New("error")
 		}
 	}
@@ -75,14 +57,14 @@ func TestNodeCapacity(t *testing.T) {
 
 	// normal case where everything is working
 	virtualMemOption = func(nc *nodeCapacity) {
-		nc.virtualMemory = func() (*mem.VirtualMemoryStat, error) {
+		nc.virtualMemory = func(ctx context.Context) (*mem.VirtualMemoryStat, error) {
 			return &mem.VirtualMemoryStat{
 				Total: 1024,
 			}, nil
 		}
 	}
 	cpuInfoOption = func(nc *nodeCapacity) {
-		nc.cpuInfo = func() ([]cpu.InfoStat, error) {
+		nc.cpuInfo = func(ctx context.Context) ([]cpu.InfoStat, error) {
 			return []cpu.InfoStat{
 				{},
 				{},

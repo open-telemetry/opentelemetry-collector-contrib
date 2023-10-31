@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package uri
 
@@ -509,12 +498,12 @@ func TestBuildParserURL(t *testing.T) {
 func TestURLToMap(t *testing.T) {
 	cases := []struct {
 		name       string
-		inputBody  url.URL
+		inputBody  *url.URL
 		outputBody map[string]interface{}
 	}{
 		{
 			"absolute-uri",
-			url.URL{
+			&url.URL{
 				Scheme:   "https",
 				Host:     "google.com:8443",
 				Path:     "/app",
@@ -535,7 +524,7 @@ func TestURLToMap(t *testing.T) {
 		},
 		{
 			"absolute-uri-simple",
-			url.URL{
+			&url.URL{
 				Scheme: "http",
 				Host:   "google.com",
 			},
@@ -546,7 +535,7 @@ func TestURLToMap(t *testing.T) {
 		},
 		{
 			"path",
-			url.URL{
+			&url.URL{
 				Path:     "/app",
 				RawQuery: "stage=prod&stage=dev",
 			},
@@ -562,7 +551,7 @@ func TestURLToMap(t *testing.T) {
 		},
 		{
 			"path-simple",
-			url.URL{
+			&url.URL{
 				Path: "/app",
 			},
 			map[string]interface{}{
@@ -571,7 +560,7 @@ func TestURLToMap(t *testing.T) {
 		},
 		{
 			"query",
-			url.URL{
+			&url.URL{
 				RawQuery: "stage=prod&stage=dev",
 			},
 			map[string]interface{}{
@@ -588,7 +577,7 @@ func TestURLToMap(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			m := make(map[string]interface{})
-			require.Equal(t, tc.outputBody, urlToMap(&tc.inputBody, m))
+			require.Equal(t, tc.outputBody, urlToMap(tc.inputBody, m))
 		})
 	}
 }

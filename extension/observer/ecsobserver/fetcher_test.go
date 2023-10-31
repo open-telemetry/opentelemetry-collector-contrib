@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsobserver
 
@@ -80,15 +69,47 @@ func TestFetcher_FetchAndDecorate(t *testing.T) {
 	assert.Equal(t, "s0", aws.StringValue(tasks[0].Service.ServiceArn))
 }
 
-func TestFetcher_GetAllTasks(t *testing.T) {
-	c := ecsmock.NewCluster()
-	f := newTestTaskFetcher(t, c)
-	const nTasks = 203
-	c.SetTasks(ecsmock.GenTasks("p", nTasks, nil))
-	ctx := context.Background()
-	tasks, err := f.getAllTasks(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, nTasks, len(tasks))
+func TestFetcher_GetDiscoverableTasks(t *testing.T) {
+	t.Run("without non discoverable tasks", func(t *testing.T) {
+		c := ecsmock.NewCluster()
+		f := newTestTaskFetcher(t, c)
+		const nTasks = 203
+		c.SetTasks(ecsmock.GenTasks("p", nTasks, nil))
+		ctx := context.Background()
+		tasks, err := f.getDiscoverableTasks(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, nTasks, len(tasks))
+	})
+
+	t.Run("with non discoverable tasks", func(t *testing.T) {
+		c := ecsmock.NewCluster()
+		f := newTestTaskFetcher(t, c)
+		nTasks := 3
+
+		c.SetTaskDefinitions(ecsmock.GenTaskDefinitions("d", 1, 1, nil))
+		c.SetTasks(ecsmock.GenTasks("t", nTasks, func(i int, task *ecs.Task) {
+			task.TaskDefinitionArn = aws.String("d0:1")
+			switch i {
+			case 0:
+				task.LaunchType = aws.String(ecs.LaunchTypeEc2)
+				task.ContainerInstanceArn = nil
+			case 1:
+				task.LaunchType = aws.String(ecs.LaunchTypeFargate)
+			case 2:
+				task.LaunchType = aws.String(ecs.LaunchTypeEc2)
+				task.ContainerInstanceArn = aws.String("ci0")
+			}
+		}))
+
+		ctx := context.Background()
+		tasks, err := f.getDiscoverableTasks(ctx)
+		require.NoError(t, err)
+
+		// Expect 2 tasks, with LaunchType Fargate and EC2 with non-nil ContainerInstanceArn
+		assert.Equal(t, 2, len(tasks))
+		assert.Equal(t, ecs.LaunchTypeFargate, aws.StringValue(tasks[0].LaunchType))
+		assert.Equal(t, ecs.LaunchTypeEc2, aws.StringValue(tasks[1].LaunchType))
+	})
 }
 
 func TestFetcher_AttachTaskDefinitions(t *testing.T) {
@@ -104,7 +125,7 @@ func TestFetcher_AttachTaskDefinitions(t *testing.T) {
 	c.SetTaskDefinitions(ecsmock.GenTaskDefinitions("pdef", nTasks, 1, nil))
 
 	// no cache
-	tasks, err := f.getAllTasks(ctx)
+	tasks, err := f.getDiscoverableTasks(ctx)
 	require.NoError(t, err)
 	attached, err := f.attachTaskDefinition(ctx, tasks)
 	stats := c.Stats()
@@ -113,7 +134,7 @@ func TestFetcher_AttachTaskDefinitions(t *testing.T) {
 	assert.Equal(t, nTasks, stats.DescribeTaskDefinition.Called)
 
 	// all cached
-	tasks, err = f.getAllTasks(ctx)
+	tasks, err = f.getDiscoverableTasks(ctx)
 	require.NoError(t, err)
 	// do it again to trigger cache logic
 	attached, err = f.attachTaskDefinition(ctx, tasks)
@@ -127,7 +148,7 @@ func TestFetcher_AttachTaskDefinitions(t *testing.T) {
 		task.TaskDefinitionArn = aws.String(fmt.Sprintf("pdef%d:1", i))
 	}))
 	c.SetTaskDefinitions(ecsmock.GenTaskDefinitions("pdef", nTasks+1, 1, nil))
-	tasks, err = f.getAllTasks(ctx)
+	tasks, err = f.getDiscoverableTasks(ctx)
 	require.NoError(t, err)
 	_, err = f.attachTaskDefinition(ctx, tasks)
 	stats = c.Stats()
@@ -155,7 +176,7 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 		c.SetEc2Instances(ecsmock.GenEc2Instances("i-", nInstances, nil))
 
 		ctx := context.Background()
-		rawTasks, err := f.getAllTasks(ctx)
+		rawTasks, err := f.getDiscoverableTasks(ctx)
 		require.NoError(t, err)
 		assert.Equal(t, nTasks, len(rawTasks))
 
@@ -193,7 +214,7 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 		c.SetEc2Instances(ecsmock.GenEc2Instances("i-", nInstances, nil))
 
 		ctx := context.Background()
-		rawTasks, err := f.getAllTasks(ctx)
+		rawTasks, err := f.getDiscoverableTasks(ctx)
 		require.NoError(t, err)
 		assert.Equal(t, nTasks, len(rawTasks))
 
@@ -246,7 +267,7 @@ func TestFetcher_AttachService(t *testing.T) {
 	}))
 
 	ctx := context.Background()
-	rawTasks, err := f.getAllTasks(ctx)
+	rawTasks, err := f.getDiscoverableTasks(ctx)
 	require.NoError(t, err)
 	tasks, err := f.attachTaskDefinition(ctx, rawTasks)
 	require.NoError(t, err)

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
@@ -42,6 +31,9 @@ type Config struct {
 
 	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
+	// maximum size in bytes of time series batch sent to remote storage
+	MaxBatchSizeBytes int `mapstructure:"max_batch_size_bytes"`
+
 	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
@@ -53,6 +45,9 @@ type Config struct {
 
 	// CreatedMetric allows customizing creation of _created metrics
 	CreatedMetric *CreatedMetric `mapstructure:"export_created_metric,omitempty"`
+
+	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
+	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 }
 
 type CreatedMetric struct {
@@ -108,5 +103,13 @@ func (cfg *Config) Validate() error {
 			Enabled: false,
 		}
 	}
+	if cfg.MaxBatchSizeBytes < 0 {
+		return fmt.Errorf("max_batch_byte_size must be greater than 0")
+	}
+	if cfg.MaxBatchSizeBytes == 0 {
+		// Defaults to ~2.81MB
+		cfg.MaxBatchSizeBytes = 3000000
+	}
+
 	return nil
 }

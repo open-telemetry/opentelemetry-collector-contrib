@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
@@ -23,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 	mock "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
@@ -32,6 +21,7 @@ import (
 func TestScrape(t *testing.T) {
 	ctx := context.Background()
 	mockServer := mock.MockServer(t, false)
+	defer mockServer.Close()
 
 	cfg := &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -43,9 +33,42 @@ func TestScrape(t *testing.T) {
 	testScrape(ctx, t, cfg)
 }
 
+func TestScrapeWithPerfObjects(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, false)
+	defer mockServer.Close()
+
+	cfg := &Config{
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Endpoint:             mockServer.URL,
+		Username:             mock.MockUsername,
+		Password:             mock.MockPassword,
+	}
+
+	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
+	scraper.emitPerfWithObject = true
+
+	metrics, err := scraper.scrape(ctx)
+	require.NoError(t, err)
+	require.NotEqual(t, metrics.MetricCount(), 0)
+
+	goldenPath := filepath.Join("testdata", "metrics", "expected_with_object.yaml")
+	expectedMetrics, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics,
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	)
+	require.NoError(t, err)
+	require.NoError(t, scraper.Shutdown(ctx))
+}
+
 func TestScrape_TLS(t *testing.T) {
 	ctx := context.Background()
 	mockServer := mock.MockServer(t, true)
+	defer mockServer.Close()
 
 	cfg := &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -67,11 +90,15 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
 	require.NoError(t, err)
 	require.NotEqual(t, metrics.MetricCount(), 0)
 
-	goldenPath := filepath.Join("testdata", "metrics", "expected.json")
+	goldenPath := filepath.Join("testdata", "metrics", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics,
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	)
 	require.NoError(t, err)
 	require.NoError(t, scraper.Shutdown(ctx))
 }
@@ -95,18 +122,18 @@ func TestScrape_NoClient(t *testing.T) {
 func TestStartFailures_Metrics(t *testing.T) {
 	cases := []struct {
 		desc string
-		cfg  Config
+		cfg  *Config
 		err  error
 	}{
 		{
 			desc: "bad client connect",
-			cfg: Config{
+			cfg: &Config{
 				Endpoint: "http://no-host",
 			},
 		},
 		{
 			desc: "unparsable endpoint",
-			cfg: Config{
+			cfg: &Config{
 				Endpoint: "<protocol>://some-host",
 			},
 		},
@@ -114,7 +141,7 @@ func TestStartFailures_Metrics(t *testing.T) {
 
 	ctx := context.Background()
 	for _, tc := range cases {
-		scraper := newVmwareVcenterScraper(zap.NewNop(), &tc.cfg, receivertest.NewNopCreateSettings())
+		scraper := newVmwareVcenterScraper(zap.NewNop(), tc.cfg, receivertest.NewNopCreateSettings())
 		err := scraper.Start(ctx, nil)
 		if tc.err != nil {
 			require.ErrorContains(t, err, tc.err.Error())

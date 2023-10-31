@@ -38,3 +38,5 @@ elasticsearch/log:
     bytes: 10485760
   retry:
     max_requests: 5
+  sending_queue:
+    enabled: true

@@ -17,7 +17,7 @@ If a timestamp block is specified, the parser operator will perform the timestam
 
 ```yaml
 - type: regex_parser
-  regexp: '^Time=(?P<timestamp_field>\d{4}-\d{2}-\d{2}), Host=(?P<host>[^,]+)'
+  regex: '^Time=(?P<timestamp_field>\d{4}-\d{2}-\d{2}), Host=(?P<host>[^,]+)'
   timestamp:
     parse_from: attributes.timestamp_field
     layout_type: strptime
@@ -53,8 +53,8 @@ Since the timestamp is a part of the log's body, it needs to be extracted from t
 
 ```yaml
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 receivers:
   filelog:
     include:
@@ -72,7 +72,7 @@ service:
       receivers:
       - filelog
       exporters:
-      - logging
+      - debug
 ```
 
 Note that this configuration has a side effect of creating a `timestamp_field` attribute for each log record.
@@ -80,8 +80,8 @@ To get rid of the attribute, use the `remove` operator:
 
 ```yaml
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 receivers:
   filelog:
     include:
@@ -101,7 +101,7 @@ service:
       receivers:
       - filelog
       exporters:
-      - logging
+      - debug
 ```
 
 #### Parse timestamps from JSON logs
@@ -118,8 +118,8 @@ Use [json_parser](../operators/json_parser.md) to parse the log body into JSON a
 
 ```yaml
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 receivers:
   filelog:
     include:
@@ -137,7 +137,7 @@ service:
       receivers:
       - filelog
       exporters:
-      - logging
+      - debug
 ```
 
 The above example uses a standalone [time_parser](../operators/time_parser.md) operator to parse the timestamp,
@@ -145,7 +145,7 @@ but you could also use a `timestamp` block inside the `json_parser`.
 
 #### Parse a timestamp using a `strptime` layout
 
-The default `layout_type` is `strptime`, which uses "directives" such as `%Y` (4-digit year) and `%H` (2-digit hour). A full list of supported directives is found [here](https://github.com/observiq/ctimefmt/blob/3e07deba22cf7a753f197ef33892023052f26614/ctimefmt.go#L63).
+The default `layout_type` is `strptime`, which uses "directives" such as `%Y` (4-digit year) and `%H` (2-digit hour). A full list of supported directives is found [here](../../../../internal/coreinternal/timeutils/internal/ctimefmt/ctimefmt.go#L68).
 
 Configuration:
 ```yaml

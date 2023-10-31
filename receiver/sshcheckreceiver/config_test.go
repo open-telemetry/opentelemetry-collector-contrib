@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
@@ -19,9 +8,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/metadata"
 )
 
 // check that OTel Collector patterns are implemented
@@ -47,6 +38,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Endpoint: "goodhost:2222",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(errMissingPasswordAndKeyFile),
 		},
@@ -57,6 +49,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "goodhost:2222",
 					KeyFile:  "/home/.ssh/id_rsa",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -70,6 +63,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Password: "otelp",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				errInvalidEndpoint,
@@ -83,6 +77,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Password: "otelp",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: error(nil),
 		},
@@ -94,6 +89,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					KeyFile:  "/possibly/a_path",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: error(nil),
 		},

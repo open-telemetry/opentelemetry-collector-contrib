@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxreceiver
 
@@ -355,6 +344,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
+			defer resp.Body.Close()
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -532,6 +522,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
@@ -611,6 +602,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	resp, err := client.Do(req)
 	require.NoErrorf(t, err, "should not have failed when sending to signalFx receiver %v", err)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	t.Log("SignalFx Request Received")
 
@@ -675,6 +667,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
@@ -753,6 +746,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
@@ -818,7 +812,7 @@ type badReqBody struct{}
 
 var _ io.ReadCloser = (*badReqBody)(nil)
 
-func (b badReqBody) Read(p []byte) (n int, err error) {
+func (b badReqBody) Read(_ []byte) (n int, err error) {
 	return 0, errors.New("badReqBody: can't read it")
 }
 

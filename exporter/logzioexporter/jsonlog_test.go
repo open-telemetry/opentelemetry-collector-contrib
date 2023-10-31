@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logzioexporter
 
@@ -33,12 +22,12 @@ import (
 )
 
 // Logs
-func GenerateLogRecordWithNestedBody() plog.LogRecord {
+func generateLogRecordWithNestedBody() plog.LogRecord {
 	lr := plog.NewLogRecord()
 	fillLogOne(lr)
 	return lr
 }
-func GenerateLogRecordWithMultiTypeValues() plog.LogRecord {
+func generateLogRecordWithMultiTypeValues() plog.LogRecord {
 	lr := plog.NewLogRecord()
 	fillLogTwo(lr)
 	return lr
@@ -52,7 +41,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 	}
 
 	var convertLogRecordToJSONTests = []convertLogRecordToJSONTest{
-		{GenerateLogRecordWithNestedBody(),
+		{generateLogRecordWithNestedBody(),
 			pcommon.NewResource(),
 			map[string]interface{}{
 				"23":           float64(45),
@@ -67,7 +56,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"traceID":      "08040201000000000000000000000000",
 			},
 		},
-		{GenerateLogRecordWithMultiTypeValues(),
+		{generateLogRecordWithMultiTypeValues(),
 			pcommon.NewResource(),
 			map[string]interface{}{
 				"bool":       true,

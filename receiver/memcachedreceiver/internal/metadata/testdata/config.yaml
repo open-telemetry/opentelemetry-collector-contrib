@@ -23,7 +23,6 @@ all_set:
       enabled: true
     memcached.threads:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     memcached.bytes:
@@ -48,4 +47,3 @@ none_set:
       enabled: false
     memcached.threads:
       enabled: false
-  resource_attributes:

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 
@@ -63,14 +52,7 @@ func NewCount(name string, ts uint64, value float64, tags []string) datadogV2.Me
 }
 
 // DefaultMetrics creates built-in metrics to report that an exporter is running
-func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buildInfo component.BuildInfo) []datadogV2.MetricSeries {
-	var tags []string
-	if buildInfo.Version != "" {
-		tags = append(tags, "version:"+buildInfo.Version)
-	}
-	if buildInfo.Command != "" {
-		tags = append(tags, "command:"+buildInfo.Command)
-	}
+func DefaultMetrics(exporterType string, hostname string, timestamp uint64, tags []string) []datadogV2.MetricSeries {
 	metrics := []datadogV2.MetricSeries{
 		NewGauge(fmt.Sprintf("otel.datadog_exporter.%s.running", exporterType), timestamp, 1.0, tags),
 	}
@@ -83,4 +65,16 @@ func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buil
 		})
 	}
 	return metrics
+}
+
+// TagsFromBuildInfo returns a list of tags derived from buildInfo to be used when creating metrics
+func TagsFromBuildInfo(buildInfo component.BuildInfo) []string {
+	var tags []string
+	if buildInfo.Version != "" {
+		tags = append(tags, "version:"+buildInfo.Version)
+	}
+	if buildInfo.Command != "" {
+		tags = append(tags, "command:"+buildInfo.Command)
+	}
+	return tags
 }

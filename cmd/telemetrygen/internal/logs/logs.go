@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logs
 
@@ -51,7 +40,7 @@ func (e *gRPCClientExporter) export(logs plog.Logs) error {
 
 // Start starts the log telemetry generator
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
@@ -65,7 +54,7 @@ func Start(cfg *Config) error {
 	}
 
 	// only support grpc in insecure mode
-	clientConn, err := grpc.DialContext(context.TODO(), cfg.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	clientConn, err := grpc.DialContext(context.TODO(), cfg.Endpoint(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
@@ -108,6 +97,7 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 		w := worker{
 			numLogs:        c.NumLogs,
 			limitPerSecond: limit,
+			body:           c.Body,
 			totalDuration:  c.TotalDuration,
 			running:        running,
 			wg:             &wg,
@@ -115,7 +105,7 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 			index:          i,
 		}
 
-		go w.simulateLogs(res, exp)
+		go w.simulateLogs(res, exp, c.GetTelemetryAttributes())
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)

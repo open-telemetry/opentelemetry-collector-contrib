@@ -1,0 +1,78 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: openshift.clusterquota.name
+          value:
+            stringValue: test-clusterquota-1
+        - key: openshift.clusterquota.uid
+          value:
+            stringValue: test-clusterquota-1-uid
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The configured upper limit for a particular resource.
+            gauge:
+              dataPoints:
+                - asInt: "10000"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: requests.cpu
+            name: openshift.clusterquota.limit
+            unit: "{resource}"
+          - description: The usage for a particular resource with a configured limit.
+            gauge:
+              dataPoints:
+                - asInt: "6000"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: requests.cpu
+            name: openshift.clusterquota.used
+            unit: "{resource}"
+          - description: The upper limit for a particular resource in a specific namespace.
+            gauge:
+              dataPoints:
+                - asInt: "6000"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: requests.cpu
+                    - key: k8s.namespace.name
+                      value:
+                        stringValue: "ns1"
+                - asInt: "4000"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: requests.cpu
+                    - key: k8s.namespace.name
+                      value:
+                        stringValue: "ns2"
+            name: openshift.appliedclusterquota.limit
+            unit: "{resource}"
+          - description: The usage for a particular resource in a specific namespace.
+            gauge:
+              dataPoints:
+                - asInt: "1000"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: requests.cpu
+                    - key: k8s.namespace.name
+                      value:
+                        stringValue: "ns1"
+                - asInt: "5000"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: requests.cpu
+                    - key:
+                        k8s.namespace.name
+                      value:
+                        stringValue: "ns2"
+            name: openshift.appliedclusterquota.used
+            unit: "{resource}"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

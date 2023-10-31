@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
 // +build windows
@@ -35,16 +24,20 @@ func (p *Publisher) Open(provider string) error {
 
 	utf16, err := syscall.UTF16PtrFromString(provider)
 	if err != nil {
-		return fmt.Errorf("failed to convert provider to utf16: %w", err)
+		return fmt.Errorf("failed to convert the provider name %q to utf16: %w", provider, err)
 	}
 
 	handle, err := evtOpenPublisherMetadata(0, utf16, nil, 0, 0)
 	if err != nil {
-		return fmt.Errorf("failed to open publisher handle: %w", err)
+		return fmt.Errorf("failed to open the metadata for the %q provider: %w", provider, err)
 	}
 
 	p.handle = handle
 	return nil
+}
+
+func (p *Publisher) Valid() bool {
+	return p.handle != 0
 }
 
 // Close will close the publisher handle.

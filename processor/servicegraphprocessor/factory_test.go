@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package servicegraphprocessor
 
@@ -33,17 +22,17 @@ func TestNewProcessor(t *testing.T) {
 	}{
 		{
 			name:                            "simplest config (use defaults)",
-			expectedLatencyHistogramBuckets: defaultLatencyHistogramBucketsMs,
+			expectedLatencyHistogramBuckets: defaultLatencyHistogramBuckets,
 		},
 		{
 			name:                            "latency histogram configured with catch-all bucket to check no additional catch-all bucket inserted",
 			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
-			expectedLatencyHistogramBuckets: []float64{2},
+			expectedLatencyHistogramBuckets: []float64{0.002},
 		},
 		{
 			name:                            "full config with no catch-all bucket and check the catch-all bucket is inserted",
 			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
-			expectedLatencyHistogramBuckets: []float64{2},
+			expectedLatencyHistogramBuckets: []float64{0.002},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -75,22 +64,22 @@ func TestNewConnector(t *testing.T) {
 	}{
 		{
 			name:                            "simplest config (use defaults)",
-			expectedLatencyHistogramBuckets: defaultLatencyHistogramBucketsMs,
+			expectedLatencyHistogramBuckets: defaultLatencyHistogramBuckets,
 		},
 		{
 			name:                            "latency histogram configured with catch-all bucket to check no additional catch-all bucket inserted",
 			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
-			expectedLatencyHistogramBuckets: []float64{2},
+			expectedLatencyHistogramBuckets: []float64{0.002},
 		},
 		{
 			name:                            "full config with no catch-all bucket and check the catch-all bucket is inserted",
 			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
-			expectedLatencyHistogramBuckets: []float64{2},
+			expectedLatencyHistogramBuckets: []float64{0.002},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			factory := NewConnectorFactory()
+			factory := newConnectorFactory()
 
 			creationParams := connectortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)

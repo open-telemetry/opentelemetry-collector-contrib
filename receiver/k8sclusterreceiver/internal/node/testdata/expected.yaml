@@ -1,0 +1,87 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.node.name
+          value:
+            stringValue: test-node-1
+        - key: k8s.node.uid
+          value:
+            stringValue: test-node-1-uid
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Amount of cpu allocatable on the node
+            gauge:
+              dataPoints:
+                - asDouble: 0.123
+            name: k8s.node.allocatable_cpu
+            unit: '{cpu}'
+          - description: Amount of ephemeral-storage allocatable on the node
+            gauge:
+              dataPoints:
+                - asInt: "1234"
+            name: k8s.node.allocatable_ephemeral_storage
+            unit: By
+          - description: Amount of memory allocatable on the node
+            gauge:
+              dataPoints:
+                - asInt: "456"
+            name: k8s.node.allocatable_memory
+            unit: By
+          - description: Amount of pods allocatable on the node
+            gauge:
+              dataPoints:
+                - asInt: "12"
+            name: k8s.node.allocatable_pods
+            unit: "{pod}"
+          - description: DiskPressure condition status of the node (true=1, false=0, unknown=-1)
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.node.condition_disk_pressure
+            unit: ""
+          - description: MemoryPressure condition status of the node (true=1, false=0, unknown=-1)
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.node.condition_memory_pressure
+            unit: ""
+          - description: NetworkUnavailable condition status of the node (true=1, false=0, unknown=-1)
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.node.condition_network_unavailable
+            unit: ""
+          - description: PIDPressure condition status of the node (true=1, false=0, unknown=-1)
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.node.condition_pid_pressure
+            unit: ""
+          - description: Ready condition status of the node (true=1, false=0, unknown=-1)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+            name: k8s.node.condition_ready
+            unit: ""
+          - description: OutOfDisk condition status of the node (true=1, false=0, unknown=-1)
+            gauge:
+              dataPoints:
+                - asInt: "-1"
+            name: k8s.node.condition_out_of_disk
+            unit: ""
+          - description: Amount of hugepages-1Gi allocatable on the node
+            gauge:
+              dataPoints:
+                - asInt: "2"
+            name: k8s.node.allocatable_hugepages_1_gi
+            unit: "{hugepages-1Gi}"
+          - description: Amount of hugepages-2Mi allocatable on the node
+            gauge:
+              dataPoints:
+                - asInt: "2048"
+            name: k8s.node.allocatable_hugepages_2_mi
+            unit: "{hugepages-2Mi}"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

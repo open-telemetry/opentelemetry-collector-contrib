@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -35,16 +24,15 @@ type MetricData interface {
 	HasMetricInputType() bool
 }
 
-// Aggregated defines a metric aggregation type.
-// TODO: Rename to AggregationTemporality
-type Aggregated struct {
+// AggregationTemporality defines a metric aggregation type.
+type AggregationTemporality struct {
 	// Aggregation describes if the aggregator reports delta changes
 	// since last report time, or cumulative changes since a fixed start time.
 	Aggregation pmetric.AggregationTemporality
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
-func (agg *Aggregated) UnmarshalText(text []byte) error {
+func (agg *AggregationTemporality) UnmarshalText(text []byte) error {
 	switch vtStr := string(text); vtStr {
 	case "cumulative":
 		agg.Aggregation = pmetric.AggregationTemporalityCumulative
@@ -57,7 +45,7 @@ func (agg *Aggregated) UnmarshalText(text []byte) error {
 }
 
 // String returns string representation of the aggregation temporality.
-func (agg *Aggregated) String() string {
+func (agg *AggregationTemporality) String() string {
 	return agg.Aggregation.String()
 }
 
@@ -71,13 +59,6 @@ type Mono struct {
 type MetricInputType struct {
 	// InputType is the type the metric needs to be parsed from, options are "string"
 	InputType string `mapstructure:"input_type"`
-}
-
-func (mit MetricInputType) Validate() error {
-	if mit.InputType != "" && mit.InputType != "string" {
-		return fmt.Errorf("invalid `input_type` value \"%v\", must be \"\" or \"string\"", mit.InputType)
-	}
-	return nil
 }
 
 func (mit MetricInputType) HasMetricInputType() bool {
@@ -127,6 +108,8 @@ func (mvt MetricValueType) BasicType() string {
 		return "int64"
 	case pmetric.NumberDataPointValueTypeDouble:
 		return "float64"
+	case pmetric.NumberDataPointValueTypeEmpty:
+		return ""
 	default:
 		return ""
 	}
@@ -158,19 +141,33 @@ func (d gauge) HasAggregated() bool {
 }
 
 type sum struct {
-	Aggregated      `mapstructure:"aggregation"`
-	Mono            `mapstructure:",squash"`
-	MetricValueType `mapstructure:"value_type"`
-	MetricInputType `mapstructure:",squash"`
+	AggregationTemporality `mapstructure:"aggregation_temporality"`
+	Mono                   `mapstructure:",squash"`
+	MetricValueType        `mapstructure:"value_type"`
+	MetricInputType        `mapstructure:",squash"`
 }
 
 // Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
 func (d *sum) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("aggregation_temporality") {
+		return errors.New("missing required field: `aggregation_temporality`")
+	}
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
 	return parser.Unmarshal(d, confmap.WithErrorUnused())
 }
+
+// TODO: Currently, this func will not be called because of https://github.com/open-telemetry/opentelemetry-collector/issues/6671. Uncomment function and
+// add a test case to Test_loadMetadata for file no_monotonic.yaml once the issue is solved.
+//
+// Unmarshal is a custom unmarshaler for Mono.
+// func (m *Mono) Unmarshal(parser *confmap.Conf) error {
+// 	if !parser.IsSet("monotonic") {
+// 		return errors.New("missing required field: `monotonic`")
+// 	}
+// 	return parser.Unmarshal(m, confmap.WithErrorUnused())
+// }
 
 func (d sum) Type() string {
 	return "Sum"

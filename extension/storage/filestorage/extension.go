@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filestorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 
@@ -18,11 +7,21 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
+)
+
+var replaceUnsafeCharactersFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"extension.filestorage.replaceUnsafeCharacters",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, characters that are not safe in file paths are replaced in component name using the extension. For example, the data for component `filelog/logs/json` will be stored in file `receiver_filelog_logs~007Ejson` and not in `receiver_filelog_logs/json`."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3148"),
+	featuregate.WithRegisterFromVersion("v0.87.0"),
 )
 
 type localFileStorage struct {
@@ -53,16 +52,19 @@ func (lfs *localFileStorage) Shutdown(context.Context) error {
 }
 
 // GetClient returns a storage client for an individual component
-func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
+func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
 	var rawName string
 	if name == "" {
 		rawName = fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
 	} else {
 		rawName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
 	}
-	// TODO sanitize rawName
+
+	if replaceUnsafeCharactersFeatureGate.IsEnabled() {
+		rawName = sanitize(rawName)
+	}
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
-	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction)
+	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, lfs.cfg.FSync)
 
 	if err != nil {
 		return nil, err
@@ -89,7 +91,46 @@ func kindString(k component.Kind) string {
 		return "exporter"
 	case component.KindExtension:
 		return "extension"
+	case component.KindConnector:
+		return "connector"
 	default:
 		return "other" // not expected
 	}
+}
+
+// sanitize replaces characters in name that are not safe in a file path
+func sanitize(name string) string {
+	// Replace all unsafe characters with a tilde followed by the unsafe character's Unicode hex number.
+	// https://en.wikipedia.org/wiki/List_of_Unicode_characters
+	// For example, the slash is replaced with "~002F", and the tilde itself is replaced with "~007E".
+	// We perform replacement on the tilde even though it is a safe character to make sure that the sanitized component name
+	// never overlaps with a component name that does not reqire sanitization.
+	var sanitized strings.Builder
+	for _, character := range name {
+		if isSafe(character) {
+			sanitized.WriteString(string(character))
+		} else {
+			sanitized.WriteString(fmt.Sprintf("~%04X", character))
+		}
+	}
+	return sanitized.String()
+}
+
+func isSafe(character rune) bool {
+	// Safe characters are the following:
+	// - uppercase and lowercase letters A-Z, a-z
+	// - digits 0-9
+	// - dot `.`
+	// - hyphen `-`
+	// - underscore `_`
+	switch {
+	case character >= 'a' && character <= 'z',
+		character >= 'A' && character <= 'Z',
+		character >= '0' && character <= '9',
+		character == '.',
+		character == '-',
+		character == '_':
+		return true
+	}
+	return false
 }

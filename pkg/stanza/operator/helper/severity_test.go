@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper
 
@@ -28,13 +17,15 @@ import (
 )
 
 type severityTestCase struct {
-	name       string
-	sample     interface{}
-	mappingSet string
-	mapping    map[string]interface{}
-	buildErr   bool
-	parseErr   bool
-	expected   entry.Severity
+	name          string
+	sample        interface{}
+	mappingSet    string
+	mapping       map[string]interface{}
+	buildErr      bool
+	parseErr      bool
+	expected      entry.Severity
+	expectedText  string
+	overwriteText bool
 }
 
 // These tests ensure that users may build a mapping that
@@ -157,16 +148,26 @@ var allTheThingsMap = map[string]interface{}{
 func TestSeverityParser(t *testing.T) {
 	testCases := []severityTestCase{
 		{
-			name:     "unknown",
-			sample:   "blah",
-			mapping:  nil,
-			expected: entry.Default,
+			name:         "unknown",
+			sample:       "blah",
+			mapping:      nil,
+			expected:     entry.Default,
+			expectedText: "blah",
 		},
 		{
-			name:     "error",
-			sample:   "error",
-			mapping:  nil,
-			expected: entry.Error,
+			name:         "error",
+			sample:       "error",
+			mapping:      nil,
+			expected:     entry.Error,
+			expectedText: "error",
+		},
+		{
+			name:          "error-overwrite-text",
+			sample:        "error",
+			mapping:       nil,
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
 		},
 		{
 			name:     "error2",
@@ -193,6 +194,14 @@ func TestSeverityParser(t *testing.T) {
 			expected: entry.Error,
 		},
 		{
+			name:          "error-capitalized-overwrite-text",
+			sample:        "Error",
+			mapping:       nil,
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
+		},
+		{
 			name:     "error-all-caps",
 			sample:   "ERROR",
 			mapping:  nil,
@@ -205,6 +214,14 @@ func TestSeverityParser(t *testing.T) {
 			expected: entry.Error,
 		},
 		{
+			name:          "custom-string-overwrite-text",
+			sample:        "NOOOOOOO",
+			mapping:       map[string]interface{}{"error": "NOOOOOOO"},
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
+		},
+		{
 			name:     "custom-string-caps-key",
 			sample:   "NOOOOOOO",
 			mapping:  map[string]interface{}{"ErRoR": "NOOOOOOO"},
@@ -215,6 +232,14 @@ func TestSeverityParser(t *testing.T) {
 			sample:   1234,
 			mapping:  map[string]interface{}{"error": 1234},
 			expected: entry.Error,
+		},
+		{
+			name:          "custom-int-overwrite-text",
+			sample:        1234,
+			mapping:       map[string]interface{}{"error": 1234},
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
 		},
 		{
 			name:     "mixed-list-string",
@@ -241,6 +266,14 @@ func TestSeverityParser(t *testing.T) {
 			expected: entry.Error2,
 		},
 		{
+			name:          "numbered-level-overwrite-text",
+			sample:        "critical",
+			mapping:       map[string]interface{}{"error2": "critical"},
+			expected:      entry.Error2,
+			expectedText:  "ERROR2",
+			overwriteText: true,
+		},
+		{
 			name:     "override-standard",
 			sample:   "error",
 			mapping:  map[string]interface{}{"error3": []interface{}{"error"}},
@@ -257,6 +290,14 @@ func TestSeverityParser(t *testing.T) {
 			sample:   123,
 			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
 			expected: entry.Error,
+		},
+		{
+			name:          "in-range-overwrite-text",
+			sample:        123,
+			mapping:       map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
 		},
 		{
 			name:     "in-range-min",
@@ -325,6 +366,14 @@ func TestSeverityParser(t *testing.T) {
 			expected: entry.Info,
 		},
 		{
+			name:          "Http-All-Overwrite-Text",
+			sample:        "301",
+			mapping:       map[string]interface{}{"debug": "2xx", "info": "3xx", "error": "4xx", "warn": "5xx"},
+			expected:      entry.Info,
+			expectedText:  "INFO",
+			overwriteText: true,
+		},
+		{
 			name:     "all-the-things-midrange",
 			sample:   1234,
 			mapping:  allTheThingsMap,
@@ -347,6 +396,14 @@ func TestSeverityParser(t *testing.T) {
 			sample:   "miss",
 			mapping:  allTheThingsMap,
 			expected: entry.Default,
+		},
+		{
+			name:          "all-the-things-miss-never-overwrite-unknown",
+			sample:        "miss",
+			mapping:       allTheThingsMap,
+			expected:      entry.Default,
+			expectedText:  "miss",
+			overwriteText: true,
 		},
 		{
 			name:       "base-mapping-none",
@@ -449,9 +506,10 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 		t.Parallel()
 
 		cfg := &SeverityConfig{
-			ParseFrom: &parseFrom,
-			Preset:    tc.mappingSet,
-			Mapping:   tc.mapping,
+			ParseFrom:     &parseFrom,
+			Preset:        tc.mappingSet,
+			Mapping:       tc.mapping,
+			OverwriteText: tc.overwriteText,
 		}
 
 		severityParser, err := cfg.Build(testutil.Logger(t))
@@ -471,6 +529,11 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, tc.expected, ent.Severity)
+		if tc.overwriteText {
+			require.Equal(t, tc.expectedText, ent.SeverityText)
+		} else {
+			require.Equal(t, fmt.Sprint(tc.sample), ent.SeverityText)
+		}
 	}
 }
 

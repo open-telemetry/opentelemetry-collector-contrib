@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package sumologicexporter
 
@@ -30,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func LogRecordsToLogs(records []plog.LogRecord) plog.Logs {
+func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
 	logs := plog.NewLogs()
 	logsSlice := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for _, record := range records {
@@ -64,7 +53,7 @@ func TestAllSuccess(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 
 	err := test.exp.pushLogsData(context.Background(), logs)
 	assert.NoError(t, err)
@@ -84,7 +73,7 @@ func TestResourceMerge(t *testing.T) {
 	require.NoError(t, err)
 	test.exp.filter = f
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 	logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("key1", "original_value")
 	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("key1", "overwrite_value")
 	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("key2", "additional_value")
@@ -105,7 +94,7 @@ func TestAllFailed(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	logs := LogRecordsToLogs(exampleTwoLogs())
+	logs := logRecordsToLogs(exampleTwoLogs())
 
 	err := test.exp.pushLogsData(context.Background(), logs)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
@@ -137,8 +126,8 @@ func TestPartiallyFailed(t *testing.T) {
 	test.exp.filter = f
 
 	records := exampleTwoDifferentLogs()
-	logs := LogRecordsToLogs(records)
-	expected := LogRecordsToLogs(records[:1])
+	logs := logRecordsToLogs(records)
+	expected := logRecordsToLogs(records[:1])
 
 	err = test.exp.pushLogsData(context.Background(), logs)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
@@ -191,7 +180,7 @@ func TestPushInvalidCompressor(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 
 	test.exp.config.CompressEncoding = "invalid"
 
@@ -224,7 +213,7 @@ func TestPushFailedBatch(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 	logs.ResourceLogs().EnsureCapacity(maxBufferSize + 1)
 	log := logs.ResourceLogs().At(0)
 

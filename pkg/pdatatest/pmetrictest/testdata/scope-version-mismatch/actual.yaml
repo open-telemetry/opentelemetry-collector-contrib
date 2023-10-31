@@ -1,0 +1,6 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - scope:
+          name: one
+          version: "2.0"

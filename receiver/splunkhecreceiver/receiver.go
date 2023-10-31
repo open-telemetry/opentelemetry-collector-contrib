@@ -1,21 +1,9 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
-	"bufio"
 	"compress/gzip"
 	"context"
 	"errors"
@@ -23,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,28 +20,30 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
 const (
 	defaultServerTimeout = 20 * time.Second
 
-	responseOK                        = "OK"
-	responseInvalidMethod             = `Only "POST" method is supported`
-	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
+	responseOK                        = `{"text": "Success", "code": 0}`
+	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
+	responseInvalidMethod             = `"Only \"POST\" method is supported"`
+	responseInvalidEncoding           = `"\"Content-Encoding\" must be \"gzip\" or empty"`
 	responseInvalidDataFormat         = `{"text":"Invalid data format","code":6}`
 	responseErrEventRequired          = `{"text":"Event field is required","code":12}`
 	responseErrEventBlank             = `{"text":"Event field cannot be blank","code":13}`
-	responseErrGzipReader             = "Error on gzip body"
-	responseErrUnmarshalBody          = "Failed to unmarshal message body"
-	responseErrInternalServerError    = "Internal Server Error"
-	responseErrUnsupportedMetricEvent = "Unsupported metric event"
-	responseErrUnsupportedLogEvent    = "Unsupported log event"
+	responseErrGzipReader             = `"Error on gzip body"`
+	responseErrUnmarshalBody          = `"Failed to unmarshal message body"`
+	responseErrInternalServerError    = `"Internal Server Error"`
+	responseErrUnsupportedMetricEvent = `"Unsupported metric event"`
+	responseErrUnsupportedLogEvent    = `"Unsupported log event"`
 	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
 	responseNoData                    = `{"text":"No data","code":5}`
 	// Centralizing some HTTP and related string constants.
@@ -67,18 +58,18 @@ var (
 	errInvalidMethod          = errors.New("invalid http method")
 	errInvalidEncoding        = errors.New("invalid encoding")
 
-	okRespBody                = initJSONResponse(responseOK)
-	eventRequiredRespBody     = initJSONResponse(responseErrEventRequired)
-	eventBlankRespBody        = initJSONResponse(responseErrEventBlank)
-	invalidEncodingRespBody   = initJSONResponse(responseInvalidEncoding)
-	invalidFormatRespBody     = initJSONResponse(responseInvalidDataFormat)
-	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
-	errGzipReaderRespBody     = initJSONResponse(responseErrGzipReader)
-	errUnmarshalBodyRespBody  = initJSONResponse(responseErrUnmarshalBody)
-	errInternalServerError    = initJSONResponse(responseErrInternalServerError)
-	errUnsupportedMetricEvent = initJSONResponse(responseErrUnsupportedMetricEvent)
-	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
-	noDataRespBody            = initJSONResponse(responseNoData)
+	okRespBody                = []byte(responseOK)
+	eventRequiredRespBody     = []byte(responseErrEventRequired)
+	eventBlankRespBody        = []byte(responseErrEventBlank)
+	invalidEncodingRespBody   = []byte(responseInvalidEncoding)
+	invalidFormatRespBody     = []byte(responseInvalidDataFormat)
+	invalidMethodRespBody     = []byte(responseInvalidMethod)
+	errGzipReaderRespBody     = []byte(responseErrGzipReader)
+	errUnmarshalBodyRespBody  = []byte(responseErrUnmarshalBody)
+	errInternalServerError    = []byte(responseErrInternalServerError)
+	errUnsupportedMetricEvent = []byte(responseErrUnsupportedMetricEvent)
+	errUnsupportedLogEvent    = []byte(responseErrUnsupportedLogEvent)
+	noDataRespBody            = []byte(responseNoData)
 )
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
@@ -89,7 +80,7 @@ type splunkReceiver struct {
 	metricsConsumer consumer.Metrics
 	server          *http.Server
 	shutdownWG      sync.WaitGroup
-	obsrecv         *obsreport.Receiver
+	obsrecv         *receiverhelper.ObsReport
 	gzipReaderPool  *sync.Pool
 }
 
@@ -114,7 +105,7 @@ func newMetricsReceiver(
 		transport = "https"
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -158,7 +149,7 @@ func newLogsReceiver(
 		transport = "https"
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -203,6 +194,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 
 	mx := mux.NewRouter()
 	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
+	mx.NewRoute().Path(r.config.HealthPath + "/1.0").HandlerFunc(r.handleHealthReq).Methods("GET")
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
@@ -253,7 +245,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 
 	if req.ContentLength == 0 {
-		r.obsrecv.EndLogsOp(ctx, typeStr, 0, nil)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type, 0, nil)
 		r.failRequest(ctx, resp, http.StatusBadRequest, noDataRespBody, 0, nil)
 		return
 	}
@@ -273,9 +265,26 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		defer r.gzipReaderPool.Put(reader)
 	}
 
-	sc := bufio.NewScanner(bodyReader)
 	resourceCustomizer := r.createResourceCustomizer(req)
-	ld, slLen := splunkHecRawToLogData(sc, req.URL.Query(), resourceCustomizer, r.config)
+	query := req.URL.Query()
+	var timestamp pcommon.Timestamp
+	if query.Has(queryTime) {
+		t, err := strconv.ParseInt(query.Get(queryTime), 10, 64)
+		if t < 0 {
+			err = errors.New("time cannot be less than 0")
+		}
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, 0, err)
+			return
+		}
+		timestamp = pcommon.NewTimestampFromTime(time.Unix(t, 0))
+	}
+
+	ld, slLen, err := splunkHecRawToLogData(bodyReader, query, resourceCustomizer, r.config, timestamp)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, err)
+		return
+	}
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
@@ -284,16 +293,17 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
 		resp.WriteHeader(http.StatusOK)
-		r.obsrecv.EndLogsOp(ctx, typeStr, slLen, nil)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type, slLen, nil)
 	}
 }
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	if r.logsConsumer == nil {
-		ctx = r.obsrecv.StartMetricsOp(ctx)
-	} else {
+	if r.logsConsumer != nil {
 		ctx = r.obsrecv.StartLogsOp(ctx)
+	}
+	if r.metricsConsumer != nil {
+		ctx = r.obsrecv.StartMetricsOp(ctx)
 	}
 
 	if req.Method != http.MethodPost {
@@ -327,85 +337,76 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	dec := jsoniter.NewDecoder(bodyReader)
 
 	var events []*splunk.Event
+	var metricEvents []*splunk.Event
 
 	for dec.More() {
 		var msg splunk.Event
 		err := dec.Decode(&msg)
 		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, len(events), err)
+			r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, len(events)+len(metricEvents), err)
 			return
 		}
 
 		if msg.Event == nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, eventRequiredRespBody, len(events), nil)
+			r.failRequest(ctx, resp, http.StatusBadRequest, eventRequiredRespBody, len(events)+len(metricEvents), nil)
 			return
 		}
 
 		if msg.Event == "" {
-			r.failRequest(ctx, resp, http.StatusBadRequest, eventBlankRespBody, len(events), nil)
+			r.failRequest(ctx, resp, http.StatusBadRequest, eventBlankRespBody, len(events)+len(metricEvents), nil)
 			return
 		}
 
 		for _, v := range msg.Fields {
 			if !isFlatJSONField(v) {
-				r.failRequest(ctx, resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events))), len(events), nil)
+				r.failRequest(ctx, resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events)+len(metricEvents))), len(events)+len(metricEvents), nil)
 				return
 			}
 		}
 		if msg.IsMetric() {
 			if r.metricsConsumer == nil {
-				r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedMetricEvent, len(events), err)
+				r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedMetricEvent, len(metricEvents), err)
 				return
 			}
-		} else if r.logsConsumer == nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedLogEvent, len(events), err)
+			metricEvents = append(metricEvents, &msg)
+		} else {
+			if r.logsConsumer == nil {
+				r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedLogEvent, len(events), err)
+				return
+			}
+			events = append(events, &msg)
+		}
+
+	}
+	resourceCustomizer := r.createResourceCustomizer(req)
+	if r.logsConsumer != nil && len(events) > 0 {
+		ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, len(events), err)
+			return
+		}
+		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type, len(events), decodeErr)
+		if decodeErr != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 			return
 		}
 
-		events = append(events, &msg)
 	}
-	if r.logsConsumer != nil {
-		r.consumeLogs(ctx, events, resp, req)
-	} else {
-		r.consumeMetrics(ctx, events, resp, req)
-	}
-}
+	if r.metricsConsumer != nil && len(metricEvents) > 0 {
+		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
 
-func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	resourceCustomizer := r.createResourceCustomizer(req)
-	md, _ := splunkHecToMetricsData(r.settings.Logger, events, resourceCustomizer, r.config)
-
-	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsOp(ctx, typeStr, len(events), decodeErr)
-
-	if decodeErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
-	} else {
-		resp.WriteHeader(http.StatusOK)
-		_, err := resp.Write(okRespBody)
-		if err != nil {
-			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
+		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type, len(metricEvents), decodeErr)
+		if decodeErr != nil {
+			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(metricEvents), decodeErr)
+			return
 		}
 	}
-}
 
-func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {
-	resourceCustomizer := r.createResourceCustomizer(req)
-	ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
-	if err != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, len(events), err)
-		return
-	}
-
-	decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
-	r.obsrecv.EndLogsOp(ctx, typeStr, len(events), decodeErr)
-	if decodeErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
-	} else {
-		resp.WriteHeader(http.StatusOK)
-		if _, err := resp.Write(okRespBody); err != nil {
-			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
-		}
+	resp.WriteHeader(http.StatusOK)
+	if _, err := resp.Write(okRespBody); err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events)+len(metricEvents), err)
 	}
 }
 
@@ -441,9 +442,9 @@ func (r *splunkReceiver) failRequest(
 	}
 
 	if r.metricsConsumer == nil {
-		r.obsrecv.EndLogsOp(ctx, typeStr, numRecordsReceived, err)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type, numRecordsReceived, err)
 	} else {
-		r.obsrecv.EndMetricsOp(ctx, typeStr, numRecordsReceived, err)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type, numRecordsReceived, err)
 	}
 
 	if r.settings.Logger.Core().Enabled(zap.DebugLevel) {
@@ -458,16 +459,9 @@ func (r *splunkReceiver) failRequest(
 }
 
 func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
-	writer.WriteHeader(200)
-}
-
-func initJSONResponse(s string) []byte {
-	respBody, err := jsoniter.Marshal(s)
-	if err != nil {
-		// This is to be used in initialization so panic here is fine.
-		panic(err)
-	}
-	return respBody
+	writer.Header().Add("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write([]byte(responseHecHealthy))
 }
 
 func isFlatJSONField(field interface{}) bool {

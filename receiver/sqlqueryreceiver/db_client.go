@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 
@@ -31,7 +20,7 @@ import (
 type stringMap map[string]string
 
 type dbClient interface {
-	metricRows(ctx context.Context) ([]stringMap, error)
+	queryRows(ctx context.Context, args ...any) ([]stringMap, error)
 }
 
 type dbSQLClient struct {
@@ -48,8 +37,8 @@ func newDbClient(db db, sql string, logger *zap.Logger) dbClient {
 	}
 }
 
-func (cl dbSQLClient) metricRows(ctx context.Context) ([]stringMap, error) {
-	sqlRows, err := cl.db.QueryContext(ctx, cl.sql)
+func (cl dbSQLClient) queryRows(ctx context.Context, args ...any) ([]stringMap, error) {
+	sqlRows, err := cl.db.QueryContext(ctx, cl.sql, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
@@ -18,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 	"go.uber.org/zap"
 
@@ -64,7 +52,7 @@ func (c TransformerConfig) Build(logger *zap.SugaredLogger) (TransformerOperator
 	}
 
 	if c.IfExpr != "" {
-		compiled, err := expr.Compile(c.IfExpr, expr.AsBool(), expr.AllowUndefinedVariables())
+		compiled, err := ExprCompileBool(c.IfExpr)
 		if err != nil {
 			return TransformerOperator{}, fmt.Errorf("failed to compile expression '%s': %w", c.IfExpr, err)
 		}
@@ -114,7 +102,7 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 	return err
 }
 
-func (t *TransformerOperator) Skip(ctx context.Context, entry *entry.Entry) (bool, error) {
+func (t *TransformerOperator) Skip(_ context.Context, entry *entry.Entry) (bool, error) {
 	if t.IfExpr == nil {
 		return false, nil
 	}

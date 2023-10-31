@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfx // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
 
@@ -67,6 +56,14 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 			fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
 		case pmetric.MetricTypeSum:
 			fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
+		case pmetric.MetricTypeHistogram:
+			fallthrough
+		case pmetric.MetricTypeExponentialHistogram:
+			fallthrough
+		case pmetric.MetricTypeSummary:
+			fallthrough
+		case pmetric.MetricTypeEmpty:
+			return fmt.Errorf("unsupported metric type: %v", m.Type())
 		}
 		return nil
 	}
@@ -89,6 +86,9 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
+
+	case model.MetricType_ENUM:
+		return fmt.Errorf("unsupported enum data-point (%d) in metric %q", sfxMetricType, sfxDataPoint.Metric)
 
 	default:
 		return fmt.Errorf("unknown data-point type (%d) in metric %q", sfxMetricType, sfxDataPoint.Metric)

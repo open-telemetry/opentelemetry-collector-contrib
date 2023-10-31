@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package probabilisticsamplerprocessor
 
@@ -128,6 +117,15 @@ func TestLogsSampling(t *testing.T) {
 			received: 23,
 		},
 		{
+			name: "sampling_source sampling as string",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "bar",
+			},
+			received: 29, // probabilistic... doesn't yield the same results as foo
+		},
+		{
 			name: "sampling_priority",
 			cfg: &Config{
 				SamplingPercentage: 0,
@@ -160,10 +158,11 @@ func TestLogsSampling(t *testing.T) {
 				ib := byte(i)
 				traceID := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, ib, ib, ib, ib, ib, ib, ib, ib}
 				record.SetTraceID(traceID)
-				// set half of records with a foo attribute
+				// set half of records with a foo (bytes) and a bar (string) attribute
 				if i%2 == 0 {
 					b := record.Attributes().PutEmptyBytes("foo")
 					b.FromRaw(traceID[:])
+					record.Attributes().PutStr("bar", record.TraceID().String())
 				}
 				// set a fourth of records with a priority attribute
 				if i%4 == 0 {

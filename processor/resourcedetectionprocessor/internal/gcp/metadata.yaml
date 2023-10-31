@@ -1,0 +1,73 @@
+type: resourcedetectionprocessor/gcp
+
+parent: resourcedetection
+
+resource_attributes:
+  host.name:
+    description: The host.name
+    type: string
+    enabled: true
+  host.id:
+    description: The host.id
+    type: string
+    enabled: true
+  host.type:
+    description: The host.type
+    type: string
+    enabled: true
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true
+  cloud.account.id:
+    description: The cloud.account.id
+    type: string
+    enabled: true
+  cloud.region:
+    description: The cloud.region
+    type: string
+    enabled: true
+  cloud.availability_zone:
+    description: The cloud.availability_zone
+    type: string
+    enabled: true
+  faas.name:
+    description: faas.name
+    type: string
+    enabled: true
+  faas.version:
+    description: The faas.version
+    type: string
+    enabled: true
+  faas.id:
+    description: The faas.id.
+    type: string
+    enabled: true
+  faas.instance:
+    description: The faas.instance
+    type: string
+    enabled: true
+  k8s.cluster.name:
+    description: The k8s.cluster.name
+    type: string
+    enabled: true
+  gcp.cloud_run.job.execution:
+    description: The Job execution name
+    type: string
+    enabled: true
+  gcp.cloud_run.job.task_index:
+    description: The Job execution task index
+    type: string
+    enabled: true
+  gcp.gce.instance.name:
+    description: The name of the GCE instance.
+    type: string
+    enabled: false
+  gcp.gce.instance.hostname:
+    description: The hostname of the GCE instance.
+    type: string
+    enabled: false

@@ -1,0 +1,4 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - scope: {}

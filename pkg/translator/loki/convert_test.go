@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
@@ -26,10 +15,11 @@ import (
 
 func TestConvertAttributesAndMerge(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		logAttrs map[string]interface{}
-		resAttrs map[string]interface{}
-		expected model.LabelSet
+		desc                 string
+		logAttrs             map[string]interface{}
+		resAttrs             map[string]interface{}
+		expected             model.LabelSet
+		defaultLabelsEnabled map[string]bool
 	}{
 		{
 			desc:     "empty attributes should have at least the default labels",
@@ -140,6 +130,36 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 				"instance": "my-service-instance-id",
 			},
 		},
+		{
+			desc: "it shouldn't add job, instance, exporter labels if they disabled in config",
+			resAttrs: map[string]interface{}{
+				"service.instance.id": "my-service-instance-id",
+				"service.namespace":   "my-service-namespace",
+				"service.name":        "my-service-name",
+			},
+			defaultLabelsEnabled: map[string]bool{
+				exporterLabel:       false,
+				model.JobLabel:      false,
+				model.InstanceLabel: false,
+			},
+			expected: model.LabelSet{},
+		},
+		{
+			desc: "it should add job label because it is enabled in config, and exporter label because it is not mentioned in config and that's why enabled by default",
+			resAttrs: map[string]interface{}{
+				"service.instance.id": "my-service-instance-id",
+				"service.namespace":   "my-service-namespace",
+				"service.name":        "my-service-name",
+			},
+			defaultLabelsEnabled: map[string]bool{
+				model.JobLabel:      true,
+				model.InstanceLabel: false,
+			},
+			expected: model.LabelSet{
+				"job":      "my-service-namespace/my-service-name",
+				"exporter": "OTLP",
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
@@ -147,7 +167,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 			assert.NoError(t, logAttrs.FromRaw(tC.logAttrs))
 			resAttrs := pcommon.NewMap()
 			assert.NoError(t, resAttrs.FromRaw(tC.resAttrs))
-			out := convertAttributesAndMerge(logAttrs, resAttrs)
+			out := convertAttributesAndMerge(logAttrs, resAttrs, tC.defaultLabelsEnabled)
 			assert.Equal(t, tC.expected, out)
 		})
 	}
@@ -270,22 +290,99 @@ func TestRemoveAttributes(t *testing.T) {
 	}
 }
 
-func TestGetNestedAttribute(t *testing.T) {
-	// prepare
-	attrs := pcommon.NewMap()
-	err := attrs.FromRaw(map[string]interface{}{
-		"host": map[string]interface{}{
-			"name": "guarana",
+func TestGetAttribute(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		attr     string
+		attrs    map[string]interface{}
+		expected pcommon.Value
+		ok       bool
+	}{
+		{
+			desc: "attributes don't contain dotted names",
+			attr: "host.name",
+			attrs: map[string]interface{}{
+				"host": map[string]interface{}{
+					"name": "guarana",
+				},
+			},
+			expected: pcommon.NewValueStr("guarana"),
+			ok:       true,
 		},
-	})
-	require.NoError(t, err)
+		{
+			desc: "attributes contain dotted name on the nested level",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log": map[string]interface{}{
+					"file.name": "foo",
+				},
+			},
+			expected: pcommon.NewValueStr("foo"),
+			ok:       true,
+		},
+		{
+			desc: "attributes contain dotted name on the upper level",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log.file": map[string]interface{}{
+					"name": "foo",
+				},
+			},
+			expected: pcommon.NewValueStr("foo"),
+			ok:       true,
+		},
+		{
+			desc: "attributes contain dotted attribute",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log.file.name": "foo",
+			},
+			expected: pcommon.NewValueStr("foo"),
+			ok:       true,
+		},
+		{
+			desc: "dotted name that doesn't match attr",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log.file": "foo",
+			},
+			expected: pcommon.Value{},
+			ok:       false,
+		},
+		{
+			desc: "should get the longest match",
+			attr: "log.file.name",
+			attrs: map[string]interface{}{
+				"log.file.name": "foo",
+				"log": map[string]interface{}{
+					"file": map[string]interface{}{
+						"name": "bar",
+					},
+				},
+				"log.file": map[string]interface{}{
+					"name": "baz",
+				},
+			},
+			expected: pcommon.NewValueStr("foo"),
+			ok:       true,
+		},
+	}
 
-	// test
-	attr, ok := getNestedAttribute("host.name", attrs)
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			// prepare
+			attrs := pcommon.NewMap()
+			err := attrs.FromRaw(tC.attrs)
+			require.NoError(t, err)
 
-	// verify
-	assert.Equal(t, "guarana", attr.AsString())
-	assert.True(t, ok)
+			// test
+			attr, ok := getAttribute(tC.attr, attrs)
+
+			// verify
+			assert.Equal(t, tC.expected, attr)
+			assert.Equal(t, tC.ok, ok)
+		})
+	}
 }
 
 func TestConvertLogToLogRawEntry(t *testing.T) {

@@ -1,37 +1,28 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 type datadogReceiver struct {
+	address      string
 	config       *Config
 	params       receiver.CreateSettings
 	nextConsumer consumer.Traces
 	server       *http.Server
-	tReceiver    *obsreport.Receiver
+	tReceiver    *receiverhelper.ObsReport
 }
 
 func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params receiver.CreateSettings) (receiver.Traces, error) {
@@ -39,31 +30,47 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params rec
 		return nil, component.ErrNilNextConsumer
 	}
 
-	instance, err := obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
+	instance, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}
+
 	return &datadogReceiver{
 		params:       params,
 		config:       config,
 		nextConsumer: nextConsumer,
 		server: &http.Server{
 			ReadTimeout: config.ReadTimeout,
-			Addr:        config.HTTPServerSettings.Endpoint,
 		},
 		tReceiver: instance,
 	}, nil
 }
 
 func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error {
+	ddmux := http.NewServeMux()
+	ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
+	ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
+	ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
+	ddmux.HandleFunc("/v0.7/traces", ddr.handleTraces)
+
+	var err error
+	ddr.server, err = ddr.config.HTTPServerSettings.ToServer(
+		host,
+		ddr.params.TelemetrySettings,
+		ddmux,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create server definition: %w", err)
+	}
+	hln, err := ddr.config.HTTPServerSettings.ToListener()
+	if err != nil {
+		return fmt.Errorf("failed to create datadog listener: %w", err)
+	}
+
+	ddr.address = hln.Addr().String()
+
 	go func() {
-		ddmux := http.NewServeMux()
-		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.7/traces", ddr.handleTraces)
-		ddr.server.Handler = ddmux
-		if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
 		}
 	}()
@@ -85,8 +92,9 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 
 	ddTraces, err = handlePayload(req)
 	if err != nil {
-		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
+		http.Error(w, "Unable to unmarshal reqs", http.StatusBadRequest)
 		ddr.params.Logger.Error("Unable to unmarshal reqs")
+		return
 	}
 
 	otelTraces := toTraces(ddTraces, req)

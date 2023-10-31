@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
@@ -21,24 +10,22 @@ import (
 	"net/url"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-	// QueueSettings is a subset of exporterhelper.QueueSettings,
-	// because only QueueSize is user-settable.
-	QueueSettings QueueSettings `mapstructure:"sending_queue"`
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
 	// Username is the authentication password.
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
 	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
@@ -53,12 +40,6 @@ type Config struct {
 	TTLDays uint `mapstructure:"ttl_days"`
 }
 
-// QueueSettings is a subset of exporterhelper.QueueSettings.
-type QueueSettings struct {
-	// QueueSize set the length of the sending queue
-	QueueSize int `mapstructure:"queue_size"`
-}
-
 const defaultDatabase = "default"
 
 var (
@@ -69,34 +50,26 @@ var (
 // Validate the clickhouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
-		err = multierr.Append(err, errConfigNoEndpoint)
+		err = errors.Join(err, errConfigNoEndpoint)
 	}
 	dsn, e := cfg.buildDSN(cfg.Database)
 	if e != nil {
-		err = multierr.Append(err, e)
+		err = errors.Join(err, e)
 	}
 
 	// Validate DSN with clickhouse driver.
 	// Last chance to catch invalid config.
 	if _, e := clickhouse.ParseDSN(dsn); e != nil {
-		err = multierr.Append(err, e)
+		err = errors.Join(err, e)
 	}
 
 	return err
 }
 
-func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
-	return exporterhelper.QueueSettings{
-		Enabled:      true,
-		NumConsumers: 1,
-		QueueSize:    cfg.QueueSettings.QueueSize,
-	}
-}
-
 func (cfg *Config) buildDSN(database string) (string, error) {
 	dsnURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err)
+		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err.Error())
 	}
 
 	queryParams := dsnURL.Query()
@@ -114,14 +87,21 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 	// Override database if specified in config.
 	if cfg.Database != "" {
 		dsnURL.Path = cfg.Database
-	} else if database == "" && cfg.Database == "" && dsnURL.Path == "" {
-		// Use default database if not specified in any other place.
+	}
+
+	// Override database if specified in database param.
+	if database != "" {
+		dsnURL.Path = database
+	}
+
+	// Use default database if not specified in any other place.
+	if database == "" && cfg.Database == "" && dsnURL.Path == "" {
 		dsnURL.Path = defaultDatabase
 	}
 
 	// Override username and password if specified in config.
 	if cfg.Username != "" {
-		dsnURL.User = url.UserPassword(cfg.Username, cfg.Password)
+		dsnURL.User = url.UserPassword(cfg.Username, string(cfg.Password))
 	}
 
 	dsnURL.RawQuery = queryParams.Encode()

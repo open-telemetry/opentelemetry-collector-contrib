@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package syslog
 
@@ -86,5 +75,21 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 		require.Equal(t, body, e.Body)
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be processed")
+	}
+}
+
+func TestSyslogProtocolConfig(t *testing.T) {
+	for _, proto := range []string{"RFC5424", "rfc5424", "RFC3164", "rfc3164"} {
+		cfg := basicConfig()
+		cfg.Protocol = proto
+		_, err := cfg.Build(testutil.Logger(t))
+		require.NoError(t, err)
+	}
+
+	for _, proto := range []string{"RFC5424a", "rfc5424b", "RFC3164c", "rfc3164d"} {
+		cfg := basicConfig()
+		cfg.Protocol = proto
+		_, err := cfg.Build(testutil.Logger(t))
+		require.Error(t, err)
 	}
 }

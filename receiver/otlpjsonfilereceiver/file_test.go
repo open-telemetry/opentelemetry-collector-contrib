@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 
@@ -34,7 +23,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver/internal/metadata"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -60,11 +50,12 @@ func TestFileTracesReceiver(t *testing.T) {
 	marshaler := &ptrace.JSONMarshaler{}
 	b, err := marshaler.MarshalTraces(td)
 	assert.NoError(t, err)
+	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), b, 0600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
-	require.Len(t, sink.AllTraces(), 1)
 
+	require.Len(t, sink.AllTraces(), 1)
 	assert.EqualValues(t, td, sink.AllTraces()[0])
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
@@ -86,6 +77,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)
+	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
@@ -112,6 +104,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	marshaler := &plog.JSONMarshaler{}
 	b, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
+	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), b, 0600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
@@ -130,12 +123,13 @@ func testdataConfigYamlAsMap() *Config {
 			IncludeFileNameResolved: false,
 			IncludeFilePathResolved: false,
 			PollInterval:            200 * time.Millisecond,
-			Splitter:                helper.NewSplitterConfig(),
+			Encoding:                "utf-8",
 			StartAt:                 "end",
 			FingerprintSize:         1000,
 			MaxLogSize:              1024 * 1024,
 			MaxConcurrentFiles:      1024,
-			Finder: fileconsumer.Finder{
+			FlushPeriod:             500 * time.Millisecond,
+			Criteria: matcher.Criteria{
 				Include: []string{"/var/log/*.log"},
 				Exclude: []string{"/var/log/example.log"},
 			},
@@ -149,7 +143,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -195,6 +189,7 @@ func TestFileMixedSignals(t *testing.T) {
 	b = append(b, b2...)
 	b = append(b, '\n')
 	b = append(b, b3...)
+	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)

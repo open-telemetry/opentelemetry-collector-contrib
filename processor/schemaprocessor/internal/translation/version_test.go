@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package translation
 
@@ -93,21 +82,22 @@ func TestVersionDifferences(t *testing.T) {
 
 	tests := []struct {
 		scenario string
-		a, b     Version
+		a        Version
+		b        *Version
 		diff     int
 	}{
-		{scenario: "equal values", a: Version{1, 0, 0}, b: Version{1, 0, 0}, diff: 0},
-		{scenario: "greater than Major", a: Version{2, 6, 4}, b: Version{1, 8, 12}, diff: 1},
-		{scenario: "greater than Minor", a: Version{2, 6, 4}, b: Version{2, 4, 12}, diff: 1},
-		{scenario: "greater than Patch", a: Version{2, 6, 4}, b: Version{2, 6, 3}, diff: 1},
-		{scenario: "less than Major", b: Version{2, 6, 4}, a: Version{1, 8, 12}, diff: -1},
-		{scenario: "less than Minor", b: Version{2, 6, 4}, a: Version{2, 4, 12}, diff: -1},
-		{scenario: "less than Patch", b: Version{2, 6, 4}, a: Version{2, 6, 3}, diff: -1},
+		{scenario: "equal values", a: Version{1, 0, 0}, b: &Version{1, 0, 0}, diff: 0},
+		{scenario: "greater than Major", a: Version{2, 6, 4}, b: &Version{1, 8, 12}, diff: 1},
+		{scenario: "greater than Minor", a: Version{2, 6, 4}, b: &Version{2, 4, 12}, diff: 1},
+		{scenario: "greater than Patch", a: Version{2, 6, 4}, b: &Version{2, 6, 3}, diff: 1},
+		{scenario: "less than Major", b: &Version{2, 6, 4}, a: Version{1, 8, 12}, diff: -1},
+		{scenario: "less than Minor", b: &Version{2, 6, 4}, a: Version{2, 4, 12}, diff: -1},
+		{scenario: "less than Patch", b: &Version{2, 6, 4}, a: Version{2, 6, 3}, diff: -1},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
-			assert.Equal(t, tc.diff, tc.a.Compare(&tc.b), "Must match the expected diff")
+			assert.Equal(t, tc.diff, tc.a.Compare(tc.b), "Must match the expected diff")
 		})
 	}
 }

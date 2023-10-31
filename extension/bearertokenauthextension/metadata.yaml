@@ -1,0 +1,15 @@
+type: bearertokenauth
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions:
+  - contrib
+  - grafana
+  - observiq
+  - redhat
+  - sumo
+  codeowners:
+    active: [jpkrohling, frzifus]
+    emeritus: [pavankrish123]

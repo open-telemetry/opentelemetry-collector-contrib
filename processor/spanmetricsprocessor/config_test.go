@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanmetricsprocessor
 
@@ -23,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			name: "configuration with dimensions size cache",
-			id:   component.NewIDWithName(typeStr, "dimensions"),
+			id:   component.NewIDWithName(metadata.Type, "dimensions"),
 			expected: &Config{
 				MetricsExporter:        "prometheus",
 				AggregationTemporality: cumulative,
@@ -46,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name: "configuration with aggregation temporality",
-			id:   component.NewIDWithName(typeStr, "temp"),
+			id:   component.NewIDWithName(metadata.Type, "temp"),
 			expected: &Config{
 				MetricsExporter:        "otlp/spanmetrics",
 				AggregationTemporality: cumulative,
@@ -56,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name: "configuration with all available parameters",
-			id:   component.NewIDWithName(typeStr, "full"),
+			id:   component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				MetricsExporter:        "otlp/spanmetrics",
 				AggregationTemporality: delta,

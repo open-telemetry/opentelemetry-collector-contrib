@@ -1,0 +1,219 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: apache.server.name
+          value:
+            stringValue: 127.0.0.1
+        - key: apache.server.port
+          value:
+            stringValue: "8080"
+    scopeMetrics:
+      - metrics:
+          - description: Current load of the CPU.
+            gauge:
+              dataPoints:
+                - asDouble: 0.66
+                  timeUnixNano: "1000000"
+            name: apache.cpu.load
+            unit: '%'
+          - description: Jiffs used by processes of given category.
+            name: apache.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.01
+                  attributes:
+                    - key: level
+                      value:
+                        stringValue: children
+                    - key: mode
+                      value:
+                        stringValue: system
+                  timeUnixNano: "1000000"
+                - asDouble: 0.02
+                  attributes:
+                    - key: level
+                      value:
+                        stringValue: children
+                    - key: mode
+                      value:
+                        stringValue: user
+                  timeUnixNano: "1000000"
+                - asDouble: 0.03
+                  attributes:
+                    - key: level
+                      value:
+                        stringValue: self
+                    - key: mode
+                      value:
+                        stringValue: system
+                  timeUnixNano: "1000000"
+                - asDouble: 0.04
+                  attributes:
+                    - key: level
+                      value:
+                        stringValue: self
+                    - key: mode
+                      value:
+                        stringValue: user
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: '{jiff}'
+          - description: The number of active connections currently attached to the HTTP server.
+            name: apache.current_connections
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "110"
+                  timeUnixNano: "1000000"
+            unit: '{connections}'
+          - description: The average server load during the last minute.
+            gauge:
+              dataPoints:
+                - asDouble: 0.9
+                  timeUnixNano: "1000000"
+            name: apache.load.1
+            unit: '%'
+          - description: The average server load during the last 15 minutes.
+            gauge:
+              dataPoints:
+                - asDouble: 0.3
+                  timeUnixNano: "1000000"
+            name: apache.load.15
+            unit: '%'
+          - description: The average server load during the last 5 minutes.
+            gauge:
+              dataPoints:
+                - asDouble: 0.4
+                  timeUnixNano: "1000000"
+            name: apache.load.5
+            unit: '%'
+          - description: Total time spent on handling requests.
+            name: apache.request.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1501"
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: ms
+          - description: The number of requests serviced by the HTTP server per second.
+            name: apache.requests
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "14169"
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: The number of workers in each state.
+            name: apache.scoreboard
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: closing
+                  timeUnixNano: "1000000"
+                - asInt: "2"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: dnslookup
+                  timeUnixNano: "1000000"
+                - asInt: "3"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: finishing
+                  timeUnixNano: "1000000"
+                - asInt: "4"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: idle_cleanup
+                  timeUnixNano: "1000000"
+                - asInt: "2"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: keepalive
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: logging
+                  timeUnixNano: "1000000"
+                - asInt: "150"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: open
+                  timeUnixNano: "1000000"
+                - asInt: "4"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: reading
+                  timeUnixNano: "1000000"
+                - asInt: "12"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: sending
+                  timeUnixNano: "1000000"
+                - asInt: "1"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: starting
+                  timeUnixNano: "1000000"
+                - asInt: "217"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: waiting
+                  timeUnixNano: "1000000"
+            unit: '{workers}'
+          - description: Total HTTP server traffic.
+            name: apache.traffic
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "21411840"
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: By
+          - description: The amount of time that the server has been running in seconds.
+            name: apache.uptime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "410"
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: s
+          - description: The number of workers currently attached to the HTTP server.
+            name: apache.workers
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "13"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: busy
+                  timeUnixNano: "1000000"
+                - asInt: "227"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: idle
+                  timeUnixNano: "1000000"
+            unit: '{workers}'
+        scope:
+          name: otelcol/apachereceiver
+          version: latest

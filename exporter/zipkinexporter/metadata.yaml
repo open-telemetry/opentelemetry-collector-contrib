@@ -1,8 +1,10 @@
-name: zipkinexporter
+type: zipkin
 
 status:
-  type: exporter
-  stability: beta
-  pipelines: [traces]
-  distributions: [core, contrib]
+  class: exporter
+  stability:
+    beta: [traces]
+  distributions: [core, contrib, observiq]
+  codeowners:
+    active: [MovieStoreGuy, astencel-sumo, crobert-1]
 

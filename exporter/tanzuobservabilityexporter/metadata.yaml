@@ -1,0 +1,9 @@
+type: tanzuobservability
+
+status:
+  class: exporter
+  stability:
+    deprecated: [traces, metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [oppegard, thepeterstone, keep94]

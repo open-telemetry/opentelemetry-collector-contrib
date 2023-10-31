@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
@@ -142,12 +131,18 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
 
-	offsetOption := eventhub.ReceiveWithLatestOffset()
+	receiverOptions := []eventhub.ReceiveOption{}
 	if applyOffset && h.config.Offset != "" {
-		offsetOption = eventhub.ReceiveWithStartingOffset(h.config.Offset)
+		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
+	} else {
+		receiverOptions = append(receiverOptions, eventhub.ReceiveWithLatestOffset())
 	}
 
-	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, offsetOption)
+	if h.config.ConsumerGroup != "" {
+		receiverOptions = append(receiverOptions, eventhub.ReceiveWithConsumerGroup(h.config.ConsumerGroup))
+	}
+
+	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, receiverOptions...)
 	if err != nil {
 		return err
 	}
@@ -166,6 +161,7 @@ func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub
 
 	err := h.dataConsumer.consume(ctx, event)
 	if err != nil {
+		h.settings.Logger.Error("error decoding message", zap.Error(err))
 		return err
 	}
 

@@ -1,24 +1,13 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.uber.org/multierr"
 )
 
 var _ error = (*deprecatedError)(nil)
@@ -71,9 +60,10 @@ func (e deprecatedError) UpdateCfg(cfg *Config) {
 // handleRenamedSettings for a given configuration map.
 // Error out if any pair of old-new options are set at the same time.
 func handleRenamedSettings(configMap *confmap.Conf, cfg *Config) (warnings []error, err error) {
+	var errs []error
 	for _, renaming := range renamedSettings {
 		isOldNameUsed, errCheck := renaming.Check(configMap)
-		err = multierr.Append(err, errCheck)
+		errs = append(errs, errCheck)
 
 		if errCheck == nil && isOldNameUsed {
 			warnings = append(warnings, renaming)
@@ -81,5 +71,7 @@ func handleRenamedSettings(configMap *confmap.Conf, cfg *Config) (warnings []err
 			renaming.UpdateCfg(cfg)
 		}
 	}
+	err = errors.Join(errs...)
+
 	return
 }

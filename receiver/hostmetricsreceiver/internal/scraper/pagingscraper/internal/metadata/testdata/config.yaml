@@ -9,7 +9,6 @@ all_set:
       enabled: true
     system.paging.utilization:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     system.paging.faults:
@@ -20,4 +19,3 @@ none_set:
       enabled: false
     system.paging.utilization:
       enabled: false
-  resource_attributes:

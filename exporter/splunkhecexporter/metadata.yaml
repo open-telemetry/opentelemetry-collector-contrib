@@ -1,7 +1,9 @@
-name: splunkhecexporter
+type: splunk_hec
 
 status:
-  type: exporter
-  stability: beta
-  pipelines: [metrics, logs, traces]
-  distributions: [contrib]
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq]
+  codeowners:
+    active: [atoulme, dmitryax]

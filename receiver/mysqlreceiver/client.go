@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
@@ -177,7 +166,7 @@ var _ client = (*mySQLClient)(nil)
 func newMySQLClient(conf *Config) client {
 	driverConf := mysql.Config{
 		User:                 conf.Username,
-		Passwd:               conf.Password,
+		Passwd:               string(conf.Password),
 		Net:                  conf.Transport,
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
@@ -216,14 +205,14 @@ func (c *mySQLClient) getVersion() (string, error) {
 
 // getGlobalStats queries the db for global status metrics.
 func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
-	query := "SHOW GLOBAL STATUS;"
-	return Query(*c, query)
+	q := "SHOW GLOBAL STATUS;"
+	return query(*c, q)
 }
 
 // getInnodbStats queries the db for innodb metrics.
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
-	query := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
-	return Query(*c, query)
+	q := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
+	return query(*c, q)
 }
 
 // getTableIoWaitsStats queries the db for table_io_waits metrics.
@@ -516,7 +505,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	return stats, nil
 }
 
-func Query(c mySQLClient, query string) (map[string]string, error) {
+func query(c mySQLClient, query string) (map[string]string, error) {
 	rows, err := c.client.Query(query)
 	if err != nil {
 		return nil, err

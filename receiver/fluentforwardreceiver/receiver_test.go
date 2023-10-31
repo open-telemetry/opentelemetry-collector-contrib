@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fluentforwardreceiver
 
@@ -119,7 +108,7 @@ func TestMessageEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(Log{
+	require.NoError(t, plogtest.CompareLogs(logConstructor(Log{
 		Timestamp: 1593031012000000000,
 		Body:      pcommon.NewValueStr("..."),
 		Attributes: map[string]interface{}{
@@ -149,7 +138,7 @@ func TestForwardEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(
+	require.NoError(t, plogtest.CompareLogs(logConstructor(
 		Log{
 			Timestamp: 1593032377776693638,
 			Body:      pcommon.NewValueEmpty(),
@@ -228,7 +217,7 @@ func TestForwardPackedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(
+	require.NoError(t, plogtest.CompareLogs(logConstructor(
 		Log{
 			Timestamp: 1593032517024597622,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),
@@ -290,7 +279,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(
+	require.NoError(t, plogtest.CompareLogs(logConstructor(
 		Log{
 			Timestamp: 1593032426012197420,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),

@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package extractors
 
@@ -22,14 +11,14 @@ import (
 	cinfo "github.com/google/cadvisor/info/v1"
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
 func TestFSStats(t *testing.T) {
 	result := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 	// container type
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric
@@ -51,7 +40,7 @@ func TestFSStats(t *testing.T) {
 	AssertContainsTaggedField(t, cMetrics[0], expectedFields, expectedTags)
 
 	// pod type
-	containerType = TypePod
+	containerType = containerinsight.TypePod
 	extractor = NewFileSystemMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -63,7 +52,7 @@ func TestFSStats(t *testing.T) {
 	// node type for eks
 
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoNode.json")
-	containerType = TypeNode
+	containerType = containerinsight.TypeNode
 	extractor = NewFileSystemMetricExtractor(nil)
 
 	if extractor.HasValue(result2[0]) {
@@ -133,7 +122,7 @@ func TestFSStatsWithAllowList(t *testing.T) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	assert.NoError(t, enc.Encode(result))
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric

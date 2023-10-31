@@ -1,24 +1,17 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package syslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -70,6 +63,9 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if c.TCP != nil {
 		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
 		tcpInputCfg.BaseConfig = *c.TCP
+		if syslogParserCfg.EnableOctetCounting {
+			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
+		}
 
 		tcpInput, err := tcpInputCfg.Build(logger)
 		if err != nil {
@@ -100,7 +96,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 		udpInput, err := udpInputCfg.Build(logger)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve upd config: %w", err)
+			return nil, fmt.Errorf("failed to resolve udp config: %w", err)
 		}
 
 		udpInput.SetOutputIDs([]string{syslogParser.ID()})
@@ -146,4 +142,40 @@ func (t *Input) Stop() error {
 func (t *Input) SetOutputs(operators []operator.Operator) error {
 	t.parser.SetOutputIDs(t.GetOutputIDs())
 	return t.parser.SetOutputs(operators)
+}
+
+func OctetSplitFuncBuilder(_ encoding.Encoding) (bufio.SplitFunc, error) {
+	return newOctetFrameSplitFunc(true), nil
+}
+
+func newOctetFrameSplitFunc(flushAtEOF bool) bufio.SplitFunc {
+	frameRegex := regexp.MustCompile(`^[1-9]\d*\s`)
+	return func(data []byte, atEOF bool) (int, []byte, error) {
+		frameLoc := frameRegex.FindIndex(data)
+		if frameLoc == nil {
+			// Flush if no more data is expected
+			if len(data) != 0 && atEOF && flushAtEOF {
+				return len(data), data, nil
+			}
+			return 0, nil, nil
+		}
+
+		frameMaxIndex := frameLoc[1]
+		// Remove the delimiter (space) between length and log, and parse the length
+		frameLenValue, err := strconv.Atoi(string(data[:frameMaxIndex-1]))
+		if err != nil {
+			// This should not be possible because the regex matched.
+			// However, return an error just in case.
+			return 0, nil, err
+		}
+
+		advance := frameMaxIndex + frameLenValue
+		if advance > len(data) {
+			if atEOF && flushAtEOF {
+				return len(data), data, nil
+			}
+			return 0, nil, nil
+		}
+		return advance, data[:advance], nil
+	}
 }

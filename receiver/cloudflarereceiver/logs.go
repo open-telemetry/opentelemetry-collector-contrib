@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver"
 
@@ -33,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
 type logsReceiver struct {
@@ -45,7 +36,7 @@ type logsReceiver struct {
 }
 
 const secretHeaderName = "X-CF-Secret"
-const receiverScopeName = "otelcol/" + typeStr
+const receiverScopeName = "otelcol/" + metadata.Type
 
 func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{
@@ -56,18 +47,20 @@ func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.
 		id:       params.ID,
 	}
 
-	tlsConfig, err := recv.cfg.TLS.LoadTLSConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	s := &http.Server{
-		TLSConfig:         tlsConfig,
+	recv.server = &http.Server{
 		Handler:           http.HandlerFunc(recv.handleRequest),
 		ReadHeaderTimeout: 20 * time.Second,
 	}
 
-	recv.server = s
+	if recv.cfg.TLS != nil {
+		tlsConfig, err := recv.cfg.TLS.LoadTLSConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		recv.server.TLSConfig = tlsConfig
+	}
+
 	return recv, nil
 }
 
@@ -102,18 +95,34 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 	go func() {
 		defer l.wg.Done()
 
-		l.logger.Debug("Starting ServeTLS",
-			zap.String("address", l.cfg.Endpoint),
-			zap.String("certfile", l.cfg.TLS.CertFile),
-			zap.String("keyfile", l.cfg.TLS.KeyFile))
+		if l.cfg.TLS != nil {
+			l.logger.Debug("Starting ServeTLS",
+				zap.String("address", l.cfg.Endpoint),
+				zap.String("certfile", l.cfg.TLS.CertFile),
+				zap.String("keyfile", l.cfg.TLS.KeyFile))
 
-		err := l.server.ServeTLS(listener, l.cfg.TLS.CertFile, l.cfg.TLS.KeyFile)
+			err := l.server.ServeTLS(listener, l.cfg.TLS.CertFile, l.cfg.TLS.KeyFile)
 
-		l.logger.Debug("Serve TLS done")
+			l.logger.Debug("ServeTLS done")
 
-		if err != http.ErrServerClosed {
-			l.logger.Error("ServeTLS failed", zap.Error(err))
-			host.ReportFatalError(err)
+			if err != http.ErrServerClosed {
+				l.logger.Error("ServeTLS failed", zap.Error(err))
+				host.ReportFatalError(err)
+			}
+
+		} else {
+			l.logger.Debug("Starting Serve",
+				zap.String("address", l.cfg.Endpoint))
+
+			err := l.server.Serve(listener)
+
+			l.logger.Debug("Serve done")
+
+			if err != http.ErrServerClosed {
+				l.logger.Error("Serve failed", zap.Error(err))
+				host.ReportFatalError(err)
+			}
+
 		}
 	}()
 	return nil
@@ -182,8 +191,9 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 }
 
 func parsePayload(payload []byte) ([]map[string]interface{}, error) {
-	var logs []map[string]interface{}
-	for _, line := range bytes.Split(payload, []byte("\n")) {
+	lines := bytes.Split(payload, []byte("\n"))
+	logs := make([]map[string]interface{}, 0, len(lines))
+	for _, line := range lines {
 		if len(line) == 0 {
 			continue
 		}

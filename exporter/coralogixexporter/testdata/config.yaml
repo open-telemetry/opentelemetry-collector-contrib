@@ -16,7 +16,41 @@ coralogix/trace:
   timeout: 5s
 
 coralogix/all:
-  # endpoint: "http://localhost:8000"
+  traces:
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  metrics:
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  logs:
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  application_name_attributes:
+    - "service.namespace"
+    - "k8s.namespace.name" 
+  subsystem_name_attributes:
+    - "service.name"
+    - "k8s.deployment.name"
+    - "k8s.statefulset.name"
+    - "k8s.daemonset.name"
+    - "k8s.cronjob.name"
+    - "k8s.job.name"
+    - "k8s.container.name"
+  private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  application_name: "APP_NAME"
+  subsystem_name: "SUBSYSTEM_NAME"
+  timeout: 5s
+
+coralogix/domain:
+  domain: "coralogix.com"
+  application_name_attributes:
+    - "service.namespace"
+  subsystem_name_attributes:
+    - "service.name"
+  private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  application_name: "APP_NAME"
+  subsystem_name: "SUBSYSTEM_NAME"
+  timeout: 5s
+
+coralogix/domain_endoints:
+  domain: "coralogix.com"
   traces:
     endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   metrics:

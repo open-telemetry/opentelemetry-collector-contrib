@@ -1,0 +1,9 @@
+type: awskinesis
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, observiq]
+  codeowners:
+    active: [Aneurysm9, MovieStoreGuy]

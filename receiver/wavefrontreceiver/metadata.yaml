@@ -1,0 +1,10 @@
+type: wavefront
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [samiura]
+

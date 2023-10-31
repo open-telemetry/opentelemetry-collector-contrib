@@ -5,11 +5,9 @@ all_set:
       enabled: true
     system.processes.created:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     system.processes.count:
       enabled: false
     system.processes.created:
       enabled: false
-  resource_attributes:

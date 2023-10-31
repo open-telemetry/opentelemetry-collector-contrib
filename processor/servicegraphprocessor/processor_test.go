@@ -1,22 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package servicegraphprocessor
 
 import (
 	"context"
-	"math/rand"
+	"crypto/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -87,7 +77,7 @@ func TestProcessorStart(t *testing.T) {
 
 func TestConnectorStart(t *testing.T) {
 	// Create servicegraph processor
-	factory := NewConnectorFactory()
+	factory := newConnectorFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	procCreationParams := connectortest.NewNopCreateSettings()
@@ -119,7 +109,7 @@ func TestProcessorShutdown(t *testing.T) {
 
 func TestConnectorShutdown(t *testing.T) {
 	// Prepare
-	factory := NewConnectorFactory()
+	factory := newConnectorFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Test
@@ -133,107 +123,227 @@ func TestConnectorShutdown(t *testing.T) {
 }
 
 func TestProcessorConsume(t *testing.T) {
-	metricsExporter := newMockMetricsExporter(func(md pmetric.Metrics) error {
-		return verifyMetrics(t, md)
-	})
-	// set virtual node feature
-	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), true)
-
 	for _, tc := range []struct {
-		name         string
-		cfg          Config
-		sampleTraces ptrace.Traces
+		name          string
+		cfg           *Config
+		gates         []*featuregate.Gate
+		sampleTraces  ptrace.Traces
+		verifyMetrics func(t *testing.T, md pmetric.Metrics)
 	}{
 		{
 			name: "traces with client and server span",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-			}, sampleTraces: buildSampleTrace("val"),
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			sampleTraces:  buildSampleTrace(t, "val"),
+			verifyMetrics: verifyHappyCaseMetrics,
 		},
 		{
-			name: "incomplete traces with server span lost",
-			cfg: Config{
+			name: "incomplete traces with virtual server span",
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
 			},
+			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
 			sampleTraces: incompleteClientTraces(),
+			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
+				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("server")
+				assert.True(t, ok)
+				assert.Equal(t, "127.10.10.1", v.Str())
+			},
+		},
+		{
+			name: "incomplete traces with virtual client span",
+			cfg: &Config{
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			},
+			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
+			sampleTraces: incompleteServerTraces(false),
+			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
+				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("client")
+				assert.True(t, ok)
+				assert.Equal(t, "user", v.Str())
+			},
 		},
 		{
 			name: "incomplete traces with client span lost",
-			cfg: Config{
+			cfg: &Config{
 				MetricsExporter: "mock",
 				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
 			},
-			sampleTraces: incompleteServerTraces(),
+			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
+			sampleTraces: incompleteServerTraces(true),
+			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
+				assert.Equal(t, 0, md.MetricCount())
+			},
+		},
+		{
+			name: "complete traces with legacy latency metrics",
+			cfg: &Config{
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Store: StoreConfig{
+					MaxItems: 10,
+					TTL:      time.Nanosecond,
+				},
+			}, sampleTraces: buildSampleTrace(t, "val"),
+			gates:         []*featuregate.Gate{virtualNodeFeatureGate, legacyLatencyUnitMsFeatureGate},
+			verifyMetrics: verifyHappyCaseMetricsWithDuration(1000),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// Set feature gates
+			for _, gate := range tc.gates {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+			}
+
 			// Prepare
-			processor := newProcessor(zaptest.NewLogger(t), &tc.cfg)
-			processor.tracesConsumer = consumertest.NewNop()
+			p := newProcessor(zaptest.NewLogger(t), tc.cfg)
+			p.tracesConsumer = consumertest.NewNop()
+
+			metricsExporter := newMockMetricsExporter()
+
 			mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 				component.DataTypeMetrics: {
 					component.NewID("mock"): metricsExporter,
 				},
 			})
 
-			assert.NoError(t, processor.Start(context.Background(), mHost))
+			// Start processor
+			assert.NoError(t, p.Start(context.Background(), mHost))
 
 			// Test & verify
-			// The assertion is part of verifyMetrics func.
-			assert.NoError(t, processor.ConsumeTraces(context.Background(), tc.sampleTraces))
+			// The assertion is part of verifyHappyCaseMetrics func.
+			assert.NoError(t, p.ConsumeTraces(context.Background(), tc.sampleTraces))
 			time.Sleep(time.Second * 2)
+
+			// Force collection
+			p.store.Expire()
+			md, err := p.buildMetrics()
+			assert.NoError(t, err)
+			tc.verifyMetrics(t, md)
+
 			// Shutdown the processor
-			assert.NoError(t, processor.Shutdown(context.Background()))
+			assert.NoError(t, p.Shutdown(context.Background()))
+
+			// Unset feature gates
+			for _, gate := range tc.gates {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+			}
 		})
 	}
-
-	// unset virtual node feature
-	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), false)
 }
 
 func TestConnectorConsume(t *testing.T) {
 	// Prepare
 	cfg := &Config{
 		Dimensions: []string{"some-attribute", "non-existing-attribute"},
+		Store:      StoreConfig{MaxItems: 10},
 	}
 
 	conn := newProcessor(zaptest.NewLogger(t), cfg)
-	conn.metricsConsumer = newMockMetricsExporter(func(md pmetric.Metrics) error {
-		return verifyMetrics(t, md)
-	})
+	conn.metricsConsumer = newMockMetricsExporter()
 
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Test & verify
-	td := buildSampleTrace("val")
-	// The assertion is part of verifyMetrics func.
+	td := buildSampleTrace(t, "val")
+	// The assertion is part of verifyHappyCaseMetrics func.
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
-	// Shutdown the conn
+	// Force collection
+	conn.store.Expire()
+	md, err := conn.buildMetrics()
+	assert.NoError(t, err)
+	verifyHappyCaseMetrics(t, md)
+
+	// Shutdown the connector
 	assert.NoError(t, conn.Shutdown(context.Background()))
 }
 
-func verifyMetrics(t *testing.T, md pmetric.Metrics) error {
-	assert.Equal(t, 2, md.MetricCount())
+func TestProcessor_MetricsFlushInterval(t *testing.T) {
+	// Prepare
+	p := newProcessor(zaptest.NewLogger(t), &Config{
+		MetricsExporter: "mock",
+		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Store: StoreConfig{
+			MaxItems: 10,
+			TTL:      time.Nanosecond,
+		},
+		MetricsFlushInterval: 2 * time.Second,
+	})
+	p.tracesConsumer = consumertest.NewNop()
 
-	rms := md.ResourceMetrics()
-	assert.Equal(t, 1, rms.Len())
+	metricsExporter := newMockMetricsExporter()
+	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("mock"): metricsExporter,
+		},
+	})
 
-	sms := rms.At(0).ScopeMetrics()
-	assert.Equal(t, 1, sms.Len())
+	// Start processor
+	assert.NoError(t, p.Start(context.Background(), mHost))
 
-	ms := sms.At(0).Metrics()
-	assert.Equal(t, 2, ms.Len())
+	// Push traces
+	assert.NoError(t, p.ConsumeTraces(context.Background(), buildSampleTrace(t, "val")))
 
-	mCount := ms.At(0)
-	verifyCount(t, mCount)
+	// Metrics are not immediately flushed
+	assert.Len(t, metricsExporter.getMetrics(), 0)
 
-	mDuration := ms.At(1)
-	verifyDuration(t, mDuration)
+	// Metrics are flushed after 2 seconds
+	assert.Eventuallyf(t, func() bool { return len(metricsExporter.getMetrics()) == 1 }, 5*time.Second, 100*time.Millisecond, "metrics are not flushed")
+	verifyHappyCaseMetrics(t, metricsExporter.getMetrics()[0])
 
-	return nil
+	// Shutdown the processor
+	assert.NoError(t, p.Shutdown(context.Background()))
+}
+
+func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
+	verifyHappyCaseMetricsWithDuration(1)(t, md)
+}
+
+func verifyHappyCaseMetricsWithDuration(durationSum float64) func(t *testing.T, md pmetric.Metrics) {
+	return func(t *testing.T, md pmetric.Metrics) {
+		assert.Equal(t, 3, md.MetricCount())
+
+		rms := md.ResourceMetrics()
+		assert.Equal(t, 1, rms.Len())
+
+		sms := rms.At(0).ScopeMetrics()
+		assert.Equal(t, 1, sms.Len())
+
+		ms := sms.At(0).Metrics()
+		assert.Equal(t, 3, ms.Len())
+
+		mCount := ms.At(0)
+		verifyCount(t, mCount)
+
+		mServerDuration := ms.At(1)
+		assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
+		verifyDuration(t, mServerDuration, durationSum)
+
+		mClientDuration := ms.At(2)
+		assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
+		verifyDuration(t, mClientDuration, durationSum)
+	}
 }
 
 func verifyCount(t *testing.T, m pmetric.Metric) {
@@ -248,31 +358,32 @@ func verifyCount(t *testing.T, m pmetric.Metric) {
 	assert.Equal(t, int64(1), dp.IntValue())
 
 	attributes := dp.Attributes()
-	assert.Equal(t, 6, attributes.Len())
+	assert.Equal(t, 5, attributes.Len())
 	verifyAttr(t, attributes, "client", "some-service")
 	verifyAttr(t, attributes, "server", "some-service")
+	verifyAttr(t, attributes, "connection_type", "")
 	verifyAttr(t, attributes, "failed", "false")
-	verifyAttr(t, attributes, "some-attribute", "val")
+	verifyAttr(t, attributes, "client_some-attribute", "val")
 }
 
-func verifyDuration(t *testing.T, m pmetric.Metric) {
-	assert.Equal(t, "traces_service_graph_request_duration_seconds", m.Name())
-
+func verifyDuration(t *testing.T, m pmetric.Metric, durationSum float64) {
 	assert.Equal(t, pmetric.MetricTypeHistogram, m.Type())
 	dps := m.Histogram().DataPoints()
 	assert.Equal(t, 1, dps.Len())
 
 	dp := dps.At(0)
-	assert.Equal(t, float64(1000), dp.Sum()) // Duration: 1sec
+	assert.Equal(t, durationSum, dp.Sum()) // Duration: 1sec
 	assert.Equal(t, uint64(1), dp.Count())
-	assert.Equal(t, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0}, dp.BucketCounts())
+	buckets := pcommon.NewUInt64Slice()
+	buckets.FromRaw([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
+	assert.Equal(t, buckets, dp.BucketCounts())
 
 	attributes := dp.Attributes()
-	assert.Equal(t, 4, attributes.Len())
+	assert.Equal(t, 5, attributes.Len())
 	verifyAttr(t, attributes, "client", "some-service")
 	verifyAttr(t, attributes, "server", "some-service")
-	verifyAttr(t, attributes, "failed", "false")
-	verifyAttr(t, attributes, "some-attribute", "val")
+	verifyAttr(t, attributes, "connection_type", "")
+	verifyAttr(t, attributes, "client_some-attribute", "val")
 }
 
 func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
@@ -281,7 +392,7 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	assert.Equal(t, expected, v.AsString())
 }
 
-func buildSampleTrace(attrValue string) ptrace.Traces {
+func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
 	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
 
@@ -293,11 +404,14 @@ func buildSampleTrace(attrValue string) ptrace.Traces {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
 	var traceID pcommon.TraceID
-	rand.Read(traceID[:])
+	_, err := rand.Read(traceID[:])
+	assert.NoError(t, err)
 
 	var clientSpanID, serverSpanID pcommon.SpanID
-	rand.Read(clientSpanID[:])
-	rand.Read(serverSpanID[:])
+	_, err = rand.Read(clientSpanID[:])
+	assert.NoError(t, err)
+	_, err = rand.Read(serverSpanID[:])
+	assert.NoError(t, err)
 
 	clientSpan := scopeSpans.Spans().AppendEmpty()
 	clientSpan.SetName("client span")
@@ -344,7 +458,7 @@ func incompleteClientTraces() ptrace.Traces {
 	return traces
 }
 
-func incompleteServerTraces() ptrace.Traces {
+func incompleteServerTraces(withParentSpan bool) ptrace.Traces {
 	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
 	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
 
@@ -357,6 +471,9 @@ func incompleteServerTraces() ptrace.Traces {
 	serverSpanNoClientSpan := scopeSpans.Spans().AppendEmpty()
 	serverSpanNoClientSpan.SetName("server span")
 	serverSpanNoClientSpan.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
+	if withParentSpan {
+		serverSpanNoClientSpan.SetParentSpanID([8]byte{0x27, 0x28, 0x29, 0x30, 0x31, 0x32, 0x33, 0x34})
+	}
 	serverSpanNoClientSpan.SetTraceID(anotherTraceID)
 	serverSpanNoClientSpan.SetKind(ptrace.SpanKindServer)
 	serverSpanNoClientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
@@ -398,12 +515,13 @@ func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]compon
 
 var _ exporter.Metrics = (*mockMetricsExporter)(nil)
 
-func newMockMetricsExporter(verifyFunc func(md pmetric.Metrics) error) exporter.Metrics {
-	return &mockMetricsExporter{verify: verifyFunc}
+func newMockMetricsExporter() *mockMetricsExporter {
+	return &mockMetricsExporter{}
 }
 
 type mockMetricsExporter struct {
-	verify func(md pmetric.Metrics) error
+	mtx sync.Mutex
+	md  []pmetric.Metrics
 }
 
 func (m *mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
@@ -413,18 +531,30 @@ func (m *mockMetricsExporter) Shutdown(context.Context) error { return nil }
 func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 
 func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	return m.verify(md)
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	m.md = append(m.md, md)
+	return nil
+}
+
+func (m *mockMetricsExporter) getMetrics() []pmetric.Metrics {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	return m.md
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
 	p := serviceGraphProcessor{
-		reqTotal:                       make(map[string]int64),
-		reqFailedTotal:                 make(map[string]int64),
-		reqDurationSecondsSum:          make(map[string]float64),
-		reqDurationSecondsCount:        make(map[string]uint64),
-		reqDurationBounds:              defaultLatencyHistogramBucketsMs,
-		reqDurationSecondsBucketCounts: make(map[string][]uint64),
-		keyToMetric:                    make(map[string]metricSeries),
+		reqTotal:                             make(map[string]int64),
+		reqFailedTotal:                       make(map[string]int64),
+		reqServerDurationSecondsSum:          make(map[string]float64),
+		reqServerDurationSecondsCount:        make(map[string]uint64),
+		reqServerDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqClientDurationSecondsSum:          make(map[string]float64),
+		reqClientDurationSecondsCount:        make(map[string]uint64),
+		reqClientDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqDurationBounds:                    defaultLatencyHistogramBuckets,
+		keyToMetric:                          make(map[string]metricSeries),
 		config: &Config{
 			Dimensions: []string{},
 		},
@@ -451,7 +581,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.caseStr, func(t *testing.T) {
-			p.updateDurationMetrics(metricKey, tc.duration)
+			p.updateDurationMetrics(metricKey, tc.duration, tc.duration)
 		})
 	}
 }
@@ -467,7 +597,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 		},
 	}
 
-	mockMetricsExporter := newMockMetricsExporter(func(md pmetric.Metrics) error { return nil })
+	mockMetricsExporter := newMockMetricsExporter()
 
 	p := newProcessor(zaptest.NewLogger(t), cfg)
 	p.tracesConsumer = consumertest.NewNop()
@@ -481,7 +611,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.NoError(t, p.Start(context.Background(), mHost))
 
 	// ConsumeTraces
-	td := buildSampleTrace("first")
+	td := buildSampleTrace(t, "first")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Make series stale and force a cache cleanup
@@ -493,7 +623,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.Equal(t, 0, len(p.keyToMetric))
 
 	// ConsumeTraces with a trace with different attribute value
-	td = buildSampleTrace("second")
+	td = buildSampleTrace(t, "second")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Shutdown the processor

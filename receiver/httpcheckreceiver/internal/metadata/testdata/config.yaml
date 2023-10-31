@@ -7,7 +7,6 @@ all_set:
       enabled: true
     httpcheck.status:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     httpcheck.duration:
@@ -16,4 +15,3 @@ none_set:
       enabled: false
     httpcheck.status:
       enabled: false
-  resource_attributes:

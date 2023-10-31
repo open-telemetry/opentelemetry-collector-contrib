@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
@@ -139,9 +128,9 @@ func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
 
 func (f *taskFetcher) fetchAndDecorate(ctx context.Context) ([]*taskAnnotated, error) {
 	// taskAnnotated
-	rawTasks, err := f.getAllTasks(ctx)
+	rawTasks, err := f.getDiscoverableTasks(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("getAllTasks failed: %w", err)
+		return nil, fmt.Errorf("getDiscoverableTasks failed: %w", err)
 	}
 	tasks, err := f.attachTaskDefinition(ctx, rawTasks)
 	if err != nil {
@@ -162,9 +151,10 @@ func (f *taskFetcher) fetchAndDecorate(ctx context.Context) ([]*taskAnnotated, e
 	return tasks, nil
 }
 
-// getAllTasks get arns of all running tasks and describe those tasks.
+// getDiscoverableTasks get arns of all running tasks and describe those tasks
+// and filter only fargate tasks or EC2 task which container instance is known.
 // There is no API to list task detail without arn so we need to call two APIs.
-func (f *taskFetcher) getAllTasks(ctx context.Context) ([]*ecs.Task, error) {
+func (f *taskFetcher) getDiscoverableTasks(ctx context.Context) ([]*ecs.Task, error) {
 	svc := f.ecs
 	cluster := aws.String(f.cluster)
 	req := ecs.ListTasksInput{Cluster: cluster}
@@ -182,7 +172,16 @@ func (f *taskFetcher) getAllTasks(ctx context.Context) ([]*ecs.Task, error) {
 		if err != nil {
 			return nil, fmt.Errorf("ecs.DescribeTasks failed: %w", err)
 		}
-		tasks = append(tasks, descRes.Tasks...)
+
+		for _, task := range descRes.Tasks {
+			// Preserve only fargate tasks or EC2 tasks with non-nil ContainerInstanceArn.
+			// When ECS task of EC2 launch type is in state Provisioning/Pending, it may
+			// not have EC2 instance. Such tasks have `nil` instance arn and the
+			// attachContainerInstance call will fail
+			if task.ContainerInstanceArn != nil || aws.StringValue(task.LaunchType) != ecs.LaunchTypeEc2 {
+				tasks = append(tasks, task)
+			}
+		}
 		if listRes.NextToken == nil {
 			break
 		}
@@ -220,12 +219,12 @@ func (f *taskFetcher) attachTaskDefinition(ctx context.Context, tasks []*ecs.Tas
 		arn2Def[arn] = def
 	}
 
-	var tasksWithDef []*taskAnnotated
-	for _, t := range tasks {
-		tasksWithDef = append(tasksWithDef, &taskAnnotated{
+	tasksWithDef := make([]*taskAnnotated, len(tasks))
+	for i, t := range tasks {
+		tasksWithDef[i] = &taskAnnotated{
 			Task:       t,
 			Definition: arn2Def[aws.StringValue(t.TaskDefinitionArn)],
-		})
+		}
 	}
 	return tasksWithDef, nil
 }
@@ -301,11 +300,11 @@ func (f *taskFetcher) describeContainerInstances(ctx context.Context, instanceLi
 	}
 
 	// Create the index to map ec2 id back to container instance id.
-	var ec2Ids []*string
+	ec2Ids := make([]*string, len(res.ContainerInstances))
 	ec2IdToCI := make(map[string]string)
-	for _, containerInstance := range res.ContainerInstances {
+	for i, containerInstance := range res.ContainerInstances {
 		ec2Id := containerInstance.Ec2InstanceId
-		ec2Ids = append(ec2Ids, ec2Id)
+		ec2Ids[i] = ec2Id
 		ec2IdToCI[aws.StringValue(ec2Id)] = aws.StringValue(containerInstance.ContainerInstanceArn)
 	}
 
@@ -415,9 +414,9 @@ func (f *taskFetcher) attachService(tasks []*taskAnnotated, services []*ecs.Serv
 // Util Start
 
 func sortStringPointers(ps []*string) {
-	var ss []string
-	for _, p := range ps {
-		ss = append(ss, aws.StringValue(p))
+	ss := make([]string, len(ps))
+	for i, p := range ps {
+		ss[i] = aws.StringValue(p)
 	}
 	sort.Strings(ss)
 	for i := range ss {

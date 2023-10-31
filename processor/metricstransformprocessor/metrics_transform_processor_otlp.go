@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
@@ -174,6 +163,7 @@ func extractMetricWithMatchingAttrs(metric pmetric.Metric, f internalFilter) pme
 	newMetric.SetUnit(metric.Unit())
 
 	switch metric.Type() {
+	//exhaustive:enforce
 	case pmetric.MetricTypeGauge:
 		newMetric.SetEmptyGauge().DataPoints().EnsureCapacity(matchedDpsCount)
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
@@ -453,6 +443,8 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 func copyMetricDetails(from, to pmetric.Metric) {
 	to.SetName(from.Name())
 	to.SetUnit(from.Unit())
+	to.SetDescription(from.Description())
+	//exhaustive:enforce
 	switch from.Type() {
 	case pmetric.MetricTypeGauge:
 		to.SetEmptyGauge()
@@ -462,7 +454,7 @@ func copyMetricDetails(from, to pmetric.Metric) {
 	case pmetric.MetricTypeHistogram:
 		to.SetEmptyHistogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
 	case pmetric.MetricTypeExponentialHistogram:
-		to.SetEmptyExponentialHistogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
+		to.SetEmptyExponentialHistogram().SetAggregationTemporality(from.ExponentialHistogram().AggregationTemporality())
 	case pmetric.MetricTypeSummary:
 		to.SetEmptySummary()
 	}
@@ -471,6 +463,7 @@ func copyMetricDetails(from, to pmetric.Metric) {
 // rangeDataPointAttributes calls f sequentially on attributes of every metric data point.
 // The iteration terminates if f returns false.
 func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
@@ -511,6 +504,7 @@ func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 }
 
 func countDataPoints(metric pmetric.Metric) int {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return metric.Gauge().DataPoints().Len()
@@ -543,25 +537,25 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 
 	for _, op := range transform.Operations {
 		switch op.configOperation.Action {
-		case UpdateLabel:
+		case updateLabel:
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)
-		case AggregateLabels:
+		case aggregateLabels:
 			if canChangeMetric {
 				aggregateLabelsOp(metric, op)
 			}
-		case AggregateLabelValues:
+		case aggregateLabelValues:
 			if canChangeMetric {
 				aggregateLabelValuesOp(metric, op)
 			}
-		case ToggleScalarDataType:
+		case toggleScalarDataType:
 			toggleScalarDataTypeOp(metric, transform.MetricIncludeFilter)
-		case ScaleValue:
+		case scaleValue:
 			scaleValueOp(metric, op, transform.MetricIncludeFilter)
-		case AddLabel:
+		case addLabel:
 			if canChangeMetric {
 				addLabelOp(metric, op)
 			}
-		case DeleteLabelValue:
+		case deleteLabelValue:
 			if canChangeMetric {
 				deleteLabelValueOp(metric, op)
 			}

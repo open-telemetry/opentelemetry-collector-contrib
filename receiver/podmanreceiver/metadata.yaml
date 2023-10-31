@@ -1,0 +1,10 @@
+type: podman_stats
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [rogercoll]
+

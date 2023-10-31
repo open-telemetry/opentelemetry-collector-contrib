@@ -1,29 +1,21 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sapmexporter
 
 import (
+	"compress/gzip"
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/jaegertracing/jaeger/model"
+	"github.com/klauspost/compress/zstd"
+	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -123,7 +115,7 @@ func hasToken(batches []*model.Batch) bool {
 	return false
 }
 
-func buildTestTrace() ptrace.Traces {
+func buildTestTrace() (ptrace.Traces, error) {
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
@@ -133,15 +125,20 @@ func buildTestTrace() ptrace.Traces {
 		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("MySpan")
 
-		rand.Seed(time.Now().Unix())
 		var traceIDBytes [16]byte
 		var spanIDBytes [8]byte
-		rand.Read(traceIDBytes[:])
-		rand.Read(spanIDBytes[:])
+		_, err := rand.Read(traceIDBytes[:])
+		if err != nil {
+			return trace, err
+		}
+		_, err = rand.Read(spanIDBytes[:])
+		if err != nil {
+			return trace, err
+		}
 		span.SetTraceID(traceIDBytes)
 		span.SetSpanID(spanIDBytes)
 	}
-	return trace
+	return trace, nil
 }
 
 func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
@@ -205,7 +202,8 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, se, "failed to create trace exporter")
 
-			trace := buildTestTrace()
+			trace, testTraceErr := buildTestTrace()
+			require.NoError(t, testTraceErr)
 			err = se.pushTraceData(context.Background(), trace)
 
 			if tt.sendError {
@@ -214,5 +212,117 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 				require.NoError(t, err)
 			}
 		})
+	}
+}
+
+func decompress(body io.Reader, compression string) ([]byte, error) {
+	switch compression {
+	case "":
+		return io.ReadAll(body)
+	case "gzip":
+		reader, err := gzip.NewReader(body)
+		if err != nil {
+			return nil, err
+		}
+		return io.ReadAll(reader)
+	case "zstd":
+		reader, err := zstd.NewReader(body)
+		if err != nil {
+			return nil, err
+		}
+		return io.ReadAll(reader)
+	}
+	return nil, fmt.Errorf("unknown compression %q", compression)
+}
+
+func TestCompression(t *testing.T) {
+	tests := []struct {
+		name                     string
+		configDisableCompression bool
+		configCompression        string
+		receivedCompression      string
+	}{
+		{
+			name:                     "unspecified config",
+			configCompression:        "",
+			configDisableCompression: false,
+			receivedCompression:      "gzip",
+		},
+		{
+			name:                     "gzip",
+			configCompression:        "gzip",
+			configDisableCompression: false,
+			receivedCompression:      "gzip",
+		},
+		{
+			name:                     "zstd",
+			configCompression:        "zstd",
+			configDisableCompression: false,
+			receivedCompression:      "zstd",
+		},
+		{
+			name:                     "disable compression and unspecified method",
+			configDisableCompression: true,
+			configCompression:        "",
+			receivedCompression:      "",
+		},
+		{
+			name:                     "disable compression and specify gzip",
+			configDisableCompression: true,
+			configCompression:        "gzip",
+			receivedCompression:      "",
+		},
+		{
+			name:                     "disable compression and specify zstd",
+			configDisableCompression: true,
+			configCompression:        "zstd",
+			receivedCompression:      "",
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(
+			tt.name, func(t *testing.T) {
+				tracesReceived := false
+				server := httptest.NewServer(
+					http.HandlerFunc(
+						func(w http.ResponseWriter, r *http.Request) {
+							compression := r.Header.Get("Content-Encoding")
+							assert.EqualValues(t, compression, tt.receivedCompression)
+
+							payload, err := decompress(r.Body, compression)
+							require.NoError(t, err)
+
+							var sapm splunksapm.PostSpansRequest
+							err = sapm.Unmarshal(payload)
+							require.NoError(t, err)
+
+							w.WriteHeader(200)
+							tracesReceived = true
+						},
+					),
+				)
+				defer func() {
+					assert.True(t, tracesReceived, "Test server never received traces.")
+				}()
+				defer server.Close()
+
+				cfg := &Config{
+					Endpoint:           server.URL,
+					DisableCompression: tt.configDisableCompression,
+					Compression:        tt.configCompression,
+				}
+				params := exportertest.NewNopCreateSettings()
+
+				se, err := newSAPMExporter(cfg, params)
+				assert.Nil(t, err)
+				assert.NotNil(t, se, "failed to create trace exporter")
+
+				trace, testTraceErr := buildTestTrace()
+				require.NoError(t, testTraceErr)
+				err = se.pushTraceData(context.Background(), trace)
+				require.NoError(t, err)
+			},
+		)
 	}
 }

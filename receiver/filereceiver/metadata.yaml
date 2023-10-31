@@ -1,0 +1,9 @@
+type: file
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [pmcollins, djaglowski]

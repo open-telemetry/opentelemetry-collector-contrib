@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
@@ -42,7 +31,7 @@ func aggregateLabelsOp(metric pmetric.Metric, mtpOp internalOperation) {
 // groupMetrics groups all the provided timeseries that will be aggregated together based on all the label values.
 // Returns a map of grouped timeseries and the corresponding selected labels
 // canBeCombined must be callled before.
-func groupMetrics(metrics pmetric.MetricSlice, aggType AggregationType, to pmetric.Metric) {
+func groupMetrics(metrics pmetric.MetricSlice, aggType aggregationType, to pmetric.Metric) {
 	var ag aggGroups
 	for i := 0; i < metrics.Len(); i++ {
 		ag = groupDataPoints(metrics.At(i), ag)
@@ -79,7 +68,7 @@ func groupDataPoints(metric pmetric.Metric, ag aggGroups) aggGroups {
 	return ag
 }
 
-func mergeDataPoints(to pmetric.Metric, aggType AggregationType, ag aggGroups) {
+func mergeDataPoints(to pmetric.Metric, aggType aggregationType, ag aggGroups) {
 	switch to.Type() {
 	case pmetric.MetricTypeGauge:
 		mergeNumberDataPoints(ag.gauge, aggType, to.Gauge().DataPoints())
@@ -164,7 +153,7 @@ func dataPointHashKey(atts pcommon.Map, ts pcommon.Timestamp, other ...interface
 	return string(jsonStr)
 }
 
-func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg AggregationType, to pmetric.NumberDataPointSlice) {
+func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg aggregationType, to pmetric.NumberDataPointSlice) {
 	for _, dps := range dpsMap {
 		dp := to.AppendEmpty()
 		dps.At(0).MoveTo(dp)
@@ -172,30 +161,30 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 		case pmetric.NumberDataPointValueTypeDouble:
 			for i := 1; i < dps.Len(); i++ {
 				switch agg {
-				case Sum, Mean:
+				case sum, mean:
 					dp.SetDoubleValue(dp.DoubleValue() + doubleVal(dps.At(i)))
-				case Max:
+				case max:
 					dp.SetDoubleValue(math.Max(dp.DoubleValue(), doubleVal(dps.At(i))))
-				case Min:
+				case min:
 					dp.SetDoubleValue(math.Min(dp.DoubleValue(), doubleVal(dps.At(i))))
 				}
 				if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
 					dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 				}
 			}
-			if agg == Mean {
+			if agg == mean {
 				dp.SetDoubleValue(dp.DoubleValue() / float64(dps.Len()))
 			}
 		case pmetric.NumberDataPointValueTypeInt:
 			for i := 1; i < dps.Len(); i++ {
 				switch agg {
-				case Sum, Mean:
+				case sum, mean:
 					dp.SetIntValue(dp.IntValue() + dps.At(i).IntValue())
-				case Max:
+				case max:
 					if dp.IntValue() < intVal(dps.At(i)) {
 						dp.SetIntValue(intVal(dps.At(i)))
 					}
-				case Min:
+				case min:
 					if dp.IntValue() > intVal(dps.At(i)) {
 						dp.SetIntValue(intVal(dps.At(i)))
 					}
@@ -204,7 +193,7 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 					dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 				}
 			}
-			if agg == Mean {
+			if agg == mean {
 				dp.SetIntValue(dp.IntValue() / int64(dps.Len()))
 			}
 		}

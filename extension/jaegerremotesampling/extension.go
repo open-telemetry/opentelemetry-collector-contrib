@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package jaegerremotesampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 
@@ -18,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	grpcStore "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
 	"github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"go.opentelemetry.io/collector/component"
@@ -73,13 +61,16 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	if jrse.cfg.Source.Remote != nil {
 		conn, err := jrse.cfg.Source.Remote.ToClientConn(ctx, host, jrse.telemetry)
 		if err != nil {
-			return fmt.Errorf("error while connecting to the remote sampling source: %w", err)
+			return fmt.Errorf("failed to create the remote strategy store: %w", err)
 		}
-
-		jrse.samplingStore = grpcStore.NewConfigManager(conn)
-		jrse.closers = append(jrse.closers, func() error {
-			return conn.Close()
-		})
+		jrse.closers = append(jrse.closers, conn.Close)
+		remoteStore, closer := internal.NewRemoteStrategyStore(
+			conn,
+			jrse.cfg.Source.Remote,
+			jrse.cfg.Source.ReloadInterval,
+		)
+		jrse.closers = append(jrse.closers, closer.Close)
+		jrse.samplingStore = remoteStore
 	}
 
 	if jrse.cfg.HTTPServerSettings != nil {

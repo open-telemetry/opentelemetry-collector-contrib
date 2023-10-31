@@ -1,9 +1,18 @@
-flatten_attributes:
-  type: flatten
-  field: attributes.errField
-flatten_one_level:
+flatten_body_one_level:
   type: flatten
   field: body.nested
-flatten_second_level:
+flatten_body_second_level:
   type: flatten
   field: body.nested.secondlevel
+flatten_resource_one_level:
+  type: flatten
+  field: resource.nested
+flatten_resource_second_level:
+  type: flatten
+  field: resource.nested.secondlevel
+flatten_attributes_one_level:
+  type: flatten
+  field: attributes.nested
+flatten_attributes_second_level:
+  type: flatten
+  field: attributes.nested.secondlevel

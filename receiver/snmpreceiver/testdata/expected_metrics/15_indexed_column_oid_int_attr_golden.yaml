@@ -1,0 +1,24 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: test description
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: attr1
+                      value:
+                        stringValue: "1"
+                  timeUnixNano: "1000000"
+                - asInt: "2"
+                  attributes:
+                    - key: attr1
+                      value:
+                        stringValue: "2"
+                  timeUnixNano: "1000000"
+            name: metric1
+            unit: By
+        scope:
+          name: otelcol/snmpreceiver
+          version: latest

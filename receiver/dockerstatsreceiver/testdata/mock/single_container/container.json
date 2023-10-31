@@ -12,6 +12,7 @@
     "Entrypoint": null,
     "Env": [
       "ENV_VAR=env-var",
+      "ENV_VAR_2=env-var-2",
       "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     ],
     "ExposedPorts": {
@@ -20,7 +21,8 @@
     "Hostname": "10b703fb312b",
     "Image": "ubuntu",
     "Labels": {
-      "container.label": "container-label"
+      "container.label": "container-label",
+      "container.label.2": "container-label-2"
     },
     "OnBuild": null,
     "OpenStdin": true,

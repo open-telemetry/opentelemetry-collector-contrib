@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package metricstransformprocessor
 
@@ -120,7 +109,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:   UpdateLabel,
+								Action:   updateLabel,
 								Label:    "label1",
 								NewLabel: "new/label1",
 							},
@@ -146,7 +135,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: UpdateLabel,
+								Action: updateLabel,
 								Label:  "label1",
 							},
 							valueActionsMapping: map[string]string{
@@ -176,7 +165,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:   UpdateLabel,
+								Action:   updateLabel,
 								Label:    "label1",
 								NewLabel: "new/label1",
 							},
@@ -203,7 +192,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: UpdateLabel,
+								Action: updateLabel,
 								Label:  "label1",
 							},
 							valueActionsMapping: map[string]string{"label1-value1": "new/label1-value1"},
@@ -233,8 +222,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Sum,
+								Action:          aggregateLabels,
+								AggregationType: sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -245,11 +234,11 @@ var (
 			in: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
 					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
-					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").addDescription("foobar").build(),
 			},
 			out: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
-					addIntDatapoint(1, 2, 4, "label1-value1").build(),
+					addIntDatapoint(1, 2, 4, "label1-value1").addDescription("foobar").build(),
 			},
 		},
 		{
@@ -261,8 +250,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Mean,
+								Action:          aggregateLabels,
+								AggregationType: mean,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -289,8 +278,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Max,
+								Action:          aggregateLabels,
+								AggregationType: max,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -318,8 +307,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Min,
+								Action:          aggregateLabels,
+								AggregationType: min,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -347,8 +336,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Sum,
+								Action:          aggregateLabels,
+								AggregationType: sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -375,8 +364,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Mean,
+								Action:          aggregateLabels,
+								AggregationType: mean,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -403,8 +392,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Max,
+								Action:          aggregateLabels,
+								AggregationType: max,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -431,8 +420,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Min,
+								Action:          aggregateLabels,
+								AggregationType: min,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -465,8 +454,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Sum,
+								Action:          aggregateLabels,
+								AggregationType: sum,
 								LabelSet:        []string{"label1", "label2"},
 							},
 							labelSetMap: map[string]bool{"label1": true, "label2": true},
@@ -500,9 +489,9 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabelValues,
+								Action:          aggregateLabelValues,
 								NewValue:        "new/label2-value",
-								AggregationType: Sum,
+								AggregationType: sum,
 								Label:           "label2",
 							},
 							aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
@@ -536,8 +525,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Sum,
+								Action:          aggregateLabels,
+								AggregationType: sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -572,8 +561,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Sum,
+								Action:          aggregateLabels,
+								AggregationType: sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -603,8 +592,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Mean,
+								Action:          aggregateLabels,
+								AggregationType: mean,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -902,7 +891,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:   UpdateLabel,
+								Action:   updateLabel,
 								Label:    "label1",
 								NewLabel: "new/label1",
 							},
@@ -931,7 +920,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: UpdateLabel,
+								Action: updateLabel,
 								Label:  "label1",
 							},
 							valueActionsMapping: map[string]string{"label1-value1": "new/label1-value1"},
@@ -962,8 +951,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Sum,
+								Action:          aggregateLabels,
+								AggregationType: sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -993,9 +982,9 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabelValues,
+								Action:          aggregateLabelValues,
 								NewValue:        "new/label2-value",
-								AggregationType: Sum,
+								AggregationType: sum,
 								Label:           "label2",
 							},
 							aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
@@ -1025,8 +1014,8 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Sum,
+								Action:          aggregateLabels,
+								AggregationType: sum,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -1122,7 +1111,7 @@ var (
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     Sum,
+					AggregationType:     sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1145,15 +1134,15 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:   AddLabel,
+								Action:   addLabel,
 								NewLabel: "new_label",
 								NewValue: "new_label_value",
 							},
 						},
 						{
 							configOperation: Operation{
-								Action:          AggregateLabels,
-								AggregationType: Sum,
+								Action:          aggregateLabels,
+								AggregationType: sum,
 								LabelSet:        []string{"$1", "new_label"},
 							},
 							labelSetMap: map[string]bool{"$1": true, "new_label": true},
@@ -1173,13 +1162,32 @@ var (
 			},
 		},
 		{
+			name: "combine_exponential_histogram",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{
+						include: regexp.MustCompile("^metric(?P<namedsubmatch>[12])$"),
+					},
+					Action:  Combine,
+					NewName: "new",
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric1").build(),
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric2").build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeExponentialHistogram, "new", "namedsubmatch").build(),
+			},
+		},
+		{
 			name: "combine_error_type",
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     Sum,
+					AggregationType:     sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1200,7 +1208,7 @@ var (
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     Sum,
+					AggregationType:     sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1221,7 +1229,7 @@ var (
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     Sum,
+					AggregationType:     sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1244,7 +1252,7 @@ var (
 					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
 					Action:              Combine,
 					NewName:             "new",
-					AggregationType:     Sum,
+					AggregationType:     sum,
 				},
 			},
 			in: []pmetric.Metric{
@@ -1268,7 +1276,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ToggleScalarDataType,
+								Action: toggleScalarDataType,
 							},
 						},
 					},
@@ -1279,7 +1287,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ToggleScalarDataType,
+								Action: toggleScalarDataType,
 							},
 						},
 					},
@@ -1303,7 +1311,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ToggleScalarDataType,
+								Action: toggleScalarDataType,
 							},
 						},
 					},
@@ -1314,7 +1322,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ToggleScalarDataType,
+								Action: toggleScalarDataType,
 							},
 						},
 					},
@@ -1338,7 +1346,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ToggleScalarDataType,
+								Action: toggleScalarDataType,
 							},
 						},
 					},
@@ -1363,7 +1371,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  100,
 							},
 						},
@@ -1375,7 +1383,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  10,
 							},
 						},
@@ -1400,7 +1408,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  100,
 							},
 						},
@@ -1412,7 +1420,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  .1,
 							},
 						},
@@ -1437,7 +1445,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  100,
 							},
 						},
@@ -1449,7 +1457,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  .1,
 							},
 						},
@@ -1478,7 +1486,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  100,
 							},
 						},
@@ -1490,7 +1498,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  .1,
 							},
 						},
@@ -1520,7 +1528,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  100,
 							},
 						},
@@ -1533,7 +1541,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  10,
 							},
 						},
@@ -1546,7 +1554,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action: ScaleValue,
+								Action: scaleValue,
 								Scale:  0.1,
 							},
 						},
@@ -1586,7 +1594,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:   AddLabel,
+								Action:   addLabel,
 								NewLabel: "foo",
 								NewValue: "bar",
 							},
@@ -1610,7 +1618,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:   AddLabel,
+								Action:   addLabel,
 								NewLabel: "foo",
 								NewValue: "bar",
 							},
@@ -1636,7 +1644,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:   AddLabel,
+								Action:   addLabel,
 								NewLabel: "label1",
 								NewValue: "value3",
 							},
@@ -1662,7 +1670,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:   AddLabel,
+								Action:   addLabel,
 								NewLabel: "foo",
 								NewValue: "bar",
 							},
@@ -1689,7 +1697,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:     DeleteLabelValue,
+								Action:     deleteLabelValue,
 								Label:      "label1",
 								LabelValue: "label1value1",
 							},
@@ -1716,7 +1724,7 @@ var (
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
-								Action:     DeleteLabelValue,
+								Action:     deleteLabelValue,
 								Label:      "label1",
 								LabelValue: "label1value1",
 							},

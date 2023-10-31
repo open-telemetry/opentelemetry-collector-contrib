@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 
@@ -35,24 +24,34 @@ func Logger(t testing.TB) *zap.SugaredLogger {
 type mockPersister struct {
 	data    map[string][]byte
 	dataMux sync.Mutex
+	errKeys map[string]error
 }
 
-func (p *mockPersister) Get(ctx context.Context, k string) ([]byte, error) {
+func (p *mockPersister) Get(_ context.Context, k string) ([]byte, error) {
 	p.dataMux.Lock()
 	defer p.dataMux.Unlock()
+	if _, ok := p.errKeys[k]; ok {
+		return nil, p.errKeys[k]
+	}
 	return p.data[k], nil
 }
 
-func (p *mockPersister) Set(ctx context.Context, k string, v []byte) error {
+func (p *mockPersister) Set(_ context.Context, k string, v []byte) error {
 	p.dataMux.Lock()
 	defer p.dataMux.Unlock()
+	if _, ok := p.errKeys[k]; ok {
+		return p.errKeys[k]
+	}
 	p.data[k] = v
 	return nil
 }
 
-func (p *mockPersister) Delete(ctx context.Context, k string) error {
+func (p *mockPersister) Delete(_ context.Context, k string) error {
 	p.dataMux.Lock()
 	defer p.dataMux.Unlock()
+	if _, ok := p.errKeys[k]; ok {
+		return p.errKeys[k]
+	}
 	delete(p.data, k)
 	return nil
 }
@@ -63,9 +62,15 @@ func NewUnscopedMockPersister() operator.Persister {
 	return &mockPersister{data: data}
 }
 
-// NewMockPersister will return a new persister for testing
 func NewMockPersister(scope string) operator.Persister {
 	return operator.NewScopedPersister(scope, NewUnscopedMockPersister())
+}
+
+// NewErrPersister will return a new persister for testing
+// which will return an error if any of the specified keys are used
+func NewErrPersister(errKeys map[string]error) operator.Persister {
+	data := make(map[string][]byte)
+	return &mockPersister{data: data, errKeys: errKeys}
 }
 
 // Trim removes white space from the lines of a string

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -29,10 +18,20 @@ func Test_loadMetadata(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "metadata.yaml",
+			name: "metadata-sample.yaml",
 			want: metadata{
-				Name:           "testreceiver",
+				Type:           "file",
 				SemConvVersion: "1.9.0",
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[string][]string{
+						"development": {"logs"},
+						"beta":        {"traces"},
+						"stable":      {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+				},
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
@@ -40,6 +39,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "string.resource.attr",
 					},
 					"string.enum.resource.attr": {
 						Description: "Resource attribute with a known set of string values.",
@@ -48,6 +48,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "string.enum.resource.attr",
 					},
 					"optional.resource.attr": {
 						Description: "Explicitly disabled ResourceAttribute.",
@@ -55,8 +56,59 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "optional.resource.attr",
+					},
+					"slice.resource.attr": {
+						Description: "Resource attribute with a slice value.",
+						Enabled:     true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeSlice,
+						},
+						FullName: "slice.resource.attr",
+					},
+					"map.resource.attr": {
+						Description: "Resource attribute with a map value.",
+						Enabled:     true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeMap,
+						},
+						FullName: "map.resource.attr",
+					},
+					"string.resource.attr_disable_warning": {
+						Description: "Resource attribute with any string value.",
+						Warnings: warnings{
+							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
+						},
+						Enabled: true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.resource.attr_disable_warning",
+					},
+					"string.resource.attr_remove_warning": {
+						Description: "Resource attribute with any string value.",
+						Warnings: warnings{
+							IfConfigured: "This resource_attribute is deprecated and will be removed soon.",
+						},
+						Enabled: false,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.resource.attr_remove_warning",
+					},
+					"string.resource.attr_to_be_removed": {
+						Description: "Resource attribute with any string value.",
+						Warnings: warnings{
+							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
+						},
+						Enabled: true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.resource.attr_to_be_removed",
 					},
 				},
+
 				Attributes: map[attributeName]attribute{
 					"enum_attr": {
 						Description:  "Attribute with a known set of string values.",
@@ -65,6 +117,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "enum_attr",
 					},
 					"string_attr": {
 						Description:  "Attribute with any string value.",
@@ -72,6 +125,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "string_attr",
 					},
 					"overridden_int_attr": {
 						Description:  "Integer attribute with overridden name.",
@@ -79,13 +133,30 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeInt,
 						},
+						FullName: "overridden_int_attr",
 					},
 					"boolean_attr": {
 						Description: "Attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
-					}},
+						FullName: "boolean_attr",
+					},
+					"slice_attr": {
+						Description: "Attribute with a slice value.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeSlice,
+						},
+						FullName: "slice_attr",
+					},
+					"map_attr": {
+						Description: "Attribute with a map value.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeMap,
+						},
+						FullName: "map_attr",
+					},
+				},
 				Metrics: map[metricName]metric{
 					"default.metric": {
 						Enabled:               true,
@@ -94,13 +165,13 @@ func Test_loadMetadata(t *testing.T) {
 						Warnings: warnings{
 							IfEnabledNotSet: "This metric will be disabled by default soon.",
 						},
-						Unit: "s",
+						Unit: strPtr("s"),
 						Sum: &sum{
-							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
-							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityCumulative},
-							Mono:            Mono{Monotonic: true},
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
 						},
-						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr"},
+						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 					"optional.metric": {
 						Enabled:     false,
@@ -108,12 +179,25 @@ func Test_loadMetadata(t *testing.T) {
 						Warnings: warnings{
 							IfConfigured: "This metric is deprecated and will be removed soon.",
 						},
-						Unit: "1",
+						Unit: strPtr("1"),
 						Gauge: &gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
 						Attributes: []attributeName{"string_attr", "boolean_attr"},
 					},
+					"optional.metric.empty_unit": {
+						Enabled:     false,
+						Description: "[DEPRECATED] Gauge double metric disabled by default.",
+						Warnings: warnings{
+							IfConfigured: "This metric is deprecated and will be removed soon.",
+						},
+						Unit: strPtr(""),
+						Gauge: &gauge{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+						},
+						Attributes: []attributeName{"string_attr", "boolean_attr"},
+					},
+
 					"default.metric.to_be_removed": {
 						Enabled:               true,
 						Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
@@ -121,37 +205,36 @@ func Test_loadMetadata(t *testing.T) {
 						Warnings: warnings{
 							IfEnabled: "This metric is deprecated and will be removed soon.",
 						},
-						Unit: "s",
+						Unit: strPtr("s"),
 						Sum: &sum{
-							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
-							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityDelta},
-							Mono:            Mono{Monotonic: false},
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityDelta},
+							Mono:                   Mono{Monotonic: false},
 						},
 					},
 				},
+				ScopeName:       "otelcol",
+				ShortFolderName: ".",
 			},
 		},
 		{
-			name:    "testdata/unknown_metric_attribute.yaml",
-			want:    metadata{},
-			wantErr: "metric \"system.cpu.time\" refers to undefined attributes: [missing]",
+			name: "testdata/parent.yaml",
+			want: metadata{
+				Type:            "subcomponent",
+				Parent:          "parentComponent",
+				ScopeName:       "otelcol",
+				ShortFolderName: "testdata",
+			},
 		},
 		{
-			name: "testdata/no_metric_type.yaml",
-			want: metadata{},
-			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
-				"one of the following has to be specified: sum, gauge",
+			name:    "testdata/invalid_type_rattr.yaml",
+			want:    metadata{},
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'resource_attributes[string.resource.attr].type': invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/no_enabled.yaml",
 			want:    metadata{},
 			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
-		},
-		{
-			name: "testdata/two_metric_types.yaml",
-			want: metadata{},
-			wantErr: "metric system.cpu.time has more than one metric type keys, " +
-				"only one of the following has to be specified: sum, gauge",
 		},
 		{
 			name: "testdata/no_value_type.yaml",
@@ -160,15 +243,23 @@ func Test_loadMetadata(t *testing.T) {
 				"* error decoding 'sum': missing required field: `value_type`",
 		},
 		{
-			name: "testdata/unknown_value_type.yaml",
-			want: metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n" +
-				"* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
+			name:    "testdata/unknown_value_type.yaml",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
 		},
 		{
-			name:    "testdata/unused_attribute.yaml",
+			name:    "testdata/no_aggregation.yaml",
 			want:    metadata{},
-			wantErr: "unused attributes: [unused_attr]",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': missing required field: `aggregation_temporality`",
+		},
+		{
+			name:    "testdata/invalid_aggregation.yaml",
+			want:    metadata{},
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'aggregation_temporality': invalid aggregation: \"invalidaggregation\"",
+		},
+		{
+			name:    "testdata/invalid_type_attr.yaml",
+			want:    metadata{},
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'attributes[used_attr].type': invalid type: \"invalidtype\"",
 		},
 	}
 	for _, tt := range tests {
@@ -183,4 +274,8 @@ func Test_loadMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+func strPtr(s string) *string {
+	return &s
 }

@@ -1,4 +1,6 @@
-name: hostmetricsreceiver/filesystem
+type: hostmetricsreceiver/filesystem
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
@@ -31,7 +33,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     attributes: [device, mode, mountpoint, type, state]
 
@@ -41,7 +43,7 @@ metrics:
     unit: "{inodes}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     attributes: [device, mode, mountpoint, type, state]
 

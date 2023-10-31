@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
@@ -38,7 +27,9 @@ type vcenterClient struct {
 	cfg       *Config
 }
 
-func newVcenterClient(c *Config) *vcenterClient {
+var newVcenterClient = defaultNewVcenterClient
+
+func defaultNewVcenterClient(c *Config) *vcenterClient {
 	return &vcenterClient{
 		cfg: c,
 	}
@@ -68,7 +59,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if tlsCfg != nil {
 		client.DefaultTransport().TLSClientConfig = tlsCfg
 	}
-	user := url.UserPassword(vc.cfg.Username, vc.cfg.Password)
+	user := url.UserPassword(vc.cfg.Username, string(vc.cfg.Password))
 	err = client.Login(ctx, user)
 	if err != nil {
 		return fmt.Errorf("unable to login to vcenter sdk: %w", err)

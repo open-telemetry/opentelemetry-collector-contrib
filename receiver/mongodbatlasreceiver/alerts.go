@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -112,14 +101,14 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 
 	recv := &alertsReceiver{
 		addr:          cfg.Endpoint,
-		secret:        cfg.Secret,
+		secret:        string(cfg.Secret),
 		tlsSettings:   cfg.TLS,
 		consumer:      consumer,
 		mode:          cfg.Mode,
 		projects:      cfg.Projects,
 		retrySettings: baseConfig.RetrySettings,
 		publicKey:     baseConfig.PublicKey,
-		privateKey:    baseConfig.PrivateKey,
+		privateKey:    string(baseConfig.PrivateKey),
 		wg:            &sync.WaitGroup{},
 		pollInterval:  baseConfig.Alerts.PollInterval,
 		maxPages:      baseConfig.Alerts.MaxPages,
@@ -358,7 +347,9 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 		resourceAttrs.PutStr("mongodbatlas.alert.config.id", alert.AlertConfigID)
 		resourceAttrs.PutStr("mongodbatlas.org.id", project.OrgID)
 		resourceAttrs.PutStr("mongodbatlas.project.name", project.Name)
+		// nolint G601
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", &alert.ClusterName)
+		// nolint G601
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", &alert.ReplicaSetName)
 
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -393,12 +384,19 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 		attrs.PutStr("id", alert.ID)
 
 		// These attributes are optional and may not be present, depending on the alert type.
+		// nolint G601
 		putStringToMapNotNil(attrs, "metric.name", &alert.MetricName)
+		// nolint G601
 		putStringToMapNotNil(attrs, "type_name", &alert.EventTypeName)
+		// nolint G601
 		putStringToMapNotNil(attrs, "last_notified", &alert.LastNotified)
+		// nolint G601
 		putStringToMapNotNil(attrs, "resolved", &alert.Resolved)
+		// nolint G601
 		putStringToMapNotNil(attrs, "acknowledgement.comment", &alert.AcknowledgementComment)
+		// nolint G601
 		putStringToMapNotNil(attrs, "acknowledgement.username", &alert.AcknowledgingUsername)
+		// nolint G601
 		putStringToMapNotNil(attrs, "acknowledgement.until", &alert.AcknowledgedUntil)
 
 		if alert.CurrentValue != nil {

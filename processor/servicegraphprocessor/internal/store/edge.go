@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package store // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 
@@ -31,7 +20,7 @@ const (
 
 // Edge is an Edge between two nodes in the graph
 type Edge struct {
-	key Key
+	Key Key
 
 	TraceID                            pcommon.TraceID
 	ConnectionType                     ConnectionType
@@ -53,7 +42,7 @@ type Edge struct {
 
 func newEdge(key Key, ttl time.Duration) *Edge {
 	return &Edge{
-		key:        key,
+		Key:        key,
 		Dimensions: make(map[string]string),
 		expiration: time.Now().Add(ttl),
 		Peer:       make(map[string]string),

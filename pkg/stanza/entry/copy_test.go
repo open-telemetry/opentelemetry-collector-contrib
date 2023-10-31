@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry
 
@@ -22,68 +11,57 @@ import (
 
 func TestCopyValueString(t *testing.T) {
 	value := "test"
-	copy := copyValue(value)
-	require.Equal(t, "test", copy)
+	require.Equal(t, "test", copyValue(value))
 }
 
 func TestCopyValueBool(t *testing.T) {
 	value := true
-	copy := copyValue(value)
-	require.Equal(t, true, copy)
+	require.Equal(t, true, copyValue(value))
 }
 
 func TestCopyValueInt(t *testing.T) {
 	value := 5
-	copy := copyValue(value)
-	require.Equal(t, 5, copy)
+	require.Equal(t, 5, copyValue(value))
 }
 
 func TestCopyValueByte(t *testing.T) {
 	value := []byte("test")[0]
-	copy := copyValue(value)
-	require.Equal(t, []byte("test")[0], copy)
+	require.Equal(t, []byte("test")[0], copyValue(value))
 }
 
 func TestCopyValueNil(t *testing.T) {
 	var value interface{}
-	copy := copyValue(value)
-	require.Equal(t, nil, copy)
+	require.Equal(t, nil, copyValue(value))
 }
 
 func TestCopyValueStringArray(t *testing.T) {
 	value := []string{"test"}
-	copy := copyValue(value)
-	require.Equal(t, value, copy)
+	require.Equal(t, value, copyValue(value))
 }
 
 func TestCopyValueIntArray(t *testing.T) {
 	value := []int{5}
-	copy := copyValue(value)
-	require.Equal(t, value, copy)
+	require.Equal(t, value, copyValue(value))
 }
 
 func TestCopyValueByteArray(t *testing.T) {
 	value := []byte("x")
-	copy := copyValue(value)
-	require.Equal(t, value, copy)
+	require.Equal(t, value, copyValue(value))
 }
 
 func TestCopyValueInterfaceArray(t *testing.T) {
 	value := []interface{}{"test", true, 5}
-	copy := copyValue(value)
-	require.Equal(t, value, copy)
+	require.Equal(t, value, copyValue(value))
 }
 
 func TestCopyValueStringMap(t *testing.T) {
 	value := map[string]string{"test": "value"}
-	copy := copyValue(value)
-	require.Equal(t, value, copy)
+	require.Equal(t, value, copyValue(value))
 }
 
 func TestCopyValueInterfaceMap(t *testing.T) {
 	value := map[string]interface{}{"test": 5}
-	copy := copyValue(value)
-	require.Equal(t, value, copy)
+	require.Equal(t, value, copyValue(value))
 }
 
 func TestCopyValueUnknown(t *testing.T) {

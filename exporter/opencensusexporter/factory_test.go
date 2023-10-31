@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opencensusexporter
 
@@ -41,13 +30,13 @@ func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name             string
-		config           Config
+		config           *Config
 		mustFailOnCreate bool
 		mustFailOnStart  bool
 	}{
 		{
 			name: "NoEndpoint",
-			config: Config{
+			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "",
 				},
@@ -57,7 +46,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "ZeroNumWorkers",
-			config: Config{
+			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -70,7 +59,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "UseSecure",
-			config: Config{
+			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -82,7 +71,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "Keepalive",
-			config: Config{
+			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Keepalive: &configgrpc.KeepaliveClientConfig{
@@ -96,7 +85,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "Compression",
-			config: Config{
+			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: "gzip",
@@ -106,7 +95,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "Headers",
-			config: Config{
+			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Headers: map[string]configopaque.String{
@@ -119,7 +108,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "CompressionError",
-			config: Config{
+			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: "unknown compression",
@@ -131,7 +120,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "CaCert",
-			config: Config{
+			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -145,7 +134,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "CertPemFileError",
-			config: Config{
+			config: &Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -164,9 +153,9 @@ func TestCreateTracesExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			set := exportertest.NewNopCreateSettings()
-			tExporter, tErr := createTracesExporter(context.Background(), set, &tt.config)
+			tExporter, tErr := createTracesExporter(context.Background(), set, tt.config)
 			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFailOnCreate, tt.mustFailOnStart)
-			mExporter, mErr := createMetricsExporter(context.Background(), set, &tt.config)
+			mExporter, mErr := createMetricsExporter(context.Background(), set, tt.config)
 			checkErrorsAndStartAndShutdown(t, mExporter, mErr, tt.mustFailOnCreate, tt.mustFailOnStart)
 		})
 	}
