@@ -7,7 +7,7 @@ change_type: breaking
 component: collectdreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Move to use HTTPServerSettings and TimeoutSettings
+note: Move to use confighttp.HTTPServerSettings
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [28811]
