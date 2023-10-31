@@ -32,7 +32,7 @@ and, `k` and `v` as the respective label values.
 
 The following settings are required:
 
-- `endpoint` (default = `localhost:8081`): Address to reach the desired Docker daemon.
+- `endpoint` (default = `localhost:8081`): Endpoint exposed by this receiver to send data.
 
 The following settings are optional:
 

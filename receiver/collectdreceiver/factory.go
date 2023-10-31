@@ -5,13 +5,12 @@ package collectdreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
@@ -21,7 +20,6 @@ import (
 
 const (
 	defaultBindEndpoint   = "localhost:8081"
-	defaultTimeout        = time.Second * 30
 	defaultEncodingFormat = "json"
 )
 
@@ -34,10 +32,12 @@ func NewFactory() receiver.Factory {
 }
 func createDefaultConfig() component.Config {
 	return &Config{
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultBindEndpoint,
 		},
-		Timeout:  defaultTimeout,
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 30 * time.Second,
+		},
 		Encoding: defaultEncodingFormat,
 	}
 }
@@ -49,14 +49,5 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
-	c.Encoding = strings.ToLower(c.Encoding)
-	// CollectD receiver only supports JSON encoding. We expose a config option
-	// to make it explicit and obvious to the users.
-	if c.Encoding != defaultEncodingFormat {
-		return nil, fmt.Errorf(
-			"CollectD only support JSON encoding format. %s is not supported",
-			c.Encoding,
-		)
-	}
-	return newCollectdReceiver(cs.Logger, c.Endpoint, c.Timeout, c.AttributesPrefix, nextConsumer, cs)
+	return newCollectdReceiver(cs.Logger, c, c.AttributesPrefix, nextConsumer, cs)
 }
