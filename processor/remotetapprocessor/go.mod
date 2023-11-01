@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor
+module github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor
 
 go 1.20
 
