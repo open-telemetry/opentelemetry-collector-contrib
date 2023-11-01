@@ -84,7 +84,7 @@ type SFlowData struct {
 	SFlowSample    []SflowSample `json:"sflow"`
 }
 
-func DecodeSFlowPacket(byteData []byte) *SFlowData {
+func decodeSFlowPacket(byteData []byte) *SFlowData {
 	// Parse the sFlow packet.
 	packet := gopacket.NewPacket(byteData, layers.LayerTypeSFlow, gopacket.Default)
 

@@ -107,7 +107,7 @@ func (s *sflowreceiverlogs) Start(ctx context.Context, host component.Host) erro
 		for {
 			select {
 			case u := <-udpDataCh:
-				sflowData := DecodeSFlowPacket(u.payload)
+				sflowData := decodeSFlowPacket(u.payload)
 				plogs := translate.SflowToOtelLogs(sflowData, s.config)
 				if plogs.LogRecordCount() > 0 {
 					err := s.nextConsumer.ConsumeLogs(ctx, plogs)
