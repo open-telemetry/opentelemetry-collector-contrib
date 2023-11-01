@@ -100,6 +100,7 @@ func (s *sflowreceiverlogs) Start(ctx context.Context, _ component.Host) error {
 				sflowData := decodeSFlowPacket(u.payload)
 				plogs := translate.SflowToOtelLogs(sflowData, s.config)
 				if plogs.LogRecordCount() > 0 {
+					logger.Info("SFlow count", zap.Int("count", plogs.LogRecordCount()))
 					err := s.nextConsumer.ConsumeLogs(ctx, plogs)
 					if err != nil {
 						logger.Error("Error consuming logs:", zap.Error(err))
@@ -115,7 +116,10 @@ func (s *sflowreceiverlogs) Start(ctx context.Context, _ component.Host) error {
 
 func (s *sflowreceiverlogs) Shutdown(_ context.Context) error {
 	logger := s.createSettings.Logger
-	s.cancel()
+	logger.Info("Shutting down consumer")
+	if s.cancel != nil {
+		s.cancel()
+	}
 	if s.connection != nil {
 		err := s.connection.Close()
 		if err != nil {

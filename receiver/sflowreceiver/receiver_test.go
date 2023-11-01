@@ -23,6 +23,9 @@ import (
 )
 
 func Test_sflowreceiverlogs_Start(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	t.Cleanup(cancel)
+
 	type fields struct {
 		host           component.Host
 		cancel         context.CancelFunc
@@ -32,7 +35,7 @@ func Test_sflowreceiverlogs_Start(t *testing.T) {
 		connection     *net.UDPConn
 	}
 	type args struct {
-		ctx context.Context
+		// ctx context.Context
 	}
 	tests := []struct {
 		name    string
@@ -67,11 +70,11 @@ func Test_sflowreceiverlogs_Start(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: func() context.Context {
-					ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-					defer cancel()
-					return ctx
-				}(),
+				// ctx: func() context.Context {
+				// 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+				// 	defer cancel()
+				// 	return ctx
+				// }(),
 			},
 			wantErr: false,
 		},
@@ -87,14 +90,12 @@ func Test_sflowreceiverlogs_Start(t *testing.T) {
 				connection:     tt.fields.connection,
 			}
 
-			go startSflowReceiver(tt.args.ctx, s, t)
-			sendSflowPacket(tt.args.ctx, s)
+			go startSflowReceiver(ctx, s, t)
+			sendSflowPacket(ctx, s)
 
 			time.Sleep(1 * time.Second)
-			<-tt.args.ctx.Done()
+			<-ctx.Done()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-			cancel()
 			err := s.Shutdown(ctx)
 			assert.Nil(t, err)
 		})
