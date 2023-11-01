@@ -8,6 +8,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/cmd/githubgen"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/confmap/provider/s3provider"
     schedule:
       interval: "weekly"
@@ -163,6 +168,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/exporter/kineticaexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/exporter/loadbalancingexporter"
     schedule:
       interval: "weekly"
@@ -284,16 +294,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/encoding"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/extension/encoding/jaegerencodingextension"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/extension/encoding/jsonlogencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -983,6 +983,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/receiver/sflowreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/receiver/signalfxreceiver"
     schedule:
       interval: "weekly"
@@ -1009,11 +1014,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/solacereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/splunkenterprisereceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

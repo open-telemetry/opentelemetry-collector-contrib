@@ -230,6 +230,7 @@ body:
       - receiver/riak
       - receiver/saphana
       - receiver/sapm
+      - receiver/sflow
       - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
