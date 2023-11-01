@@ -298,6 +298,7 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["azuremonitor"].CreateDefaultConfig().(*azuremonitorexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				cfg.ConnectionString = "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=" + cfg.Endpoint
 
 				return cfg
 			},
