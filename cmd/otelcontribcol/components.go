@@ -174,6 +174,7 @@ import (
 	redisreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	riakreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
 	sapmreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
+	sflowreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver"
 	signalfxreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 	simpleprometheusreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 	skywalkingreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
@@ -316,6 +317,7 @@ func components() (otelcol.Factories, error) {
 		windowseventlogreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),
+		sflowreceiver.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err

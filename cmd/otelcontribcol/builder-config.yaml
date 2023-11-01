@@ -214,6 +214,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver => ../../receiver/k8sobjectsreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver => ../../receiver/haproxyreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver => ../../receiver/httpcheckreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver => ../../receiver/sflowreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver =>  ../../extension/observer/dockerobserver
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver => ../../extension/observer/k8sobserver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter => ../../exporter/sentryexporter

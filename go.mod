@@ -164,6 +164,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver v0.88.0
 	go.opentelemetry.io/collector/exporter v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/exporter/debugexporter v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.88.1-0.20231026220224-6405e152a2d9
@@ -1125,5 +1126,7 @@ replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristre
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver => ./receiver/snowflakereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ./receiver/azureeventhubreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver => ./receiver/sflowreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ./pkg/golden
