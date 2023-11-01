@@ -74,6 +74,10 @@ func (cfg *Config) Validate() error {
 
 	if len(cfg.Markers) != 0 {
 		for _, m := range cfg.Markers {
+			if m.Type == "" {
+				return fmt.Errorf("marker must have a type #{m}")
+			}
+
 			if len(m.Rules.LogConditions) == 0 {
 				return fmt.Errorf("no rules supplied for Marker %v", m)
 			}
