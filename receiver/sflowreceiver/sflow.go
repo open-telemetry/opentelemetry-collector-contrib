@@ -32,7 +32,7 @@ type IPv4 struct {
 	IHL        uint8  `json:"ihl"`
 	TOS        uint8  `json:"tos"`
 	Length     uint16 `json:"length"`
-	Id         uint16 `json:"id"`
+	Id         uint16 `json:"id"` // nolint
 	Flags      string `json:"flags"`
 	FragOffset uint16 `json:"fragOffset"`
 	TTL        uint8  `json:"ttl"`
@@ -100,13 +100,13 @@ func decodeSFlowPacket(byteData []byte) *SFlowData {
 				RecordCount:           sample.RecordCount,
 			})
 			for _, record := range sample.Records {
-				switch record.(type) {
+				switch rType := record.(type) {
 				case layers.SFlowRawPacketFlowRecord:
-					fr := record.(layers.SFlowRawPacketFlowRecord)
+					fr := rType
 					for _, hl := range fr.Header.Layers() {
-						switch hl.(type) {
+						switch hlType := hl.(type) {
 						case *layers.Ethernet:
-							mac := hl.(*layers.Ethernet)
+							mac := hlType
 							sFlowData.SFlowSample[idx].Records = append(sFlowData.SFlowSample[idx].Records, SFlowRawPacketFlowRecord{
 								Header: Ethernet{
 									SrcMAC:       mac.SrcMAC.String(),
@@ -115,7 +115,8 @@ func decodeSFlowPacket(byteData []byte) *SFlowData {
 								},
 							})
 						case *layers.Dot1Q:
-							dot1q := hl.(*layers.Dot1Q)
+							// dot1q := hl.(*layers.Dot1Q)
+							dot1q := hlType
 							sFlowData.SFlowSample[idx].Records = append(sFlowData.SFlowSample[idx].Records, SFlowRawPacketFlowRecord{
 								Header: Dot1Q{
 									Priority:       dot1q.Priority,
@@ -125,7 +126,8 @@ func decodeSFlowPacket(byteData []byte) *SFlowData {
 								},
 							})
 						case *layers.IPv4:
-							ip := hl.(*layers.IPv4)
+							// ip := hl.(*layers.IPv4)
+							ip := hlType
 							sFlowData.SFlowSample[idx].Records = append(sFlowData.SFlowSample[idx].Records, SFlowRawPacketFlowRecord{
 								Header: IPv4{
 									Version:    ip.Version,
@@ -160,7 +162,7 @@ func decodeSFlowPacket(byteData []byte) *SFlowData {
 		}
 
 		// Map sFlow data to the SFlowData struct.
-		sFlowData.Version = uint32(sFlow.DatagramVersion)
+		sFlowData.Version = sFlow.DatagramVersion
 		sFlowData.AgentIP = sFlow.AgentAddress.String()
 		sFlowData.AgentUptime = sFlow.AgentUptime
 		sFlowData.SampleCount = sFlow.SampleCount

@@ -6,7 +6,6 @@ package sflowreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -126,32 +125,6 @@ func parseToAttributesToValue(key string, val interface{}, dest pcommon.Map) {
 	}
 }
 
-func parseToBodyValue(val interface{}, dest pcommon.Value) {
-	switch r := val.(type) {
-	case bool:
-		dest.SetBool(r)
-	case string:
-		dest.SetStr(r)
-	case []byte:
-		dest.SetStr(string(r))
-	case int64:
-		dest.SetInt(r)
-	case uint64:
-		dest.SetInt(int64(r))
-	case float32:
-		dest.SetDouble(float64(r))
-	case float64:
-		dest.SetDouble(r)
-	case map[string]interface{}:
-		parseInterfaceToMap(r, dest)
-	case []interface{}:
-		parseInterfaceToArray(r, dest)
-	case nil:
-	default:
-		dest.SetStr(fmt.Sprintf("%v", val))
-	}
-}
-
 func timeFromTimestamp(ts interface{}) (time.Time, error) {
 	switch v := ts.(type) {
 	case uint64:
@@ -167,80 +140,6 @@ func timeFromTimestamp(ts interface{}) (time.Time, error) {
 	}
 }
 
-func parseInterfaceToMap(m map[string]interface{}, dest pcommon.Value) {
-	am := dest.SetEmptyMap()
-	am.EnsureCapacity(len(m))
-	for k, value := range m {
-		parseToBodyValue(value, am.PutEmpty(k))
-	}
-}
-
-func parseInterfaceToArray(a []interface{}, dest pcommon.Value) {
-	av := dest.SetEmptySlice()
-	av.EnsureCapacity(len(a))
-	for _, value := range a {
-		parseToBodyValue(value, av.AppendEmpty())
-	}
-}
-
-func flattenStruct(input interface{}, separator string) map[string]interface{} {
-	output := make(map[string]interface{})
-	flattenStructHelper(reflect.ValueOf(input), "", separator, output)
-	return output
-}
-
-func flattenStructHelper(value reflect.Value, prefix, separator string, output map[string]interface{}) {
-	switch value.Kind() {
-	case reflect.Struct:
-		for i := 0; i < value.NumField(); i++ {
-			field := value.Field(i)
-			fieldName := value.Type().Field(i).Name
-			newKey := fieldName
-
-			if prefix != "" {
-				newKey = prefix + separator + newKey
-			}
-
-			flattenStructHelper(field, newKey, separator, output)
-		}
-	case reflect.Map:
-		for _, key := range value.MapKeys() {
-			field := value.MapIndex(key)
-			keyName := key.Interface().(string)
-			newKey := keyName
-
-			if prefix != "" {
-				newKey = prefix + separator + newKey
-			}
-
-			flattenStructHelper(field, newKey, separator, output)
-		}
-	default:
-		output[prefix] = value.Interface()
-	}
-}
-
-func flattenJSON(input map[string]interface{}, separator string) map[string]interface{} {
-	output := make(map[string]interface{})
-	flattenHelper(input, "", separator, output)
-	return output
-}
-
-func flattenHelper(input interface{}, prefix, separator string, output map[string]interface{}) {
-	switch val := input.(type) {
-	case map[string]interface{}:
-		for key, value := range val {
-			newKey := key
-			if prefix != "" {
-				newKey = prefix + separator + newKey
-			}
-			flattenHelper(value, newKey, separator, output)
-		}
-	default:
-		output[prefix] = val
-	}
-}
-
 func flattenJSON2(jsonObj map[string]interface{}) map[string]interface{} {
 	m := make(map[string]interface{}, 0)
 	for k, v := range jsonObj {
@@ -250,35 +149,35 @@ func flattenJSON2(jsonObj map[string]interface{}) map[string]interface{} {
 }
 
 func flatten(key string, jsonObj interface{}, m map[string]interface{}) {
-	switch jsonObj.(type) {
+	switch jsonObj.(type) { // nolint
 	case map[string]interface{}:
-		for k, v := range jsonObj.(map[string]interface{}) {
+		for k, v := range jsonObj.(map[string]interface{}) { // nolint
 			newkey := fmt.Sprintf("%s.%s", key, k)
 			flatten(newkey, v, m)
 		}
 	case []interface{}:
-		for i, v := range jsonObj.([]interface{}) {
+		for i, v := range jsonObj.([]interface{}) { // nolint
 			newkey := fmt.Sprintf("%s[%d]", key, i)
 			flatten(newkey, v, m)
 		}
 	case int8:
-		m[key] = jsonObj.(int)
+		m[key] = jsonObj.(int) // nolint
 	case int16:
-		m[key] = jsonObj.(int)
+		m[key] = jsonObj.(int) // nolint
 	case int32:
-		m[key] = jsonObj.(int)
+		m[key] = jsonObj.(int) // nolint
 	case int64:
-		m[key] = jsonObj.(int)
+		m[key] = jsonObj.(int) // nolint
 	case float32:
-		m[key] = jsonObj.(float32)
+		m[key] = jsonObj.(float32) // nolint
 	case float64:
-		m[key] = jsonObj.(float64)
+		m[key] = jsonObj.(float64) // nolint
 	case []byte:
-		m[key] = jsonObj.([]byte)
+		m[key] = jsonObj.([]byte) // nolint
 	case string:
-		m[key] = jsonObj.(string)
+		m[key] = jsonObj.(string) // nolint
 	case bool:
-		m[key] = jsonObj.(bool)
+		m[key] = jsonObj.(bool) // nolint
 	case nil:
 		m[key] = nil
 	default:

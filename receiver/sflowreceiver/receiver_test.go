@@ -68,7 +68,8 @@ func Test_sflowreceiverlogs_Start(t *testing.T) {
 			},
 			args: args{
 				ctx: func() context.Context {
-					ctx, _ := context.WithTimeout(context.Background(), 50*time.Millisecond)
+					ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+					defer cancel()
 					return ctx
 				}(),
 			},
@@ -92,7 +93,8 @@ func Test_sflowreceiverlogs_Start(t *testing.T) {
 			time.Sleep(1 * time.Second)
 			<-tt.args.ctx.Done()
 
-			ctx, _ := context.WithTimeout(context.Background(), 50*time.Millisecond)
+			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+			cancel()
 			err := s.Shutdown(ctx)
 			assert.Nil(t, err)
 		})
@@ -102,12 +104,12 @@ func Test_sflowreceiverlogs_Start(t *testing.T) {
 func startSflowReceiver(ctx context.Context, s *sflowreceiverlogs, t *testing.T) {
 	err := s.Start(ctx, s.host)
 	if err != nil {
-		s.Shutdown(ctx)
+		_ = s.Shutdown(ctx)
 	}
 	assert.Nil(t, err)
 }
 
-func sendSflowPacket(ctx context.Context, s *sflowreceiverlogs) {
+func sendSflowPacket(_ context.Context, _ *sflowreceiverlogs) {
 	serverAddr, err := net.ResolveUDPAddr("udp", "0.0.0.0:9995")
 	if err != nil {
 		fmt.Println("Error resolving UDP address:", err)
@@ -132,6 +134,5 @@ func sendSflowPacket(ctx context.Context, s *sflowreceiverlogs) {
 	_, err = udpConn.Write(message)
 	if err != nil {
 		fmt.Println("Error sending UDP message:", err)
-		os.Exit(1)
 	}
 }

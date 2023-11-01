@@ -6,11 +6,12 @@ package sflowreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver/internal/metadata"
 )
 
 const (
@@ -35,7 +36,7 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-func createLogsReceiver(ctx context.Context, params receiver.CreateSettings, basecfg component.Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
+func createLogsReceiver(_ context.Context, params receiver.CreateSettings, basecfg component.Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
