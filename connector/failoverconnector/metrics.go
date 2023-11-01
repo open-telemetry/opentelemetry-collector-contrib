@@ -1,8 +1,12 @@
-package failoverconnector
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package failoverconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 
 import (
 	"context"
 	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -24,11 +28,11 @@ func (f *metricsFailover) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeMetrics will try to export to the current set priority level and handle failover in the case of an error
-func (f *metricsFailover) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (f *metricsFailover) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
 	return nil
 }
 
-func (f *metricsFailover) Shutdown(ctx context.Context) error {
+func (f *metricsFailover) Shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -39,7 +43,7 @@ func newMetricsToMetrics(set connector.CreateSettings, cfg component.Config, met
 		return nil, errors.New("consumer is not of type MetricsRouter")
 	}
 
-	failover := newFailoverRouter(mr.Consumer, config)
+	failover := newFailoverRouter[consumer.Metrics](mr.Consumer, config) // temp add type spec to resolve linter issues
 	return &metricsFailover{
 		config:   config,
 		failover: failover,

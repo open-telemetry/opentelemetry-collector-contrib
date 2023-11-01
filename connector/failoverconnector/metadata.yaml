@@ -6,4 +6,4 @@ status:
     development: [metrics_to_metrics, traces_to_traces, logs_to_logs]
   distributions: [contrib]
   codeowners:
-    active: []
+    active: [djaglowski, fatsheep9146]

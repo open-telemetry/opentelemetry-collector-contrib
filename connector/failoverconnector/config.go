@@ -1,9 +1,13 @@
-package failoverconnector
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package failoverconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 
 import (
 	"errors"
-	"go.opentelemetry.io/collector/component"
 	"time"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 var (
@@ -15,7 +19,7 @@ type Config struct {
 	// PipelinePriority is the list of pipeline level priorities in a 1 - n configuration, multiple pipelines can
 	// sit at a single priority level and will be routed in a fanout. If any pipeline at a level fails, the
 	// level is considered unhealthy
-	PipelinePriority [][]component.ID `mapstructure:"priority"`
+	PipelinePriority [][]component.ID `mapstructure:"priority_levels"`
 
 	// RetryInterval is the frequency at which the pipeline levels will attempt to recover by going over
 	// all levels below the current
@@ -28,7 +32,7 @@ type Config struct {
 
 	// MaxRetry is the maximum retries per level, once this limit is hit for a level, even if the next pipeline level fails,
 	// it will not try to recover the level that exceeded the maximum retries
-	MaxRetry int `mapstructure:"max_retry"`
+	MaxRetries int `mapstructure:"max_retries"`
 }
 
 // Validate needs to ensure RetryInterval > # elements in PriorityList * RetryGap

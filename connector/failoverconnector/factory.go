@@ -1,34 +1,34 @@
-package failoverconnector
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package failoverconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 
 import (
 	"context"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"time"
-)
 
-const (
-	Type             = "failover"
-	TracesStability  = component.StabilityLevelDevelopment
-	MetricsStability = component.StabilityLevelDevelopment
-	LogsStability    = component.StabilityLevelDevelopment
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
-		Type,
+		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToTraces(createTracesToTraces, TracesStability),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, MetricsStability),
-		connector.WithLogsToLogs(createLogsToLogs, LogsStability),
+		connector.WithTracesToTraces(createTracesToTraces, metadata.TracesToTracesStability),
+		connector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
+		connector.WithLogsToLogs(createLogsToLogs, metadata.LogsToLogsStability),
 	)
 }
 
-func createDefaultConfig() component.Config { // LOOK INTO THIS
+func createDefaultConfig() component.Config {
 	return &Config{
-		RetryGap:      time.Minute,
-		RetryInterval: 15 * time.Minute,
+		RetryGap:      30 * time.Second,
+		RetryInterval: 10 * time.Minute,
+		MaxRetries:    10,
 	}
 }
 
