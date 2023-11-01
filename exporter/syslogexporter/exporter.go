@@ -8,12 +8,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -23,6 +21,7 @@ type syslogexporter struct {
 	config    *Config
 	logger    *zap.Logger
 	tlsConfig *tls.Config
+	formatter formatter
 }
 
 func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*syslogexporter, error) {
@@ -37,11 +36,12 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 		config:    cfg,
 		logger:    createSettings.Logger,
 		tlsConfig: tlsConfig,
+		formatter: createFormatter(cfg.Protocol),
 	}
 
 	s.logger.Info("Syslog Exporter configured",
 		zap.String("endpoint", cfg.Endpoint),
-		zap.String("Protocol", cfg.Protocol),
+		zap.String("protocol", cfg.Protocol),
 		zap.Int("port", cfg.Port),
 	)
 
@@ -69,78 +69,77 @@ func newLogsExporter(
 	)
 }
 
-func (se *syslogexporter) logsToMap(record plog.LogRecord) map[string]any {
-	attributes := record.Attributes().AsRaw()
-	return attributes
+func (se *syslogexporter) pushLogsData(_ context.Context, logs plog.Logs) error {
+	batchMessages := strings.ToLower(se.config.Network) == "tcp"
+	var err error
+	if batchMessages {
+		err = se.exportBatch(logs)
+	} else {
+		err = se.exportNonBatch(logs)
+	}
+	return err
 }
 
-func (se *syslogexporter) getTimestamp(record plog.LogRecord) time.Time {
-	timestamp := record.Timestamp().AsTime()
-	return timestamp
-}
-
-func (se *syslogexporter) pushLogsData(_ context.Context, ld plog.Logs) error {
-	type droppedResourceRecords struct {
-		resource pcommon.Resource
-		records  []plog.LogRecord
-	}
-	var (
-		errs    []error
-		dropped []droppedResourceRecords
-	)
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		rl := rls.At(i)
-		if droppedRecords, err := se.sendSyslogs(rl); err != nil {
-			dropped = append(dropped, droppedResourceRecords{
-				resource: rl.Resource(),
-				records:  droppedRecords,
-			})
-			errs = append(errs, err)
-		}
-	}
-	if len(dropped) > 0 {
-		ld = plog.NewLogs()
-		for i := range dropped {
-			rls := ld.ResourceLogs().AppendEmpty()
-			logRecords := rls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-			dropped[i].resource.MoveTo(rls.Resource())
-			for j := 0; j < len(dropped[i].records); j++ {
-				dropped[i].records[j].MoveTo(logRecords)
+func (se *syslogexporter) exportBatch(logs plog.Logs) error {
+	var payload strings.Builder
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		resourceLogs := logs.ResourceLogs().At(i)
+		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
+			scopeLogs := resourceLogs.ScopeLogs().At(j)
+			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
+				logRecord := scopeLogs.LogRecords().At(k)
+				formatted := se.formatter.format(logRecord)
+				payload.WriteString(formatted)
 			}
 		}
-		errs = deduplicateErrors(errs)
-		return consumererror.NewLogs(multierr.Combine(errs...), ld)
 	}
-	se.logger.Info("Connected successfully, exporting logs....")
+
+	if payload.Len() > 0 {
+		sender, err := connect(se.logger, se.config, se.tlsConfig)
+		if err != nil {
+			return consumererror.NewLogs(err, logs)
+		}
+		defer sender.close()
+		err = sender.Write(payload.String())
+		if err != nil {
+			return consumererror.NewLogs(err, logs)
+		}
+	}
 	return nil
 }
 
-func (se *syslogexporter) sendSyslogs(rl plog.ResourceLogs) ([]plog.LogRecord, error) {
-	var (
-		errs           []error
-		droppedRecords []plog.LogRecord
-	)
-	slgs := rl.ScopeLogs()
-	for i := 0; i < slgs.Len(); i++ {
-		slg := slgs.At(i)
-		for j := 0; j < slg.LogRecords().Len(); j++ {
-			lr := slg.LogRecords().At(j)
-			formattedLine := se.logsToMap(lr)
-			timestamp := se.getTimestamp(lr)
-			s, errConn := connect(se.logger, se.config, se.tlsConfig)
-			if errConn != nil {
-				droppedRecords = append(droppedRecords, lr)
-				errs = append(errs, errConn)
-				continue
-			}
-			defer s.close()
-			err := s.Write(formattedLine, timestamp)
-			if err != nil {
-				droppedRecords = append(droppedRecords, lr)
-				errs = append(errs, err)
+func (se *syslogexporter) exportNonBatch(logs plog.Logs) error {
+	sender, err := connect(se.logger, se.config, se.tlsConfig)
+	if err != nil {
+		return consumererror.NewLogs(err, logs)
+	}
+	defer sender.close()
+
+	errs := []error{}
+	droppedLogs := plog.NewLogs()
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		resourceLogs := logs.ResourceLogs().At(i)
+		droppedResourceLogs := droppedLogs.ResourceLogs().AppendEmpty()
+		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
+			scopeLogs := resourceLogs.ScopeLogs().At(j)
+			droppedScopeLogs := droppedResourceLogs.ScopeLogs().AppendEmpty()
+			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
+				logRecord := scopeLogs.LogRecords().At(k)
+				formatted := se.formatter.format(logRecord)
+				err = sender.Write(formatted)
+				if err != nil {
+					errs = append(errs, err)
+					droppedLogRecord := droppedScopeLogs.LogRecords().AppendEmpty()
+					logRecord.CopyTo(droppedLogRecord)
+				}
 			}
 		}
 	}
-	return droppedRecords, multierr.Combine(errs...)
+
+	if len(errs) > 0 {
+		errs = deduplicateErrors(errs)
+		return consumererror.NewLogs(multierr.Combine(errs...), droppedLogs)
+	}
+
+	return nil
 }

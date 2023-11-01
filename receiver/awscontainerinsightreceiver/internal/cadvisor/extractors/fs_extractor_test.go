@@ -11,14 +11,14 @@ import (
 	cinfo "github.com/google/cadvisor/info/v1"
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
 func TestFSStats(t *testing.T) {
 	result := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 	// container type
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric
@@ -40,7 +40,7 @@ func TestFSStats(t *testing.T) {
 	AssertContainsTaggedField(t, cMetrics[0], expectedFields, expectedTags)
 
 	// pod type
-	containerType = TypePod
+	containerType = containerinsight.TypePod
 	extractor = NewFileSystemMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -52,7 +52,7 @@ func TestFSStats(t *testing.T) {
 	// node type for eks
 
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoNode.json")
-	containerType = TypeNode
+	containerType = containerinsight.TypeNode
 	extractor = NewFileSystemMetricExtractor(nil)
 
 	if extractor.HasValue(result2[0]) {
@@ -122,7 +122,7 @@ func TestFSStatsWithAllowList(t *testing.T) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	assert.NoError(t, enc.Encode(result))
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric

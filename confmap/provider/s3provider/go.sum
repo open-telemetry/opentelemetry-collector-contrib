@@ -3,8 +3,8 @@ github.com/aws/aws-sdk-go-v2 v1.21.2 h1:+LXZ0sgo8quN9UOKXXzAWRT3FWd4NxeXWOZom9pE
 github.com/aws/aws-sdk-go-v2 v1.21.2/go.mod h1:ErQhvNuEMhJjweavOYhxVkn2RUx7kQXVATHrjKtxIpM=
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.0.0 h1:yVUAwvJC/0WNPbyl0nA3j1L6CW1CN8wBubCRqtG7JLI=
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.0.0/go.mod h1:Xn6sxgRuIDflLRJFj5Ev7UxABIkNbccFPV/p8itDReM=
-github.com/aws/aws-sdk-go-v2/config v1.19.0 h1:AdzDvwH6dWuVARCl3RTLGRc4Ogy+N7yLFxVxXe1ClQ0=
-github.com/aws/aws-sdk-go-v2/config v1.19.0/go.mod h1:ZwDUgFnQgsazQTnWfeLWk5GjeqTQTL8lMkoE1UXzxdE=
+github.com/aws/aws-sdk-go-v2/config v1.19.1 h1:oe3vqcGftyk40icfLymhhhNysAwk0NfiwkDi2GTPMXs=
+github.com/aws/aws-sdk-go-v2/config v1.19.1/go.mod h1:ZwDUgFnQgsazQTnWfeLWk5GjeqTQTL8lMkoE1UXzxdE=
 github.com/aws/aws-sdk-go-v2/credentials v1.13.43 h1:LU8vo40zBlo3R7bAvBVy/ku4nxGEyZe9N8MqAeFTzF8=
 github.com/aws/aws-sdk-go-v2/credentials v1.13.43/go.mod h1:zWJBz1Yf1ZtX5NGax9ZdNjhhI4rgjfgsyk6vTY1yfVg=
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.13 h1:PIktER+hwIG286DqXyvVENjgLTAwGgoeriLDD5C+YlQ=
@@ -64,10 +64,10 @@ github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjR
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-go.opentelemetry.io/collector/confmap v0.88.0 h1:tOgY6NXMXAL2hz2+zVDQ0jvBlCUHprSf90bw5ktbdaI=
-go.opentelemetry.io/collector/confmap v0.88.0/go.mod h1:CSJlMk1KRZloXAygpiPeCLpuQiLVDEZYbGsGHIKHeUg=
-go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017 h1:DtJQalPXMWQqT6jd2LZ1oKrOfLJJRCi+rh2LKnkj4Zo=
-go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017/go.mod h1:fLmJMf1AoHttkF8p5oJAc4o5ZpHu8yO5XYJ7gbLCLzo=
+go.opentelemetry.io/collector/confmap v0.88.1-0.20231026220224-6405e152a2d9 h1:JKFChlNpigR1Q4hZUjDU2sB2VuQ+RigAh7oOQfdcaiQ=
+go.opentelemetry.io/collector/confmap v0.88.1-0.20231026220224-6405e152a2d9/go.mod h1:CSJlMk1KRZloXAygpiPeCLpuQiLVDEZYbGsGHIKHeUg=
+go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017.0.20231026220224-6405e152a2d9 h1:luvDPu+FNy6LIylBOO8PH/ca6ym7JKAdMe1J1aJbsF4=
+go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017.0.20231026220224-6405e152a2d9/go.mod h1:fLmJMf1AoHttkF8p5oJAc4o5ZpHu8yO5XYJ7gbLCLzo=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
 go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=

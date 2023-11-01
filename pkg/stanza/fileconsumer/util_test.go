@@ -91,6 +91,7 @@ func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Ma
 	}
 	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(tmc.emitChan))
 	require.NoError(t, err)
+	t.Cleanup(func() { input.closePreviousFiles() })
 	return input, tmc.emitChan
 }
 

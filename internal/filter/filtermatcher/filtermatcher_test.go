@@ -25,12 +25,12 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	version := "["
 	testcases := []struct {
 		name        string
-		property    filterconfig.MatchProperties
+		property    *filterconfig.MatchProperties
 		errorString string
 	}{
 		{
 			name: "regexp_match_type_for_int_attribute",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Regexp),
 				Attributes: []filterconfig.Attribute{
 					{Key: "key", Value: 1},
@@ -40,7 +40,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "unknown_attribute_value",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Strict),
 				Attributes: []filterconfig.Attribute{
 					{Key: "key", Value: []string{}},
@@ -50,7 +50,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_attribute",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Regexp),
 				Attributes: []filterconfig.Attribute{{Key: "key", Value: "["}},
 			},
@@ -58,7 +58,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_resource",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				Resources: []filterconfig.Attribute{{Key: "key", Value: "["}},
 			},
@@ -66,7 +66,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_library_name",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				Libraries: []filterconfig.InstrumentationLibrary{{Name: "["}},
 			},
@@ -74,7 +74,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "invalid_regexp_pattern_library_version",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:    *createConfig(filterset.Regexp),
 				Libraries: []filterconfig.InstrumentationLibrary{{Name: "lib", Version: &version}},
 			},
@@ -82,7 +82,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "empty_key_name_in_attributes_list",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:   *createConfig(filterset.Strict),
 				Services: []string{"a"},
 				Attributes: []filterconfig.Attribute{
@@ -96,7 +96,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := NewMatcher(&tc.property)
+			output, err := NewMatcher(tc.property)
 			assert.Zero(t, output)
 			assert.EqualError(t, err, tc.errorString)
 		})
