@@ -122,7 +122,7 @@ func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger
 		}
 
 		exporterConfig.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
-		exporterConfig.Endpoint = connectionVars.IngestionUrl
+		exporterConfig.Endpoint = connectionVars.IngestionURL
 		telemetryConfiguration := appinsights.NewTelemetryConfiguration(string(exporterConfig.InstrumentationKey))
 		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
 		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize

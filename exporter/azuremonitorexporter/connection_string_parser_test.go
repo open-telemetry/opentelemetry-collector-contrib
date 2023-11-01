@@ -27,7 +27,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionUrl:       "https://ingestion.azuremonitor.com/v2/track",
+				IngestionURL:       "https://ingestion.azuremonitor.com/v2/track",
 			},
 			wantError: false,
 		},
@@ -38,7 +38,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionUrl:       DefaultIngestionEndpoint + "v2/track",
+				IngestionURL:       DefaultIngestionEndpoint + "v2/track",
 			},
 			wantError: false,
 		},
@@ -49,7 +49,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionUrl:       "https://ingestion.azuremonitor.com/v2/track",
+				IngestionURL:       "https://ingestion.azuremonitor.com/v2/track",
 			},
 			wantError: false,
 		},
@@ -93,7 +93,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionUrl:       "https://ingestion.azuremonitor.com/v2/track",
+				IngestionURL:       "https://ingestion.azuremonitor.com/v2/track",
 			},
 			wantError: false,
 		},
@@ -104,7 +104,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionUrl:       "https://ingestion.azuremonitor.com/v2/track",
+				IngestionURL:       "https://ingestion.azuremonitor.com/v2/track",
 			},
 			wantError: false,
 		},
@@ -127,7 +127,7 @@ func TestParseConnectionString(t *testing.T) {
 				require.NoError(t, err, "Unexpected error: %v", err)
 				require.NotNil(t, got, "Expected a non-nil result")
 				assert.Equal(t, tt.want.InstrumentationKey, got.InstrumentationKey, "InstrumentationKey does not match")
-				assert.Equal(t, tt.want.IngestionUrl, got.IngestionUrl, "IngestionEndpoint does not match")
+				assert.Equal(t, tt.want.IngestionURL, got.IngestionURL, "IngestionEndpoint does not match")
 			}
 		})
 	}

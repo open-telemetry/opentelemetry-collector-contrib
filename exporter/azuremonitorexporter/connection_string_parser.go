@@ -12,7 +12,7 @@ import (
 
 type ConnectionVars struct {
 	InstrumentationKey string
-	IngestionUrl       string
+	IngestionURL       string
 }
 
 const (
@@ -35,7 +35,7 @@ func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
 	}
 	if connectionString == "" {
 		connectionVars.InstrumentationKey = instrumentationKey
-		connectionVars.IngestionUrl, _ = getIngestionURL(DefaultIngestionEndpoint)
+		connectionVars.IngestionURL = getIngestionURL(DefaultIngestionEndpoint)
 		return connectionVars, nil
 	}
 
@@ -64,17 +64,17 @@ func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
 		ingestionEndpoint = DefaultIngestionEndpoint
 	}
 
-	connectionVars.IngestionUrl, _ = getIngestionURL(ingestionEndpoint)
+	connectionVars.IngestionURL = getIngestionURL(ingestionEndpoint)
 
 	return connectionVars, nil
 }
 
-func getIngestionURL(ingestionEndpoint string) (string, error) {
+func getIngestionURL(ingestionEndpoint string) string {
 	ingestionURL, err := url.Parse(ingestionEndpoint)
 	if err != nil {
 		ingestionURL, _ = url.Parse(DefaultIngestionEndpoint)
 	}
 
 	ingestionURL.Path = path.Join(ingestionURL.Path, "/v2/track")
-	return ingestionURL.String(), nil
+	return ingestionURL.String()
 }
