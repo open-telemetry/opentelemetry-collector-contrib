@@ -151,6 +151,29 @@ func maskSpanID(traces ptrace.Traces, spanID pcommon.SpanID) {
 	}
 }
 
+// IgnoreSpanAttributeValue is a CompareTracesOption that clears value of the span attribute.
+func IgnoreSpanAttributeValue(attributeName string) CompareTracesOption {
+	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {
+		maskSpanAttributeValue(expected, attributeName)
+		maskSpanAttributeValue(actual, attributeName)
+	})
+}
+
+func maskSpanAttributeValue(traces ptrace.Traces, attributeName string) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				if _, ok := span.Attributes().Get(attributeName); ok {
+					span.Attributes().PutStr(attributeName, "*")
+				}
+			}
+		}
+	}
+}
+
 // IgnoreStartTimestamp is a CompareTracesOption that clears StartTimestamp fields on all spans.
 func IgnoreStartTimestamp() CompareTracesOption {
 	return compareTracesOptionFunc(func(expected, actual ptrace.Traces) {

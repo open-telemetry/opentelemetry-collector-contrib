@@ -31,7 +31,7 @@ func newNginxScraper(
 	settings receiver.CreateSettings,
 	cfg *Config,
 ) *nginxScraper {
-	mb := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings, metadata.WithCurrentConnectionsAsGaugeDisabled())
+	mb := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
 	return &nginxScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      cfg,
