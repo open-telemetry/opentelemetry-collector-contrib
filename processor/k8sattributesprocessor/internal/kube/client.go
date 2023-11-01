@@ -26,10 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
 )
 
-// Upgrade to StageBeta in v0.83.0
+// Upgrade to StageStable in v0.92.0
 var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.rfc3339",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, uses RFC3339 format for k8s.pod.start_time value"),
 	featuregate.WithRegisterFromVersion("v0.82.0"),
 )

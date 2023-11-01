@@ -125,4 +125,4 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-replace cloud.google.com/go v0.54.0 => cloud.google.com/go v0.110.7
+replace cloud.google.com/go v0.54.0 => cloud.google.com/go v0.110.10
