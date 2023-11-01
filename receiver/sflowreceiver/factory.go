@@ -18,6 +18,7 @@ package sflowreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -25,8 +26,8 @@ import (
 )
 
 const (
-	stability = component.StabilityLevelAlpha
-	typeStr   = "sflow"
+	stability = metadata.LogsStability
+	typeStr   = metadata.Type
 )
 
 func createDefaultConfig() component.Config {

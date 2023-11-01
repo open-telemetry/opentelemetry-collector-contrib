@@ -1,0 +1,9 @@
+type: sflow
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [Ishmeet]
