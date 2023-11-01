@@ -167,6 +167,10 @@ func NewNode(id string) *corev1.Node {
 				"foo":  "bar",
 				"foo1": "",
 			},
+			Annotations: map[string]string{
+				"foo":  "bar",
+				"foo1": "",
+			},
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
