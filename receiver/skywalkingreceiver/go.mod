@@ -20,11 +20,10 @@ require (
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0
-	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f
+	skywalking.apache.org/repo/goapi v0.0.0-20230314034821-0c5a44bb767a
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
