@@ -7,11 +7,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -28,53 +26,59 @@ var _ receiver.Metrics = (*collectdReceiver)(nil)
 // collectdReceiver implements the receiver.Metrics for CollectD protocol.
 type collectdReceiver struct {
 	logger             *zap.Logger
-	addr               string
 	server             *http.Server
 	defaultAttrsPrefix string
 	nextConsumer       consumer.Metrics
 	obsrecv            *receiverhelper.ObsReport
+	createSettings     receiver.CreateSettings
+	config             *Config
 }
 
 // newCollectdReceiver creates the CollectD receiver with the given parameters.
 func newCollectdReceiver(
 	logger *zap.Logger,
-	addr string,
-	timeout time.Duration,
+	cfg *Config,
 	defaultAttrsPrefix string,
 	nextConsumer consumer.Metrics,
 	createSettings receiver.CreateSettings) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             createSettings.ID,
-		Transport:              "http",
-		ReceiverCreateSettings: createSettings,
-	})
-	if err != nil {
-		return nil, err
-	}
+
 	r := &collectdReceiver{
 		logger:             logger,
-		addr:               addr,
 		nextConsumer:       nextConsumer,
 		defaultAttrsPrefix: defaultAttrsPrefix,
-		obsrecv:            obsrecv,
+		config:             cfg,
+		createSettings:     createSettings,
 	}
-	r.server = &http.Server{
-		Addr:         addr,
-		Handler:      r,
-		ReadTimeout:  timeout,
-		WriteTimeout: timeout,
-	}
-	return r, err
+	return r, nil
 }
 
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
+	var err error
+	cdr.server, err = cdr.config.HTTPServerSettings.ToServer(host, cdr.createSettings.TelemetrySettings, cdr)
+	if err != nil {
+		return err
+	}
+	cdr.server.ReadTimeout = cdr.config.Timeout
+	cdr.server.WriteTimeout = cdr.config.Timeout
+	cdr.obsrecv, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             cdr.createSettings.ID,
+		Transport:              "http",
+		ReceiverCreateSettings: cdr.createSettings,
+	})
+	if err != nil {
+		return err
+	}
+	l, err := cdr.config.HTTPServerSettings.ToListener()
+	if err != nil {
+		return err
+	}
 	go func() {
-		if err := cdr.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %w", err))
+		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
+			_ = cdr.createSettings.TelemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
@@ -82,6 +86,9 @@ func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error
 
 // Shutdown stops the CollectD receiver.
 func (cdr *collectdReceiver) Shutdown(context.Context) error {
+	if cdr.server == nil {
+		return nil
+	}
 	return cdr.server.Shutdown(context.Background())
 }
 

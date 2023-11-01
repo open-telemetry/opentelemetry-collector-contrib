@@ -117,4 +117,4 @@ retract (
 )
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-replace cloud.google.com/go v0.65.0 => cloud.google.com/go v0.110.7
+replace cloud.google.com/go v0.65.0 => cloud.google.com/go v0.110.10
