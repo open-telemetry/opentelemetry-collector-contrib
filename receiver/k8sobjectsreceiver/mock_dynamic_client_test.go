@@ -47,6 +47,16 @@ func (c mockDynamicClient) createPods(objects ...*unstructured.Unstructured) {
 	}
 }
 
+func (c mockDynamicClient) deletePods(objects ...*unstructured.Unstructured) {
+	pods := c.client.Resource(schema.GroupVersionResource{
+		Version:  "v1",
+		Resource: "pods",
+	})
+	for _, pod := range objects {
+		_ = pods.Namespace(pod.GetNamespace()).Delete(context.Background(), pod.GetName(), v1.DeleteOptions{})
+	}
+}
+
 func generatePod(name, namespace string, labels map[string]interface{}, resourceVersion string) *unstructured.Unstructured {
 	pod := unstructured.Unstructured{
 		Object: map[string]interface{}{

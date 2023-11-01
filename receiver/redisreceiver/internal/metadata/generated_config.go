@@ -30,6 +30,7 @@ type MetricsConfig struct {
 	RedisClientsMaxInputBuffer             MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
 	RedisClientsMaxOutputBuffer            MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
 	RedisCmdCalls                          MetricConfig `mapstructure:"redis.cmd.calls"`
+	RedisCmdLatency                        MetricConfig `mapstructure:"redis.cmd.latency"`
 	RedisCmdUsec                           MetricConfig `mapstructure:"redis.cmd.usec"`
 	RedisCommands                          MetricConfig `mapstructure:"redis.commands"`
 	RedisCommandsProcessed                 MetricConfig `mapstructure:"redis.commands.processed"`
@@ -75,6 +76,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisCmdCalls: MetricConfig{
+			Enabled: false,
+		},
+		RedisCmdLatency: MetricConfig{
 			Enabled: false,
 		},
 		RedisCmdUsec: MetricConfig{
@@ -167,6 +171,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for redis resource attributes.

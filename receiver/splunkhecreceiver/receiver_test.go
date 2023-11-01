@@ -33,6 +33,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -164,16 +165,18 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 
 	tests := []struct {
-		name           string
-		req            *http.Request
-		assertResponse func(t *testing.T, status int, body string)
+		name              string
+		req               *http.Request
+		assertResponse    func(t *testing.T, status int, body any)
+		assertSink        func(t *testing.T, sink *consumertest.LogsSink)
+		assertMetricsSink func(t *testing.T, sink *consumertest.MetricsSink)
 	}{
 		{
 			name: "incorrect_method",
 			req:  httptest.NewRequest("PUT", "http://localhost/foo", nil),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseInvalidMethod, body)
+				assert.Equal(t, "Only \"POST\" method is supported", body)
 			},
 		},
 		{
@@ -185,24 +188,12 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusOK, status)
-				assert.Equal(t, responseOK, body)
-			},
-		},
-		{
-			name: "metric_unsupported",
-			req: func() *http.Request {
-				metricMsg := buildSplunkHecMsg(currentTime, 3)
-				metricMsg.Event = "metric"
-				msgBytes, err := json.Marshal(metricMsg)
-				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
-				return req
-			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseErrUnsupportedMetricEvent, body)
+				assert.Equal(t, map[string]interface{}{
+					"text": "Success",
+					"code": float64(0),
+				}, body)
 			},
 		},
 		{
@@ -212,9 +203,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusUnsupportedMediaType, status)
-				assert.Equal(t, responseInvalidEncoding, body)
+				assert.Equal(t, `"Content-Encoding" must be "gzip" or empty`, body)
 			},
 		},
 		{
@@ -223,9 +214,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader([]byte{1, 2, 3, 4}))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseInvalidDataFormat, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(6), "text": "Invalid data format"}, body)
 			},
 		},
 		{
@@ -234,9 +225,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(nil))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseNoData, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(5), "text": "No data"}, body)
 			},
 		},
 		{
@@ -247,9 +238,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseInvalidDataFormat, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(6), "text": "Invalid data format"}, body)
 			},
 		},
 		{
@@ -262,9 +253,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseErrEventRequired, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(12), "text": "Event field is required"}, body)
 			},
 		},
 		{
@@ -277,9 +268,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseErrEventBlank, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(13), "text": "Event field cannot be blank"}, body)
 			},
 		},
 		{
@@ -290,9 +281,34 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusOK, status)
-				assert.Equal(t, responseOK, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(0), "text": "Success"}, body)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Equal(t, 1, len(sink.AllLogs()))
+			},
+			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
+				assert.Equal(t, 0, len(sink.AllMetrics()))
+			},
+		},
+		{
+			name: "metric_msg_accepted",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(buildSplunkHecMetricsMsg(3, 4, 3))
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body any) {
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]interface{}{"code": float64(0), "text": "Success"}, body)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Equal(t, 0, len(sink.AllLogs()))
+			},
+			assertMetricsSink: func(t *testing.T, sink *consumertest.MetricsSink) {
+				assert.Equal(t, 1, len(sink.AllMetrics()))
 			},
 		},
 		{
@@ -311,9 +327,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusOK, status)
-				assert.Equal(t, responseOK, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(0), "text": "Success"}, body)
 			},
 		},
 		{
@@ -326,9 +342,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseErrGzipReader, body)
+				assert.Equal(t, `Error on gzip body`, body)
 			},
 		},
 	}
@@ -336,10 +352,15 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			metricsSink := new(consumertest.MetricsSink)
+			f := NewFactory()
+
+			_, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, sink)
+			assert.NoError(t, err)
+			rcv, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, metricsSink)
 			assert.NoError(t, err)
 
-			r := rcv.(*splunkReceiver)
+			r := rcv.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver)
 			w := httptest.NewRecorder()
 			r.handleReq(w, tt.req)
 
@@ -348,17 +369,24 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
-			var bodyStr string
-			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			var body any
+			fmt.Println(string(respBytes))
+			assert.NoError(t, json.Unmarshal(respBytes, &body))
 
-			tt.assertResponse(t, resp.StatusCode, bodyStr)
+			tt.assertResponse(t, resp.StatusCode, body)
+			if tt.assertSink != nil {
+				tt.assertSink(t, sink)
+			}
+			if tt.assertMetricsSink != nil {
+				tt.assertMetricsSink(t, metricsSink)
+			}
 		})
 	}
 }
 
 func Test_consumer_err(t *testing.T) {
 	currentTime := float64(time.Now().UnixNano()) / 1e6
-	splunkMsg := buildSplunkHecMsg(currentTime, 3)
+	splunkMsg := buildSplunkHecMsg(currentTime, 5)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
@@ -385,7 +413,7 @@ func Test_consumer_err(t *testing.T) {
 
 func Test_consumer_err_metrics(t *testing.T) {
 	currentTime := float64(time.Now().UnixNano()) / 1e6
-	splunkMsg := buildSplunkHecMetricsMsg(currentTime, 13, 3)
+	splunkMsg := buildSplunkHecMetricsMsg(currentTime, 13, 2)
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
@@ -713,10 +741,13 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 			defer resp.Body.Close()
-			var bodyStr string
-			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			var body any
+			assert.NoError(t, json.Unmarshal(respBytes, &body))
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
-			assert.Equal(t, responseOK, bodyStr)
+			assert.Equal(t, map[string]interface{}{
+				"text": "Success",
+				"code": float64(0),
+			}, body)
 			select {
 			case <-done:
 				break
@@ -808,10 +839,13 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			respBytes, err := io.ReadAll(resp.Body)
 			defer resp.Body.Close()
 			assert.NoError(t, err)
-			var bodyStr string
-			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			var body any
+			assert.NoError(t, json.Unmarshal(respBytes, &body))
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
-			assert.Equal(t, responseOK, bodyStr)
+			assert.Equal(t, map[string]interface{}{
+				"text": "Success",
+				"code": float64(0),
+			}, body)
 			select {
 			case <-done:
 				break
@@ -894,14 +928,14 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	tests := []struct {
 		name           string
 		req            *http.Request
-		assertResponse func(t *testing.T, status int, body string)
+		assertResponse func(t *testing.T, status int, body any)
 	}{
 		{
 			name: "incorrect_method",
 			req:  httptest.NewRequest("PUT", "http://localhost/foo", nil),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseInvalidMethod, body)
+				assert.Equal(t, `Only "POST" method is supported`, body)
 			},
 		},
 		{
@@ -911,7 +945,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusOK, status)
 			},
 		},
@@ -922,9 +956,9 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusUnsupportedMediaType, status)
-				assert.Equal(t, responseInvalidEncoding, body)
+				assert.Equal(t, `"Content-Encoding" must be "gzip" or empty`, body)
 			},
 		},
 		{
@@ -933,9 +967,9 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(nil))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseNoData, body)
+				assert.Equal(t, map[string]interface{}{"code": float64(5), "text": "No data"}, body)
 			},
 		},
 
@@ -945,7 +979,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", strings.NewReader("foo\nbar"))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusOK, status)
 			},
 		},
@@ -957,7 +991,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusOK, status)
 			},
 		},
@@ -977,7 +1011,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusOK, status)
 			},
 		},
@@ -991,9 +1025,47 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
+			assertResponse: func(t *testing.T, status int, body any) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseErrGzipReader, body)
+				assert.Equal(t, `Error on gzip body`, body)
+			},
+		},
+		{
+			name: "raw_endpoint_bad_time_negative_number",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest("POST", "http://localhost/service/collector/raw", bytes.NewReader(msgBytes))
+
+				q := req.URL.Query()
+				q.Add(queryTime, "-5")
+				req.URL.RawQuery = q.Encode()
+
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body any) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]interface{}{"code": float64(6), "text": "Invalid data format"}, body)
+			},
+		},
+		{
+			name: "raw_endpoint_bad_time_not_a_number",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest("POST", "http://localhost/service/collector/raw", bytes.NewReader(msgBytes))
+
+				q := req.URL.Query()
+				q.Add(queryTime, "notANumber")
+				req.URL.RawQuery = q.Encode()
+
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body any) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]interface{}{"code": float64(6), "text": "Invalid data format"}, body)
 			},
 		},
 	}
@@ -1017,14 +1089,12 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			assert.NoError(t, err)
 			defer resp.Body.Close()
 
-			var bodyStr string
+			var body any
 			if len(respBytes) > 0 {
-				assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
-			} else {
-				bodyStr = ""
+				assert.NoError(t, json.Unmarshal(respBytes, &body))
 			}
 
-			tt.assertResponse(t, resp.StatusCode, bodyStr)
+			tt.assertResponse(t, resp.StatusCode, body)
 		})
 	}
 }
@@ -1251,7 +1321,7 @@ func BenchmarkHandleReq(b *testing.B) {
 	r := rcv.(*splunkReceiver)
 	w := httptest.NewRecorder()
 	currentTime := float64(time.Now().UnixNano()) / 1e6
-	splunkMsg := buildSplunkHecMsg(currentTime, 3)
+	splunkMsg := buildSplunkHecMsg(currentTime, 2)
 	msgBytes, err := json.Marshal(splunkMsg)
 	require.NoError(b, err)
 	totalMessage := make([]byte, 100*len(msgBytes))

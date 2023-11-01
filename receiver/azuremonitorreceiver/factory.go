@@ -41,6 +41,7 @@ func createDefaultConfig() component.Config {
 		CacheResourcesDefinitions:     24 * 60 * 60,
 		MaximumNumberOfMetricsInACall: 20,
 		Services:                      monitorServices,
+		Authentication:                servicePrincipal,
 	}
 }
 

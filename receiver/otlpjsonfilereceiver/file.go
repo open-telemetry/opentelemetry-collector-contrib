@@ -8,11 +8,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -24,13 +24,13 @@ const (
 )
 
 // NewFactory creates a factory for file receiver
-func NewFactory() rcvr.Factory {
-	return rcvr.NewFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		rcvr.WithLogs(createLogsReceiver, metadata.LogsStability),
-		rcvr.WithTraces(createTracesReceiver, metadata.TracesStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
 type Config struct {
@@ -44,13 +44,13 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-type receiver struct {
+type otlpjsonfilereceiver struct {
 	input     *fileconsumer.Manager
 	id        component.ID
 	storageID *component.ID
 }
 
-func (f *receiver) Start(ctx context.Context, host component.Host) error {
+func (f *otlpjsonfilereceiver) Start(ctx context.Context, host component.Host) error {
 	storageClient, err := adapter.GetStorageClient(ctx, host, f.storageID, f.id)
 	if err != nil {
 		return err
@@ -58,13 +58,13 @@ func (f *receiver) Start(ctx context.Context, host component.Host) error {
 	return f.input.Start(storageClient)
 }
 
-func (f *receiver) Shutdown(_ context.Context) error {
+func (f *otlpjsonfilereceiver) Shutdown(_ context.Context) error {
 	return f.input.Stop()
 }
 
-func createLogsReceiver(_ context.Context, settings rcvr.CreateSettings, configuration component.Config, logs consumer.Logs) (rcvr.Logs, error) {
+func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, configuration component.Config, logs consumer.Logs) (receiver.Logs, error) {
 	logsUnmarshaler := &plog.JSONUnmarshaler{}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -91,12 +91,12 @@ func createLogsReceiver(_ context.Context, settings rcvr.CreateSettings, configu
 		return nil, err
 	}
 
-	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func createMetricsReceiver(_ context.Context, settings rcvr.CreateSettings, configuration component.Config, metrics consumer.Metrics) (rcvr.Metrics, error) {
+func createMetricsReceiver(_ context.Context, settings receiver.CreateSettings, configuration component.Config, metrics consumer.Metrics) (receiver.Metrics, error) {
 	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -123,12 +123,12 @@ func createMetricsReceiver(_ context.Context, settings rcvr.CreateSettings, conf
 		return nil, err
 	}
 
-	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func createTracesReceiver(_ context.Context, settings rcvr.CreateSettings, configuration component.Config, traces consumer.Traces) (rcvr.Traces, error) {
+func createTracesReceiver(_ context.Context, settings receiver.CreateSettings, configuration component.Config, traces consumer.Traces) (receiver.Traces, error) {
 	tracesUnmarshaler := &ptrace.JSONUnmarshaler{}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -155,5 +155,5 @@ func createTracesReceiver(_ context.Context, settings rcvr.CreateSettings, confi
 		return nil, err
 	}
 
-	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }

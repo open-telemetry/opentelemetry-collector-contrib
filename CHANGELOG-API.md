@@ -7,6 +7,131 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.88.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate 'flush.WithPeriod'. Use 'flush.WithFunc' instead. (#27843)
+
+## v0.87.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/kafka, receiver/kafka, receiver/kafkametrics`: Move configuration parts to an internal pkg (#27093)
+- `pulsarexporter`: Do not export function WithTracesMarshalers, add test for that and pass checkapi (#26304)
+- `pulsarreceiver`: Do not export the functions `WithLogsUnmarshalers`, `WithMetricsUnmarshalers`, `WithTracesUnmarshalers`, add tests and pass checkapi. (#26304)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: allows adding warning section to resource_attribute configuration (#19174)
+- `mdatagen`: allow setting empty metric units (#27089)
+
+## v0.86.0
+
+### 🛑 Breaking changes 🛑
+
+- `azuremonitorexporter`: Unexport `Accept` to comply with checkapi (#26304)
+- `tailsamplingprocessor`: Unexport `SamplingProcessorMetricViews` to comply with checkapi (#26304)
+- `awskinesisexporter`: Do not export the functions `NewTracesExporter`, `NewMetricsExporter`, `NewLogsExporter` and pass checkapi. (#26304)
+- `dynatraceexporter`: Rename struct to keep expected `exporter.Factory` and pass checkapi. (#26304)
+- `ecsobserver`: Do not export the function `DefaultConfig` and pass checkapi. (#26304)
+- `f5cloudexporter`: Do not export the function `NewFactoryWithTokenSourceGetter` and pass checkapi. (#26304)
+- `fluentforwardreceiver`: rename `Logs` and `DetermineNextEventMode` functions and all usage to lowercase to stop exporting method and pass checkapi (#26304)
+- `groupbyattrsprocessor`: Do not export the function `MetricViews` and pass checkapi. (#26304)
+- `groupbytraceprocessor`: Do not export the function `MetricViews` and pass checkapi. (#26304)
+- `jaegerreceiver`: Do not export the function `DefaultServerConfigUDP` and pass checkapi. (#26304)
+- `lokiexporter`: Do not export the function `MetricViews` and pass checkapi. (#26304)
+- `mongodbatlasreceiver`: Rename struct to pass checkapi. (#26304)
+- `mongodbreceiver`: Do not export the function `NewClient` and pass checkapi. (#26304)
+- `mysqlreceiver`: Do not export the function `Query` (#26304)
+- `pkg/ottl`: Remove support for `ottlarg`. The struct's field order is now the function parameter order. (#25705)
+- `pkg/stanza`: Make trim func composable (#26536)
+  - Adds trim.WithFunc to allow trim funcs to wrap bufio.SplitFuncs.
+  - Removes trim.Func from split.Config.Func. Use trim.WithFunc instead.
+  - Removes trim.Func from flush.WithPeriod. Use trim.WithFunc instead.
+  
+- `pkg/stanza`: Rename syslog and tcp MultilineBuilders (#26631)
+  - Rename syslog.OctetMultiLineBuilder to syslog.OctetSplitFuncBuilder
+  - Rename tc.MultilineBuilder to tcp.SplitFuncBuilder
+  
+- `probabilisticsamplerprocessor`: Do not export the function `SamplingProcessorMetricViews` and pass checkapi. (#26304)
+- `sentryexporter`: Do not export the functions `CreateSentryExporter` and pass checkapi. (#26304)
+- `sumologicexporter`: Do not export the function `CreateDefaultHTTPClientSettings` and pass checkapi. (#26304)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add support for optional parameters (#20879)
+  The new `ottl.Optional` type can now be used in a function's `Arguments` struct
+  to indicate that a parameter is optional.
+  
+
+## v0.85.0
+
+### 🛑 Breaking changes 🛑
+
+- `alibabacloudlogserviceexporter`: Do not export the function `NewLogServiceClient` (#26304)
+- `awss3exporter`: Do not export the function `NewMarshaler` (#26304)
+- `statsdreceiver`: rename and do not export function `New` to `newReceiver` to pass checkapi (#26304)
+- `chronyreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26113)
+- `dockerstatsreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26114)
+- `elasticsearchexporter`: Do not export the function `DurationAsMicroseconds` (#26304)
+- `jaegerexporter`: Do not export the function `MetricViews` (#26304)
+- `k8sobjectsreceiver`: Do not export the function `NewTicker` (#26304)
+- `pkg/stanza`: Rename 'pkg/stanza/decoder' to 'pkg/stanza/decode' (#26340)
+- `pkg/stanza`: Move tokenize.SplitterConfig.Encoding to fileconsumer.Config.Encoding (#26511)
+- `pkg/stanza`: Remove Flusher from tokenize.SplitterConfig (#26517)
+  Removes the following in favor of flush.WithPeriod - tokenize.DefaultFlushPeriod - tokenize.FlusherConfig - tokenize.NewFlusherConfig
+- `pkg/stanza`: Remove tokenize.SplitterConfig (#26537)
+- `pkg/stanza`: Rename "tokenize" package to "split" (#26540)
+  - Remove 'Multiline' struct
+  - Remove 'NewMultilineConfig' struct
+  - Rename 'MultilineConfig' to 'split.Config'
+  
+- `pkg/stanza`: Extract whitespace trim configuration into trim.Config (#26511)
+  - PreserveLeading and PreserveTrailing removed from tokenize.SplitterConfig.
+  - PreserveLeadingWhitespaces and PreserveTrailingWhitespaces removed from tcp.BaseConfig and udp.BaseConfig.
+  
+
+### 💡 Enhancements 💡
+
+- `oauth2clientauthextension`: Enable dynamically reading ClientID and ClientSecret from files (#26117)
+  - Read the client ID and/or secret from a file by specifying the file path to the ClientIDFile (`client_id_file`) and ClientSecretFile (`client_secret_file`) fields respectively.
+  - The file is read every time the client issues a new token. This means that the corresponding value can change dynamically during the execution by modifying the file contents.
+  
+
+## v0.84.0
+
+### 🛑 Breaking changes 🛑
+
+- `memcachedreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26084)
+- `podmanreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26083)
+- `zookeeperreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26082)
+- `jaegerreceiver`: Deprecate remote_sampling config in the jaeger receiver (#24186)
+  The jaeger receiver will fail to start if remote_sampling config is specified in it.  The `receiver.jaeger.DisableRemoteSampling` feature gate can be set to let the receiver start and treat  remote_sampling config as no-op. In a future version this feature gate will be removed and the receiver will always  fail when remote_sampling config is specified.
+  
+- `pkg/ottl`: use IntGetter argument for Substring function (#25852)
+- `pkg/stanza`: Remove deprecated 'helper.Encoding' and 'helper.EncodingConfig.Build' (#25846)
+- `pkg/stanza`: Remove deprecated fileconsumer config structs (#24853)
+  Includes | - MatchingCriteria - OrderingCriteria - NumericSortRule - AlphabeticalSortRule - TimestampSortRule
+- `googlecloudexporter`: remove retry_on_failure from the googlecloud exporter. The exporter itself handles retries, and retrying can cause issues. (#57233)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate 'helper.EncodingConfig' and 'helper.NewEncodingConfig' (#25846)
+- `pkg/stanza`: Deprecate encoding related elements of helper pacakge, in favor of new decoder package (#26019)
+  Includes the following deprecations | - Decoder - NewDecoder - LookupEncoding - IsNop
+- `pkg/stanza`: Deprecate tokenization related elements of helper pacakge, in favor of new tokenize package (#25914)
+  Includes the following deprecations | - Flusher - FlusherConfig - NewFlusherConfig - Multiline - MultilineConfig - NewMultilineConfig - NewLineStartSplitFunc - NewLineEndSplitFunc - NewNewlineSplitFunc - Splitter - SplitterConfig - NewSplitterConfig - SplitNone
+
+### 💡 Enhancements 💡
+
+- `googlemanagedprometheus`: Add a `add_metric_suffixes` option to the googlemanagedprometheus exporter. When set to false, metric suffixes are not added. (#26071)
+- `receiver/prometheus`: translate units from prometheus to UCUM (#23208)
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/influxdb`: add allowable inputs to line protocol precision parameter (#24974)
+
 ## v0.83.0
 
 ### 🛑 Breaking changes 🛑

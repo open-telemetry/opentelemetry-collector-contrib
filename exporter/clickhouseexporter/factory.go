@@ -28,9 +28,12 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	queueSettings := exporterhelper.NewDefaultQueueSettings()
+	queueSettings.NumConsumers = 1
+
 	return &Config{
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
+		QueueSettings:    queueSettings,
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,
@@ -62,7 +65,7 @@ func createLogsExporter(
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.enforcedQueueSettings()),
+		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
 	)
 }
@@ -88,7 +91,7 @@ func createTracesExporter(
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.enforcedQueueSettings()),
+		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
 	)
 }
@@ -112,7 +115,7 @@ func createMetricExporter(
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.enforcedQueueSettings()),
+		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
 	)
 }

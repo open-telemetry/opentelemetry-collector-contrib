@@ -25,51 +25,59 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for kubeletstats metrics.
 type MetricsConfig struct {
-	ContainerCPUTime               MetricConfig `mapstructure:"container.cpu.time"`
-	ContainerCPUUtilization        MetricConfig `mapstructure:"container.cpu.utilization"`
-	ContainerFilesystemAvailable   MetricConfig `mapstructure:"container.filesystem.available"`
-	ContainerFilesystemCapacity    MetricConfig `mapstructure:"container.filesystem.capacity"`
-	ContainerFilesystemUsage       MetricConfig `mapstructure:"container.filesystem.usage"`
-	ContainerMemoryAvailable       MetricConfig `mapstructure:"container.memory.available"`
-	ContainerMemoryMajorPageFaults MetricConfig `mapstructure:"container.memory.major_page_faults"`
-	ContainerMemoryPageFaults      MetricConfig `mapstructure:"container.memory.page_faults"`
-	ContainerMemoryRss             MetricConfig `mapstructure:"container.memory.rss"`
-	ContainerMemoryUsage           MetricConfig `mapstructure:"container.memory.usage"`
-	ContainerMemoryWorkingSet      MetricConfig `mapstructure:"container.memory.working_set"`
-	ContainerUptime                MetricConfig `mapstructure:"container.uptime"`
-	K8sNodeCPUTime                 MetricConfig `mapstructure:"k8s.node.cpu.time"`
-	K8sNodeCPUUtilization          MetricConfig `mapstructure:"k8s.node.cpu.utilization"`
-	K8sNodeFilesystemAvailable     MetricConfig `mapstructure:"k8s.node.filesystem.available"`
-	K8sNodeFilesystemCapacity      MetricConfig `mapstructure:"k8s.node.filesystem.capacity"`
-	K8sNodeFilesystemUsage         MetricConfig `mapstructure:"k8s.node.filesystem.usage"`
-	K8sNodeMemoryAvailable         MetricConfig `mapstructure:"k8s.node.memory.available"`
-	K8sNodeMemoryMajorPageFaults   MetricConfig `mapstructure:"k8s.node.memory.major_page_faults"`
-	K8sNodeMemoryPageFaults        MetricConfig `mapstructure:"k8s.node.memory.page_faults"`
-	K8sNodeMemoryRss               MetricConfig `mapstructure:"k8s.node.memory.rss"`
-	K8sNodeMemoryUsage             MetricConfig `mapstructure:"k8s.node.memory.usage"`
-	K8sNodeMemoryWorkingSet        MetricConfig `mapstructure:"k8s.node.memory.working_set"`
-	K8sNodeNetworkErrors           MetricConfig `mapstructure:"k8s.node.network.errors"`
-	K8sNodeNetworkIo               MetricConfig `mapstructure:"k8s.node.network.io"`
-	K8sNodeUptime                  MetricConfig `mapstructure:"k8s.node.uptime"`
-	K8sPodCPUTime                  MetricConfig `mapstructure:"k8s.pod.cpu.time"`
-	K8sPodCPUUtilization           MetricConfig `mapstructure:"k8s.pod.cpu.utilization"`
-	K8sPodFilesystemAvailable      MetricConfig `mapstructure:"k8s.pod.filesystem.available"`
-	K8sPodFilesystemCapacity       MetricConfig `mapstructure:"k8s.pod.filesystem.capacity"`
-	K8sPodFilesystemUsage          MetricConfig `mapstructure:"k8s.pod.filesystem.usage"`
-	K8sPodMemoryAvailable          MetricConfig `mapstructure:"k8s.pod.memory.available"`
-	K8sPodMemoryMajorPageFaults    MetricConfig `mapstructure:"k8s.pod.memory.major_page_faults"`
-	K8sPodMemoryPageFaults         MetricConfig `mapstructure:"k8s.pod.memory.page_faults"`
-	K8sPodMemoryRss                MetricConfig `mapstructure:"k8s.pod.memory.rss"`
-	K8sPodMemoryUsage              MetricConfig `mapstructure:"k8s.pod.memory.usage"`
-	K8sPodMemoryWorkingSet         MetricConfig `mapstructure:"k8s.pod.memory.working_set"`
-	K8sPodNetworkErrors            MetricConfig `mapstructure:"k8s.pod.network.errors"`
-	K8sPodNetworkIo                MetricConfig `mapstructure:"k8s.pod.network.io"`
-	K8sPodUptime                   MetricConfig `mapstructure:"k8s.pod.uptime"`
-	K8sVolumeAvailable             MetricConfig `mapstructure:"k8s.volume.available"`
-	K8sVolumeCapacity              MetricConfig `mapstructure:"k8s.volume.capacity"`
-	K8sVolumeInodes                MetricConfig `mapstructure:"k8s.volume.inodes"`
-	K8sVolumeInodesFree            MetricConfig `mapstructure:"k8s.volume.inodes.free"`
-	K8sVolumeInodesUsed            MetricConfig `mapstructure:"k8s.volume.inodes.used"`
+	ContainerCPUTime                     MetricConfig `mapstructure:"container.cpu.time"`
+	ContainerCPUUtilization              MetricConfig `mapstructure:"container.cpu.utilization"`
+	ContainerFilesystemAvailable         MetricConfig `mapstructure:"container.filesystem.available"`
+	ContainerFilesystemCapacity          MetricConfig `mapstructure:"container.filesystem.capacity"`
+	ContainerFilesystemUsage             MetricConfig `mapstructure:"container.filesystem.usage"`
+	ContainerMemoryAvailable             MetricConfig `mapstructure:"container.memory.available"`
+	ContainerMemoryMajorPageFaults       MetricConfig `mapstructure:"container.memory.major_page_faults"`
+	ContainerMemoryPageFaults            MetricConfig `mapstructure:"container.memory.page_faults"`
+	ContainerMemoryRss                   MetricConfig `mapstructure:"container.memory.rss"`
+	ContainerMemoryUsage                 MetricConfig `mapstructure:"container.memory.usage"`
+	ContainerMemoryWorkingSet            MetricConfig `mapstructure:"container.memory.working_set"`
+	ContainerUptime                      MetricConfig `mapstructure:"container.uptime"`
+	K8sContainerCPULimitUtilization      MetricConfig `mapstructure:"k8s.container.cpu_limit_utilization"`
+	K8sContainerCPURequestUtilization    MetricConfig `mapstructure:"k8s.container.cpu_request_utilization"`
+	K8sContainerMemoryLimitUtilization   MetricConfig `mapstructure:"k8s.container.memory_limit_utilization"`
+	K8sContainerMemoryRequestUtilization MetricConfig `mapstructure:"k8s.container.memory_request_utilization"`
+	K8sNodeCPUTime                       MetricConfig `mapstructure:"k8s.node.cpu.time"`
+	K8sNodeCPUUtilization                MetricConfig `mapstructure:"k8s.node.cpu.utilization"`
+	K8sNodeFilesystemAvailable           MetricConfig `mapstructure:"k8s.node.filesystem.available"`
+	K8sNodeFilesystemCapacity            MetricConfig `mapstructure:"k8s.node.filesystem.capacity"`
+	K8sNodeFilesystemUsage               MetricConfig `mapstructure:"k8s.node.filesystem.usage"`
+	K8sNodeMemoryAvailable               MetricConfig `mapstructure:"k8s.node.memory.available"`
+	K8sNodeMemoryMajorPageFaults         MetricConfig `mapstructure:"k8s.node.memory.major_page_faults"`
+	K8sNodeMemoryPageFaults              MetricConfig `mapstructure:"k8s.node.memory.page_faults"`
+	K8sNodeMemoryRss                     MetricConfig `mapstructure:"k8s.node.memory.rss"`
+	K8sNodeMemoryUsage                   MetricConfig `mapstructure:"k8s.node.memory.usage"`
+	K8sNodeMemoryWorkingSet              MetricConfig `mapstructure:"k8s.node.memory.working_set"`
+	K8sNodeNetworkErrors                 MetricConfig `mapstructure:"k8s.node.network.errors"`
+	K8sNodeNetworkIo                     MetricConfig `mapstructure:"k8s.node.network.io"`
+	K8sNodeUptime                        MetricConfig `mapstructure:"k8s.node.uptime"`
+	K8sPodCPUTime                        MetricConfig `mapstructure:"k8s.pod.cpu.time"`
+	K8sPodCPUUtilization                 MetricConfig `mapstructure:"k8s.pod.cpu.utilization"`
+	K8sPodCPULimitUtilization            MetricConfig `mapstructure:"k8s.pod.cpu_limit_utilization"`
+	K8sPodCPURequestUtilization          MetricConfig `mapstructure:"k8s.pod.cpu_request_utilization"`
+	K8sPodFilesystemAvailable            MetricConfig `mapstructure:"k8s.pod.filesystem.available"`
+	K8sPodFilesystemCapacity             MetricConfig `mapstructure:"k8s.pod.filesystem.capacity"`
+	K8sPodFilesystemUsage                MetricConfig `mapstructure:"k8s.pod.filesystem.usage"`
+	K8sPodMemoryAvailable                MetricConfig `mapstructure:"k8s.pod.memory.available"`
+	K8sPodMemoryMajorPageFaults          MetricConfig `mapstructure:"k8s.pod.memory.major_page_faults"`
+	K8sPodMemoryPageFaults               MetricConfig `mapstructure:"k8s.pod.memory.page_faults"`
+	K8sPodMemoryRss                      MetricConfig `mapstructure:"k8s.pod.memory.rss"`
+	K8sPodMemoryUsage                    MetricConfig `mapstructure:"k8s.pod.memory.usage"`
+	K8sPodMemoryWorkingSet               MetricConfig `mapstructure:"k8s.pod.memory.working_set"`
+	K8sPodMemoryLimitUtilization         MetricConfig `mapstructure:"k8s.pod.memory_limit_utilization"`
+	K8sPodMemoryRequestUtilization       MetricConfig `mapstructure:"k8s.pod.memory_request_utilization"`
+	K8sPodNetworkErrors                  MetricConfig `mapstructure:"k8s.pod.network.errors"`
+	K8sPodNetworkIo                      MetricConfig `mapstructure:"k8s.pod.network.io"`
+	K8sPodUptime                         MetricConfig `mapstructure:"k8s.pod.uptime"`
+	K8sVolumeAvailable                   MetricConfig `mapstructure:"k8s.volume.available"`
+	K8sVolumeCapacity                    MetricConfig `mapstructure:"k8s.volume.capacity"`
+	K8sVolumeInodes                      MetricConfig `mapstructure:"k8s.volume.inodes"`
+	K8sVolumeInodesFree                  MetricConfig `mapstructure:"k8s.volume.inodes.free"`
+	K8sVolumeInodesUsed                  MetricConfig `mapstructure:"k8s.volume.inodes.used"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -108,6 +116,18 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerUptime: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerCPULimitUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerCPURequestUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerMemoryLimitUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerMemoryRequestUtilization: MetricConfig{
 			Enabled: false,
 		},
 		K8sNodeCPUTime: MetricConfig{
@@ -158,6 +178,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodCPUUtilization: MetricConfig{
 			Enabled: true,
 		},
+		K8sPodCPULimitUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sPodCPURequestUtilization: MetricConfig{
+			Enabled: false,
+		},
 		K8sPodFilesystemAvailable: MetricConfig{
 			Enabled: true,
 		},
@@ -184,6 +210,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sPodMemoryWorkingSet: MetricConfig{
 			Enabled: true,
+		},
+		K8sPodMemoryLimitUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sPodMemoryRequestUtilization: MetricConfig{
+			Enabled: false,
 		},
 		K8sPodNetworkErrors: MetricConfig{
 			Enabled: true,
@@ -215,6 +247,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for kubeletstats resource attributes.

@@ -106,8 +106,8 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
 		stx := ottlspan.NewTransformContext(
-			ptrace.Span{},
-			pcommon.InstrumentationScope{},
+			ptrace.NewSpan(),
+			pcommon.NewInstrumentationScope(),
 			rspans.Resource(),
 		)
 

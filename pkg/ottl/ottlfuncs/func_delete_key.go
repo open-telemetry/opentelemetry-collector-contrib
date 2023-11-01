@@ -11,8 +11,8 @@ import (
 )
 
 type DeleteKeyArguments[K any] struct {
-	Target ottl.PMapGetter[K] `ottlarg:"0"`
-	Key    string             `ottlarg:"1"`
+	Target ottl.PMapGetter[K]
+	Key    string
 }
 
 func NewDeleteKeyFactory[K any]() ottl.Factory[K] {

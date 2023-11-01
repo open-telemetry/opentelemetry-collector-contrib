@@ -138,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(cmNoStr, cfg))
 	assert.NoError(t, component.ValidateConfig(cfg))
 
-	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}))
+	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{}))
 	if diff != "" {
 		t.Errorf("config mismatch (-expected / +actual)\n%s", diff)
 	}

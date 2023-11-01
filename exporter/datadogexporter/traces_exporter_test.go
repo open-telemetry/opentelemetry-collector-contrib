@@ -258,6 +258,7 @@ func TestTraceExporter(t *testing.T) {
 			},
 			IgnoreResources: []string{},
 			flushInterval:   0.1,
+			TraceBuffer:     2,
 		},
 	}
 

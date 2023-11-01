@@ -19,6 +19,11 @@ opensearch/empty_dataset:
   http:
     endpoint: https://opensearch.example.com:9200
 
+opensearch/invalid_bulk_action:
+  bulk_action: "delete"
+  http:
+    endpoint: https://opensearch.example.com:9200
+
 opensearch/trace:
   dataset: ngnix
   namespace: eu

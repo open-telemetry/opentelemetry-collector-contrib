@@ -1,6 +1,7 @@
 #!/bin/bash
 
 beta_modules=(
+  "go.opentelemetry.io/collector/cmd/builder"
   "go.opentelemetry.io/collector/component"
   "go.opentelemetry.io/collector/config/configauth"
   "go.opentelemetry.io/collector/config/configcompression"

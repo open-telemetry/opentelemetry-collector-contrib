@@ -35,6 +35,13 @@ var mertricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegi
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
 )
 
+// noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
+var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.DisableAPMStats",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Datadog Exporter will not compute APM Stats"),
+)
+
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
 	return mertricExportNativeClientFeatureGate.IsEnabled()
@@ -246,7 +253,7 @@ func (f *factory) createMetricsExporter(
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
-				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs)
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
 			})
 
 			// Consume resources for host metadata
@@ -331,7 +338,7 @@ func (f *factory) createTracesExporter(
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
-				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs)
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
 			})
 			// Consume resources for host metadata
 			for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -402,7 +409,7 @@ func (f *factory) createLogsExporter(
 		pusher = func(_ context.Context, td plog.Logs) error {
 			f.onceMetadata.Do(func() {
 				attrs := pcommon.NewMap()
-				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs)
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
 			})
 			for i := 0; i < td.ResourceLogs().Len(); i++ {
 				res := td.ResourceLogs().At(i).Resource()

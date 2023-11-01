@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	apmcorrelation "github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -21,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
+	apmcorrelation "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -74,6 +74,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: 20,
 					MaxConnsPerHost:     20,
 					IdleConnTimeout:     30 * time.Second,
+					Timeout:             10 * time.Second,
 				},
 				TranslationRules:    nil,
 				ExcludeMetrics:      nil,
@@ -140,6 +141,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: 10,
 					MaxConnsPerHost:     10000,
 					IdleConnTimeout:     2 * time.Hour,
+					Timeout:             20 * time.Second,
 				},
 				TranslationRules: []translation.Rule{
 					{
@@ -482,14 +484,6 @@ func TestConfigValidateErrors(t *testing.T) {
 			cfg: &Config{
 				AccessToken: "access_token",
 				APIURL:      "https://api.us1.signalfx.com/",
-			},
-		},
-		{
-			name: "Negative MaxConnections",
-			cfg: &Config{
-				Realm:          "us0",
-				AccessToken:    "access_token",
-				MaxConnections: -1,
 			},
 		},
 		{

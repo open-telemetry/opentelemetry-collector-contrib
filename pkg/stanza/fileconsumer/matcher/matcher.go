@@ -4,6 +4,7 @@
 package matcher // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -17,6 +18,10 @@ const (
 	sortTypeAlphabetical = "alphabetical"
 )
 
+const (
+	defaultOrderingCriteriaTopN = 1
+)
+
 type Criteria struct {
 	Include          []string         `mapstructure:"include,omitempty"`
 	Exclude          []string         `mapstructure:"exclude,omitempty"`
@@ -25,6 +30,7 @@ type Criteria struct {
 
 type OrderingCriteria struct {
 	Regex  string `mapstructure:"regex,omitempty"`
+	TopN   int    `mapstructure:"top_n,omitempty"`
 	SortBy []Sort `mapstructure:"sort_by,omitempty"`
 }
 
@@ -59,6 +65,14 @@ func New(c Criteria) (*Matcher, error) {
 
 	if c.OrderingCriteria.Regex == "" {
 		return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
+	}
+
+	if c.OrderingCriteria.TopN < 0 {
+		return nil, fmt.Errorf("'top_n' must be a positive integer")
+	}
+
+	if c.OrderingCriteria.TopN == 0 {
+		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
 	}
 
 	regex, err := regexp.Compile(c.OrderingCriteria.Regex)
@@ -96,6 +110,7 @@ func New(c Criteria) (*Matcher, error) {
 		include:    c.Include,
 		exclude:    c.Exclude,
 		regex:      regex,
+		topN:       c.OrderingCriteria.TopN,
 		filterOpts: filterOpts,
 	}, nil
 }
@@ -104,25 +119,32 @@ type Matcher struct {
 	include    []string
 	exclude    []string
 	regex      *regexp.Regexp
+	topN       int
 	filterOpts []filter.Option
 }
 
 // MatchFiles gets a list of paths given an array of glob patterns to include and exclude
 func (m Matcher) MatchFiles() ([]string, error) {
-	files := finder.FindFiles(m.include, m.exclude)
+	var errs error
+	files, err := finder.FindFiles(m.include, m.exclude)
+	if err != nil {
+		errs = errors.Join(errs, err)
+	}
 	if len(files) == 0 {
-		return files, fmt.Errorf("no files match the configured criteria")
+		return files, errors.Join(fmt.Errorf("no files match the configured criteria"), errs)
 	}
 	if len(m.filterOpts) == 0 {
-		return files, nil
+		return files, errs
 	}
 
 	result, err := filter.Filter(files, m.regex, m.filterOpts...)
 	if len(result) == 0 {
-		return result, err
+		return result, errors.Join(err, errs)
 	}
 
-	// Return only the first item.
-	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23788
-	return result[:1], err
+	if len(result) <= m.topN {
+		return result, errors.Join(err, errs)
+	}
+
+	return result[:m.topN], errors.Join(err, errs)
 }

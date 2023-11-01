@@ -61,9 +61,10 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
+	pathExpressionParser := pathExpressionParser{telemetrySettings}
 	p, err := ottl.NewParser[TransformContext](
 		functions,
-		parsePath,
+		pathExpressionParser.parsePath,
 		telemetrySettings,
 		ottl.WithEnumParser[TransformContext](parseEnum),
 	)
@@ -102,7 +103,11 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
+type pathExpressionParser struct {
+	telemetrySettings component.TelemetrySettings
+}
+
+func (pep *pathExpressionParser) parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
 	}
@@ -125,6 +130,8 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		return internal.SpanPathGetSetter[TransformContext](path[1:])
 	case "time_unix_nano":
 		return accessSpanEventTimeUnixNano(), nil
+	case "time":
+		return accessSpanEventTime(), nil
 	case "name":
 		return accessSpanEventName(), nil
 	case "attributes":
@@ -173,6 +180,20 @@ func accessSpanEventTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if newTimestamp, ok := val.(int64); ok {
 				tCtx.GetSpanEvent().SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTimestamp)))
+			}
+			return nil
+		},
+	}
+}
+
+func accessSpanEventTime() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return tCtx.GetSpanEvent().Timestamp().AsTime(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if newTimestamp, ok := val.(time.Time); ok {
+				tCtx.GetSpanEvent().SetTimestamp(pcommon.NewTimestampFromTime(newTimestamp))
 			}
 			return nil
 		},

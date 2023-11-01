@@ -24,7 +24,7 @@ type CarbonDataReceiver struct {
 	receiver receiver.Metrics
 }
 
-// Ensure CarbonDataReceiver implements MetricDataSender.
+// Ensure CarbonDataReceiver implements DataReceiver
 var _ testbed.DataReceiver = (*CarbonDataReceiver)(nil)
 
 // NewCarbonDataReceiver creates a new CarbonDataReceiver that will listen on the

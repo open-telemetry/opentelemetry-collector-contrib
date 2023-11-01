@@ -101,7 +101,7 @@ With above guidelines, you can write code that is more portable and easier to ma
 ## Adding New Components
 
 **Before** any code is written, [open an
-issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=new+component&template=new_component.md&title=New%20component)
+issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
 providing the following information:
 
 * Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of
@@ -111,8 +111,8 @@ providing the following information:
   components, having a sponsor means that your use case has been validated.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
-* The configuration options your component will accept. This will help us understand what it does and have an idea of
-  how the implementation might look like.
+* The configuration options your component will accept. This will give us a better understanding of what it does, and 
+  how it may be implemented.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
@@ -121,7 +121,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Provide the implementation which performs the component operation
 * Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
 
-Familiarize yourself with the interface of the component that you want to write, and use existing implementations as reference.
+Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
 
 *NOTICE:* The Collector is in Beta stage and as such the interfaces may undergo breaking changes. Component creators
@@ -130,8 +130,8 @@ excluded from the default builds.
 
 Generally, maintenance of components is the responsibility of contributors who authored them. If the original author or
 some other contributor does not maintain the component it may be excluded from the default build. The component **will**
-be excluded if it causes build problems, has failing tests or otherwise causes problems to the rest of the repository
-and the rest of contributors.
+be excluded if it causes build problems, has failing tests, or otherwise causes problems to the rest of the repository
+and its contributors.
 
 - Create your component under the proper folder and use Go standard package naming recommendations.
 - Use a boiler-plate Makefile that just references the one at top level, ie.: `include ../../Makefile.Common` - this
@@ -191,6 +191,19 @@ When submitting a component to the community, consider breaking it down into sep
   * This PR is usually trivial to review, so the size limit does not apply to
     it.
   * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
+  * Before submitting a PR, run the following commands from the root of the repository to ensure your new component is meeting the repo linting expectations:
+    * `make checkdoc`
+    * `make checkmetadata`
+    * `make checkapi`
+    * `make goporto`
+    * `make crosslink`
+    * `make gotidy`
+    * `make genotelcontribcol`
+    * `make genoteltestbedcol`
+    * `make generate`
+    * `make  gendependabot`
+    * `make multimod-verify`
+    * `make generate-gh-issue-templates`
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
@@ -305,6 +318,7 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 | `bug`                | Something that is advertised or intended to work isn't working as expected.                                                                                                                             |
 | `enhancement`        | Something that isn't an advertised feature that would be useful to users or maintainers.                                                                                                                |
 | `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                    |
+| `documentation`      | This is a collector usability issue that could likely be resolved by providing relevant documentation. Please consider adding new or improving existing documentation before closing issues with this label.                               |
 | `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                               |
 | `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                             |
 | `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |

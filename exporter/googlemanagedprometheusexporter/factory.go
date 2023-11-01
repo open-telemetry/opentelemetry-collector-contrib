@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,10 +38,7 @@ func createDefaultConfig() component.Config {
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		GMPConfig: GMPConfig{
 			MetricConfig: MetricConfig{
-				ExtraMetricsConfig: ExtraMetricsConfig{
-					EnableTargetInfo: true,
-					EnableScopeInfo:  true,
-				},
+				Config: googlemanagedprometheus.DefaultConfig(),
 			},
 		},
 	}

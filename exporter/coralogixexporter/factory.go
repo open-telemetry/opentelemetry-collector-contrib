@@ -12,20 +12,20 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
-	exp "go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
 
 // NewFactory by Coralogix
-func NewFactory() exp.Factory {
-	return exp.NewFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exp.WithTraces(createTraceExporter, metadata.TracesStability),
-		exp.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exp.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTraceExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
@@ -60,7 +60,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTraceExporter(ctx context.Context, set exp.CreateSettings, config component.Config) (exp.Traces, error) {
+func createTraceExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
 	exporter, err := newTracesExporter(cfg, set)
@@ -84,9 +84,9 @@ func createTraceExporter(ctx context.Context, set exp.CreateSettings, config com
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exp.CreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (exp.Metrics, error) {
+) (exporter.Metrics, error) {
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
 		return nil, err
@@ -108,9 +108,9 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exp.CreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (exp.Logs, error) {
+) (exporter.Logs, error) {
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {
 		return nil, err

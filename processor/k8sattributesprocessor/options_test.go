@@ -123,6 +123,24 @@ func TestWithExtractAnnotations(t *testing.T) {
 			"",
 		},
 		{
+			"basic-node",
+			[]FieldExtractConfig{
+				{
+					TagName: "tag1",
+					Key:     "key1",
+					From:    kube.MetadataFromNode,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name: "tag1",
+					Key:  "key1",
+					From: kube.MetadataFromNode,
+				},
+			},
+			"",
+		},
+		{
 			"basic-pod-keyregex",
 			[]FieldExtractConfig{
 				{
@@ -154,6 +172,24 @@ func TestWithExtractAnnotations(t *testing.T) {
 					Name:     "tag1",
 					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromNamespace,
+				},
+			},
+			"",
+		},
+		{
+			"basic-node-keyregex",
+			[]FieldExtractConfig{
+				{
+					TagName:  "tag1",
+					KeyRegex: "key*",
+					From:     kube.MetadataFromNode,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name:     "tag1",
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
+					From:     kube.MetadataFromNode,
 				},
 			},
 			"",
@@ -229,6 +265,24 @@ func TestWithExtractLabels(t *testing.T) {
 			"",
 		},
 		{
+			"basic-node",
+			[]FieldExtractConfig{
+				{
+					TagName: "tag1",
+					Key:     "key1",
+					From:    kube.MetadataFromNode,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name: "tag1",
+					Key:  "key1",
+					From: kube.MetadataFromNode,
+				},
+			},
+			"",
+		},
+		{
 			"basic-pod-keyregex",
 			[]FieldExtractConfig{
 				{
@@ -247,7 +301,7 @@ func TestWithExtractLabels(t *testing.T) {
 			"",
 		},
 		{
-			"basic-namespace",
+			"basic-namespace-keyregex",
 			[]FieldExtractConfig{
 				{
 					TagName:  "tag1",
@@ -260,6 +314,24 @@ func TestWithExtractLabels(t *testing.T) {
 					Name:     "tag1",
 					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromNamespace,
+				},
+			},
+			"",
+		},
+		{
+			"basic-node-keyregex",
+			[]FieldExtractConfig{
+				{
+					TagName:  "tag1",
+					KeyRegex: "key*",
+					From:     kube.MetadataFromNode,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name:     "tag1",
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
+					From:     kube.MetadataFromNode,
 				},
 			},
 			"",
@@ -284,7 +356,7 @@ func TestWithExtractLabels(t *testing.T) {
 
 func TestWithExtractMetadata(t *testing.T) {
 	p := &kubernetesprocessor{}
-	assert.NoError(t, withExtractMetadata()(p))
+	assert.NoError(t, withExtractMetadata(enabledAttributes()...)(p))
 	assert.True(t, p.rules.Namespace)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)

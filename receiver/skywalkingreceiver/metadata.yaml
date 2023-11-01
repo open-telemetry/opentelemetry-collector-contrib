@@ -3,6 +3,7 @@ type: skywalking
 status:
   class: receiver
   stability:
+    development: [metrics]
     beta: [traces]
   distributions: [contrib, sumo]
   codeowners:

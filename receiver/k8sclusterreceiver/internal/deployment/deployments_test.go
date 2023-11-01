@@ -17,7 +17,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
@@ -37,10 +37,9 @@ func TestDeploymentMetrics(t *testing.T) {
 	rm := m.ResourceMetrics().At(0)
 	assert.Equal(t,
 		map[string]interface{}{
-			"k8s.deployment.uid":      "test-deployment-1-uid",
-			"k8s.deployment.name":     "test-deployment-1",
-			"k8s.namespace.name":      "test-namespace",
-			"opencensus.resourcetype": "k8s",
+			"k8s.deployment.uid":  "test-deployment-1-uid",
+			"k8s.deployment.name": "test-deployment-1",
+			"k8s.namespace.name":  "test-namespace",
 		},
 		rm.Resource().Attributes().AsRaw(),
 	)

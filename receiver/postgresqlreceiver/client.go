@@ -36,6 +36,7 @@ var errNoLastArchive = errors.New("no last archive found, not able to calculate 
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
@@ -163,6 +164,44 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	return dbStats, errs
 }
 
+type databaseLocks struct {
+	relation string
+	mode     string
+	lockType string
+	locks    int64
+}
+
+func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
+	query := `SELECT relname AS relation, mode, locktype,COUNT(pid)
+	AS locks FROM pg_locks
+	JOIN pg_class ON pg_locks.relation = pg_class.oid
+	GROUP BY relname, mode, locktype;`
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_locks and pg_locks.relation: %w", err)
+	}
+	defer rows.Close()
+	var dl []databaseLocks
+	var errs []error
+	for rows.Next() {
+		var relation, mode, lockType string
+		var locks int64
+		err = rows.Scan(&relation, &mode, &lockType, &locks)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		dl = append(dl, databaseLocks{
+			relation: relation,
+			mode:     mode,
+			lockType: lockType,
+			locks:    locks,
+		})
+	}
+	return dl, multierr.Combine(errs...)
+}
+
 // getBackends returns a map of database names to the number of active connections
 func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error) {
 	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
@@ -222,6 +261,7 @@ type tableStats struct {
 	upd         int64
 	del         int64
 	hotUpd      int64
+	seqScans    int64
 	size        int64
 	vacuumCount int64
 }
@@ -234,6 +274,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	n_tup_upd AS upd,
 	n_tup_del AS del,
 	n_tup_hot_upd AS hot_upd,
+	seq_scan AS seq_scans,
 	pg_relation_size(relid) AS table_size,
 	vacuum_count
 	FROM pg_stat_user_tables;`
@@ -246,8 +287,8 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	}
 	for rows.Next() {
 		var table string
-		var live, dead, ins, upd, del, hotUpd, tableSize, vacuumCount int64
-		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd, &tableSize, &vacuumCount)
+		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount int64
+		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -260,6 +301,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 			upd:         upd,
 			del:         del,
 			hotUpd:      hotUpd,
+			seqScans:    seqScans,
 			size:        tableSize,
 			vacuumCount: vacuumCount,
 		}
