@@ -35,7 +35,6 @@ func Test_sflowreceiverlogs_Start(t *testing.T) {
 		connection     *net.UDPConn
 	}
 	type args struct {
-		// ctx context.Context
 	}
 	tests := []struct {
 		name    string
@@ -69,13 +68,7 @@ func Test_sflowreceiverlogs_Start(t *testing.T) {
 					BuildInfo: component.BuildInfo{},
 				},
 			},
-			args: args{
-				// ctx: func() context.Context {
-				// 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-				// 	defer cancel()
-				// 	return ctx
-				// }(),
-			},
+			args:    args{},
 			wantErr: false,
 		},
 	}
