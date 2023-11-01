@@ -32,6 +32,16 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.node.labels:
+    description: The k8s node labels.
+    type: map
+    enabled: false
+
+  k8s.node.annotations:
+    description: The k8s node annotations.
+    type: map
+    enabled: false
+
   container.id:
     description: The container id.
     type: string

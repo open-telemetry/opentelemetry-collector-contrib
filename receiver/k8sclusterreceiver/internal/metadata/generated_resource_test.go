@@ -31,6 +31,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sKubeproxyVersion("k8s.kubeproxy.version-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNamespaceUID("k8s.namespace.uid-val")
+			rb.SetK8sNodeAnnotations(map[string]any{"key1": "k8s.node.annotations-val1", "key2": "k8s.node.annotations-val2"})
+			rb.SetK8sNodeLabels(map[string]any{"key1": "k8s.node.labels-val1", "key2": "k8s.node.labels-val2"})
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
@@ -54,7 +56,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 30, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 33, res.Attributes().Len())
+				assert.Equal(t, 35, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -151,6 +153,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.namespace.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.node.annotations")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, map[string]any{"key1": "k8s.node.annotations-val1", "key2": "k8s.node.annotations-val2"}, val.Map().AsRaw())
+			}
+			val, ok = res.Attributes().Get("k8s.node.labels")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, map[string]any{"key1": "k8s.node.labels-val1", "key2": "k8s.node.labels-val2"}, val.Map().AsRaw())
 			}
 			val, ok = res.Attributes().Get("k8s.node.name")
 			assert.True(t, ok)

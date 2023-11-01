@@ -165,7 +165,7 @@ func TestNodeMetrics(t *testing.T) {
 	mbc := metadata.DefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sNodeCondition.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
-	RecordMetrics(mb, n, ts)
+	RecordMetrics(mb, mb.NewResourceBuilder(), n, ts)
 	m := mb.Emit()
 
 	expectedFile := filepath.Join("testdata", "expected_mdatagen.yaml")

@@ -45,7 +45,7 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
-	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	RecordMetrics(zap.NewNop(), mb, func(string, *metadata.ResourceBuilder) {}, pod, ts)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
@@ -71,7 +71,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	mbc.ResourceAttributes.K8sPodQosClass.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
-	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	RecordMetrics(zap.NewNop(), mb, func(string, *metadata.ResourceBuilder) {}, pod, ts)
 	m := mb.Emit()
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_evicted.yaml"))

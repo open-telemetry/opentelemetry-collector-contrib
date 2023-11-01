@@ -126,6 +126,10 @@ all_set:
       enabled: true
     k8s.namespace.uid:
       enabled: true
+    k8s.node.annotations:
+      enabled: true
+    k8s.node.labels:
+      enabled: true
     k8s.node.name:
       enabled: true
     k8s.node.uid:
@@ -282,6 +286,10 @@ none_set:
     k8s.namespace.name:
       enabled: false
     k8s.namespace.uid:
+      enabled: false
+    k8s.node.annotations:
+      enabled: false
+    k8s.node.labels:
       enabled: false
     k8s.node.name:
       enabled: false

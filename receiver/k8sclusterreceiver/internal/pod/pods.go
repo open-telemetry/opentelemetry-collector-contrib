@@ -69,7 +69,9 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 	return newPod
 }
 
-func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
+type nodeMetadataAttachFunc = func(nodeName string, rb *metadata.ResourceBuilder)
+
+func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, attachNodeMetadata nodeMetadataAttachFunc, pod *corev1.Pod, ts pcommon.Timestamp) {
 	mb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
 	mb.RecordK8sPodStatusReasonDataPoint(ts, int64(reasonToInt(pod.Status.Reason)))
 	rb := mb.NewResourceBuilder()
@@ -78,10 +80,12 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sPodUID(string(pod.UID))
 	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
+	attachNodeMetadata(pod.Spec.NodeName, rb)
+
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	for _, c := range pod.Spec.Containers {
-		container.RecordSpecMetrics(logger, mb, c, pod, ts)
+		container.RecordSpecMetrics(logger, mb, attachNodeMetadata, c, pod, ts)
 	}
 }
 

@@ -247,6 +247,8 @@ type ResourceAttributesConfig struct {
 	K8sKubeproxyVersion          ResourceAttributeConfig `mapstructure:"k8s.kubeproxy.version"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sNamespaceUID              ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
+	K8sNodeAnnotations           ResourceAttributeConfig `mapstructure:"k8s.node.annotations"`
+	K8sNodeLabels                ResourceAttributeConfig `mapstructure:"k8s.node.labels"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
 	K8sNodeUID                   ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
 	K8sPodName                   ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
@@ -319,6 +321,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sNamespaceUID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sNodeAnnotations: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sNodeLabels: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sNodeName: ResourceAttributeConfig{
 			Enabled: true,

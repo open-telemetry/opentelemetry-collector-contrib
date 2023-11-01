@@ -39,6 +39,7 @@ func Transform(node *corev1.Node) *corev1.Node {
 			},
 		},
 	}
+	newNode.Annotations = node.Annotations
 	for _, c := range node.Status.Conditions {
 		newNode.Status.Conditions = append(newNode.Status.Conditions, corev1.NodeCondition{
 			Type:   c.Type,
@@ -48,11 +49,10 @@ func Transform(node *corev1.Node) *corev1.Node {
 	return newNode
 }
 
-func RecordMetrics(mb *imetadata.MetricsBuilder, node *corev1.Node, ts pcommon.Timestamp) {
+func RecordMetrics(mb *imetadata.MetricsBuilder, rb *metadata.ResourceBuilder, node *corev1.Node, ts pcommon.Timestamp) {
 	for _, c := range node.Status.Conditions {
 		mb.RecordK8sNodeConditionDataPoint(ts, nodeConditionValues[c.Status], string(c.Type))
 	}
-	rb := mb.NewResourceBuilder()
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)

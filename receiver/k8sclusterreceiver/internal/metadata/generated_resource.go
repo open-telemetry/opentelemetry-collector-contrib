@@ -147,6 +147,20 @@ func (rb *ResourceBuilder) SetK8sNamespaceUID(val string) {
 	}
 }
 
+// SetK8sNodeAnnotations sets provided value as "k8s.node.annotations" attribute.
+func (rb *ResourceBuilder) SetK8sNodeAnnotations(val map[string]any) {
+	if rb.config.K8sNodeAnnotations.Enabled {
+		rb.res.Attributes().PutEmptyMap("k8s.node.annotations").FromRaw(val)
+	}
+}
+
+// SetK8sNodeLabels sets provided value as "k8s.node.labels" attribute.
+func (rb *ResourceBuilder) SetK8sNodeLabels(val map[string]any) {
+	if rb.config.K8sNodeLabels.Enabled {
+		rb.res.Attributes().PutEmptyMap("k8s.node.labels").FromRaw(val)
+	}
+}
+
 // SetK8sNodeName sets provided value as "k8s.node.name" attribute.
 func (rb *ResourceBuilder) SetK8sNodeName(val string) {
 	if rb.config.K8sNodeName.Enabled {

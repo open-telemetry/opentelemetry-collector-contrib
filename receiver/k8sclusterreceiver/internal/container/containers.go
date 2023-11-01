@@ -27,9 +27,11 @@ const (
 	containerStatusTerminated = "terminated"
 )
 
+type nodeMetadataAttachFunc = func(nodeName string, rb *metadata.ResourceBuilder)
+
 // RecordSpecMetrics metricizes values from the container spec.
 // This includes values like resource requests and limits.
-func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev1.Container, pod *corev1.Pod, ts pcommon.Timestamp) {
+func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, attachNodeMetadata nodeMetadataAttachFunc, c corev1.Container, pod *corev1.Pod, ts pcommon.Timestamp) {
 	for k, r := range c.Resources.Requests {
 		//exhaustive:ignore
 		switch k {
@@ -79,6 +81,7 @@ func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev
 	rb.SetK8sNamespaceName(pod.Namespace)
 	rb.SetContainerID(utils.StripContainerID(containerID))
 	rb.SetK8sContainerName(c.Name)
+	attachNodeMetadata(pod.Spec.NodeName, rb)
 	image, err := docker.ParseImageName(imageStr)
 	if err != nil {
 		docker.LogParseError(err, imageStr, logger)
