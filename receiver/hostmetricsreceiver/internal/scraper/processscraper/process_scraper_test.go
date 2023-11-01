@@ -935,6 +935,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 	type testCase struct {
 		name                 string
+		skipTestCase         bool
 		muteProcessNameError bool
 		muteProcessExeError  bool
 		muteProcessIOError   bool
@@ -1000,6 +1001,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 		},
 		{
 			name:                 "Process User Error Muted",
+			skipTestCase:         runtime.GOOS != "linux",
 			muteProcessUserError: true,
 			skipProcessNameError: true,
 			muteProcessExeError:  true,
@@ -1008,6 +1010,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 		},
 		{
 			name:                 "Process User Error Unmuted",
+			skipTestCase:         runtime.GOOS != "linux",
 			muteProcessUserError: false,
 			skipProcessNameError: true,
 			muteProcessExeError:  true,
@@ -1019,6 +1022,9 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			if test.skipTestCase {
+				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
+			}
 			config := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 			if !test.omitConfigField {
 				config.MuteProcessNameError = test.muteProcessNameError
