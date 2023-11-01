@@ -12,6 +12,7 @@ import (
 // Config defines configuration for Azure Monitor
 type Config struct {
 	Endpoint           string              `mapstructure:"endpoint"`
+	ConnectionString   configopaque.String `mapstructure:"connection_string"`
 	InstrumentationKey configopaque.String `mapstructure:"instrumentation_key"`
 	MaxBatchSize       int                 `mapstructure:"maxbatchsize"`
 	MaxBatchInterval   time.Duration       `mapstructure:"maxbatchinterval"`
