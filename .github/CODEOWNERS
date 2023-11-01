@@ -270,6 +270,7 @@ receiver/windowseventlogreceiver/                                       @open-te
 receiver/windowsperfcountersreceiver/                                   @open-telemetry/collector-contrib-approvers @dashpole
 receiver/zipkinreceiver/                                                @open-telemetry/collector-contrib-approvers @MovieStoreGuy @astencel-sumo @crobert-1
 receiver/zookeeperreceiver/                                             @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/sflowreceiver                                                  @open-telemetry/collector-contrib-approvers @Ishmeet
 
 testbed/                                                                @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatareceivers/mockawsxrayreceiver/                          @open-telemetry/collector-contrib-approvers @wangzlei @srprash
