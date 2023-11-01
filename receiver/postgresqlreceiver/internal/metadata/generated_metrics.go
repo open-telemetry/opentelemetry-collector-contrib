@@ -215,6 +215,9 @@ const (
 	AttributeWalOperationLagFlush
 	AttributeWalOperationLagReplay
 	AttributeWalOperationLagWrite
+	AttributeWalOperationLagFlushMs
+	AttributeWalOperationLagReplayMs
+	AttributeWalOperationLagWriteMs
 )
 
 // String returns the string representation of the AttributeWalOperationLag.
@@ -226,6 +229,12 @@ func (av AttributeWalOperationLag) String() string {
 		return "replay"
 	case AttributeWalOperationLagWrite:
 		return "write"
+	case AttributeWalOperationLagFlushMs:
+		return "flush_ms"
+	case AttributeWalOperationLagReplayMs:
+		return "replay_ms"
+	case AttributeWalOperationLagWriteMs:
+		return "write_ms"
 	}
 	return ""
 }
@@ -235,6 +244,9 @@ var MapAttributeWalOperationLag = map[string]AttributeWalOperationLag{
 	"flush":  AttributeWalOperationLagFlush,
 	"replay": AttributeWalOperationLagReplay,
 	"write":  AttributeWalOperationLagWrite,
+	"flush_ms":  AttributeWalOperationLagFlushMs,
+	"replay_ms": AttributeWalOperationLagReplayMs,
+	"write_ms":  AttributeWalOperationLagWriteMs,
 }
 
 type metricPostgresqlBackends struct {

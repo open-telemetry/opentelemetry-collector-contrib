@@ -15,7 +15,16 @@ import (
 	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
+)
+
+const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.lagmetricsinseconds"
+
+var lagInSecondsFG = featuregate.GlobalRegistry().MustRegister(
+	lagMetricsInSecondsFeatureGateID,
+	featuregate.StageDeprecated,
+	featuregate.WithRegisterDescription("Metrics 'flush', 'replay' and 'write' are replaced by 'flush_ms','replay_ms' and 'write_ms'."),
 )
 
 // databaseName is a name that refers to a database so that it can be uniquely referred to later
@@ -62,6 +71,10 @@ type postgreSQLConfig struct {
 	database string
 	address  confignet.NetAddr
 	tls      configtls.TLSClientSetting
+}
+
+func init() {
+	featuregate.GlobalRegistry().Set(lagInSecondsFG.ID(), true)
 }
 
 func sslConnectionString(tls configtls.TLSClientSetting) string {
@@ -484,18 +497,24 @@ func (c *postgreSQLClient) getMaxConnections(ctx context.Context) (int64, error)
 type replicationStats struct {
 	clientAddr   string
 	pendingBytes int64
-	flushLag     int64
-	replayLag    int64
-	writeLag     int64
+	flushLag     int64 // Deprecated
+	replayLag    int64 // Deprecated
+	writeLag     int64 // Deprecated
+	flushLagMs   int64
+	replayLagMs  int64
+	writeLagMs   int64
 }
 
-func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([]replicationStats, error) {
 	query := `SELECT
 	client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
 	extract('epoch' from coalesce(write_lag, '-1 seconds'))::integer,
 	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::integer,
-	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::integer
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::integer,
+	(extract('epoch' from coalesce(write_lag, '-0.001 seconds')) * 1000)::integer AS write_lag_ms,
+	(extract('epoch' from coalesce(flush_lag, '-0.001 seconds')) * 1000)::integer AS flush_lag_ms,
+	(extract('epoch' from coalesce(replay_lag, '-0.001 seconds')) * 1000)::integer AS replay_lag_ms
 	FROM pg_stat_replication;
 	`
 	rows, err := c.client.QueryContext(ctx, query)
@@ -509,7 +528,10 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 		var client string
 		var replicationBytes int64
 		var writeLag, flushLag, replayLag int64
-		err = rows.Scan(&client, &replicationBytes, &writeLag, &flushLag, &replayLag)
+		var writeLagMs, flushLagMs, replayLagMs int64
+		err = rows.Scan(&client, &replicationBytes,
+			&writeLag, &flushLag, &replayLag,
+			&writeLagMs, &flushLagMs, &replayLagMs)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -520,6 +542,49 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 			replayLag:    replayLag,
 			writeLag:     writeLag,
 			flushLag:     flushLag,
+			replayLagMs:  replayLagMs,
+			writeLagMs:   writeLagMs,
+			flushLagMs:   flushLagMs,
+		})
+	}
+
+	return rs, errors
+}
+
+func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	if lagInSecondsFG.IsEnabled() {
+		return c.getDeprecatedReplicationStats(ctx)
+	}
+
+	query := `SELECT
+	client_addr,
+	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
+	(extract('epoch' from coalesce(write_lag, '-0.001 seconds')) * 1000)::integer AS write_lag_ms,
+	(extract('epoch' from coalesce(flush_lag, '-0.001 seconds')) * 1000)::integer AS flush_lag_ms,
+	(extract('epoch' from coalesce(replay_lag, '-0.001 seconds')) * 1000)::integer AS replay_lag_ms
+	FROM pg_stat_replication;
+	`
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_stat_replication: %w", err)
+	}
+	defer rows.Close()
+	var rs []replicationStats
+	var errors error
+	for rows.Next() {
+		var client string
+		var replicationBytes, writeLagMs, flushLagMs, replayLagMs int64
+		err = rows.Scan(&client, &replicationBytes, &writeLagMs, &flushLagMs, &replayLagMs)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		rs = append(rs, replicationStats{
+			clientAddr:   client,
+			pendingBytes: replicationBytes,
+			replayLagMs:  replayLagMs,
+			writeLagMs:   writeLagMs,
+			flushLagMs:   flushLagMs,
 		})
 	}
 
