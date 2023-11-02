@@ -83,6 +83,7 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
@@ -152,7 +153,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
-      - processor/remoteobserver
+      - processor/remotetap
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
@@ -163,6 +164,7 @@ body:
       - processor/servicegraph
       - processor/span
       - processor/spanmetrics
+      - processor/sumologic
       - processor/tailsampling
       - processor/transform
       - receiver/activedirectoryds

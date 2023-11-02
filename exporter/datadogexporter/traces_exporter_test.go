@@ -229,7 +229,6 @@ func TestTracesSource(t *testing.T) {
 }
 
 func TestTraceExporter(t *testing.T) {
-	t.Skip("Flaky test on CI, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27630")
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
@@ -259,6 +258,7 @@ func TestTraceExporter(t *testing.T) {
 			},
 			IgnoreResources: []string{},
 			flushInterval:   0.1,
+			TraceBuffer:     2,
 		},
 	}
 
