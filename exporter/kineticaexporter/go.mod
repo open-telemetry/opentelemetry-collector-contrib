@@ -7,17 +7,12 @@ require (
 	github.com/kineticadb/kinetica-api-go v0.0.2
 	github.com/samber/lo v1.38.1
 	github.com/stretchr/testify v1.8.4
+	github.com/wk8/go-ordered-map v1.0.0
 	go.opentelemetry.io/collector/component v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/config/configopaque v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/confmap v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/exporter v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017.0.20231026220224-6405e152a2d9
-	github.com/wk8/go-ordered-map v1.0.0
-	go.opentelemetry.io/collector/component v0.87.1-0.20231017160804-ec0725874313
-	go.opentelemetry.io/collector/config/configopaque v0.87.1-0.20231017160804-ec0725874313
-	go.opentelemetry.io/collector/confmap v0.87.1-0.20231017160804-ec0725874313
-	go.opentelemetry.io/collector/exporter v0.87.1-0.20231017160804-ec0725874313
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0016.0.20231017160804-ec0725874313
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
