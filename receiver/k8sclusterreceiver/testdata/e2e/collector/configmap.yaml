@@ -15,7 +15,9 @@ data:
     processors:
     receivers:
       k8s_cluster:
-        
+        resource_attributes:
+          k8s.node.labels:
+            enabled: true
     service:
       telemetry:
         logs:

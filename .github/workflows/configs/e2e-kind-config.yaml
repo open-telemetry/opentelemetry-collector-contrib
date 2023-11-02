@@ -7,5 +7,5 @@ kubeadmConfigPatches:
 nodes:
   - role: control-plane
     labels:
-      # used in k8sattributesprocessor e2e test
+      # used in k8sattributesprocessor/k8sclusterreceiver e2e test
       foo: too

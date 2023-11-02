@@ -112,6 +112,13 @@ resourceMetrics:
         - key: k8s.node.uid
           value:
             stringValue: afd51338-8dbe-4234-aed3-0d1a9b3ee38e
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
@@ -409,6 +416,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: otelcol-5ffb893c-5459b589fd-lrbpq
@@ -436,6 +450,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: coredns-565d847f94-kt4s4
@@ -463,6 +484,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: coredns-565d847f94-v6kmv
@@ -490,6 +518,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: etcd-kind-control-plane
@@ -517,6 +552,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: kindnet-kjb8z
@@ -544,6 +586,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: kube-apiserver-kind-control-plane
@@ -571,6 +620,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: kube-controller-manager-kind-control-plane
@@ -598,6 +654,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: kube-proxy-twxhf
@@ -625,6 +688,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: kube-scheduler-kind-control-plane
@@ -652,6 +722,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: local-path-provisioner-684f458cdd-v726j
@@ -691,6 +768,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: etcd-kind-control-plane
@@ -751,6 +835,13 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.name
           value:
             stringValue: kindnet-kjb8z
