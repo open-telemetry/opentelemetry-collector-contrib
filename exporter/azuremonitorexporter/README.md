@@ -82,3 +82,7 @@ This exporter saves log records to Application Insights `traces` table.
 ### Metrics
 
 This exporter saves metrics to Application Insights `customMetrics` table.
+
+## AAD/Entra Authentication
+
+Details of how to use the Azure Monitor Exporter with AAD/Entra based identities can be found in the [Authentication](AUTHENTICATION.md) page.

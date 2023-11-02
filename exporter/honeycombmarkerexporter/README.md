@@ -9,25 +9,23 @@ The following configuration options are supported:
 * `api_url` (Required): You can set the hostname to send marker data to.
 * `markers` (Required): This specifies the exact configuration to create an event marker. 
   * `type`: Specifies the marker type. Markers with the same type will appear in the same color in Honeycomb.  
-  * `messagefield`: This is the attribute that will be used as the message. If necessary the value will be converted to a string.
-  * `urlfield`: This is the attribute that will be used as the url. If necessary the value will be converted to a string.
+  * `message_key`: This is the attribute that will be used as the message. If necessary the value will be converted to a string.
+  * `url_key`: This is the attribute that will be used as the url. If necessary the value will be converted to a string.
   * `rules`: This is a list of OTTL rules that determine when to create an event marker. 
-    * `resourceconditions`: A list of ottlresource conditions that determine a match
-    * `logconditions`: A list of ottllog conditions that determine a match
+    * `log_conditions`: A list of ottllog conditions that determine a match
   Example:
 
 ```yaml
 exporters:
   honeycomb:
     api_key: "my-api-key"
-    api_url: "https://api.testhost.io"
+    api_url: "https://api.honeycomb.io:443"
     markers:
-      - type: "fooType",
-        messagefield: "test message",
-        urlfield: "https://api.testhost.io",
+      - type: ""
+        message_key: "test message"
+        url_key: "https://api.testhost.io"
+        dataset_slug: "__all__"
         rules:
-          - resourceconditions:
-              - IsMatch(attributes["test"], ".*")
           - logconditions:
               - body == "test"
 ```

@@ -404,7 +404,8 @@ func mustSendTracesWithAttributes(t *testing.T, exporter *elasticsearchTracesExp
 	traces := newTracesWithAttributeAndResourceMap(attrMp, resMp)
 	resSpans := traces.ResourceSpans().At(0)
 	span := resSpans.ScopeSpans().At(0).Spans().At(0)
+	scope := resSpans.ScopeSpans().At(0).Scope()
 
-	err := exporter.pushTraceRecord(context.TODO(), resSpans.Resource(), span)
+	err := exporter.pushTraceRecord(context.TODO(), resSpans.Resource(), span, scope)
 	require.NoError(t, err)
 }
