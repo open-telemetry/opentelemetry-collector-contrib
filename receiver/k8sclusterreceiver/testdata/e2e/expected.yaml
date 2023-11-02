@@ -919,6 +919,13 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: kube-apiserver-kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.uid
           value:
             stringValue: 4ce29152-4749-43a7-89b4-b8265bf35b09
@@ -972,6 +979,13 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: kube-scheduler-kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.uid
           value:
             stringValue: d966df8b-e9d3-41d5-9b25-6c1a5ec9d3dc
@@ -1025,6 +1039,13 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: kube-controller-manager-kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.uid
           value:
             stringValue: 5ebe0d65-e661-4e6b-a053-a3a22adec893
@@ -1078,6 +1099,13 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: kube-proxy-twxhf
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.uid
           value:
             stringValue: 38e3c8d5-0c3e-465f-8a79-4117dbcd7607
@@ -1124,6 +1152,13 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: coredns-565d847f94-kt4s4
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.uid
           value:
             stringValue: ebd4da01-4a19-4ed8-bb2b-a75fa9c66160
@@ -1191,6 +1226,13 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: otelcol-5ffb893c-5459b589fd-lrbpq
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.uid
           value:
             stringValue: 5e4d1b29-35e5-4ff6-9779-b02921adcace
@@ -1265,6 +1307,13 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: local-path-provisioner-684f458cdd-v726j
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.uid
           value:
             stringValue: 22a22d93-0ec2-4c90-91b1-29a0b3ea9173
@@ -1311,6 +1360,13 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: coredns-565d847f94-v6kmv
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.pod.uid
           value:
             stringValue: 2c672907-5d69-4f91-85e0-f1792164cadc
