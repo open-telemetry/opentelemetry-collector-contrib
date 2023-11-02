@@ -161,6 +161,7 @@ func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub
 
 	err := h.dataConsumer.consume(ctx, event)
 	if err != nil {
+		h.settings.Logger.Error("error decoding message", zap.Error(err))
 		return err
 	}
 

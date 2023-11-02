@@ -40,6 +40,7 @@ connector/spanmetricsconnector/                                         @open-te
 
 examples/demo/                                                          @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
+exporter/alertmanagerexporter/                                          @open-telemetry/collector-contrib-approvers @jpkrohling @sokoide @mcube8
 exporter/alibabacloudlogserviceexporter/                                @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
 exporter/awscloudwatchlogsexporter/                                     @open-telemetry/collector-contrib-approvers @boostchicken @bryan-aguilar @rapphil
 exporter/awsemfexporter/                                                @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia @bryan-aguilar
@@ -90,11 +91,13 @@ exporter/zipkinexporter/                                                @open-te
 extension/asapauthextension/                                            @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                                           @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin @frzifus
-extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123 @frzifus
+extension/bearertokenauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
+extension/encoding/                                                     @open-telemetry/collector-contrib-approvers @atoulme @dao-jun @dmitryax @MovieStoreGuy @VihasMakwana
 extension/encoding/jaegerencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/                            @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
+extension/encoding/otlpencodingextension/                               @open-telemetry/collector-contrib-approvers @dao-jun @VihasMakwana
 extension/encoding/textencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
-extension/encoding/zipkinencodingextension/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
+extension/encoding/zipkinencodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/headerssetterextension/                                       @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                                @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
@@ -110,6 +113,7 @@ extension/observer/k8sobserver/                                         @open-te
 extension/oidcauthextension/                                            @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/opampextension/                                               @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan
 extension/pprofextension/                                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+extension/remotetapextension/                                           @open-telemetry/collector-contrib-approvers @atoulme
 extension/sigv4authextension/                                           @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
 extension/storage/                                                      @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                                            @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
@@ -132,12 +136,13 @@ internal/tools/                                                         @open-te
 pkg/batchperresourceattr/                                               @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                                                     @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/experimentalmetricmetadata/                                         @open-telemetry/collector-contrib-approvers @rmfitzpatrick
+pkg/golden/                                                             @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 pkg/ottl/                                                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/pdatatest/                                                          @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                                          @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                                @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/stanza/                                                             @open-telemetry/collector-contrib-approvers @djaglowski
-pkg/translator/azure/                                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme
+pkg/translator/azure/                                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
 pkg/translator/jaeger/                                                  @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
 pkg/translator/loki/                                                    @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @mar4uk
 pkg/translator/opencensus/                                              @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
@@ -160,7 +165,7 @@ processor/metricsgenerationprocessor/                                   @open-te
 processor/metricstransformprocessor/                                    @open-telemetry/collector-contrib-approvers @dmitryax
 processor/probabilisticsamplerprocessor/                                @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/redactionprocessor/                                           @open-telemetry/collector-contrib-approvers @leonsp-ai @dmitryax @mx-psi @TylerHelmuth
-processor/remoteobserverprocessor/                                      @open-telemetry/collector-contrib-approvers @pmcollins
+processor/remotetapprocessor/                                           @open-telemetry/collector-contrib-approvers @pmcollins
 processor/resourcedetectionprocessor/                                   @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 processor/resourcedetectionprocessor/internal/azure/                    @open-telemetry/collector-contrib-approvers @mx-psi
 processor/resourcedetectionprocessor/internal/heroku/                   @open-telemetry/collector-contrib-approvers @atoulme
@@ -171,6 +176,7 @@ processor/schemaprocessor/                                              @open-te
 processor/servicegraphprocessor/                                        @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 processor/spanmetricsprocessor/                                         @open-telemetry/collector-contrib-approvers @albertteoh
 processor/spanprocessor/                                                @open-telemetry/collector-contrib-approvers @boostchicken
+processor/sumologicprocessor/                                           @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @sumo-drosiek
 processor/tailsamplingprocessor/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/transformprocessor/                                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 

@@ -1,0 +1,12 @@
+# Use this changelog template to create an entry for release notes.
+change_type: enhancement
+
+component: extension/encoding
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Introduce interfaces for encoding extensions.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [28686]
+
+change_logs: [api]

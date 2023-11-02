@@ -146,8 +146,8 @@ func (r *Reader) delete() {
 	}
 }
 
-// Close will close the file
-func (r *Reader) Close() {
+// Close will close the file and return the metadata
+func (r *Reader) Close() *Metadata {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.logger.Debugw("Problem closing reader", zap.Error(err))
@@ -160,6 +160,9 @@ func (r *Reader) Close() {
 			r.logger.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
+	m := r.Metadata
+	r.Metadata = nil
+	return m
 }
 
 // Read from the file and update the fingerprint if necessary

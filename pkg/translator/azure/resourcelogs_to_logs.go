@@ -5,6 +5,7 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"bytes"
+	"encoding/json"
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
@@ -54,11 +55,11 @@ type azureLogRecord struct {
 	ResultType        *string      `json:"resultType"`
 	ResultSignature   *string      `json:"resultSignature"`
 	ResultDescription *string      `json:"resultDescription"`
-	DurationMs        *string      `json:"durationMs"`
+	DurationMs        *json.Number `json:"durationMs"`
 	CallerIPAddress   *string      `json:"callerIpAddress"`
 	CorrelationID     *string      `json:"correlationId"`
 	Identity          *interface{} `json:"identity"`
-	Level             *string      `json:"Level"`
+	Level             *json.Number `json:"Level"`
 	Location          *string      `json:"location"`
 	Properties        *interface{} `json:"properties"`
 }
@@ -112,7 +113,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			if log.Level != nil {
 				severity := asSeverity(*log.Level)
 				lr.SetSeverityNumber(severity)
-				lr.SetSeverityText(*log.Level)
+				lr.SetSeverityText(log.Level.String())
 			}
 
 			if err := lr.Attributes().FromRaw(extractRawAttributes(log)); err != nil {
@@ -138,8 +139,8 @@ func asTimestamp(s string) (pcommon.Timestamp, error) {
 // asSeverity converts the Azure log level to equivalent
 // OpenTelemetry severity numbers. If the log level is not
 // valid, then the 'Unspecified' value is returned.
-func asSeverity(s string) plog.SeverityNumber {
-	switch s {
+func asSeverity(number json.Number) plog.SeverityNumber {
+	switch number.String() {
 	case "Informational":
 		return plog.SeverityNumberInfo
 	case "Warning":
@@ -149,6 +150,11 @@ func asSeverity(s string) plog.SeverityNumber {
 	case "Critical":
 		return plog.SeverityNumberFatal
 	default:
+		var levelNumber, _ = number.Int64()
+		if levelNumber > 0 {
+			return plog.SeverityNumber(levelNumber)
+		}
+
 		return plog.SeverityNumberUnspecified
 	}
 }
@@ -159,7 +165,7 @@ func extractRawAttributes(log azureLogRecord) map[string]interface{} {
 	attrs[azureCategory] = log.Category
 	setIf(attrs, azureCorrelationID, log.CorrelationID)
 	if log.DurationMs != nil {
-		duration, err := strconv.ParseInt(*log.DurationMs, 10, 64)
+		duration, err := strconv.ParseInt(log.DurationMs.String(), 10, 64)
 		if err == nil {
 			attrs[azureDuration] = duration
 		}
