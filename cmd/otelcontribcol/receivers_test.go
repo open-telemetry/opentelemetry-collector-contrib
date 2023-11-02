@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
@@ -170,6 +171,14 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "elasticsearch",
+		},
+		{
+			receiver: "sflow",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["sflow"].CreateDefaultConfig().(*sflowreceiver.Config)
+				cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+				return cfg
+			},
 		},
 		{
 			receiver: "expvar",
