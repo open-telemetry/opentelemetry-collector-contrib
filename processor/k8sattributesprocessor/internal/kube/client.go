@@ -324,7 +324,7 @@ func (c *WatchClient) GetPod(identifier PodIdentifier) (*Pod, bool) {
 		}
 		return pod, ok
 	}
-	observability.RecordIPLookupMiss()
+	observability.RecordIDLookupMiss()
 	return nil, false
 }
 
