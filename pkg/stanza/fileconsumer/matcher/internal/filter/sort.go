@@ -134,10 +134,6 @@ func SortTemporal(regexKey string, ascending bool, layout string, location strin
 
 type mtimeSortOption struct{}
 
-func newMtimeSortOption() Option {
-	return mtimeSortOption{}
-}
-
 type mtimeItem struct {
 	mtime time.Time
 	path  string
@@ -176,5 +172,5 @@ func (m mtimeSortOption) apply(items []*item) ([]*item, error) {
 }
 
 func SortMtime() Option {
-	return newMtimeSortOption()
+	return mtimeSortOption{}
 }
