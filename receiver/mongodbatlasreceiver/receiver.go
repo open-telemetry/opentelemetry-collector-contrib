@@ -37,6 +37,10 @@ type timeconstraints struct {
 
 func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mongodbatlasreceiver {
 	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.RetrySettings, settings.Logger)
+	for _, p := range cfg.Projects {
+		p.populateIncludesAndExcludes()
+	}
+
 	return &mongodbatlasreceiver{
 		log:         settings.Logger,
 		cfg:         cfg,
@@ -77,45 +81,104 @@ func (s *mongodbatlasreceiver) shutdown(context.Context) error {
 	return s.client.Shutdown()
 }
 
+type ProjectWithConfig struct {
+	Project       *mongodbatlas.Project
+	ProjectConfig *ProjectConfig
+}
+
 func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) error {
-	orgs, err := s.client.Organizations(ctx)
-	if err != nil {
-		return fmt.Errorf("error retrieving organizations: %w", err)
-	}
-	for _, org := range orgs {
-		projects, err := s.client.Projects(ctx, org.ID)
+	var projectsWithConfig []ProjectWithConfig
+
+	if len(s.cfg.Projects) > 0 {
+		for _, projectCfg := range s.cfg.Projects {
+			project, err := s.client.GetProject(ctx, projectCfg.Name)
+			if err != nil {
+				s.log.Error("error retrieving project", zap.String("projectName", projectCfg.Name), zap.Error(err))
+				continue
+			}
+			projectsWithConfig = append(projectsWithConfig, ProjectWithConfig{Project: project, ProjectConfig: projectCfg})
+		}
+	} else {
+		orgs, err := s.client.Organizations(ctx)
 		if err != nil {
-			return fmt.Errorf("error retrieving projects: %w", err)
+			return fmt.Errorf("error retrieving organizations: %w", err)
 		}
-		for _, project := range projects {
-			nodeClusterMap, providerMap, err := s.getNodeClusterNameMap(ctx, project.ID)
+		for _, org := range orgs {
+			proj, err := s.client.Projects(ctx, org.ID)
 			if err != nil {
-				return fmt.Errorf("error collecting clusters from project %s: %w", project.ID, err)
+				s.log.Error("error retrieving projects", zap.String("orgID", org.ID), zap.Error(err))
+				continue
 			}
-
-			processes, err := s.client.Processes(ctx, project.ID)
-			if err != nil {
-				return fmt.Errorf("error retrieving MongoDB Atlas processes for project %s: %w", project.ID, err)
-			}
-			for _, process := range processes {
-				clusterName := nodeClusterMap[process.UserAlias]
-				providerValues := providerMap[clusterName]
-
-				if err := s.extractProcessMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
-					return fmt.Errorf("error when polling process metrics from MongoDB Atlas for process %s: %w", process.ID, err)
-				}
-
-				if err := s.extractProcessDatabaseMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
-					return fmt.Errorf("error when polling process database metrics from MongoDB Atlas for process %s: %w", process.ID, err)
-				}
-
-				if err := s.extractProcessDiskMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
-					return fmt.Errorf("error when polling process disk metrics from MongoDB Atlas for process %s: %w", process.ID, err)
-				}
+			for _, project := range proj {
+				// Since there is no specific ProjectConfig for these projects, pass nil.
+				projectsWithConfig = append(projectsWithConfig, ProjectWithConfig{Project: project, ProjectConfig: nil})
 			}
 		}
 	}
+
+	for _, projectWithConfig := range projectsWithConfig {
+		if err := s.processProject(ctx, time, projectWithConfig.Project, projectWithConfig.ProjectConfig); err != nil {
+			s.log.Error("error processing project", zap.String("projectID", projectWithConfig.Project.ID), zap.Error(err))
+		}
+	}
+
 	return nil
+}
+
+func (s *mongodbatlasreceiver) processProject(ctx context.Context, time timeconstraints, project *mongodbatlas.Project, projectCfg *ProjectConfig) error {
+	org, err := s.client.GetOrganization(ctx, project.OrgID)
+	if err != nil {
+		return fmt.Errorf("error retrieving organization: %w", err)
+	}
+
+	nodeClusterMap, providerMap, err := s.getNodeClusterNameMap(ctx, project.ID)
+	if err != nil {
+		return fmt.Errorf("error collecting clusters from project %s: %w", project.ID, err)
+	}
+
+	processes, err := s.client.Processes(ctx, project.ID)
+	if err != nil {
+		return fmt.Errorf("error retrieving MongoDB Atlas processes for project %s: %w", project.ID, err)
+	}
+
+	for _, process := range processes {
+		clusterName := nodeClusterMap[process.UserAlias]
+		providerValues := providerMap[clusterName]
+
+		if !shouldProcessCluster(projectCfg, clusterName) {
+			// Skip processing for this cluster
+			continue
+		}
+
+		if err := s.extractProcessMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
+			return fmt.Errorf("error when polling process metrics from MongoDB Atlas for process %s: %w", process.ID, err)
+		}
+
+		if err := s.extractProcessDatabaseMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
+			return fmt.Errorf("error when polling process database metrics from MongoDB Atlas for process %s: %w", process.ID, err)
+		}
+
+		if err := s.extractProcessDiskMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
+			return fmt.Errorf("error when polling process disk metrics from MongoDB Atlas for process %s: %w", process.ID, err)
+		}
+	}
+
+	return nil
+}
+
+// shouldProcessCluster checks whether a given cluster should be processed based on the project configuration.
+func shouldProcessCluster(projectCfg *ProjectConfig, clusterName string) bool {
+	// If there are no included clusters specified, process all clusters unless the is an excluded clusters.
+	if len(projectCfg.IncludeClusters) == 0 {
+		// Check if cluster is excluded.
+		_, isExcluded := projectCfg.excludesByClusterName[clusterName]
+		return !isExcluded
+	}
+
+	// If included clusters are specified, only process clusters that are included and not excluded.
+	_, isIncluded := projectCfg.includesByClusterName[clusterName]
+	_, isExcluded := projectCfg.excludesByClusterName[clusterName]
+	return isIncluded && !isExcluded
 }
 
 type providerValues struct {

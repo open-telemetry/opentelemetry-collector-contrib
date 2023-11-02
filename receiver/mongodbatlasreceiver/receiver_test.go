@@ -71,3 +71,64 @@ func TestTimeConstraints(t *testing.T) {
 		t.Run(testCase.name, testCase.run)
 	}
 }
+
+func TestShouldProcessCluster(t *testing.T) {
+	tests := []struct {
+		name        string
+		projectCfg  *ProjectConfig
+		clusterName string
+		want        bool
+	}{
+		{
+			name: "included cluster",
+			projectCfg: &ProjectConfig{
+				IncludeClusters: []string{"Cluster1"},
+				includesByClusterName: map[string]struct{}{
+					"Cluster1": {},
+				},
+			},
+			clusterName: "Cluster1",
+			want:        true,
+		},
+		{
+			name: "excluded cluster",
+			projectCfg: &ProjectConfig{
+				ExcludeClusters: []string{"Cluster2"},
+				excludesByClusterName: map[string]struct{}{
+					"Cluster2": {},
+				},
+			},
+			clusterName: "Cluster2",
+			want:        false,
+		},
+		{
+			name: "cluster not in include or exclude list",
+			projectCfg: &ProjectConfig{
+				IncludeClusters: []string{"Cluster1"},
+				ExcludeClusters: []string{"Cluster2"},
+				includesByClusterName: map[string]struct{}{
+					"Cluster1": {},
+				},
+				excludesByClusterName: map[string]struct{}{
+					"Cluster2": {},
+				},
+			},
+			clusterName: "Cluster3",
+			want:        false,
+		},
+		{
+			name:        "no include or exclude list",
+			projectCfg:  &ProjectConfig{},
+			clusterName: "Cluster1",
+			want:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldProcessCluster(tt.projectCfg, tt.clusterName); got != tt.want {
+				t.Errorf("shouldProcessCluster() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
