@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   FixMyPR:
-    if: github.event.comment.body == 'please fix my PR'
+#    if: github.event.comment.body == 'please fix my PR'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
