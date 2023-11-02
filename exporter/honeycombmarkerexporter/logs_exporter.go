@@ -20,11 +20,10 @@ import (
 )
 
 type honeycombLogsExporter struct {
-	set      component.TelemetrySettings
-	markers  []Marker
-	client   *http.Client
-	config   *Config
-	cancelFn func()
+	set     component.TelemetrySettings
+	markers []Marker
+	client  *http.Client
+	config  *Config
 }
 
 func newHoneycombLogsExporter(set component.TelemetrySettings, config *Config) (*honeycombLogsExporter, error) {
@@ -92,6 +91,9 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 	}
 
 	request, err := json.Marshal(requestMap)
+	if err != nil {
+		return err
+	}
 
 	url := fmt.Sprintf("%s/1/markers/%s", e.config.APIURL, marker.DatasetSlug)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
@@ -109,10 +111,6 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 	defer func() {
 		_ = resp.Body.Close()
 	}()
-
-	if err != nil {
-		return err
-	}
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
 		b, err := io.ReadAll(resp.Body)

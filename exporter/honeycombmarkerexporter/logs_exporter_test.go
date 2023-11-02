@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package honeycombmarkerexporter
 
 import (
@@ -90,7 +93,7 @@ func TestExportMarkers(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				decodedBody := map[string]any{}
@@ -111,7 +114,7 @@ func TestExportMarkers(t *testing.T) {
 			tt.config.APIURL = markerServer.URL
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &tt.config)
+			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &tests[i].config)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -189,7 +192,7 @@ func TestExportMarkers_Error(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				rw.WriteHeader(tt.responseCode)
@@ -199,7 +202,7 @@ func TestExportMarkers_Error(t *testing.T) {
 			tt.config.APIURL = markerServer.URL
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &tt.config)
+			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &tests[i].config)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -238,7 +241,7 @@ func TestExportMarkers_NoAPICall(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				assert.Fail(t, "should not call the markers api")
@@ -249,7 +252,7 @@ func TestExportMarkers_NoAPICall(t *testing.T) {
 			tt.config.APIURL = markerServer.URL
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &tt.config)
+			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), &tests[i].config)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
