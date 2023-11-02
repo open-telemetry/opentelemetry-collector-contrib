@@ -300,7 +300,7 @@ metrics:
   postgresql.wal.delay:
     attributes: [wal_operation_lag, replication_client]
     description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it captured in seconds and milliseconds.
-    enabled: true
+    enabled: false
     unit: s
     gauge:
       value_type: double

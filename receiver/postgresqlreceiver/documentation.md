@@ -225,24 +225,6 @@ This metric requires WAL to be enabled with at least one replica.
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
 
-### postgresql.wal.delay
-
-Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it captured in seconds and milliseconds.
-
-This metric requires WAL to be enabled with at least one replica.
-
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` |
-| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str |
-
 ### postgresql.wal.lag
 
 Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
@@ -310,6 +292,24 @@ The number of temp files.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {temp_file} | Sum | Int | Cumulative | true |
+
+### postgresql.wal.delay
+
+Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it captured in seconds and milliseconds.
+
+This metric requires WAL to be enabled with at least one replica.
+
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` |
+| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str |
 
 ## Resource Attributes
 

@@ -132,7 +132,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		PostgresqlWalDelay: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		PostgresqlWalLag: MetricConfig{
 			Enabled: true,
