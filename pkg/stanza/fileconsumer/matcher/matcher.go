@@ -73,12 +73,6 @@ func New(c Criteria) (*Matcher, error) {
 		}, nil
 	}
 
-	regexIsUsed := orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy)
-
-	if regexIsUsed && c.OrderingCriteria.Regex == "" {
-		return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
-	}
-
 	if c.OrderingCriteria.TopN < 0 {
 		return nil, fmt.Errorf("'top_n' must be a positive integer")
 	}
@@ -88,7 +82,11 @@ func New(c Criteria) (*Matcher, error) {
 	}
 
 	var regex *regexp.Regexp
-	if regexIsUsed {
+	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
+		if c.OrderingCriteria.Regex == "" {
+			return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
+		}
+
 		var err error
 		regex, err = regexp.Compile(c.OrderingCriteria.Regex)
 		if err != nil {
