@@ -935,11 +935,15 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 	type testCase struct {
 		name                 string
+		skipTestCase         bool
 		muteProcessNameError bool
 		muteProcessExeError  bool
 		muteProcessIOError   bool
+		muteProcessUserError bool
+		skipProcessNameError bool
 		omitConfigField      bool
 		expectedError        string
+		expectedCount        int
 	}
 
 	testCases := []testCase{
@@ -948,6 +952,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			muteProcessNameError: true,
 			muteProcessExeError:  true,
 			muteProcessIOError:   true,
+			muteProcessUserError: true,
 		},
 		{
 			name:                 "Process Name Error Muted And Process Exe Error Enabled And Process IO Error Muted",
@@ -994,23 +999,57 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 					fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
 			}(),
 		},
+		{
+			name:                 "Process User Error Muted",
+			skipTestCase:         runtime.GOOS != "linux",
+			muteProcessUserError: true,
+			skipProcessNameError: true,
+			muteProcessExeError:  true,
+			muteProcessNameError: true,
+			expectedCount:        4,
+		},
+		{
+			name:                 "Process User Error Unmuted",
+			skipTestCase:         runtime.GOOS != "linux",
+			muteProcessUserError: false,
+			skipProcessNameError: true,
+			muteProcessExeError:  true,
+			muteProcessNameError: true,
+			expectedError:        fmt.Sprintf("error reading username for process \"processname\" (pid 1): %v", processNameError),
+			expectedCount:        4,
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			if test.skipTestCase {
+				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
+			}
 			config := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 			if !test.omitConfigField {
 				config.MuteProcessNameError = test.muteProcessNameError
 				config.MuteProcessExeError = test.muteProcessExeError
 				config.MuteProcessIOError = test.muteProcessIOError
+				config.MuteProcessUserError = test.muteProcessUserError
 			}
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-			handleMock := &processHandleMock{}
-			handleMock.On("NameWithContext", mock.Anything).Return("test", processNameError)
+			handleMock := newDefaultHandleMock()
+			if !test.skipProcessNameError {
+				handleMock.On("NameWithContext", mock.Anything).Return("test", processNameError)
+			} else {
+				for _, c := range handleMock.ExpectedCalls {
+					if c.Method == "UsernameWithContext" {
+						c.ReturnArguments = []interface{}{"processname", processNameError}
+						break
+					}
+				}
+				handleMock.On("NameWithContext", mock.Anything).Return("processname", nil)
+				handleMock.On("CreateTimeWithContext", mock.Anything).Return(time.Now().UnixMilli(), nil)
+			}
 			handleMock.On("ExeWithContext", mock.Anything).Return("test", processNameError)
 			handleMock.On("CmdlineWithContext", mock.Anything).Return("test", processNameError)
 
@@ -1023,9 +1062,9 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			}
 			md, err := scraper.scrape(context.Background())
 
-			assert.Zero(t, md.MetricCount())
+			assert.Equal(t, test.expectedCount, md.MetricCount())
 
-			if config.MuteProcessNameError && config.MuteProcessExeError {
+			if config.MuteProcessNameError && config.MuteProcessExeError && config.MuteProcessUserError {
 				assert.Nil(t, err)
 			} else {
 				assert.EqualError(t, err, test.expectedError)

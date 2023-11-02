@@ -31,7 +31,7 @@ The options for `routing_key` are: `service`, `traceID`, `metric` (metric name),
 
 If no `routing_key` is configured, the default routing mechanism is `traceID`  for traces, while `service` is the default for metrics. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend.
 
-It requires a source of backend information to be provided: static, with a fixed list of backends, or DNS, with a hostname that will resolve to all IP addresses to use. The DNS resolver will periodically check for updates.
+It requires a source of backend information to be provided: static, with a fixed list of backends, or DNS, with a hostname that will resolve to all IP addresses to use (such as a Kubernetes headless service). The DNS resolver will periodically check for updates.
 
 Note that either the Trace ID or Service name is used for the decision on which backend to use: the actual backend load isn't taken into consideration. Even though this load-balancer won't do round-robin balancing of the batches, the load distribution should be very similar among backends with a standard deviation under 5% at the current configuration.
 
@@ -93,6 +93,9 @@ exporters:
         - backend-2:4317
         - backend-3:4317
         - backend-4:4317
+      # Notice to config a headless service DNS in Kubernetes  
+      # dns:
+      #  hostname: otelcol-headless.observability.svc.cluster.local        
 
 service:
   pipelines:

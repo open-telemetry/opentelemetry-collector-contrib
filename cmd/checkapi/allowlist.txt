@@ -1,6 +1,5 @@
 connector/servicegraphconnector
-exporter/kafkaexporter
-exporter/pulsarexporter
+extension/encoding
 extension/observer
 processor/servicegraphprocessor
 receiver/carbonreceiver

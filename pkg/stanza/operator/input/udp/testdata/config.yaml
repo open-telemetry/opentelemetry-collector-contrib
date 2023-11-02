@@ -18,3 +18,5 @@ all_with_async:
     line_end_pattern: ""
   async:
     readers: 2
+    processors: 2
+    max_queue_length: 100
