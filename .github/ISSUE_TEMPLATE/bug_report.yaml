@@ -33,6 +33,7 @@ body:
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
+      - exporter/alertmanager
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
       - exporter/awsemf
