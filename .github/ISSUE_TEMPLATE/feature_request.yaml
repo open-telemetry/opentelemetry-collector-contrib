@@ -27,6 +27,7 @@ body:
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
+      - exporter/alertmanager
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
       - exporter/awsemf
@@ -132,6 +133,7 @@ body:
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
+      - pkg/translator/skywalking
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
@@ -147,7 +149,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
-      - processor/remoteobserver
+      - processor/remotetap
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
