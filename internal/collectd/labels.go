@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package collectd // github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd
+package collectd // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd"
 
 import (
 	"strings"
