@@ -8,11 +8,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/configschema"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/confmap/provider/s3provider"
     schedule:
       interval: "weekly"
@@ -354,11 +349,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/oidcauthextension"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/extension/opampextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1019,6 +1009,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/solacereceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/splunkenterprisereceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
