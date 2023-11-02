@@ -1,0 +1,43 @@
+name: "Fix My PR"
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  FixMyPR:
+    if: github.event.comment.body == 'please fix my PR'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        with:
+          go-version: ~1.20.10
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: "Fix PR"
+        run: |
+          .github/workflows/scripts/check-collector-module-versions.sh
+          make generate gogci goporto gotidy crosslink genotelcontribcol gendependabot generate-gh-issue-templates
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -a -m "Fix PR"
+          git push
+          
+          

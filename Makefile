@@ -88,6 +88,10 @@ stability-tests: otelcontribcol
 	@echo Stability tests are disabled until we have a stable performance environment.
 	@echo To enable the tests replace this echo by $(MAKE) -C testbed run-stability-tests
 
+.PHONY: gogci
+gogci:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
+
 .PHONY: gotidy
 gotidy:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
