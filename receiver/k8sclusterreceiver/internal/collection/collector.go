@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
@@ -69,6 +70,7 @@ func (dc *DataCollector) attachNodeMetadata(nodeName string, rb *metadata.Resour
 
 	obj, exists, err := dc.metadataStore.Get(gvk.Node).GetByKey(nodeName)
 	if !exists || err != nil {
+		dc.settings.Logger.Warn("cannot get node for metadata", zap.String("nodename", nodeName))
 		return
 	}
 	node := obj.(*corev1.Node)
