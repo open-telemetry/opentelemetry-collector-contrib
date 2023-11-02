@@ -25,6 +25,7 @@ var lagInSecondsFG = featuregate.GlobalRegistry().MustRegister(
 	lagMetricsInSecondsFeatureGateID,
 	featuregate.StageDeprecated,
 	featuregate.WithRegisterDescription("Metrics 'flush', 'replay' and 'write' are replaced by 'flush_ms','replay_ms' and 'write_ms'."),
+	featuregate.WithRegisterToVersion("0.91.0"),
 )
 
 // databaseName is a name that refers to a database so that it can be uniquely referred to later
@@ -497,12 +498,12 @@ func (c *postgreSQLClient) getMaxConnections(ctx context.Context) (int64, error)
 type replicationStats struct {
 	clientAddr   string
 	pendingBytes int64
-	flushLag     int64 // Deprecated
-	replayLag    int64 // Deprecated
-	writeLag     int64 // Deprecated
-	flushLagMs   int64
-	replayLagMs  int64
-	writeLagMs   int64
+	flushLagInt  int64 // Deprecated
+	replayLagInt int64 // Deprecated
+	writeLagInt  int64 // Deprecated
+	flushLag     float64
+	replayLag    float64
+	writeLag     float64
 }
 
 func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([]replicationStats, error) {
@@ -512,9 +513,9 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 	extract('epoch' from coalesce(write_lag, '-1 seconds'))::integer,
 	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::integer,
 	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::integer,
-	(extract('epoch' from coalesce(write_lag, '-0.001 seconds')) * 1000)::integer AS write_lag_ms,
-	(extract('epoch' from coalesce(flush_lag, '-0.001 seconds')) * 1000)::integer AS flush_lag_ms,
-	(extract('epoch' from coalesce(replay_lag, '-0.001 seconds')) * 1000)::integer AS replay_lag_ms
+	extract('epoch' from coalesce(write_lag, '-1 seconds'))::decimal AS write_lag_fractional,
+	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::decimal AS flush_lag_fractional,
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::decimal AS replay_lag_fractional
 	FROM pg_stat_replication;
 	`
 	rows, err := c.client.QueryContext(ctx, query)
@@ -527,11 +528,11 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 	for rows.Next() {
 		var client string
 		var replicationBytes int64
-		var writeLag, flushLag, replayLag int64
-		var writeLagMs, flushLagMs, replayLagMs int64
+		var writeLagInt, flushLagInt, replayLagInt int64
+		var writeLagFractional, flushLagFractional, replayLagFractional float64
 		err = rows.Scan(&client, &replicationBytes,
-			&writeLag, &flushLag, &replayLag,
-			&writeLagMs, &flushLagMs, &replayLagMs)
+			&writeLagInt, &flushLagInt, &replayLagInt,
+			&writeLagFractional, &flushLagFractional, &replayLagFractional)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -539,12 +540,12 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 		rs = append(rs, replicationStats{
 			clientAddr:   client,
 			pendingBytes: replicationBytes,
-			replayLag:    replayLag,
-			writeLag:     writeLag,
-			flushLag:     flushLag,
-			replayLagMs:  replayLagMs,
-			writeLagMs:   writeLagMs,
-			flushLagMs:   flushLagMs,
+			replayLagInt: replayLagInt,
+			writeLagInt:  writeLagInt,
+			flushLagInt:  flushLagInt,
+			replayLag:    replayLagFractional,
+			writeLag:     writeLagFractional,
+			flushLag:     flushLagFractional,
 		})
 	}
 
@@ -559,9 +560,9 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	query := `SELECT
 	client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
-	(extract('epoch' from coalesce(write_lag, '-0.001 seconds')) * 1000)::integer AS write_lag_ms,
-	(extract('epoch' from coalesce(flush_lag, '-0.001 seconds')) * 1000)::integer AS flush_lag_ms,
-	(extract('epoch' from coalesce(replay_lag, '-0.001 seconds')) * 1000)::integer AS replay_lag_ms
+	extract('epoch' from coalesce(write_lag, '-1 seconds'))::decimal AS write_lag_fractional,
+	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::decimal AS flush_lag_fractional,
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::decimal AS replay_lag_fractional
 	FROM pg_stat_replication;
 	`
 	rows, err := c.client.QueryContext(ctx, query)
@@ -573,8 +574,9 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	var errors error
 	for rows.Next() {
 		var client string
-		var replicationBytes, writeLagMs, flushLagMs, replayLagMs int64
-		err = rows.Scan(&client, &replicationBytes, &writeLagMs, &flushLagMs, &replayLagMs)
+		var replicationBytes int64
+		var writeLag, flushLag, replayLag float64
+		err = rows.Scan(&client, &replicationBytes, &writeLag, &flushLag, &replayLag)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -582,9 +584,9 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 		rs = append(rs, replicationStats{
 			clientAddr:   client,
 			pendingBytes: replicationBytes,
-			replayLagMs:  replayLagMs,
-			writeLagMs:   writeLagMs,
-			flushLagMs:   flushLagMs,
+			replayLag:    replayLag,
+			writeLag:     writeLag,
+			flushLag:     flushLag,
 		})
 	}
 
