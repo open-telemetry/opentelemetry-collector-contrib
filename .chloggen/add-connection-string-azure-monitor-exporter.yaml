@@ -15,7 +15,13 @@ issues: [28853]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: This enhancement simplifies the configuration process and aligns the exporter with Azure Monitor's recommended practices.
+subtext: |
+  This enhancement simplifies the configuration process and aligns the exporter with Azure Monitor's recommended practices.
+  The Connection String method allows the inclusion of various fields such as the InstrumentationKey and IngestionEndpoint
+  within a single string, facilitating an easier and more integrated setup.
+  While the traditional InstrumentationKey method remains supported for backward compatibility, it will be phased out.
+  Users are encouraged to adopt the Connection String approach to ensure future compatibility and to leverage the broader
+  configuration options it enables.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
