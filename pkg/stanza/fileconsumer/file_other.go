@@ -15,9 +15,11 @@ import (
 
 func (m *Manager) readLostFiles(ctx context.Context, newReaders []*reader.Reader) {
 	// Detect files that have been rotated out of matching pattern
-	lostReaders := make([]*reader.Reader, 0, len(m.previousPollFiles))
+	previousPollFiles := m.previousPollFiles.Values()
+	lostReaders := make([]*reader.Reader, 0, len(previousPollFiles))
 OUTER:
-	for _, oldReader := range m.previousPollFiles {
+	for _, _oldReader := range previousPollFiles {
+		oldReader := *_oldReader
 		for _, newReader := range newReaders {
 			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
 				continue OUTER

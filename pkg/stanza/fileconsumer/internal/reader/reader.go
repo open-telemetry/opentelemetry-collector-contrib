@@ -161,7 +161,7 @@ func (r *Reader) Close() *Metadata {
 		}
 	}
 	m := r.Metadata
-	r.Metadata = nil
+	// r.Metadata = nil
 	return m
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/trie"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
@@ -32,7 +33,8 @@ type Manager struct {
 	maxBatches    int
 	maxBatchFiles int
 
-	previousPollFiles []*reader.Reader
+	// previousPollFiles []*reader.Reader
+	previousPollFiles *trie.Trie[*reader.Reader]
 	knownFiles        []*reader.Metadata
 }
 
@@ -63,12 +65,21 @@ func (m *Manager) Start(persister operator.Persister) error {
 	return nil
 }
 
+func (m *Manager) populateTrie(readers []*reader.Reader) {
+	m.previousPollFiles = trie.NewTrie[*reader.Reader]()
+	for _, reader := range readers {
+		m.previousPollFiles.Put(reader.Metadata.Fingerprint.FirstBytes, reader)
+	}
+}
+
 func (m *Manager) closePreviousFiles() {
-	if forgetNum := len(m.previousPollFiles) + len(m.knownFiles) - cap(m.knownFiles); forgetNum > 0 {
+	previousPollFiles := m.previousPollFiles.Values()
+	// fmt.Println(previousPollFiles)
+	if forgetNum := len(previousPollFiles) + len(m.knownFiles) - cap(m.knownFiles); forgetNum > 0 {
 		m.knownFiles = m.knownFiles[forgetNum:]
 	}
-	for _, r := range m.previousPollFiles {
-		m.knownFiles = append(m.knownFiles, r.Close())
+	for _, r := range previousPollFiles {
+		m.knownFiles = append(m.knownFiles, (*r).Close())
 	}
 }
 
@@ -146,6 +157,7 @@ func (m *Manager) poll(ctx context.Context) {
 func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files", zap.Strings("paths", paths))
 	readers := m.makeReaders(paths)
+	fmt.Println(readers)
 
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
@@ -164,7 +176,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
-	m.previousPollFiles = readers
+	m.populateTrie(readers)
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
@@ -227,14 +239,10 @@ func (m *Manager) makeReaders(paths []string) []*reader.Reader {
 
 func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Check previous poll cycle for match
-	for i := 0; i < len(m.previousPollFiles); i++ {
-		oldReader := m.previousPollFiles[i]
-		if fp.StartsWith(oldReader.Fingerprint) {
-			// Keep the new reader and discard the old. This ensures that if the file was
-			// copied to another location and truncated, our handle is updated.
-			m.previousPollFiles = append(m.previousPollFiles[:i], m.previousPollFiles[i+1:]...)
-			return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
-		}
+	oldReader := m.previousPollFiles.Get(fp.FirstBytes)
+	if oldReader != nil {
+		m.previousPollFiles.Delete(oldReader.Metadata.Fingerprint.FirstBytes)
+		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
 	}
 
 	// Iterate backwards to match newest first
