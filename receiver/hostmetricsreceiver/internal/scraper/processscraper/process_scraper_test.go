@@ -524,6 +524,9 @@ func initDefaultsHandleMock(t mock.TestingT, handleMock *processHandleMock) {
 	if !handleMock.IsMethodCallable(t, "CreateTimeWithContext", mock.Anything) {
 		handleMock.On("CreateTimeWithContext", mock.Anything).Return(time.Now().UnixMilli(), nil)
 	}
+	if !handleMock.IsMethodCallable(t, "ExeWithContext", mock.Anything) {
+		handleMock.On("ExeWithContext", mock.Anything).Return("processname", nil)
+	}
 }
 
 func TestScrapeMetrics_Filtered(t *testing.T) {
