@@ -74,10 +74,6 @@ type postgreSQLConfig struct {
 	tls      configtls.TLSClientSetting
 }
 
-func init() {
-	_ = featuregate.GlobalRegistry().Set(lagInSecondsFG.ID(), true) // Depracated but enabled for now. Will be changed in next releases. StageDeprecated does not allow to enable feature
-}
-
 func sslConnectionString(tls configtls.TLSClientSetting) string {
 	if tls.Insecure {
 		return "sslmode='disable'"
