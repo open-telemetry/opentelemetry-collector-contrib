@@ -4,16 +4,17 @@
 package honeycombmarkerexporter
 
 import (
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"path/filepath"
 	"testing"
+
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter/internal/metadata"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -27,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName("honeycomb", ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
@@ -43,6 +44,7 @@ func TestLoadConfig(t *testing.T) {
 								`body == "test"`,
 							},
 						},
+						DatasetSlug: "__all__",
 					},
 				},
 			},
@@ -58,6 +60,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "no_markers_supplied"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "no_dataset_slug"),
 		},
 	}
 

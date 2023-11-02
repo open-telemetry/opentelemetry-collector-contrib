@@ -8,12 +8,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"net/http"
 )
 
 type honeycombLogsExporter struct {
@@ -103,13 +106,20 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 		return fmt.Errorf("failed to send a request: %w", err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("failed with %s and message: %s", resp.Status, resp.Body)
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("marker creation failed with %s and unable to read response body: %w", resp.Status, err)
+		}
+		return fmt.Errorf("marker creation failed with %s and message: %s", resp.Status, b)
 	}
 
 	return nil

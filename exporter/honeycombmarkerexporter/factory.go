@@ -5,6 +5,7 @@ package honeycombmarkerexporter // import "github.com/open-telemetry/opentelemet
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
