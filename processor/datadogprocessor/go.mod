@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.20
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.48.1
+	github.com/DataDog/datadog-agent/pkg/proto v0.49.0-rc.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.0
 	github.com/DataDog/sketches-go v1.4.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.88.0
@@ -20,13 +20,13 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-devel.0.20231030140030-aa8a206e6ac7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.49.0-rc.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.8.0 // indirect
@@ -34,7 +34,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
-	github.com/containerd/cgroups v1.0.4 // indirect
+	github.com/containerd/cgroups/v3 v3.0.2 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/go-units v0.5.0 // indirect

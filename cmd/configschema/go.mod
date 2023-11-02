@@ -213,14 +213,14 @@ require (
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.15.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.89 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-devel.0.20231030140030-aa8a206e6ac7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.49.0-rc.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.18.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
@@ -291,7 +291,7 @@ require (
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e // indirect
 	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
 	github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4 // indirect
-	github.com/containerd/cgroups v1.1.0 // indirect
+	github.com/containerd/cgroups/v3 v3.0.2 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/containerd/ttrpc v1.2.2 // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible // indirect

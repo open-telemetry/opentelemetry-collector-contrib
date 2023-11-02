@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package remoteobserverprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor"
+package remotetapprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor"
 
 import (
 	"go.opentelemetry.io/collector/component"

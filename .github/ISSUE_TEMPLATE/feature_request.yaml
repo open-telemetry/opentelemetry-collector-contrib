@@ -147,7 +147,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
-      - processor/remoteobserver
+      - processor/remotetap
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
