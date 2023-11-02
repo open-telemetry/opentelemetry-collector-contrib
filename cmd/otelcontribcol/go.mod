@@ -86,7 +86,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.88.0
@@ -541,6 +541,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.88.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -706,7 +707,7 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.3.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
-	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
+	skywalking.apache.org/repo/goapi v0.0.0-20231026090926-09378dd56587 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
@@ -1113,7 +1114,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webho
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver => ../../extension/observer/ecsobserver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor => ../../processor/remoteobserverprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor => ../../processor/remotetapprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor => ../../processor/sumologicprocessor
 
@@ -1140,3 +1141,5 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking

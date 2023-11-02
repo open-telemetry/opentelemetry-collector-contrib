@@ -1,4 +1,4 @@
-type: remoteobserver
+type: remotetap
 
 status:
   class: processor

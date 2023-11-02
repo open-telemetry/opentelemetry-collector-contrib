@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package trace // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/trace"
+package skywalking // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking"
 
 import (
 	"bytes"
@@ -40,7 +40,8 @@ var otSpanTagsMapping = map[string]string{
 	"mq.broker":   conventions.AttributeNetPeerName,
 }
 
-func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
+// ProtoToTraces converts multiple skywalking proto batches to internal traces
+func ProtoToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 	traceData := ptrace.NewTraces()
 
 	swSpans := segment.Spans
