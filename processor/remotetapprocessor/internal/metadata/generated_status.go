@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	Type             = "remoteobserver"
+	Type             = "remotetap"
 	LogsStability    = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelAlpha
 	TracesStability  = component.StabilityLevelAlpha

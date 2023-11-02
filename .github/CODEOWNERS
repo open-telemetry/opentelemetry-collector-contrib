@@ -164,7 +164,7 @@ processor/metricsgenerationprocessor/                                   @open-te
 processor/metricstransformprocessor/                                    @open-telemetry/collector-contrib-approvers @dmitryax
 processor/probabilisticsamplerprocessor/                                @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/redactionprocessor/                                           @open-telemetry/collector-contrib-approvers @leonsp-ai @dmitryax @mx-psi @TylerHelmuth
-processor/remoteobserverprocessor/                                      @open-telemetry/collector-contrib-approvers @pmcollins
+processor/remotetapprocessor/                                           @open-telemetry/collector-contrib-approvers @pmcollins
 processor/resourcedetectionprocessor/                                   @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 processor/resourcedetectionprocessor/internal/azure/                    @open-telemetry/collector-contrib-approvers @mx-psi
 processor/resourcedetectionprocessor/internal/heroku/                   @open-telemetry/collector-contrib-approvers @atoulme
