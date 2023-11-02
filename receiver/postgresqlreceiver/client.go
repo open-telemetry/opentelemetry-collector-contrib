@@ -19,13 +19,13 @@ import (
 	"go.uber.org/multierr"
 )
 
-const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.lagmetricsinseconds"
+const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
 
-var lagInSecondsFG = featuregate.GlobalRegistry().MustRegister(
+var preciseLagMetricsFg = featuregate.GlobalRegistry().MustRegister(
 	lagMetricsInSecondsFeatureGateID,
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterDescription("Metrics 'flush', 'replay' and 'write' are replaced by 'flush_ms','replay_ms' and 'write_ms'."),
-	featuregate.WithRegisterToVersion("0.91.0"),
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`."),
+	featuregate.WithRegisterFromVersion("0.89.0"),
 )
 
 // databaseName is a name that refers to a database so that it can be uniquely referred to later
@@ -508,10 +508,7 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
 	extract('epoch' from coalesce(write_lag, '-1 seconds'))::integer,
 	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::integer,
-	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::integer,
-	extract('epoch' from coalesce(write_lag, '-1 seconds'))::decimal AS write_lag_fractional,
-	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::decimal AS flush_lag_fractional,
-	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::decimal AS replay_lag_fractional
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::integer
 	FROM pg_stat_replication;
 	`
 	rows, err := c.client.QueryContext(ctx, query)
@@ -525,10 +522,8 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 		var client string
 		var replicationBytes int64
 		var writeLagInt, flushLagInt, replayLagInt int64
-		var writeLagFractional, flushLagFractional, replayLagFractional float64
 		err = rows.Scan(&client, &replicationBytes,
-			&writeLagInt, &flushLagInt, &replayLagInt,
-			&writeLagFractional, &flushLagFractional, &replayLagFractional)
+			&writeLagInt, &flushLagInt, &replayLagInt)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -539,9 +534,6 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 			replayLagInt: replayLagInt,
 			writeLagInt:  writeLagInt,
 			flushLagInt:  flushLagInt,
-			replayLag:    replayLagFractional,
-			writeLag:     writeLagFractional,
-			flushLag:     flushLagFractional,
 		})
 	}
 
@@ -549,7 +541,7 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 }
 
 func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
-	if lagInSecondsFG.IsEnabled() {
+	if !preciseLagMetricsFg.IsEnabled() {
 		return c.getDeprecatedReplicationStats(ctx)
 	}
 
