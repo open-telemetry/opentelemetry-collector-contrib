@@ -1318,3 +1318,34 @@ func TestSpanMetrics_Events(t *testing.T) {
 		})
 	}
 }
+func TestExemplarsForSumMetrics(t *testing.T) {
+	mcon := consumertest.NewNop()
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, cumulative, zaptest.NewLogger(t), nil)
+	traces := buildSampleTrace()
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	err := p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+	metrics := p.buildMetrics()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				if metric.Type() == pmetric.MetricTypeSum {
+					dps := metric.Sum().DataPoints()
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Greater(t, dp.Exemplars().Len(), 0)
+					}
+				}
+			}
+		}
+	}
+}
