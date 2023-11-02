@@ -56,6 +56,7 @@ Since [v0.69.0](https://github.com/open-telemetry/opentelemetry-collector-contri
 ```
 otelcol --config=config.yaml --feature-gates=-exporter.datadogexporter.metricexportnativeclient
 ```
+Note that we are currently migrating the Datadog metrics exporter to use the metrics serializer instead. The feature flag `exporter.datadogexporter.metricexportnativeclient` will be deprecated and evetually removed in the future, following the [feature lifecycle](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle).
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
