@@ -83,7 +83,26 @@ func TestE2E(t *testing.T) {
 	containerImageShorten := func(value string) string {
 		return value[(strings.LastIndex(value, "/") + 1):]
 	}
-	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+
+	actual := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
+
+	// filter out built-in labels
+	rms := actual.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		if m, ok := rms.At(i).Resource().Attributes().Get("k8s.node.labels"); ok {
+			newRawMap := make(map[string]any)
+			for k, v := range m.Map().AsRaw() {
+				if strings.Contains(k, "kubernetes.io") {
+					// skip this label
+					continue
+				}
+				newRawMap[k] = v
+			}
+			require.NoError(t, m.FromRaw(newRawMap))
+		}
+	}
+
+	require.NoError(t, pmetrictest.CompareMetrics(expected, actual,
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreMetricValues("k8s.deployment.desired", "k8s.deployment.available", "k8s.container.restarts", "k8s.container.cpu_request", "k8s.container.memory_request", "k8s.container.memory_limit"),
