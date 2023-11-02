@@ -28,8 +28,9 @@ type mappingModel interface {
 //
 // See: https://github.com/open-telemetry/oteps/blob/master/text/logs/0097-log-data-model.md
 type encodeModel struct {
-	dedup bool
-	dedot bool
+	dedup   bool
+	dedot   bool
+	mapping string
 }
 
 const (
@@ -41,15 +42,26 @@ const (
 func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) ([]byte, error) {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddTraceID("TraceId", record.TraceID())
-	document.AddSpanID("SpanId", record.SpanID())
-	document.AddInt("TraceFlags", int64(record.Flags()))
-	document.AddString("SeverityText", record.SeverityText())
-	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
-	document.AddAttribute("Body", record.Body())
-	document.AddAttributes("Attributes", record.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
-	document.AddAttributes("Scope", scopeToAttributes(scope))
+
+	if m.mapping == MappingECS.String() {
+		/* Add message first and overwrite it from the record if present */
+		document.AddAttribute("message", record.Body())
+
+		document.AddAttributes("", record.Attributes())
+		document.AddAttributes("", resource.Attributes())
+
+		document.AddAttribute("log.level", pcommon.NewValueStr(record.SeverityText()))
+	} else {
+		document.AddTraceID("TraceId", record.TraceID())
+		document.AddSpanID("SpanId", record.SpanID())
+		document.AddInt("TraceFlags", int64(record.Flags()))
+		document.AddString("SeverityText", record.SeverityText())
+		document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
+		document.AddAttribute("Body", record.Body())
+		document.AddAttributes("Attributes", record.Attributes())
+		document.AddAttributes("Resource", resource.Attributes())
+		document.AddAttributes("Scope", scopeToAttributes(scope))
+	}
 
 	if m.dedup {
 		document.Dedup()
