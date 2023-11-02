@@ -140,7 +140,7 @@ func stopSampling(_ context.Context) error {
 		// no load scraper is running nothing to do
 		return nil
 	}
-	
+
 	// only stop sampling if all load scrapers have been closed
 	scraperCount--
 	if scraperCount > 0 {
