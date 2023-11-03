@@ -18,7 +18,7 @@ func init() {
 		viewPodsUpdated,
 		viewPodsAdded,
 		viewPodsDeleted,
-		viewIPLookupMiss,
+		viewIDLookupMiss,
 		viewPodTableSize,
 		viewNamespacesAdded,
 		viewNamespacesUpdated,
@@ -30,20 +30,20 @@ func init() {
 }
 
 var (
-	mPodsUpdated        = stats.Int64("otelsvc/k8s/pod_updated", "Number of pod update events received", "1")
-	mPodsAdded          = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
-	mPodsDeleted        = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
-	mPodTableSize       = stats.Int64("otelsvc/k8s/pod_table_size", "Size of table containing pod info", "1")
-	mIPLookupMiss       = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
-	mNamespacesUpdated  = stats.Int64("otelsvc/k8s/namespace_updated", "Number of namespace update events received", "1")
-	mNamespacesAdded    = stats.Int64("otelsvc/k8s/namespace_added", "Number of namespace add events received", "1")
-	mNamespacesDeleted  = stats.Int64("otelsvc/k8s/namespace_deleted", "Number of namespace delete events received", "1")
-	mNodesUpdated       = stats.Int64("otelsvc/k8s/node_updated", "Number of node update events received", "1")
-	mNodesAdded         = stats.Int64("otelsvc/k8s/node_added", "Number of node add events received", "1")
-	mNodesDeleted       = stats.Int64("otelsvc/k8s/node_deleted", "Number of node delete events received", "1")
-	mReplicaSetsUpdated = stats.Int64("otelsvc/k8s/replicaset_updated", "Number of ReplicaSet update events received", "1")
-	mReplicaSetsAdded   = stats.Int64("otelsvc/k8s/replicaset_added", "Number of ReplicaSet add events received", "1")
-	mReplicaSetsDeleted = stats.Int64("otelsvc/k8s/replicaset_deleted", "Number of ReplicaSet delete events received", "1")
+	mPodsUpdated        = stats.Int64("otelcol.k8s.pod_updated", "Number of pod update events received", "1")
+	mPodsAdded          = stats.Int64("otelcol.k8s.pod_added", "Number of pod add events received", "1")
+	mPodsDeleted        = stats.Int64("otelcol.k8s.pod_deleted", "Number of pod delete events received", "1")
+	mPodTableSize       = stats.Int64("otelcol.k8s.pod_table_size", "Size of table containing pod info", "1")
+	mIPLookupMiss       = stats.Int64("otelcol.k8s.id_lookup_miss", "Number of times pod by ID lookup failed.", "1")
+	mNamespacesUpdated  = stats.Int64("otelcol.k8s.namespace_updated", "Number of namespace update events received", "1")
+	mNamespacesAdded    = stats.Int64("otelcol.k8s.namespace_added", "Number of namespace add events received", "1")
+	mNamespacesDeleted  = stats.Int64("otelcol.k8s.namespace_deleted", "Number of namespace delete events received", "1")
+	mNodesUpdated       = stats.Int64("otelcol.k8s.node_updated", "Number of node update events received", "1")
+	mNodesAdded         = stats.Int64("otelcol.k8s.node_added", "Number of node add events received", "1")
+	mNodesDeleted       = stats.Int64("otelcol.k8s.node_deleted", "Number of node delete events received", "1")
+	mReplicaSetsUpdated = stats.Int64("otelcol.k8s.replicaset_updated", "Number of ReplicaSet update events received", "1")
+	mReplicaSetsAdded   = stats.Int64("otelcol.k8s.replicaset_added", "Number of ReplicaSet add events received", "1")
+	mReplicaSetsDeleted = stats.Int64("otelcol.k8s.replicaset_deleted", "Number of ReplicaSet delete events received", "1")
 )
 
 var viewPodsUpdated = &view.View{
@@ -67,7 +67,7 @@ var viewPodsDeleted = &view.View{
 	Aggregation: view.Sum(),
 }
 
-var viewIPLookupMiss = &view.View{
+var viewIDLookupMiss = &view.View{
 	Name:        mIPLookupMiss.Name(),
 	Description: mIPLookupMiss.Description(),
 	Measure:     mIPLookupMiss,
@@ -138,8 +138,8 @@ func RecordPodDeleted() {
 	stats.Record(context.Background(), mPodsDeleted.M(int64(1)))
 }
 
-// RecordIPLookupMiss increments the metric that records Pod lookup by IP misses.
-func RecordIPLookupMiss() {
+// RecordIDLookupMiss increments the metric that records Pod lookup by ID misses.
+func RecordIDLookupMiss() {
 	stats.Record(context.Background(), mIPLookupMiss.M(int64(1)))
 }
 

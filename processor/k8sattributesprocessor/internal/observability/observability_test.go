@@ -61,43 +61,43 @@ func TestMetrics(t *testing.T) {
 	}
 	tests := []testCase{
 		{
-			"otelsvc/k8s/pod_added",
+			"otelcol.k8s.pod_added",
 			RecordPodAdded,
 		},
 		{
-			"otelsvc/k8s/pod_deleted",
+			"otelcol.k8s.pod_deleted",
 			RecordPodDeleted,
 		},
 		{
-			"otelsvc/k8s/pod_updated",
+			"otelcol.k8s.pod_updated",
 			RecordPodUpdated,
 		},
 		{
-			"otelsvc/k8s/ip_lookup_miss",
-			RecordIPLookupMiss,
+			"otelcol.k8s.id_lookup_miss",
+			RecordIDLookupMiss,
 		},
 		{
-			"otelsvc/k8s/namespace_added",
+			"otelcol.k8s.namespace_added",
 			RecordNamespaceAdded,
 		},
 		{
-			"otelsvc/k8s/namespace_updated",
+			"otelcol.k8s.namespace_updated",
 			RecordNamespaceUpdated,
 		},
 		{
-			"otelsvc/k8s/namespace_deleted",
+			"otelcol.k8s.namespace_deleted",
 			RecordNamespaceDeleted,
 		},
 		{
-			"otelsvc/k8s/node_added",
+			"otelcol.k8s.node_added",
 			RecordNodeAdded,
 		},
 		{
-			"otelsvc/k8s/node_updated",
+			"otelcol.k8s.node_updated",
 			RecordNodeUpdated,
 		},
 		{
-			"otelsvc/k8s/node_deleted",
+			"otelcol.k8s.node_deleted",
 			RecordNodeDeleted,
 		},
 	}
