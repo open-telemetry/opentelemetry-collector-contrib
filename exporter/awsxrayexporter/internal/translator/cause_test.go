@@ -59,6 +59,39 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	assert.Empty(t, cause.Exceptions[2].Message)
 }
 
+func TestMakeCauseAwsSdkSpan(t *testing.T) {
+	errorMsg := "this is a test"
+	attributeMap := make(map[string]interface{})
+	attributeMap[conventions.AttributeRPCSystem] = "aws-api"
+	span := constructExceptionServerSpan(attributeMap, ptrace.StatusCodeError)
+	span.Status().SetMessage(errorMsg)
+
+	event1 := span.Events().AppendEmpty()
+	event1.SetName(AwsIndividualHTTPEventName)
+	event1.Attributes().PutStr(AwsIndividualHTTPErrorCodeAttr, "503")
+	event1.Attributes().PutStr(AwsIndividualHTTPErrorMsgAttr, "service is temporarily unavailable")
+	timestamp := pcommon.NewTimestampFromTime(time.UnixMicro(1696954761000001))
+	event1.SetTimestamp(timestamp)
+
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, _, cause := makeCause(span, nil, res)
+
+	assert.False(t, isError)
+	assert.True(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, cause)
+
+	assert.Equal(t, 1, len(cause.CauseObject.Exceptions))
+	exception := cause.CauseObject.Exceptions[0]
+	assert.Equal(t, AwsIndividualHTTPErrorEventType, *exception.Type)
+	assert.True(t, *exception.Remote)
+
+	messageParts := strings.SplitN(*exception.Message, "@", 3)
+	assert.Equal(t, "503", messageParts[0])
+	assert.Equal(t, "1696954761.000001", messageParts[1])
+	assert.Equal(t, "service is temporarily unavailable", messageParts[2])
+}
+
 func TestCauseExceptionWithoutError(t *testing.T) {
 	var nonErrorStatusCodes = []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
 
