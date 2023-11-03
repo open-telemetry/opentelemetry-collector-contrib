@@ -3,7 +3,6 @@ extension/encoding
 extension/observer
 processor/servicegraphprocessor
 receiver/collectdreceiver
-receiver/dockerstatsreceiver
 receiver/journaldreceiver
 receiver/kafkareceiver
 receiver/windowseventlogreceiver
