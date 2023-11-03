@@ -26,7 +26,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					GitRepositoryCount: MetricConfig{Enabled: true},
+					GitRepositoryBranchCount:      MetricConfig{Enabled: true},
+					GitRepositoryContributorCount: MetricConfig{Enabled: true},
+					GitRepositoryCount:            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					GitVendorName:    ResourceAttributeConfig{Enabled: true},
@@ -38,7 +40,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					GitRepositoryCount: MetricConfig{Enabled: false},
+					GitRepositoryBranchCount:      MetricConfig{Enabled: false},
+					GitRepositoryContributorCount: MetricConfig{Enabled: false},
+					GitRepositoryCount:            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					GitVendorName:    ResourceAttributeConfig{Enabled: false},

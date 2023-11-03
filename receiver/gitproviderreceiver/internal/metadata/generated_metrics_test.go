@@ -57,6 +57,13 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordGitRepositoryBranchCountDataPoint(ts, 1, "repository.name-val")
+
+			allMetricsCount++
+			mb.RecordGitRepositoryContributorCountDataPoint(ts, 1, "repository.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordGitRepositoryCountDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
@@ -84,6 +91,36 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "git.repository.branch.count":
+					assert.False(t, validatedMetrics["git.repository.branch.count"], "Found a duplicate in the metrics slice: git.repository.branch.count")
+					validatedMetrics["git.repository.branch.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of branches that exist in the repository", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "repository.name-val", attrVal.Str())
+				case "git.repository.contributor.count":
+					assert.False(t, validatedMetrics["git.repository.contributor.count"], "Found a duplicate in the metrics slice: git.repository.contributor.count")
+					validatedMetrics["git.repository.contributor.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total number of unique contributors to this repository", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 				case "git.repository.count":
 					assert.False(t, validatedMetrics["git.repository.count"], "Found a duplicate in the metrics slice: git.repository.count")
 					validatedMetrics["git.repository.count"] = true

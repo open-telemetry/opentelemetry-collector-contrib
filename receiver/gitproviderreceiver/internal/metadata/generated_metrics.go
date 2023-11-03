@@ -12,6 +12,108 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
+type metricGitRepositoryBranchCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills git.repository.branch.count metric with initial data.
+func (m *metricGitRepositoryBranchCount) init() {
+	m.data.SetName("git.repository.branch.count")
+	m.data.SetDescription("Number of branches that exist in the repository")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricGitRepositoryBranchCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricGitRepositoryBranchCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricGitRepositoryBranchCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricGitRepositoryBranchCount(cfg MetricConfig) metricGitRepositoryBranchCount {
+	m := metricGitRepositoryBranchCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricGitRepositoryContributorCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills git.repository.contributor.count metric with initial data.
+func (m *metricGitRepositoryContributorCount) init() {
+	m.data.SetName("git.repository.contributor.count")
+	m.data.SetDescription("Total number of unique contributors to this repository")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricGitRepositoryContributorCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("repository.name", repositoryNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricGitRepositoryContributorCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricGitRepositoryContributorCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricGitRepositoryContributorCount(cfg MetricConfig) metricGitRepositoryContributorCount {
+	m := metricGitRepositoryContributorCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricGitRepositoryCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -64,12 +166,14 @@ func newMetricGitRepositoryCount(cfg MetricConfig) metricGitRepositoryCount {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                   MetricsBuilderConfig // config of the metrics builder.
-	startTime                pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity          int                  // maximum observed number of metrics per resource.
-	metricsBuffer            pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                component.BuildInfo  // contains version information.
-	metricGitRepositoryCount metricGitRepositoryCount
+	config                              MetricsBuilderConfig // config of the metrics builder.
+	startTime                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                     int                  // maximum observed number of metrics per resource.
+	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                           component.BuildInfo  // contains version information.
+	metricGitRepositoryBranchCount      metricGitRepositoryBranchCount
+	metricGitRepositoryContributorCount metricGitRepositoryContributorCount
+	metricGitRepositoryCount            metricGitRepositoryCount
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -84,11 +188,13 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                   mbc,
-		startTime:                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:            pmetric.NewMetrics(),
-		buildInfo:                settings.BuildInfo,
-		metricGitRepositoryCount: newMetricGitRepositoryCount(mbc.Metrics.GitRepositoryCount),
+		config:                              mbc,
+		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                       pmetric.NewMetrics(),
+		buildInfo:                           settings.BuildInfo,
+		metricGitRepositoryBranchCount:      newMetricGitRepositoryBranchCount(mbc.Metrics.GitRepositoryBranchCount),
+		metricGitRepositoryContributorCount: newMetricGitRepositoryContributorCount(mbc.Metrics.GitRepositoryContributorCount),
+		metricGitRepositoryCount:            newMetricGitRepositoryCount(mbc.Metrics.GitRepositoryCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -151,6 +257,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/gitproviderreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricGitRepositoryBranchCount.emit(ils.Metrics())
+	mb.metricGitRepositoryContributorCount.emit(ils.Metrics())
 	mb.metricGitRepositoryCount.emit(ils.Metrics())
 
 	for _, op := range rmo {
@@ -170,6 +278,16 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordGitRepositoryBranchCountDataPoint adds a data point to git.repository.branch.count metric.
+func (mb *MetricsBuilder) RecordGitRepositoryBranchCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
+	mb.metricGitRepositoryBranchCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue)
+}
+
+// RecordGitRepositoryContributorCountDataPoint adds a data point to git.repository.contributor.count metric.
+func (mb *MetricsBuilder) RecordGitRepositoryContributorCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string) {
+	mb.metricGitRepositoryContributorCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue)
 }
 
 // RecordGitRepositoryCountDataPoint adds a data point to git.repository.count metric.

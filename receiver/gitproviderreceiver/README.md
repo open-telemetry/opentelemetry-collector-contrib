@@ -26,8 +26,8 @@ The current metrics available via scraping from GitHub are:
 
 - [x] Repository count
 - [ ] Repository branch time
-- [ ] Repository branch count
-- [ ] Repository contributor count
+- [x] Repository branch count
+- [x] Repository contributor count
 - [ ] Repository pull request time
 - [ ] Repository pull request merge time
 - [ ] Repository pull request approval time

@@ -36,3 +36,35 @@ query checkLogin($login: String!) {
   }
 }
 
+query getBranchData(
+  $name: String!
+  $owner: String!
+  $branchFirst: Int!
+  $targetBranch: String!
+  # @genqlient(pointer: true)
+  $branchCursor: String
+) {
+  repository(name: $name, owner: $owner) {
+    refs(refPrefix: "refs/heads/", first: $branchFirst, after: $branchCursor) {
+      totalCount
+      # @genqlient(typename: "BranchNode")
+      nodes {
+        name
+        compare(headRef: $targetBranch) {
+          aheadBy
+          behindBy
+        }
+        repository{
+          name
+          defaultBranchRef {
+            name
+          }
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+    }
+  }
+}

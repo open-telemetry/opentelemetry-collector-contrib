@@ -12,6 +12,20 @@ metrics:
     enabled: false
 ```
 
+### git.repository.branch.count
+
+Number of branches that exist in the repository
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The full name of the Git repository | Any Str |
+
 ### git.repository.count
 
 Number of repositories that exist in an organization
@@ -19,6 +33,30 @@ Number of repositories that exist in an organization
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### git.repository.contributor.count
+
+Total number of unique contributors to this repository
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The full name of the Git repository | Any Str |
 
 ## Resource Attributes
 

@@ -10,6 +10,76 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// BranchNode includes the requested fields of the GraphQL type Ref.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git reference.
+type BranchNode struct {
+	// The ref name.
+	Name string `json:"name"`
+	// Compares the current ref as a base ref to another head ref, if the comparison can be made.
+	Compare BranchNodeCompareComparison `json:"compare"`
+	// The repository the ref belongs to.
+	Repository BranchNodeRepository `json:"repository"`
+}
+
+// GetName returns BranchNode.Name, and is useful for accessing the field via an interface.
+func (v *BranchNode) GetName() string { return v.Name }
+
+// GetCompare returns BranchNode.Compare, and is useful for accessing the field via an interface.
+func (v *BranchNode) GetCompare() BranchNodeCompareComparison { return v.Compare }
+
+// GetRepository returns BranchNode.Repository, and is useful for accessing the field via an interface.
+func (v *BranchNode) GetRepository() BranchNodeRepository { return v.Repository }
+
+// BranchNodeCompareComparison includes the requested fields of the GraphQL type Comparison.
+// The GraphQL type's documentation follows.
+//
+// Represents a comparison between two commit revisions.
+type BranchNodeCompareComparison struct {
+	// The number of commits ahead of the base branch.
+	AheadBy int `json:"aheadBy"`
+	// The number of commits behind the base branch.
+	BehindBy int `json:"behindBy"`
+}
+
+// GetAheadBy returns BranchNodeCompareComparison.AheadBy, and is useful for accessing the field via an interface.
+func (v *BranchNodeCompareComparison) GetAheadBy() int { return v.AheadBy }
+
+// GetBehindBy returns BranchNodeCompareComparison.BehindBy, and is useful for accessing the field via an interface.
+func (v *BranchNodeCompareComparison) GetBehindBy() int { return v.BehindBy }
+
+// BranchNodeRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository contains the content for a project.
+type BranchNodeRepository struct {
+	// The name of the repository.
+	Name string `json:"name"`
+	// The Ref associated with the repository's default branch.
+	DefaultBranchRef BranchNodeRepositoryDefaultBranchRef `json:"defaultBranchRef"`
+}
+
+// GetName returns BranchNodeRepository.Name, and is useful for accessing the field via an interface.
+func (v *BranchNodeRepository) GetName() string { return v.Name }
+
+// GetDefaultBranchRef returns BranchNodeRepository.DefaultBranchRef, and is useful for accessing the field via an interface.
+func (v *BranchNodeRepository) GetDefaultBranchRef() BranchNodeRepositoryDefaultBranchRef {
+	return v.DefaultBranchRef
+}
+
+// BranchNodeRepositoryDefaultBranchRef includes the requested fields of the GraphQL type Ref.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git reference.
+type BranchNodeRepositoryDefaultBranchRef struct {
+	// The ref name.
+	Name string `json:"name"`
+}
+
+// GetName returns BranchNodeRepositoryDefaultBranchRef.Name, and is useful for accessing the field via an interface.
+func (v *BranchNodeRepositoryDefaultBranchRef) GetName() string { return v.Name }
+
 // SearchNode includes the requested fields of the GraphQL interface SearchResultItem.
 //
 // SearchNode is implemented by the following types:
@@ -286,6 +356,30 @@ type __checkLoginInput struct {
 // GetLogin returns __checkLoginInput.Login, and is useful for accessing the field via an interface.
 func (v *__checkLoginInput) GetLogin() string { return v.Login }
 
+// __getBranchDataInput is used internally by genqlient
+type __getBranchDataInput struct {
+	Name         string  `json:"name"`
+	Owner        string  `json:"owner"`
+	BranchFirst  int     `json:"branchFirst"`
+	TargetBranch string  `json:"targetBranch"`
+	BranchCursor *string `json:"branchCursor"`
+}
+
+// GetName returns __getBranchDataInput.Name, and is useful for accessing the field via an interface.
+func (v *__getBranchDataInput) GetName() string { return v.Name }
+
+// GetOwner returns __getBranchDataInput.Owner, and is useful for accessing the field via an interface.
+func (v *__getBranchDataInput) GetOwner() string { return v.Owner }
+
+// GetBranchFirst returns __getBranchDataInput.BranchFirst, and is useful for accessing the field via an interface.
+func (v *__getBranchDataInput) GetBranchFirst() int { return v.BranchFirst }
+
+// GetTargetBranch returns __getBranchDataInput.TargetBranch, and is useful for accessing the field via an interface.
+func (v *__getBranchDataInput) GetTargetBranch() string { return v.TargetBranch }
+
+// GetBranchCursor returns __getBranchDataInput.BranchCursor, and is useful for accessing the field via an interface.
+func (v *__getBranchDataInput) GetBranchCursor() *string { return v.BranchCursor }
+
 // __getRepoDataBySearchInput is used internally by genqlient
 type __getRepoDataBySearchInput struct {
 	SearchQuery string  `json:"searchQuery"`
@@ -335,6 +429,70 @@ type checkLoginUser struct {
 
 // GetLogin returns checkLoginUser.Login, and is useful for accessing the field via an interface.
 func (v *checkLoginUser) GetLogin() string { return v.Login }
+
+// getBranchDataRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository contains the content for a project.
+type getBranchDataRepository struct {
+	// Fetch a list of refs from the repository
+	Refs getBranchDataRepositoryRefsRefConnection `json:"refs"`
+}
+
+// GetRefs returns getBranchDataRepository.Refs, and is useful for accessing the field via an interface.
+func (v *getBranchDataRepository) GetRefs() getBranchDataRepositoryRefsRefConnection { return v.Refs }
+
+// getBranchDataRepositoryRefsRefConnection includes the requested fields of the GraphQL type RefConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Ref.
+type getBranchDataRepositoryRefsRefConnection struct {
+	// Identifies the total count of items in the connection.
+	TotalCount int `json:"totalCount"`
+	// A list of nodes.
+	Nodes []BranchNode `json:"nodes"`
+	// Information to aid in pagination.
+	PageInfo getBranchDataRepositoryRefsRefConnectionPageInfo `json:"pageInfo"`
+}
+
+// GetTotalCount returns getBranchDataRepositoryRefsRefConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *getBranchDataRepositoryRefsRefConnection) GetTotalCount() int { return v.TotalCount }
+
+// GetNodes returns getBranchDataRepositoryRefsRefConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *getBranchDataRepositoryRefsRefConnection) GetNodes() []BranchNode { return v.Nodes }
+
+// GetPageInfo returns getBranchDataRepositoryRefsRefConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getBranchDataRepositoryRefsRefConnection) GetPageInfo() getBranchDataRepositoryRefsRefConnectionPageInfo {
+	return v.PageInfo
+}
+
+// getBranchDataRepositoryRefsRefConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getBranchDataRepositoryRefsRefConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns getBranchDataRepositoryRefsRefConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getBranchDataRepositoryRefsRefConnectionPageInfo) GetEndCursor() string { return v.EndCursor }
+
+// GetHasNextPage returns getBranchDataRepositoryRefsRefConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getBranchDataRepositoryRefsRefConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// getBranchDataResponse is returned by getBranchData on success.
+type getBranchDataResponse struct {
+	// Lookup a given repository by the owner and repository name.
+	Repository getBranchDataRepository `json:"repository"`
+}
+
+// GetRepository returns getBranchDataResponse.Repository, and is useful for accessing the field via an interface.
+func (v *getBranchDataResponse) GetRepository() getBranchDataRepository { return v.Repository }
 
 // getRepoDataBySearchResponse is returned by getRepoDataBySearch on success.
 type getRepoDataBySearchResponse struct {
@@ -502,6 +660,68 @@ func checkLogin(
 	var err error
 
 	var data checkLoginResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+// The query or mutation executed by getBranchData.
+const getBranchData_Operation = `
+query getBranchData ($name: String!, $owner: String!, $branchFirst: Int!, $targetBranch: String!, $branchCursor: String) {
+	repository(name: $name, owner: $owner) {
+		refs(refPrefix: "refs/heads/", first: $branchFirst, after: $branchCursor) {
+			totalCount
+			nodes {
+				name
+				compare(headRef: $targetBranch) {
+					aheadBy
+					behindBy
+				}
+				repository {
+					name
+					defaultBranchRef {
+						name
+					}
+				}
+			}
+			pageInfo {
+				endCursor
+				hasNextPage
+			}
+		}
+	}
+}
+`
+
+func getBranchData(
+	ctx context.Context,
+	client graphql.Client,
+	name string,
+	owner string,
+	branchFirst int,
+	targetBranch string,
+	branchCursor *string,
+) (*getBranchDataResponse, error) {
+	req := &graphql.Request{
+		OpName: "getBranchData",
+		Query:  getBranchData_Operation,
+		Variables: &__getBranchDataInput{
+			Name:         name,
+			Owner:        owner,
+			BranchFirst:  branchFirst,
+			TargetBranch: targetBranch,
+			BranchCursor: branchCursor,
+		},
+	}
+	var err error
+
+	var data getBranchDataResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
