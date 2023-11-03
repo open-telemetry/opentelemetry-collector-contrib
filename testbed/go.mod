@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/fluent/fluent-logger-golang v1.9.0
+	github.com/jaegertracing/jaeger v1.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.88.0
@@ -17,6 +17,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.88.0
@@ -153,7 +154,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.8 // indirect
-	github.com/jaegertracing/jaeger v1.48.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
@@ -187,7 +187,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.88.0 // indirect
