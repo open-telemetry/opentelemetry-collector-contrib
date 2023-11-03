@@ -75,8 +75,8 @@ func TestScrape(t *testing.T) {
 	startChan := make(chan bool)
 	// used to lock results map in order to avoid concurrent map writes
 	resultsMapLock := sync.Mutex{}
-	
-	testFn := func(t *testing.T, test testCase){
+
+	testFn := func(t *testing.T, test testCase) {
 		// wait for messurement to start
 		<-startChan
 
@@ -93,7 +93,7 @@ func TestScrape(t *testing.T) {
 		defer func() { assert.NoError(t, scraper.shutdown(context.Background())) }()
 		if runtime.GOOS == "windows" {
 			// let it sample
-			<-time.After(3*time.Second)
+			<-time.After(3 * time.Second)
 		}
 
 		md, err := scraper.scrape(context.Background())
@@ -144,9 +144,10 @@ func TestScrape(t *testing.T) {
 	var waitWg sync.WaitGroup
 	waitWg.Add(len(testCases))
 
+	setSamplingFrequency(500 * time.Millisecond)
+
 	for _, test := range testCases {
-		samplingFrequency = 500*time.Millisecond
-		go func(t *testing.T, test testCase){
+		go func(t *testing.T, test testCase) {
 			startWg.Done()
 			testFn(t, test)
 			waitWg.Done()

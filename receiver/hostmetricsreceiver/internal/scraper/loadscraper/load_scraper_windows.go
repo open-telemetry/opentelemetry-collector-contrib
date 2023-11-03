@@ -51,6 +51,10 @@ type sampler struct {
 	lock               sync.RWMutex
 }
 
+func setSamplingFrequency(freq time.Duration) {
+	samplingFrequency = freq
+}
+
 func startSampling(_ context.Context, logger *zap.Logger) error {
 	startupLock.Lock()
 	defer startupLock.Unlock()
