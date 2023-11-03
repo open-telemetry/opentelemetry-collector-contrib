@@ -86,7 +86,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.88.0
@@ -209,7 +209,7 @@ require (
 
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
-	cloud.google.com/go v0.110.9 // indirect
+	cloud.google.com/go v0.110.10 // indirect
 	cloud.google.com/go/compute v1.23.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	cloud.google.com/go/iam v1.1.2 // indirect
@@ -252,14 +252,14 @@ require (
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.15.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.89 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-devel.0.20231030140030-aa8a206e6ac7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.49.0-rc.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.18.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
@@ -328,11 +328,11 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
-	github.com/cilium/ebpf v0.7.0 // indirect
+	github.com/cilium/ebpf v0.9.1 // indirect
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e // indirect
 	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
 	github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4 // indirect
-	github.com/containerd/cgroups v1.0.4 // indirect
+	github.com/containerd/cgroups/v3 v3.0.2 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible // indirect
@@ -541,6 +541,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.88.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -706,7 +707,7 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.3.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
-	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
+	skywalking.apache.org/repo/goapi v0.0.0-20231026090926-09378dd56587 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
@@ -1113,7 +1114,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webho
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver => ../../extension/observer/ecsobserver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor => ../../processor/remoteobserverprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor => ../../processor/remotetapprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor => ../../processor/sumologicprocessor
 
@@ -1140,3 +1141,5 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
