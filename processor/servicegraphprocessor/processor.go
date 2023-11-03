@@ -33,9 +33,13 @@ const (
 )
 
 var (
-	defaultLatencyHistogramBucketsMs = []float64{
+	legacyDefaultLatencyHistogramBuckets = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 	}
+	defaultLatencyHistogramBuckets = []float64{
+		0.002, 0.004, 0.006, 0.008, 0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 1.4, 2, 5, 10, 15,
+	}
+
 	defaultPeerAttributes = []string{
 		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
 	}
@@ -78,9 +82,12 @@ type serviceGraphProcessor struct {
 func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProcessor {
 	pConfig := config.(*Config)
 
-	bounds := defaultLatencyHistogramBucketsMs
+	bounds := defaultLatencyHistogramBuckets
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		bounds = legacyDefaultLatencyHistogramBuckets
+	}
 	if pConfig.LatencyHistogramBuckets != nil {
-		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
+		bounds = mapDurationsToFloat(pConfig.LatencyHistogramBuckets)
 	}
 
 	if pConfig.CacheLoop <= 0 {
@@ -254,7 +261,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
 						e.ClientService = serviceName
-						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+						e.ClientLatencySec = spanDuration(span)
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
@@ -267,7 +274,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						if dbName, ok := findAttributeValue(semconv.AttributeDBName, rAttributes, span.Attributes()); ok {
 							e.ConnectionType = store.Database
 							e.ServerService = dbName
-							e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+							e.ServerLatencySec = spanDuration(span)
 						}
 					})
 				case ptrace.SpanKindConsumer:
@@ -281,7 +288,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
 						e.ServerService = serviceName
-						e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+						e.ServerLatencySec = spanDuration(span)
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(serverKind, e.Dimensions, rAttributes, span.Attributes())
 					})
@@ -655,16 +662,26 @@ func (p *serviceGraphProcessor) cleanCache() {
 	p.seriesMutex.Unlock()
 }
 
-// durationToMillis converts the given duration to the number of milliseconds it represents.
-// Note that this can return sub-millisecond (i.e. < 1ms) values as well.
-func durationToMillis(d time.Duration) float64 {
-	return float64(d.Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
+// spanDuration returns the duration of the given span in seconds (legacy ms).
+func spanDuration(span ptrace.Span) float64 {
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+	}
+	return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Second.Nanoseconds())
 }
 
-func mapDurationsToMillis(vs []time.Duration) []float64 {
+// durationToFloat converts the given duration to the number of seconds (legacy ms) it represents.
+func durationToFloat(d time.Duration) float64 {
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		return float64(d.Milliseconds())
+	}
+	return d.Seconds()
+}
+
+func mapDurationsToFloat(vs []time.Duration) []float64 {
 	vsm := make([]float64, len(vs))
 	for i, v := range vs {
-		vsm[i] = durationToMillis(v)
+		vsm[i] = durationToFloat(v)
 	}
 	return vsm
 }

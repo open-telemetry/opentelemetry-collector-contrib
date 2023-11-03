@@ -3,6 +3,6 @@ type: opensearch
 status:
   class: exporter
   stability:
-    development: [traces]
+    development: [logs, traces]
   codeowners:
     active: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]
