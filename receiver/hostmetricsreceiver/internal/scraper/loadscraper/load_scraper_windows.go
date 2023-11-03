@@ -93,6 +93,7 @@ func (sw *sampler) startSamplingTicker() {
 		ticker := time.NewTicker(samplingFrequency)
 		defer ticker.Stop()
 
+		sw.sampleLoad()
 		for {
 			select {
 			case <-ticker.C:
