@@ -1,0 +1,24 @@
+extensions:
+  remotetap:
+    endpoint: localhost:8080
+    taps:
+      - name: remotetap/1
+        endpoint: localhost:8081
+receivers:
+  filelog:
+    include: [ /tmp/file*.log ]
+    start_at: beginning
+processors:
+  remotetap:
+    endpoint: localhost:8081
+exporters:
+  file:
+    path: /tmp/output.log
+
+service:
+  extensions: [remotetap]
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [remotetap]
+      exporters: [file]

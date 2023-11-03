@@ -1,0 +1,7 @@
+remotetap:
+  endpoint: localhost:8080
+  taps:
+    - name: remotetap/1
+      endpoint: localhost:8081
+    - name: remotetap/2
+      endpoint: localhost:8082
