@@ -182,7 +182,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		maxBatchFiles:     c.MaxConcurrentFiles / 2,
 		maxBatches:        c.MaxBatches,
 		previousPollFiles: make([]*reader.Reader, 0, c.MaxConcurrentFiles/2),
-		knownFiles:        make([]*reader.Metadata, 0, 10*c.MaxConcurrentFiles),
+		knownFiles:        []*reader.Metadata{},
 	}, nil
 }
 

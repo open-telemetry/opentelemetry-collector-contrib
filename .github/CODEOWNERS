@@ -149,6 +149,7 @@ pkg/translator/opencensus/                                              @open-te
 pkg/translator/prometheus/                                              @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
 pkg/translator/prometheusremotewrite/                                   @open-telemetry/collector-contrib-approvers @Aneurysm9
 pkg/translator/signalfx/                                                @open-telemetry/collector-contrib-approvers @dmitryax
+pkg/translator/skywalking/                                              @open-telemetry/collector-contrib-approvers @JaredTan95
 pkg/translator/zipkin/                                                  @open-telemetry/collector-contrib-approvers @MovieStoreGuy @astencel-sumo @crobert-1
 pkg/winperfcounters/                                                    @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @BinaryFissionGames
 

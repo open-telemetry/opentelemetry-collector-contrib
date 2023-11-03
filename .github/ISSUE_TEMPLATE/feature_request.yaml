@@ -133,6 +133,7 @@ body:
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
+      - pkg/translator/skywalking
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
