@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// no sampling performed on non windows enviroments, nothing to do
+// no sampling performed on non windows environments, nothing to do
 func setSamplingFrequency(_ time.Duration) {}
 
 // unix based systems sample & compute load averages in the kernel, so nothing to do here
