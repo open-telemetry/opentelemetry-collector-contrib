@@ -29,11 +29,6 @@ const (
 	bootTime     = 100
 )
 
-// Skips test without applying unused rule
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
-
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name         string
