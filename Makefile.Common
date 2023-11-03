@@ -68,6 +68,7 @@ CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
+GCI                 := $(TOOLS_BIN_DIR)/gci
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -197,3 +198,8 @@ misspell-correction: $(TOOLS_BIN_DIR)/misspell
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
+
+.PHONY: gci
+gci: $(TOOLS_BIN_DIR)/gci
+	@echo "running $(GCI)"
+	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $(ALL_SRC_AND_DOC)
