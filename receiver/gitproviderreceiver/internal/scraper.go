@@ -17,9 +17,6 @@ type ScraperFactory interface {
 	CreateMetricsScraper(ctx context.Context, params receiver.CreateSettings, cfg Config) (scraperhelper.Scraper, error)
 }
 
-// TODO: vet that these are the right interfaces to use
-type Config interface {
-}
+type Config interface{}
 
-type ScraperConfig struct {
-}
+type ScraperConfig struct{}
