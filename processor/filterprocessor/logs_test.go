@@ -723,7 +723,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		{
 			name: "drop everything by dropping all logs",
 			conditions: []string{
-				`IsMatch(body, "operation.*")`,
+				`IsMatch(body, attributes["name"])`,
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,

@@ -13,7 +13,7 @@ import (
 
 type IsMatchArguments[K any] struct {
 	Target  ottl.StringLikeGetter[K]
-	Pattern string
+	Pattern ottl.StringLikeGetter[K]
 }
 
 func NewIsMatchFactory[K any]() ottl.Factory[K] {
@@ -30,19 +30,27 @@ func createIsMatchFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 	return isMatch(args.Target, args.Pattern)
 }
 
-func isMatch[K any](target ottl.StringLikeGetter[K], pattern string) (ottl.ExprFunc[K], error) {
-	compiledPattern, err := regexp.Compile(pattern)
-	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)
-	}
+func isMatch[K any](target ottl.StringLikeGetter[K], pattern ottl.StringLikeGetter[K]) (ottl.ExprFunc[K], error) {
+
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
-		val, err := target.Get(ctx, tCtx)
+		val, err := pattern.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		if val == nil {
 			return false, nil
 		}
-		return compiledPattern.MatchString(*val), nil
+		compiledPattern, err := regexp.Compile(*val)
+		if err != nil {
+			return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)
+		}
+		val2, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		if val2 == nil {
+			return false, nil
+		}
+		return compiledPattern.MatchString(*val2), nil
 	}, nil
 }
