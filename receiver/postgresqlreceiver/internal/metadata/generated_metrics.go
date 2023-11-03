@@ -1529,7 +1529,7 @@ type metricPostgresqlWalDelay struct {
 // init fills postgresql.wal.delay metric with initial data.
 func (m *metricPostgresqlWalDelay) init() {
 	m.data.SetName("postgresql.wal.delay")
-	m.data.SetDescription("Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it captured in seconds and milliseconds.")
+	m.data.SetDescription("Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

@@ -559,7 +559,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["postgresql.wal.delay"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it captured in seconds and milliseconds.", ms.At(i).Description())
+					assert.Equal(t, "Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

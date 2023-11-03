@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -119,6 +120,37 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+func TestScraperNoDatabaseMultipleWithPreciseLagFeatureGate(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel", "open", "telemetry"})
+
+	cfg := createDefaultConfig().(*Config)
+
+	testutil.SetFeatureGateForTest(t, preciseLagMetricsFg, true)
+	cfg.Metrics.PostgresqlWalDelay.Enabled = true
+	defer testutil.SetFeatureGateForTest(t, preciseLagMetricsFg, false)
+
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
+	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled == false)
+	cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected_precise_lag.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	fmt.Println(actualMetrics.ResourceMetrics())
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
