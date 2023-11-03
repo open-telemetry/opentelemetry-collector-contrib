@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/fluent/fluent-logger-golang v1.9.0
-	github.com/jaegertracing/jaeger v1.48.0
+	github.com/jaegertracing/jaeger v1.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.90.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.90.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.90.1
@@ -187,7 +187,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.90.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
-	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.2 // indirect
 	github.com/ovh/go-ovh v1.4.3 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
@@ -211,8 +210,6 @@ require (
 	github.com/tinylib/msgp v1.1.9 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
-	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
-	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
