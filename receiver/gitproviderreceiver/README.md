@@ -58,12 +58,8 @@ A more complete example using the GitHub & GitLab scrapers with authentication i
 
 ```yaml
 extensions:
-    basicauth/github:
-        client_auth:
-            username: ${env:GH_USER}
-            password: ${env:GH_PAT}
-    bearertokenauth/gitlab:
-        token: ${env:GITLAB_PAT}
+    bearertokenauth/github:
+        token: ${env:GH_PAT}
 
 receivers:
     gitprovider:
@@ -78,9 +74,9 @@ receivers:
                 search_query: "org:myfancyorg topic:o11yalltheway" #optional query override, defaults to "{org,user}:<github_org>"
                 endpoint: "https://selfmanagedenterpriseserver.com"
                 auth:
-                    authenticator: basicauth/github
+                    authenticator: bearertokenauth/github
 service:
-    extensions: [basicauth/github, bearertokenauth/gitlab]
+    extensions: [bearertokenauth/github]
     pipelines:
         metrics:
             receivers: [..., gitprovider]
