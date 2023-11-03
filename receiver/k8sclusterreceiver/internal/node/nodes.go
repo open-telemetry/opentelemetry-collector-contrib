@@ -49,19 +49,25 @@ func Transform(node *corev1.Node) *corev1.Node {
 	return newNode
 }
 
-func RecordMetrics(mb *imetadata.MetricsBuilder, rb *metadata.ResourceBuilder, node *corev1.Node, ts pcommon.Timestamp) {
+type nodeMetadataAttachFunc = func(node *corev1.Node, res pcommon.Resource)
+
+func RecordMetrics(mb *imetadata.MetricsBuilder, attachNodeMetadataFn nodeMetadataAttachFunc, node *corev1.Node, ts pcommon.Timestamp) {
 	for _, c := range node.Status.Conditions {
 		mb.RecordK8sNodeConditionDataPoint(ts, nodeConditionValues[c.Status], string(c.Type))
 	}
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 	rb.SetK8sKubeproxyVersion(node.Status.NodeInfo.KubeProxyVersion)
 
-	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
+	res := rb.Emit()
+	attachNodeMetadataFn(node, res)
+
+	mb.EmitForResource(imetadata.WithResource(res))
 }
 
-func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, node *corev1.Node, nodeConditionTypesToReport,
+func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, attachNodeMetadataFn nodeMetadataAttachFunc, node *corev1.Node, nodeConditionTypesToReport,
 	allocatableTypesToReport []string, ts pcommon.Timestamp) pmetric.ResourceMetrics {
 	rm := pmetric.NewResourceMetrics()
 
@@ -111,7 +117,10 @@ func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, no
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 	rb.SetK8sKubeproxyVersion(node.Status.NodeInfo.KubeProxyVersion)
-	rb.Emit().MoveTo(rm.Resource())
+
+	res := rb.Emit()
+	attachNodeMetadataFn(node, res)
+	res.MoveTo(rm.Resource())
 	return rm
 }
 

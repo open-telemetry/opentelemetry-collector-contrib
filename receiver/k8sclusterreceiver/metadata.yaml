@@ -32,14 +32,16 @@ resource_attributes:
     type: string
     enabled: true
 
+  # lables will be flattened into k8s.node.labels.<label_name>
   k8s.node.labels:
     description: The k8s node labels.
-    type: map
+    type: string
     enabled: false
 
+  # annotations will be flattened into k8s.node.annotations.<annotation_name>
   k8s.node.annotations:
     description: The k8s node annotations.
-    type: map
+    type: string
     enabled: false
 
   container.id:

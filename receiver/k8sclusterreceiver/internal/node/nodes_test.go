@@ -26,7 +26,7 @@ import (
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
 	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
-	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, n,
+	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, func(*corev1.Node, pcommon.Resource) {}, n,
 		[]string{
 			"Ready",
 			"MemoryPressure",
@@ -68,7 +68,7 @@ func TestNodeOptionalMetrics(t *testing.T) {
 	rac.K8sKubeproxyVersion.Enabled = true
 
 	rb := metadata.NewResourceBuilder(rac)
-	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, n,
+	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, func(*corev1.Node, pcommon.Resource) {}, n,
 		[]string{},
 		[]string{
 			"cpu",
@@ -165,7 +165,7 @@ func TestNodeMetrics(t *testing.T) {
 	mbc := metadata.DefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sNodeCondition.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
-	RecordMetrics(mb, mb.NewResourceBuilder(), n, ts)
+	RecordMetrics(mb, func(*corev1.Node, pcommon.Resource) {}, n, ts)
 	m := mb.Emit()
 
 	expectedFile := filepath.Join("testdata", "expected_mdatagen.yaml")

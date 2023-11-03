@@ -7,26 +7,18 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: test-node-1
-        - key: k8s.node.labels
+        - key: k8s.node.labels.label-1
           value:
-            kvlistValue:
-              values:
-                - key: label-2
-                  value:
-                    stringValue: label-2
-                - key: label-1
-                  value:
-                    stringValue: label-1
-        - key: k8s.node.annotations
+            stringValue: label-1
+        - key: k8s.node.labels.label-2
           value:
-            kvlistValue:
-              values:
-                - key: annotation-1
-                  value:
-                    stringValue: annotation-1
-                - key: annotation-2
-                  value:
-                    stringValue: annotation-2
+            stringValue: label-2
+        - key: k8s.node.annotations.annotation-1
+          value:
+            stringValue: annotation-1
+        - key: k8s.node.annotations.annotation-2
+          value:
+            stringValue: annotation-2
         - key: k8s.pod.name
           value:
             stringValue: test-pod-1
@@ -51,26 +43,18 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: test-node-1
-        - key: k8s.node.labels
+        - key: k8s.node.labels.label-1
           value:
-            kvlistValue:
-              values:
-                - key: label-2
-                  value:
-                    stringValue: label-2
-                - key: label-1
-                  value:
-                    stringValue: label-1
-        - key: k8s.node.annotations
+            stringValue: label-1
+        - key: k8s.node.labels.label-2
           value:
-            kvlistValue:
-              values:
-                - key: annotation-1
-                  value:
-                    stringValue: annotation-1
-                - key: annotation-2
-                  value:
-                    stringValue: annotation-2
+            stringValue: label-2
+        - key: k8s.node.annotations.annotation-1
+          value:
+            stringValue: annotation-1
+        - key: k8s.node.annotations.annotation-2
+          value:
+            stringValue: annotation-2
         - key: k8s.node.uid
           value:
             stringValue: test-node-1-uid
@@ -88,26 +72,18 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: k8s.node.annotations
+        - key: k8s.node.annotations.foo1
           value:
-            kvlistValue:
-              values:
-                - key: foo
-                  value:
-                    stringValue: bar
-                - key: foo1
-                  value:
-                    stringValue: ""
-        - key: k8s.node.labels
+            stringValue: ""
+        - key: k8s.node.annotations.foo
           value:
-            kvlistValue:
-              values:
-                - key: foo1
-                  value:
-                    stringValue: ""
-                - key: foo
-                  value:
-                    stringValue: bar
+            stringValue: bar
+        - key: k8s.node.labels.foo1
+          value:
+            stringValue: ""
+        - key: k8s.node.labels.foo
+          value:
+            stringValue: bar
         - key: k8s.node.name
           value:
             stringValue: test-node-2
@@ -146,26 +122,18 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: test-node-1
-        - key: k8s.node.labels
+        - key: k8s.node.labels.label-1
           value:
-            kvlistValue:
-              values:
-                - key: label-2
-                  value:
-                    stringValue: label-2
-                - key: label-1
-                  value:
-                    stringValue: label-1
-        - key: k8s.node.annotations
+            stringValue: label-1
+        - key: k8s.node.labels.label-2
           value:
-            kvlistValue:
-              values:
-                - key: annotation-1
-                  value:
-                    stringValue: annotation-1
-                - key: annotation-2
-                  value:
-                    stringValue: annotation-2
+            stringValue: label-2
+        - key: k8s.node.annotations.annotation-1
+          value:
+            stringValue: annotation-1
+        - key: k8s.node.annotations.annotation-2
+          value:
+            stringValue: annotation-2
         - key: k8s.pod.name
           value:
             stringValue: test-pod-1

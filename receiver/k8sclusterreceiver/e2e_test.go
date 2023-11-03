@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -86,20 +87,13 @@ func TestE2E(t *testing.T) {
 
 	actual := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
 
-	// filter out built-in labels
+	// mask built-in labels
 	rms := actual.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		if m, ok := rms.At(i).Resource().Attributes().Get("k8s.node.labels"); ok {
-			newRawMap := make(map[string]any)
-			for k, v := range m.Map().AsRaw() {
-				if strings.Contains(k, "kubernetes.io") {
-					// skip this label
-					continue
-				}
-				newRawMap[k] = v
-			}
-			require.NoError(t, m.FromRaw(newRawMap))
-		}
+		rms.At(i).Resource().Attributes().RemoveIf(func(name string, _ pcommon.Value) bool {
+			// k8s built-in labels (k8s.node.labels.beta.kubernetes.io/arch, k8s.node.labels.kubernetes.io/os etc)
+			return strings.HasPrefix(name, "k8s.node.labels.") && strings.Contains(name, "kubernetes.io")
+		})
 	}
 
 	require.NoError(t, pmetrictest.CompareMetrics(expected, actual,

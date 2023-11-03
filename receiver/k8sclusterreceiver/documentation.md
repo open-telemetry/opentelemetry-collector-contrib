@@ -440,8 +440,8 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.kubeproxy.version | The version of Kube Proxy running on the node. | Any Str | false |
 | k8s.namespace.name | The k8s namespace name. | Any Str | true |
 | k8s.namespace.uid | The k8s namespace uid. | Any Str | true |
-| k8s.node.annotations | The k8s node annotations. | Any Map | false |
-| k8s.node.labels | The k8s node labels. | Any Map | false |
+| k8s.node.annotations | The k8s node annotations. | Any Str | false |
+| k8s.node.labels | The k8s node labels. | Any Str | false |
 | k8s.node.name | The k8s node name. | Any Str | true |
 | k8s.node.uid | The k8s node uid. | Any Str | true |
 | k8s.pod.name | The k8s pod name. | Any Str | true |

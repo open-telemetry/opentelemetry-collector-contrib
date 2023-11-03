@@ -63,7 +63,7 @@ func NewDataCollector(set receiver.CreateSettings, ms *metadata.Store,
 	}
 }
 
-func (dc *DataCollector) attachNodeMetadata(nodeName string, rb *metadata.ResourceBuilder) {
+func (dc *DataCollector) attachNodeMetadataByName(nodeName string, res pcommon.Resource) {
 	if !dc.enableNodeAnnotations && !dc.enableNodeLabels {
 		return
 	}
@@ -75,33 +75,32 @@ func (dc *DataCollector) attachNodeMetadata(nodeName string, rb *metadata.Resour
 	}
 	node := obj.(*corev1.Node)
 
-	dc.attachNodeLabels(node, rb)
-	dc.attachNodeAnnations(node, rb)
+	dc.attachNodeMetadata(node, res)
 }
 
-func (dc *DataCollector) attachNodeLabels(node *corev1.Node, rb *metadata.ResourceBuilder) {
+func (dc *DataCollector) attachNodeMetadata(node *corev1.Node, res pcommon.Resource) {
+	dc.attachNodeLabels(node, res)
+	dc.attachNodeAnnations(node, res)
+}
+
+func (dc *DataCollector) attachNodeLabels(node *corev1.Node, res pcommon.Resource) {
 	if !dc.enableNodeLabels {
 		return
 	}
 
-	attrs := make(map[string]any, len(node.Labels))
 	for k, v := range node.Labels {
-		attrs[k] = v
+		res.Attributes().PutStr("k8s.node.labels."+k, v)
 	}
-
-	rb.SetK8sNodeLabels(attrs)
 }
-func (dc *DataCollector) attachNodeAnnations(node *corev1.Node, rb *metadata.ResourceBuilder) {
+func (dc *DataCollector) attachNodeAnnations(node *corev1.Node, res pcommon.Resource) {
 	if !dc.enableNodeAnnotations {
 		return
 	}
 
-	attrs := make(map[string]any, len(node.Annotations))
 	for k, v := range node.Annotations {
-		attrs[k] = v
+		res.Attributes().PutStr("k8s.node.annotations."+k, v)
 	}
 
-	rb.SetK8sNodeAnnotations(attrs)
 }
 
 func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metrics {
@@ -109,27 +108,15 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 	customRMs := pmetric.NewResourceMetricsSlice()
 
 	dc.metadataStore.ForEach(gvk.Pod, func(o any) {
-		pod.RecordMetrics(dc.settings.Logger, dc.metricsBuilder, dc.attachNodeMetadata, o.(*corev1.Pod), ts)
+		pod.RecordMetrics(dc.settings.Logger, dc.metricsBuilder, dc.attachNodeMetadataByName, o.(*corev1.Pod), ts)
 	})
 	dc.metadataStore.ForEach(gvk.Node, func(o any) {
-		n := o.(*corev1.Node)
-		{
-			rb := dc.metricsBuilder.NewResourceBuilder()
-			dc.attachNodeLabels(n, rb)
-			dc.attachNodeAnnations(n, rb)
-
-			crm := node.CustomMetrics(dc.settings, rb, n,
-				dc.nodeConditionsToReport, dc.allocatableTypesToReport, ts)
-			if crm.ScopeMetrics().Len() > 0 {
-				crm.MoveTo(customRMs.AppendEmpty())
-			}
+		crm := node.CustomMetrics(dc.settings, dc.metricsBuilder.NewResourceBuilder(), dc.attachNodeMetadata, o.(*corev1.Node),
+			dc.nodeConditionsToReport, dc.allocatableTypesToReport, ts)
+		if crm.ScopeMetrics().Len() > 0 {
+			crm.MoveTo(customRMs.AppendEmpty())
 		}
-		{
-			rb := dc.metricsBuilder.NewResourceBuilder()
-			dc.attachNodeLabels(n, rb)
-			dc.attachNodeAnnations(n, rb)
-			node.RecordMetrics(dc.metricsBuilder, rb, n, ts)
-		}
+		node.RecordMetrics(dc.metricsBuilder, dc.attachNodeMetadata, o.(*corev1.Node), ts)
 	})
 	dc.metadataStore.ForEach(gvk.Namespace, func(o any) {
 		namespace.RecordMetrics(dc.metricsBuilder, o.(*corev1.Namespace), ts)
