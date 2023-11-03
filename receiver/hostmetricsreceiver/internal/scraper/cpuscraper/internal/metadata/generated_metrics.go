@@ -62,6 +62,57 @@ var MapAttributeState = map[string]AttributeState{
 	"wait":      AttributeStateWait,
 }
 
+type metricSystemCPUFrequency struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.cpu.frequency metric with initial data.
+func (m *metricSystemCPUFrequency) init() {
+	m.data.SetName("system.cpu.frequency")
+	m.data.SetDescription("Current frequency of the CPU core in Hz.")
+	m.data.SetUnit("Hz")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemCPUFrequency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("cpu", cpuAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemCPUFrequency) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemCPUFrequency) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemCPUFrequency(cfg MetricConfig) metricSystemCPUFrequency {
+	m := metricSystemCPUFrequency{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemCPULogicalCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -278,6 +329,7 @@ type MetricsBuilder struct {
 	metricsCapacity              int                  // maximum observed number of metrics per resource.
 	metricsBuffer                pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                    component.BuildInfo  // contains version information.
+	metricSystemCPUFrequency     metricSystemCPUFrequency
 	metricSystemCPULogicalCount  metricSystemCPULogicalCount
 	metricSystemCPUPhysicalCount metricSystemCPUPhysicalCount
 	metricSystemCPUTime          metricSystemCPUTime
@@ -300,6 +352,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                pmetric.NewMetrics(),
 		buildInfo:                    settings.BuildInfo,
+		metricSystemCPUFrequency:     newMetricSystemCPUFrequency(mbc.Metrics.SystemCPUFrequency),
 		metricSystemCPULogicalCount:  newMetricSystemCPULogicalCount(mbc.Metrics.SystemCPULogicalCount),
 		metricSystemCPUPhysicalCount: newMetricSystemCPUPhysicalCount(mbc.Metrics.SystemCPUPhysicalCount),
 		metricSystemCPUTime:          newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
@@ -361,6 +414,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/cpu")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricSystemCPUFrequency.emit(ils.Metrics())
 	mb.metricSystemCPULogicalCount.emit(ils.Metrics())
 	mb.metricSystemCPUPhysicalCount.emit(ils.Metrics())
 	mb.metricSystemCPUTime.emit(ils.Metrics())
@@ -383,6 +437,11 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordSystemCPUFrequencyDataPoint adds a data point to system.cpu.frequency metric.
+func (mb *MetricsBuilder) RecordSystemCPUFrequencyDataPoint(ts pcommon.Timestamp, val float64, cpuAttributeValue string) {
+	mb.metricSystemCPUFrequency.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue)
 }
 
 // RecordSystemCPULogicalCountDataPoint adds a data point to system.cpu.logical.count metric.
