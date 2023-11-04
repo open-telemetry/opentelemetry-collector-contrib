@@ -197,6 +197,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // been read this polling interval
 func (m *Manager) makeReaders(paths []string) []*reader.Reader {
 	readers := make([]*reader.Reader, 0, len(paths))
+OUTER:
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
@@ -210,7 +211,7 @@ func (m *Manager) makeReaders(paths []string) []*reader.Reader {
 				if err := file.Close(); err != nil {
 					m.Debugw("problem closing file", zap.Error(err))
 				}
-				continue
+				continue OUTER
 			}
 		}
 
