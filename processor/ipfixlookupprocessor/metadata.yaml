@@ -1,0 +1,9 @@
+type: ipfixlookup
+
+status:
+  class: connector
+  stability:
+    development: [traces_to_traces]
+  distributions: [contrib]
+  codeowners:
+    active: [tbd]
