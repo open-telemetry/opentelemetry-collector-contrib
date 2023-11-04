@@ -13,7 +13,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -147,8 +146,8 @@ func (r *Reader) delete() {
 	}
 }
 
-// Close will close the file
-func (r *Reader) Close() {
+// Close will close the file and return the metadata
+func (r *Reader) Close() *Metadata {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.logger.Debugw("Problem closing reader", zap.Error(err))
@@ -161,6 +160,9 @@ func (r *Reader) Close() {
 			r.logger.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
+	m := r.Metadata
+	r.Metadata = nil
+	return m
 }
 
 // Read from the file and update the fingerprint if necessary
@@ -196,27 +198,17 @@ func (r *Reader) NameEquals(other *Reader) bool {
 	return r.fileName == other.fileName
 }
 
-// ValidateOrClose returns true if the reader still has a valid file handle, false otherwise.
-// If false is returned, the file handle should be considered closed.
-//
-// It may create a new fingerprint from the old file handle and compare it to the
-// previously known fingerprint. If there has been a change to the fingerprint
-// (other than appended data), the file is considered truncated. Consequently, the
-// reader will automatically close the file and drop the handle.
-func (r *Reader) ValidateOrClose() bool {
+// Validate returns true if the reader still has a valid file handle, false otherwise.
+func (r *Reader) Validate() bool {
 	if r.file == nil {
 		return false
 	}
 	refreshedFingerprint, err := fingerprint.New(r.file, r.FingerprintSize)
 	if err != nil {
-		r.logger.Debugw("Closing unreadable file", zap.Error(err), zap.String(attrs.LogFileName, r.fileName))
-		r.Close()
 		return false
 	}
 	if refreshedFingerprint.StartsWith(r.Fingerprint) {
 		return true
 	}
-	r.logger.Debugw("Closing truncated file", zap.String(attrs.LogFileName, r.fileName))
-	r.Close()
 	return false
 }
