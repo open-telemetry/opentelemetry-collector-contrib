@@ -6,6 +6,7 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -29,8 +30,9 @@ type router[C any] struct {
 	logger *zap.Logger
 	parser ottl.Parser[ottlresource.TransformContext]
 
-	table  []RoutingTableItem
-	routes map[string]routingItem[C]
+	table      []RoutingTableItem
+	routes     map[string]routingItem[C]
+	routeSlice []routingItem[C]
 
 	defaultConsumer  C
 	consumerProvider consumerProvider[C]
@@ -70,6 +72,7 @@ func newRouter[C any](
 
 type routingItem[C any] struct {
 	consumer  C
+	order     int
 	statement *ottl.Statement[ottlresource.TransformContext]
 }
 
@@ -125,9 +128,20 @@ func (r *router[C]) registerRouteConsumers() error {
 			return fmt.Errorf("%w: %s", errPipelineNotFound, err.Error())
 		}
 		route.consumer = consumer
+		route.order = item.Order
 
 		r.routes[key(item)] = route
 	}
+
+	// copy to list
+	for _, route := range r.routes {
+		r.routeSlice = append(r.routeSlice, route)
+	}
+
+	// sort
+	sort.Slice(r.routeSlice, func(i, j int) bool {
+		return r.routeSlice[i].order < r.routeSlice[j].order
+	})
 	return nil
 }
 

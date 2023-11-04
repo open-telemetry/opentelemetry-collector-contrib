@@ -39,6 +39,11 @@ type Config struct {
 	// Table contains the routing table for this processor.
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
+
+	// MatchOnce determines whether the connector matches multiple statements.
+	// Valid values are `true` and `false`.
+	// Optional.
+	MatchOnce bool `mapstructure:"match_once"`
 }
 
 // Validate checks if the processor configuration is valid.
@@ -75,4 +80,9 @@ type RoutingTableItem struct {
 	// The routing processor will fail upon the first failure from these pipelines.
 	// Optional.
 	Pipelines []component.ID `mapstructure:"pipelines"`
+
+	// Order will affect the priority of the statement, when the smaller the Order, the higher
+	// the priority of the statement
+	// Optional.
+	Order int `mapstructure:"order"`
 }
