@@ -1,0 +1,640 @@
+{
+  "took": 19,
+  "timed_out": false,
+  "_shards": {
+    "total": 12,
+    "successful": 12,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 3,
+      "relation": "eq"
+    },
+    "max_score": 5.000033,
+    "hits": [
+      {
+        "_index": ".ds-logs-netflow.log-default-2023.11.29-000003",
+        "_id": "PFRtJIwB9hE7__H6RRK1",
+        "_score": 5.000033,
+        "fields": {
+          "flow.id": [
+            "kmkdh7501nI"
+          ],
+          "elastic_agent.version": [
+            "8.10.2"
+          ],
+          "event.category": [
+            "network"
+          ],
+          "netflow.ip_class_of_service": [
+            0
+          ],
+          "netflow.source_transport_port": [
+            35340
+          ],
+          "netflow.tcp_control_bits": [
+            27
+          ],
+          "netflow.exporter.version": [
+            9
+          ],
+          "netflow.exporter.address": [
+            "192.168.200.110:10029"
+          ],
+          "netflow.ip_version": [
+            4
+          ],
+          "source.ip": [
+            "10.0.10.10"
+          ],
+          "agent.name": [
+            "ipfix-agent-ch4cq"
+          ],
+          "network.community_id": [
+            "1:WKydzbXVu9IwFFuVVrA/KwJFFNA="
+          ],
+          "event.agent_id_status": [
+            "auth_metadata_missing"
+          ],
+          "event.kind": [
+            "event"
+          ],
+          "source.packets": [
+            7
+          ],
+          "network.packets": [
+            7
+          ],
+          "netflow.destination_ipv4_address": [
+            "10.0.20.20"
+          ],
+          "netflow.flow_start_sys_up_time": [
+            321294019
+          ],
+          "flow.locality": [
+            "internal"
+          ],
+          "input.type": [
+            "netflow"
+          ],
+          "data_stream.type": [
+            "logs"
+          ],
+          "tags": [
+            "netflow",
+            "forwarded"
+          ],
+          "agent.id": [
+            "4267406d-d5d3-489b-8dd7-76cc7e1d336e"
+          ],
+          "source.port": [
+            35340
+          ],
+          "ecs.version": [
+            "8.10.0"
+          ],
+          "event.created": [
+            "2023-12-01T08:09:49.256Z"
+          ],
+          "network.iana_number": [
+            "6"
+          ],
+          "agent.version": [
+            "8.10.2"
+          ],
+          "event.start": [
+            "2023-12-01T08:09:43.307Z"
+          ],
+          "observer.ip": [
+            "192.168.200.110"
+          ],
+          "netflow.source_ipv4_address": [
+            "10.0.10.10"
+          ],
+          "netflow.type": [
+            "netflow_flow"
+          ],
+          "destination.port": [
+            3001
+          ],
+          "netflow.flow_end_sys_up_time": [
+            321294473
+          ],
+          "event.end": [
+            "2023-12-01T08:09:43.761Z"
+          ],
+          "netflow.octet_delta_count": [
+            834
+          ],
+          "agent.type": [
+            "filebeat"
+          ],
+          "netflow.exporter.source_id": [
+            0
+          ],
+          "event.module": [
+            "netflow"
+          ],
+          "related.ip": [
+            "10.0.10.10",
+            "10.0.20.20"
+          ],
+          "netflow.ingress_interface": [
+            1
+          ],
+          "netflow.packet_delta_count": [
+            7
+          ],
+          "network.bytes": [
+            834
+          ],
+          "elastic_agent.snapshot": [
+            false
+          ],
+          "network.direction": [
+            "internal"
+          ],
+          "network.type": [
+            "ipv4"
+          ],
+          "netflow.exporter.uptime_millis": [
+            321299712
+          ],
+          "source.bytes": [
+            834
+          ],
+          "destination.locality": [
+            "internal"
+          ],
+          "elastic_agent.id": [
+            "4267406d-d5d3-489b-8dd7-76cc7e1d336e"
+          ],
+          "data_stream.namespace": [
+            "default"
+          ],
+          "netflow.destination_transport_port": [
+            3001
+          ],
+          "netflow.exporter.timestamp": [
+            "2023-12-01T08:09:49.000Z"
+          ],
+          "destination.ip": [
+            "10.0.20.20"
+          ],
+          "source.locality": [
+            "internal"
+          ],
+          "network.transport": [
+            "tcp"
+          ],
+          "event.duration": [
+            454000000
+          ],
+          "netflow.protocol_identifier": [
+            6
+          ],
+          "event.action": [
+            "netflow_flow"
+          ],
+          "event.ingested": [
+            "2023-12-01T08:09:50Z"
+          ],
+          "@timestamp": [
+            "2023-12-01T08:09:49.000Z"
+          ],
+          "data_stream.dataset": [
+            "netflow.log"
+          ],
+          "event.type": [
+            "connection"
+          ],
+          "agent.ephemeral_id": [
+            "2c589e2c-2889-415c-a1d3-abc7aeb27f41"
+          ],
+          "event.dataset": [
+            "netflow.log"
+          ],
+          "netflow.egress_interface": [
+            1
+          ]
+        }
+      },
+      {
+        "_index": ".ds-logs-netflow.log-default-2023.11.29-000003",
+        "_id": "vlRuJIwB9hE7__H68RdM",
+        "_score": 5.000033,
+        "fields": {
+          "flow.id": [
+            "kmkdh7501nI"
+          ],
+          "elastic_agent.version": [
+            "8.10.2"
+          ],
+          "event.category": [
+            "network"
+          ],
+          "netflow.ip_class_of_service": [
+            0
+          ],
+          "netflow.source_transport_port": [
+            35340
+          ],
+          "netflow.tcp_control_bits": [
+            27
+          ],
+          "netflow.exporter.version": [
+            9
+          ],
+          "netflow.exporter.address": [
+            "192.168.200.110:4556"
+          ],
+          "netflow.ip_version": [
+            4
+          ],
+          "source.ip": [
+            "10.0.10.10"
+          ],
+          "agent.name": [
+            "ipfix-agent-ch4cq"
+          ],
+          "network.community_id": [
+            "1:WKydzbXVu9IwFFuVVrA/KwJFFNA="
+          ],
+          "event.agent_id_status": [
+            "auth_metadata_missing"
+          ],
+          "event.kind": [
+            "event"
+          ],
+          "source.packets": [
+            7
+          ],
+          "network.packets": [
+            7
+          ],
+          "netflow.destination_ipv4_address": [
+            "10.0.20.20"
+          ],
+          "netflow.flow_start_sys_up_time": [
+            321294158
+          ],
+          "flow.locality": [
+            "internal"
+          ],
+          "input.type": [
+            "netflow"
+          ],
+          "data_stream.type": [
+            "logs"
+          ],
+          "tags": [
+            "netflow",
+            "forwarded"
+          ],
+          "agent.id": [
+            "4267406d-d5d3-489b-8dd7-76cc7e1d336e"
+          ],
+          "source.port": [
+            35340
+          ],
+          "ecs.version": [
+            "8.10.0"
+          ],
+          "event.created": [
+            "2023-12-01T08:11:38.867Z"
+          ],
+          "network.iana_number": [
+            "6"
+          ],
+          "agent.version": [
+            "8.10.2"
+          ],
+          "event.start": [
+            "2023-12-01T08:09:43.101Z"
+          ],
+          "observer.ip": [
+            "192.168.200.110"
+          ],
+          "netflow.source_ipv4_address": [
+            "10.0.10.10"
+          ],
+          "netflow.type": [
+            "netflow_flow"
+          ],
+          "destination.port": [
+            3001
+          ],
+          "netflow.flow_end_sys_up_time": [
+            321294470
+          ],
+          "event.end": [
+            "2023-12-01T08:09:43.413Z"
+          ],
+          "netflow.octet_delta_count": [
+            834
+          ],
+          "agent.type": [
+            "filebeat"
+          ],
+          "netflow.exporter.source_id": [
+            0
+          ],
+          "event.module": [
+            "netflow"
+          ],
+          "related.ip": [
+            "10.0.10.10",
+            "10.0.20.20"
+          ],
+          "netflow.ingress_interface": [
+            2
+          ],
+          "netflow.packet_delta_count": [
+            7
+          ],
+          "network.bytes": [
+            834
+          ],
+          "elastic_agent.snapshot": [
+            false
+          ],
+          "network.direction": [
+            "internal"
+          ],
+          "network.type": [
+            "ipv4"
+          ],
+          "netflow.exporter.uptime_millis": [
+            321409057
+          ],
+          "source.bytes": [
+            834
+          ],
+          "destination.locality": [
+            "internal"
+          ],
+          "elastic_agent.id": [
+            "4267406d-d5d3-489b-8dd7-76cc7e1d336e"
+          ],
+          "data_stream.namespace": [
+            "default"
+          ],
+          "netflow.destination_transport_port": [
+            3001
+          ],
+          "netflow.exporter.timestamp": [
+            "2023-12-01T08:11:38.000Z"
+          ],
+          "destination.ip": [
+            "10.0.20.20"
+          ],
+          "source.locality": [
+            "internal"
+          ],
+          "network.transport": [
+            "tcp"
+          ],
+          "event.duration": [
+            312000000
+          ],
+          "netflow.protocol_identifier": [
+            6
+          ],
+          "event.action": [
+            "netflow_flow"
+          ],
+          "event.ingested": [
+            "2023-12-01T08:11:39Z"
+          ],
+          "@timestamp": [
+            "2023-12-01T08:11:38.000Z"
+          ],
+          "data_stream.dataset": [
+            "netflow.log"
+          ],
+          "event.type": [
+            "connection"
+          ],
+          "agent.ephemeral_id": [
+            "2c589e2c-2889-415c-a1d3-abc7aeb27f41"
+          ],
+          "event.dataset": [
+            "netflow.log"
+          ],
+          "netflow.egress_interface": [
+            2
+          ]
+        }
+      },
+      {
+        "_index": ".ds-logs-netflow.log-default-2023.11.29-000003",
+        "_id": "0FRuJIwB9hE7__H6-xhC",
+        "_score": 5.000033,
+        "fields": {
+          "flow.id": [
+            "kmkdh7501nI"
+          ],
+          "elastic_agent.version": [
+            "8.10.2"
+          ],
+          "event.category": [
+            "network"
+          ],
+          "netflow.ip_class_of_service": [
+            0
+          ],
+          "netflow.source_transport_port": [
+            35340
+          ],
+          "netflow.tcp_control_bits": [
+            27
+          ],
+          "netflow.exporter.version": [
+            9
+          ],
+          "netflow.exporter.address": [
+            "192.168.200.120:3455"
+          ],
+          "netflow.ip_version": [
+            4
+          ],
+          "source.ip": [
+            "10.0.10.10"
+          ],
+          "agent.name": [
+            "ipfix-agent-ch4cq"
+          ],
+          "network.community_id": [
+            "1:WKydzbXVu9IwFFuVVrA/KwJFFNA="
+          ],
+          "event.agent_id_status": [
+            "auth_metadata_missing"
+          ],
+          "event.kind": [
+            "event"
+          ],
+          "source.packets": [
+            7
+          ],
+          "network.packets": [
+            7
+          ],
+          "netflow.destination_ipv4_address": [
+            "10.0.20.20"
+          ],
+          "netflow.flow_start_sys_up_time": [
+            321292160
+          ],
+          "flow.locality": [
+            "internal"
+          ],
+          "input.type": [
+            "netflow"
+          ],
+          "data_stream.type": [
+            "logs"
+          ],
+          "tags": [
+            "netflow",
+            "forwarded"
+          ],
+          "agent.id": [
+            "4267406d-d5d3-489b-8dd7-76cc7e1d336e"
+          ],
+          "source.port": [
+            35340
+          ],
+          "ecs.version": [
+            "8.10.0"
+          ],
+          "event.created": [
+            "2023-12-01T08:11:41.275Z"
+          ],
+          "network.iana_number": [
+            "6"
+          ],
+          "agent.version": [
+            "8.10.2"
+          ],
+          "event.start": [
+            "2023-12-01T08:09:43.543Z"
+          ],
+          "observer.ip": [
+            "192.168.200.120"
+          ],
+          "netflow.source_ipv4_address": [
+            "10.0.10.10"
+          ],
+          "netflow.type": [
+            "netflow_flow"
+          ],
+          "destination.port": [
+            3001
+          ],
+          "netflow.flow_end_sys_up_time": [
+            321292471
+          ],
+          "event.end": [
+            "2023-12-01T08:09:43.854Z"
+          ],
+          "netflow.octet_delta_count": [
+            834
+          ],
+          "agent.type": [
+            "filebeat"
+          ],
+          "netflow.exporter.source_id": [
+            0
+          ],
+          "event.module": [
+            "netflow"
+          ],
+          "related.ip": [
+            "10.0.10.10",
+            "10.0.20.20"
+          ],
+          "netflow.ingress_interface": [
+            2
+          ],
+          "netflow.packet_delta_count": [
+            7
+          ],
+          "network.bytes": [
+            834
+          ],
+          "elastic_agent.snapshot": [
+            false
+          ],
+          "network.direction": [
+            "internal"
+          ],
+          "network.type": [
+            "ipv4"
+          ],
+          "netflow.exporter.uptime_millis": [
+            321409617
+          ],
+          "source.bytes": [
+            834
+          ],
+          "destination.locality": [
+            "internal"
+          ],
+          "elastic_agent.id": [
+            "4267406d-d5d3-489b-8dd7-76cc7e1d336e"
+          ],
+          "data_stream.namespace": [
+            "default"
+          ],
+          "netflow.destination_transport_port": [
+            3001
+          ],
+          "netflow.exporter.timestamp": [
+            "2023-12-01T08:11:41.000Z"
+          ],
+          "destination.ip": [
+            "10.0.20.20"
+          ],
+          "source.locality": [
+            "internal"
+          ],
+          "network.transport": [
+            "tcp"
+          ],
+          "event.duration": [
+            311000000
+          ],
+          "netflow.protocol_identifier": [
+            6
+          ],
+          "event.action": [
+            "netflow_flow"
+          ],
+          "event.ingested": [
+            "2023-12-01T08:11:42Z"
+          ],
+          "@timestamp": [
+            "2023-12-01T08:11:41.000Z"
+          ],
+          "data_stream.dataset": [
+            "netflow.log"
+          ],
+          "event.type": [
+            "connection"
+          ],
+          "agent.ephemeral_id": [
+            "2c589e2c-2889-415c-a1d3-abc7aeb27f41"
+          ],
+          "event.dataset": [
+            "netflow.log"
+          ],
+          "netflow.egress_interface": [
+            2
+          ]
+        }
+      }
+    ]
+  }
+}

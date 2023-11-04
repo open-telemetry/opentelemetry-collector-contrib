@@ -1,0 +1,40 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeSpans:
+      - scope: {}
+        spans:
+          - attributes:
+              - key: span.optional
+                value:
+                  stringValue: bar
+            endTimeUnixNano: "1672527601000000000"
+            name: proxy
+            parentSpanId: ""
+            spanId: "1000000000000000"
+            startTimeUnixNano: "1672527600000000000"
+            status: {}
+            traceId: "10000000000000000000000000000000"
+          - attributes:
+              - key: http.host
+                value:
+                  stringValue: 10.0.20.20:3001
+              - key: net.peer.ip
+                value:
+                  stringValue: 10.0.10.10
+              - key: net.peer.port
+                value:
+                  stringValue: "54321"
+            endTimeUnixNano: "1672527604000000000"
+            name: server
+            parentSpanId: "1000000000000000"
+            spanId: "3000000000000000"
+            startTimeUnixNano: "1672527603000000000"
+            status: {}
+            traceId: "10000000000000000000000000000000"
