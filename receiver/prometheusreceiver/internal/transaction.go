@@ -203,7 +203,7 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 	return 0, nil
 }
 
-func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, _ int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
+func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -242,22 +242,34 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, _ i
 	// if metricName == scrapeUpMetricName {}
 
 	// For the `target_info` metric we need to convert it to resource attributes.
-	if metricName == targetMetricName {
-		t.AddTargetInfo(ls)
-		return 0, nil
-	}
+	// if metricName == targetMetricName {
+	// 	t.AddTargetInfo(ls)
+	// 	return 0, nil
+	// }
 
 	// For the `otel_scope_info` metric we need to convert it to scope attributes.
-	if metricName == scopeMetricName {
-		t.addScopeInfo(ls)
-		return 0, nil
+	// if metricName == scopeMetricName {
+	// 	t.addScopeInfo(ls)
+	// 	return 0, nil
+	// }
+
+	curMF := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
+	if curMF.mtype == pmetric.MetricTypeHistogram {
+		// Assume it was just created, turn into exponential histogram type.
+		curMF.mtype = pmetric.MetricTypeExponentialHistogram
+	}
+	err := curMF.addExponentialHistogramSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
+	if err != nil {
+		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 	}
 
-	// curMF := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
-	// err := curMF.addSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, val)
-	// if err != nil {
-	// 	t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
-	// }
+	t.logger.Info(
+		"added datapoint",
+		zap.String("metric_name", metricName),
+		zap.Any("labels", ls),
+		zap.Uint64("count", h.Count), zap.Float64("sum", h.Sum),
+		zap.Any("mtype", curMF.mtype.String()),
+	)
 
 	return 0, nil // never return errors, as that fails the whole scrape
 }

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/prometheus/prometheus/model/exemplar"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
@@ -49,6 +50,8 @@ type metricGroup struct {
 	hasSum       bool
 	created      float64
 	value        float64
+	hValue       *histogram.Histogram
+	fhValue      *histogram.FloatHistogram
 	complexValue []*dataPoint
 	exemplars    pmetric.ExemplarSlice
 }
@@ -153,6 +156,39 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
+	mg.setExemplars(point.Exemplars())
+}
+
+func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.ExponentialHistogramDataPointSlice) {
+	if !mg.hasCount {
+		return
+	}
+	point := dest.AppendEmpty()
+	point.SetTimestamp(timestampFromMs(mg.ts))
+
+	// We do not set Min or Max as native histograms don't have that information.
+	switch {
+	case mg.fhValue != nil:
+		fh := mg.fhValue
+		// Input is float native histogram. This is lose precision in this
+		// conversion but we don't actually expect float histograms in scrape,
+		// since these are typically the result of operations on integer
+		// native histograms.
+		point.SetScale(fh.Schema)
+		point.SetCount(uint64(fh.Count))
+		point.SetSum(fh.Sum)
+		point.SetZeroCount(uint64(fh.ZeroCount))
+	case mg.hValue != nil:
+		h := mg.hValue
+		point.SetScale(h.Schema)
+		point.SetCount(h.Count)
+		point.SetSum(h.Sum)
+		point.SetZeroCount(h.ZeroCount)
+	default:
+		// This should never happen.
+		return
+	}
+
 	mg.setExemplars(point.Exemplars())
 }
 
@@ -311,6 +347,25 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 	return nil
 }
 
+func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64,  h *histogram.Histogram, fh *histogram.FloatHistogram) error {
+	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
+	if mg.ts != t {
+		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
+	}
+	if mg.mtype != pmetric.MetricTypeExponentialHistogram {
+		return fmt.Errorf("metric type mismatch for exponential histogram metric %v type %s", metricName, mg.mtype.String())
+	}
+	if h != nil {
+		mg.count = float64(h.Count)
+		mg.sum = h.Sum
+		mg.hasCount = true
+		mg.hasSum = true
+		mg.hValue = h
+		mg.fhValue = fh
+	}
+	return nil
+}
+
 func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes bool) {
 	metric := pmetric.NewMetric()
 	// Trims type and unit suffixes from metric name
@@ -352,7 +407,16 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		}
 		pointCount = sdpL.Len()
 
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
+		histogram := metric.SetEmptyExponentialHistogram()
+		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		hdpL := histogram.DataPoints()
+		for _, mg := range mf.groupOrders {
+			mg.toExponentialHistogramDataPoints(hdpL)
+		}
+		pointCount = hdpL.Len()
+
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
 		fallthrough
 	default: // Everything else should be set to a Gauge.
 		gauge := metric.SetEmptyGauge()

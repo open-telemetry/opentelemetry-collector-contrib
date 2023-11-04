@@ -11,6 +11,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/scrape"
@@ -1461,6 +1462,51 @@ func TestMetricBuilderSummary(t *testing.T) {
 
 }
 
+func TestMetricBuilderNativeHistogram(t *testing.T) {
+	emptyH := &histogram.Histogram{
+		Schema: 1,
+		Count: 0,
+		Sum:   0,
+		ZeroThreshold: 0.001,
+		ZeroCount: 0,
+	}
+
+	tests := []buildTestData{
+		{
+			name: "empty integer histogram",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createHistogramDataPoint("hist_test", emptyH, nil, nil, "foo", "bar"),
+					},
+				},
+			},
+			wants: func() []pmetric.Metrics {
+				md0 := pmetric.NewMetrics()
+				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("hist_test")
+				m0.SetEmptyExponentialHistogram()
+				m0.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt0 := m0.ExponentialHistogram().DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetTimestamp(tsNanos)
+				pt0.SetCount(0)
+				pt0.SetSum(0)
+				pt0.SetScale(1)
+
+				return []pmetric.Metrics{md0}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.run(t)
+		})
+	}
+}
+
 type buildTestData struct {
 	name   string
 	inputs []*testScrapedPage
@@ -1477,7 +1523,15 @@ func (tt buildTestData) run(t *testing.T) {
 		for _, pt := range page.pts {
 			// set ts for testing
 			pt.t = st
-			_, err := tr.Append(0, pt.lb, pt.t, pt.v)
+			var err error
+			switch {
+				case pt.fh != nil:
+					_, err = tr.AppendHistogram(0, pt.lb, pt.t, nil, pt.fh)
+				case pt.h != nil:
+					_, err = tr.AppendHistogram(0, pt.lb, pt.t, pt.h, nil)
+				default:
+					_, err = tr.Append(0, pt.lb, pt.t, pt.v)
+			}
 			assert.NoError(t, err)
 
 			for _, e := range pt.exemplars {
@@ -1546,6 +1600,8 @@ type testDataPoint struct {
 	lb        labels.Labels
 	t         int64
 	v         float64
+	h         *histogram.Histogram
+	fh		  *histogram.FloatHistogram
 	exemplars []exemplar.Exemplar
 }
 
@@ -1567,6 +1623,14 @@ func createDataPoint(mname string, value float64, es []exemplar.Exemplar, tagPai
 		exemplars: es,
 	}
 }
+
+func createHistogramDataPoint(mname string, h *histogram.Histogram, fh *histogram.FloatHistogram, es []exemplar.Exemplar, tagPairs ...string) *testDataPoint {
+	dataPoint := createDataPoint(mname, 0, es, tagPairs...)
+	dataPoint.h = h
+	dataPoint.fh = fh
+	return dataPoint
+}
+
 
 func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 	require.Equal(t, want.ResourceMetrics().Len(), got.ResourceMetrics().Len())
