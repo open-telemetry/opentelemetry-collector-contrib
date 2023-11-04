@@ -6,5 +6,4 @@ receiver/carbonreceiver
 receiver/collectdreceiver
 receiver/dockerstatsreceiver
 receiver/journaldreceiver
-receiver/kafkareceiver
 receiver/windowseventlogreceiver
