@@ -211,6 +211,15 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 		return
 	}
 
+	tsNanos := timestampFromMs(mg.ts)
+	if mg.created != 0 {
+		point.SetStartTimestamp(timestampFromFloat64(mg.created))
+	} else {
+		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+		point.SetStartTimestamp(tsNanos)
+	}
+	point.SetTimestamp(tsNanos)
+	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
 	mg.setExemplars(point.Exemplars())
 }
 
