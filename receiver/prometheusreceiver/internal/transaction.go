@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -144,9 +145,26 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	}
 
 	curMF := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
+
+	if curMF.mtype == pmetric.MetricTypeExponentialHistogram {
+		// Prefer exponential histogram over float series.
+		return 0, nil
+	}
+
 	err := curMF.addSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, val)
 	if err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+	}
+
+	if strings.Contains(metricName, "manual_histogram") {
+		t.logger.Info(
+			"added float datapoint",
+			zap.String("metric_name", metricName),
+			zap.String("family_name", curMF.name),
+			zap.Any("labels", ls),
+			zap.Float64("Value", val),
+			zap.Any("mtype", curMF.mtype.String()),
+		)
 	}
 
 	return 0, nil // never return errors, as that fails the whole scrape
@@ -234,29 +252,17 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 		return 0, errMetricNameNotFound
 	}
 
-	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
-	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
-	// But it can also be a staleNaN, which is inserted when the target goes away.
-	// Native histogram: the up metric is generated as a counter so we can assume that
-	// this metric is user defined. Do explicit nothing with up metric to be consistent with Append()
-	// if metricName == scrapeUpMetricName {}
-
-	// For the `target_info` metric we need to convert it to resource attributes.
-	// if metricName == targetMetricName {
-	// 	t.AddTargetInfo(ls)
-	// 	return 0, nil
-	// }
-
-	// For the `otel_scope_info` metric we need to convert it to scope attributes.
-	// if metricName == scopeMetricName {
-	// 	t.addScopeInfo(ls)
-	// 	return 0, nil
-	// }
-
+	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms.
 	curMF := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
-	if curMF.mtype == pmetric.MetricTypeHistogram {
+	switch curMF.mtype {
+	case pmetric.MetricTypeExponentialHistogram:
+		break
+	case pmetric.MetricTypeHistogram:
 		// Assume it was just created, turn into exponential histogram type.
 		curMF.mtype = pmetric.MetricTypeExponentialHistogram
+	default:
+		// Do not add native histogram datapoints to other metric types.
+		return 0, nil
 	}
 	err := curMF.addExponentialHistogramSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
 	if err != nil {
@@ -264,8 +270,9 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	}
 
 	t.logger.Info(
-		"added datapoint",
+		"added native histogram datapoint",
 		zap.String("metric_name", metricName),
+		zap.String("family_name", curMF.name),
 		zap.Any("labels", ls),
 		zap.Uint64("count", h.Count), zap.Float64("sum", h.Sum),
 		zap.Any("mtype", curMF.mtype.String()),
