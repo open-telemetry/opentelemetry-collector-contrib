@@ -812,7 +812,7 @@ func TestIsStaleOrNaN_ExponentialHistogramDataPointSlice(t *testing.T) {
 			boolAssertFunc: assert.True,
 		},
 		{
-			name: "Exponential histogram with NaN Man",
+			name: "Exponential histogram with NaN Max",
 			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
 				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
 				histogramDP := histogramDPS.AppendEmpty()
