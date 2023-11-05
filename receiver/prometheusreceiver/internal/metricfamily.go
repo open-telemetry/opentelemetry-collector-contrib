@@ -182,11 +182,11 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 		point.SetZeroCount(uint64(fh.ZeroCount))
 
 		if len(fh.PositiveSpans) > 0 {
-			point.Positive().SetOffset(fh.PositiveSpans[0].Offset-1) // -1 because OTEL offset are for the lower bound, not the upper bound
+			point.Positive().SetOffset(fh.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 			convertAbsoluteBuckets(fh.PositiveSpans, fh.PositiveBuckets, point.Positive().BucketCounts())
 		}
 		if len(fh.NegativeSpans) > 0 {
-			point.Negative().SetOffset(fh.NegativeSpans[0].Offset-1) // -1 because OTEL offset are for the lower bound, not the upper bound
+			point.Negative().SetOffset(fh.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 			convertAbsoluteBuckets(fh.NegativeSpans, fh.NegativeBuckets, point.Negative().BucketCounts())
 		}
 
@@ -198,11 +198,11 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 		point.SetZeroCount(h.ZeroCount)
 
 		if len(h.PositiveSpans) > 0 {
-			point.Positive().SetOffset(h.PositiveSpans[0].Offset-1) // -1 because OTEL offset are for the lower bound, not the upper bound
+			point.Positive().SetOffset(h.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 			convertDeltaBuckets(h.PositiveSpans, h.PositiveBuckets, point.Positive().BucketCounts())
 		}
 		if len(h.NegativeSpans) > 0 {
-			point.Negative().SetOffset(h.NegativeSpans[0].Offset-1) // -1 because OTEL offset are for the lower bound, not the upper bound
+			point.Negative().SetOffset(h.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
 			convertDeltaBuckets(h.NegativeSpans, h.NegativeBuckets, point.Negative().BucketCounts())
 		}
 
@@ -234,14 +234,14 @@ func convertDeltaBuckets(spans []histogram.Span, deltas []int64, buckets pcommon
 			}
 		}
 		for i := uint32(0); i < span.Length; i++ {
-			bucketCount+=deltas[bucketIdx]
+			bucketCount += deltas[bucketIdx]
 			bucketIdx++
 			buckets.Append(uint64(bucketCount))
 		}
 	}
 }
 
-func convertAbsoluteBuckets(spans []histogram.Span, counts[]float64, buckets pcommon.UInt64Slice) {
+func convertAbsoluteBuckets(spans []histogram.Span, counts []float64, buckets pcommon.UInt64Slice) {
 	buckets.EnsureCapacity(len(counts))
 	bucketIdx := 0
 	for spanIdx, span := range spans {
@@ -412,7 +412,7 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 	return nil
 }
 
-func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64,  h *histogram.Histogram, fh *histogram.FloatHistogram) error {
+func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
 	if mg.ts != t {
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)

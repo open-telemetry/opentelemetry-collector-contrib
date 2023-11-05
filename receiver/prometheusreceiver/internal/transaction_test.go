@@ -1465,11 +1465,11 @@ func TestMetricBuilderSummary(t *testing.T) {
 
 func TestMetricBuilderNativeHistogram(t *testing.T) {
 	emptyH := &histogram.Histogram{
-		Schema: 1,
-		Count: 0,
-		Sum:   0,
+		Schema:        1,
+		Count:         0,
+		Sum:           0,
 		ZeroThreshold: 0.001,
-		ZeroCount: 0,
+		ZeroCount:     0,
 	}
 	h0 := tsdbutil.GenerateTestHistogram(0)
 
@@ -1568,12 +1568,12 @@ func (tt buildTestData) run(t *testing.T) {
 			pt.t = st
 			var err error
 			switch {
-				case pt.fh != nil:
-					_, err = tr.AppendHistogram(0, pt.lb, pt.t, nil, pt.fh)
-				case pt.h != nil:
-					_, err = tr.AppendHistogram(0, pt.lb, pt.t, pt.h, nil)
-				default:
-					_, err = tr.Append(0, pt.lb, pt.t, pt.v)
+			case pt.fh != nil:
+				_, err = tr.AppendHistogram(0, pt.lb, pt.t, nil, pt.fh)
+			case pt.h != nil:
+				_, err = tr.AppendHistogram(0, pt.lb, pt.t, pt.h, nil)
+			default:
+				_, err = tr.Append(0, pt.lb, pt.t, pt.v)
 			}
 			assert.NoError(t, err)
 
@@ -1649,7 +1649,7 @@ type testDataPoint struct {
 	t         int64
 	v         float64
 	h         *histogram.Histogram
-	fh		  *histogram.FloatHistogram
+	fh        *histogram.FloatHistogram
 	exemplars []exemplar.Exemplar
 }
 
@@ -1678,7 +1678,6 @@ func createHistogramDataPoint(mname string, h *histogram.Histogram, fh *histogra
 	dataPoint.fh = fh
 	return dataPoint
 }
-
 
 func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 	require.Equal(t, want.ResourceMetrics().Len(), got.ResourceMetrics().Len())
