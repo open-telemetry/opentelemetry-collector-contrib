@@ -111,6 +111,7 @@ body:
       - extension/storage/dbstorage
       - extension/storage/filestorage
       - internal/aws
+      - internal/collectd
       - internal/core
       - internal/datadog
       - internal/docker
