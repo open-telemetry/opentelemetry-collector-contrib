@@ -23,15 +23,18 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		newDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
 func newDefaultConfig() component.Config {
 	return &Config{
 		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
-		Namespace:          defaultNamespace,
 		Dataset:            defaultDataset,
+		Namespace:          defaultNamespace,
+		BulkAction:         defaultBulkAction,
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		MappingsSettings:   MappingsSettings{Mode: defaultMappingMode},
 	}
 }
 
@@ -48,6 +51,23 @@ func createTracesExporter(ctx context.Context,
 		te.pushTraceData,
 		exporterhelper.WithStart(te.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithTimeout(c.TimeoutSettings))
+}
+
+func createLogsExporter(ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config) (exporter.Logs, error) {
+	c := cfg.(*Config)
+	le, e := newLogExporter(c, set)
+	if e != nil {
+		return nil, e
+	}
+
+	return exporterhelper.NewLogsExporter(ctx, set, cfg,
+		le.pushLogData,
+		exporterhelper.WithStart(le.Start),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithRetry(c.RetrySettings),
 		exporterhelper.WithTimeout(c.TimeoutSettings))
 }

@@ -117,7 +117,9 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	eventData := body["event_data"]
 	eventDataMap, ok := eventData.(map[string]interface{})
 	require.True(t, ok)
-	require.Equal(t, map[string]interface{}{}, eventDataMap)
+	require.Equal(t, map[string]interface{}{
+		"data": []interface{}{map[string]interface{}{"": "Test log"}},
+	}, eventDataMap)
 
 	eventID := body["event_id"]
 	require.NotNil(t, eventID)

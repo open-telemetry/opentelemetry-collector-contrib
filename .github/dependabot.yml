@@ -8,31 +8,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/cmd/mdatagen"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/opampsupervisor"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/otelcontribcol"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/oteltestbedcol"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/telemetrygen"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/confmap/provider/s3provider"
     schedule:
       interval: "weekly"
@@ -64,6 +39,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/connector/spanmetricsconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/alertmanagerexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -308,6 +288,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/extension/encoding"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/extension/headerssetterextension"
     schedule:
       interval: "weekly"
@@ -458,6 +443,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/pkg/golden"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/pkg/ottl"
     schedule:
       interval: "weekly"
@@ -479,6 +469,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/stanza"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/translator/azure"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -509,6 +504,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/signalfx"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/translator/skywalking"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -588,7 +588,7 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/processor/remoteobserverprocessor"
+    directory: "/processor/remotetapprocessor"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -624,6 +624,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/spanprocessor"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/processor/sumologicprocessor"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1059,11 +1064,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/wavefrontreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/webhookeventreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

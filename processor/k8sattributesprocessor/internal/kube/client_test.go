@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -115,6 +116,33 @@ func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj in
 	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.NamespaceUID)
 }
 
+func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interface{})) {
+	assert.Equal(t, 0, len(c.Nodes))
+
+	node := &api_v1.Node{}
+	handler(node)
+	assert.Equal(t, 0, len(c.Nodes))
+
+	node = &api_v1.Node{}
+	node.Name = "nodeA"
+	handler(node)
+	assert.Equal(t, 1, len(c.Nodes))
+	got, ok := c.GetNode("nodeA")
+	assert.True(t, ok)
+	assert.Equal(t, "nodeA", got.Name)
+	assert.Equal(t, "", got.NodeUID)
+
+	node = &api_v1.Node{}
+	node.Name = "nodeB"
+	node.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	handler(node)
+	assert.Equal(t, 2, len(c.Nodes))
+	got, ok = c.GetNode("nodeB")
+	assert.True(t, ok)
+	assert.Equal(t, "nodeB", got.Name)
+	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.NodeUID)
+}
+
 func TestDefaultClientset(t *testing.T) {
 	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil, nil)
 	assert.Error(t, err)
@@ -192,6 +220,11 @@ func TestNamespaceAdd(t *testing.T) {
 	namespaceAddAndUpdateTest(t, c, c.handleNamespaceAdd)
 }
 
+func TestNodeAdd(t *testing.T) {
+	c, _ := newTestClient(t)
+	nodeAddAndUpdateTest(t, c, c.handleNodeAdd)
+}
+
 func TestReplicaSetHandler(t *testing.T) {
 	c, _ := newTestClient(t)
 	assert.Equal(t, len(c.ReplicaSets), 0)
@@ -250,6 +283,14 @@ func TestReplicaSetHandler(t *testing.T) {
 	// test delete replicaset
 	c.handleReplicaSetDelete(updatedReplicaset)
 	assert.Equal(t, len(c.ReplicaSets), 0)
+	// test delete replicaset when DeletedFinalStateUnknown
+	c.handleReplicaSetAdd(replicaset)
+	require.Equal(t, len(c.ReplicaSets), 1)
+	c.handleReplicaSetDelete(cache.DeletedFinalStateUnknown{
+		Obj: replicaset,
+	})
+	assert.Equal(t, len(c.ReplicaSets), 0)
+
 }
 
 func TestPodHostNetwork(t *testing.T) {
@@ -383,6 +424,14 @@ func TestNamespaceUpdate(t *testing.T) {
 	})
 }
 
+func TestNodeUpdate(t *testing.T) {
+	c, _ := newTestClient(t)
+	nodeAddAndUpdateTest(t, c, func(obj interface{}) {
+		// first argument (old node) is not used right now
+		c.handleNodeUpdate(&api_v1.Node{}, obj)
+	})
+}
+
 func TestPodDelete(t *testing.T) {
 	c, _ := newTestClient(t)
 	podAddAndUpdateTest(t, c, c.handlePodAdd)
@@ -427,13 +476,14 @@ func TestPodDelete(t *testing.T) {
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 
+	// delete when DeletedFinalStateUnknown
 	c.deleteQueue = c.deleteQueue[:0]
 	pod = &api_v1.Pod{}
 	pod.Name = "podC"
 	pod.Status.PodIP = "2.2.2.2"
 	pod.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 	tsBeforeDelete = time.Now()
-	c.handlePodDelete(pod)
+	c.handlePodDelete(cache.DeletedFinalStateUnknown{Obj: pod})
 	assert.Equal(t, 5, len(c.Pods))
 	assert.Equal(t, 5, len(c.deleteQueue))
 	deleteRequest = c.deleteQueue[0]
@@ -464,6 +514,58 @@ func TestNamespaceDelete(t *testing.T) {
 	assert.Equal(t, 2, len(c.Namespaces))
 	got := c.Namespaces["namespaceA"]
 	assert.Equal(t, "namespaceA", got.Name)
+	// delete non-existent namespace when DeletedFinalStateUnknown
+	c.handleNamespaceDelete(cache.DeletedFinalStateUnknown{Obj: namespace})
+	assert.Equal(t, 2, len(c.Namespaces))
+	got = c.Namespaces["namespaceA"]
+	assert.Equal(t, "namespaceA", got.Name)
+
+	// delete namespace A
+	namespace.Name = "namespaceA"
+	c.handleNamespaceDelete(namespace)
+	assert.Equal(t, 1, len(c.Namespaces))
+	got = c.Namespaces["namespaceB"]
+	assert.Equal(t, "namespaceB", got.Name)
+
+	// delete namespace B when DeletedFinalStateUnknown
+	namespace.Name = "namespaceB"
+	c.handleNamespaceDelete(cache.DeletedFinalStateUnknown{Obj: namespace})
+	assert.Equal(t, 0, len(c.Namespaces))
+}
+
+func TestNodeDelete(t *testing.T) {
+	c, _ := newTestClient(t)
+	nodeAddAndUpdateTest(t, c, c.handleNodeAdd)
+	assert.Equal(t, 2, len(c.Nodes))
+	assert.Equal(t, "nodeA", c.Nodes["nodeA"].Name)
+
+	// delete empty node
+	c.handleNodeDelete(&api_v1.Node{})
+
+	// delete non-existent node
+	node := &api_v1.Node{}
+	node.Name = "nodeC"
+	c.handleNodeDelete(node)
+	assert.Equal(t, 2, len(c.Nodes))
+	got := c.Nodes["nodeA"]
+	assert.Equal(t, "nodeA", got.Name)
+	// delete non-existent namespace when DeletedFinalStateUnknown
+	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
+	assert.Equal(t, 2, len(c.Nodes))
+	got = c.Nodes["nodeA"]
+	assert.Equal(t, "nodeA", got.Name)
+
+	// delete node A
+	node.Name = "nodeA"
+	c.handleNodeDelete(node)
+	assert.Equal(t, 1, len(c.Nodes))
+	got = c.Nodes["nodeB"]
+	assert.Equal(t, "nodeB", got.Name)
+
+	// delete node B when DeletedFinalStateUnknown
+	node.Name = "nodeB"
+	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
+	assert.Equal(t, 0, len(c.Nodes))
 }
 
 func TestDeleteQueue(t *testing.T) {
@@ -1243,6 +1345,96 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	}
 }
 
+func TestNodeExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	node := &api_v1.Node{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{{
+		name:       "no-rules",
+		rules:      ExtractionRules{},
+		attributes: nil,
+	}, {
+		name: "labels",
+		rules: ExtractionRules{
+			Annotations: []FieldExtractionRule{{
+				Name: "a1",
+				Key:  "annotation1",
+				From: MetadataFromNode,
+			},
+			},
+			Labels: []FieldExtractionRule{{
+				Name: "l1",
+				Key:  "label1",
+				From: MetadataFromNode,
+			},
+			},
+		},
+		attributes: map[string]string{
+			"l1": "lv1",
+			"a1": "av1",
+		},
+	},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{{
+					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+					From:     MetadataFromNode,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.labels.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+					From:     MetadataFromNode,
+				},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.annotations.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleNodeAdd(node)
+			n, ok := c.GetNode(node.Name)
+			require.True(t, ok)
+
+			assert.Equal(t, len(tc.attributes), len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
 func TestFilters(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -1311,20 +1503,20 @@ func TestFilters(t *testing.T) {
 func TestPodIgnorePatterns(t *testing.T) {
 	testCases := []struct {
 		ignore bool
-		pod    api_v1.Pod
+		pod    *api_v1.Pod
 	}{{
 		ignore: false,
-		pod:    api_v1.Pod{},
+		pod:    &api_v1.Pod{},
 	}, {
 		ignore: false,
-		pod: api_v1.Pod{
+		pod: &api_v1.Pod{
 			Spec: api_v1.PodSpec{
 				HostNetwork: true,
 			},
 		},
 	}, {
 		ignore: true,
-		pod: api_v1.Pod{
+		pod: &api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Annotations: map[string]string{
 					"opentelemetry.io/k8s-processor/ignore": "True ",
@@ -1333,7 +1525,7 @@ func TestPodIgnorePatterns(t *testing.T) {
 		},
 	}, {
 		ignore: true,
-		pod: api_v1.Pod{
+		pod: &api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Annotations: map[string]string{
 					"opentelemetry.io/k8s-processor/ignore": "true",
@@ -1342,7 +1534,7 @@ func TestPodIgnorePatterns(t *testing.T) {
 		},
 	}, {
 		ignore: false,
-		pod: api_v1.Pod{
+		pod: &api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Annotations: map[string]string{
 					"opentelemetry.io/k8s-processor/ignore": "false",
@@ -1351,7 +1543,7 @@ func TestPodIgnorePatterns(t *testing.T) {
 		},
 	}, {
 		ignore: false,
-		pod: api_v1.Pod{
+		pod: &api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Annotations: map[string]string{
 					"opentelemetry.io/k8s-processor/ignore": "",
@@ -1360,28 +1552,28 @@ func TestPodIgnorePatterns(t *testing.T) {
 		},
 	}, {
 		ignore: true,
-		pod: api_v1.Pod{
+		pod: &api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: "jaeger-agent",
 			},
 		},
 	}, {
 		ignore: true,
-		pod: api_v1.Pod{
+		pod: &api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: "jaeger-collector",
 			},
 		},
 	}, {
 		ignore: true,
-		pod: api_v1.Pod{
+		pod: &api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: "jaeger-agent-b2zdv",
 			},
 		},
 	}, {
 		ignore: false,
-		pod: api_v1.Pod{
+		pod: &api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: "test-pod-name",
 			},
@@ -1391,7 +1583,7 @@ func TestPodIgnorePatterns(t *testing.T) {
 
 	c, _ := newTestClient(t)
 	for _, tc := range testCases {
-		assert.Equal(t, tc.ignore, c.shouldIgnorePod(&tc.pod))
+		assert.Equal(t, tc.ignore, c.shouldIgnorePod(tc.pod))
 	}
 }
 
@@ -1440,7 +1632,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 	tests := []struct {
 		name  string
 		rules ExtractionRules
-		pod   api_v1.Pod
+		pod   *api_v1.Pod
 		want  PodContainers
 	}{
 		{
@@ -1450,13 +1642,13 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				ContainerImageTag:  true,
 				ContainerID:        true,
 			},
-			pod:  api_v1.Pod{},
+			pod:  &api_v1.Pod{},
 			want: PodContainers{ByID: map[string]*Container{}, ByName: map[string]*Container{}},
 		},
 		{
 			name:  "no-rules",
 			rules: ExtractionRules{},
-			pod:   pod,
+			pod:   &pod,
 			want:  PodContainers{ByID: map[string]*Container{}, ByName: map[string]*Container{}},
 		},
 		{
@@ -1464,7 +1656,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			rules: ExtractionRules{
 				ContainerImageName: true,
 			},
-			pod: pod,
+			pod: &pod,
 			want: PodContainers{
 				ByID: map[string]*Container{
 					"container1-id-123":     {ImageName: "test/image1"},
@@ -1483,7 +1675,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			rules: ExtractionRules{
 				ContainerImageName: true,
 			},
-			pod: api_v1.Pod{
+			pod: &api_v1.Pod{
 				Spec: api_v1.PodSpec{
 					Containers: []api_v1.Container{
 						{
@@ -1505,7 +1697,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			rules: ExtractionRules{
 				ContainerID: true,
 			},
-			pod: pod,
+			pod: &pod,
 			want: PodContainers{
 				ByID: map[string]*Container{
 					"container1-id-123": {
@@ -1550,7 +1742,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				ContainerImageTag:  true,
 				ContainerID:        true,
 			},
-			pod: pod,
+			pod: &pod,
 			want: PodContainers{
 				ByID: map[string]*Container{
 					"container1-id-123": {
@@ -1606,7 +1798,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			c := WatchClient{Rules: tt.rules}
 			// manually call the data removal function here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
-			transformedPod := removeUnnecessaryPodData(&tt.pod, c.Rules)
+			transformedPod := removeUnnecessaryPodData(tt.pod, c.Rules)
 			assert.Equal(t, tt.want, c.extractPodContainersAttributes(transformedPod))
 		})
 	}

@@ -153,11 +153,16 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
 	}
 	d.rb.SetHostCPUFamily(family)
 
-	model, err := strconv.ParseInt(cpuInfo.Model, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to convert cpuinfo model to integer: %w", err)
+	// For windows, this field is left blank. See https://github.com/shirou/gopsutil/blob/v3.23.9/cpu/cpu_windows.go#L113
+	// Skip setting modelId if the field is blank.
+	// ISSUE: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27675
+	if cpuInfo.Model != "" {
+		model, err := strconv.ParseInt(cpuInfo.Model, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to convert cpuinfo model to integer: %w", err)
+		}
+		d.rb.SetHostCPUModelID(model)
 	}
-	d.rb.SetHostCPUModelID(model)
 
 	d.rb.SetHostCPUModelName(cpuInfo.ModelName)
 	d.rb.SetHostCPUStepping(int64(cpuInfo.Stepping))

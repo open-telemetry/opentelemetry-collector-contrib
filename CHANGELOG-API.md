@@ -7,6 +7,12 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.88.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate 'flush.WithPeriod'. Use 'flush.WithFunc' instead. (#27843)
+
 ## v0.87.0
 
 ### 🛑 Breaking changes 🛑

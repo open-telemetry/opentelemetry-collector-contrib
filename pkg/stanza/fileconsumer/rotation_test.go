@@ -48,7 +48,7 @@ func TestMultiFileRotate(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -75,7 +75,7 @@ func TestMultiFileRotate(t *testing.T) {
 		}(temp, i)
 	}
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -109,7 +109,7 @@ func TestMultiFileRotateSlow(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -133,7 +133,7 @@ func TestMultiFileRotateSlow(t *testing.T) {
 		}(fileNum)
 	}
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -163,7 +163,7 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -195,7 +195,7 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 		}(fileNum)
 	}
 
-	waitForTokens(t, emitCalls, expected)
+	waitForTokens(t, emitCalls, expected...)
 	wg.Wait()
 }
 
@@ -263,7 +263,7 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 			expected = append(expected, []byte(fmt.Sprintf("%s %3d", baseStr, i)))
 		}
 
-		require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+		require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 		defer func() {
 			require.NoError(t, operator.Stop())
 		}()
@@ -358,17 +358,13 @@ func TestMoveFile(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\n")
 	temp1.Close()
 
 	operator.poll(context.Background())
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
 	waitForToken(t, emitCalls, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
@@ -390,17 +386,13 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\n")
 	temp1.Close()
 
 	operator.poll(context.Background())
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
 	waitForToken(t, emitCalls, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
@@ -439,7 +431,7 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	orginalName := originalFile.Name()
 	writeString(t, originalFile, "testlog1\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -458,7 +450,7 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	require.NoError(t, err)
 	writeString(t, newFile, "testlog3\n")
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2"), []byte("testlog3")})
+	waitForTokens(t, emitCalls, []byte("testlog2"), []byte("testlog3"))
 }
 
 // When a file it rotated out of pattern via move/create, we should
@@ -474,7 +466,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	cfg.Include = append(cfg.Include, fmt.Sprintf("%s/*.log1", tempDir))
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	originalFile := openTempWithPattern(t, tempDir, "*.log1")
 	originalFileName := originalFile.Name()
@@ -498,7 +490,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	operator.poll(context.Background())
 
 	// expect remaining log from old file as well as all from new file
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2"), []byte("testlog4"), []byte("testlog5")})
+	waitForTokens(t, emitCalls, []byte("testlog2"), []byte("testlog4"), []byte("testlog5"))
 }
 
 // When a file it rotated out of pattern via copy/truncate, we should
@@ -511,7 +503,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	cfg.Include = append(cfg.Include, fmt.Sprintf("%s/*.log1", tempDir))
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	originalFile := openTempWithPattern(t, tempDir, "*.log1")
 	writeString(t, originalFile, "testlog1\n")
@@ -536,7 +528,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	// poll again
 	operator.poll(context.Background())
 
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog4"), []byte("testlog5")})
+	waitForTokens(t, emitCalls, []byte("testlog4"), []byte("testlog5"))
 }
 
 // TruncateThenWrite tests that, after a file has been truncated,
@@ -551,18 +543,13 @@ func TestTruncateThenWrite(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
 	operator.poll(context.Background())
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
-	waitForToken(t, emitCalls, []byte("testlog1"))
-	waitForToken(t, emitCalls, []byte("testlog2"))
+	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
 
 	require.NoError(t, temp1.Truncate(0))
 	_, err := temp1.Seek(0, 0)
@@ -588,18 +575,13 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
 	operator.poll(context.Background())
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
-	waitForToken(t, emitCalls, []byte("testlog1"))
-	waitForToken(t, emitCalls, []byte("testlog2"))
+	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
 	operator.wg.Wait() // wait for all goroutines to finish
 
 	// Copy the first file to a new file, and add another log
@@ -618,7 +600,7 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 
 	// Expect both messages to come through
 	operator.poll(context.Background())
-	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog3"), []byte("testlog4")})
+	waitForTokens(t, emitCalls, []byte("testlog3"), []byte("testlog4"))
 }
 
 func TestFileMovedWhileOff_BigFiles(t *testing.T) {
@@ -631,33 +613,35 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	persister := testutil.NewMockPersister("test")
+	persister := testutil.NewUnscopedMockPersister()
 
-	log1 := tokenWithLength(1000)
-	log2 := tokenWithLength(1000)
+	log1 := tokenWithLength(1001)
+	log2 := tokenWithLength(1002)
+	log3 := tokenWithLength(1003)
 
 	temp := openTemp(t, tempDir)
+	tempName := temp.Name()
 	writeString(t, temp, string(log1)+"\n")
-	require.NoError(t, temp.Close())
 
-	// Start the operator
+	// Run the operator to read the first log
 	require.NoError(t, operator.Start(persister))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
 	waitForToken(t, emitCalls, log1)
-
-	// Stop the operator, then rename and write a new log
 	require.NoError(t, operator.Stop())
 
-	err := os.Rename(temp.Name(), fmt.Sprintf("%s2", temp.Name()))
-	require.NoError(t, err)
-
-	temp = reopenTemp(t, temp.Name())
-	require.NoError(t, err)
+	// Write one more log to the original file
 	writeString(t, temp, string(log2)+"\n")
+	require.NoError(t, temp.Close())
+
+	// Rename the file and open another file in the same location
+	require.NoError(t, os.Rename(tempName, fmt.Sprintf("%s2", tempName)))
+
+	// Write a different log to the new file
+	temp2 := reopenTemp(t, tempName)
+	writeString(t, temp2, string(log3)+"\n")
 
 	// Expect the message written to the new log to come through
-	require.NoError(t, operator.Start(persister))
-	waitForToken(t, emitCalls, log2)
+	operator2, emitCalls2 := buildTestManager(t, cfg)
+	require.NoError(t, operator2.Start(persister))
+	waitForTokens(t, emitCalls2, log2, log3)
+	require.NoError(t, operator2.Stop())
 }
