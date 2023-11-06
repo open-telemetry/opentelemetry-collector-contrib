@@ -8,4 +8,4 @@ clusterRole:
     name: opentelemetry-collector-gateway
 presets:
   logsCollection:
-    enabled: false
+    enabled: true
