@@ -362,7 +362,7 @@ func ScenarioSendingQueuesFull(
 			dataChannel <- true
 			return false
 		}
-		tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == 0 }, "any data items received successfully")
+		tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == 0 }, "no data successfully received before an error")
 		close(dataChannel)
 		return logFound
 	}, time.Second*time.Duration(sleepTime), "sending_queue errors present")
@@ -370,7 +370,7 @@ func ScenarioSendingQueuesFull(
 	// check if data started to be received successfully
 	tc.WaitForN(func() bool {
 		return tc.MockBackend.DataItemsReceived() > 0
-	}, time.Second*time.Duration(sleepTime), "data was accepted")
+	}, time.Second*time.Duration(sleepTime), "data started to be successfully received")
 
 	tc.WaitForN(func() bool {
 		// get IDs from logs to retry
@@ -382,7 +382,7 @@ func ScenarioSendingQueuesFull(
 		// check if all the logs to retry were actually retried
 		logsWereRetried := allElementsExistInSlice(logsToRetry, successfulLogs)
 		return logsWereRetried
-	}, time.Second*time.Duration(sleepTime), "all logs were retried")
+	}, time.Second*time.Duration(sleepTime), "all logs were retried successfully")
 
 	tc.StopLoad()
 	tc.StopAgent()
@@ -423,7 +423,6 @@ func ScenarioSendingQueuesNotFull(
 		resultsSummary,
 		testbed.WithResourceLimits(resourceSpec),
 	)
-	tc.MockBackend.EnableRecording()
 	defer tc.Stop()
 
 	tc.StartBackend()
