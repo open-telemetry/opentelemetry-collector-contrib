@@ -72,12 +72,14 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	var hostIPAttribute []any
-	hostIPs, errIPs := d.provider.HostIPs()
-	if errIPs != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting host IP addresses: %w", errIPs)
-	}
-	for _, ip := range hostIPs {
-		hostIPAttribute = append(hostIPAttribute, ip.String())
+	if d.cfg.ResourceAttributes.HostIP.Enabled {
+		hostIPs, errIPs := d.provider.HostIPs()
+		if errIPs != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting host IP addresses: %w", errIPs)
+		}
+		for _, ip := range hostIPs {
+			hostIPAttribute = append(hostIPAttribute, ip.String())
+		}
 	}
 
 	osDescription, err := d.provider.OSDescription(ctx)

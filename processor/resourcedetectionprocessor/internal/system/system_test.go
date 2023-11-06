@@ -148,7 +148,6 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
-	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, metadata.DefaultResourceAttributesConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -156,6 +155,7 @@ func TestFallbackHostname(t *testing.T) {
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
 	mdHostname.AssertNotCalled(t, "HostID")
+	mdHostname.AssertNotCalled(t, "HostIPs")
 
 	expected := map[string]any{
 		conventions.AttributeHostName: "hostname",
