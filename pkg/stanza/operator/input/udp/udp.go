@@ -258,8 +258,8 @@ func (u *Input) readMessagesAsync(ctx context.Context) {
 	defer u.wg.Done()
 
 	for {
-		readBuffer := *u.readBufferPool.Get().(*[]byte) // Can't reuse the same buffer since same references would be written multiple times to the messageQueue (and cause data override of previous entries)
-		message, remoteAddr, bufferLength, err := u.readMessage(readBuffer)
+		readBuffer := u.readBufferPool.Get().(*[]byte) // Can't reuse the same buffer since same references would be written multiple times to the messageQueue (and cause data override of previous entries)
+		message, remoteAddr, bufferLength, err := u.readMessage(*readBuffer)
 		if err != nil {
 			u.readBufferPool.Put(readBuffer)
 			select {
