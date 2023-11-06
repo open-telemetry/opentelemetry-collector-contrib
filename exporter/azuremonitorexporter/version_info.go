@@ -6,6 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"sync"
 )
 
@@ -27,7 +28,9 @@ func getCollectorVersion() string {
 
 		for _, mod := range info.Deps {
 			if mod.Path == "go.opentelemetry.io/collector" {
-				cachedVersion = "otelc-" + mod.Version + "-" + osInformation
+				// Extract the semantic version without metadata.
+				semVer := strings.SplitN(mod.Version, "-", 2)[0]
+				cachedVersion = "otelc-" + semVer + "-" + osInformation
 				return
 			}
 		}
