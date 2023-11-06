@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerosp
 go 1.20
 
 require (
-	github.com/aerospike/aerospike-client-go/v6 v6.13.0
+	github.com/aerospike/aerospike-client-go/v6 v6.14.1
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
