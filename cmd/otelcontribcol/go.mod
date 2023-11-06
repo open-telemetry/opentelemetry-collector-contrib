@@ -520,6 +520,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.88.0 // indirect
@@ -1143,3 +1144,5 @@ replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristre
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ../../internal/collectd
