@@ -723,7 +723,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		{
 			name: "drop everything by dropping all logs",
 			conditions: []string{
-				`IsMatch(body, attributes["name"])`,
+				`IsMatch(body, "operation.*")`,
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
@@ -736,6 +736,16 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "regex from resource",
+			conditions: []string{
+				`not IsMatch(resource.attributes["k8s.container.name"], resource.attributes["log.std.container"])`,
+			},
+			want: func(ld plog.Logs) {
+
+			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "with error conditions",
@@ -768,6 +778,8 @@ func constructLogs() plog.Logs {
 	td := plog.NewLogs()
 	rs0 := td.ResourceLogs().AppendEmpty()
 	rs0.Resource().Attributes().PutStr("host.name", "localhost")
+	rs0.Resource().Attributes().PutStr("log.std.container", "nginx")
+	rs0.Resource().Attributes().PutStr("k8s.container.name", "nginx")
 	rs0ils0 := rs0.ScopeLogs().AppendEmpty()
 	rs0ils0.Scope().SetName("scope1")
 	fillLogOne(rs0ils0.LogRecords().AppendEmpty())

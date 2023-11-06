@@ -215,6 +215,13 @@ func Test_NewBoolExprForLog(t *testing.T) {
 			},
 			expectedResult: false,
 		},
+		{
+			name: "With Converter",
+			conditions: []string{
+				`IsMatch(resource.attributes["test"], resource.attributes["test"])`,
+			},
+			expectedResult: true,
+		},
 	}
 
 	for _, tt := range tests {
