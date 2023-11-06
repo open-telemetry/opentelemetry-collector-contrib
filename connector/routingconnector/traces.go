@@ -6,6 +6,7 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
