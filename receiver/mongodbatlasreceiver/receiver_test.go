@@ -80,44 +80,39 @@ func TestShouldProcessCluster(t *testing.T) {
 		want        bool
 	}{
 		{
-			name: "included cluster",
+			name: "included cluster should be processed",
 			projectCfg: &ProjectConfig{
 				IncludeClusters: []string{"Cluster1"},
-				includesByClusterName: map[string]struct{}{
-					"Cluster1": {},
-				},
 			},
 			clusterName: "Cluster1",
 			want:        true,
 		},
 		{
-			name: "excluded cluster",
+			name: "cluster not included should not be processed",
 			projectCfg: &ProjectConfig{
-				ExcludeClusters: []string{"Cluster2"},
-				excludesByClusterName: map[string]struct{}{
-					"Cluster2": {},
-				},
+				IncludeClusters: []string{"Cluster1"},
 			},
 			clusterName: "Cluster2",
 			want:        false,
 		},
 		{
-			name: "cluster not in include or exclude list",
+			name: "excluded cluster should not be processed",
 			projectCfg: &ProjectConfig{
-				IncludeClusters: []string{"Cluster1"},
 				ExcludeClusters: []string{"Cluster2"},
-				includesByClusterName: map[string]struct{}{
-					"Cluster1": {},
-				},
-				excludesByClusterName: map[string]struct{}{
-					"Cluster2": {},
-				},
 			},
-			clusterName: "Cluster3",
+			clusterName: "Cluster2",
 			want:        false,
 		},
 		{
-			name:        "no include or exclude list",
+			name: "cluster not excluded should processed assuming it exists in the project",
+			projectCfg: &ProjectConfig{
+				ExcludeClusters: []string{"Cluster1"},
+			},
+			clusterName: "Cluster2",
+			want:        true,
+		},
+		{
+			name:        "cluster should be processed when no includes or excludes are set",
 			projectCfg:  &ProjectConfig{},
 			clusterName: "Cluster1",
 			want:        true,
@@ -126,6 +121,8 @@ func TestShouldProcessCluster(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.projectCfg.populateIncludesAndExcludes()
+
 			if got := shouldProcessCluster(tt.projectCfg, tt.clusterName); got != tt.want {
 				t.Errorf("shouldProcessCluster() = %v, want %v", got, tt.want)
 			}
