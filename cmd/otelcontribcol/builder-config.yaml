@@ -421,3 +421,4 @@ replaces:
   - github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ../../internal/collectd

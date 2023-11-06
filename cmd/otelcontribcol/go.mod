@@ -186,6 +186,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/config/configgrpc v0.88.1-0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/config/configopaque v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/confmap v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/connector v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/connector/forwardconnector v0.88.1-0.20231026220224-6405e152a2d9
@@ -519,6 +520,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.88.0 // indirect
@@ -637,7 +639,6 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.88.1-0.20231026220224-6405e152a2d9 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.88.1-0.20231026220224-6405e152a2d9 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.88.1-0.20231026220224-6405e152a2d9 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.88.1-0.20231026220224-6405e152a2d9 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.88.1-0.20231026220224-6405e152a2d9 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.88.1-0.20231026220224-6405e152a2d9 // indirect
 	go.opentelemetry.io/collector/config/internal v0.88.1-0.20231026220224-6405e152a2d9 // indirect
@@ -1143,3 +1144,5 @@ replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristre
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ../../internal/collectd
