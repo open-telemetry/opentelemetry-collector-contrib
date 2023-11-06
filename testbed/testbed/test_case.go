@@ -5,6 +5,7 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -327,11 +328,17 @@ func (tc *TestCase) logStatsOnce() {
 // Used to search for text in agent.log
 // It can be used to verify if we've hit QueuedRetry sender or memory limitter
 func (tc *TestCase) SearchText(text string) bool {
-	cmd := exec.Command("cat", tc.composeTestResultFileName("agent.log"))
+	filename := tc.composeTestResultFileName("agent.log")
+	cmd := exec.Command("cat", filename)
 	grep := exec.Command("grep", "-E", text)
 
 	pipe, err := cmd.StdoutPipe()
-	defer pipe.Close()
+	defer func(pipe io.ReadCloser) {
+		err = pipe.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(pipe)
 	grep.Stdin = pipe
 
 	if err != nil {
@@ -346,10 +353,6 @@ func (tc *TestCase) SearchText(text string) bool {
 	}
 
 	res, _ := grep.Output()
-	if string(res) != "" {
-		return true
-	} else {
-		return false
-	}
+	return string(res) != ""
 
 }

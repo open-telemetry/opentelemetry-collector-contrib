@@ -32,7 +32,7 @@ type LogPresentValidator struct {
 func (v *LogPresentValidator) Validate(tc *TestCase) {
 	logMsg := v.LogBody
 	var successMsg, errorMsg string
-	if v.Present == true {
+	if v.Present {
 		successMsg = fmt.Sprintf("Log '%s' found", logMsg)
 		errorMsg = fmt.Sprintf("Log '%s' not found", logMsg)
 	} else {
@@ -41,7 +41,7 @@ func (v *LogPresentValidator) Validate(tc *TestCase) {
 	}
 
 	if assert.True(tc.t, tc.SearchText(logMsg) == v.Present, errorMsg) {
-		log.Printf(successMsg)
+		log.Print(successMsg)
 	}
 }
 

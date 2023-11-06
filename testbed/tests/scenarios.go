@@ -8,12 +8,13 @@ package tests // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"math/rand"
 	"path"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -357,7 +358,7 @@ func ScenarioSendingQueuesFull(
 	// searchFunc checks for "sending_queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
 	// to generate only successes from that time on
 	tc.WaitForN(func() bool {
-		logFound := tc.SearchText("sending_queue is full") == true
+		logFound := tc.SearchText("sending_queue is full")
 		if !logFound {
 			dataChannel <- true
 			return false
@@ -374,10 +375,10 @@ func ScenarioSendingQueuesFull(
 
 	tc.WaitForN(func() bool {
 		// get IDs from logs to retry
-		logsToRetry := getLogsId(tc.MockBackend.LogsToRetry)
+		logsToRetry := getLogsID(tc.MockBackend.LogsToRetry)
 
 		// get IDs from logs received successfully
-		successfulLogs := getLogsId(tc.MockBackend.ReceivedLogs)
+		successfulLogs := getLogsID(tc.MockBackend.ReceivedLogs)
 
 		// check if all the logs to retry were actually retried
 		logsWereRetried := allElementsExistInSlice(logsToRetry, successfulLogs)
@@ -455,7 +456,7 @@ func constructLoadOptions(test TestCase) testbed.LoadOptions {
 	return options
 }
 
-func getLogsId(logToRetry []plog.Logs) []string {
+func getLogsID(logToRetry []plog.Logs) []string {
 	var result []string
 	for _, logElement := range logToRetry {
 		logRecord := logElement.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
