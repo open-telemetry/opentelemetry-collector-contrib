@@ -28,8 +28,21 @@ type worker struct {
 	index          int             // worker index
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
+func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdkmetric.Exporter, error), signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
+
+	exporter, err := exporterFunc()
+	if err != nil {
+		w.logger.Error("failed to create the exporter", zap.Error(err))
+		return
+	}
+
+	defer func() {
+		w.logger.Info("stopping the exporter")
+		if tempError := exporter.Shutdown(context.Background()); tempError != nil {
+			w.logger.Error("failed to stop the exporter", zap.Error(tempError))
+		}
+	}()
 
 	var i int64
 	for w.running.Load() {

@@ -51,6 +51,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: true},
 					PostgresqlTempFiles:                MetricConfig{Enabled: true},
 					PostgresqlWalAge:                   MetricConfig{Enabled: true},
+					PostgresqlWalDelay:                 MetricConfig{Enabled: true},
 					PostgresqlWalLag:                   MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -89,6 +90,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: false},
 					PostgresqlTempFiles:                MetricConfig{Enabled: false},
 					PostgresqlWalAge:                   MetricConfig{Enabled: false},
+					PostgresqlWalDelay:                 MetricConfig{Enabled: false},
 					PostgresqlWalLag:                   MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
