@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdat
 go 1.20
 
 require (
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	go.opentelemetry.io/collector/component v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/config/configtls v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/consumer v0.88.1-0.20231026220224-6405e152a2d9
