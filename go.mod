@@ -495,6 +495,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.88.0 // indirect
@@ -1130,3 +1131,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowf
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ./receiver/azureeventhubreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ./pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ./internal/collectd
