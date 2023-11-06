@@ -1,0 +1,9 @@
+type: deltatocumulative
+
+status:
+  class: processor
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: []
