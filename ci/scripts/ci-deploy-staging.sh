@@ -24,6 +24,23 @@ install_collector() {
 		--set-string image.tag="otelcolcontrib-v$CI_COMMIT_SHORT_SHA" \
 		--set-string image.repository="601427279990.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib"
 	helm list --all-namespaces
+
+	if [ "$namespace" == "otel-staging" ]; then
+		install_deployment
+	fi
+}
+
+install_deployment() {
+	release_name_deployment="opentelemetry-collector-deployment"
+
+	# --install collector that fetches jmx metrics. The jmx receiver cannot be used in the daemonset deployment
+	# as this would lead to duplicate metrics.
+	helm --debug upgrade "${release_name_deployment}" -n "${namespace}" open-telemetry/opentelemetry-collector --install \
+		-f ./ci/values-jmx.yaml \
+		--set-string image.tag="otelcolcontrib-v$CI_COMMIT_SHORT_SHA" \
+		--set-string image.repository="601427279990.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib" \
+		--set nodeSelector.alpha\\.eksctl\\.io/nodegroup-name=ng-3
+
 }
 
 ###########################################################################################################

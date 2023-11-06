@@ -15,7 +15,7 @@ extraEnvs:
   - name: OTEL_EXPORTER_OTLP_ENDPOINT
     value: http://$(OTEL_COLLECTOR_NAME):4317
   - name: OTEL_RESOURCE_ATTRIBUTES
-    value: kafka_source=jmxreceiver
+    value: kafka_source=deploymentcol
 config:
   receivers:
     jmx:
@@ -42,12 +42,23 @@ config:
       endpoint: "opentelemetry-demo-zookeeper:2181"
       collection_interval: 20s
       initial_delay: 1s
+    kafkametrics:
+      brokers: "opentelemetry-demo-kafka:9092"
+      protocol_version: 2.0.0
+      scrapers:
+        - brokers
+        - topics
+        - consumers
   exporters:
+    logging:
+      verbosity: detailed
     otlp:
       endpoint: ${env:OTEL_EXPORTER_OTLP_ENDPOINT}
       tls:
         insecure: true
   processors:
+    resourcedetection/env:
+      detectors: [env]
     batch:
       send_batch_max_size: 1000
       send_batch_size: 100
@@ -55,6 +66,6 @@ config:
   service:
     pipelines:
       metrics:
-        receivers: [jmx, jmx/jvm, jmx/consumer, jmx/producer, zookeeper]
-        processors: [batch]
+        receivers: [jmx, jmx/jvm, jmx/consumer, jmx/producer, zookeeper, kafkametrics]
+        processors: [batch, resourcedetection/env]
         exporters: [otlp]
