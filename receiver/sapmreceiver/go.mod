@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmre
 go 1.20
 
 require (
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/jaegertracing/jaeger v1.41.0
 	github.com/klauspost/compress v1.17.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0
