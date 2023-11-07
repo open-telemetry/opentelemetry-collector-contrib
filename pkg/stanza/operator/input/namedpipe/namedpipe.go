@@ -48,6 +48,7 @@ type BaseConfig struct {
 	Encoding    string       `mapstructure:"encoding"`
 	SplitConfig split.Config `mapstructure:"multiline,omitempty"`
 	TrimConfig  trim.Config  `mapstructure:",squash"`
+	MaxLogSize  int          `mapstructure:"max_log_size"`
 }
 
 // Build will build a namedpipe input operator.
@@ -67,10 +68,15 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to create split function: %w", err)
 	}
 
+	maxLogSize := c.MaxLogSize
+	if maxLogSize == 0 {
+		maxLogSize = DefaultMaxLogSize
+	}
+
 	return &Input{
 		InputOperator: inputOperator,
 
-		buffer:      make([]byte, DefaultMaxLogSize),
+		buffer:      make([]byte, maxLogSize),
 		path:        c.Path,
 		permissions: c.Permissions,
 		splitFunc:   splitFunc,
