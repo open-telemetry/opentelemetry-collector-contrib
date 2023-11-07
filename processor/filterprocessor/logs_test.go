@@ -740,7 +740,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		{
 			name: "regex from resource",
 			conditions: []string{
-				`not IsMatch(resource.attributes["k8s.container.name"], resource.attributes["log.std.container"])`,
+				`not IsMatch(resource.attributes["test"], resource.attributes["pattern"])`,
 			},
 			want: func(ld plog.Logs) {
 
@@ -778,8 +778,8 @@ func constructLogs() plog.Logs {
 	td := plog.NewLogs()
 	rs0 := td.ResourceLogs().AppendEmpty()
 	rs0.Resource().Attributes().PutStr("host.name", "localhost")
-	rs0.Resource().Attributes().PutStr("log.std.container", "nginx")
-	rs0.Resource().Attributes().PutStr("k8s.container.name", "nginx")
+	rs0.Resource().Attributes().PutStr("test", "test")
+	rs0.Resource().Attributes().PutStr("pattern", "te*")
 	rs0ils0 := rs0.ScopeLogs().AppendEmpty()
 	rs0ils0.Scope().SetName("scope1")
 	fillLogOne(rs0ils0.LogRecords().AppendEmpty())
