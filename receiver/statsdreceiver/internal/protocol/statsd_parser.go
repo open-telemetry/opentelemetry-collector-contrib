@@ -79,6 +79,7 @@ var defaultObserverCategory = ObserverCategory{
 type StatsDParser struct {
 	instrumentsByAddress map[netAddr]*instruments
 	enableMetricType     bool
+	enableSimpleTags     bool
 	isMonotonicCounter   bool
 	timerEvents          ObserverCategory
 	histogramEvents      ObserverCategory
@@ -156,12 +157,13 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
 	p.timerEvents = defaultObserverCategory
 	p.enableMetricType = enableMetricType
+	p.enableSimpleTags = enableSimpleTags
 	p.isMonotonicCounter = isMonotonicCounter
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
@@ -270,7 +272,7 @@ func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 
 // Aggregate for each metric line.
 func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
-	parsedMetric, err := parseMessageToMetric(line, p.enableMetricType)
+	parsedMetric, err := parseMessageToMetric(line, p.enableMetricType, p.enableSimpleTags)
 	if err != nil {
 		return err
 	}
@@ -349,7 +351,7 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	return nil
 }
 
-func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, error) {
+func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags bool) (statsDMetric, error) {
 	result := statsDMetric{}
 
 	parts := strings.Split(line, "|")
@@ -420,6 +422,10 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 				var v string
 				if len(tagParts) == 2 {
 					v = tagParts[1]
+				}
+
+				if v == "" && !enableSimpleTags {
+					return result, fmt.Errorf("invalid tag format: %q", tagSet)
 				}
 
 				kvs = append(kvs, attribute.String(k, v))

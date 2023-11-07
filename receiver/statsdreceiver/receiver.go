@@ -91,6 +91,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ticker := time.NewTicker(r.config.AggregationInterval)
 	err = r.parser.Initialize(
 		r.config.EnableMetricType,
+		r.config.EnableSimpleTags,
 		r.config.IsMonotonicCounter,
 		r.config.TimerHistogramMapping,
 	)
