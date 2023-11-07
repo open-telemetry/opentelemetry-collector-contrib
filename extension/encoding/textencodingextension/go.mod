@@ -51,3 +51,15 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension => ../zipkinencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension => ../otlpencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension => ../jaegerencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../../pkg/translator/zipkin
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../../pkg/translator/jaeger
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension => ../jsonlogencodingextension

@@ -42,3 +42,23 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../../pkg/translator/jaeger
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension => ../zipkinencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension => ../textencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension => ../otlpencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension => ../jaegerencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../../pkg/translator/zipkin
