@@ -33,8 +33,14 @@ type byDimensions []*sfxpb.Dimension
 
 func (dims byDimensions) Len() int { return len(dims) }
 func (dims byDimensions) Less(i, j int) bool {
-	ib, _ := json.Marshal(dims[i])
-	jb, _ := json.Marshal(dims[j])
+	ib, err := json.Marshal(dims[i])
+	if err != nil {
+		panic(err)
+	}
+	jb, err := json.Marshal(dims[j])
+	if err != nil {
+		panic(err)
+	}
 	return string(ib) < string(jb)
 }
 func (dims byDimensions) Swap(i, j int) { dims[i], dims[j] = dims[j], dims[i] }
@@ -2954,7 +2960,7 @@ func testConverter(t *testing.T, mapping map[string]string) *MetricsConverter {
 	tr, err := NewMetricTranslator(rules, 1)
 	require.NoError(t, err)
 
-	c, err := NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
+	c, err := NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false)
 	require.NoError(t, err)
 	return c
 }

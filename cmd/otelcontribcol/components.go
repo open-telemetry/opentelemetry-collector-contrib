@@ -20,6 +20,7 @@ import (
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
+	datadogconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	exceptionsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector"
 	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 	servicegraphconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
@@ -407,6 +408,7 @@ func components() (otelcol.Factories, error) {
 	factories.Connectors, err = connector.MakeFactoryMap(
 		forwardconnector.NewFactory(),
 		countconnector.NewFactory(),
+		datadogconnector.NewFactory(),
 		exceptionsconnector.NewFactory(),
 		routingconnector.NewFactory(),
 		servicegraphconnector.NewFactory(),

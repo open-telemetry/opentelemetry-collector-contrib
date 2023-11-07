@@ -36,8 +36,8 @@ type statsdReceiver struct {
 	cancel       context.CancelFunc
 }
 
-// New creates the StatsD receiver with the given parameters.
-func New(
+// newReceiver creates the StatsD receiver with the given parameters.
+func newReceiver(
 	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,

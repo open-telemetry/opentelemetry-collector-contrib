@@ -54,6 +54,111 @@ func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.Trac
 	return t.pe.Evaluate(ctx, traceID, trace)
 }
 
+type spanInfo struct {
+	span     ptrace.Span
+	resource pcommon.Resource
+	scope    pcommon.InstrumentationScope
+}
+
+func TestTraceIntegrity(t *testing.T) {
+	const spanCount = 4
+	// Generate trace with several spans with different scopes
+	traces := ptrace.NewTraces()
+	spans := make(map[pcommon.SpanID]spanInfo, 0)
+
+	// Fill resource
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	resourceSpans.Resource().Attributes().PutStr("key1", "value1")
+	resourceSpans.Resource().Attributes().PutInt("key2", 0)
+
+	// Fill scopeSpans 1
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	scopeSpans.Scope().SetName("scope1")
+	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
+	scopeSpans.Scope().Attributes().PutInt("key2", 0)
+
+	// Add spans to scopeSpans 1
+	span := scopeSpans.Spans().AppendEmpty()
+	spanID := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
+	span.SetSpanID(pcommon.SpanID(spanID))
+	span.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+
+	span = scopeSpans.Spans().AppendEmpty()
+	spanID = [8]byte{9, 10, 11, 12, 13, 14, 15, 16}
+	span.SetSpanID(pcommon.SpanID(spanID))
+	span.SetTraceID(pcommon.TraceID([16]byte{5, 6, 7, 8}))
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+
+	// Fill scopeSpans 2
+	scopeSpans = resourceSpans.ScopeSpans().AppendEmpty()
+	scope = scopeSpans.Scope()
+	scopeSpans.Scope().SetName("scope2")
+	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
+	scopeSpans.Scope().Attributes().PutInt("key2", 0)
+
+	// Add spans to scopeSpans 2
+	span = scopeSpans.Spans().AppendEmpty()
+	spanID = [8]byte{17, 18, 19, 20, 21, 22, 23, 24}
+	span.SetSpanID(pcommon.SpanID(spanID))
+	span.SetTraceID(pcommon.TraceID([16]byte{9, 10, 11, 12}))
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+
+	span = scopeSpans.Spans().AppendEmpty()
+	spanID = [8]byte{25, 26, 27, 28, 29, 30, 31, 32}
+	span.SetSpanID(pcommon.SpanID(spanID))
+	span.SetTraceID(pcommon.TraceID([16]byte{13, 14, 15, 16}))
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+
+	require.Equal(t, spanCount, len(spans))
+
+	msp := new(consumertest.TracesSink)
+	mpe := &mockPolicyEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    spanCount,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(1),
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		deleteChan:      make(chan pcommon.TraceID, spanCount),
+		policyTicker:    mtt,
+		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  &atomic.Uint64{},
+	}
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), traces))
+
+	tsp.samplingPolicyOnTick()
+	mpe.NextDecision = sampling.Sampled
+	tsp.samplingPolicyOnTick()
+
+	consumed := msp.AllTraces()
+	require.Equal(t, 4, len(consumed))
+	for _, trace := range consumed {
+		require.Equal(t, 1, trace.SpanCount())
+		require.Equal(t, 1, trace.ResourceSpans().Len())
+		require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().Len())
+		require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+
+		span := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		if spanInfo, ok := spans[span.SpanID()]; ok {
+			require.Equal(t, spanInfo.span, span)
+			require.Equal(t, spanInfo.resource, trace.ResourceSpans().At(0).Resource())
+			require.Equal(t, spanInfo.scope, trace.ResourceSpans().At(0).ScopeSpans().At(0).Scope())
+		} else {
+			require.Fail(t, "Span not found")
+		}
+	}
+}
+
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
 	cfg := Config{

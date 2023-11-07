@@ -35,18 +35,28 @@ func newSortOption(regexKey string, parseFunc parseFunc, compareFunc compareFunc
 	}, nil
 }
 
-func (o sortOption) apply(f *Filter) error {
-	sort.Slice(f.items, func(i, j int) bool {
+func (o sortOption) apply(items []*item) ([]*item, error) {
+	// Special case where sort.Slice will not run the 'less' func.
+	// We still need to ensure it parses in order to ensure the file should be included.
+	if len(items) == 1 {
+		_, err := o.parseFunc(items[0].captures[o.regexKey])
+		if err != nil {
+			return []*item{}, err
+		}
+		return items, nil
+	}
+
+	sort.Slice(items, func(i, j int) bool {
 		// Parse both values before checking for errors
-		valI, errI := o.parseFunc(f.items[i].captures[o.regexKey])
-		valJ, errJ := o.parseFunc(f.items[j].captures[o.regexKey])
+		valI, errI := o.parseFunc(items[i].captures[o.regexKey])
+		valJ, errJ := o.parseFunc(items[j].captures[o.regexKey])
 		if errI != nil && errJ != nil {
-			f.items[i].err = errI
-			f.items[j].err = errJ
+			items[i].err = errI
+			items[j].err = errJ
 			return true // Sort i to the top of the slice
 		}
 		if errI != nil {
-			f.items[i].err = errI
+			items[i].err = errI
 			return true // Sort i to top of the slice
 		}
 		if errJ != nil {
@@ -57,18 +67,16 @@ func (o sortOption) apply(f *Filter) error {
 
 	// If there were errors, they are at the top of the slice.
 	var errs error
-	for i, it := range f.items {
+	for i, it := range items {
 		if it.err == nil {
 			// No more errors, return the good items
-			f.items = f.items[i:]
-			return errs
+			return items[i:], errs
 		}
 		errs = multierr.Append(errs, it.err)
 	}
 
 	// All items errored, clear the slice
-	f.items = []*item{}
-	return errs
+	return []*item{}, errs
 }
 
 func SortNumeric(regexKey string, ascending bool) (Option, error) {

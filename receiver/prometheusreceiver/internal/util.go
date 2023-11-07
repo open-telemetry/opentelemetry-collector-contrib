@@ -74,7 +74,7 @@ func timestampFromMs(timeAtMs int64) pcommon.Timestamp {
 }
 
 func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, error) {
-	val := ""
+	var val string
 	switch metricType {
 	case pmetric.MetricTypeHistogram:
 		val = labels.Get(model.BucketLabel)

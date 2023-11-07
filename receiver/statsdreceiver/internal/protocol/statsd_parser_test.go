@@ -409,6 +409,17 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 				[]string{"metric_type"},
 				[]string{"histogram"}),
 		},
+		{
+			name:  "int distribution",
+			input: "test.metric:42|d",
+			wantMetric: testStatsDMetric(
+				"test.metric",
+				42,
+				false,
+				"d", 0,
+				[]string{"metric_type"},
+				[]string{"distribution"}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -632,12 +643,14 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 		},
 		{
-			name: "counter and gauge: 2 timings and 2 histograms",
+			name: "counter and gauge: 2 timings and 2 histograms and 2 distribution",
 			input: []string{
 				"statsdTestMetric1:500|ms|#mykey:myvalue",
 				"statsdTestMetric1:400|h|#mykey:myvalue",
 				"statsdTestMetric1:300|ms|#mykey:myvalue",
 				"statsdTestMetric1:10|h|@0.1|#mykey:myvalue",
+				"statsdTestMetric1:100|d|#mykey:myvalue",
+				"statsdTestMetric1:200|d|#mykey:myvalue",
 			},
 			expectedGauges:   map[statsDMetricDescription]pmetric.ScopeMetrics{},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{},
@@ -646,6 +659,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				buildGaugeMetric(testStatsDMetric("statsdTestMetric1", 400, false, "h", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				buildGaugeMetric(testStatsDMetric("statsdTestMetric1", 300, false, "ms", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				buildGaugeMetric(testStatsDMetric("statsdTestMetric1", 10, false, "h", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+				buildGaugeMetric(testStatsDMetric("statsdTestMetric1", 100, false, "d", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
+				buildGaugeMetric(testStatsDMetric("statsdTestMetric1", 200, false, "d", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 		},
 	}
@@ -930,6 +945,30 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 					[]string{"mykey"}, []string{"myvalue"}): {
 					points:  []float64{300, 100, 300, 200},
 					weights: []float64{10, 20, 10, 100},
+				},
+			},
+		},
+		{
+			name: "distribution",
+			input: []string{
+				"statsdTestMetric1:1|d|#mykey:myvalue",
+				"statsdTestMetric2:2|d|#mykey:myvalue",
+				"statsdTestMetric1:1|d|#mykey:myvalue",
+				"statsdTestMetric1:10|d|#mykey:myvalue",
+				"statsdTestMetric1:20|d|#mykey:myvalue",
+				"statsdTestMetric2:5|d|#mykey:myvalue",
+				"statsdTestMetric2:10|d|#mykey:myvalue",
+			},
+			expectedSummaries: map[statsDMetricDescription]summaryMetric{
+				testDescription("statsdTestMetric1", "d",
+					[]string{"mykey"}, []string{"myvalue"}): {
+					points:  []float64{1, 1, 10, 20},
+					weights: []float64{1, 1, 1, 1},
+				},
+				testDescription("statsdTestMetric2", "d",
+					[]string{"mykey"}, []string{"myvalue"}): {
+					points:  []float64{2, 5, 10},
+					weights: []float64{1, 1, 1},
 				},
 			},
 		},
@@ -1314,6 +1353,33 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 				})
 				dp.Negative().BucketCounts().FromRaw([]uint64{
 					2, // 1 / 0.5
+				})
+				return data
+			}(),
+			mapping: normalMapping,
+		},
+		{
+			name: "one_each_distribution",
+			input: []string{
+				"expohisto:1|d|#mykey:myvalue",
+				"expohisto:0|d|#mykey:myvalue",
+				"expohisto:-1|d|#mykey:myvalue",
+			},
+			expected: func() pmetric.Metrics {
+				data, dp := newPoint()
+				dp.SetCount(3)
+				dp.SetSum(0)
+				dp.SetMin(-1)
+				dp.SetMax(1)
+				dp.SetZeroCount(1)
+				dp.SetScale(logarithm.MaxScale)
+				dp.Positive().SetOffset(-1)
+				dp.Negative().SetOffset(-1)
+				dp.Positive().BucketCounts().FromRaw([]uint64{
+					1,
+				})
+				dp.Negative().BucketCounts().FromRaw([]uint64{
+					1,
 				})
 				return data
 			}(),

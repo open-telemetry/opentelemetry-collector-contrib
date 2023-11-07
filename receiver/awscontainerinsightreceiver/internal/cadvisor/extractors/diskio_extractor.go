@@ -56,6 +56,10 @@ func (d *DiskIOMetricExtractor) extractIoMetrics(curStatsSet []cInfo.PerDiskStat
 	return metrics
 }
 
+func (d *DiskIOMetricExtractor) Shutdown() error {
+	return d.rateCalculator.Shutdown()
+}
+
 func ioMetricName(prefix, key string) string {
 	return prefix + strings.ToLower(key)
 }

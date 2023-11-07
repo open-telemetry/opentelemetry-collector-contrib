@@ -97,6 +97,7 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 		w := worker{
 			numLogs:        c.NumLogs,
 			limitPerSecond: limit,
+			body:           c.Body,
 			totalDuration:  c.TotalDuration,
 			running:        running,
 			wg:             &wg,

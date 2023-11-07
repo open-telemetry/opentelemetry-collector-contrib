@@ -57,7 +57,6 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
 		}),
-		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithStart(prwe.Start),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)

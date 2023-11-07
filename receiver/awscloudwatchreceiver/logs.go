@@ -5,6 +5,7 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -182,7 +182,7 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 	endTime := time.Now()
 	for _, r := range l.groupRequests {
 		if err := l.pollForLogs(ctx, r, startTime, endTime); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = errors.Join(errs, err)
 		}
 	}
 	l.nextStartTime = endTime

@@ -14,7 +14,7 @@ func TestProcessorMetrics(t *testing.T) {
 		"jaegerexporter_conn_state",
 	}
 
-	views := MetricViews()
+	views := metricViews()
 	for i, viewName := range expectedViewNames {
 		assert.Equal(t, viewName, views[i].Name)
 	}

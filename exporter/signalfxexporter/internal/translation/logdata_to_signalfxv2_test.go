@@ -133,7 +133,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 }
 
 func mapToEventProps(m map[string]interface{}) []*sfxpb.Property {
-	var out []*sfxpb.Property
+	out := make([]*sfxpb.Property, 0, len(m))
 	for k, v := range m {
 		var pval sfxpb.PropertyValue
 

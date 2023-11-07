@@ -47,6 +47,8 @@ syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.m
 Variables available are detailed below in [Rule
 Expressions](#rule-expressions).
 
+Note: The built-in `type` function introduced in v1.14.1 has been relocated to `typeOf`.
+
 **receivers.&lt;receiver_type/id&gt;.config**
 
 This is configuration that will be used when creating the receiver at

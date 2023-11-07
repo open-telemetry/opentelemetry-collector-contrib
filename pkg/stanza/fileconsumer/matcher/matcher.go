@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"go.uber.org/multierr"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/filter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
 )
@@ -119,12 +117,12 @@ func (m Matcher) MatchFiles() ([]string, error) {
 		return files, nil
 	}
 
-	// Return the list of sorted files, as well as any errors that occurred while parsing the filenames
-	var errs error
-	f, errs := filter.New(files, m.regex, m.filterOpts...)
-	errs = multierr.Append(errs, f.Apply())
+	result, err := filter.Filter(files, m.regex, m.filterOpts...)
+	if len(result) == 0 {
+		return result, err
+	}
 
 	// Return only the first item.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23788
-	return f.Values()[:1], errs
+	return result[:1], err
 }

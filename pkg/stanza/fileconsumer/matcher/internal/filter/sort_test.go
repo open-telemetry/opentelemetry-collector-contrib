@@ -111,6 +111,29 @@ func TestSort(t *testing.T) {
 			expectAscending: []string{"2023020609.log", "2023020612.log"},
 		},
 		{
+			name: "SoloItem",
+			withOpts: func(t *testing.T, ascending bool) []Option {
+				o, err := SortNumeric("num", ascending)
+				require.NoError(t, err)
+				return []Option{o}
+			},
+			regex:           `(?P<num>[a-z0-9]{2}).*log`,
+			values:          []string{"22.log"},
+			expectAscending: []string{"22.log"},
+		},
+		{
+			name: "SoloErr",
+			withOpts: func(t *testing.T, ascending bool) []Option {
+				o, err := SortNumeric("num", ascending)
+				require.NoError(t, err)
+				return []Option{o}
+			},
+			regex:           `(?P<num>[a-z0-9]{2}).*log`,
+			values:          []string{"aa.log"},
+			expectApplyErr:  `strconv.Atoi: parsing "aa": invalid syntax`,
+			expectAscending: []string{},
+		},
+		{
 			name: "AllErr",
 			withOpts: func(t *testing.T, ascending bool) []Option {
 				o, err := SortNumeric("num", ascending)
@@ -126,10 +149,7 @@ func TestSort(t *testing.T) {
 	for _, tc := range cases {
 		for _, ascending := range []bool{true, false} {
 			t.Run(fmt.Sprintf("%s/%t", tc.name, ascending), func(t *testing.T) {
-				f, err := New(tc.values, regexp.MustCompile(tc.regex), tc.withOpts(t, ascending)...)
-				require.NoError(t, err, "parse failures tested elsewhere")
-
-				err = f.Apply()
+				result, err := Filter(tc.values, regexp.MustCompile(tc.regex), tc.withOpts(t, ascending)...)
 				if tc.expectApplyErr != "" {
 					assert.EqualError(t, err, tc.expectApplyErr)
 				} else {
@@ -137,13 +157,13 @@ func TestSort(t *testing.T) {
 				}
 
 				if ascending {
-					assert.Equal(t, tc.expectAscending, f.Values())
+					assert.Equal(t, tc.expectAscending, result)
 				} else {
 					descending := make([]string, 0, len(tc.expectAscending))
 					for i := len(tc.expectAscending) - 1; i >= 0; i-- {
 						descending = append(descending, tc.expectAscending[i])
 					}
-					assert.Equal(t, descending, f.Values())
+					assert.Equal(t, descending, result)
 				}
 			})
 		}

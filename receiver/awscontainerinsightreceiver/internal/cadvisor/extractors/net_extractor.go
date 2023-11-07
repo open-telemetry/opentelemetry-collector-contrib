@@ -91,6 +91,10 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 	return metrics
 }
 
+func (n *NetMetricExtractor) Shutdown() error {
+	return n.rateCalculator.Shutdown()
+}
+
 func NewNetMetricExtractor(logger *zap.Logger) *NetMetricExtractor {
 	return &NetMetricExtractor{
 		logger:         logger,

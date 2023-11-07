@@ -16,6 +16,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerImageTag("container.image.tag-val")
+			rb.SetK8sClusterUID("k8s.cluster.uid-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
 			rb.SetK8sDaemonsetName("k8s.daemonset.name-val")
@@ -36,13 +37,13 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 
 			res := rb.Emit()
-			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return 0
+			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch test {
 			case "default":
 				assert.Equal(t, 8, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 21, res.Attributes().Len())
+				assert.Equal(t, 22, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -64,6 +65,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "container.image.tag-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.cluster.uid")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "k8s.cluster.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.container.name")
 			assert.Equal(t, test == "all_set", ok)

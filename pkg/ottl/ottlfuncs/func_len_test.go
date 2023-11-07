@@ -10,6 +10,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -37,6 +40,108 @@ func Test_Len(t *testing.T) {
 	err = pcommonValueMap.FromRaw(dummyMap(5))
 	if err != nil {
 		t.Error(err)
+	}
+
+	plogLogRecordSlice := plog.NewLogRecordSlice()
+	plogLogRecordSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		plogLogRecordSlice.AppendEmpty()
+	}
+
+	plogResourceLogsSlice := plog.NewResourceLogsSlice()
+	plogResourceLogsSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		plogResourceLogsSlice.AppendEmpty()
+	}
+
+	plogScopeLogsSlice := plog.NewScopeLogsSlice()
+	for i := 0; i < 5; i++ {
+		plogScopeLogsSlice.AppendEmpty()
+	}
+	plogScopeLogsSlice.EnsureCapacity(5)
+
+	pmetricExemplarSlice := pmetric.NewExemplarSlice()
+	pmetricExemplarSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricExemplarSlice.AppendEmpty()
+	}
+
+	pmetricExponentialHistogramDataPointSlice := pmetric.NewExponentialHistogramDataPointSlice()
+	pmetricExponentialHistogramDataPointSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricExponentialHistogramDataPointSlice.AppendEmpty()
+	}
+
+	pmetricHistogramDataPointSlice := pmetric.NewHistogramDataPointSlice()
+	pmetricHistogramDataPointSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricHistogramDataPointSlice.AppendEmpty()
+	}
+
+	pmetricMetricSlice := pmetric.NewMetricSlice()
+	pmetricMetricSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricMetricSlice.AppendEmpty()
+	}
+
+	pmetricNumberDataPointSlice := pmetric.NewNumberDataPointSlice()
+	pmetricNumberDataPointSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricNumberDataPointSlice.AppendEmpty()
+	}
+
+	pmetricResourceSlice := pmetric.NewResourceMetricsSlice()
+	pmetricResourceSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricResourceSlice.AppendEmpty()
+	}
+
+	pmetricScopeMetricsSlice := pmetric.NewScopeMetricsSlice()
+	pmetricScopeMetricsSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricScopeMetricsSlice.AppendEmpty()
+	}
+
+	pmetricSummaryDataPointSlice := pmetric.NewSummaryDataPointSlice()
+	pmetricSummaryDataPointSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricSummaryDataPointSlice.AppendEmpty()
+	}
+
+	pmetricSummaryDataPointValueAtQuantileSlice := pmetric.NewSummaryDataPointValueAtQuantileSlice()
+	pmetricSummaryDataPointValueAtQuantileSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricSummaryDataPointValueAtQuantileSlice.AppendEmpty()
+	}
+
+	ptraceResourceSpansSlice := ptrace.NewResourceSpansSlice()
+	ptraceResourceSpansSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceResourceSpansSlice.AppendEmpty()
+	}
+
+	ptraceScopeSpansSlice := ptrace.NewScopeSpansSlice()
+	ptraceScopeSpansSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceScopeSpansSlice.AppendEmpty()
+	}
+
+	ptraceSpanEventSlice := ptrace.NewSpanEventSlice()
+	ptraceSpanEventSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceSpanEventSlice.AppendEmpty()
+	}
+
+	ptraceSpanLinkSlice := ptrace.NewSpanLinkSlice()
+	ptraceSpanLinkSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceSpanLinkSlice.AppendEmpty()
+	}
+
+	ptraceSpanSlice := ptrace.NewSpanSlice()
+	ptraceSpanSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceSpanSlice.AppendEmpty()
 	}
 
 	tests := []struct {
@@ -87,6 +192,92 @@ func Test_Len(t *testing.T) {
 		{
 			name:     "pcommon value map",
 			value:    pcommonValueMap,
+			expected: 5,
+		},
+		{
+			name:     "plog LogRecord slice",
+			value:    plogLogRecordSlice,
+			expected: 5,
+		},
+		{
+			name:     "plog ResourceLogs slice",
+			value:    plogResourceLogsSlice,
+			expected: 5,
+		},
+		{
+			name:     "plog ScopeLogs slice",
+			value:    plogScopeLogsSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric Exemplar slice",
+			value:    pmetricExemplarSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric ExponentialHistogramDataPoint slice",
+			value:    pmetricExponentialHistogramDataPointSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric HistogramDataPoint slice",
+			value:    pmetricHistogramDataPointSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric Metric slice",
+			value:    pmetricMetricSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric NumberDataPoint slice",
+			value:    pmetricNumberDataPointSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric Resource slice",
+			value:    pmetricResourceSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric ScopeMetrics slice",
+			value:    pmetricScopeMetricsSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric SummaryDataPoint slice",
+			value:    pmetricSummaryDataPointSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric SummaryDataPointValueAtQuantile slice",
+			value:    pmetricSummaryDataPointValueAtQuantileSlice,
+			expected: 5,
+		},
+		{
+			name:     "ptrace ResourceSpans slice",
+			value:    ptraceResourceSpansSlice,
+			expected: 5,
+		},
+		{
+			name:     "ptrace ScopeSpans slice",
+			value:    ptraceScopeSpansSlice,
+			expected: 5,
+		},
+		{
+			name:     "ptrace SpanEvent slice",
+			value:    ptraceSpanEventSlice,
+			expected: 5,
+		},
+
+		{
+			name:     "ptrace SpanLink slice",
+			value:    ptraceSpanLinkSlice,
+			expected: 5,
+		},
+		{
+			name:     "ptrace Span slice",
+			value:    ptraceSpanSlice,
 			expected: 5,
 		},
 	}

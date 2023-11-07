@@ -57,7 +57,7 @@ Number of available physical CPUs.
 
 ### system.cpu.utilization
 
-Difference in system.cpu.time since the last measurement, divided by the elapsed time and number of logical CPUs.
+Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

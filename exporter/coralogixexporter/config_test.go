@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
@@ -124,8 +125,8 @@ func TestLoadConfig(t *testing.T) {
 					WaitForReady:    false,
 					BalancerName:    "",
 				},
-				AppNameAttributes:   []string{"service.namespace"},
-				SubSystemAttributes: []string{"service.name"},
+				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
+				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "https://",
 					TLSSetting: configtls.TLSClientSetting{
@@ -269,4 +270,29 @@ func TestEndpoindsAndDomainWithAllExporters(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
 	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestGetMetadataFromResource(t *testing.T) {
+	r1 := pcommon.NewResource()
+	r1.Attributes().PutStr("k8s.node.name", "node-test")
+	r1.Attributes().PutStr("k8s.container.name", "container-test")
+	r1.Attributes().PutStr("k8s.deployment.name", "deployment-test")
+	r1.Attributes().PutStr("k8s.namespace.name", "namespace-test")
+
+	r2 := pcommon.NewResource()
+	r2.Attributes().PutStr("k8s.node.name", "node-test")
+	r2.Attributes().PutStr("k8s.namespace.name", "namespace-test")
+
+	c := &Config{
+		AppNameAttributes:   []string{"k8s.container.name", "k8s.deployment.name", "k8s.node.name"},
+		SubSystemAttributes: []string{"k8s.namespace.name", "k8s.node.name"},
+	}
+
+	appName, subSystemName := c.getMetadataFromResource(r1)
+	assert.Equal(t, "container-test", appName)
+	assert.Equal(t, "namespace-test", subSystemName)
+
+	appName, subSystemName = c.getMetadataFromResource(r2)
+	assert.Equal(t, "node-test", appName)
+	assert.Equal(t, "namespace-test", subSystemName)
 }

@@ -95,6 +95,7 @@ data:
             - k8s.namespace.name
             - k8s.node.name
             - k8s.pod.start_time
+            - k8s.cluster.uid
           # Pod labels which can be fetched via K8sattributeprocessor
           labels:
             - tag_name: key1

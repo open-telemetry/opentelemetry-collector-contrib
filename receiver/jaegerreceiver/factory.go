@@ -7,14 +7,18 @@ package jaegerreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/jaegerreceiverdeprecated"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
 
@@ -32,8 +36,36 @@ const (
 	defaultThriftBinaryBindEndpoint  = "0.0.0.0:6832"
 )
 
+var disableJaegerReceiverRemoteSampling = featuregate.GlobalRegistry().MustRegister(
+	"receiver.jaeger.DisableRemoteSampling",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, the Jaeger Receiver will fail to start when it is configured with remote_sampling config. When disabled, the receiver will start and the remote_sampling config will be no-op."),
+)
+
+var once sync.Once
+
+func logDeprecation(logger *zap.Logger) {
+	once.Do(func() {
+		logger.Warn("jaeger receiver will deprecate Thrift-gen and replace it with Proto-gen to be compatbible to jaeger 1.42.0 and higher. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/18485 for more details.")
+
+	})
+}
+
+const protoInsteadOfThrift = "receiver.jaegerreceiver.replaceThriftWithProto"
+
+var protoGate = featuregate.GlobalRegistry().MustRegister(
+	protoInsteadOfThrift,
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription(
+		"When enabled, the jaegerreceiver will use Proto-gen over Thrift-gen.",
+	),
+)
+
 // NewFactory creates a new Jaeger receiver factory.
 func NewFactory() receiver.Factory {
+	if !protoGate.IsEnabled() {
+		return jaegerreceiverdeprecated.NewFactory()
+	}
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -72,6 +104,7 @@ func createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
+	logDeprecation(set.Logger)
 
 	// Convert settings in the source config to configuration struct
 	// that Jaeger receiver understands.
@@ -95,6 +128,10 @@ func createTracesReceiver(
 
 	if rCfg.Protocols.ThriftCompact != nil {
 		config.AgentCompactThrift = *rCfg.ThriftCompact
+	}
+
+	if rCfg.RemoteSampling != nil {
+		set.Logger.Warn("You are using a deprecated no-op `remote_sampling` option which will be removed soon; use a `jaegerremotesampling` extension instead")
 	}
 
 	// Create the receiver.

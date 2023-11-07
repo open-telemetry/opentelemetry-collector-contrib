@@ -119,6 +119,7 @@ func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	e1 := []testExpectation{
 		assertMetricPresent("http_connected_total",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -137,6 +138,7 @@ func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 			}),
 		assertMetricPresent("foo_gauge_total",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{

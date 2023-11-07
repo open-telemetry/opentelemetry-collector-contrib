@@ -33,16 +33,18 @@ type (
 const (
 	tagMetricType = "metric_type"
 
-	CounterType   MetricType = "c"
-	GaugeType     MetricType = "g"
-	HistogramType MetricType = "h"
-	TimingType    MetricType = "ms"
+	CounterType      MetricType = "c"
+	GaugeType        MetricType = "g"
+	HistogramType    MetricType = "h"
+	TimingType       MetricType = "ms"
+	DistributionType MetricType = "d"
 
-	CounterTypeName   TypeName = "counter"
-	GaugeTypeName     TypeName = "gauge"
-	HistogramTypeName TypeName = "histogram"
-	TimingTypeName    TypeName = "timing"
-	TimingAltTypeName TypeName = "timer"
+	CounterTypeName      TypeName = "counter"
+	GaugeTypeName        TypeName = "gauge"
+	HistogramTypeName    TypeName = "histogram"
+	TimingTypeName       TypeName = "timing"
+	TimingAltTypeName    TypeName = "timer"
+	DistributionTypeName TypeName = "distribution"
 
 	GaugeObserver     ObserverType = "gauge"
 	SummaryObserver   ObserverType = "summary"
@@ -143,6 +145,8 @@ func (t MetricType) FullName() TypeName {
 		return TimingTypeName
 	case HistogramType:
 		return HistogramTypeName
+	case DistributionType:
+		return DistributionTypeName
 	}
 	return TypeName(fmt.Sprintf("unknown(%s)", t))
 }
@@ -162,7 +166,7 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
 		switch eachMap.StatsdType {
-		case HistogramTypeName:
+		case HistogramTypeName, DistributionTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
 			p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 		case TimingTypeName, TimingAltTypeName:
@@ -255,7 +259,7 @@ var timeNowFunc = time.Now
 
 func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 	switch t {
-	case HistogramType:
+	case HistogramType, DistributionType:
 		return p.histogramEvents
 	case TimingType:
 		return p.timerEvents
@@ -301,7 +305,7 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())
 		}
 
-	case TimingType, HistogramType:
+	case TimingType, HistogramType, DistributionType:
 		category := p.observerCategoryFor(parsedMetric.description.metricType)
 		switch category.method {
 		case GaugeObserver:
@@ -372,7 +376,7 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 
 	inType := MetricType(parts[1])
 	switch inType {
-	case CounterType, GaugeType, HistogramType, TimingType:
+	case CounterType, GaugeType, HistogramType, TimingType, DistributionType:
 		result.description.metricType = inType
 	default:
 		return result, fmt.Errorf("unsupported metric type: %s", inType)

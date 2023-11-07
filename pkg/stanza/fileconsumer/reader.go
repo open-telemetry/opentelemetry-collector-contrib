@@ -12,11 +12,11 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 type readerConfig struct {
@@ -29,24 +29,26 @@ type readerConfig struct {
 	includeFilePathResolved bool
 }
 
+type readerMetadata struct {
+	Fingerprint     *fingerprint.Fingerprint
+	Offset          int64
+	FileAttributes  map[string]any
+	HeaderFinalized bool
+}
+
 // reader manages a single file
 type reader struct {
-	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
+	*zap.SugaredLogger
 	*readerConfig
+	*readerMetadata
+	file          *os.File
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
-	encoding      helper.Encoding
+	decoder       *decode.Decoder
+	headerReader  *header.Reader
 	processFunc   emit.Callback
-
-	Fingerprint    *fingerprint.Fingerprint
-	Offset         int64
-	generation     int
-	file           *os.File
-	FileAttributes map[string]any
-	eof            bool
-
-	HeaderFinalized bool
-	headerReader    *header.Reader
+	generation    int
+	eof           bool
 }
 
 // offsetToEnd sets the starting offset
@@ -87,7 +89,7 @@ func (r *reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		token, err := r.encoding.Decode(s.Bytes())
+		token, err := r.decoder.Decode(s.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else if err := r.processFunc(ctx, token, r.FileAttributes); err != nil {
@@ -122,12 +124,25 @@ func (r *reader) finalizeHeader() {
 	r.HeaderFinalized = true
 }
 
+// Delete will close and delete the file
+func (r *reader) Delete() {
+	if r.file == nil {
+		return
+	}
+	f := r.file
+	r.Close()
+	if err := os.Remove(f.Name()); err != nil {
+		r.Errorf("could not delete %s", f.Name())
+	}
+}
+
 // Close will close the file
 func (r *reader) Close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.Debugw("Problem closing reader", zap.Error(err))
 		}
+		r.file = nil
 	}
 
 	if r.headerReader != nil {

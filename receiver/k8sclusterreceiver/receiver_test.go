@@ -275,12 +275,6 @@ func newFakeClientWithAllResources() *fake.Clientset {
 				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
 			},
 		},
-		{
-			GroupVersion: "autoscaling/v2beta2",
-			APIResources: []v1.APIResource{
-				gvkToAPIResource(gvk.HorizontalPodAutoscalerBeta),
-			},
-		},
 	}
 	return client
 }

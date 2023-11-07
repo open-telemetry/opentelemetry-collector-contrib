@@ -60,7 +60,7 @@ Note that _by default_, no logs will be read from a file that is not actively be
 
 ### Operators
 
-Each operator performs a simple responsibility, such as parsing a timestamp or JSON. Chain together operators to process logs into a desired format.
+Each [operator](../../pkg/stanza/docs/operators/README.md#what-is-an-operator) performs a simple responsibility, such as parsing a timestamp or JSON. Chain together operators to process logs into a desired format.
 
 - Every operator has a `type`.
 - Every operator can be given a unique `id`. If you use the same type of operator more than once in a pipeline, you must specify an `id`. Otherwise, the `id` defaults to the value of `type`.

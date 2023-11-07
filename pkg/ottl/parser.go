@@ -102,7 +102,7 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 // If parsing fails, returns an empty slice  with a multierr error containing
 // an error per failed statement.
 func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
-	var parsedStatements []*Statement[K]
+	parsedStatements := make([]*Statement[K], 0, len(statements))
 	var parseErr error
 
 	for _, statement := range statements {

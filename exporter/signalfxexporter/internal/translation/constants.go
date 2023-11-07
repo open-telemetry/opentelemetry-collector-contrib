@@ -395,6 +395,14 @@ translation_rules:
     major: vmpage_io.swap.out
     minor: vmpage_io.memory.out
 
+# convert from bytes to pages
+- action: divide_int
+  scale_factors_int:
+    vmpage_io.swap.in: 4096
+    vmpage_io.swap.out: 4096
+    vmpage_io.memory.in: 4096
+    vmpage_io.memory.out: 4096
+
 # process metric
 - action: copy_metrics
   mapping:

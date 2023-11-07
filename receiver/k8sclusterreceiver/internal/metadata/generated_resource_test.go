@@ -27,6 +27,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sHpaUID("k8s.hpa.uid-val")
 			rb.SetK8sJobName("k8s.job.name-val")
 			rb.SetK8sJobUID("k8s.job.uid-val")
+			rb.SetK8sKubeletVersion("k8s.kubelet.version-val")
+			rb.SetK8sKubeproxyVersion("k8s.kubeproxy.version-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNamespaceUID("k8s.namespace.uid-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
@@ -46,13 +48,13 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
 
 			res := rb.Emit()
-			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return 0
+			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch test {
 			case "default":
 				assert.Equal(t, 31, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 31, res.Attributes().Len())
+				assert.Equal(t, 33, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -129,6 +131,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.job.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.kubelet.version")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "k8s.kubelet.version-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.kubeproxy.version")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "k8s.kubeproxy.version-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.namespace.name")
 			assert.True(t, ok)

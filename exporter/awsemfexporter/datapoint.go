@@ -22,10 +22,10 @@ const (
 	summarySumSuffix   = "_sum"
 )
 
-var (
-	deltaMetricCalculator   = aws.NewFloat64DeltaCalculator()
-	summaryMetricCalculator = aws.NewMetricCalculator(calculateSummaryDelta)
-)
+type emfCalculators struct {
+	delta   aws.MetricCalculator
+	summary aws.MetricCalculator
+}
 
 func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
 	metricEntry := val.(summaryMetricEntry)
@@ -60,7 +60,7 @@ type dataPoints interface {
 	// dataPoint: the adjusted data point
 	// retained: indicates whether the data point is valid for further process
 	// NOTE: It is an expensive call as it calculates the metric value.
-	CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool) (dataPoint []dataPoint, retained bool)
+	CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) (dataPoint []dataPoint, retained bool)
 }
 
 // deltaMetricMetadata contains the metadata required to perform rate/delta calculation
@@ -106,7 +106,7 @@ type summaryMetricEntry struct {
 }
 
 // CalculateDeltaDatapoints retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
-func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool) ([]dataPoint, bool) {
+func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, calculators *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
@@ -124,7 +124,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 	if dps.adjustToDelta {
 		var deltaVal interface{}
 		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
-		deltaVal, retained = deltaMetricCalculator.Calculate(mKey, metricVal, metric.Timestamp().AsTime())
+		deltaVal, retained = calculators.delta.Calculate(mKey, metricVal, metric.Timestamp().AsTime())
 
 		// If a delta to the previous data point could not be computed use the current metric value instead
 		if !retained && dps.retainInitialValueForDelta {
@@ -146,7 +146,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 }
 
 // CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
-func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool) ([]dataPoint, bool) {
+func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
@@ -165,7 +165,7 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 }
 
 // CalculateDeltaDatapoints retrieves the ExponentialHistogramDataPoint at the given index.
-func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, instrumentationScopeName string, _ bool) ([]dataPoint, bool) {
+func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.ExponentialHistogramDataPointSlice.At(idx)
 
 	scale := metric.Scale()
@@ -247,7 +247,7 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 }
 
 // CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
-func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool) ([]dataPoint, bool) {
+func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.SummaryDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
@@ -261,7 +261,7 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 	if dps.adjustToDelta {
 		var delta interface{}
 		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
-		delta, retained = summaryMetricCalculator.Calculate(mKey, summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
+		delta, retained = calculators.summary.Calculate(mKey, summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
 
 		// If a delta to the previous data point could not be computed use the current metric value instead
 		if !retained && dps.retainInitialValueForDelta {
@@ -333,6 +333,7 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 
 	var dps dataPoints
 
+	//exhaustive:enforce
 	switch pmd.Type() {
 	case pmetric.MetricTypeGauge:
 		metric := pmd.Gauge()

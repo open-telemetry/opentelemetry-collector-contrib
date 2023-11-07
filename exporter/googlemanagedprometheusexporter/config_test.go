@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Exporters), 3)
+	assert.Equal(t, len(cfg.Exporters), 2)
 
 	r0 := cfg.Exporters[component.NewID(metadata.Type)].(*Config)
 	assert.Equal(t, r0, factory.CreateDefaultConfig().(*Config))
@@ -44,19 +44,15 @@ func TestLoadConfig(t *testing.T) {
 				ProjectID: "my-project",
 				UserAgent: "opentelemetry-collector-contrib {{version}}",
 				MetricConfig: MetricConfig{
-					ExtraMetricsConfig: ExtraMetricsConfig{
-						EnableTargetInfo: true,
-						EnableScopeInfo:  true,
+					Config: googlemanagedprometheus.Config{
+						AddMetricSuffixes: false,
+						ExtraMetricsConfig: googlemanagedprometheus.ExtraMetricsConfig{
+							EnableTargetInfo: false,
+							EnableScopeInfo:  false,
+						},
 					},
+					Prefix: "my-metric-domain.com",
 				},
-			},
-			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:             true,
-				InitialInterval:     10 * time.Second,
-				MaxInterval:         1 * time.Minute,
-				MaxElapsedTime:      10 * time.Minute,
-				RandomizationFactor: backoff.DefaultRandomizationFactor,
-				Multiplier:          backoff.DefaultMultiplier,
 			},
 			QueueSettings: exporterhelper.QueueSettings{
 				Enabled:      true,
@@ -64,9 +60,4 @@ func TestLoadConfig(t *testing.T) {
 				QueueSize:    10,
 			},
 		})
-
-	r2 := cfg.Exporters[component.NewIDWithName(metadata.Type, "customprefix")].(*Config)
-	r2Expected := factory.CreateDefaultConfig().(*Config)
-	r2Expected.GMPConfig.MetricConfig.Prefix = "my-metric-domain.com"
-	assert.Equal(t, r2, r2Expected)
 }

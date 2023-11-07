@@ -31,6 +31,12 @@ type collectDRecord struct {
 	Severity       *string                `json:"severity"`
 }
 
+type createMetricInfo struct {
+	Name   string
+	DsType *string
+	Val    *json.Number
+}
+
 func (cdr *collectDRecord) isEvent() bool {
 	return cdr.Time != nil && cdr.Severity != nil && cdr.Message != nil
 }
@@ -68,6 +74,11 @@ func (cdr *collectDRecord) appendToMetrics(scopeMetrics pmetric.ScopeMetrics, de
 		if i < len(cdr.Dstypes) && i < len(cdr.Values) && cdr.Values[i] != nil {
 			dsType, dsName, val := cdr.Dstypes[i], cdr.Dsnames[i], cdr.Values[i]
 			metricName, usedDsName := cdr.getReasonableMetricName(i, labels)
+			createMetric := createMetricInfo{
+				Name:   metricName,
+				DsType: dsType,
+				Val:    val,
+			}
 
 			addIfNotNullOrEmpty(labels, "plugin", cdr.Plugin)
 			parseAndAddLabels(labels, cdr.PluginInstance, cdr.Host)
@@ -75,7 +86,7 @@ func (cdr *collectDRecord) appendToMetrics(scopeMetrics pmetric.ScopeMetrics, de
 				addIfNotNullOrEmpty(labels, "dsname", dsName)
 			}
 
-			metric, err := cdr.newMetric(metricName, dsType, val, labels)
+			metric, err := cdr.newMetric(createMetric, labels)
 			if err != nil {
 				return fmt.Errorf("error processing metric %s: %w", sanitize.String(metricName), err)
 			}
@@ -87,11 +98,11 @@ func (cdr *collectDRecord) appendToMetrics(scopeMetrics pmetric.ScopeMetrics, de
 }
 
 // Create new metric, get labels, then setting attribute and metric info
-func (cdr *collectDRecord) newMetric(name string, dsType *string, val *json.Number, labels map[string]string) (pmetric.Metric, error) {
+func (cdr *collectDRecord) newMetric(createMetric createMetricInfo, labels map[string]string) (pmetric.Metric, error) {
 	attributes := setAttributes(labels)
-	metric, err := cdr.setMetric(name, dsType, val, attributes)
+	metric, err := cdr.setMetric(createMetric, attributes)
 	if err != nil {
-		return pmetric.Metric{}, fmt.Errorf("error processing metric %s: %w", name, err)
+		return pmetric.Metric{}, fmt.Errorf("error processing metric %s: %w", createMetric.Name, err)
 	}
 	return metric, nil
 }
@@ -105,24 +116,23 @@ func setAttributes(labels map[string]string) pcommon.Map {
 }
 
 // Set new metric info with name, datapoint, time, attributes
-func (cdr *collectDRecord) setMetric(name string, dsType *string, val *json.Number, atr pcommon.Map) (pmetric.Metric, error) {
-
+func (cdr *collectDRecord) setMetric(createMetric createMetricInfo, atr pcommon.Map) (pmetric.Metric, error) {
 	typ := ""
 	metric := pmetric.NewMetric()
 
-	if dsType != nil {
-		typ = *dsType
+	if createMetric.DsType != nil {
+		typ = *createMetric.DsType
 	}
 
-	metric.SetName(name)
+	metric.SetName(createMetric.Name)
 	dataPoint := setDataPoint(typ, metric)
 	dataPoint.SetTimestamp(cdr.protoTime())
 	atr.CopyTo(dataPoint.Attributes())
 
-	if pointVal, err := val.Int64(); err == nil {
-		dataPoint.SetIntValue(pointVal)
-	} else if pointVal, err := val.Float64(); err == nil {
-		dataPoint.SetDoubleValue(pointVal)
+	if val, err := createMetric.Val.Int64(); err == nil {
+		dataPoint.SetIntValue(val)
+	} else if val, err := createMetric.Val.Float64(); err == nil {
+		dataPoint.SetDoubleValue(val)
 	} else {
 		return pmetric.Metric{}, fmt.Errorf("value could not be decoded: %w", err)
 	}

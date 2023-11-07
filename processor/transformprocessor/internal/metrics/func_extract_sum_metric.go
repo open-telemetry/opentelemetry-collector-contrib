@@ -44,20 +44,11 @@ type SumCountDataPoint interface {
 
 func extractSumMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
-		var aggTemp pmetric.AggregationTemporality
 		metric := tCtx.GetMetric()
 		invalidMetricTypeError := fmt.Errorf("extract_sum_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got %s", metric.Type())
 
-		switch metric.Type() {
-		case pmetric.MetricTypeHistogram:
-			aggTemp = metric.Histogram().AggregationTemporality()
-		case pmetric.MetricTypeExponentialHistogram:
-			aggTemp = metric.ExponentialHistogram().AggregationTemporality()
-		case pmetric.MetricTypeSummary:
-			// Summaries don't have an aggregation temporality, but they *should* be cumulative based on the Openmetrics spec.
-			// This should become an optional argument once those are available in OTTL.
-			aggTemp = pmetric.AggregationTemporalityCumulative
-		default:
+		aggTemp := getAggregationTemporality(metric)
+		if aggTemp == pmetric.AggregationTemporalityUnspecified {
 			return nil, invalidMetricTypeError
 		}
 
@@ -109,4 +100,19 @@ func addSumDataPoint(dataPoint SumCountDataPoint, destination pmetric.NumberData
 	newDp.SetDoubleValue(dataPoint.Sum())
 	newDp.SetStartTimestamp(dataPoint.StartTimestamp())
 	newDp.SetTimestamp(dataPoint.Timestamp())
+}
+
+func getAggregationTemporality(metric pmetric.Metric) pmetric.AggregationTemporality {
+	switch metric.Type() {
+	case pmetric.MetricTypeHistogram:
+		return metric.Histogram().AggregationTemporality()
+	case pmetric.MetricTypeExponentialHistogram:
+		return metric.ExponentialHistogram().AggregationTemporality()
+	case pmetric.MetricTypeSummary:
+		// Summaries don't have an aggregation temporality, but they *should* be cumulative based on the Openmetrics spec.
+		// This should become an optional argument once those are available in OTTL.
+		return pmetric.AggregationTemporalityCumulative
+	default:
+		return pmetric.AggregationTemporalityUnspecified
+	}
 }

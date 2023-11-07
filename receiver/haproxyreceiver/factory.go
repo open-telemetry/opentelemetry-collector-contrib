@@ -37,16 +37,15 @@ func newReceiver(
 ) (receiver.Metrics, error) {
 	haProxyCfg := cfg.(*Config)
 	mp := newScraper(haProxyCfg, settings)
-	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape)
+	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape, scraperhelper.WithStart(mp.start))
 	if err != nil {
 		return nil, err
 	}
-	opt := scraperhelper.AddScraper(s)
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&haProxyCfg.ScraperControllerSettings,
 		settings,
 		consumer,
-		opt,
+		scraperhelper.AddScraper(s),
 	)
 }

@@ -24,9 +24,8 @@ type labelKeysAndType struct {
 	allNumberDataPointValueInt bool
 }
 
-// ResourceMetricsToOC may be used only by OpenCensus receiver and exporter implementations.
-// Deprecated: Use pmetric.Metrics.
-// TODO: move this function to OpenCensus package.
+// ResourceMetricsToOC converts pmetric.ResourceMetrics to OC data format,
+// may be used only by OpenCensus receiver and exporter implementations.
 func ResourceMetricsToOC(rm pmetric.ResourceMetrics) (*occommon.Node, *ocresource.Resource, []*ocmetrics.Metric) {
 	node, resource := internalResourceToOC(rm.Resource())
 	ilms := rm.ScopeMetrics()
