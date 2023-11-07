@@ -7,13 +7,35 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+// Cache compiled patterns
+var compiledPatterns = make(map[string]*regexp.Regexp)
+var mutex = &sync.RWMutex{}
+
 type IsMatchArguments[K any] struct {
 	Target  ottl.StringLikeGetter[K]
 	Pattern ottl.StringLikeGetter[K]
+}
+
+func GetCompiledPattern(pattern *string) (*regexp.Regexp, error) {
+	mutex.RLock()
+	compiledPattern, ok := compiledPatterns[*pattern]
+	mutex.RUnlock()
+	if !ok {
+		var err error
+		compiledPattern, err = regexp.Compile(*pattern)
+		if err != nil {
+			return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)
+		}
+		mutex.Lock()
+		compiledPatterns[*pattern] = compiledPattern
+		mutex.Unlock()
+	}
+	return compiledPattern, nil
 }
 
 func NewIsMatchFactory[K any]() ottl.Factory[K] {
@@ -40,9 +62,12 @@ func isMatch[K any](target ottl.StringLikeGetter[K], pattern ottl.StringLikeGett
 		if val == nil {
 			return false, nil
 		}
-		compiledPattern, err := regexp.Compile(*val)
+		compiledPattern, err := GetCompiledPattern(val)
 		if err != nil {
-			return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)
+			return nil, err
+		}
+		if compiledPattern == nil {
+			return false, nil
 		}
 		val2, err := target.Get(ctx, tCtx)
 		if err != nil {

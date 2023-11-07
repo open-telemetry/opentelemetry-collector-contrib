@@ -135,6 +135,20 @@ func Test_isMatch(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			name: "nil pattern",
+			target: &ottl.StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "hello world", nil
+				},
+			},
+			pattern: &ottl.StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			expected: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
