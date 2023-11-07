@@ -1,3 +1,9 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:build linux
+// +build linux
+
 package namedpipe
 
 import (
@@ -39,7 +45,11 @@ func (w *Watcher) Watch(ctx context.Context) error {
 			return nil
 		case event := <-w.watcher.Events:
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				w.C <- struct{}{}
+				select {
+				case w.C <- struct{}{}:
+				case <-ctx.Done():
+					return nil
+				}
 			}
 		case err := <-w.watcher.Errors:
 			return fmt.Errorf("watcher error: %w", err)

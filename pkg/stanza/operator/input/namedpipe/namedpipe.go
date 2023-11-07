@@ -1,3 +1,9 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:build linux
+// +build linux
+
 package namedpipe
 
 import (
@@ -7,13 +13,14 @@ import (
 	"os"
 	"sync"
 
+	"go.uber.org/zap"
+	"golang.org/x/sys/unix"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
-	"go.uber.org/zap"
-	"golang.org/x/sys/unix"
 )
 
 const (
@@ -97,7 +104,7 @@ type Input struct {
 	wg          sync.WaitGroup
 }
 
-func (n *Input) Start(p operator.Persister) error {
+func (n *Input) Start(_ operator.Persister) error {
 	stat, err := os.Stat(n.path)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to stat named pipe: %w", err)
@@ -108,15 +115,15 @@ func (n *Input) Start(p operator.Persister) error {
 	}
 
 	if os.IsNotExist(err) {
-		if err := unix.Mkfifo(n.path, n.permissions); err != nil {
-			return fmt.Errorf("failed to create named pipe: %w", err)
+		if fifoErr := unix.Mkfifo(n.path, n.permissions); fifoErr != nil {
+			return fmt.Errorf("failed to create named pipe: %w", fifoErr)
 		}
 	}
 
 	// chmod the named pipe because mkfifo respects the umask which may result
 	// in a named pipe with incorrect permissions.
-	if err := os.Chmod(n.path, os.FileMode(n.permissions)); err != nil {
-		return fmt.Errorf("failed to chmod named pipe: %w", err)
+	if chmodErr := os.Chmod(n.path, os.FileMode(n.permissions)); chmodErr != nil {
+		return fmt.Errorf("failed to chmod named pipe: %w", chmodErr)
 	}
 
 	watcher, err := NewWatcher(n.path)
