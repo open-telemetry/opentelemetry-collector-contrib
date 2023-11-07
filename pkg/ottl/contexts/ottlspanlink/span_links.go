@@ -122,10 +122,10 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 			return accessSpanLinkAttributes(), nil
 		}
 		return accessSpanLinkAttributesKey(mapKey), nil
-	// TODO(fujin): Would it be valid to enable modifying the span id, is this the trace.link.span_id? It doesn't seem like there is something in 
-	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/pdata/ptrace/generated_spanlink.go that allows it to be set.
-	// case "span_id":
-	// 	return accessSpanLinkSpanID(), nil
+	 case "span_id":
+		return accessSpanLinkSpanID(), nil
+	 case "trace_id":
+		return accessSpanLinkTraceID(), nil
 	case "dropped_attributes_count":
 		return accessSpanLinkDroppedAttributeCount(), nil
 	}
@@ -158,20 +158,19 @@ func accessCacheKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-// TODO(fujin): Remove pending question above
-// func accessSpanLinkSpanID() ottl.StandardGetSetter[TransformContext] {
-// 	return ottl.StandardGetSetter[TransformContext]{
-// 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-// 			return tCtx.GetSpanLink().SpanID(), nil
-// 		},
-// 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-// 			if newName, ok := val.(pcommon.SpanID); ok {
-// 				tCtx.GetSpanLink().SetSpanID(newName)
-// 			}
-// 			return nil
-// 		},
-// 	}
-// }
+func accessSpanLinkSpanID() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return tCtx.GetSpanLink().SpanID(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if newName, ok := val.(pcommon.SpanID); ok {
+				tCtx.GetSpanLink().SetSpanID(newName)
+			}
+			return nil
+		},
+	}
+}
 
 func accessSpanLinkAttributes() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
@@ -206,6 +205,20 @@ func accessSpanLinkDroppedAttributeCount() ottl.StandardGetSetter[TransformConte
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if newCount, ok := val.(int64); ok {
 				tCtx.GetSpanLink().SetDroppedAttributesCount(uint32(newCount))
+			}
+			return nil
+		},
+	}
+}
+
+func accessSpanLinkTraceID() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return tCtx.GetSpanLink().TraceID(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if newTraceID, ok := val.(pcommon.TraceID); ok {
+				tCtx.GetSpanLink().SetTraceID(newTraceID)
 			}
 			return nil
 		},
