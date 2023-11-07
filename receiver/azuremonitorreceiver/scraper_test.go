@@ -674,3 +674,60 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 		},
 	}
 }
+
+func TestLookupPlatform(t *testing.T) {
+	// Tests lookup of cloud.platform among semantic convention well known kinds based on Azure resourceID
+	// Current types are azure_vm, azure_container_instance, azure_aks, azure_functions, azure_app_service, azure_openshift
+	// OTel Resource semantic conventions for cloud - https://opentelemetry.io/docs/specs/semconv/resource/cloud/
+	// Azure Monitor metrics by resource - https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/metrics-index
+	// Azure resource providers - https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-services-resource-providers
+	tests := []struct {
+		name       string
+		resourceID string
+		want       string
+	}{
+		{
+			name:       "VMs",
+			resourceID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Compute/virtualMachines/vm1",
+			want:       "azure_vm",
+		},
+		{
+			name:       "Container Groups",
+			resourceID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.ContainerInstance/containerGroups/container1",
+			want:       "azure_container_instances",
+		},
+		{
+			name:       "Container Scale Sets",
+			resourceID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.ContainerInstance/containerScaleSets/container1",
+			want:       "azure_container_instances",
+		},
+		{
+			name:       "AKS",
+			resourceID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.ContainerService/managedClusters/cluster1",
+			want:       "azure_aks",
+		},
+		// We don't currently support platform inference in the following cases, even though they're referenced in semantic conventions
+		{
+			name:       "Functions",
+			resourceID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Web/sites/site1",
+			want:       "",
+		},
+		{
+			name:       "App Services",
+			resourceID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Web/sites/site1",
+			want:       "",
+		},
+		{
+			name:       "OpenShift",
+			resourceID: "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.ContainerService/openShiftManagedClusters/cluster1",
+			want:       "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := lookupPlatform(tt.resourceID); got != tt.want {
+				t.Errorf("lookupPlatform() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

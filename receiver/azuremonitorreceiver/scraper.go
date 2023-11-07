@@ -61,11 +61,15 @@ const (
 
 var (
 	cloudProvider = "azure"
-	rx = regexp.MustCompile(`\/providers\/([^\/]+)\/`)
+	// regex captures the provider and resource type from an Azure resourceID
+	// e.g. /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm
+	rx          = regexp.MustCompile(`\/providers\/([^\/]+\/[^\/]+)\/`)
 	platformMap = map[string]string{
-		"microsoft.compute/virtualmachines": "azure_vm",
-		"microsoft.containerinstance": "azure_container_instances",
-		"microsoft.kubernetes": "azure_aks",
+		"microsoft.compute/virtualmachines":              "azure_vm",
+		"microsoft.containerinstance/containergroups":    "azure_container_instances",
+		"microsoft.containerinstance/containerscalesets": "azure_container_instances",
+		"microsoft.kubernetes/connectedclusters":         "azure_aks",
+		"microsoft.containerservice/managedclusters":     "azure_aks",
 		// semantic conventions also identifies "azure_app_service",  "azure_functions", and "azure_openshift"
 		// however it's not clear to me how to identify these platforms from the resource
 	}
@@ -269,7 +273,7 @@ func (s *azureScraper) getResources(ctx context.Context) {
 				attributes["cloud.provider"] = &cloudProvider
 				attributes["cloud.account.id"] = &s.cfg.SubscriptionID
 				// we add cloud.platform if we can identify it from the resourceID
-				cloudPlatform := lookupProvider(*resource.ID)
+				cloudPlatform := lookupPlatform(*resource.ID)
 				if cloudPlatform != "" {
 					attributes["cloud.platform"] = &cloudPlatform
 				}
@@ -363,18 +367,17 @@ func (s *azureScraper) storeMetricsDefinition(resourceID, name string, composite
 	}
 }
 
-// gets platform
+// attempts to lookup the platform for inference based on the resourceID
 func lookupPlatform(resourceID string) string {
-	// extract namespace from resourceID
-	s, err := regexp.Compile(`\/providers\/([^\/]+)\/`)
-	if err != nil {
+	match := rx.FindStringSubmatch(strings.ToLower(resourceID))
+	if len(match) < 2 {
 		return ""
 	}
-	match := s.FindStringSubmatch(strings.ToLower(resourceID))
-	if len(match) == 2 {
-		return match[1]
+	p, ok := platformMap[match[1]]
+	if !ok {
+		return ""
 	}
-	return ""
+	return p
 }
 
 func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string) {
