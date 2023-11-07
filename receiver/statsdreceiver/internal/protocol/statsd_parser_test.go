@@ -53,8 +53,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		},
 		{
 			name:  "invalid tag format",
-			input: "test.metric:42|c|#key1",
-			err:   errors.New("invalid tag format: [key1]"),
+			input: "test.metric:42|c|#:val1",
+			err:   errors.New("invalid tag format: \":val1\""),
 		},
 		{
 			name:  "unrecognized message part",
@@ -90,7 +90,7 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			err:   errors.New("unsupported metric type: unhandled_type"),
 		},
 		{
-			name:  "counter metric with sample rate and tag",
+			name:  "counter metric with sample rate and (dimensional) tag",
 			input: "test.metric:42|c|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
 				"test.metric",
@@ -100,6 +100,18 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				0.1,
 				[]string{"key"},
 				[]string{"value"}),
+		},
+		{
+			name:  "counter metric with sample rate and (simple) tag",
+			input: "test.metric:42|c|@0.1|#key",
+			wantMetric: testStatsDMetric(
+				"test.metric",
+				42,
+				false,
+				"c",
+				0.1,
+				[]string{"key"},
+				[]string{""}),
 		},
 		{
 			name:  "counter metric with sample rate(not divisible) and tag",

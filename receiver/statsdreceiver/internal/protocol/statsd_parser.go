@@ -410,11 +410,18 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 
 			for _, tagSet := range tagSets {
 				tagParts := strings.SplitN(tagSet, ":", 2)
-				if len(tagParts) != 2 {
-					return result, fmt.Errorf("invalid tag format: %s", tagParts)
-				}
 				k := tagParts[0]
-				v := tagParts[1]
+				if k == "" {
+					return result, fmt.Errorf("invalid tag format: %q", tagSet)
+				}
+
+				// support both simple tags (w/o value) and dimension tags (w/ value).
+				// dogstatsd notably allows simple tags.
+				var v string
+				if len(tagParts) == 2 {
+					v = tagParts[1]
+				}
+
 				kvs = append(kvs, attribute.String(k, v))
 			}
 		default:
