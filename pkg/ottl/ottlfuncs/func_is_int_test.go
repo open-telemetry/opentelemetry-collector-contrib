@@ -5,7 +5,7 @@ import (
     "testing"
 
     "github.com/stretchr/testify/assert"
-    "go.opentelemetry.io/collector/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Test_IsInt(t *testing.T) {
@@ -92,7 +92,7 @@ func Test_IsInt(t *testing.T) {
     }
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            exprFunc := isInt[any](&ottl.StandardStringGetter[any]{
+            exprFunc := isInt[any](&ottl.StandardIntGetter[any]{
                 Getter: func(context.Context, interface{}) (interface{}, error) {
                     return tt.value, nil
                 },
@@ -106,7 +106,7 @@ func Test_IsInt(t *testing.T) {
 
 // nolint:errorlint
 func Test_IsInt_Error(t *testing.T) {
-    exprFunc := isInt[any](&ottl.StandardStringGetter[any]{
+    exprFunc := isInt[any](&ottl.StandardIntGetter[any]{
         Getter: func(context.Context, interface{}) (interface{}, error) {
             return nil, ottl.TypeError("")
         },
