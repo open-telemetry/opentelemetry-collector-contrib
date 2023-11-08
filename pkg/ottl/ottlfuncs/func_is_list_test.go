@@ -47,7 +47,7 @@ func Test_IsList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := isList[any](&ottl.StandardPSliceGetter[any]{
+			exprFunc := isList[any](&ottl.StandardGetSetter[any]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},
@@ -61,7 +61,7 @@ func Test_IsList(t *testing.T) {
 
 // nolint:errorlint
 func Test_IsList_Error(t *testing.T) {
-	exprFunc := isList[any](&ottl.StandardPSliceGetter[any]{
+	exprFunc := isList[any](&ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, interface{}) (interface{}, error) {
 			return nil, ottl.TypeError("")
 		},
@@ -70,5 +70,5 @@ func Test_IsList_Error(t *testing.T) {
 	assert.Equal(t, false, result)
 	assert.Error(t, err)
 	_, ok := err.(ottl.TypeError)
-	assert.False(t, ok)
+	assert.True(t, ok)
 }
