@@ -40,13 +40,15 @@ func (h *handler) ListEndpoints() []observer.Endpoint {
 	return endpoints
 }
 
-// OnAdd is called in response to a new pod or node being detected.
+// OnAdd is called in response to a new pod, service or node being detected.
 func (h *handler) OnAdd(objectInterface interface{}, _ bool) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {
 	case *v1.Pod:
 		endpoints = convertPodToEndpoints(h.idNamespace, object)
+	case *v1.Service:
+		endpoints = convertServiceToEndpoints(h.idNamespace, object)
 	case *v1.Node:
 		endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
 	default: // unsupported
@@ -58,7 +60,7 @@ func (h *handler) OnAdd(objectInterface interface{}, _ bool) {
 	}
 }
 
-// OnUpdate is called in response to an existing pod or node changing.
+// OnUpdate is called in response to an existing pod, service or node changing.
 func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 	oldEndpoints := map[observer.EndpointID]observer.Endpoint{}
 	newEndpoints := map[observer.EndpointID]observer.Endpoint{}
@@ -73,6 +75,18 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 			oldEndpoints[e.ID] = e
 		}
 		for _, e := range convertPodToEndpoints(h.idNamespace, newPod) {
+			newEndpoints[e.ID] = e
+		}
+
+	case *v1.Service:
+		newService, ok := newObjectInterface.(*v1.Service)
+		if !ok {
+			return
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, newService) {
 			newEndpoints[e.ID] = e
 		}
 
@@ -130,7 +144,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 	}
 }
 
-// OnDelete is called in response to a pod or node being deleted.
+// OnDelete is called in response to a pod, service or node being deleted.
 func (h *handler) OnDelete(objectInterface interface{}) {
 	var endpoints []observer.Endpoint
 
@@ -143,6 +157,10 @@ func (h *handler) OnDelete(objectInterface interface{}) {
 	case *v1.Pod:
 		if object != nil {
 			endpoints = convertPodToEndpoints(h.idNamespace, object)
+		}
+	case *v1.Service:
+		if object != nil {
+			endpoints = convertServiceToEndpoints(h.idNamespace, object)
 		}
 	case *v1.Node:
 		if object != nil {
