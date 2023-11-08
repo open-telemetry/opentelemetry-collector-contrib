@@ -15,7 +15,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb := NewResourceBuilder(cfg)
 			rb.SetHostArch("host.arch-val")
 			rb.SetHostCPUCacheL2Size(22)
-			rb.SetHostCPUFamily(15)
+			rb.SetHostCPUFamily("host.cpu.family-val")
 			rb.SetHostCPUModelID(17)
 			rb.SetHostCPUModelName("host.cpu.model.name-val")
 			rb.SetHostCPUStepping(17)
@@ -53,7 +53,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok = res.Attributes().Get("host.cpu.family")
 			assert.Equal(t, test == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, 15, val.Int())
+				assert.EqualValues(t, "host.cpu.family-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.cpu.model.id")
 			assert.Equal(t, test == "all_set", ok)

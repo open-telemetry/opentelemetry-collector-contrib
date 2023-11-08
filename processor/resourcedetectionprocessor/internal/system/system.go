@@ -147,11 +147,7 @@ func reverseLookupHost(d *Detector) (string, error) {
 func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
 	d.logger.Debug("getting host's cpuinfo", zap.String("coreID", cpuInfo.CoreID))
 	d.rb.SetHostCPUVendorID(cpuInfo.VendorID)
-	family, err := strconv.ParseInt(cpuInfo.Family, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to convert cpuinfo family to integer: %w", err)
-	}
-	d.rb.SetHostCPUFamily(family)
+	d.rb.SetHostCPUFamily(cpuInfo.Family)
 
 	// For windows, this field is left blank. See https://github.com/shirou/gopsutil/blob/v3.23.9/cpu/cpu_windows.go#L113
 	// Skip setting modelId if the field is blank.

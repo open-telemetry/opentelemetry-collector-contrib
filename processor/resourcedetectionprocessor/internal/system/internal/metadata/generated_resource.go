@@ -36,9 +36,9 @@ func (rb *ResourceBuilder) SetHostCPUCacheL2Size(val int64) {
 }
 
 // SetHostCPUFamily sets provided value as "host.cpu.family" attribute.
-func (rb *ResourceBuilder) SetHostCPUFamily(val int64) {
+func (rb *ResourceBuilder) SetHostCPUFamily(val string) {
 	if rb.config.HostCPUFamily.Enabled {
-		rb.res.Attributes().PutInt("host.cpu.family", val)
+		rb.res.Attributes().PutStr("host.cpu.family", val)
 	}
 }
 
