@@ -5,4 +5,3 @@ processor/servicegraphprocessor
 receiver/dockerstatsreceiver
 receiver/journaldreceiver
 receiver/kafkareceiver
-receiver/windowseventlogreceiver

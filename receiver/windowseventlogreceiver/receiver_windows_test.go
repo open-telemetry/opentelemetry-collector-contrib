@@ -30,7 +30,7 @@ import (
 )
 
 func TestDefaultConfig(t *testing.T) {
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -39,7 +39,7 @@ func TestDefaultConfig(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	cfg := factory.CreateDefaultConfig()
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
@@ -60,7 +60,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 		}(),
 	}
 
-	_, err := NewFactory().CreateLogsReceiver(
+	_, err := newFactoryAdapter().CreateLogsReceiver(
 		context.Background(),
 		receivertest.NewNopCreateSettings(),
 		cfg,
@@ -73,7 +73,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	logMessage := "Test log"
 
 	ctx := context.Background()
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
@@ -133,7 +133,7 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	logMessage := "Test log"
 
 	ctx := context.Background()
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	cfg.InputConfig.Raw = true
@@ -186,7 +186,7 @@ func TestReadWindowsEventLoggerWithExcludeProvider(t *testing.T) {
 	src := "otel"
 
 	ctx := context.Background()
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	cfg.InputConfig.ExcludeProviders = []string{src}
@@ -225,7 +225,7 @@ func TestReadWindowsEventLoggerRawWithExcludeProvider(t *testing.T) {
 	src := "otel"
 
 	ctx := context.Background()
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	cfg.InputConfig.Raw = true
