@@ -8,13 +8,11 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -35,18 +33,13 @@ func NewCarbonDataReceiver(port int) *CarbonDataReceiver {
 
 // Start the receiver.
 func (cr *CarbonDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
-	addr := fmt.Sprintf("127.0.0.1:%d", cr.Port)
-	config := carbonreceiver.Config{
-		NetAddr: confignet.NetAddr{
-			Endpoint: addr,
-		},
-		Parser: &protocol.Config{
-			Type:   "plaintext",
-			Config: &protocol.PlaintextConfig{},
-		},
-	}
+	factory := carbonreceiver.NewFactory()
+	cfg := factory.CreateDefaultConfig().(*carbonreceiver.Config)
+	cfg.Endpoint = fmt.Sprintf("127.0.0.1:%d", cr.Port)
+
+	set := receivertest.NewNopCreateSettings()
 	var err error
-	cr.receiver, err = carbonreceiver.New(receivertest.NewNopCreateSettings(), config, mc)
+	cr.receiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
 	if err != nil {
 		return err
 	}
