@@ -606,7 +606,7 @@ The `IsList` Converter returns true if the given value is a slice.
 
 The `value` is either a path expression to a telemetry field to retrieve or a literal.
 
-If `value` is a `slice[]` or a `pcommon.ValueTypeSlice` then returns `true`, otherwise returns `false`.
+If `value` is a `slice`, `pcommon.ValueTypeSlice`. `pcommon.Slice`, or any other slice type, then returns `true`, otherwise returns `false`.
 
 Examples:
 
