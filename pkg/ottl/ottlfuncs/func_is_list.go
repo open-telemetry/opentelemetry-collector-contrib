@@ -43,8 +43,6 @@ func isList[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 
 		switch valType := val.(type) {
 
-		case pcommon.Slice:
-			return true, nil
 		case pcommon.Value:
 			switch valType.Type() {
 			case pcommon.ValueTypeSlice:
@@ -52,39 +50,7 @@ func isList[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 			}
 			return false, nil
 
-		case plog.LogRecordSlice:
-			return true, nil
-		case plog.ResourceLogsSlice:
-			return true, nil
-		case plog.ScopeLogsSlice:
-			return true, nil
-		case pmetric.ExemplarSlice:
-			return true, nil
-		case pmetric.ExponentialHistogramDataPointSlice:
-			return true, nil
-		case pmetric.HistogramDataPointSlice:
-			return true, nil
-		case pmetric.MetricSlice:
-			return true, nil
-		case pmetric.NumberDataPointSlice:
-			return true, nil
-		case pmetric.ResourceMetricsSlice:
-			return true, nil
-		case pmetric.ScopeMetricsSlice:
-			return true, nil
-		case pmetric.SummaryDataPointSlice:
-			return true, nil
-		case pmetric.SummaryDataPointValueAtQuantileSlice:
-			return true, nil
-		case ptrace.ResourceSpansSlice:
-			return true, nil
-		case ptrace.ScopeSpansSlice:
-			return true, nil
-		case ptrace.SpanEventSlice:
-			return true, nil
-		case ptrace.SpanLinkSlice:
-			return true, nil
-		case ptrace.SpanSlice:
+		case pcommon.Slice, plog.LogRecordSlice, plog.ResourceLogsSlice, plog.ScopeLogsSlice, pmetric.ExemplarSlice, pmetric.ExponentialHistogramDataPointSlice, pmetric.HistogramDataPointSlice, pmetric.MetricSlice, pmetric.NumberDataPointSlice, pmetric.ResourceMetricsSlice, pmetric.ScopeMetricsSlice, pmetric.SummaryDataPointSlice, pmetric.SummaryDataPointValueAtQuantileSlice, ptrace.ResourceSpansSlice, ptrace.ScopeSpansSlice, ptrace.SpanEventSlice, ptrace.SpanLinkSlice, ptrace.SpanSlice:
 			return true, nil
 		}
 
