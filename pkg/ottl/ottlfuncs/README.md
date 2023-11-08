@@ -300,6 +300,7 @@ Available Converters:
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
+- [IsInt](#isint)
 - [Len](#len)
 - [Log](#log)
 - [Microseconds](#microseconds)
@@ -541,6 +542,23 @@ Examples:
 - `IsString(body)`
 
 - `IsString(attributes["maybe a string"])`
+
+### IsInt
+
+`IsInt(value)`
+
+The `IsInt` Converter returns true if the given value is a integer.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal. 
+
+If `value` is an `int64` or `pcommon.ValueTypeInt` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsInt(attributes["status_code"])` 
+
+- `IsInt(123)`
+
 
 ### Len
 
