@@ -15,8 +15,8 @@ import (
 func Test_FNV(t *testing.T) {
 	tests := []struct {
 		name     string
-		value    interface{}
-		expected interface{}
+		value    any
+		expected any
 		err      bool
 	}{
 		{
@@ -32,8 +32,8 @@ func Test_FNV(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := FNVHashString[interface{}](&ottl.StandardStringGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			exprFunc, err := FNVHashString[any](&ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
@@ -52,7 +52,7 @@ func Test_FNV(t *testing.T) {
 func Test_FNVError(t *testing.T) {
 	tests := []struct {
 		name          string
-		value         interface{}
+		value         any
 		err           bool
 		expectedError string
 	}{
@@ -69,8 +69,8 @@ func Test_FNVError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := FNVHashString[interface{}](&ottl.StandardStringGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			exprFunc, err := FNVHashString[any](&ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})

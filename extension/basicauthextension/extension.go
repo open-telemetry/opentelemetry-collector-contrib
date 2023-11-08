@@ -173,7 +173,7 @@ type authData struct {
 	raw      string
 }
 
-func (a *authData) GetAttribute(name string) interface{} {
+func (a *authData) GetAttribute(name string) any {
 	switch name {
 	case "username":
 		return a.username

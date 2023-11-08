@@ -32,7 +32,7 @@ func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 }
 
 func extractCountMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
+	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		invalidMetricTypeError := fmt.Errorf("extract_count_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got %s", metric.Type())
 

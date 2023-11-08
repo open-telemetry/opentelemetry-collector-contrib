@@ -134,7 +134,7 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	err = ehHandler.newMessageHandler(context.Background(), &eventhub.Event{
 		Data:         []byte("hello"),
 		PartitionKey: nil,
-		Properties:   map[string]interface{}{"foo": "bar"},
+		Properties:   map[string]any{"foo": "bar"},
 		ID:           "11234",
 		SystemProperties: &eventhub.SystemProperties{
 			SequenceNumber: nil,

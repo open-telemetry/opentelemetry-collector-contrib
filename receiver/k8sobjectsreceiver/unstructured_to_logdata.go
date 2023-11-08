@@ -24,7 +24,7 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 
 	ul := unstructured.UnstructuredList{
 		Items: []unstructured.Unstructured{{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"type":   string(event.Type),
 				"object": udata.Object,
 			},
@@ -32,7 +32,7 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 	}
 
 	return unstructuredListToLogData(&ul, observedAt, config, func(attrs pcommon.Map) {
-		objectMeta := udata.Object["metadata"].(map[string]interface{})
+		objectMeta := udata.Object["metadata"].(map[string]any)
 		name := objectMeta["name"].(string)
 		if name != "" {
 			attrs.PutStr("event.domain", "k8s")
