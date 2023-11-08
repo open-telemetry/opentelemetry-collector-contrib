@@ -602,11 +602,11 @@ Examples:
 
 `IsList(value)`
 
-The `IsList` Converter returns true if the given value is a slice.
+The `IsList` Converter returns true if the given value is a list.
 
 The `value` is either a path expression to a telemetry field to retrieve or a literal.
 
-If `value` is a `slice`, `pcommon.ValueTypeSlice`. `pcommon.Slice`, or any other slice type, then returns `true`, otherwise returns `false`.
+If `value` is a `list`, `pcommon.ValueTypeSlice`. `pcommon.Slice`, or any other list type, then returns `true`, otherwise returns `false`.
 
 Examples:
 
