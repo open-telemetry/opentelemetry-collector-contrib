@@ -9,6 +9,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -43,6 +46,91 @@ func Test_IsList(t *testing.T) {
 			name:     "nil",
 			value:    nil,
 			expected: false,
+		},
+		{
+			name:     "plog.LogRecordSlice",
+			value:    plog.NewLogRecordSlice(),
+			expected: true,
+		},
+		{
+			name:     "plog.ResourceLogsSlice",
+			value:    plog.NewResourceLogsSlice(),
+			expected: true,
+		},
+		{
+			name:     "plog.ScopeLogsSlice",
+			value:    plog.NewScopeLogsSlice(),
+			expected: true,
+		},
+		{
+			name:     "pmetric.ExemplarSlice",
+			value:    pmetric.NewExemplarSlice(),
+			expected: true,
+		},
+		{
+			name:     "pmetric.ExponentialHistogramDataPointSlice",
+			value:    pmetric.NewExponentialHistogramDataPointSlice(),
+			expected: true,
+		},
+		{
+			name:     "pmetric.HistogramDataPointSlice",
+			value:    pmetric.NewHistogramDataPointSlice(),
+			expected: true,
+		},
+		{
+			name:     "pmetric.MetricSlice",
+			value:    pmetric.NewMetricSlice(),
+			expected: true,
+		},
+		{
+			name:     "pmetric.NumberDataPointSlice",
+			value:    pmetric.NewNumberDataPointSlice(),
+			expected: true,
+		},
+		{
+			name:     "pmetric.ResourceMetricsSlice",
+			value:    pmetric.NewResourceMetricsSlice(),
+			expected: true,
+		},
+		{
+			name:     "pmetric.ScopeMetricsSlice",
+			value:    pmetric.NewScopeMetricsSlice(),
+			expected: true,
+		},
+		{
+			name:     "pmetric.SummaryDataPointSlice",
+			value:    pmetric.NewSummaryDataPointSlice(),
+			expected: true,
+		},
+		{
+			name:     "pmetric.SummaryDataPointValueAtQuantileSlice",
+			value:    pmetric.NewSummaryDataPointValueAtQuantileSlice(),
+			expected: true,
+		},
+		{
+			name:     "ptrace.ResourceSpansSlice",
+			value:    ptrace.NewResourceSpansSlice(),
+			expected: true,
+		},
+		{
+			name:     "ptrace.ScopeSpansSlice",
+			value:    ptrace.NewScopeSpansSlice(),
+			expected: true,
+		},
+		{
+			name:     "ptrace.SpanEventSlice",
+			value:    ptrace.NewSpanEventSlice(),
+			expected: true,
+		},
+		{
+			name:     "ptrace.SpanLinkSlice",
+			value:    ptrace.NewSpanLinkSlice(),
+			expected: true,
+		},
+		{
+			name:     "ptrace.SpanSlice",
+			value:    ptrace.NewSpanSlice(),
+			expected: true,
 		},
 	}
 	for _, tt := range tests {
