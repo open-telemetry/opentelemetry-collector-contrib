@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type               = "otlpencoding"
+	Type               = "otlp_encoding"
 	ExtensionStability = component.StabilityLevelDevelopment
 )

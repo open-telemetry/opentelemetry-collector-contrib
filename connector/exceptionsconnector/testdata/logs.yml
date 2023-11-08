@@ -24,8 +24,8 @@ resourceLogs:
             body: {}
             severityNumber: 17
             severityText: ERROR
-            spanId: ""
-            traceId: ""
+            spanId: 2a00000000000000
+            traceId: 2a000000000000000000000000000000
           - attributes:
               - key: span.kind
                 value:
@@ -48,8 +48,8 @@ resourceLogs:
             body: {}
             severityNumber: 17
             severityText: ERROR
-            spanId: ""
-            traceId: ""
+            spanId: 2a00000000000000
+            traceId: 2a000000000000000000000000000000
         scope: {}
   - resource: {}
     scopeLogs:
@@ -76,6 +76,6 @@ resourceLogs:
             body: {}
             severityNumber: 17
             severityText: ERROR
-            spanId: ""
-            traceId: ""
+            spanId: 2a00000000000000
+            traceId: 2a000000000000000000000000000000
         scope: {}

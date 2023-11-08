@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/daixiang0/gci v0.11.2
-	github.com/golangci/golangci-lint v1.55.0
+	github.com/golangci/golangci-lint v1.55.1
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.5.1
 	github.com/jstemmer/go-junit-report v1.0.0
@@ -45,7 +45,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.1 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.6.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/bombsimon/wsl/v3 v3.4.0 // indirect
 	github.com/breml/bidichk v0.2.7 // indirect
 	github.com/breml/errchkjson v0.3.6 // indirect
@@ -93,7 +93,7 @@ require (
 	github.com/golangci/lint-1 v0.0.0-20191013205115-297bf364a8e0 // indirect
 	github.com/golangci/maligned v0.0.0-20180506175553-b1d89398deca // indirect
 	github.com/golangci/misspell v0.4.1 // indirect
-	github.com/golangci/revgrep v0.5.0 // indirect
+	github.com/golangci/revgrep v0.5.2 // indirect
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
@@ -170,7 +170,7 @@ require (
 	github.com/sanposhiho/wastedassign/v2 v2.0.7 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/sashamelentyev/usestdlibvars v1.24.0 // indirect
-	github.com/securego/gosec/v2 v2.18.1 // indirect
+	github.com/securego/gosec/v2 v2.18.2 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect

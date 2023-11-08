@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.110.8 // indirect
+	cloud.google.com/go v0.110.10 // indirect
 	cloud.google.com/go/compute v1.23.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/logging v1.8.1 // indirect
@@ -79,6 +79,11 @@ require (
 )
 
 retract (
+	v0.88.0
+	v0.87.0
+	v0.86.0
+	v0.85.0
+	v0.84.0
 	v0.76.2
 	v0.76.1
 	v0.65.0

@@ -1,4 +1,4 @@
-type: otlpencoding
+type: otlp_encoding
 
 status:
   class: extension
