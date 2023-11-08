@@ -188,21 +188,24 @@ func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 		return consumererror.NewPermanent(err)
 	}
 
-	if res, err := b.httpClient.Do(req); err != nil {
+	res, err := b.httpClient.Do(req)
+	if err != nil {
 		return err
-	} else if body, err := io.ReadAll(res.Body); err != nil {
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
 		return err
-	} else if err = res.Body.Close(); err != nil {
+	}
+	if err = res.Body.Close(); err != nil {
 		return err
-	} else { // nolint indent-error-flow
-		switch res.StatusCode / 100 {
-		case 2: // Success
-			break
-		case 5: // Retryable error
-			return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
-		default: // Terminal error
-			return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
-		}
+	}
+	switch res.StatusCode / 100 {
+	case 2: // Success
+		break
+	case 5: // Retryable error
+		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
+	default: // Terminal error
+		return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
 	}
 
 	return nil
