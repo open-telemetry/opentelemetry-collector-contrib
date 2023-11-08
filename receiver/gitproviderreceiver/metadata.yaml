@@ -27,9 +27,6 @@ attributes:
   repository.name:
       description: The full name of the Git repository
       type: string
-#  branch.name:
-#      description: The name of the branch in a given repository
-#      type: string
 
 metrics:
   git.repository.count:

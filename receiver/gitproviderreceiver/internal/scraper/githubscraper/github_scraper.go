@@ -30,6 +30,7 @@ type githubScraper struct {
 	settings component.TelemetrySettings
 	logger   *zap.Logger
 	mb       *metadata.MetricsBuilder
+	rb       *metadata.ResourceBuilder
 }
 
 func (ghs *githubScraper) start(_ context.Context, host component.Host) (err error) {
@@ -48,6 +49,7 @@ func newGitHubScraper(
 		settings: settings.TelemetrySettings,
 		logger:   settings.Logger,
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}
 }
 
@@ -137,5 +139,9 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		sem <- i
 	}
 
-	return ghs.mb.Emit(), nil
+    // Set the resource attributes and emit metrics with those resources
+    ghs.rb.SetGitVendorName("github")
+    ghs.rb.SetOrganizationName(ghs.cfg.GitHubOrg)
+    res := ghs.rb.Emit()
+	return ghs.mb.Emit(metadata.WithResource(res)), nil
 }
