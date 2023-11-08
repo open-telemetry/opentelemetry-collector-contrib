@@ -139,9 +139,9 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		sem <- i
 	}
 
-    // Set the resource attributes and emit metrics with those resources
-    ghs.rb.SetGitVendorName("github")
-    ghs.rb.SetOrganizationName(ghs.cfg.GitHubOrg)
-    res := ghs.rb.Emit()
+	// Set the resource attributes and emit metrics with those resources
+	ghs.rb.SetGitVendorName("github")
+	ghs.rb.SetOrganizationName(ghs.cfg.GitHubOrg)
+	res := ghs.rb.Emit()
 	return ghs.mb.Emit(metadata.WithResource(res)), nil
 }
