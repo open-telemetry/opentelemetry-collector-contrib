@@ -14,7 +14,7 @@ metrics:
 
 ### git.repository.branch.count
 
-Number of branches that exist in the repository
+Number of branches in the repository
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -28,7 +28,7 @@ Number of branches that exist in the repository
 
 ### git.repository.count
 
-Number of repositories that exist in an organization
+Number of repositories in an organization
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

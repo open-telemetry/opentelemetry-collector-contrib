@@ -1,16 +1,16 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate genqlient
+
 package githubscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal/scraper/githubscraper"
 
 import (
 	"context"
 	"errors"
 	"net/http"
-	"net/url"
 	"time"
 
-	"github.com/Khan/genqlient/graphql"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -63,24 +63,10 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	currentDate := time.Now().Day()
 	ghs.logger.Sugar().Debugf("current date: %v", currentDate)
 
-	// Enable the ability to override the endpoint for self-hosted github instances
-	// GitHub Free URL : https://api.github.com/graphql
-	// https://docs.github.com/en/graphql/guides/forming-calls-with-graphql#the-graphql-endpoint
-	graphCURL := "https://api.github.com/graphql"
-
-	if ghs.cfg.HTTPClientSettings.Endpoint != "" {
-		var err error
-
-		// GitHub Enterprise (ghe) URL : http(s)://HOSTNAME/api/graphql
-		// https://docs.github.com/en/enterprise-server@3.8/graphql/guides/forming-calls-with-graphql#the-graphql-endpoint
-		graphCURL, err = url.JoinPath(ghs.cfg.HTTPClientSettings.Endpoint, "api/graphql")
-		if err != nil {
-			ghs.logger.Sugar().Errorf("error: %v", err)
-		}
+	genClient, restClient, err := ghs.createClients()
+	if err != nil {
+		ghs.logger.Sugar().Errorf("unable to create clients", zap.Error(err))
 	}
-	ghs.logger.Sugar().Debugf("GitHub GraphQL endpoint URL set to: %v", graphCURL)
-
-	genClient := graphql.NewClient(graphCURL, ghs.client)
 
 	// Do some basic validation to ensure the values provided actually exist in github
 	// prior to making queries against that org or user value
@@ -119,17 +105,36 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	ghs.mb.RecordGitRepositoryCountDataPoint(now, int64(count))
 
 	// Get the branch count (future branch data) for each repo and record the given metrics
-	for _, repo := range repos {
-		name := repo.(*SearchNodeRepository).Name
-		trunk := repo.(*SearchNodeRepository).DefaultBranchRef.Name
+	max := 5
+	sem := make(chan int, max)
 
-		count, err := ghs.getBranches(ctx, genClient, name, ghs.cfg.GitHubOrg, trunk)
-		if err != nil {
-			ghs.logger.Sugar().Errorf("error getting branch count", zap.Error(err))
-			return ghs.mb.Emit(), err
-		}
-		ghs.mb.RecordGitRepositoryBranchCountDataPoint(now, int64(count), name)
+	for i, repo := range repos {
+		i := i
+		repo := repo
+		name := repo.Name
+		trunk := repo.DefaultBranchRef.Name
 
+		sem <- i
+		go func() {
+			count, err := ghs.getBranches(ctx, genClient, name, trunk)
+			if err != nil {
+				ghs.logger.Sugar().Errorf("error getting branch count for repo %s", zap.Error(err), repo.Name)
+			}
+			ghs.mb.RecordGitRepositoryBranchCountDataPoint(now, int64(count), name)
+
+			// Get the contributor count for each of the repositories
+			contribs, err := ghs.getContributorCount(ctx, restClient, name)
+			if err != nil {
+				ghs.logger.Sugar().Errorf("error getting contributor count for repo %s", zap.Error(err), repo.Name)
+			}
+			ghs.mb.RecordGitRepositoryContributorCountDataPoint(now, int64(contribs), name)
+			<-sem
+		}()
+	}
+
+	// send dummy values to channel to wait for all goroutines to finish
+	for i := 0; i < max; i++ {
+		sem <- i
 	}
 
 	return ghs.mb.Emit(), nil

@@ -34,14 +34,14 @@ attributes:
 metrics:
   git.repository.count:
       enabled: true
-      description: Number of repositories that exist in an organization
+      description: Number of repositories in an organization
       unit: 1
       gauge:
           value_type: int
       attributes: []
   git.repository.branch.count:
       enabled: true
-      description: Number of branches that exist in the repository
+      description: Number of branches in the repository
       unit: 1
       gauge:
           value_type: int

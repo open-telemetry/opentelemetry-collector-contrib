@@ -21,7 +21,7 @@ type metricGitRepositoryBranchCount struct {
 // init fills git.repository.branch.count metric with initial data.
 func (m *metricGitRepositoryBranchCount) init() {
 	m.data.SetName("git.repository.branch.count")
-	m.data.SetDescription("Number of branches that exist in the repository")
+	m.data.SetDescription("Number of branches in the repository")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -123,7 +123,7 @@ type metricGitRepositoryCount struct {
 // init fills git.repository.count metric with initial data.
 func (m *metricGitRepositoryCount) init() {
 	m.data.SetName("git.repository.count")
-	m.data.SetDescription("Number of repositories that exist in an organization")
+	m.data.SetDescription("Number of repositories in an organization")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
