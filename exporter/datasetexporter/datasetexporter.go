@@ -86,21 +86,21 @@ func buildKey(prefix string, separator string, key string, depth int) string {
 	return res
 }
 
-func updateWithPrefixedValuesMap(target map[string]interface{}, prefix string, separator string, suffix string, source map[string]interface{}, depth int) {
+func updateWithPrefixedValuesMap(target map[string]any, prefix string, separator string, suffix string, source map[string]any, depth int) {
 	for k, v := range source {
 		key := buildKey(prefix, separator, k, depth)
 		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValuesArray(target map[string]interface{}, prefix string, separator string, suffix string, source []interface{}, depth int) {
+func updateWithPrefixedValuesArray(target map[string]any, prefix string, separator string, suffix string, source []any, depth int) {
 	for i, v := range source {
 		key := buildKey(prefix, separator, strconv.FormatInt(int64(i), 10), depth)
 		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValues(target map[string]interface{}, prefix string, separator string, suffix string, source interface{}, depth int) {
+func updateWithPrefixedValues(target map[string]any, prefix string, separator string, suffix string, source any, depth int) {
 	setValue := func() {
 		for {
 			// now the last value wins
@@ -122,9 +122,9 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 	}
 	switch st.Kind() {
 	case reflect.Map:
-		updateWithPrefixedValuesMap(target, prefix, separator, suffix, source.(map[string]interface{}), depth)
+		updateWithPrefixedValuesMap(target, prefix, separator, suffix, source.(map[string]any), depth)
 	case reflect.Array, reflect.Slice:
-		updateWithPrefixedValuesArray(target, prefix, separator, suffix, source.([]interface{}), depth)
+		updateWithPrefixedValuesArray(target, prefix, separator, suffix, source.([]any), depth)
 	default:
 		setValue()
 	}
@@ -132,7 +132,7 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 
 func inferServerHost(
 	resource pcommon.Resource,
-	attrs map[string]interface{},
+	attrs map[string]any,
 	serverHost string,
 ) string {
 	// first use value from the attribute serverHost

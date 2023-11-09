@@ -39,12 +39,12 @@ var (
 func Test_MetricDataToSignalFxV2(t *testing.T) {
 	logger := zap.NewNop()
 
-	labelMap := map[string]interface{}{
+	labelMap := map[string]any{
 		"k0": "v0",
 		"k1": "v1",
 	}
 
-	longLabelMap := map[string]interface{}{
+	longLabelMap := map[string]any{
 		fmt.Sprintf("l%sng_key", strings.Repeat("o", 128)): "v0",
 		"k0": "v0",
 		"k1": fmt.Sprintf("l%sng_value", strings.Repeat("o", 256)),
@@ -68,7 +68,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		assert.NoError(t, doublePtWithLabels.Attributes().FromRaw(longLabelMap))
 	}
 
-	differentLabelMap := map[string]interface{}{
+	differentLabelMap := map[string]any{
 		"k00": "v00",
 		"k11": "v11",
 	}
@@ -232,7 +232,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]interface{}{
+					maps.MergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -241,7 +241,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]interface{}{
+					maps.MergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -295,7 +295,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]interface{}{
+					maps.MergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -304,7 +304,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]interface{}{
+					maps.MergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -338,12 +338,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]interface{}{
+					maps.MergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, map[string]interface{}{
+					}, map[string]any{
 						"k0": "v0",
 						"k2": "v2",
 					})),
@@ -372,7 +372,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(labelMap, map[string]interface{}{
+					maps.MergeRawMaps(labelMap, map[string]any{
 						"cloud_account_id": "efgh",
 						"cloud_provider":   conventions.AttributeCloudProviderAWS,
 						"cloud_region":     "us-east",
@@ -405,7 +405,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(labelMap, map[string]interface{}{
+					maps.MergeRawMaps(labelMap, map[string]any{
 						"cloud_provider":   conventions.AttributeCloudProviderAWS,
 						"cloud_account_id": "efgh",
 						"cloud_region":     "us-east",
@@ -438,7 +438,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(labelMap, map[string]interface{}{
+					maps.MergeRawMaps(labelMap, map[string]any{
 						"host_id":        "abcd",
 						"cloud_provider": conventions.AttributeCloudProviderGCP,
 						"k_r0":           "vr0",
@@ -469,7 +469,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(labelMap, map[string]interface{}{
+					maps.MergeRawMaps(labelMap, map[string]any{
 						"gcp_id":           "efgh_abcd",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
@@ -520,14 +520,14 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				},
 				{
 					MetricName: "gauge_int_with_dims",
-					Dimensions: map[string]interface{}{
-						"k0": []interface{}{"v1"},
+					Dimensions: map[string]any{
+						"k0": []any{"v1"},
 					},
 				},
 				{
 					MetricName: "cumulative_double_with_dims",
-					Dimensions: map[string]interface{}{
-						"k0": []interface{}{"v0"},
+					Dimensions: map[string]any{
+						"k0": []any{"v0"},
 					},
 				},
 			},
@@ -578,14 +578,14 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				},
 				{
 					MetricName: "gauge_int_with_dims",
-					Dimensions: map[string]interface{}{
-						"k0": []interface{}{"v1"},
+					Dimensions: map[string]any{
+						"k0": []any{"v1"},
 					},
 				},
 				{
 					MetricName: "cumulative_double_with_dims",
-					Dimensions: map[string]interface{}{
-						"k0": []interface{}{"v0"},
+					Dimensions: map[string]any{
+						"k0": []any{"v0"},
 					},
 				},
 			},
@@ -619,27 +619,27 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 func Test_MetricDataToSignalFxV2WithHistogramBuckets(t *testing.T) {
 	logger := zap.NewNop()
 
-	labelMap := map[string]interface{}{
+	labelMap := map[string]any{
 		"k0": "v0",
 		"k1": "v1",
 	}
 
-	labelMapBucket1 := map[string]interface{}{
+	labelMapBucket1 := map[string]any{
 		"k0": "v0",
 		"k1": "v1",
 		"le": "1",
 	}
-	labelMapBucket2 := map[string]interface{}{
+	labelMapBucket2 := map[string]any{
 		"k0": "v0",
 		"k1": "v1",
 		"le": "2",
 	}
-	labelMapBucket3 := map[string]interface{}{
+	labelMapBucket3 := map[string]any{
 		"k0": "v0",
 		"k1": "v1",
 		"le": "4",
 	}
-	labelMapBucket4 := map[string]interface{}{
+	labelMapBucket4 := map[string]any{
 		"k0": "v0",
 		"k1": "v1",
 		"le": "+Inf",
@@ -1136,7 +1136,7 @@ func sortDimensions(points []*sfxpb.DataPoint) {
 func doubleSFxDataPoint(
 	metric string,
 	metricType *sfxpb.MetricType,
-	dims map[string]interface{},
+	dims map[string]any,
 ) *sfxpb.DataPoint {
 	return &sfxpb.DataPoint{
 		Metric:     metric,
@@ -1150,7 +1150,7 @@ func doubleSFxDataPoint(
 func int64SFxDataPoint(
 	metric string,
 	metricType *sfxpb.MetricType,
-	dims map[string]interface{},
+	dims map[string]any,
 ) *sfxpb.DataPoint {
 	return &sfxpb.DataPoint{
 		Metric:     metric,
@@ -1166,7 +1166,7 @@ func histoValue(dps *sfxpb.DataPoint, val int64) *sfxpb.DataPoint {
 	return dps
 }
 
-func sfxDimensions(m map[string]interface{}) []*sfxpb.Dimension {
+func sfxDimensions(m map[string]any) []*sfxpb.Dimension {
 	sfxDims := make([]*sfxpb.Dimension, 0, len(m))
 	for k, v := range m {
 		sfxDims = append(sfxDims, &sfxpb.Dimension{

@@ -159,7 +159,7 @@ func (s *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // parse will parse a value as syslog.
-func (s *Parser) parse(value interface{}) (interface{}, error) {
+func (s *Parser) parse(value any) (any, error) {
 	bytes, err := toBytes(value)
 	if err != nil {
 		return nil, err
@@ -186,8 +186,8 @@ func (s *Parser) parse(value interface{}) (interface{}, error) {
 }
 
 // parseRFC3164 will parse an RFC3164 syslog message.
-func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]interface{}, error) {
-	value := map[string]interface{}{
+func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]any, error) {
+	value := map[string]any{
 		"timestamp": syslogMessage.Timestamp,
 		"priority":  syslogMessage.Priority,
 		"facility":  syslogMessage.Facility,
@@ -202,8 +202,8 @@ func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]
 }
 
 // parseRFC5424 will parse an RFC5424 syslog message.
-func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]interface{}, error) {
-	value := map[string]interface{}{
+func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]any, error) {
+	value := map[string]any{
 		"timestamp":       syslogMessage.Timestamp,
 		"priority":        syslogMessage.Priority,
 		"facility":        syslogMessage.Facility,
@@ -220,7 +220,7 @@ func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
-func (s *Parser) toSafeMap(message map[string]interface{}) (map[string]interface{}, error) {
+func (s *Parser) toSafeMap(message map[string]any) (map[string]any, error) {
 	for key, val := range message {
 		switch v := val.(type) {
 		case *string:
@@ -257,13 +257,13 @@ func (s *Parser) toSafeMap(message map[string]interface{}) (map[string]interface
 	return message, nil
 }
 
-// convertMap converts map[string]map[string]string to map[string]interface{}
+// convertMap converts map[string]map[string]string to map[string]any
 // which is expected by stanza converter
-func convertMap(data map[string]map[string]string) map[string]interface{} {
-	ret := map[string]interface{}{}
+func convertMap(data map[string]map[string]string) map[string]any {
+	ret := map[string]any{}
 	for key, value := range data {
-		ret[key] = map[string]interface{}{}
-		r := ret[key].(map[string]interface{})
+		ret[key] = map[string]any{}
+		r := ret[key].(map[string]any)
 
 		for k, v := range value {
 			r[k] = v
@@ -273,7 +273,7 @@ func convertMap(data map[string]map[string]string) map[string]interface{} {
 	return ret
 }
 
-func toBytes(value interface{}) ([]byte, error) {
+func toBytes(value any) ([]byte, error) {
 	switch v := value.(type) {
 	case string:
 		return []byte(v), nil

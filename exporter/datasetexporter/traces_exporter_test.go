@@ -46,7 +46,7 @@ func generateTEvent1Raw() *add_events.Event {
 		Sev:        9,
 		Ts:         "1581452772000000321",
 		ServerHost: "foo",
-		Attrs: map[string]interface{}{
+		Attrs: map[string]any{
 			"sca:schemVer": 1,
 			"sca:schema":   "tracing",
 			"sca:type":     "span",
@@ -75,7 +75,7 @@ func generateTEvent2Raw() *add_events.Event {
 		Sev:        9,
 		Ts:         "1581452772000000321",
 		ServerHost: "foo",
-		Attrs: map[string]interface{}{
+		Attrs: map[string]any{
 			"sca:schemVer": 1,
 			"sca:schema":   "tracing",
 			"sca:type":     "span",
@@ -105,7 +105,7 @@ func generateTEvent3Raw() *add_events.Event {
 		Sev:        9,
 		Ts:         "1581452772000000321",
 		ServerHost: "valServerHost",
-		Attrs: map[string]interface{}{
+		Attrs: map[string]any{
 			"sca:schemVer": 1,
 			"sca:schema":   "tracing",
 			"sca:type":     "span",
@@ -136,7 +136,7 @@ var testTThread = &add_events.Thread{
 
 var testTLog = &add_events.Log{
 	Id:    "LT",
-	Attrs: map[string]interface{}{},
+	Attrs: map[string]any{},
 }
 
 func TestBuildEventFromSpanOne(t *testing.T) {
@@ -173,7 +173,7 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 			Log:    "LT",
 			Sev:    9,
 			Ts:     "0",
-			Attrs: map[string]interface{}{
+			Attrs: map[string]any{
 				"sca:schemVer": 1,
 				"sca:schema":   "tracing",
 				"sca:type":     "span",
@@ -229,7 +229,7 @@ func TestBuildEventsFromSpanAttributesDifferentTypes(t *testing.T) {
 			Log:    "LT",
 			Sev:    9,
 			Ts:     "0",
-			Attrs: map[string]interface{}{
+			Attrs: map[string]any{
 				"sca:schemVer": 1,
 				"sca:schema":   "tracing",
 				"sca:type":     "span",
@@ -617,7 +617,7 @@ func generateSimpleEvent(
 	serviceName string,
 	serverHost string,
 ) *add_events.Event {
-	attrs := map[string]interface{}{
+	attrs := map[string]any{
 		"sca:schemVer": 1,
 		"sca:schema":   "tracing",
 		"sca:type":     "span",
@@ -729,38 +729,38 @@ func TestUpdateResource(t *testing.T) {
 	tests := []struct {
 		name     string
 		resource map[string]any
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			name:     "with_service.name",
 			resource: map[string]any{"service.name": "foo"},
-			expected: map[string]interface{}{resourceName: "foo", resourceType: string(Service)},
+			expected: map[string]any{resourceName: "foo", resourceType: string(Service)},
 		},
 		{
 			name:     "without_service.name",
 			resource: map[string]any{"service.bar": "foo"},
-			expected: map[string]interface{}{resourceName: "", resourceType: string(Service)},
+			expected: map[string]any{resourceName: "", resourceType: string(Service)},
 		},
 		{
 			name:     "with_process.pid",
 			resource: map[string]any{"process.pid": "bar"},
-			expected: map[string]interface{}{resourceName: "bar", resourceType: string(Process)},
+			expected: map[string]any{resourceName: "bar", resourceType: string(Process)},
 		},
 		{
 			name:     "prefer_service",
 			resource: map[string]any{"service.bar": "foo", "process.pid": "bar"},
-			expected: map[string]interface{}{resourceName: "", resourceType: string(Service)},
+			expected: map[string]any{resourceName: "", resourceType: string(Service)},
 		},
 		{
 			name:     "empty",
 			resource: map[string]any{},
-			expected: map[string]interface{}{resourceName: "", resourceType: string(Process)},
+			expected: map[string]any{resourceName: "", resourceType: string(Process)},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(*testing.T) {
-			attrs := make(map[string]interface{})
+			attrs := make(map[string]any)
 			updateResource(attrs, tt.resource)
 
 			assert.Equal(t, tt.expected, attrs, tt.name)

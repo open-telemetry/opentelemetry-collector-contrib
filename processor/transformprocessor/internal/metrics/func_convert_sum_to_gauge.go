@@ -21,7 +21,7 @@ func createConvertSumToGaugeFunction(_ ottl.FunctionContext, _ ottl.Arguments) (
 }
 
 func convertSumToGauge() (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
-	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSum {
 			return nil, nil
