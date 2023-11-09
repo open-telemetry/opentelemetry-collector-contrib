@@ -33,7 +33,6 @@ func createIsListFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	return isList(args.Target), nil
 }
 
-// nolint:errorlint
 func isList[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
