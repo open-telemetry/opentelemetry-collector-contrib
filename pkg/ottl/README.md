@@ -71,6 +71,7 @@ The following types are supported for single-value parameters in OTTL functions:
 - `GetSetter`
 - `Getter`
 - `PMapGetter`
+- `BoolGetter`
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
@@ -87,6 +88,7 @@ For slice parameters, the following types are supported:
 
 - `Getter`
 - `PMapGetter`
+- `BoolGetter`
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
@@ -148,7 +150,7 @@ Contexts will have an implementation of `PathExpressionParser` that decides how 
 The context's implementation will need to make decisions like what a dot (`.`) represents or which paths allow indexing (`["key"]`) and how many indexes.
 
 [There are OpenTelemetry-specific contexts provided for each signal here.](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts)
-When using OTTL it is recommended to use these contexts unless you have a specific need.  Check out each context to view the paths it supports. 
+When using OTTL it is recommended to use these contexts unless you have a specific need.  Check out each context to view the paths it supports.
 
 ### Lists
 
@@ -193,10 +195,10 @@ When defining an OTTL function, if the function needs to take an Enum then the f
 
 Math Expressions represent arithmetic calculations.  They support `+`, `-`, `*`, and `/`, along with `()` for grouping.
 
-Math Expressions currently support `int64`, `float64`, `time.Time` and `time.Duration`. 
-For `time.Time` and `time.Duration`, only `+` and `-` are supported with the following rules: 
+Math Expressions currently support `int64`, `float64`, `time.Time` and `time.Duration`.
+For `time.Time` and `time.Duration`, only `+` and `-` are supported with the following rules:
   - A `time.Time` `-` a `time.Time` yields a `time.Duration`.
-  - A `time.Duration` `+` a `time.Time` yields a `time.Time`. 
+  - A `time.Duration` `+` a `time.Time` yields a `time.Time`.
   - A `time.Time` `+`  a `time.Duration` yields a `time.Time`.
   - A `time.Time` `-`  a `time.Duration` yields a `time.Time`.
   - A `time.Duration` `+` a `time.Duration` yields a `time.Duration`.
@@ -204,7 +206,7 @@ For `time.Time` and `time.Duration`, only `+` and `-` are supported with the fol
 
 Math Expressions support `Paths` and `Editors` that return supported types.
 Note that `*` and `/` take precedence over `+` and `-`.
-Also note that `time.Time` and `time.Duration` can only be used with `+` and `-`. 
+Also note that `time.Time` and `time.Duration` can only be used with `+` and `-`.
 Operations that share the same level of precedence will be executed in the order that they appear in the Math Expression.
 Math Expressions can be grouped with parentheses to override evaluation precedence.
 Math Expressions that mix `int64` and `float64` will result in an error.
