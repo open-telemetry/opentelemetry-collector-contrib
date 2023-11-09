@@ -14,6 +14,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+type TTLConfig struct {
+	Value int    `mapstructure:"value"`
+	Unit  string `mapstructure:"unit"`
+}
+
 // Config defines configuration for Elastic exporter.
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
@@ -36,8 +41,8 @@ type Config struct {
 	TracesTableName string `mapstructure:"traces_table_name"`
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
 	MetricsTableName string `mapstructure:"metrics_table_name"`
-	// TTLDays is The data time-to-live in days, 0 means no ttl.
-	TTLDays uint `mapstructure:"ttl_days"`
+	// TTL is The data time-to-live in days or hours, 0 means no ttl.
+	TTL TTLConfig `mapstructure:"ttl"`
 }
 
 const defaultDatabase = "default"

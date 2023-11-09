@@ -51,10 +51,15 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tableName string, ttlDays uint, db *sql.DB) error {
+func NewMetricsTable(ctx context.Context, tableName string, Value int, Unit string, db *sql.DB) error {
 	var ttlExpr string
-	if ttlDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalDay(%d)`, ttlDays)
+	if Value > 0 {
+		switch Unit {
+		case "days":
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalDay(%d)`, Value)
+		case "hours":
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalHour(%d)`, Value)
+		}
 	}
 	for table := range supportedMetricTypes {
 		query := fmt.Sprintf(table, tableName, ttlExpr)
