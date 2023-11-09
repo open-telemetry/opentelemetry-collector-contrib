@@ -614,6 +614,70 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 	}
 }
 
+func Test_StandardBoolGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardBoolGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "bool type",
+			getter: StandardBoolGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "ValueTypeBool type",
+			getter: StandardBoolGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueBool(true), nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardBoolGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "str", nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: boolExpectMsg + " string",
+		},
+		{
+			name: "nil",
+			getter: StandardBoolGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: boolExpectMsg + " nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
 func Test_StandardStringGetter(t *testing.T) {
 	tests := []struct {
 		name             string

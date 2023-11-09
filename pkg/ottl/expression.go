@@ -142,6 +142,43 @@ func (t TypeError) Error() string {
 	return string(t)
 }
 
+// BoolGetter is a Getter than must return a bool.
+type BoolGetter[K any] interface {
+	// Get retrieves a bool value.
+	Get(ctx context.Context, tCtx K) (bool, error)
+}
+
+// StandardBoolGetter is a basic implementation of BoolGetter
+type StandardBoolGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+const boolExpectMsg = "expected bool but got"
+
+// Get retrieves a bool value.
+// If the value is not a bool a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardBoolGetter[K]) Get(ctx context.Context, tCtx K) (bool, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return false, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return false, TypeError(boolExpectMsg + " nil")
+	}
+	switch v := val.(type) {
+	case bool:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeBool {
+			return v.Bool(), nil
+		}
+		return false, TypeError(fmt.Sprintf("%s %v", boolExpectMsg, v.Type()))
+	default:
+		return false, TypeError(fmt.Sprintf("%s %T", boolExpectMsg, val))
+	}
+}
+
 // StringGetter is a Getter that must return a string.
 type StringGetter[K any] interface {
 	// Get retrieves a string value.
