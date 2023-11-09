@@ -47,6 +47,10 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	cluster := mongodbatlas.Cluster{
 		GroupID: testProjectID,
 		Name:    testClusterName,
+		ProviderSettings: &mongodbatlas.ProviderSettings{
+			ProviderName: testProviderName,
+			RegionName:   testRegionName,
+		},
 	}
 
 	inputLogs := []*mongodbatlas.AccessLogs{
@@ -79,10 +83,12 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	rl := expectedLogs.ResourceLogs().AppendEmpty()
 
 	assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]any{
-		"mongodbatlas.project.name": testProjectName,
-		"mongodbatlas.project.id":   testProjectID,
-		"mongodbatlas.org.id":       testOrgID,
-		"mongodbatlas.cluster.name": testClusterName,
+		"mongodbatlas.project.name":  testProjectName,
+		"mongodbatlas.project.id":    testProjectID,
+		"mongodbatlas.org.id":        testOrgID,
+		"mongodbatlas.cluster.name":  testClusterName,
+		"mongodbatlas.region.name":   testRegionName,
+		"mongodbatlas.provider.name": testProviderName,
 	}))
 
 	records := rl.ScopeLogs().AppendEmpty().LogRecords()
@@ -180,10 +186,12 @@ func TestAccessLogsRetrieval(t *testing.T) {
 				}
 				validateAttributes(t, expectedStringAttributes, l)
 				expectedResourceAttributes := map[string]string{
-					"mongodbatlas.cluster.name": testClusterName,
-					"mongodbatlas.project.name": testProjectName,
-					"mongodbatlas.project.id":   testProjectID,
-					"mongodbatlas.org.id":       testOrgID,
+					"mongodbatlas.cluster.name":  testClusterName,
+					"mongodbatlas.project.name":  testProjectName,
+					"mongodbatlas.project.id":    testProjectID,
+					"mongodbatlas.org.id":        testOrgID,
+					"mongodbatlas.region.name":   testRegionName,
+					"mongodbatlas.provider.name": testProviderName,
 				}
 
 				ra := l.ResourceLogs().At(0).Resource().Attributes()
@@ -335,6 +343,10 @@ func testClientBase() *mockAccessLogsClient {
 			{
 				GroupID: testProjectID,
 				Name:    testClusterName,
+				ProviderSettings: &mongodbatlas.ProviderSettings{
+					ProviderName: testProviderName,
+					RegionName:   testRegionName,
+				},
 			},
 		},
 		nil)

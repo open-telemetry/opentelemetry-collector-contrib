@@ -305,6 +305,8 @@ func transformAccessLogs(now pcommon.Timestamp, accessLogs []*mongodbatlas.Acces
 	ra := resourceLogs.Resource().Attributes()
 	ra.PutStr("mongodbatlas.project.name", p.Name)
 	ra.PutStr("mongodbatlas.project.id", p.ID)
+	ra.PutStr("mongodbatlas.region.name", c.ProviderSettings.RegionName)
+	ra.PutStr("mongodbatlas.provider.name", c.ProviderSettings.ProviderName)
 	ra.PutStr("mongodbatlas.org.id", p.OrgID)
 	ra.PutStr("mongodbatlas.cluster.name", c.Name)
 
