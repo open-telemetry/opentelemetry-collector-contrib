@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.89
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-devel
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-devel.0.20231030140030-aa8a206e6ac7
+	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-devel.0.20231109182235-3aca48c3ec89
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-devel.0.20231109182235-3aca48c3ec89
 	github.com/DataDog/datadog-api-client-go/v2 v2.18.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.8.0
