@@ -94,7 +94,7 @@ func TestEndpointEnv(t *testing.T) {
 			name: "Service",
 			endpoint: Endpoint{
 				ID:     EndpointID("service_id"),
-				Target: "192.68.73.2",
+				Target: "service.namespace",
 				Details: &K8sService{
 					Name: "service_name",
 					UID:  "service-uid",
@@ -104,12 +104,14 @@ func TestEndpointEnv(t *testing.T) {
 					Annotations: map[string]string{
 						"annotation_1": "value_1",
 					},
-					Namespace: "service-namespace",
+					Namespace:   "service-namespace",
+					ServiceType: "LoadBalancer",
+					ClusterIP:   "192.68.73.2",
 				},
 			},
 			want: EndpointEnv{
 				"type":     "k8s.service",
-				"endpoint": "192.68.73.2",
+				"endpoint": "service.namespace",
 				"id":       "service_id",
 				"name":     "service_name",
 				"labels": map[string]string{
@@ -118,8 +120,10 @@ func TestEndpointEnv(t *testing.T) {
 				"annotations": map[string]string{
 					"annotation_1": "value_1",
 				},
-				"uid":       "service-uid",
-				"namespace": "service-namespace",
+				"uid":          "service-uid",
+				"namespace":    "service-namespace",
+				"cluster_ip":   "192.68.73.2",
+				"service_type": "LoadBalancer",
 			},
 		},
 		{

@@ -114,7 +114,7 @@ type K8sService struct {
 }
 
 func (s *K8sService) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"uid":          s.UID,
 		"name":         s.Name,
 		"labels":       s.Labels,
@@ -125,7 +125,7 @@ func (s *K8sService) Env() EndpointEnv {
 	}
 }
 
-func (p *K8sService) Type() EndpointType {
+func (s *K8sService) Type() EndpointType {
 	return K8sServiceType
 }
 

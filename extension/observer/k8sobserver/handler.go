@@ -40,13 +40,8 @@ func (h *handler) ListEndpoints() []observer.Endpoint {
 	return endpoints
 }
 
-<<<<<<< HEAD
-// OnAdd is called in response to a new pod, service or node being detected.
-func (h *handler) OnAdd(objectInterface interface{}, _ bool) {
-=======
 // OnAdd is called in response to a new pod or node being detected.
 func (h *handler) OnAdd(objectInterface any, _ bool) {
->>>>>>> main
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {
@@ -74,6 +69,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	case *v1.Pod:
 		newPod, ok := newObjectInterface.(*v1.Pod)
 		if !ok {
+			h.logger.Info("skip updating endpoints for pod as the update is of different type", zap.Any("oldPod", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		for _, e := range convertPodToEndpoints(h.idNamespace, oldObject) {
@@ -149,13 +145,8 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	}
 }
 
-<<<<<<< HEAD
-// OnDelete is called in response to a pod, service or node being deleted.
-func (h *handler) OnDelete(objectInterface interface{}) {
-=======
 // OnDelete is called in response to a pod or node being deleted.
 func (h *handler) OnDelete(objectInterface any) {
->>>>>>> main
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {
