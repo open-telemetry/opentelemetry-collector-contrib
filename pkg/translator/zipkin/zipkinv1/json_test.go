@@ -158,7 +158,7 @@ func TestMultipleJSONV1BatchesToTraces(t *testing.T) {
 	blob, err := os.ReadFile("./testdata/zipkin_v1_multiple_batches.json")
 	require.NoError(t, err, "Failed to load test data")
 
-	var batches []interface{}
+	var batches []any
 	err = json.Unmarshal(blob, &batches)
 	require.NoError(t, err, "Failed to load the batches")
 
@@ -576,7 +576,7 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 454487000)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 457320000)))
 	//nolint:errcheck
-	span.Attributes().FromRaw(map[string]interface{}{
+	span.Attributes().FromRaw(map[string]any{
 		"http.status_code": 200,
 		"http.url":         "http://localhost:9000/trace/2",
 		"success":          true,

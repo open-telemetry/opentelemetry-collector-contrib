@@ -8,5 +8,5 @@ import (
 
 const (
 	Type             = "collectd"
-	MetricsStability = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelBeta
 )

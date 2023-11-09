@@ -46,12 +46,12 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 	curIfceStats := getInterfacesStats(curStats)
 
 	// used for aggregation
-	netIfceMetrics := make([]map[string]interface{}, len(curIfceStats))
+	netIfceMetrics := make([]map[string]any, len(curIfceStats))
 	metrics := make([]*CAdvisorMetric, len(curIfceStats))
 
 	for i, cur := range curIfceStats {
 		mType := getNetMetricType(containerType, n.logger)
-		netIfceMetric := make(map[string]interface{})
+		netIfceMetric := make(map[string]any)
 
 		infoName := info.Name + containerType + cur.Name // used to identify the network interface
 		multiplier := float64(time.Second)
