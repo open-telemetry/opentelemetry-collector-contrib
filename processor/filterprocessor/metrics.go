@@ -5,6 +5,7 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -28,6 +29,7 @@ type filterMetricProcessor struct {
 	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
 	skipMetricExpr    expr.BoolExpr[ottlmetric.TransformContext]
 	skipDataPointExpr expr.BoolExpr[ottldatapoint.TransformContext]
+	telemetry         *filterProcessorTelemetry
 	logger            *zap.Logger
 }
 
@@ -36,6 +38,13 @@ func newFilterMetricProcessor(set component.TelemetrySettings, cfg *Config) (*fi
 	fsp := &filterMetricProcessor{
 		logger: set.Logger,
 	}
+
+	fpt, err := newfilterProcessorTelemetry(set)
+	if err != nil {
+		return nil, fmt.Errorf("error creating batch processor telemetry: %w", err)
+	}
+	fsp.telemetry = fpt
+
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		if cfg.Metrics.MetricConditions != nil {
 			fsp.skipMetricExpr, err = filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, filterottl.StandardMetricFuncs(), cfg.ErrorMode, set)
@@ -107,6 +116,8 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 		return md, nil
 	}
 
+	totalMetrics := md.ResourceMetrics().Len()
+
 	var errors error
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
 		resource := rmetrics.Resource()
@@ -168,6 +179,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	if md.ResourceMetrics().Len() == 0 {
 		return md, processorhelper.ErrSkipProcessingData
 	}
+	fmp.telemetry.record(int64(totalMetrics-md.ResourceMetrics().Len()), int64(totalMetrics))
 	return md, nil
 }
 
