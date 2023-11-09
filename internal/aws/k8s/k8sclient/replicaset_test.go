@@ -51,7 +51,7 @@ func TestReplicaSetClient_ReplicaSetToDeployment(t *testing.T) {
 	fakeClientSet := fake.NewSimpleClientset(replicaSetArray...)
 	client, _ := newReplicaSetClient(fakeClientSet, zap.NewNop(), setOption)
 
-	replicaSets := make([]interface{}, len(replicaSetArray))
+	replicaSets := make([]any, len(replicaSetArray))
 	for i := range replicaSetArray {
 		replicaSets[i] = replicaSetArray[i]
 	}

@@ -93,7 +93,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	}
 	emf.config.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
 
-	groupedMetrics := make(map[interface{}]*groupedMetric)
+	groupedMetrics := make(map[any]*groupedMetric)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
 	outputDestination := emf.config.OutputDestination
 

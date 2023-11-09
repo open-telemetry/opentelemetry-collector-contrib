@@ -177,10 +177,10 @@ func statusCodeToShortString(code ptrace.StatusCode) string {
 }
 
 func eventsToString(events ptrace.SpanEventSlice) string {
-	eventArray := make([]map[string]interface{}, 0, events.Len())
+	eventArray := make([]map[string]any, 0, events.Len())
 	for i := 0; i < events.Len(); i++ {
 		spanEvent := events.At(i)
-		event := map[string]interface{}{}
+		event := map[string]any{}
 		event[nameField] = spanEvent.Name()
 		event[timeField] = spanEvent.Timestamp()
 		event[attributeField] = spanEvent.Attributes().AsRaw()
@@ -192,10 +192,10 @@ func eventsToString(events ptrace.SpanEventSlice) string {
 }
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
-	linkArray := make([]map[string]interface{}, 0, spanLinkSlice.Len())
+	linkArray := make([]map[string]any, 0, spanLinkSlice.Len())
 	for i := 0; i < spanLinkSlice.Len(); i++ {
 		spanLink := spanLinkSlice.At(i)
-		link := map[string]interface{}{}
+		link := map[string]any{}
 		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())
 		link[traceIDField] = traceutil.TraceIDToHexOrEmptyString(spanLink.TraceID())
 		link[attributeField] = spanLink.Attributes().AsRaw()

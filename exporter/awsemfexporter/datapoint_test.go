@@ -276,7 +276,7 @@ func TestIsStaleOrNaN_NumberDataPointSlice(t *testing.T) {
 	testCases := []struct {
 		name           string
 		metricName     string
-		metricValue    interface{}
+		metricValue    any
 		expectedAssert assert.BoolAssertionFunc
 		setFlagsFunc   func(point pmetric.NumberDataPoint) pmetric.NumberDataPoint
 	}{
@@ -338,7 +338,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 			name              string
 			adjustToDelta     bool
 			metricName        string
-			metricValue       interface{}
+			metricValue       any
 			expectedDatapoint dataPoint
 			expectedRetained  bool
 		}{
@@ -784,13 +784,13 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 
 		testCases := []struct {
 			name               string
-			summaryMetricValue map[string]interface{}
+			summaryMetricValue map[string]any
 			expectedDatapoint  []dataPoint
 			expectedRetained   bool
 		}{
 			{
 				name:               fmt.Sprintf("Detailed summary with 1st delta sum count calculation retainInitialValueOfDeltaMetric=%t", retainInitialValueOfDeltaMetric),
-				summaryMetricValue: map[string]interface{}{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+				summaryMetricValue: map[string]any{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
 				expectedDatapoint: []dataPoint{
 					{name: fmt.Sprint("foo", summarySumSuffix), value: float64(17.3), labels: map[string]string{"label1": "value1"}},
 					{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(17), labels: map[string]string{"label1": "value1"}},
@@ -801,7 +801,7 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 			},
 			{
 				name:               "Detailed summary with 2nd delta sum count calculation",
-				summaryMetricValue: map[string]interface{}{"sum": float64(100), "count": uint64(25), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+				summaryMetricValue: map[string]any{"sum": float64(100), "count": uint64(25), "firstQuantile": float64(1), "secondQuantile": float64(5)},
 				expectedDatapoint: []dataPoint{
 					{name: fmt.Sprint("foo", summarySumSuffix), value: float64(82.7), labels: map[string]string{"label1": "value1"}},
 					{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(8), labels: map[string]string{"label1": "value1"}},
@@ -812,7 +812,7 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 			},
 			{
 				name:               "Detailed summary with 3rd delta sum count calculation",
-				summaryMetricValue: map[string]interface{}{"sum": float64(120), "count": uint64(26), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+				summaryMetricValue: map[string]any{"sum": float64(120), "count": uint64(26), "firstQuantile": float64(1), "secondQuantile": float64(5)},
 				expectedDatapoint: []dataPoint{
 					{name: fmt.Sprint("foo", summarySumSuffix), value: float64(20), labels: map[string]string{"label1": "value1"}},
 					{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(1), labels: map[string]string{"label1": "value1"}},
@@ -864,23 +864,23 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 func TestIsStaleOrNaN_SummaryDataPointSlice(t *testing.T) {
 	testCases := []struct {
 		name               string
-		summaryMetricValue map[string]interface{}
+		summaryMetricValue map[string]any
 		expectedBoolAssert assert.BoolAssertionFunc
 		setFlagsFunc       func(point pmetric.SummaryDataPoint) pmetric.SummaryDataPoint
 	}{
 		{
 			name:               "summary with no nan values",
-			summaryMetricValue: map[string]interface{}{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+			summaryMetricValue: map[string]any{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
 			expectedBoolAssert: assert.False,
 		},
 		{
 			name:               "Summary with nan values",
-			summaryMetricValue: map[string]interface{}{"sum": math.NaN(), "count": uint64(25), "firstQuantile": math.NaN(), "secondQuantile": math.NaN()},
+			summaryMetricValue: map[string]any{"sum": math.NaN(), "count": uint64(25), "firstQuantile": math.NaN(), "secondQuantile": math.NaN()},
 			expectedBoolAssert: assert.True,
 		},
 		{
 			name:               "Summary with set flag func",
-			summaryMetricValue: map[string]interface{}{"sum": math.NaN(), "count": uint64(25), "firstQuantile": math.NaN(), "secondQuantile": math.NaN()},
+			summaryMetricValue: map[string]any{"sum": math.NaN(), "count": uint64(25), "firstQuantile": math.NaN(), "secondQuantile": math.NaN()},
 			expectedBoolAssert: assert.True,
 			setFlagsFunc: func(point pmetric.SummaryDataPoint) pmetric.SummaryDataPoint {
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
@@ -924,7 +924,7 @@ func TestCreateLabels(t *testing.T) {
 		"c": "C",
 	}
 	labelsMap := pcommon.NewMap()
-	assert.NoError(t, labelsMap.FromRaw(map[string]interface{}{
+	assert.NoError(t, labelsMap.FromRaw(map[string]any{
 		"a": "A",
 		"b": "B",
 		"c": "C",
@@ -950,49 +950,49 @@ func TestGetDataPoints(t *testing.T) {
 		isPrometheusMetrics    bool
 		metric                 pmetric.Metrics
 		expectedDatapointSlice dataPoints
-		expectedAttributes     map[string]interface{}
+		expectedAttributes     map[string]any
 	}{
 		{
 			name:                   "Int gauge",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestGaugeMetric("foo", intValueType),
 			expectedDatapointSlice: numberDataPointSlice{normalDeltraMetricMetadata, pmetric.NumberDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "Double sum",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestSumMetric("foo", doubleValueType),
 			expectedDatapointSlice: numberDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.NumberDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "Histogram",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestHistogramMetric("foo"),
 			expectedDatapointSlice: histogramDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.HistogramDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "ExponentialHistogram",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestExponentialHistogramMetric("foo"),
 			expectedDatapointSlice: exponentialHistogramDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.ExponentialHistogramDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "Summary from SDK",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestSummaryMetric("foo"),
 			expectedDatapointSlice: summaryDataPointSlice{normalDeltraMetricMetadata, pmetric.SummaryDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "Summary from Prometheus",
 			isPrometheusMetrics:    true,
 			metric:                 generateTestSummaryMetric("foo"),
 			expectedDatapointSlice: summaryDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.SummaryDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 	}
 
