@@ -25,12 +25,12 @@ func Start(cfg *Config) error {
 		return err
 	}
 
-	exporter, err := newExporter(context.Background(), cfg)
+	e, err := newExporter(context.Background(), cfg)
 	if err != nil {
 		return err
 	}
 
-	if err = Run(cfg, exporter, logger); err != nil {
+	if err = Run(cfg, e, logger); err != nil {
 		logger.Error("failed to stop the exporter", zap.Error(err))
 		return err
 	}
