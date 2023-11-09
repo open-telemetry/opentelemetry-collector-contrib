@@ -228,7 +228,7 @@ func getTestEvent4_4() model.LogEntry {
 		ID:         12312,
 		Context:    "context",
 		Message:    "Connection ended",
-		Attributes: map[string]interface{}{"connectionCount": 47, "connectionId": 9052, "remote": "192.168.253.105:59742", "id": "93a8f190-afd0-422d-9de6-f6c5e833e35f"},
+		Attributes: map[string]any{"connectionCount": 47, "connectionId": 9052, "remote": "192.168.253.105:59742", "id": "93a8f190-afd0-422d-9de6-f6c5e833e35f"},
 		Raw:        "RAW MESSAGE",
 	}
 }

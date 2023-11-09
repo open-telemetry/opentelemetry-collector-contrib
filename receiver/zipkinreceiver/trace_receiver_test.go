@@ -443,7 +443,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
-	expected := map[string]interface{}{
+	expected := map[string]any{
 		"cache_hit":            true,
 		"ping_count":           int64(25),
 		"timeout":              12.3,

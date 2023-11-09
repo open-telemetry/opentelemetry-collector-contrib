@@ -42,9 +42,9 @@ func newRule(ruleStr string) (rule, error) {
 		// expr v1.14.1 introduced a `type` builtin whose implementation we relocate to `typeOf`
 		// to avoid collision
 		expr.DisableBuiltin("type"),
-		expr.Function("typeOf", func(params ...interface{}) (interface{}, error) {
+		expr.Function("typeOf", func(params ...any) (any, error) {
 			return builtin.Type(params[0]), nil
-		}, new(func(interface{}) string)),
+		}, new(func(any) string)),
 	)
 	if err != nil {
 		return rule{}, err

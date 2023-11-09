@@ -78,7 +78,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	expectedLogs := plog.NewLogs()
 	rl := expectedLogs.ResourceLogs().AppendEmpty()
 
-	assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]any{
 		"mongodbatlas.project.name": testProjectName,
 		"mongodbatlas.project.id":   testProjectID,
 		"mongodbatlas.org.id":       testOrgID,
@@ -88,7 +88,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	records := rl.ScopeLogs().AppendEmpty().LogRecords()
 	// First log is an example of a success, and tests that the timestamp works parsed from the log line
 	lr := records.AppendEmpty()
-	assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, lr.Attributes().FromRaw(map[string]any{
 		"event.domain": "mongodbatlas",
 		"auth.result":  "success",
 		"auth.source":  "admin",
@@ -102,13 +102,13 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	lr.SetSeverityNumber(plog.SeverityNumberInfo)
 	lr.SetSeverityText(plog.SeverityNumberInfo.String())
 
-	var logBody map[string]interface{}
+	var logBody map[string]any
 	assert.NoError(t, json.Unmarshal([]byte(inputLogs[0].LogLine), &logBody))
 	assert.NoError(t, lr.Body().SetEmptyMap().FromRaw(logBody))
 
 	// Second log is an example of a failure, and tests that the timestamp is missing from the log line
 	lr = records.AppendEmpty()
-	assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, lr.Attributes().FromRaw(map[string]any{
 		"event.domain":        "mongodbatlas",
 		"auth.result":         "failure",
 		"auth.failure_reason": "User not found",
@@ -124,7 +124,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	lr.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr.SetSeverityText(plog.SeverityNumberWarn.String())
 
-	logBody = map[string]interface{}{}
+	logBody = map[string]any{}
 	assert.NoError(t, json.Unmarshal([]byte(inputLogs[1].LogLine), &logBody))
 	assert.NoError(t, lr.Body().SetEmptyMap().FromRaw(logBody))
 

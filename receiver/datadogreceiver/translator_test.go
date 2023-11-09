@@ -15,7 +15,7 @@ import (
 	vmsgp "github.com/vmihailenco/msgpack/v4"
 )
 
-var data = [2]interface{}{
+var data = [2]any{
 	0: []string{
 		0:  "baggage",
 		1:  "item",
@@ -30,7 +30,7 @@ var data = [2]interface{}{
 		10: "sql",
 		11: "service.name",
 	},
-	1: [][][12]interface{}{
+	1: [][][12]any{
 		{
 			{
 				6,
@@ -42,13 +42,13 @@ var data = [2]interface{}{
 				int64(123),
 				int64(456),
 				1,
-				map[interface{}]interface{}{
+				map[any]any{
 					8:  9,
 					0:  1,
 					2:  3,
 					11: 6,
 				},
-				map[interface{}]float64{
+				map[any]float64{
 					5: 1.2,
 				},
 				10,

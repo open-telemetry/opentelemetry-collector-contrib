@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-type toBodyFunc func([]byte) interface{}
+type toBodyFunc func([]byte) any
 
 // Input is an operator that monitors files for entries
 type Input struct {

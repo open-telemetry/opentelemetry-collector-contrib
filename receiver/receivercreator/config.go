@@ -33,7 +33,7 @@ type receiverConfig struct {
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
-type userConfigMap map[string]interface{}
+type userConfigMap map[string]any
 
 // receiverTemplate is the configuration of a single subreceiver.
 type receiverTemplate struct {
@@ -44,7 +44,7 @@ type receiverTemplate struct {
 	Rule string `mapstructure:"rule"`
 	// ResourceAttributes is a map of resource attributes to add to just this receiver's resource metrics.
 	// It can contain expr expressions for endpoint env value expansion
-	ResourceAttributes map[string]interface{} `mapstructure:"resource_attributes"`
+	ResourceAttributes map[string]any `mapstructure:"resource_attributes"`
 	rule               rule
 }
 

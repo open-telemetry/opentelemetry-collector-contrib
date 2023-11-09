@@ -12,7 +12,7 @@ import (
 )
 
 func TestHTTPAttributeMapping(t *testing.T) {
-	httpAttributeValues := map[string]interface{}{
+	httpAttributeValues := map[string]any{
 		conventions.AttributeHTTPMethod: conventions.AttributeHTTPMethod,
 		conventions.AttributeHTTPURL:    conventions.AttributeHTTPURL,
 		conventions.AttributeHTTPTarget: conventions.AttributeHTTPTarget,
@@ -63,7 +63,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 }
 
 func TestRPCPAttributeMapping(t *testing.T) {
-	rpcAttributeValues := map[string]interface{}{
+	rpcAttributeValues := map[string]any{
 		conventions.AttributeRPCSystem:  conventions.AttributeRPCSystem,
 		conventions.AttributeRPCService: conventions.AttributeRPCService,
 		conventions.AttributeRPCMethod:  conventions.AttributeRPCMethod,
@@ -85,7 +85,7 @@ func TestRPCPAttributeMapping(t *testing.T) {
 }
 
 func TestDatabaseAttributeMapping(t *testing.T) {
-	databaseAttributeValues := map[string]interface{}{
+	databaseAttributeValues := map[string]any{
 		conventions.AttributeDBSystem:              conventions.AttributeDBSystem,
 		conventions.AttributeDBConnectionString:    conventions.AttributeDBConnectionString,
 		conventions.AttributeDBUser:                conventions.AttributeDBUser,
@@ -121,7 +121,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 }
 
 func TestMessagingAttributeMapping(t *testing.T) {
-	messagingAttributeValues := map[string]interface{}{
+	messagingAttributeValues := map[string]any{
 		conventions.AttributeMessagingSystem:                            conventions.AttributeMessagingSystem,
 		conventions.AttributeMessagingDestination:                       conventions.AttributeMessagingDestination,
 		conventions.AttributeMessagingDestinationKind:                   conventions.AttributeMessagingDestinationKind,
