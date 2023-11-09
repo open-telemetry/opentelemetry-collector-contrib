@@ -292,12 +292,23 @@ func renderInsertTracesSQL(cfg *Config) string {
 
 func renderCreateTracesTableSQL(cfg *Config) string {
 	var ttlExpr string
-	if cfg.TTL.Value > 0 {
-		switch cfg.TTL.Unit {
-		case "days":
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTL.Value)
-		case "hours":
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalHour(%d)`, cfg.TTL.Value)
+
+	// deprecated and will be removed
+	if cfg.TTLDays > 0 {
+		fmt.Println("TTL_DAYS is deprecated, use TTL instead.")
+		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
+	}
+
+	if cfg.TTL > 0 {
+		switch {
+		case cfg.TTL%(24*time.Hour) == 0:
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTL/(24*time.Hour))
+		case cfg.TTL%(time.Hour) == 0:
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalHour(%d)`, cfg.TTL/time.Hour)
+		case cfg.TTL%(time.Minute) == 0:
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalMinute(%d)`, cfg.TTL/time.Minute)
+		default:
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalSecond(%d)`, cfg.TTL/time.Second)
 		}
 	}
 	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, ttlExpr)
@@ -305,12 +316,23 @@ func renderCreateTracesTableSQL(cfg *Config) string {
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 	var ttlExpr string
-	if cfg.TTL.Value > 0 {
-		switch cfg.TTL.Unit {
-		case "days":
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTL.Value)
-		case "hours":
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalHour(%d)`, cfg.TTL.Value)
+
+	// deprecated and will be removed
+	if cfg.TTLDays > 0 {
+		fmt.Println("TTL_DAYS is deprecated, use TTL instead.")
+		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
+	}
+
+	if cfg.TTL > 0 {
+		switch {
+		case cfg.TTL%(24*time.Hour) == 0:
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTL/(24*time.Hour))
+		case cfg.TTL%(time.Hour) == 0:
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalHour(%d)`, cfg.TTL/time.Hour)
+		case cfg.TTL%(time.Minute) == 0:
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalMinute(%d)`, cfg.TTL/time.Minute)
+		default:
+			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalSecond(%d)`, cfg.TTL/time.Second)
 		}
 	}
 	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, ttlExpr)

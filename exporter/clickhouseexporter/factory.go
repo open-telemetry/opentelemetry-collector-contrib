@@ -40,10 +40,7 @@ func createDefaultConfig() component.Config {
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
-		TTL: TTLConfig{
-		    Value: 0,
-		    Unit: "hours",
-		},
+		TTL:              0,
 	}
 }
 

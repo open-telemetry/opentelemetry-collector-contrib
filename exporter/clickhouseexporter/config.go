@@ -7,17 +7,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/url"
-
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"net/url"
+	"time"
 )
-
-type TTLConfig struct {
-	Value int    `mapstructure:"value"`
-	Unit  string `mapstructure:"unit"`
-}
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
@@ -41,8 +36,10 @@ type Config struct {
 	TracesTableName string `mapstructure:"traces_table_name"`
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
 	MetricsTableName string `mapstructure:"metrics_table_name"`
-	// TTL is The data time-to-live in days or hours, 0 means no ttl.
-	TTL TTLConfig `mapstructure:"ttl"`
+	// TTLDays is The data time-to-live in days, 0 means no ttl.
+	TTLDays uint `mapstructure:"ttl_days"`
+	// TTL is The data time-to-live example 30m, 48h. 0 means no ttl.
+	TTL time.Duration `mapstructure:"ttl"`
 }
 
 const defaultDatabase = "default"
@@ -50,6 +47,7 @@ const defaultDatabase = "default"
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
+	errConfigTTL             = errors.New("Both TTLDays and TTL can not be provided. TTLDays is deprecated, use TTL instead.")
 )
 
 // Validate the clickhouse server configuration.
@@ -60,6 +58,10 @@ func (cfg *Config) Validate() (err error) {
 	dsn, e := cfg.buildDSN(cfg.Database)
 	if e != nil {
 		err = errors.Join(err, e)
+	}
+
+	if cfg.TTL > 0 && cfg.TTLDays > 0 {
+		err = errors.Join(err, errConfigTTL)
 	}
 
 	// Validate DSN with clickhouse driver.
