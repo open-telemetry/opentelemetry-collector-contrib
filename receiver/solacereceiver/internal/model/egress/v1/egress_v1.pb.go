@@ -989,7 +989,7 @@ func file_egress_v1_proto_rawDescGZIP() []byte {
 
 var file_egress_v1_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_egress_v1_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_egress_v1_proto_goTypes = []interface{}{
+var file_egress_v1_proto_goTypes = []any{
 	(SpanData_SendSpan_Outcome)(0),                       // 0: solace.messaging.proto.broker.trace.egress.v1.SpanData.SendSpan.Outcome
 	(SpanData_TransactionEvent_Type)(0),                  // 1: solace.messaging.proto.broker.trace.egress.v1.SpanData.TransactionEvent.Type
 	(SpanData_TransactionEvent_Initiator)(0),             // 2: solace.messaging.proto.broker.trace.egress.v1.SpanData.TransactionEvent.Initiator
@@ -1022,7 +1022,7 @@ func file_egress_v1_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_egress_v1_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_egress_v1_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData); i {
 			case 0:
 				return &v.state
@@ -1034,7 +1034,7 @@ func file_egress_v1_proto_init() {
 				return nil
 			}
 		}
-		file_egress_v1_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_egress_v1_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_EgressSpan); i {
 			case 0:
 				return &v.state
@@ -1046,7 +1046,7 @@ func file_egress_v1_proto_init() {
 				return nil
 			}
 		}
-		file_egress_v1_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_egress_v1_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_SendSpan); i {
 			case 0:
 				return &v.state
@@ -1058,7 +1058,7 @@ func file_egress_v1_proto_init() {
 				return nil
 			}
 		}
-		file_egress_v1_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_egress_v1_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_TransactionEvent); i {
 			case 0:
 				return &v.state
@@ -1070,7 +1070,7 @@ func file_egress_v1_proto_init() {
 				return nil
 			}
 		}
-		file_egress_v1_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_egress_v1_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_TransactionEvent_Xid); i {
 			case 0:
 				return &v.state
@@ -1082,7 +1082,7 @@ func file_egress_v1_proto_init() {
 				return nil
 			}
 		}
-		file_egress_v1_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_egress_v1_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_TransactionEvent_LocalTransactionId); i {
 			case 0:
 				return &v.state
@@ -1095,15 +1095,15 @@ func file_egress_v1_proto_init() {
 			}
 		}
 	}
-	file_egress_v1_proto_msgTypes[0].OneofWrappers = []interface{}{}
-	file_egress_v1_proto_msgTypes[1].OneofWrappers = []interface{}{
+	file_egress_v1_proto_msgTypes[0].OneofWrappers = []any{}
+	file_egress_v1_proto_msgTypes[1].OneofWrappers = []any{
 		(*SpanData_EgressSpan_SendSpan)(nil),
 	}
-	file_egress_v1_proto_msgTypes[2].OneofWrappers = []interface{}{
+	file_egress_v1_proto_msgTypes[2].OneofWrappers = []any{
 		(*SpanData_SendSpan_QueueName)(nil),
 		(*SpanData_SendSpan_TopicEndpointName)(nil),
 	}
-	file_egress_v1_proto_msgTypes[3].OneofWrappers = []interface{}{
+	file_egress_v1_proto_msgTypes[3].OneofWrappers = []any{
 		(*SpanData_TransactionEvent_Xid_)(nil),
 		(*SpanData_TransactionEvent_LocalId)(nil),
 	}

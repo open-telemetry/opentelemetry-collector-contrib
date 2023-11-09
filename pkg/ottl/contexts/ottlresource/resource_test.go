@@ -27,16 +27,16 @@ func Test_newPathGetSetter(t *testing.T) {
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
-	newMap := make(map[string]interface{})
-	newMap2 := make(map[string]interface{})
+	newMap := make(map[string]any)
+	newMap2 := make(map[string]any)
 	newMap2["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(resource pcommon.Resource, cache pcommon.Map)
 	}{
 		{
@@ -370,7 +370,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					},
 				},
 			},
-			orig: func() interface{} {
+			orig: func() any {
 				return nil
 			}(),
 			newVal: "new",

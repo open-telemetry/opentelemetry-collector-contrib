@@ -52,7 +52,7 @@ type Config struct {
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
 	// structure, ie.: it will error if an unknown key is present.
-	ConfigPlaceholder interface{} `mapstructure:"config"`
+	ConfigPlaceholder any `mapstructure:"config"`
 
 	// EnableProtobufNegotiation allows the collector to set the scraper option for
 	// protobuf negotiation when conferring with a prometheus client.
@@ -66,7 +66,7 @@ type targetAllocator struct {
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
 	// structure, ie.: it will error if an unknown key is present.
-	ConfigPlaceholder interface{}        `mapstructure:"http_sd_config"`
+	ConfigPlaceholder any                `mapstructure:"http_sd_config"`
 	HTTPSDConfig      *promHTTP.SDConfig `mapstructure:"-"`
 }
 

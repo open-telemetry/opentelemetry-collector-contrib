@@ -13,14 +13,14 @@ import (
 func TestLoadParserConfig(t *testing.T) {
 	tests := []struct {
 		name    string
-		cfgMap  map[string]interface{}
+		cfgMap  map[string]any
 		cfg     Config
 		want    Config
 		wantErr bool
 	}{
 		{
 			name:    "unknow_type",
-			cfgMap:  map[string]interface{}{"type": "unknow"},
+			cfgMap:  map[string]any{"type": "unknow"},
 			cfg:     Config{Type: "unknown"},
 			want:    Config{Type: "unknown"},
 			wantErr: true,
@@ -29,10 +29,10 @@ func TestLoadParserConfig(t *testing.T) {
 			// Keep this test before the default_regex to ensure that the
 			// default configuration is not being corrupted.
 			name: "custom_delimiter",
-			cfgMap: map[string]interface{}{
+			cfgMap: map[string]any{
 				"type": "regex",
-				"config": map[string]interface{}{
-					"rules": []interface{}{map[string]interface{}{"regexp": "(?<key_test>.*test)"}},
+				"config": map[string]any{
+					"rules": []any{map[string]any{"regexp": "(?<key_test>.*test)"}},
 				},
 			},
 			cfg: Config{Type: "regex"},
@@ -46,7 +46,7 @@ func TestLoadParserConfig(t *testing.T) {
 		},
 		{
 			name:   "default_regex",
-			cfgMap: map[string]interface{}{"type": "regex"},
+			cfgMap: map[string]any{"type": "regex"},
 			cfg:    Config{Type: "regex"},
 			want: Config{
 				Type:   "regex",
