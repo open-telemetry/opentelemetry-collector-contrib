@@ -85,7 +85,7 @@ func (e *httpClientExporter) export(logs plog.Logs) error {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		var respData bytes.Buffer
-		io.Copy(&respData, resp.Body)
+		_, _ = io.Copy(&respData, resp.Body)
 		return fmt.Errorf("log request failed with status %s (%s)", resp.Status, respData.String())
 	}
 
