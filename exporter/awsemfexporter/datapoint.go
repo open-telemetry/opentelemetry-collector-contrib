@@ -27,7 +27,7 @@ type emfCalculators struct {
 	summary aws.MetricCalculator
 }
 
-func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
+func calculateSummaryDelta(prev *aws.MetricValue, val any, _ time.Time) (any, bool) {
 	metricEntry := val.(summaryMetricEntry)
 	summaryDelta := metricEntry.sum
 	countDelta := metricEntry.count
@@ -44,7 +44,7 @@ func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, _ time.Time) 
 // dataPoint represents a processed metric data point
 type dataPoint struct {
 	name        string
-	value       interface{}
+	value       any
 	labels      map[string]string
 	timestampMs int64
 }
@@ -126,7 +126,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 	retained := true
 
 	if dps.adjustToDelta {
-		var deltaVal interface{}
+		var deltaVal any
 		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
 		deltaVal, retained = calculators.delta.Calculate(mKey, metricVal, metric.Timestamp().AsTime())
 
@@ -299,7 +299,7 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 	datapoints := []dataPoint{}
 
 	if dps.adjustToDelta {
-		var delta interface{}
+		var delta any
 		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
 		delta, retained = calculators.summary.Calculate(mKey, summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
 
