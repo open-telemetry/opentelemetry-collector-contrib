@@ -208,11 +208,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/exporter/opensearchexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/exporter/prometheusexporter"
     schedule:
       interval: "weekly"
