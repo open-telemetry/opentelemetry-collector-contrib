@@ -124,7 +124,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						1, ts,
 					), "", false),
 					Help: "gauge description",
-					Unit: "testing_unit",
+					Unit: "testing_unit1",
 				},
 				{
 					Type: prompb.MetricMetadata_GAUGE,
@@ -198,7 +198,7 @@ func GenerateMetricsAllTypesNoDataPointsHelpAndUnit() pmetric.Metrics {
 	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	ms := ilm0.Metrics()
-	initMetric(ms.AppendEmpty(), testdata.TestGaugeDoubleMetricName, pmetric.MetricTypeGauge, "gauge description", "testing_unit")
+	initMetric(ms.AppendEmpty(), testdata.TestGaugeDoubleMetricName, pmetric.MetricTypeGauge, "gauge description", "testing_unit1")
 	initMetric(ms.AppendEmpty(), testdata.TestGaugeIntMetricName, pmetric.MetricTypeGauge, "gauge description", "testing_unit")
 	initMetric(ms.AppendEmpty(), testdata.TestSumDoubleMetricName, pmetric.MetricTypeSum, "sum description", "testing_unit")
 	initMetric(ms.AppendEmpty(), testdata.TestSumIntMetricName, pmetric.MetricTypeSum, "sum description", "testing_unit")
