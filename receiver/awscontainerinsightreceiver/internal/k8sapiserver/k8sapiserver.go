@@ -5,25 +5,32 @@ package k8sapiserver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sutil"
 )
 
 // K8sAPIServer is a struct that produces metrics from kubernetes api server
 type K8sAPIServer struct {
-	nodeName            string // get the value from downward API
-	logger              *zap.Logger
-	clusterNameProvider clusterNameProvider
-	cancel              context.CancelFunc
-	leaderElection      *LeaderElection
+	nodeName                  string // get the value from downward API
+	logger                    *zap.Logger
+	clusterNameProvider       clusterNameProvider
+	cancel                    context.CancelFunc
+	leaderElection            *LeaderElection
+	addFullPodNameMetricLabel bool
+	includeEnhancedMetrics    bool
 }
 
 type clusterNameProvider interface {
@@ -33,12 +40,14 @@ type clusterNameProvider interface {
 type Option func(*K8sAPIServer)
 
 // NewK8sAPIServer creates a k8sApiServer which can generate cluster-level metrics
-func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection *LeaderElection, options ...Option) (*K8sAPIServer, error) {
+func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection *LeaderElection, addFullPodNameMetricLabel bool, includeEnhancedMetrics bool, options ...Option) (*K8sAPIServer, error) {
 
 	k := &K8sAPIServer{
-		logger:              logger,
-		clusterNameProvider: cnp,
-		leaderElection:      leaderElection,
+		logger:                    logger,
+		clusterNameProvider:       cnp,
+		leaderElection:            leaderElection,
+		addFullPodNameMetricLabel: addFullPodNameMetricLabel,
+		includeEnhancedMetrics:    includeEnhancedMetrics,
 	}
 
 	for _, opt := range options {
@@ -85,6 +94,7 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	result = append(result, k.getServiceMetrics(clusterName, timestampNs)...)
 	result = append(result, k.getStatefulSetMetrics(clusterName, timestampNs)...)
 	result = append(result, k.getReplicaSetMetrics(clusterName, timestampNs)...)
+	result = append(result, k.getPendingPodStatusMetrics(clusterName, timestampNs)...)
 
 	return result
 }
@@ -277,6 +287,129 @@ func (k *K8sAPIServer) getReplicaSetMetrics(clusterName, timestampNs string) []p
 		metrics = append(metrics, md)
 	}
 	return metrics
+}
+
+// Statues and conditions for all pods assigned to a node are determined in podstore.go. Given Pending pods do not have a node allocated to them, we need to fetch their details from the K8s API Server here.
+func (k *K8sAPIServer) getPendingPodStatusMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
+	podsList := k.leaderElection.podClient.PodInfos()
+	podKeyToServiceNamesMap := k.leaderElection.epClient.PodKeyToServiceNames()
+
+	for _, podInfo := range podsList {
+		if podInfo.Phase == corev1.PodPending {
+			fields := map[string]interface{}{}
+
+			if k.includeEnhancedMetrics {
+				addPodStatusMetrics(fields, podInfo)
+				addPodConditionMetrics(fields, podInfo)
+			}
+
+			attributes := map[string]string{
+				ci.ClusterNameKey: clusterName,
+				ci.MetricType:     ci.TypePod,
+				ci.Timestamp:      timestampNs,
+				ci.PodNameKey:     podInfo.Name,
+				ci.K8sNamespace:   podInfo.Namespace,
+				ci.Version:        "0",
+			}
+
+			podKey := k8sutil.CreatePodKey(podInfo.Namespace, podInfo.Name)
+			if serviceList, ok := podKeyToServiceNamesMap[podKey]; ok {
+				if len(serviceList) > 0 {
+					attributes[ci.TypeService] = serviceList[0]
+				}
+			}
+
+			attributes[ci.PodStatus] = string(corev1.PodPending)
+			attributes["k8s.node.name"] = "pending"
+
+			kubernetesBlob := map[string]interface{}{}
+			k.getKubernetesBlob(podInfo, kubernetesBlob, attributes)
+			if k.nodeName != "" {
+				kubernetesBlob["host"] = k.nodeName
+			}
+			if len(kubernetesBlob) > 0 {
+				kubernetesInfo, err := json.Marshal(kubernetesBlob)
+				if err != nil {
+					k.logger.Warn("Error parsing kubernetes blob for pod metrics")
+				} else {
+					attributes[ci.Kubernetes] = string(kubernetesInfo)
+				}
+			}
+			attributes[ci.SourcesKey] = "[\"apiserver\"]"
+			md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+			metrics = append(metrics, md)
+		}
+	}
+	return metrics
+}
+
+// TODO this is duplicated code from podstore.go, move this to a common package to re-use
+func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob map[string]interface{}, attributes map[string]string) {
+	var owners []interface{}
+	podName := ""
+	for _, owner := range pod.OwnerReferences {
+		if owner.Kind != "" && owner.Name != "" {
+			kind := owner.Kind
+			name := owner.Name
+			if owner.Kind == ci.ReplicaSet {
+				rsToDeployment := k.leaderElection.replicaSetClient.ReplicaSetToDeployment()
+				if parent := rsToDeployment[owner.Name]; parent != "" {
+					kind = ci.Deployment
+					name = parent
+				} else if parent := parseDeploymentFromReplicaSet(owner.Name); parent != "" {
+					kind = ci.Deployment
+					name = parent
+				}
+			} else if owner.Kind == ci.Job {
+				if parent := parseCronJobFromJob(owner.Name); parent != "" {
+					kind = ci.CronJob
+					name = parent
+				} else if !k.addFullPodNameMetricLabel {
+					name = getJobNamePrefix(name)
+				}
+			}
+			owners = append(owners, map[string]string{"owner_kind": kind, "owner_name": name})
+
+			if podName == "" {
+				if owner.Kind == ci.StatefulSet {
+					podName = pod.Name
+				} else if owner.Kind == ci.DaemonSet || owner.Kind == ci.Job ||
+					owner.Kind == ci.ReplicaSet || owner.Kind == ci.ReplicationController {
+					podName = name
+				}
+			}
+		}
+	}
+
+	if len(owners) > 0 {
+		kubernetesBlob["pod_owners"] = owners
+	}
+
+	labels := make(map[string]string)
+	for k, v := range pod.Labels {
+		labels[k] = v
+	}
+	if len(labels) > 0 {
+		kubernetesBlob["labels"] = labels
+	}
+	kubernetesBlob["namespace_name"] = pod.Namespace
+	kubernetesBlob["pod_id"] = pod.Uid
+
+	// if podName is not set according to a well-known controllers, then set it to its own name
+	if podName == "" {
+		if strings.HasPrefix(pod.Name, KubeProxy) && !k.addFullPodNameMetricLabel {
+			podName = KubeProxy
+		} else {
+			podName = pod.Name
+		}
+	}
+
+	attributes[ci.PodNameKey] = podName
+	if k.addFullPodNameMetricLabel {
+		attributes[ci.FullPodNameKey] = pod.Name
+		kubernetesBlob["pod_name"] = pod.Name
+	}
 }
 
 // Shutdown stops the k8sApiServer

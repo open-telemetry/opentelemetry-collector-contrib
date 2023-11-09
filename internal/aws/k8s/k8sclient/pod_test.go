@@ -191,3 +191,42 @@ func TestTransformFuncPod(t *testing.T) {
 	assert.Nil(t, info)
 	assert.NotNil(t, err)
 }
+
+func TestPodClient_PodNameToPodMap(t *testing.T) {
+	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
+	setOption := podSyncCheckerOption(&mockReflectorSyncChecker{})
+
+	samplePodArray := []interface{}{
+		&v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
+				Name:      "kube-proxy-csm88",
+				Namespace: "kube-system",
+				SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-csm88",
+			},
+			Status: v1.PodStatus{
+				Phase: "Running",
+			},
+		},
+	}
+
+	fakeClientSet := fake.NewSimpleClientset()
+	client := newPodClient(fakeClientSet, zap.NewNop(), setOption)
+	assert.NoError(t, client.store.Replace(samplePodArray, ""))
+	client.refresh()
+
+	expectedArray := []*PodInfo{
+		{
+			Name:      "kube-proxy-csm88",
+			Namespace: "kube-system",
+			Uid:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
+			Labels:    map[string]string{},
+			Phase:     v1.PodRunning,
+		},
+	}
+
+	resultMap := client.PodInfos()
+	assert.Equal(t, expectedArray, resultMap)
+	client.shutdown()
+	assert.True(t, client.stopped)
+}

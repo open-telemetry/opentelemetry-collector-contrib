@@ -132,6 +132,12 @@ func (client *MockClient) NamespaceToRunningPodNum() map[string]int {
 	return args.Get(0).(map[string]int)
 }
 
+// k8sclient.PodClient
+func (client *MockClient) PodInfos() []*k8sclient.PodInfo {
+	args := client.Called()
+	return args.Get(0).([]*k8sclient.PodInfo)
+}
+
 // k8sclient.NodeClient
 func (client *MockClient) ClusterFailedNodeCount() int {
 	args := client.Called()
@@ -147,6 +153,12 @@ func (client *MockClient) ClusterNodeCount() int {
 func (client *MockClient) ServiceToPodNum() map[k8sclient.Service]int {
 	args := client.Called()
 	return args.Get(0).(map[k8sclient.Service]int)
+}
+
+// k8sclient.EpClient
+func (client *MockClient) PodKeyToServiceNames() map[string][]string {
+	args := client.Called()
+	return args.Get(0).(map[string][]string)
 }
 
 type mockEventBroadcaster struct {
@@ -212,7 +224,7 @@ func (m mockClusterNameProvider) GetClusterName() string {
 }
 
 func TestK8sAPIServer_New(t *testing.T) {
-	k8sAPIServer, err := NewK8sAPIServer(mockClusterNameProvider{}, zap.NewNop(), nil)
+	k8sAPIServer, err := NewK8sAPIServer(mockClusterNameProvider{}, zap.NewNop(), nil, false, false)
 	assert.Nil(t, k8sAPIServer)
 	assert.NotNil(t, err)
 }
@@ -285,6 +297,18 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			},
 		},
 	})
+	mockClient.On("PodInfos").Return([]*k8sclient.PodInfo{
+		{
+			Name:      "kube-proxy-csm88",
+			Namespace: "kube-system",
+			Uid:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
+			Phase:     v1.PodPending,
+		},
+	})
+	mockClient.On("PodKeyToServiceNames").Return(map[string][]string{
+		"namespace:kube-system,podName:coredns-7554568866-26jdf": {"kube-dns"},
+		"namespace:kube-system,podName:coredns-7554568866-shwn6": {"kube-dns"},
+	})
 
 	leaderElection := &LeaderElection{
 		k8sClient:         &mockK8sClient{},
@@ -302,7 +326,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 
 	t.Setenv("HOST_NAME", hostName)
 	t.Setenv("K8S_NAMESPACE", "namespace")
-	k8sAPIServer, err := NewK8sAPIServer(mockClusterNameProvider{}, zap.NewNop(), leaderElection)
+	k8sAPIServer, err := NewK8sAPIServer(mockClusterNameProvider{}, zap.NewNop(), leaderElection, true, true)
 
 	assert.NotNil(t, k8sAPIServer)
 	assert.Nil(t, err)
@@ -366,6 +390,17 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
 			assert.Equal(t, "statefulset1", getStringAttrVal(metric, ci.PodNameKey))
 			assert.Equal(t, "ClusterStatefulSet", getStringAttrVal(metric, ci.MetricType))
+		case ci.TypePod:
+			assertMetricValueEqual(t, metric, "pod_status_pending", int64(1))
+			assertMetricValueEqual(t, metric, "pod_status_running", int64(0))
+			assertMetricValueEqual(t, metric, "pod_status_failed", int64(0))
+			assertMetricValueEqual(t, metric, "pod_status_ready", int64(0))
+			assertMetricValueEqual(t, metric, "pod_status_scheduled", int64(0))
+			assertMetricValueEqual(t, metric, "pod_status_succeeded", int64(0))
+			assertMetricValueEqual(t, metric, "pod_status_unknown", int64(0))
+			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
+			assert.Equal(t, "Pending", getStringAttrVal(metric, "pod_status"))
+			assert.Equal(t, "Pod", getStringAttrVal(metric, ci.MetricType))
 		default:
 			assert.Fail(t, "Unexpected metric type: "+metricType)
 		}

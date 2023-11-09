@@ -20,6 +20,7 @@ import (
 type PodClient interface {
 	// Get the mapping between the namespace and the number of belonging pods
 	NamespaceToRunningPodNum() map[string]int
+	PodInfos() []*PodInfo
 }
 
 type podClientOption func(*podClient)
@@ -39,6 +40,7 @@ type podClient struct {
 
 	mu                          sync.RWMutex
 	namespaceToRunningPodNumMap map[string]int
+	podInfos                    []*PodInfo
 }
 
 func (c *podClient) NamespaceToRunningPodNum() map[string]int {
@@ -50,22 +52,35 @@ func (c *podClient) NamespaceToRunningPodNum() map[string]int {
 	return c.namespaceToRunningPodNumMap
 }
 
+func (c *podClient) PodInfos() []*PodInfo {
+	if c.store.GetResetRefreshStatus() {
+		c.refresh()
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.podInfos
+}
+
 func (c *podClient) refresh() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	objsList := c.store.List()
 	namespaceToRunningPodNumMapNew := make(map[string]int)
+	podInfos := make([]*PodInfo, 0)
 	for _, obj := range objsList {
-		pod := obj.(*podInfo)
-		if pod.phase == v1.PodRunning {
-			if podNum, ok := namespaceToRunningPodNumMapNew[pod.namespace]; !ok {
-				namespaceToRunningPodNumMapNew[pod.namespace] = 1
+		pod := obj.(*PodInfo)
+		podInfos = append(podInfos, pod)
+
+		if pod.Phase == v1.PodRunning {
+			if podNum, ok := namespaceToRunningPodNumMapNew[pod.Namespace]; !ok {
+				namespaceToRunningPodNumMapNew[pod.Namespace] = 1
 			} else {
-				namespaceToRunningPodNumMapNew[pod.namespace] = podNum + 1
+				namespaceToRunningPodNumMapNew[pod.Namespace] = podNum + 1
 			}
 		}
 	}
+	c.podInfos = podInfos
 	c.namespaceToRunningPodNumMap = namespaceToRunningPodNumMapNew
 }
 
@@ -105,9 +120,14 @@ func transformFuncPod(obj interface{}) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Pod type", obj)
 	}
-	info := new(podInfo)
-	info.namespace = pod.Namespace
-	info.phase = pod.Status.Phase
+	info := new(PodInfo)
+	info.Name = pod.Name
+	info.Namespace = pod.Namespace
+	info.Uid = string(pod.UID)
+	info.Labels = pod.Labels
+	info.OwnerReferences = pod.OwnerReferences
+	info.Phase = pod.Status.Phase
+	info.Conditions = pod.Status.Conditions
 	return info, nil
 }
 
