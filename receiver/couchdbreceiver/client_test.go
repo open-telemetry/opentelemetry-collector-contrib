@@ -169,7 +169,7 @@ func TestGetNodeStats(t *testing.T) {
 		require.Nil(t, actualStats)
 	})
 	t.Run("no error", func(t *testing.T) {
-		expectedStats := map[string]interface{}{"key": []interface{}{"value"}}
+		expectedStats := map[string]any{"key": []any{"value"}}
 		couchdbClient := defaultClient(t, ts.URL)
 
 		actualStats, err := couchdbClient.GetStats("_local")

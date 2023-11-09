@@ -359,7 +359,7 @@ func setUpEndpointClient() (*epClient, chan struct{}) {
 func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	client, stopChan := setUpEndpointClient()
 	defer close(stopChan)
-	arrays := make([]interface{}, len(endpointsArray))
+	arrays := make([]any, len(endpointsArray))
 	for i := range arrays {
 		arrays[i] = endpointsArray[i]
 	}

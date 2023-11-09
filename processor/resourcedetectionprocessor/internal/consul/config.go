@@ -39,7 +39,7 @@ type Config struct {
 	// Allowlist of [Consul
 	// Metadata](https://www.consul.io/docs/agent/options#node_meta) keys to use as
 	// resource attributes.
-	MetaLabels map[string]interface{} `mapstructure:"meta"`
+	MetaLabels map[string]any `mapstructure:"meta"`
 
 	// ResourceAttributes configuration for Consul detector
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`

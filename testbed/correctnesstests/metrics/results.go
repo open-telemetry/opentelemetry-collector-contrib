@@ -39,7 +39,7 @@ func (r *results) Init(resultsDir string) {
 	)
 }
 
-func (r *results) Add(_ string, rslt interface{}) {
+func (r *results) Add(_ string, rslt any) {
 	tr := rslt.(result)
 	line := fmt.Sprintf(
 		"%-40s|%-6s|%9d|\n",

@@ -26,6 +26,9 @@ Event Hub, transforms them, and pushes them through the collector pipeline.
 ### connection (Required)
 A string describing the connection to an Azure event hub.
 
+### group (Optional)
+The Consumer Group to read from. If empty will default to the default Consumer Group $Default
+
 ### partition (Optional)
 The partition to watch. If empty, it will watch explicitly all partitions.
 
@@ -49,6 +52,7 @@ receivers:
   azureeventhub:
     connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
     partition: foo
+    group: bar
     offset: "1234-5566"
     format: "azure"
 ```
@@ -100,20 +104,21 @@ JSON numbers are encoded as doubles.
 For Metrics the Azure Metric Records are an array
 of "records" with the following fields.
 
-| Azure      |
-|------------|
-| time       |
-| resourceId |
-| metricName |
-| timeGrain  |
-| total      |
-| count      |
-| minimum    |
-| maximum    |
-| average    |
+| Azure      | Open Telemetry                              |
+|------------|---------------------------------------------|
+| time       | time_unix_nano (field)                      |
+| resourceId | azure.resource.id (resource attribute)      |
+| metricName |                                             |
+| timeGrain  | start_time_unix_nano (field)                |
+| total      | mapped to datapoint metricName + "_TOTAL"   |
+| count      | mapped to datapoint metricName + "_COUNT"   |
+| minimum    | mapped to datapoint metricName + "_MINIMUM" |
+| maximum    | mapped to datapoint metricName + "_MAXIMUM" |
+| average    | mapped to datapoint metricName + "_AVERAGE" |
 
-From this data a Metric of type Summary is created
-with a single Data Point that represents the value
-from the "total" field.
+From this data a Metric of type Gauge is created
+with a Data Points that represents the values
+for the Metric including: Total, Minimum, Maximum,
+Average and Count.
 
 [storage extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage

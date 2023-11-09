@@ -106,7 +106,7 @@ func TestBuildBody(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.valueType, func(*testing.T) {
-			attrs := make(map[string]interface{})
+			attrs := make(map[string]any)
 			msg := buildBody(settings, attrs, tt.body)
 
 			assert.Equal(t, tt.message, msg, tt.valueType)
@@ -127,10 +127,10 @@ func TestBuildBodyMap(t *testing.T) {
 	if assert.NoError(t, err) {
 		settings := newDefaultLogsSettings()
 		settings.DecomposeComplexMessageField = true
-		attrs := make(map[string]interface{})
+		attrs := make(map[string]any)
 
 		msg := buildBody(settings, attrs, m)
-		expectedAttrs := make(map[string]interface{})
+		expectedAttrs := make(map[string]any)
 		expectedAttrs["body.map.scalar"] = "scalar-value"
 		expectedAttrs["body.map.map.m1"] = "v1"
 		expectedAttrs["body.map.map.m2"] = "v2"
@@ -152,7 +152,7 @@ var testLThread = &add_events.Thread{
 
 var testLLog = &add_events.Log{
 	Id:    "LL",
-	Attrs: map[string]interface{}{},
+	Attrs: map[string]any{},
 }
 
 var testServerHost = "foo"
@@ -163,7 +163,7 @@ var testLEventRaw = &add_events.Event{
 	Sev:        3,
 	Ts:         "1581452773000000789",
 	ServerHost: testServerHost,
-	Attrs: map[string]interface{}{
+	Attrs: map[string]any{
 		"app":                      "server",
 		"instance_num":             int64(1),
 		"dropped_attributes_count": uint32(1),
@@ -179,7 +179,7 @@ var testLEventRawWithScopeInfo = &add_events.Event{
 	Sev:        3,
 	Ts:         "1581452773000000789",
 	ServerHost: testServerHost,
-	Attrs: map[string]interface{}{
+	Attrs: map[string]any{
 		"app":                      "server",
 		"instance_num":             int64(1),
 		"dropped_attributes_count": uint32(1),
@@ -195,7 +195,7 @@ var testLEventReq = &add_events.Event{
 	Log:    testLEventRaw.Log,
 	Sev:    testLEventRaw.Sev,
 	Ts:     testLEventRaw.Ts,
-	Attrs: map[string]interface{}{
+	Attrs: map[string]any{
 		add_events.AttrOrigServerHost: testServerHost,
 		"app":                         "server",
 		"instance_num":                float64(1),
@@ -790,7 +790,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		assert.NoError(t, err, "Error reading request: %v", err)
 
 		wasSuccessful.Store(true)
-		payload, err := json.Marshal(map[string]interface{}{
+		payload, err := json.Marshal(map[string]any{
 			"status":       "success",
 			"bytesCharged": 42,
 		})
@@ -895,7 +895,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 						Log:    testLEventReq.Log,
 						Sev:    testLEventReq.Sev,
 						Ts:     testLEventReq.Ts,
-						Attrs: map[string]interface{}{
+						Attrs: map[string]any{
 							add_events.AttrOrigServerHost: testServerHost,
 							"app":                         "server",
 							"instance_num":                float64(1),
@@ -913,7 +913,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 						Log:    testLEventReq.Log,
 						Sev:    testLEventReq.Sev,
 						Ts:     testLEventReq.Ts,
-						Attrs: map[string]interface{}{
+						Attrs: map[string]any{
 							add_events.AttrOrigServerHost: "serverHostFromAttribute",
 							"app":                         "server",
 							"instance_num":                float64(1),
@@ -932,7 +932,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 						Log:    testLEventReq.Log,
 						Sev:    testLEventReq.Sev,
 						Ts:     testLEventReq.Ts,
-						Attrs: map[string]interface{}{
+						Attrs: map[string]any{
 							add_events.AttrOrigServerHost: "serverHostFromResourceServer",
 							"app":                         "server",
 							"instance_num":                float64(1),
@@ -952,7 +952,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 						Log:    testLEventReq.Log,
 						Sev:    testLEventReq.Sev,
 						Ts:     testLEventReq.Ts,
-						Attrs: map[string]interface{}{
+						Attrs: map[string]any{
 							add_events.AttrOrigServerHost: "serverHostFromResourceHost",
 							"app":                         "server",
 							"instance_num":                float64(1),
@@ -971,7 +971,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 						Log:    testLEventReq.Log,
 						Sev:    testLEventReq.Sev,
 						Ts:     testLEventReq.Ts,
-						Attrs: map[string]interface{}{
+						Attrs: map[string]any{
 							add_events.AttrOrigServerHost: testServerHost,
 							"app":                         "server",
 							"instance_num":                float64(1),

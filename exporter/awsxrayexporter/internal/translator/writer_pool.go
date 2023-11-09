@@ -24,7 +24,7 @@ type writerPool struct {
 
 func newWriterPool(size int) *writerPool {
 	pool := &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			var (
 				buffer  = bytes.NewBuffer(make([]byte, 0, size))
 				encoder = json.NewEncoder(buffer)
@@ -43,7 +43,7 @@ func (w *writer) Reset() {
 	w.buffer.Reset()
 }
 
-func (w *writer) Encode(v interface{}) error {
+func (w *writer) Encode(v any) error {
 	return w.encoder.Encode(v)
 }
 
