@@ -434,6 +434,8 @@ const (
 	testTypeName        = "OUTSIDE_METRIC_THRESHOLD"
 	testHostNameAndPort = "127.0.0.1:27017"
 	testClusterName     = "Cluster1"
+	testRegionName      = "region-name"
+	testProviderName    = "provider-name"
 )
 
 func TestAlertsRetrieval(t *testing.T) {
