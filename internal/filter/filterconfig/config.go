@@ -198,7 +198,7 @@ type Attribute struct {
 
 	// Values specifies the value to match against.
 	// If it is not set, any value will match.
-	Value interface{} `mapstructure:"value"`
+	Value any `mapstructure:"value"`
 }
 
 // InstrumentationLibrary specifies the instrumentation library and optional version to match against.

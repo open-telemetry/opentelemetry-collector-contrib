@@ -23,7 +23,7 @@ func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 	if strings.HasSuffix(filePath, ".yaml") || strings.HasSuffix(filePath, ".yml") {
-		var m map[string]interface{}
+		var m map[string]any
 		if err = yaml.Unmarshal(b, &m); err != nil {
 			return pmetric.Metrics{}, err
 		}
@@ -54,7 +54,7 @@ func MarshalMetricsYAML(metrics pmetric.Metrics) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	var jsonVal map[string]interface{}
+	var jsonVal map[string]any
 	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func ReadLogs(filePath string) (plog.Logs, error) {
 		return plog.Logs{}, err
 	}
 	if strings.HasSuffix(filePath, ".yaml") || strings.HasSuffix(filePath, ".yml") {
-		var m map[string]interface{}
+		var m map[string]any
 		if err = yaml.Unmarshal(b, &m); err != nil {
 			return plog.Logs{}, err
 		}
@@ -116,7 +116,7 @@ func writeLogs(filePath string, logs plog.Logs) error {
 	if err != nil {
 		return err
 	}
-	var jsonVal map[string]interface{}
+	var jsonVal map[string]any
 	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func ReadTraces(filePath string) (ptrace.Traces, error) {
 		return ptrace.Traces{}, err
 	}
 	if strings.HasSuffix(filePath, ".yaml") || strings.HasSuffix(filePath, ".yml") {
-		var m map[string]interface{}
+		var m map[string]any
 		if err = yaml.Unmarshal(b, &m); err != nil {
 			return ptrace.Traces{}, err
 		}
@@ -167,7 +167,7 @@ func writeTraces(filePath string, traces ptrace.Traces) error {
 	if err != nil {
 		return err
 	}
-	var jsonVal map[string]interface{}
+	var jsonVal map[string]any
 	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
 		return err
 	}

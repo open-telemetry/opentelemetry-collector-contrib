@@ -76,7 +76,7 @@ func (e *EventXML) parseSeverity() entry.Severity {
 }
 
 // parseBody will parse a body from the event.
-func (e *EventXML) parseBody() map[string]interface{} {
+func (e *EventXML) parseBody() map[string]any {
 	message, details := e.parseMessage()
 
 	level := e.RenderedLevel
@@ -99,12 +99,12 @@ func (e *EventXML) parseBody() map[string]interface{} {
 		keywords = e.Keywords
 	}
 
-	body := map[string]interface{}{
-		"event_id": map[string]interface{}{
+	body := map[string]any{
+		"event_id": map[string]any{
 			"qualifiers": e.EventID.Qualifiers,
 			"id":         e.EventID.ID,
 		},
-		"provider": map[string]interface{}{
+		"provider": map[string]any{
 			"name":         e.Provider.Name,
 			"guid":         e.Provider.GUID,
 			"event_source": e.Provider.EventSourceName,
@@ -139,7 +139,7 @@ func (e *EventXML) parseBody() map[string]interface{} {
 }
 
 // parseMessage will attempt to parse a message into a message and details
-func (e *EventXML) parseMessage() (string, map[string]interface{}) {
+func (e *EventXML) parseMessage() (string, map[string]any) {
 	switch e.Channel {
 	case "Security":
 		return parseSecurity(e.Message)
@@ -150,8 +150,8 @@ func (e *EventXML) parseMessage() (string, map[string]interface{}) {
 
 // parse event data into a map[string]interface
 // see: https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-datafieldtype-complextype
-func parseEventData(eventData EventData) map[string]interface{} {
-	outputMap := make(map[string]interface{}, 3)
+func parseEventData(eventData EventData) map[string]any {
+	outputMap := make(map[string]any, 3)
 	if eventData.Name != "" {
 		outputMap["name"] = eventData.Name
 	}
@@ -163,9 +163,9 @@ func parseEventData(eventData EventData) map[string]interface{} {
 		return outputMap
 	}
 
-	dataMaps := make([]interface{}, len(eventData.Data))
+	dataMaps := make([]any, len(eventData.Data))
 	for i, data := range eventData.Data {
-		dataMaps[i] = map[string]interface{}{
+		dataMaps[i] = map[string]any{
 			data.Name: data.Value,
 		}
 	}

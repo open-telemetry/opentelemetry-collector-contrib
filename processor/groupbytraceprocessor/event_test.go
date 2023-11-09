@@ -24,7 +24,7 @@ func TestEventCallback(t *testing.T) {
 	for _, tt := range []struct {
 		casename         string
 		typ              eventType
-		payload          interface{}
+		payload          any
 		registerCallback func(em *eventMachine, wg *sync.WaitGroup)
 	}{
 		{
