@@ -88,13 +88,17 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
 	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
 
-	// The error is unhandled because we want to return successfully detected resources
-	// regardless of an error. The caller will properly handle any error hit while getting
-	// the cluster name.
 	if d.ra.K8sClusterName.Enabled {
 		var clusterName string
 		clusterName, err = d.utils.getClusterName(ctx)
-		d.rb.SetK8sClusterName(clusterName)
+		if err != nil {
+			// We clear out the error here so that the correctly detected resources
+			// can still be used by the processor.
+			d.logger.Warn("Unable to get EKS cluster name", zap.Error(err))
+			err = nil
+		} else {
+			d.rb.SetK8sClusterName(clusterName)
+		}
 	}
 
 	return d.rb.Emit(), conventions.SchemaURL, err
