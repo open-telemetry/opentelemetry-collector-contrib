@@ -65,13 +65,8 @@ func (h *handler) OnAdd(objectInterface any, _ bool) {
 	}
 }
 
-<<<<<<< HEAD
-// OnUpdate is called in response to an existing pod, service or node changing.
-func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
-=======
 // OnUpdate is called in response to an existing pod or node changing.
 func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
->>>>>>> main
 	oldEndpoints := map[observer.EndpointID]observer.Endpoint{}
 	newEndpoints := map[observer.EndpointID]observer.Endpoint{}
 
