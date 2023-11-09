@@ -69,7 +69,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	case *v1.Pod:
 		newPod, ok := newObjectInterface.(*v1.Pod)
 		if !ok {
-			h.logger.Info("skip updating endpoints for pod as the update is of different type", zap.Any("oldPod", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			h.logger.Warn("skip updating endpoint for pod as the update is of different type", zap.Any("oldPod", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		for _, e := range convertPodToEndpoints(h.idNamespace, oldObject) {
@@ -82,6 +82,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	case *v1.Service:
 		newService, ok := newObjectInterface.(*v1.Service)
 		if !ok {
+			h.logger.Warn("skip updating endpoint for service as the update is of different type", zap.Any("oldService", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		for _, e := range convertServiceToEndpoints(h.idNamespace, oldObject) {
@@ -94,6 +95,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	case *v1.Node:
 		newNode, ok := newObjectInterface.(*v1.Node)
 		if !ok {
+			h.logger.Warn("skip updating endpoint for node as the update is of different type", zap.Any("oldNode", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		oldEndpoint := convertNodeToEndpoint(h.idNamespace, oldObject)
