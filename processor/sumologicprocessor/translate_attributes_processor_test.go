@@ -115,7 +115,7 @@ func assertAttribute(t *testing.T, metadata pcommon.Map, attributeName string, e
 }
 
 var (
-	benchPdataAttributes = map[string]interface{}{
+	benchPdataAttributes = map[string]any{
 		"host.name":               pcommon.NewValueStr("testing-host"),
 		"host.id":                 pcommon.NewValueStr("my-host-id"),
 		"host.type":               pcommon.NewValueStr("my-host-type"),

@@ -47,7 +47,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, telemetrySettings
 
 	return &influxHTTPWriter{
 		encoderPool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				e := new(lineprotocol.Encoder)
 				e.SetLax(false)
 				e.SetPrecision(lineprotocol.Nanosecond)
@@ -137,7 +137,7 @@ func newInfluxHTTPWriterBatch(w *influxHTTPWriter) *influxHTTPWriterBatch {
 // EnqueuePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
 // to the internal line protocol buffer.
 // If the buffer is full, it will be flushed by calling WriteBatch.
-func (b *influxHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
+func (b *influxHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]any, ts time.Time, _ common.InfluxMetricValueType) error {
 	if b.encoder == nil {
 		b.encoder = b.encoderPool.Get().(*lineprotocol.Encoder)
 	}
@@ -234,7 +234,7 @@ func (b *influxHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
 	return tags
 }
 
-func (b *influxHTTPWriterBatch) convertFields(m map[string]interface{}) (fields map[string]lineprotocol.Value) {
+func (b *influxHTTPWriterBatch) convertFields(m map[string]any) (fields map[string]lineprotocol.Value) {
 	fields = make(map[string]lineprotocol.Value, len(m))
 	for k, v := range m {
 		if k == "" {

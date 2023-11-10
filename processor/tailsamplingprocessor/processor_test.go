@@ -344,7 +344,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	// Since we can't guarantee the order of insertion the only thing that can be checked is
 	// if the number of traces on the map matches the expected value.
 	cnt := 0
-	tsp.idToTrace.Range(func(_ interface{}, _ interface{}) bool {
+	tsp.idToTrace.Range(func(_ any, _ any) bool {
 		cnt++
 		return true
 	})

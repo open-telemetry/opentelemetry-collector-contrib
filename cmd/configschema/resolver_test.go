@@ -67,7 +67,7 @@ func TestTypetoProjectPath_External(t *testing.T) {
 	assert.Equal(t, "", dir)
 }
 
-func testTypeToPackagePath(t *testing.T, v interface{}) string {
+func testTypeToPackagePath(t *testing.T, v any) string {
 	packageDir, err := testDR().TypeToPackagePath(reflect.ValueOf(v).Type())
 	require.NoError(t, err)
 	return packageDir
