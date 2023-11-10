@@ -43,7 +43,7 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 
 	internal.SetLogger(e.logger)
 
-	ttlExpr := ttlConfig(e.cfg.TTLDays, e.cfg.TTL)
+	ttlExpr := GenerateTTLExpr(e.cfg.TTLDays, e.cfg.TTL)
 	return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, ttlExpr, e.client)
 }
 

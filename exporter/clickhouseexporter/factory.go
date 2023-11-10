@@ -121,7 +121,7 @@ func createMetricExporter(
 	)
 }
 
-func ttlConfig(ttlDays uint, ttl time.Duration) string {
+func GenerateTTLExpr(ttlDays uint, ttl time.Duration) string {
 	if ttlDays > 0 {
 		return fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, ttlDays)
 	}
