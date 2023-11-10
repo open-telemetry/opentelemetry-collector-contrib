@@ -54,7 +54,10 @@ func (c *Config) Validate() error {
 		}
 
 		switch eachMap.ObserverType {
-		case protocol.GaugeObserver, protocol.SummaryObserver, protocol.HistogramObserver:
+		case protocol.GaugeObserver,
+			protocol.SummaryObserver,
+			protocol.DatadogSummaryObserver,
+			protocol.HistogramObserver:
 			// do nothing
 		case protocol.DisableObserver:
 			fallthrough
