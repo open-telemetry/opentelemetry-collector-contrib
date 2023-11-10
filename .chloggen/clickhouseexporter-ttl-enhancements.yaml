@@ -7,7 +7,7 @@ change_type: deprecation & enhancement
 component: clickhouseexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Currently, TTL flag supports only days, now we can specify it in seconds, minutes and hours as well (ttl).
+note: Added support for more control over TTL configuration. Currently, it supports timelines only in days, now also in hours, minutes and seconds (propertyName ttl_days --> ttl).
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [28675]
