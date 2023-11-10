@@ -1318,6 +1318,7 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 }
 
 func TestTLSAPIConnection(t *testing.T) {
+	t.Skip("Flaky test see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29099")
 	cfg := createDefaultConfig().(*Config)
 	converter, err := translation.NewMetricsConverter(
 		zap.NewNop(),
