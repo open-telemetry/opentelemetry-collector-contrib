@@ -7,11 +7,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
+	"time"
+
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"net/url"
-	"time"
 )
 
 // Config defines configuration for Elastic exporter.
