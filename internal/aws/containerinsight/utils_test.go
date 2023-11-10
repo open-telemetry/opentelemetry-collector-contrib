@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -58,13 +59,15 @@ func TestAggregateFields(t *testing.T) {
 }
 
 func TestMetricName(t *testing.T) {
-	assert.Equal(t, "instance_cpu_usage_total", MetricName(TypeInstance, "cpu_usage_total"))
-	assert.Equal(t, "instance_filesystem_usage", MetricName(TypeInstanceFS, "filesystem_usage"))
-	assert.Equal(t, "instance_interface_network_rx_bytes", MetricName(TypeInstanceNet, "network_rx_bytes"))
-	assert.Equal(t, "instance_diskio_io_service_bytes_total", MetricName(TypeInstanceDiskIO, "diskio_io_service_bytes_total"))
-	assert.Equal(t, "service_number_of_running_pods", MetricName(TypeService, "number_of_running_pods"))
-	assert.Equal(t, "namespace_number_of_running_pods", MetricName(TypeClusterNamespace, "number_of_running_pods"))
-	assert.Equal(t, "container_diskio_io_service_bytes_total", MetricName(TypeContainerDiskIO, "diskio_io_service_bytes_total"))
+	assert.Equal(t, "instance_cpu_usage_total", MetricName(TypeInstance, CPUTotal))
+	assert.Equal(t, "instance_filesystem_usage", MetricName(TypeInstanceFS, FSUsage))
+	assert.Equal(t, "instance_interface_network_rx_bytes", MetricName(TypeInstanceNet, NetRxBytes))
+	assert.Equal(t, "instance_diskio_io_service_bytes_total", MetricName(TypeInstanceDiskIO, strings.ToLower(DiskIOServiceBytesPrefix+DiskIOTotal)))
+	assert.Equal(t, "service_number_of_running_pods", MetricName(TypeService, RunningPodCount))
+	assert.Equal(t, "namespace_number_of_running_pods", MetricName(TypeClusterNamespace, RunningPodCount))
+	assert.Equal(t, "container_diskio_io_service_bytes_total", MetricName(TypeContainerDiskIO, strings.ToLower(DiskIOServiceBytesPrefix+DiskIOTotal)))
+	assert.Equal(t, "pod_cpu_reserved_capacity", MetricName(TypePod, CPUReservedCapacity))
+	assert.Equal(t, "node_memory_cache", MetricName(TypeNode, MemCache))
 	assert.Equal(t, "unknown_metrics", MetricName("unknown_type", "unknown_metrics"))
 }
 
@@ -385,7 +388,7 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
-	// test container metrics
+	// test node metrics
 	fields = map[string]interface{}{
 		"node_cpu_limit":                      int64(4000),
 		"node_cpu_request":                    int64(610),
@@ -480,7 +483,7 @@ func TestConvertToOTLPMetricsForNodeDiskIOMetrics(t *testing.T) {
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
-	// test container metrics
+	// test node diskio metrics
 	fields = map[string]interface{}{
 		"node_diskio_io_service_bytes_async": 6704.018980016907,
 		"node_diskio_io_service_bytes_read":  float64(0),
@@ -529,7 +532,7 @@ func TestConvertToOTLPMetricsForNodeFSMetrics(t *testing.T) {
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
-	// test container metrics
+	// test node filesystem metrics
 	fields = map[string]interface{}{
 		"node_filesystem_available":   int64(4271607808),
 		"node_filesystem_capacity":    int64(21462233088),
@@ -571,7 +574,7 @@ func TestConvertToOTLPMetricsForNodeNetMetrics(t *testing.T) {
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
-	// test container metrics
+	// test node network metrics
 	fields = map[string]interface{}{
 		"node_interface_network_rx_bytes":    294.8620421098953,
 		"node_interface_network_rx_dropped":  float64(0),
@@ -601,6 +604,50 @@ func TestConvertToOTLPMetricsForNodeNetMetrics(t *testing.T) {
 		"InstanceType":         "t2.xlarge",
 		"NodeName":             "ip-192-168-12-170.ec2.internal",
 		"Type":                 "NodeNet",
+		"Version":              "0",
+		"interface":            "eni7cce1b61ea4",
+		"Timestamp":            timestamp,
+	}
+	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
+	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
+}
+
+func TestConvertToOTLPMetricsForNodeStatusMetrics(t *testing.T) {
+	var fields map[string]interface{}
+	var expectedUnits map[string]string
+	var tags map[string]string
+	var md pmetric.Metrics
+	now := time.Now()
+	timestamp := strconv.FormatInt(now.UnixNano(), 10)
+
+	// test node network metrics
+	fields = map[string]interface{}{
+		"node_status_condition_ready":               uint64(1),
+		"node_status_condition_disk_pressure":       uint64(1),
+		"node_status_condition_memory_pressure":     uint64(1),
+		"node_status_condition_pid_pressure":        uint64(1),
+		"node_status_condition_network_unavailable": uint64(1),
+		"node_status_condition_unknown":             uint64(0),
+		"node_status_capacity_pods":                 uint64(1),
+		"node_status_allocatable_pods":              uint64(1),
+	}
+	expectedUnits = map[string]string{
+		"node_status_condition_ready":               UnitCount,
+		"node_status_condition_disk_pressure":       UnitCount,
+		"node_status_condition_memory_pressure":     UnitCount,
+		"node_status_condition_pid_pressure":        UnitCount,
+		"node_status_condition_network_unavailable": UnitCount,
+		"node_status_condition_unknown":             UnitCount,
+		"node_status_capacity_pods":                 UnitCount,
+		"node_status_allocatable_pods":              UnitCount,
+	}
+	tags = map[string]string{
+		"AutoScalingGroupName": "eks-a6bb9db9-267c-401c-db55-df8ef645b06f",
+		"ClusterName":          "eks-aoc",
+		"InstanceId":           "i-01bf9fb097cbf3205",
+		"InstanceType":         "t2.xlarge",
+		"NodeName":             "ip-192-168-12-170.ec2.internal",
+		"Type":                 "Node",
 		"Version":              "0",
 		"interface":            "eni7cce1b61ea4",
 		"Timestamp":            timestamp,
@@ -655,6 +702,13 @@ func TestConvertToOTLPMetricsForPodMetrics(t *testing.T) {
 		"pod_number_of_container_restarts":      0,
 		"pod_number_of_containers":              uint(1),
 		"pod_number_of_running_containers":      uint(1),
+		"pod_status_running":                    1,
+		"pod_status_pending":                    0,
+		"pod_status_succeeded":                  0,
+		"pod_status_failed":                     0,
+		"pod_status_unknown":                    0,
+		"pod_status_ready":                      1,
+		"pod_status_scheduled":                  1,
 	}
 	expectedUnits = map[string]string{
 		"pod_cpu_limit":                         "",
@@ -694,6 +748,13 @@ func TestConvertToOTLPMetricsForPodMetrics(t *testing.T) {
 		"pod_number_of_container_restarts":      UnitCount,
 		"pod_number_of_containers":              UnitCount,
 		"pod_number_of_running_containers":      UnitCount,
+		"pod_status_running":                    UnitCount,
+		"pod_status_pending":                    UnitCount,
+		"pod_status_succeeded":                  UnitCount,
+		"pod_status_failed":                     UnitCount,
+		"pod_status_unknown":                    UnitCount,
+		"pod_status_ready":                      UnitCount,
+		"pod_status_scheduled":                  UnitCount,
 	}
 	tags = map[string]string{
 		"ClusterName":  "eks-aoc",
@@ -718,17 +779,17 @@ func TestConvertToOTLPMetricsForPodNetMetrics(t *testing.T) {
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
-	// test container metrics
+	// test pod network metrics
 	fields = map[string]interface{}{
-		"node_interface_network_rx_bytes":    294.8620421098953,
-		"node_interface_network_rx_dropped":  float64(0),
-		"node_interface_network_rx_errors":   float64(0),
-		"node_interface_network_rx_packets":  2.69744105680903,
-		"node_interface_network_total_bytes": 1169.5469730310588,
-		"node_interface_network_tx_bytes":    874.6849309211634,
-		"node_interface_network_tx_dropped":  float64(0),
-		"node_interface_network_tx_errors":   float64(0),
-		"node_interface_network_tx_packets":  2.713308357143201,
+		"pod_interface_network_rx_bytes":    294.8620421098953,
+		"pod_interface_network_rx_dropped":  float64(0),
+		"pod_interface_network_rx_errors":   float64(0),
+		"pod_interface_network_rx_packets":  2.69744105680903,
+		"pod_interface_network_total_bytes": 1169.5469730310588,
+		"pod_interface_network_tx_bytes":    874.6849309211634,
+		"pod_interface_network_tx_dropped":  float64(0),
+		"pod_interface_network_tx_errors":   float64(0),
+		"pod_interface_network_tx_packets":  2.713308357143201,
 	}
 	expectedUnits = map[string]string{
 		"pod_interface_network_rx_bytes":    UnitBytesPerSec,
@@ -750,6 +811,54 @@ func TestConvertToOTLPMetricsForPodNetMetrics(t *testing.T) {
 		"NodeName":             "ip-192-168-12-170.ec2.internal",
 		"PodName":              "aws-otel-eks-ci",
 		"Type":                 "PodNet",
+		"Version":              "0",
+		"interface":            "eth0",
+		"Timestamp":            timestamp,
+	}
+	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
+	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
+}
+
+func TestConvertToOTLPMetricsForPodContainerStatusMetrics(t *testing.T) {
+	var fields map[string]interface{}
+	var expectedUnits map[string]string
+	var tags map[string]string
+	var md pmetric.Metrics
+	now := time.Now()
+	timestamp := strconv.FormatInt(now.UnixNano(), 10)
+
+	// test pod container status metrics
+	fields = map[string]interface{}{
+		"pod_container_status_running":                                      1,
+		"pod_container_status_terminated":                                   0,
+		"pod_container_status_waiting":                                      0,
+		"pod_container_status_waiting_reason_crash_loop_back_off":           0,
+		"pod_container_status_waiting_reason_image_pull_error":              0,
+		"pod_container_status_waiting_reason_start_error":                   0,
+		"pod_container_status_waiting_reason_create_container_error":        0,
+		"pod_container_status_waiting_reason_create_container_config_error": 0,
+		"pod_container_status_terminated_reason_oom_killed":                 0,
+	}
+	expectedUnits = map[string]string{
+		"pod_container_status_running":                                      UnitCount,
+		"pod_container_status_terminated":                                   UnitCount,
+		"pod_container_status_waiting":                                      UnitCount,
+		"pod_container_status_waiting_reason_crash_loop_back_off":           UnitCount,
+		"pod_container_status_waiting_reason_image_pull_error":              UnitCount,
+		"pod_container_status_waiting_reason_start_error":                   UnitCount,
+		"pod_container_status_waiting_reason_create_container_error":        UnitCount,
+		"pod_container_status_waiting_reason_create_container_config_error": UnitCount,
+		"pod_container_status_terminated_reason_oom_killed":                 UnitCount,
+	}
+	tags = map[string]string{
+		"AutoScalingGroupName": "eks-a6bb9db9-267c-401c-db55-df8ef645b06f",
+		"ClusterName":          "eks-aoc",
+		"InstanceId":           "i-01bf9fb097cbf3205",
+		"InstanceType":         "t2.xlarge",
+		"Namespace":            "default",
+		"NodeName":             "ip-192-168-12-170.ec2.internal",
+		"PodName":              "aws-otel-eks-ci",
+		"Type":                 "Pod",
 		"Version":              "0",
 		"interface":            "eth0",
 		"Timestamp":            timestamp,
