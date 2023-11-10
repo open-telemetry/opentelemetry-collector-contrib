@@ -139,7 +139,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if c.AsyncConfig != nil {
 		udpInput.messageQueue = make(chan messageAndAddress, c.AsyncConfig.MaxQueueLength)
 		udpInput.readBufferPool = sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				buffer := make([]byte, MaxUDPSize)
 				return &buffer
 			},
