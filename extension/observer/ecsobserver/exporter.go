@@ -130,7 +130,7 @@ func (e *taskExporter) exportTask(task *taskAnnotated) ([]prometheusECSTarget, e
 			target := containerTarget
 			mappedPort, err := task.MappedPort(container, int64(matchedTarget.Port))
 			if err != nil {
-				err = errctx.WithValues(err, map[string]interface{}{
+				err = errctx.WithValues(err, map[string]any{
 					errKeyTarget: matchedTarget,
 					errKeyTask:   task,
 				})

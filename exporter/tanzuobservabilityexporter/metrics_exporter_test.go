@@ -32,7 +32,7 @@ func verifyPushMetricsData(t *testing.T, errorOnSend bool) error {
 	addDataPoint(
 		7,
 		1631205001,
-		map[string]interface{}{
+		map[string]any{
 			"env":    "prod",
 			"bucket": 73,
 		},
