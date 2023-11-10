@@ -252,7 +252,9 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 		return 0, errMetricNameNotFound
 	}
 
-	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms.
+	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms,
+	// thus we don't check for them here as opposed to the Append function.
+
 	curMF := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
 	switch curMF.mtype {
 	case pmetric.MetricTypeExponentialHistogram:
