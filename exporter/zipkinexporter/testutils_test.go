@@ -12,7 +12,7 @@ import (
 )
 
 func unmarshalZipkinSpanArrayToMap(t *testing.T, jsonStr string) map[zipkinmodel.ID]*zipkinmodel.SpanModel {
-	var i interface{}
+	var i any
 
 	err := json.Unmarshal([]byte(jsonStr), &i)
 	require.NoError(t, err)
@@ -20,7 +20,7 @@ func unmarshalZipkinSpanArrayToMap(t *testing.T, jsonStr string) map[zipkinmodel
 	results := make(map[zipkinmodel.ID]*zipkinmodel.SpanModel)
 
 	switch x := i.(type) {
-	case []interface{}:
+	case []any:
 		for _, j := range x {
 			span := jsonToSpan(t, j)
 			results[span.ID] = span
@@ -32,7 +32,7 @@ func unmarshalZipkinSpanArrayToMap(t *testing.T, jsonStr string) map[zipkinmodel
 	return results
 }
 
-func jsonToSpan(t *testing.T, j interface{}) *zipkinmodel.SpanModel {
+func jsonToSpan(t *testing.T, j any) *zipkinmodel.SpanModel {
 	b, err := json.Marshal(j)
 	require.NoError(t, err)
 	span := &zipkinmodel.SpanModel{}
