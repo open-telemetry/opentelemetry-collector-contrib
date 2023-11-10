@@ -15,7 +15,7 @@ import (
 )
 
 func TestAddAnnotations(t *testing.T) {
-	input := make(map[string]interface{})
+	input := make(map[string]any)
 	input["int"] = 0
 	input["int32"] = int32(1)
 	input["int64"] = int64(2)
@@ -42,7 +42,7 @@ func TestAddAnnotations(t *testing.T) {
 	expectedKeys.AppendEmpty().SetStr("float32")
 	expectedKeys.AppendEmpty().SetStr("float64")
 
-	assert.True(t, cmp.Equal(expectedAttrMap.AsRaw(), attrMap.AsRaw(), cmpopts.SortSlices(func(x, y interface{}) bool {
+	assert.True(t, cmp.Equal(expectedAttrMap.AsRaw(), attrMap.AsRaw(), cmpopts.SortSlices(func(x, y any) bool {
 		return x.(string) < y.(string)
 	})), "attribute maps differ")
 }

@@ -120,6 +120,7 @@ extension/storage/dbstorage/                                            @open-te
 extension/storage/filestorage/                                          @open-telemetry/collector-contrib-approvers @djaglowski
 
 internal/aws/                                                           @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
+internal/collectd/                                                      @open-telemetry/collector-contrib-approvers @atoulme
 internal/coreinternal/                                                  @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/datadog/                                                       @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
 internal/docker/                                                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
@@ -149,6 +150,7 @@ pkg/translator/opencensus/                                              @open-te
 pkg/translator/prometheus/                                              @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
 pkg/translator/prometheusremotewrite/                                   @open-telemetry/collector-contrib-approvers @Aneurysm9
 pkg/translator/signalfx/                                                @open-telemetry/collector-contrib-approvers @dmitryax
+pkg/translator/skywalking/                                              @open-telemetry/collector-contrib-approvers @JaredTan95
 pkg/translator/zipkin/                                                  @open-telemetry/collector-contrib-approvers @MovieStoreGuy @astencel-sumo @crobert-1
 pkg/winperfcounters/                                                    @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @BinaryFissionGames
 

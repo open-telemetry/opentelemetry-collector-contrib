@@ -254,7 +254,7 @@ func (tc *TestCase) Sleep(d time.Duration) {
 // if time is out and condition does not become true. If error is signaled
 // while waiting the function will return false, but will not record additional
 // test error (we assume that signaled error is already recorded in indicateError()).
-func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg interface{}) bool {
+func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg any) bool {
 	startTime := time.Now()
 
 	// Start with 5 ms waiting interval between condition re-evaluation.
@@ -285,7 +285,7 @@ func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg in
 }
 
 // WaitFor is like WaitForN but with a fixed duration of 10 seconds
-func (tc *TestCase) WaitFor(cond func() bool, errMsg interface{}) bool {
+func (tc *TestCase) WaitFor(cond func() bool, errMsg any) bool {
 	return tc.WaitForN(cond, time.Second*10, errMsg)
 }
 

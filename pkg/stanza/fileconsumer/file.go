@@ -34,11 +34,25 @@ type Manager struct {
 
 	previousPollFiles []*reader.Reader
 	knownFiles        []*reader.Metadata
+
+	// This value approximates the expected number of files which we will find in a single poll cycle.
+	// It is updated each poll cycle using a simple moving average calculation which assigns 20% weight
+	// to the most recent poll cycle.
+	// It is used to regulate the size of knownFiles. The goal is to allow knownFiles
+	// to contain checkpoints from a few previous poll cycles, but not grow unbounded.
+	movingAverageMatches int
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
+
+	if matches, err := m.fileMatcher.MatchFiles(); err != nil {
+		m.Warnf("finding files: %v", err)
+	} else {
+		m.movingAverageMatches = len(matches)
+		m.knownFiles = make([]*reader.Metadata, 0, 4*len(matches))
+	}
 
 	if persister != nil {
 		m.persister = persister
@@ -53,10 +67,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 		}
 	}
 
-	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.Warnf("finding files: %v", err)
-	}
-
 	// Start polling goroutine
 	m.startPoller(ctx)
 
@@ -64,8 +74,8 @@ func (m *Manager) Start(persister operator.Persister) error {
 }
 
 func (m *Manager) closePreviousFiles() {
-	if forgetNum := len(m.previousPollFiles) + len(m.knownFiles) - cap(m.knownFiles); forgetNum > 0 {
-		m.knownFiles = m.knownFiles[forgetNum:]
+	if len(m.knownFiles) > 4*m.movingAverageMatches {
+		m.knownFiles = m.knownFiles[m.movingAverageMatches:]
 	}
 	for _, r := range m.previousPollFiles {
 		m.knownFiles = append(m.knownFiles, r.Close())
@@ -116,6 +126,8 @@ func (m *Manager) poll(ctx context.Context) {
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
 		m.Debugf("finding files: %v", err)
+	} else {
+		m.movingAverageMatches = (m.movingAverageMatches*3 + len(matches)) / 4
 	}
 	m.Debugf("matched files", zap.Strings("paths", matches))
 
@@ -197,6 +209,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // been read this polling interval
 func (m *Manager) makeReaders(paths []string) []*reader.Reader {
 	readers := make([]*reader.Reader, 0, len(paths))
+OUTER:
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
@@ -210,7 +223,7 @@ func (m *Manager) makeReaders(paths []string) []*reader.Reader {
 				if err := file.Close(); err != nil {
 					m.Debugw("problem closing file", zap.Error(err))
 				}
-				continue
+				continue OUTER
 			}
 		}
 

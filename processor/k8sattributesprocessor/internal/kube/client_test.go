@@ -46,7 +46,7 @@ func newPodIdentifier(from string, name string, value string) PodIdentifier {
 	}
 }
 
-func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interface{})) {
+func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Equal(t, 0, len(c.Pods))
 
 	// pod without IP
@@ -91,7 +91,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 
 }
 
-func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interface{})) {
+func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Equal(t, 0, len(c.Namespaces))
 
 	namespace := &api_v1.Namespace{}
@@ -116,7 +116,7 @@ func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj in
 	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.NamespaceUID)
 }
 
-func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interface{})) {
+func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Equal(t, 0, len(c.Nodes))
 
 	node := &api_v1.Node{}
@@ -410,7 +410,7 @@ func TestPodAddOutOfSync(t *testing.T) {
 
 func TestPodUpdate(t *testing.T) {
 	c, _ := newTestClient(t)
-	podAddAndUpdateTest(t, c, func(obj interface{}) {
+	podAddAndUpdateTest(t, c, func(obj any) {
 		// first argument (old pod) is not used right now
 		c.handlePodUpdate(&api_v1.Pod{}, obj)
 	})
@@ -418,7 +418,7 @@ func TestPodUpdate(t *testing.T) {
 
 func TestNamespaceUpdate(t *testing.T) {
 	c, _ := newTestClient(t)
-	namespaceAddAndUpdateTest(t, c, func(obj interface{}) {
+	namespaceAddAndUpdateTest(t, c, func(obj any) {
 		// first argument (old namespace) is not used right now
 		c.handleNamespaceUpdate(&api_v1.Namespace{}, obj)
 	})
@@ -426,7 +426,7 @@ func TestNamespaceUpdate(t *testing.T) {
 
 func TestNodeUpdate(t *testing.T) {
 	c, _ := newTestClient(t)
-	nodeAddAndUpdateTest(t, c, func(obj interface{}) {
+	nodeAddAndUpdateTest(t, c, func(obj any) {
 		// first argument (old node) is not used right now
 		c.handleNodeUpdate(&api_v1.Node{}, obj)
 	})
