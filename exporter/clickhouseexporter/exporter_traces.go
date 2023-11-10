@@ -316,7 +316,6 @@ func renderCreateTracesTableSQL(cfg *Config) string {
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 	var ttlExpr string
 
-	// deprecated and will be removed
 	if cfg.TTLDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}

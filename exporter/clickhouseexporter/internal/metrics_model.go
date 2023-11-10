@@ -55,7 +55,7 @@ func SetLogger(l *zap.Logger) {
 func NewMetricsTable(ctx context.Context, tableName string, ttlDays uint, ttl time.Duration, db *sql.DB) error {
 	var ttlExpr string
 
-	// deprecated and will be removed
+	// deprecated and will be removed. Use 'ttl' instead.
 	if ttlDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, ttlDays)
 	}
