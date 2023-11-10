@@ -1207,6 +1207,7 @@ func TestTLSExporterInit(t *testing.T) {
 }
 
 func TestTLSIngestConnection(t *testing.T) {
+	t.Skip("Flaky test see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29099")
 	metricsPayload := pmetric.NewMetrics()
 	rm := metricsPayload.ResourceMetrics().AppendEmpty()
 	ilm := rm.ScopeMetrics().AppendEmpty()
