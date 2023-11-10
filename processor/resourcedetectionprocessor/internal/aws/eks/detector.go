@@ -93,7 +93,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		d.rb.SetK8sClusterName(clusterName)
 	}
 
-	return d.rb.Emit(), conventions.SchemaURL, err
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
 func isEKS(ctx context.Context, utils detectorUtils) (bool, error) {
