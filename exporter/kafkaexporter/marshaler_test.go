@@ -97,15 +97,15 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 
 	// Since marshaling json is not guaranteed to be in order
 	// within a string, using a map to compare that the expected values are there
-	otlpJSON := map[string]interface{}{
-		"resourceSpans": []interface{}{
-			map[string]interface{}{
-				"resource": map[string]interface{}{},
-				"scopeSpans": []interface{}{
-					map[string]interface{}{
-						"scope": map[string]interface{}{},
-						"spans": []interface{}{
-							map[string]interface{}{
+	otlpJSON := map[string]any{
+		"resourceSpans": []any{
+			map[string]any{
+				"resource": map[string]any{},
+				"scopeSpans": []any{
+					map[string]any{
+						"scope": map[string]any{},
+						"spans": []any{
+							map[string]any{
 								"traceId":           "0102030405060708090a0b0c0d0e0f10",
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
@@ -113,7 +113,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 								"kind":              float64(ptrace.SpanKindServer),
 								"startTimeUnixNano": fmt.Sprint(now.UnixNano()),
 								"endTimeUnixNano":   fmt.Sprint(now.Add(time.Second).UnixNano()),
-								"status":            map[string]interface{}{},
+								"status":            map[string]any{},
 							},
 						},
 						"schemaUrl": conventions.SchemaURL,
@@ -124,8 +124,8 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		},
 	}
 
-	zipkinJSON := []interface{}{
-		map[string]interface{}{
+	zipkinJSON := []any{
+		map[string]any{
 			"traceId":       "0102030405060708090a0b0c0d0e0f10",
 			"id":            "0001020304050607",
 			"parentId":      "08090a0b0c0d0e00",
@@ -133,17 +133,17 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 			"timestamp":     float64(time.Second.Microseconds()),
 			"duration":      float64(time.Second.Microseconds()),
 			"kind":          string(zipkin.Server),
-			"localEndpoint": map[string]interface{}{"serviceName": "otlpresourcenoservicename"},
+			"localEndpoint": map[string]any{"serviceName": "otlpresourcenoservicename"},
 		},
 	}
 
 	tests := []struct {
 		encoding     string
-		expectedJSON interface{}
-		unmarshaled  interface{}
+		expectedJSON any
+		unmarshaled  any
 	}{
-		{encoding: "otlp_json", expectedJSON: otlpJSON, unmarshaled: map[string]interface{}{}},
-		{encoding: "zipkin_json", expectedJSON: zipkinJSON, unmarshaled: []map[string]interface{}{}},
+		{encoding: "otlp_json", expectedJSON: otlpJSON, unmarshaled: map[string]any{}},
+		{encoding: "zipkin_json", expectedJSON: zipkinJSON, unmarshaled: []map[string]any{}},
 	}
 
 	for _, test := range tests {
@@ -159,10 +159,11 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		require.NoError(t, err, "Must not error when encoding value")
 		require.NotNil(t, data, "Must have valid data to test")
 
-		err = json.Unmarshal(data, &test.unmarshaled)
+		unmarshaled := test.unmarshaled
+		err = json.Unmarshal(data, &unmarshaled)
 		require.NoError(t, err, "Must not error marshaling expected data")
 
-		assert.Equal(t, test.expectedJSON, test.unmarshaled, "Must match the expected value")
+		assert.Equal(t, test.expectedJSON, unmarshaled, "Must match the expected value")
 
 	}
 }

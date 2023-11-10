@@ -297,3 +297,13 @@ metrics:
       value_type: int
     extended_documentation: |
       This metric requires WAL to be enabled with at least one replica.
+  postgresql.wal.delay:
+    attributes: [wal_operation_lag, replication_client]
+    description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
+    enabled: false
+    unit: s
+    gauge:
+      value_type: double
+    extended_documentation: |
+      This metric requires WAL to be enabled with at least one replica.
+  

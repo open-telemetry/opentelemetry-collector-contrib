@@ -72,8 +72,8 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 			libraryLog := libraryLogs.At(j)
 			logs := libraryLog.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				logMetadataMap := make(map[string]interface{})
-				resourceMapperMap := make(map[string]interface{})
+				logMetadataMap := make(map[string]any)
+				resourceMapperMap := make(map[string]any)
 				log := logs.At(k)
 
 				log.Attributes().Range(func(key string, value pcommon.Value) bool {

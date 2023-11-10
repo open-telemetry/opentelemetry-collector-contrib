@@ -18,9 +18,7 @@ import (
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-	// QueueSettings is a subset of exporterhelper.QueueSettings,
-	// because only QueueSize is user-settable.
-	QueueSettings QueueSettings `mapstructure:"sending_queue"`
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
@@ -40,12 +38,6 @@ type Config struct {
 	MetricsTableName string `mapstructure:"metrics_table_name"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
 	TTLDays uint `mapstructure:"ttl_days"`
-}
-
-// QueueSettings is a subset of exporterhelper.QueueSettings.
-type QueueSettings struct {
-	// QueueSize set the length of the sending queue
-	QueueSize int `mapstructure:"queue_size"`
 }
 
 const defaultDatabase = "default"
@@ -72,14 +64,6 @@ func (cfg *Config) Validate() (err error) {
 	}
 
 	return err
-}
-
-func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
-	return exporterhelper.QueueSettings{
-		Enabled:      true,
-		NumConsumers: 1,
-		QueueSize:    cfg.QueueSettings.QueueSize,
-	}
 }
 
 func (cfg *Config) buildDSN(database string) (string, error) {

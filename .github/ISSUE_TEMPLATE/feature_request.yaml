@@ -27,6 +27,7 @@ body:
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
+      - exporter/alertmanager
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
       - exporter/awsemf
@@ -48,6 +49,7 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
+      - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/instana
       - exporter/kafka
@@ -59,7 +61,6 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
-      - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
@@ -77,8 +78,12 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/encoding/jaegerencoding
+      - extension/encoding/jsonlogencoding
+      - extension/encoding/otlpencoding
       - extension/encoding/textencoding
+      - extension/encoding/zipkinencoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
@@ -92,18 +97,22 @@ body:
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
       - extension/oidcauth
+      - extension/opamp
       - extension/pprof
+      - extension/remotetap
       - extension/sigv4auth
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
       - internal/aws
+      - internal/collectd
       - internal/core
       - internal/datadog
       - internal/docker
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
+      - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
       - internal/sharedcomponent
@@ -112,17 +121,20 @@ body:
       - pkg/batchperresourceattr
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
+      - pkg/golden
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/stanza
+      - pkg/translator/azure
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
+      - pkg/translator/skywalking
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
@@ -138,7 +150,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
-      - processor/remoteobserver
+      - processor/remotetap
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
@@ -149,6 +161,7 @@ body:
       - processor/servicegraph
       - processor/span
       - processor/spanmetrics
+      - processor/sumologic
       - processor/tailsampling
       - processor/transform
       - receiver/activedirectoryds

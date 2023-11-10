@@ -66,7 +66,7 @@ Whether a container has passed its readiness probe (0 for no, 1 for yes)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ### k8s.container.restarts
 
@@ -226,7 +226,7 @@ The current phase of namespaces (1 for active and 0 for terminating)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ### k8s.pod.phase
 
@@ -234,7 +234,7 @@ Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ### k8s.replicaset.available
 
@@ -274,7 +274,7 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -288,7 +288,7 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -334,7 +334,7 @@ The upper limit for a particular resource in a specific namespace.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -349,7 +349,7 @@ The usage for a particular resource in a specific namespace.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -364,7 +364,7 @@ The configured upper limit for a particular resource.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -378,7 +378,7 @@ The usage for a particular resource with a configured limit.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -396,13 +396,27 @@ metrics:
     enabled: true
 ```
 
+### k8s.node.condition
+
+The condition of a particular Node.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {condition} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str |
+
 ### k8s.pod.status_reason
 
 Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ## Resource Attributes
 
@@ -429,6 +443,7 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.node.name | The k8s node name. | Any Str | true |
 | k8s.node.uid | The k8s node uid. | Any Str | true |
 | k8s.pod.name | The k8s pod name. | Any Str | true |
+| k8s.pod.qos_class | The k8s pod qos class name. One of Guaranteed, Burstable, BestEffort. | Any Str | false |
 | k8s.pod.uid | The k8s pod uid. | Any Str | true |
 | k8s.replicaset.name | The k8s replicaset name | Any Str | true |
 | k8s.replicaset.uid | The k8s replicaset uid | Any Str | true |
@@ -438,6 +453,5 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |
-| opencensus.resourcetype | The OpenCensus resource type. | Any Str | true |
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |

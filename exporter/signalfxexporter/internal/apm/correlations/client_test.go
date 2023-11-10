@@ -148,8 +148,8 @@ func setup(t *testing.T) (CorrelationClient, chan *request, *atomic.Value, *atom
 			MaxBuffered:     10,
 			MaxRetries:      4,
 			LogUpdates:      true,
-			RetryDelay:      0,
-			CleanupInterval: 0,
+			RetryDelay:      0 * time.Second,
+			CleanupInterval: 1 * time.Minute,
 		},
 		AccessToken: "",
 		URL:         serverURL,
@@ -180,7 +180,6 @@ func setup(t *testing.T) (CorrelationClient, chan *request, *atomic.Value, *atom
 }
 
 func TestCorrelationClient(t *testing.T) {
-	t.Skip("See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27059")
 	client, serverCh, forcedRespCode, forcedRespPayload, cancel := setup(t)
 	defer close(serverCh)
 	defer cancel()
@@ -248,6 +247,7 @@ func TestCorrelationClient(t *testing.T) {
 
 		cors := waitForCors(serverCh, 1, 4)
 		require.Len(t, cors, 0)
+		require.Equal(t, uint32(5), client.(*Client).maxAttempts)
 		require.Equal(t, int64(5), atomic.LoadInt64(&client.(*Client).TotalRetriedUpdates))
 
 		forcedRespCode.Store(200)

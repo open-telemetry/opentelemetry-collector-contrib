@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
@@ -16,54 +17,45 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 type Factory struct {
 	*zap.SugaredLogger
-	Config          *Config
-	FromBeginning   bool
-	SplitterFactory splitter.Factory
-	Encoding        encoding.Encoding
-	HeaderConfig    *header.Config
-}
-
-func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
-	return f.build(file, &Metadata{
-		Fingerprint:    fp,
-		FileAttributes: map[string]any{},
-	}, f.SplitterFactory.SplitFunc())
-}
-
-// copy creates a deep copy of a reader
-func (f *Factory) Copy(old *Reader, newFile *os.File) (*Reader, error) {
-	lineSplitFunc := old.lineSplitFunc
-	if lineSplitFunc == nil {
-		lineSplitFunc = f.SplitterFactory.SplitFunc()
-	}
-	return f.build(newFile, &Metadata{
-		Fingerprint:     old.Fingerprint.Copy(),
-		Offset:          old.Offset,
-		FileAttributes:  util.MapCopy(old.FileAttributes),
-		HeaderFinalized: old.HeaderFinalized,
-	}, lineSplitFunc)
+	Config        *Config
+	FromBeginning bool
+	Encoding      encoding.Encoding
+	HeaderConfig  *header.Config
+	SplitFunc     bufio.SplitFunc
+	TrimFunc      trim.Func
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
 	return fingerprint.New(file, f.Config.FingerprintSize)
 }
 
-func (f *Factory) build(file *os.File, m *Metadata, lineSplitFunc bufio.SplitFunc) (r *Reader, err error) {
+func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
+	m := &Metadata{Fingerprint: fp, FileAttributes: map[string]any{}}
+	if f.Config.FlushTimeout > 0 {
+		m.FlushState = &flush.State{LastDataChange: time.Now()}
+	}
+	return f.NewReaderFromMetadata(file, m)
+}
+
+func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
 	r = &Reader{
 		Config:        f.Config,
 		Metadata:      m,
 		file:          file,
-		FileName:      file.Name(),
+		fileName:      file.Name(),
 		logger:        f.SugaredLogger.With("path", file.Name()),
 		decoder:       decode.New(f.Encoding),
-		lineSplitFunc: lineSplitFunc,
+		lineSplitFunc: f.SplitFunc,
 	}
+
+	flushFunc := m.FlushState.Func(f.SplitFunc, f.Config.FlushTimeout)
+	r.lineSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.Config.MaxLogSize), f.TrimFunc)
 
 	if !f.FromBeginning {
 		if err = r.offsetToEnd(); err != nil {
@@ -84,12 +76,12 @@ func (f *Factory) build(file *os.File, m *Metadata, lineSplitFunc bufio.SplitFun
 	}
 
 	// Resolve file name and path attributes
-	resolved := r.FileName
+	resolved := r.fileName
 
 	// Dirty solution, waiting for this permanent fix https://github.com/golang/go/issues/39786
 	// EvalSymlinks on windows is partially working depending on the way you use Symlinks and Junctions
 	if runtime.GOOS != "windows" {
-		resolved, err = filepath.EvalSymlinks(r.FileName)
+		resolved, err = filepath.EvalSymlinks(r.fileName)
 		if err != nil {
 			f.Errorf("resolve symlinks: %w", err)
 		}
@@ -100,12 +92,12 @@ func (f *Factory) build(file *os.File, m *Metadata, lineSplitFunc bufio.SplitFun
 	}
 
 	if f.Config.IncludeFileName {
-		r.FileAttributes[attrs.LogFileName] = filepath.Base(r.FileName)
+		r.FileAttributes[attrs.LogFileName] = filepath.Base(r.fileName)
 	} else if r.FileAttributes[attrs.LogFileName] != nil {
 		delete(r.FileAttributes, attrs.LogFileName)
 	}
 	if f.Config.IncludeFilePath {
-		r.FileAttributes[attrs.LogFilePath] = r.FileName
+		r.FileAttributes[attrs.LogFilePath] = r.fileName
 	} else if r.FileAttributes[attrs.LogFilePath] != nil {
 		delete(r.FileAttributes, attrs.LogFilePath)
 	}

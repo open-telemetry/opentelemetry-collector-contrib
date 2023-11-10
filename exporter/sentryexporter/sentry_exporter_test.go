@@ -205,7 +205,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 		Timestamp:   sampleSentrySpanForEvent.EndTime,
 		Transaction: sampleSentrySpanForEvent.Description,
 		Contexts:    map[string]sentry.Context{},
-		Extra:       map[string]interface{}{},
+		Extra:       map[string]any{},
 		Modules:     map[string]string{},
 		StartTime:   unixNanoToTime(123),
 	}
@@ -357,7 +357,7 @@ type SpanDescriptorsCase struct {
 	testName string
 	// input
 	name     string
-	attrs    map[string]interface{}
+	attrs    map[string]any
 	spanKind ptrace.SpanKind
 	// output
 	op          string
@@ -369,7 +369,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeHTTPMethod: "GET",
 			},
 			spanKind:    ptrace.SpanKindClient,
@@ -379,7 +379,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeHTTPMethod: "POST",
 			},
 			spanKind:    ptrace.SpanKindServer,
@@ -389,7 +389,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeDBSystem: "redis",
 			},
 			spanKind:    ptrace.SpanKindClient,
@@ -399,7 +399,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-with-statement",
 			name:     "mysql call",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeDBSystem:    "sqlite",
 				conventions.AttributeDBStatement: "SELECT * FROM table",
 			},
@@ -410,7 +410,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "rpc",
 			name:     "grpc.test.EchoService/Echo",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeRPCService: "EchoService",
 			},
 			spanKind:    ptrace.SpanKindClient,
@@ -420,7 +420,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "message-system",
 			name:     "message-destination",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"messaging.system": "kafka",
 			},
 			spanKind:    ptrace.SpanKindProducer,
@@ -430,7 +430,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "faas",
 			name:     "message-destination",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"faas.trigger": "pubsub",
 			},
 			spanKind:    ptrace.SpanKindServer,

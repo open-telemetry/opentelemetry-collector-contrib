@@ -38,7 +38,7 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.TransformerConfig `mapstructure:",squash"`
 	Field                    entry.Field `mapstructure:"field"`
-	Value                    interface{} `mapstructure:"value,omitempty"`
+	Value                    any         `mapstructure:"value,omitempty"`
 }
 
 // Build will build an add operator from the supplied configuration
@@ -74,7 +74,7 @@ type Transformer struct {
 	helper.TransformerOperator
 
 	Field   entry.Field
-	Value   interface{}
+	Value   any
 	program *vm.Program
 }
 

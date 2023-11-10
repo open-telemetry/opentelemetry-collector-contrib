@@ -34,13 +34,13 @@ type Decorator interface {
 type Option func(*Cadvisor)
 
 // WithDecorator constructs an option for configuring the metric decorator
-func WithDecorator(_ interface{}) Option {
+func WithDecorator(_ any) Option {
 	return func(c *Cadvisor) {
 		// do nothing
 	}
 }
 
-func WithECSInfoCreator(_ interface{}) Option {
+func WithECSInfoCreator(_ any) Option {
 	return func(c *Cadvisor) {
 		// do nothing
 	}
