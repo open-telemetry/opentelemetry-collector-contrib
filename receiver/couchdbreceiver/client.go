@@ -17,7 +17,7 @@ import (
 // client defines the basic HTTP client interface.
 type client interface {
 	Get(path string) ([]byte, error)
-	GetStats(nodeName string) (map[string]interface{}, error)
+	GetStats(nodeName string) (map[string]any, error)
 }
 
 var _ client = (*couchDBClient)(nil)
@@ -76,14 +76,14 @@ func (c *couchDBClient) Get(path string) ([]byte, error) {
 }
 
 // GetStats gets couchdb stats at a specific node name endpoint.
-func (c *couchDBClient) GetStats(nodeName string) (map[string]interface{}, error) {
+func (c *couchDBClient) GetStats(nodeName string) (map[string]any, error) {
 	path := fmt.Sprintf("/_node/%s/_stats/couchdb", nodeName)
 	body, err := c.Get(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var stats map[string]interface{}
+	var stats map[string]any
 	err = json.Unmarshal(body, &stats)
 	if err != nil {
 		return nil, err

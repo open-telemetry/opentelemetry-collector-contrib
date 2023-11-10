@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
@@ -20,13 +21,16 @@ import (
 )
 
 const (
-	networkName   = "kafka-network"
 	kafkaPort     = "9092"
 	zookeeperPort = "2181"
-	zookeeperHost = "zookeeper"
 )
 
 func TestIntegration(t *testing.T) {
+	uid := fmt.Sprintf("-%s", uuid.NewString())
+	networkName := "kafka-network" + uid
+	zkContainerName := "zookeeper" + uid
+	kafkaContainerName := "kafka" + uid
+
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithNetworkRequest(
@@ -37,10 +41,10 @@ func TestIntegration(t *testing.T) {
 		),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				Name:         "zookeeper",
+				Name:         zkContainerName,
 				Image:        "ubuntu/zookeeper:3.1-22.04_beta",
 				Networks:     []string{networkName},
-				Hostname:     zookeeperHost,
+				Hostname:     zkContainerName,
 				ExposedPorts: []string{zookeeperPort},
 				WaitingFor: wait.ForAll(
 					wait.ForListeningPort(zookeeperPort).WithStartupTimeout(2 * time.Minute),
@@ -48,12 +52,12 @@ func TestIntegration(t *testing.T) {
 			}),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				Name:         "kafka",
+				Name:         kafkaContainerName,
 				Image:        "ubuntu/kafka:3.1-22.04_beta",
 				Networks:     []string{networkName},
 				ExposedPorts: []string{kafkaPort},
 				Env: map[string]string{
-					"ZOOKEEPER_HOST": zookeeperHost,
+					"ZOOKEEPER_HOST": zkContainerName,
 					"ZOOKEEPER_PORT": zookeeperPort,
 				},
 				WaitingFor: wait.ForAll(
@@ -65,8 +69,8 @@ func TestIntegration(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = 5 * time.Second
 				rCfg.Brokers = []string{fmt.Sprintf("%s:%s",
-					ci.HostForNamedContainer(t, "kafka"),
-					ci.MappedPortForNamedContainer(t, "kafka", kafkaPort))}
+					ci.HostForNamedContainer(t, kafkaContainerName),
+					ci.MappedPortForNamedContainer(t, kafkaContainerName, kafkaPort))}
 				rCfg.Scrapers = []string{"brokers", "consumers", "topics"}
 			}),
 		// scraperinttest.WriteExpected(), // TODO remove

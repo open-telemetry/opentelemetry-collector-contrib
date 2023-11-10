@@ -304,7 +304,7 @@ func (dc *DimensionClient) makePatchRequest(dim *DimensionUpdate) (*http.Request
 		}
 	}
 
-	json, err := json.Marshal(map[string]interface{}{
+	json, err := json.Marshal(map[string]any{
 		"customProperties": dim.Properties,
 		"tags":             tagsToAdd,
 		"tagsToRemove":     tagsToRemove,

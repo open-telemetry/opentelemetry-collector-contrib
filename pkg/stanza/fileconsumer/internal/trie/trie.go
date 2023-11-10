@@ -12,21 +12,15 @@
 
 package trie // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/trie"
 
-import (
-	"slices"
-
-	"github.com/google/go-cmp/cmp"
-)
-
 type Trie[T any] struct {
 	value    *T
 	children map[byte]*Trie[T]
-	values   []*T
+	values   map[*T]bool
 }
 
 // NewTrie allocates and returns a new *Trie.
 func NewTrie[T any]() *Trie[T] {
-	return &Trie[T]{children: make(map[byte]*Trie[T])}
+	return &Trie[T]{children: make(map[byte]*Trie[T]), values: make(map[*T]bool)}
 }
 
 func (trie *Trie[T]) Get(key []byte) T {
@@ -55,14 +49,13 @@ func (trie *Trie[T]) Put(key []byte, v T) {
 		}
 		node = node.children[b]
 	}
-	trie.values = append(trie.values, &v)
+	trie.values[&v] = true
 	node.value = &v
 }
 
 // Delete removes a value from the Trie. Returns true if the value was found.
 // Any empty nodes which become childless as a result are removed from the trie.
 func (trie *Trie[T]) Delete(key []byte) bool {
-	var empty T
 	var path []*Trie[T] // record ancestors to check later
 	node := trie
 	for _, b := range key {
@@ -73,16 +66,12 @@ func (trie *Trie[T]) Delete(key []byte) bool {
 		path = append(path, node)
 	}
 
-	if cmp.Equal(node.value, empty) {
+	if node.value == nil {
 		return false
 	}
 
 	// Remove the value
-	idx := slices.Index(trie.values, node.value)
-	if idx == -1 {
-		return false
-	}
-	trie.values = append(trie.values[:idx], trie.values[idx:]...)
+	delete(trie.values, node.value)
 	node.value = nil
 
 	// Iterate back up the path and remove empty nodes
@@ -90,7 +79,7 @@ func (trie *Trie[T]) Delete(key []byte) bool {
 		node := path[i]
 		b := key[i]
 		delete(node.children, b)
-		if len(node.children) > 0 || cmp.Equal(node.value, empty) {
+		if len(node.children) > 0 || node.value != nil {
 			break // node has other children or a value, leave it
 		}
 	}
@@ -98,6 +87,6 @@ func (trie *Trie[T]) Delete(key []byte) bool {
 	return true
 }
 
-func (t *Trie[T]) Values() []*T {
-	return t.values
+func (trie *Trie[T]) Values() map[*T]bool {
+	return trie.values
 }

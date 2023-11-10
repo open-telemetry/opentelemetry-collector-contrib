@@ -29,7 +29,7 @@ const (
 type SNMPData struct {
 	columnOID string // optional
 	oid       string
-	value     interface{}
+	value     any
 	valueType oidDataType
 }
 
@@ -372,7 +372,7 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
 // This is a convenience function to make working with SnmpPDU's easier - it
 // reduces the need for type assertions. A int64 is convenient, as SNMP can
 // return int32, uint32, and int64.
-func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
+func (c snmpClient) toInt64(name string, value any) (int64, error) {
 	switch value := value.(type) { // shadow
 	case uint:
 		return int64(value), nil
@@ -405,7 +405,7 @@ func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
 // This is a convenience function to make working with SnmpPDU's easier - it
 // reduces the need for type assertions. A float64 is convenient, as SNMP can
 // return float32 and float64.
-func (c snmpClient) toFloat64(name string, value interface{}) (float64, error) {
+func (c snmpClient) toFloat64(name string, value any) (float64, error) {
 	switch value := value.(type) { // shadow
 	case float32:
 		return float64(value), nil
@@ -428,7 +428,7 @@ func (c snmpClient) toFloat64(name string, value interface{}) (float64, error) {
 //
 // This is a convenience function to make working with SnmpPDU's easier - it
 // reduces the need for type assertions.
-func toString(value interface{}) string {
+func toString(value any) string {
 	switch value := value.(type) { // shadow
 	case []byte:
 		return string(value)

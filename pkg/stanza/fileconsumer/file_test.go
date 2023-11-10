@@ -1662,6 +1662,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	waitForToken(t, emitCalls, []byte(content))
 	expectNoTokens(t, emitCalls)
 	operator.wg.Wait()
+	require.Len(t, operator.previousPollFiles.Values(), 1)
 
 	// keep append data to file1 and file2
 	newContent := "bbbbbbbbbbbb"
@@ -1672,36 +1673,5 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	// We should have updated the offset for one of the files, so the second file should now
 	// be ingested from the beginning
 	waitForTokens(t, emitCalls, []byte(content), []byte(newContent1), []byte(newContent))
-	operator.wg.Wait()
-}
-
-func TestStalePartialFingerprintDiscarded123(t *testing.T) {
-	t.Parallel()
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.FingerprintSize = 18
-	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewUnscopedMockPersister()
-
-	// Both of they will be include
-	file1 := openTempWithPattern(t, tempDir, "*.log")
-
-	// Two same fingerprint file , and smaller than  config size
-	content := "aaaaaaaaaaa"
-	writeString(t, file1, content+"\n")
-	operator.poll(context.Background())
-	// one file will be exclude, ingest only one content
-	waitForToken(t, emitCalls, []byte(content))
-	expectNoTokens(t, emitCalls)
-	operator.wg.Wait()
-
-	// keep append data to file1 and file2
-	newContent := "bbbbbbbbbbbb"
-	writeString(t, file1, newContent+"\n")
-	operator.poll(context.Background())
-	// We should have updated the offset for one of the files, so the second file should now
-	// be ingested from the beginning
-	waitForTokens(t, emitCalls, []byte(newContent))
 	operator.wg.Wait()
 }

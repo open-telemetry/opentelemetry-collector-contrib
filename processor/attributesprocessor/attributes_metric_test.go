@@ -24,8 +24,8 @@ import (
 // Common structure for all the Tests
 type metricTestCase struct {
 	name               string
-	inputAttributes    map[string]interface{}
-	expectedAttributes map[string]interface{}
+	inputAttributes    map[string]any
+	expectedAttributes map[string]any
 }
 
 // runIndividualMetricTestCase is the common logic of passing metric data through a configured attributes processor.
@@ -37,7 +37,7 @@ func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp processor.M
 	})
 }
 
-func generateMetricData(resourceName string, attrs map[string]interface{}) pmetric.Metrics {
+func generateMetricData(resourceName string, attrs map[string]any) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	res := md.ResourceMetrics().AppendEmpty()
 	res.Resource().Attributes().PutStr("name", resourceName)
@@ -105,32 +105,32 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name:            "apply processor",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"attribute1": 123,
 			},
 		},
 		{
 			name: "apply processor with different value for exclude property",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"attribute1":     123,
 				"NoModification": false,
 			},
 		},
 		{
 			name:               "incorrect name for include property",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name: "attribute match for exclude property",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"NoModification": true,
 			},
 		},
@@ -166,37 +166,37 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name:            "apply",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"attribute1": 123,
 			},
 		},
 		{
 			name: "apply",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"attribute1":     123,
 				"NoModification": false,
 			},
 		},
 		{
 			name:               "incorrect_metric_name",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name:               "dont_apply",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name: "incorrect_metric_name_with_attr",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"NoModification": true,
 			},
 		},
@@ -230,37 +230,37 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name:            "apply_to_metric_with_no_attrs",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"attribute1": 123,
 			},
 		},
 		{
 			name: "apply_to_metric_with_attr",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"attribute1":     123,
 				"NoModification": false,
 			},
 		},
 		{
 			name:               "incorrect_metric_name",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name:               "apply_dont_apply",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name: "incorrect_metric_name_with_attr",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"NoModification": true,
 			},
 		},
@@ -293,37 +293,37 @@ func TestMetricAttributes_Hash(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name: "String",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user.email": "john.doe@example.com",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user.email": "836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f",
 			},
 		},
 		{
 			name: "Int",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user.id": 10,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user.id": "a111f275cc2e7588000001d300a31e76336d15b9d314cd1a1d8f3d3556975eed",
 			},
 		},
 		{
 			name: "Double",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user.balance": 99.1,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user.balance": "05fabd78b01be9692863cb0985f600c99da82979af18db5c55173c2a30adb924",
 			},
 		},
 		{
 			name: "Bool",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user.authenticated": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user.authenticated": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
 			},
 		},
@@ -351,37 +351,37 @@ func TestMetricAttributes_Convert(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name: "String to int (good)",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.int": "123",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.int": 123,
 			},
 		},
 		{
 			name: "String to int (bad)",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.int": "int-10",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.int": "int-10",
 			},
 		},
 		{
 			name: "String to double",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.double": "3.141e2",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.double": 314.1,
 			},
 		},
 		{
 			name: "Double to string",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.string": 99.1,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.string": "99.1",
 			},
 		},
@@ -409,25 +409,25 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 	testCases := []metricTestCase{
 		{
 			name:            "apply_to_metric_with_no_attrs",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"attribute1": 123,
 			},
 		},
 		{
 			name: "apply_to_metric_with_attr",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"attribute1":     123,
 				"NoModification": false,
 			},
 		},
 		{
 			name:               "dont_apply",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 	}
 

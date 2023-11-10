@@ -33,14 +33,27 @@ type Manager struct {
 	maxBatches    int
 	maxBatchFiles int
 
-	// previousPollFiles []*reader.Reader
 	previousPollFiles *trie.Trie[*reader.Reader]
 	knownFiles        []*reader.Metadata
+
+	// This value approximates the expected number of files which we will find in a single poll cycle.
+	// It is updated each poll cycle using a simple moving average calculation which assigns 20% weight
+	// to the most recent poll cycle.
+	// It is used to regulate the size of knownFiles. The goal is to allow knownFiles
+	// to contain checkpoints from a few previous poll cycles, but not grow unbounded.
+	movingAverageMatches int
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
+
+	if matches, err := m.fileMatcher.MatchFiles(); err != nil {
+		m.Warnf("finding files: %v", err)
+	} else {
+		m.movingAverageMatches = len(matches)
+		m.knownFiles = make([]*reader.Metadata, 0, 4*len(matches))
+	}
 
 	if persister != nil {
 		m.persister = persister
@@ -55,10 +68,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 		}
 	}
 
-	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.Warnf("finding files: %v", err)
-	}
-
 	// Start polling goroutine
 	m.startPoller(ctx)
 
@@ -68,17 +77,19 @@ func (m *Manager) Start(persister operator.Persister) error {
 func (m *Manager) populateTrie(readers []*reader.Reader) {
 	m.previousPollFiles = trie.NewTrie[*reader.Reader]()
 	for _, reader := range readers {
-		m.previousPollFiles.Put(reader.Metadata.Fingerprint.FirstBytes, reader)
+		// only add open readers to the trie
+		if reader.Metadata != nil {
+			m.previousPollFiles.Put(reader.Metadata.Fingerprint.FirstBytes, reader)
+		}
 	}
 }
 
 func (m *Manager) closePreviousFiles() {
 	previousPollFiles := m.previousPollFiles.Values()
-	// fmt.Println(previousPollFiles)
-	if forgetNum := len(previousPollFiles) + len(m.knownFiles) - cap(m.knownFiles); forgetNum > 0 {
-		m.knownFiles = m.knownFiles[forgetNum:]
+	if len(m.knownFiles) > 4*m.movingAverageMatches {
+		m.knownFiles = m.knownFiles[m.movingAverageMatches:]
 	}
-	for _, r := range previousPollFiles {
+	for r := range previousPollFiles {
 		m.knownFiles = append(m.knownFiles, (*r).Close())
 	}
 }
@@ -127,6 +138,8 @@ func (m *Manager) poll(ctx context.Context) {
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
 		m.Debugf("finding files: %v", err)
+	} else {
+		m.movingAverageMatches = (m.movingAverageMatches*3 + len(matches)) / 4
 	}
 	m.Debugf("matched files", zap.Strings("paths", matches))
 
@@ -157,7 +170,6 @@ func (m *Manager) poll(ctx context.Context) {
 func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files", zap.Strings("paths", paths))
 	readers := m.makeReaders(paths)
-	fmt.Println(readers)
 
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
@@ -209,6 +221,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // been read this polling interval
 func (m *Manager) makeReaders(paths []string) []*reader.Reader {
 	readers := make([]*reader.Reader, 0, len(paths))
+OUTER:
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
@@ -222,7 +235,7 @@ func (m *Manager) makeReaders(paths []string) []*reader.Reader {
 				if err := file.Close(); err != nil {
 					m.Debugw("problem closing file", zap.Error(err))
 				}
-				continue
+				continue OUTER
 			}
 		}
 

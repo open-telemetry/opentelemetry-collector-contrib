@@ -18,14 +18,13 @@ func (m *Manager) readLostFiles(ctx context.Context, newReaders []*reader.Reader
 	previousPollFiles := m.previousPollFiles.Values()
 	lostReaders := make([]*reader.Reader, 0, len(previousPollFiles))
 OUTER:
-	for _, _oldReader := range previousPollFiles {
-		oldReader := *_oldReader
+	for oldReader := range previousPollFiles {
 		for _, newReader := range newReaders {
-			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
+			if newReader.Fingerprint.StartsWith((*oldReader).Fingerprint) {
 				continue OUTER
 			}
 
-			if !newReader.NameEquals(oldReader) {
+			if !newReader.NameEquals(*oldReader) {
 				continue
 			}
 
@@ -33,11 +32,11 @@ OUTER:
 			// if it was moved or truncated. If truncated, then both handles point to the same
 			// file, in which case we should only read from it using the new reader. We can use
 			// the Validate method to ensure that the file has not been truncated.
-			if !oldReader.Validate() {
+			if !(*oldReader).Validate() {
 				continue OUTER
 			}
 		}
-		lostReaders = append(lostReaders, oldReader)
+		lostReaders = append(lostReaders, *oldReader)
 	}
 
 	var lostWG sync.WaitGroup

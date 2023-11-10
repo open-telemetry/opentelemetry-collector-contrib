@@ -9,9 +9,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
-var _ ptrace.Unmarshaler = &jaegerExtension{}
+var _ encoding.TracesUnmarshalerExtension = &jaegerExtension{}
 
 type jaegerExtension struct {
 	config      *Config
