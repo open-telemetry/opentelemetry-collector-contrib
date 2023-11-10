@@ -196,7 +196,7 @@ func TestConsumeMetrics(t *testing.T) {
 				sfxClientBase: sfxClientBase{
 					ingestURL: serverURL,
 					client:    client,
-					zippers: sync.Pool{New: func() interface{} {
+					zippers: sync.Pool{New: func() any {
 						return gzip.NewWriter(nil)
 					}},
 				},
@@ -736,7 +736,7 @@ func TestConsumeMetadata(t *testing.T) {
 		metadata []*metadata.MetadataUpdate
 	}
 	type fields struct {
-		payLoad map[string]interface{}
+		payLoad map[string]any
 	}
 	tests := []struct {
 		name                   string
@@ -751,8 +751,8 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test property updates",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{
+				map[string]any{
+					"customProperties": map[string]any{
 						"prop.erty1": "val1",
 						"property2":  nil,
 						"prop.erty3": "val33",
@@ -811,12 +811,12 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test tag updates",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{},
-					"tags": []interface{}{
+				map[string]any{
+					"customProperties": map[string]any{},
+					"tags": []any{
 						"tag.1",
 					},
-					"tagsToRemove": []interface{}{
+					"tagsToRemove": []any{
 						"tag/2",
 					},
 				},
@@ -853,16 +853,16 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test quick successive updates",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{
+				map[string]any{
+					"customProperties": map[string]any{
 						"property1": nil,
 						"property2": "val2",
 						"property3": nil,
 					},
-					"tags": []interface{}{
+					"tags": []any{
 						"tag/2",
 					},
-					"tagsToRemove": []interface{}{
+					"tagsToRemove": []any{
 						"tag.1",
 					},
 				},
@@ -923,8 +923,8 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test updates on dimensions with nonalphanumeric characters (other than the default allow list)",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{
+				map[string]any{
+					"customProperties": map[string]any{
 						"prop.erty1": "val1",
 						"property2":  nil,
 						"prop.erty3": "val33",
@@ -1012,7 +1012,7 @@ func TestConsumeMetadata(t *testing.T) {
 				assert.Equal(t, tt.expectedDimensionKey, dimPair[0])
 				assert.Equal(t, tt.expectedDimensionValue, dimPair[1])
 
-				p := map[string]interface{}{
+				p := map[string]any{
 					"customProperties": map[string]*string{},
 					"tags":             []string{},
 					"tagsToRemove":     []string{},
@@ -1098,7 +1098,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 			client: &http.Client{
 				Timeout: 1 * time.Second,
 			},
-			zippers: sync.Pool{New: func() interface{} {
+			zippers: sync.Pool{New: func() any {
 				return gzip.NewWriter(nil)
 			}},
 		},
@@ -1207,6 +1207,7 @@ func TestTLSExporterInit(t *testing.T) {
 }
 
 func TestTLSIngestConnection(t *testing.T) {
+	t.Skip("Flaky test see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29099")
 	metricsPayload := pmetric.NewMetrics()
 	rm := metricsPayload.ResourceMetrics().AppendEmpty()
 	ilm := rm.ScopeMetrics().AppendEmpty()
@@ -1318,6 +1319,7 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 }
 
 func TestTLSAPIConnection(t *testing.T) {
+	t.Skip("Flaky test see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29099")
 	cfg := createDefaultConfig().(*Config)
 	converter, err := translation.NewMetricsConverter(
 		zap.NewNop(),

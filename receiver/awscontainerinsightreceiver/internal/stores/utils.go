@@ -132,7 +132,7 @@ func TagMetricSource(metric CIMetric) {
 	}
 }
 
-func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]interface{}) {
+func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]any) {
 	needMoveToKubernetes := map[string]string{ci.ContainerNamekey: "container_name", ci.K8sPodNameKey: "pod_name",
 		ci.PodIDKey: "pod_id"}
 

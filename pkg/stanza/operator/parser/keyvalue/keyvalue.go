@@ -88,7 +88,7 @@ func (kv *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // parse will parse a value as key values.
-func (kv *Parser) parse(value interface{}) (interface{}, error) {
+func (kv *Parser) parse(value any) (any, error) {
 	switch m := value.(type) {
 	case string:
 		return kv.parser(m, kv.delimiter)
@@ -97,12 +97,12 @@ func (kv *Parser) parse(value interface{}) (interface{}, error) {
 	}
 }
 
-func (kv *Parser) parser(input string, delimiter string) (map[string]interface{}, error) {
+func (kv *Parser) parser(input string, delimiter string) (map[string]any, error) {
 	if input == "" {
 		return nil, fmt.Errorf("parse from field %s is empty", kv.ParseFrom.String())
 	}
 
-	parsed := make(map[string]interface{})
+	parsed := make(map[string]any)
 
 	var err error
 	for _, raw := range kv.pairSplitFunc(input) {

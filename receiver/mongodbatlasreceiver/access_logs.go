@@ -259,15 +259,15 @@ func getTimestamp(log *mongodbatlas.AccessLogs) (time.Time, error) {
 	body, err := parseLogMessage(log)
 	if err != nil {
 		// If body couldn't be parsed, we'll still use the outer Timestamp field to determine the new max date.
-		body = map[string]interface{}{}
+		body = map[string]any{}
 	}
 	return getTimestampPreparsedBody(log, body)
 }
 
-func getTimestampPreparsedBody(log *mongodbatlas.AccessLogs, body map[string]interface{}) (time.Time, error) {
+func getTimestampPreparsedBody(log *mongodbatlas.AccessLogs, body map[string]any) (time.Time, error) {
 	// If the log message has a timestamp, use that. When present, it has more precision than the timestamp from the access log entry.
 	if tMap, ok := body["t"]; ok {
-		if dateMap, ok := tMap.(map[string]interface{}); ok {
+		if dateMap, ok := tMap.(map[string]any); ok {
 			if v, ok := dateMap["$date"]; ok {
 				if dateStr, ok := v.(string); ok {
 					return time.Parse(time.RFC3339, dateStr)
@@ -291,8 +291,8 @@ func getTimestampPreparsedBody(log *mongodbatlas.AccessLogs, body map[string]int
 	return t, nil
 }
 
-func parseLogMessage(log *mongodbatlas.AccessLogs) (map[string]interface{}, error) {
-	var body map[string]interface{}
+func parseLogMessage(log *mongodbatlas.AccessLogs) (map[string]any, error) {
+	var body map[string]any
 	if err := json.Unmarshal([]byte(log.LogLine), &body); err != nil {
 		return nil, err
 	}
@@ -305,6 +305,8 @@ func transformAccessLogs(now pcommon.Timestamp, accessLogs []*mongodbatlas.Acces
 	ra := resourceLogs.Resource().Attributes()
 	ra.PutStr("mongodbatlas.project.name", p.Name)
 	ra.PutStr("mongodbatlas.project.id", p.ID)
+	ra.PutStr("mongodbatlas.region.name", c.ProviderSettings.RegionName)
+	ra.PutStr("mongodbatlas.provider.name", c.ProviderSettings.ProviderName)
 	ra.PutStr("mongodbatlas.org.id", p.OrgID)
 	ra.PutStr("mongodbatlas.cluster.name", c.Name)
 

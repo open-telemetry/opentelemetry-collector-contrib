@@ -42,6 +42,7 @@ const (
 	notInSpanAttrName0     = "shouldBeInMetric"
 	notInSpanAttrName1     = "shouldNotBeInMetric"
 	regionResourceAttrName = "region"
+	exceptionTypeAttrName  = "exception.type"
 	DimensionsCacheSize    = 2
 
 	sampleRegion   = "us-east-1"
@@ -394,6 +395,10 @@ func initSpan(span span, s ptrace.Span) {
 	s.Attributes().PutEmptySlice(arrayAttrName)
 	s.SetTraceID(pcommon.TraceID(span.traceID))
 	s.SetSpanID(pcommon.SpanID(span.spanID))
+
+	e := s.Events().AppendEmpty()
+	e.SetName("exception")
+	e.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
 }
 
 func disabledExemplarsConfig() ExemplarsConfig {
@@ -488,8 +493,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		optionalDims    []dimension
-		resourceAttrMap map[string]interface{}
-		spanAttrMap     map[string]interface{}
+		resourceAttrMap map[string]any
+		spanAttrMap     map[string]any
 		wantKey         string
 	}{
 		{
@@ -515,7 +520,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []dimension{
 				{name: "foo"},
 			},
-			spanAttrMap: map[string]interface{}{
+			spanAttrMap: map[string]any{
 				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
@@ -525,7 +530,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []dimension{
 				{name: "foo"},
 			},
-			resourceAttrMap: map[string]interface{}{
+			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
@@ -535,10 +540,10 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []dimension{
 				{name: "foo"},
 			},
-			spanAttrMap: map[string]interface{}{
+			spanAttrMap: map[string]any{
 				"foo": 100,
 			},
-			resourceAttrMap: map[string]interface{}{
+			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
@@ -1257,5 +1262,90 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 			got := initHistogramMetrics(tt.config)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+func TestSpanMetrics_Events(t *testing.T) {
+	tests := []struct {
+		name                    string
+		eventsConfig            EventsConfig
+		shouldEventsMetricExist bool
+	}{
+		{
+			name:                    "events disabled",
+			eventsConfig:            EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			shouldEventsMetricExist: false,
+		},
+		{
+			name:                    "events enabled",
+			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			shouldEventsMetricExist: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.Events = tt.eventsConfig
+			c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+			require.NoError(t, err)
+			err = c.ConsumeTraces(context.Background(), buildSampleTrace())
+			require.NoError(t, err)
+			metrics := c.buildMetrics()
+			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+				rm := metrics.ResourceMetrics().At(i)
+				ism := rm.ScopeMetrics()
+				for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+					m := ism.At(ilmC).Metrics()
+					if !tt.shouldEventsMetricExist {
+						assert.Equal(t, 2, m.Len())
+						continue
+					}
+					assert.Equal(t, 3, m.Len())
+					for mC := 0; mC < m.Len(); mC++ {
+						metric := m.At(mC)
+						if metric.Name() != "events" {
+							continue
+						}
+						assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+						for idp := 0; idp < metric.Sum().DataPoints().Len(); idp++ {
+							attrs := metric.Sum().DataPoints().At(idp).Attributes()
+							assert.Contains(t, attrs.AsRaw(), exceptionTypeAttrName)
+						}
+					}
+				}
+			}
+		})
+	}
+}
+func TestExemplarsForSumMetrics(t *testing.T) {
+	mcon := consumertest.NewNop()
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, cumulative, zaptest.NewLogger(t), nil)
+	traces := buildSampleTrace()
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	err := p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+	metrics := p.buildMetrics()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				if metric.Type() == pmetric.MetricTypeSum {
+					dps := metric.Sum().DataPoints()
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Greater(t, dp.Exemplars().Len(), 0)
+					}
+				}
+			}
+		}
 	}
 }

@@ -100,7 +100,7 @@ func (c *podClient) shutdown() {
 	c.stopped = true
 }
 
-func transformFuncPod(obj interface{}) (interface{}, error) {
+func transformFuncPod(obj any) (any, error) {
 	pod, ok := obj.(*v1.Pod)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Pod type", obj)

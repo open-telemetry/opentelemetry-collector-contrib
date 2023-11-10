@@ -20,3 +20,5 @@ svrakitin
 thepeterstone
 yiyang5055
 am-kinetica
+mcube8
+sokoide
