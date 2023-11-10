@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -52,26 +51,7 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tableName string, ttlDays uint, ttl time.Duration, db *sql.DB) error {
-	var ttlExpr string
-
-	// deprecated and will be removed. Use 'ttl' instead.
-	if ttlDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, ttlDays)
-	}
-
-	if ttl > 0 {
-		switch {
-		case ttl%(24*time.Hour) == 0:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, ttl/(24*time.Hour))
-		case ttl%(time.Hour) == 0:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalHour(%d)`, ttl/time.Hour)
-		case ttl%(time.Minute) == 0:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalMinute(%d)`, ttl/time.Minute)
-		default:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalSecond(%d)`, ttl/time.Second)
-		}
-	}
+func NewMetricsTable(ctx context.Context, tableName string, ttlExpr string, db *sql.DB) error {
 	for table := range supportedMetricTypes {
 		query := fmt.Sprintf(table, tableName, ttlExpr)
 		if _, err := db.ExecContext(ctx, query); err != nil {

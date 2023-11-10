@@ -291,47 +291,12 @@ func renderInsertTracesSQL(cfg *Config) string {
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {
-	var ttlExpr string
-
-	// deprecated and will be removed
-	if cfg.TTLDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
-	}
-
-	if cfg.TTL > 0 {
-		switch {
-		case cfg.TTL%(24*time.Hour) == 0:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTL/(24*time.Hour))
-		case cfg.TTL%(time.Hour) == 0:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalHour(%d)`, cfg.TTL/time.Hour)
-		case cfg.TTL%(time.Minute) == 0:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalMinute(%d)`, cfg.TTL/time.Minute)
-		default:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalSecond(%d)`, cfg.TTL/time.Second)
-		}
-	}
+	ttlExpr := ttlConfig(cfg.TTLDays, cfg.TTL)
 	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, ttlExpr)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
-	var ttlExpr string
-
-	if cfg.TTLDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
-	}
-
-	if cfg.TTL > 0 {
-		switch {
-		case cfg.TTL%(24*time.Hour) == 0:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTL/(24*time.Hour))
-		case cfg.TTL%(time.Hour) == 0:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalHour(%d)`, cfg.TTL/time.Hour)
-		case cfg.TTL%(time.Minute) == 0:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalMinute(%d)`, cfg.TTL/time.Minute)
-		default:
-			ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalSecond(%d)`, cfg.TTL/time.Second)
-		}
-	}
+	ttlExpr := ttlConfig(cfg.TTLDays, cfg.TTL)
 	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, ttlExpr)
 }
 
