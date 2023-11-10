@@ -41,7 +41,7 @@ const (
 
 type detectorUtils interface {
 	getConfigMap(ctx context.Context, namespace string, name string) (map[string]string, error)
-	getClusterName(ctx context.Context) (string, error)
+	getClusterName(ctx context.Context, logger *zap.Logger) string
 	getClusterNameTagFromReservations([]*ec2.Reservation) string
 }
 
@@ -89,16 +89,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
 
 	if d.ra.K8sClusterName.Enabled {
-		var clusterName string
-		clusterName, err = d.utils.getClusterName(ctx)
-		if err != nil {
-			// We clear out the error here so that the correctly detected resources
-			// can still be used by the processor.
-			d.logger.Warn("Unable to get EKS cluster name", zap.Error(err))
-			err = nil
-		} else {
-			d.rb.SetK8sClusterName(clusterName)
-		}
+		clusterName := d.utils.getClusterName(ctx, d.logger)
+		d.rb.SetK8sClusterName(clusterName)
 	}
 
 	return d.rb.Emit(), conventions.SchemaURL, err
@@ -142,22 +134,26 @@ func (e eksDetectorUtils) getConfigMap(ctx context.Context, namespace string, na
 	return cm.Data, nil
 }
 
-func (e eksDetectorUtils) getClusterName(ctx context.Context) (string, error) {
+func (e eksDetectorUtils) getClusterName(ctx context.Context, logger *zap.Logger) string {
+	defaultErrorMessage := "Unable to get EKS cluster name"
 	sess, err := session.NewSession()
 	if err != nil {
-		return "", err
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
 	}
 
 	ec2Svc := ec2metadata.New(sess)
 	region, err := ec2Svc.Region()
 	if err != nil {
-		return "", err
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
 	}
 
 	svc := ec2.New(sess, aws.NewConfig().WithRegion(region))
 	instanceIdentityDocument, err := ec2Svc.GetInstanceIdentityDocumentWithContext(ctx)
 	if err != nil {
-		return "", err
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
 	}
 
 	instances, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{
@@ -166,14 +162,17 @@ func (e eksDetectorUtils) getClusterName(ctx context.Context) (string, error) {
 		},
 	})
 	if err != nil {
-		return "", err
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
 	}
 
 	clusterName := e.getClusterNameTagFromReservations(instances.Reservations)
 	if len(clusterName) == 0 {
-		return clusterName, fmt.Errorf("Failed to detect EKS cluster name. No tag for cluster name found on EC2 instance")
+		logger.Warn("Failed to detect EKS cluster name. No tag for cluster name found on EC2 instance")
+		return ""
 	}
-	return clusterName, nil
+
+	return clusterName
 }
 
 func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []*ec2.Reservation) string {
