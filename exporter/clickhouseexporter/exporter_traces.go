@@ -295,7 +295,6 @@ func renderCreateTracesTableSQL(cfg *Config) string {
 
 	// deprecated and will be removed
 	if cfg.TTLDays > 0 {
-		fmt.Println("TTL_DAYS is deprecated, use TTL instead.")
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
 
@@ -319,7 +318,6 @@ func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 
 	// deprecated and will be removed
 	if cfg.TTLDays > 0 {
-		fmt.Println("TTL_DAYS is deprecated, use TTL instead.")
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
 

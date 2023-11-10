@@ -57,7 +57,6 @@ func NewMetricsTable(ctx context.Context, tableName string, ttlDays uint, ttl ti
 
 	// deprecated and will be removed
 	if ttlDays > 0 {
-		fmt.Println("TTL_DAYS is deprecated, use TTL instead.")
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, ttlDays)
 	}
 
