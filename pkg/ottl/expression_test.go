@@ -1669,6 +1669,7 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 	}
 }
 
+// nolint:errorlint
 func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardBoolLikeGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
