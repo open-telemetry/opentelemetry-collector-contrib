@@ -34,8 +34,10 @@ The following settings are available:
 - `table (required)`: the routing table for this connector.
 - `table.statement (required)`: the routing condition provided as the [OTTL] statement.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
+- `table.order (optional)`: Order will affect the priority of the statement, when the smaller the Order, the higher the priority of the statement.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `ignore` and `propagate`. If `ignored` is used and a statement's condition has an error then the payload will be routed to the default pipelines.  If not supplied, `propagate` is used.
+- `match_once (optional)`: determines whether the connector matches multiple statements. Valid values are `true` and `false`. If `true` is used, then the payload will be routed to the pipeline with the lowest order. If not supplied, `false` is used.
 
 Example:
 
@@ -55,11 +57,24 @@ connectors:
   routing:
     default_pipelines: [traces/jaeger]
     error_mode: ignore
+    match_once: false
     table:
       - statement: route() where attributes["X-Tenant"] == "acme"
         pipelines: [traces/jaeger-acme]
       - statement: delete_key(attributes, "X-Tenant") where IsMatch(attributes["X-Tenant"], ".*corp")
         pipelines: [traces/jaeger-ecorp]
+
+  routing/match_once:
+    default_pipelines: [traces/jaeger]
+    error_mode: ignore
+    match_once: true
+    table:
+      - statement: route() where attributes["X-Tenant"] == "acme"
+        pipelines: [traces/jaeger-acme]
+        order: 1
+      - statement: route() where attributes["X-Tenant"] == ".*acme"
+        pipelines: [traces/jaeger-ecorp]
+        order: 2
 
 service:
   pipelines:
