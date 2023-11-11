@@ -143,7 +143,7 @@ k8sattributes/2:
       - k8s.pod.start_time
    labels:
      - tag_name: app.label.component
-       key: app.kubenetes.io/component
+       key: app.kubernetes.io/component
        from: pod
   pod_association:
     - sources:
