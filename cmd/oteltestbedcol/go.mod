@@ -34,7 +34,7 @@ require (
 	go.opentelemetry.io/collector/component v0.88.1-0.20231112151805-b570812b1e06
 	go.opentelemetry.io/collector/connector v0.88.1-0.20231112151805-b570812b1e06
 	go.opentelemetry.io/collector/exporter v0.88.1-0.20231112151805-b570812b1e06
-	go.opentelemetry.io/collector/exporter/debugexporter v0.88.1-0.20231026220224-6405e152a2d9
+	go.opentelemetry.io/collector/exporter/debugexporter v0.88.1-0.20231112151805-b570812b1e06
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.88.1-0.20231112151805-b570812b1e06
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.88.1-0.20231112151805-b570812b1e06
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.88.1-0.20231112151805-b570812b1e06
