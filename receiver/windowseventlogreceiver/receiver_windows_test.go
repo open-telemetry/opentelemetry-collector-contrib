@@ -30,7 +30,7 @@ import (
 )
 
 func TestDefaultConfig(t *testing.T) {
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -39,7 +39,7 @@ func TestDefaultConfig(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	cfg := factory.CreateDefaultConfig()
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
@@ -60,7 +60,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 		}(),
 	}
 
-	_, err := NewFactory().CreateLogsReceiver(
+	_, err := newFactoryAdapter().CreateLogsReceiver(
 		context.Background(),
 		receivertest.NewNopCreateSettings(),
 		cfg,
@@ -73,7 +73,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	logMessage := "Test log"
 
 	ctx := context.Background()
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
@@ -115,16 +115,16 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	require.Equal(t, logMessage, body["message"])
 
 	eventData := body["event_data"]
-	eventDataMap, ok := eventData.(map[string]interface{})
+	eventDataMap, ok := eventData.(map[string]any)
 	require.True(t, ok)
-	require.Equal(t, map[string]interface{}{
-		"data": []interface{}{map[string]interface{}{"": "Test log"}},
+	require.Equal(t, map[string]any{
+		"data": []any{map[string]any{"": "Test log"}},
 	}, eventDataMap)
 
 	eventID := body["event_id"]
 	require.NotNil(t, eventID)
 
-	eventIDMap, ok := eventID.(map[string]interface{})
+	eventIDMap, ok := eventID.(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, int64(10), eventIDMap["id"])
 }
@@ -133,7 +133,7 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	logMessage := "Test log"
 
 	ctx := context.Background()
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	cfg.InputConfig.Raw = true
@@ -186,7 +186,7 @@ func TestReadWindowsEventLoggerWithExcludeProvider(t *testing.T) {
 	src := "otel"
 
 	ctx := context.Background()
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	cfg.InputConfig.ExcludeProviders = []string{src}
@@ -225,7 +225,7 @@ func TestReadWindowsEventLoggerRawWithExcludeProvider(t *testing.T) {
 	src := "otel"
 
 	ctx := context.Background()
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	createSettings := receivertest.NewNopCreateSettings()
 	cfg := createTestConfig()
 	cfg.InputConfig.Raw = true

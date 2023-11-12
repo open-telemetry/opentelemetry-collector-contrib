@@ -58,6 +58,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
@@ -520,6 +521,18 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "sumologic",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["sumologic"].CreateDefaultConfig().(*sumologicexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
+				return cfg
+			},
+			expectConsumeErr: true,
+		},
+		{
+			exporter: "syslog",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["syslog"].CreateDefaultConfig().(*syslogexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false

@@ -187,4 +187,4 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 }
 
 // ParseFunction is function that parses a raw value.
-type ParseFunction = func(interface{}) (interface{}, error)
+type ParseFunction = func(any) (any, error)

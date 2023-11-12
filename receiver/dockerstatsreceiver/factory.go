@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
-	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -24,11 +24,11 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("0.74.0"),
 )
 
-func NewFactory() rcvr.Factory {
-	return rcvr.NewFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -45,12 +45,12 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params rcvr.CreateSettings,
+	params receiver.CreateSettings,
 	config component.Config,
 	consumer consumer.Metrics,
-) (rcvr.Metrics, error) {
+) (receiver.Metrics, error) {
 	dockerConfig := config.(*Config)
-	dsr := newReceiver(params, dockerConfig)
+	dsr := newMetricsReceiver(params, dockerConfig)
 
 	scrp, err := scraperhelper.NewScraper(metadata.Type, dsr.scrapeV2, scraperhelper.WithStart(dsr.start))
 	if err != nil {
