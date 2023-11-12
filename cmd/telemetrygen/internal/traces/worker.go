@@ -28,8 +28,8 @@ type worker struct {
 	totalDuration    time.Duration   // how long to run the test for (overrides `numTraces`)
 	limitPerSecond   rate.Limit      // how many spans per second to generate
 	wg               *sync.WaitGroup // notify when done
-  loadSize         int             // desired minimum size in MB of string data for each generated trace
-  spanDuration     time.Duration   // duration of generated spans
+	loadSize         int             // desired minimum size in MB of string data for each generated trace
+	spanDuration     time.Duration   // duration of generated spans
 	logger           *zap.Logger
 }
 
@@ -45,15 +45,15 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 	var i int
 
 	for w.running.Load() {
-    spanStart := time.Now()
-    spanEnd := spanStart.Add(w.spanDuration)
+		spanStart := time.Now()
+		spanEnd := spanStart.Add(w.spanDuration)
 
-    ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
+		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("telemetrygen-server"),
 		),
 			trace.WithSpanKind(trace.SpanKindClient),
-      trace.WithTimestamp(spanStart),
+			trace.WithTimestamp(spanStart),
 		)
 		sp.SetAttributes(telemetryAttributes...)
 		for j := 0; j < w.loadSize; j++ {
@@ -75,7 +75,7 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 			semconv.PeerServiceKey.String("telemetrygen-client"),
 		),
 			trace.WithSpanKind(trace.SpanKindServer),
-      trace.WithTimestamp(spanStart),
+			trace.WithTimestamp(spanStart),
 		)
 		child.SetAttributes(telemetryAttributes...)
 
