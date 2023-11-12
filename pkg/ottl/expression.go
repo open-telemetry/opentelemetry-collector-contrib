@@ -255,7 +255,7 @@ type BoolGetter[K any] interface {
 
 // StandardBoolGetter is a basic implementation of BoolGetter
 type StandardBoolGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 // Get retrieves a bool value.
@@ -552,7 +552,7 @@ type BoolLikeGetter[K any] interface {
 }
 
 type StandardBoolLikeGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 func (g StandardBoolLikeGetter[K]) Get(ctx context.Context, tCtx K) (*bool, error) {

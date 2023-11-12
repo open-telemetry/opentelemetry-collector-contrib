@@ -1452,15 +1452,15 @@ func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 func Test_StandardBoolGetter(t *testing.T) {
 	tests := []struct {
 		name             string
-		getter           StandardBoolGetter[interface{}]
+		getter           StandardBoolGetter[any]
 		want             bool
 		valid            bool
 		expectedErrorMsg string
 	}{
 		{
 			name: "primitive bool type",
-			getter: StandardBoolGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return true, nil
 				},
 			},
@@ -1469,8 +1469,8 @@ func Test_StandardBoolGetter(t *testing.T) {
 		},
 		{
 			name: "ValueTypeBool type",
-			getter: StandardBoolGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return pcommon.NewValueBool(true), nil
 				},
 			},
@@ -1479,8 +1479,8 @@ func Test_StandardBoolGetter(t *testing.T) {
 		},
 		{
 			name: "Incorrect type",
-			getter: StandardBoolGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return 1, nil
 				},
 			},
@@ -1489,8 +1489,8 @@ func Test_StandardBoolGetter(t *testing.T) {
 		},
 		{
 			name: "nil",
-			getter: StandardBoolGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return nil, nil
 				},
 			},
@@ -1515,8 +1515,8 @@ func Test_StandardBoolGetter(t *testing.T) {
 
 // nolint:errorlint
 func Test_StandardBoolGetter_WrappedError(t *testing.T) {
-	getter := StandardBoolGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	getter := StandardBoolGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return nil, TypeError("")
 		},
 	}
@@ -1529,15 +1529,15 @@ func Test_StandardBoolGetter_WrappedError(t *testing.T) {
 func Test_StandardBoolLikeGetter(t *testing.T) {
 	tests := []struct {
 		name             string
-		getter           BoolLikeGetter[interface{}]
-		want             interface{}
+		getter           BoolLikeGetter[any]
+		want             any
 		valid            bool
 		expectedErrorMsg string
 	}{
 		{
 			name: "string type true",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "true", nil
 				},
 			},
@@ -1546,8 +1546,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "string type false",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "false", nil
 				},
 			},
@@ -1556,8 +1556,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "int type",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return 0, nil
 				},
 			},
@@ -1566,8 +1566,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "float64 type",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return float64(0.0), nil
 				},
 			},
@@ -1576,8 +1576,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "pcommon.value type int",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					v := pcommon.NewValueInt(int64(0))
 					return v, nil
 				},
@@ -1587,8 +1587,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "pcommon.value type string",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					v := pcommon.NewValueStr("false")
 					return v, nil
 				},
@@ -1598,8 +1598,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "pcommon.value type bool",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					v := pcommon.NewValueBool(true)
 					return v, nil
 				},
@@ -1609,8 +1609,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "pcommon.value type double",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					v := pcommon.NewValueDouble(float64(0.0))
 					return v, nil
 				},
@@ -1620,8 +1620,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "nil",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return nil, nil
 				},
 			},
@@ -1630,8 +1630,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "invalid type",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return []byte{}, nil
 				},
 			},
@@ -1640,8 +1640,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 		},
 		{
 			name: "invalid pcommon.value type",
-			getter: StandardBoolLikeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					v := pcommon.NewValueMap()
 					return v, nil
 				},
@@ -1671,8 +1671,8 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 
 // nolint:errorlint
 func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
-	getter := StandardBoolLikeGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	getter := StandardBoolLikeGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return nil, TypeError("")
 		},
 	}

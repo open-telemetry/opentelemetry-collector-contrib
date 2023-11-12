@@ -16,7 +16,7 @@ import (
 func Test_IsBool(t *testing.T) {
 	tests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expected bool
 	}{
 		{
@@ -48,7 +48,7 @@ func Test_IsBool(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := isBool[any](&ottl.StandardBoolGetter[any]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
@@ -62,7 +62,7 @@ func Test_IsBool(t *testing.T) {
 // nolint:errorlint
 func Test_IsBool_Error(t *testing.T) {
 	exprFunc := isBool[any](&ottl.StandardBoolGetter[any]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, ottl.TypeError("")
 		},
 	})
