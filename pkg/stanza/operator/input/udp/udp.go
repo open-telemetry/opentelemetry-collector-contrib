@@ -160,7 +160,7 @@ type Input struct {
 	connection net.PacketConn
 	cancel     context.CancelFunc
 	wg         sync.WaitGroup
-	wg_reader  sync.WaitGroup
+	wgReader   sync.WaitGroup
 
 	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
@@ -201,7 +201,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 	}
 
 	for i := 0; i < u.AsyncConfig.Readers; i++ {
-		u.wg_reader.Add(1)
+		u.wgReader.Add(1)
 		go u.readMessagesAsync(ctx)
 	}
 
@@ -256,7 +256,7 @@ func (u *Input) processMessage(ctx context.Context, message []byte, remoteAddr n
 }
 
 func (u *Input) readMessagesAsync(ctx context.Context) {
-	defer u.wg_reader.Done()
+	defer u.wgReader.Done()
 
 	for {
 		readBuffer := u.readBufferPool.Get().(*[]byte) // Can't reuse the same buffer since same references would be written multiple times to the messageQueue (and cause data override of previous entries)
@@ -379,7 +379,7 @@ func (u *Input) Stop() error {
 			}
 		}
 		if u.AsyncConfig != nil {
-			u.wg_reader.Wait() // only when all async readers are finished, so there's no risk of sending to a closed channel, do we close messageQueue (which allows the async processors to finish)
+			u.wgReader.Wait() // only when all async readers are finished, so there's no risk of sending to a closed channel, do we close messageQueue (which allows the async processors to finish)
 			close(u.messageQueue)
 		}
 
