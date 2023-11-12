@@ -31,10 +31,22 @@ Aggregates Request, Error and Duration (R.E.D) OpenTelemetry metrics from span d
 dimensions, including Errors. Multiple metrics can be aggregated if, for instance,
 a user wishes to view call counts just on `service.name` and `span.name`.
 
+```
+calls{service.name="shipping",span.name="get_shipping/{shippingId}"}
+```
+
 **Error** counts are computed from the Request counts which have an `Error` Status Code metric dimension.
+
+```
+calls{http.method="GET",http.route="/shipping/{shippingId}",status.code=STATUS_CODE_ERROR}
+```
 
 **Duration** is computed from the difference between the span start and end times and inserted into the
 relevant duration histogram time bucket for each unique set dimensions.
+
+```
+duration{http.method="GET",http.route="/shipping/{shippingId}"}
+```
 
 Each metric will have _at least_ the following dimensions because they are common
 across all spans:
