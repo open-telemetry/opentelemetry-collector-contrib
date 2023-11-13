@@ -4,6 +4,7 @@
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 
 import (
+	"math"
 	"sort"
 	"time"
 
@@ -15,7 +16,25 @@ import (
 
 var (
 	statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
+
+	explicitHistogramMaxSize                              = 30 // covers values from 2^-14..2^14, with -Inf and +Inf boundaries
+	explicitHistogramBoundaries, explicitHistogramBuckets = getExplicitHistogramBoundaries()
 )
+
+func getExplicitHistogramBoundaries() ([]float64, []uint64) {
+	boundaries := []float64{}
+	buckets := []uint64{}
+	// add buckets for (-Inf...N-1)
+	for i := 0; i < (explicitHistogramMaxSize - 1); i++ {
+		exponent := i - (explicitHistogramMaxSize / 2) + 1
+		boundaries = append(boundaries, math.Pow(2, float64(exponent)*math.Pow(2.0, 0)))
+		buckets = append(buckets, 0)
+	}
+	// add final bucket for (N-1, +Inf) to catch any datapoints that
+	// fall outside the static bucketing
+	buckets = append(buckets, 0)
+	return boundaries, buckets
+}
 
 func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool) pmetric.ScopeMetrics {
 	ilm := pmetric.NewScopeMetrics()
@@ -99,7 +118,7 @@ func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, sta
 	}
 }
 
-func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
+func buildExponentialHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(desc.name)
 	expo := nm.SetEmptyExponentialHistogram()
@@ -141,6 +160,49 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 		for i := uint32(0); i < in.Len(); i++ {
 			out.BucketCounts().Append(in.At(i))
 		}
+	}
+}
+
+func buildHistogramMetric(desc statsDMetricDescription, histogram explicitHistogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(desc.name)
+	hist := nm.SetEmptyHistogram()
+	hist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+	dp := hist.DataPoints().AppendEmpty()
+	dp.ExplicitBounds().FromRaw(explicitHistogramBoundaries)
+	dp.BucketCounts().FromRaw(explicitHistogramBuckets)
+
+	sum := 0.0
+	min := math.MaxFloat64
+	max := -math.MaxFloat64
+	for _, dpt := range histogram.points {
+		sum += dpt
+		min = math.Min(min, dpt)
+		max = math.Max(max, dpt)
+
+		// This search will return an index in the range [0, len(boundaries)], where
+		// it will return len(boundaries) if value is greater than the last element
+		// of boundaries. This aligns with the buckets in that the length of buckets
+		// is len(boundaries)+1, with the last bucket representing:
+		// (boundaries[len(boundaries)-1], +∞).
+		idx := sort.SearchFloat64s(explicitHistogramBoundaries, float64(dpt))
+
+		dp.BucketCounts().SetAt(idx, dp.BucketCounts().At(idx)+1)
+	}
+
+	dp.SetCount(uint64(len(histogram.points)))
+	dp.SetSum(sum)
+	if dp.Count() != 0 {
+		dp.SetMin(min)
+		dp.SetMax(max)
+	}
+
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 }
 

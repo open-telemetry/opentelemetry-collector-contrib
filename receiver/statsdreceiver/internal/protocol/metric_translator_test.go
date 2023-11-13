@@ -215,3 +215,81 @@ func TestBuildSummaryMetricSampled(t *testing.T) {
 		assert.Equal(t, expectedMetric, metric)
 	}
 }
+
+func TestBuildHistogramMetric(t *testing.T) {
+	timeNow := time.Now()
+	metricDescription := statsDMetricDescription{
+		name: "testHistogram",
+		attrs: attribute.NewSet(
+			attribute.String("mykey", "myvalue"),
+			attribute.String("mykey2", "myvalue2"),
+		),
+	}
+
+	parsedMetric := explicitHistogramMetric{
+		points: []float64{
+			0,
+			0.0001,   // 0.1ms
+			0.0010,   // 1ms
+			0.0100,   // 10ms
+			0.0250,   // 25ms
+			0.0500,   // 50ms
+			0.1000,   // 100ms
+			1.0,      // 1s
+			10.0,     // 10s
+			100000.0, // 100000s
+		},
+	}
+	metrics := pmetric.NewScopeMetrics()
+	timeStart := timeNow.Add(-time.Minute)
+	buildHistogramMetric(metricDescription, parsedMetric, timeStart, timeNow, metrics)
+
+	expectedMetrics := pmetric.NewScopeMetrics()
+	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
+	expectedMetric.SetName("testHistogram")
+	expectedMetric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := expectedMetric.Histogram().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(timeStart))
+	dp.SetCount(10)
+	dp.SetMin(0)
+	dp.SetMax(100000)
+	dp.SetSum(100011.1861)
+	dp.BucketCounts().FromRaw([]uint64{
+		1, // 2^-14
+		1, // 2^-13
+		0, // 2^-12
+		0, // 2^-11
+		0, // 2^-10
+		1, // 2^-9
+		0, // 2^-8
+		0, // 2^-7
+		1, // 2^-6
+		1, // 2^-5
+		1, // 2^-4
+		1, // 2^-3
+		0, // 2^-2
+		0, // 2^-1
+		1, // 2^0
+		0, // 2^1
+		0, // 2^2
+		0, // 2^3
+		1, // 2^4
+		0, // 2^5
+		0, // 2^6
+		0, // 2^7
+		0, // 2^8
+		0, // 2^9
+		0, // 2^10
+		0, // 2^11
+		0, // 2^12
+		0, // 2^13
+		0, // 2^14
+		0, // +Inf
+	})
+	dp.ExplicitBounds().FromRaw(explicitHistogramBoundaries)
+	dp.Attributes().PutStr("mykey", "myvalue")
+	dp.Attributes().PutStr("mykey2", "myvalue2")
+
+	assert.Equal(t, expectedMetrics, metrics)
+}

@@ -47,10 +47,11 @@ const (
 	TimingAltTypeName    TypeName = "timer"
 	DistributionTypeName TypeName = "distribution"
 
-	GaugeObserver     ObserverType = "gauge"
-	SummaryObserver   ObserverType = "summary"
-	HistogramObserver ObserverType = "histogram"
-	DisableObserver   ObserverType = "disabled"
+	GaugeObserver             ObserverType = "gauge"
+	SummaryObserver           ObserverType = "summary"
+	HistogramObserver         ObserverType = "histogram"
+	ExplicitHistogramObserver ObserverType = "explicit_histogram"
+	DisableObserver           ObserverType = "disabled"
 
 	DefaultObserverType = DisableObserver
 
@@ -84,6 +85,7 @@ type StatsDParser struct {
 	isMonotonicCounter   bool
 	timerEvents          ObserverCategory
 	histogramEvents      ObserverCategory
+	distributionEvents   ObserverCategory
 	lastIntervalTime     time.Time
 	BuildInfo            component.BuildInfo
 }
@@ -94,16 +96,18 @@ type instruments struct {
 	counters               map[statsDMetricDescription]pmetric.ScopeMetrics
 	summaries              map[statsDMetricDescription]summaryMetric
 	histograms             map[statsDMetricDescription]histogramMetric
+	explicitHistograms     map[statsDMetricDescription]explicitHistogramMetric
 	timersAndDistributions []pmetric.ScopeMetrics
 }
 
 func newInstruments(addr net.Addr) *instruments {
 	return &instruments{
-		addr:       addr,
-		gauges:     make(map[statsDMetricDescription]pmetric.ScopeMetrics),
-		counters:   make(map[statsDMetricDescription]pmetric.ScopeMetrics),
-		summaries:  make(map[statsDMetricDescription]summaryMetric),
-		histograms: make(map[statsDMetricDescription]histogramMetric),
+		addr:               addr,
+		gauges:             make(map[statsDMetricDescription]pmetric.ScopeMetrics),
+		counters:           make(map[statsDMetricDescription]pmetric.ScopeMetrics),
+		summaries:          make(map[statsDMetricDescription]summaryMetric),
+		histograms:         make(map[statsDMetricDescription]histogramMetric),
+		explicitHistograms: make(map[statsDMetricDescription]explicitHistogramMetric),
 	}
 }
 
@@ -121,6 +125,10 @@ type histogramStructure = structure.Histogram[float64]
 
 type histogramMetric struct {
 	agg *histogramStructure
+}
+
+type explicitHistogramMetric struct {
+	points []float64
 }
 
 type statsDMetric struct {
@@ -163,6 +171,7 @@ func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, 
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
+	p.distributionEvents = defaultObserverCategory
 	p.timerEvents = defaultObserverCategory
 	p.enableMetricType = enableMetricType
 	p.enableSimpleTags = enableSimpleTags
@@ -170,9 +179,12 @@ func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, 
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
 		switch eachMap.StatsdType {
-		case HistogramTypeName, DistributionTypeName:
+		case HistogramTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
 			p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
+		case DistributionTypeName:
+			p.distributionEvents.method = eachMap.ObserverType
+			p.distributionEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 		case TimingTypeName, TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
@@ -232,10 +244,21 @@ func (p *StatsDParser) GetMetrics() []BatchMetrics {
 		for desc, histogramMetric := range instrument.histograms {
 			ilm := rm.ScopeMetrics().AppendEmpty()
 			p.setVersionAndNameScope(ilm.Scope())
-
-			buildHistogramMetric(
+			buildExponentialHistogramMetric(
 				desc,
 				histogramMetric,
+				p.lastIntervalTime,
+				now,
+				ilm,
+			)
+		}
+
+		for desc, explicitHistogramMetric := range instrument.explicitHistograms {
+			ilm := rm.ScopeMetrics().AppendEmpty()
+			p.setVersionAndNameScope(ilm.Scope())
+			buildHistogramMetric(
+				desc,
+				explicitHistogramMetric,
 				p.lastIntervalTime,
 				now,
 				ilm,
@@ -263,8 +286,10 @@ var timeNowFunc = time.Now
 
 func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 	switch t {
-	case HistogramType, DistributionType:
+	case HistogramType:
 		return p.histogramEvents
+	case DistributionType:
+		return p.distributionEvents
 	case TimingType:
 		return p.timerEvents
 	case CounterType, GaugeType:
