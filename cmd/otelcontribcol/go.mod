@@ -32,6 +32,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.88.0
@@ -1079,6 +1080,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter => ../../exporter/sumologicexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter => ../../exporter/instanaexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter => ../../exporter/honeycombmarkerexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver => ../../receiver/otlpjsonfilereceiver
 

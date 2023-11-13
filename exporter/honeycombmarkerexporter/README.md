@@ -17,7 +17,7 @@ The following configuration options are supported:
 
 ```yaml
 exporters:
-  honeycomb:
+  honeycombmarker:
     api_key: "my-api-key"
     api_url: "https://api.honeycomb.io:443"
     markers:
