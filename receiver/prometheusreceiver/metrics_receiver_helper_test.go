@@ -37,6 +37,9 @@ type mockPrometheusResponse struct {
 	code           int
 	data           string
 	useOpenMetrics bool
+
+	useProtoBuf    bool // This overrides data and useOpenMetrics above
+	buf            []byte
 }
 
 type mockPrometheus struct {
@@ -82,11 +85,18 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(404)
 		return
 	}
-	if pages[index].useOpenMetrics {
+	switch {
+	case pages[index].useProtoBuf:
+		rw.Header().Set("Content-Type", "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited")
+	case pages[index].useOpenMetrics:
 		rw.Header().Set("Content-Type", "application/openmetrics-text")
 	}
 	rw.WriteHeader(pages[index].code)
-	_, _ = rw.Write([]byte(pages[index].data))
+	if pages[index].useProtoBuf {
+		_, _ = rw.Write(pages[index].buf)
+	} else {
+		_, _ = rw.Write([]byte(pages[index].data))
+	}
 }
 
 func (mp *mockPrometheus) Close() {
