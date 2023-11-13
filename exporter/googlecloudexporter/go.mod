@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.20
 
 require (
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.44.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.44.1-0.20231113185509-337c81d87781
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.1-0.20231112151805-b570812b1e06
 	go.opentelemetry.io/collector/confmap v0.88.1-0.20231112151805-b570812b1e06

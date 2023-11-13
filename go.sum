@@ -198,8 +198,8 @@ github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 h1:KeNholpO2xKjgaa
 github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962/go.mod h1:kC29dT1vFpj7py2OvG1khBdQpo3kInWP+6QipLbdngo=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.20.0 h1:tk85AYGwOf6VNtoOQi8w/kVDi2vmPxp3/OU2FsUpdcA=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.20.0/go.mod h1:Xx0VKh7GJ4si3rmElbh19Mejxz68ibWg/J30ZOMrqzU=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.44.0 h1:4UERCh56sgYXn6XzH5+qsft5fnus2b/RzcTk+6Ue7Vo=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.44.0/go.mod h1:ap6zVvkSC/UkZG8wI5FKpPs4EFNbsXqO6yyYHD5v6mY=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.44.1-0.20231113185509-337c81d87781 h1:tI/JgbDUBFpVCgawBboIxIV4OCcXsXSQDx5IvA7rsag=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.44.1-0.20231113185509-337c81d87781/go.mod h1:Y8A+tRfM4DfIY2ODAyzSrxHmaxL3wWERfLy6PAthDpI=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.44.0 h1:pBusS51rwSCzbF49NXee3/+rnVS6ikhLd7EWfLvQDyI=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.44.0/go.mod h1:XDVqFuWntVYBlXsjC0Dn7QZkmTyVNjY+VR2Cl771gWo=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.20.0 h1:uY/4lpbbFG73TgzmJoB7XMyFIheII95hlfH62uC+oS0=
