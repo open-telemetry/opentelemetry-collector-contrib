@@ -77,6 +77,8 @@ The following types are supported for single-value parameters in OTTL functions:
 - `StringLikeGetter`
 - `IntGetter`
 - `IntLikeGetter`
+- `BoolGetter`
+- `BoolLikeGetter`
 - `Enum`
 - `string`
 - `float64`
