@@ -133,7 +133,7 @@ func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric 
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(startTimestamp),
 						compareHistogramTimestamp(ts1),
-						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+						compareHistogram(2500, 5000, []float64{0.05, 0.5, 1}, []uint64{1000, 500, 500, 500}),
 					},
 				},
 			}),
