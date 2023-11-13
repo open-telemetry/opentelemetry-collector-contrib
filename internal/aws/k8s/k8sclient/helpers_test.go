@@ -67,8 +67,8 @@ func removeTempKubeConfig() {
 	kubeConfigPath = ""
 }
 
-func convertToInterfaceArray(objArray []runtime.Object) []interface{} {
-	array := make([]interface{}, len(objArray))
+func convertToInterfaceArray(objArray []runtime.Object) []any {
+	array := make([]any, len(objArray))
 	for i := range array {
 		array[i] = objArray[i]
 	}

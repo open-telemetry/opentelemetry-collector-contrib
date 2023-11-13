@@ -493,8 +493,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		optionalDims    []dimension
-		resourceAttrMap map[string]interface{}
-		spanAttrMap     map[string]interface{}
+		resourceAttrMap map[string]any
+		spanAttrMap     map[string]any
 		wantKey         string
 	}{
 		{
@@ -520,7 +520,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []dimension{
 				{name: "foo"},
 			},
-			spanAttrMap: map[string]interface{}{
+			spanAttrMap: map[string]any{
 				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
@@ -530,7 +530,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []dimension{
 				{name: "foo"},
 			},
-			resourceAttrMap: map[string]interface{}{
+			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
@@ -540,10 +540,10 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []dimension{
 				{name: "foo"},
 			},
-			spanAttrMap: map[string]interface{}{
+			spanAttrMap: map[string]any{
 				"foo": 100,
 			},
-			resourceAttrMap: map[string]interface{}{
+			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",

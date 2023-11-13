@@ -29,7 +29,7 @@ func createDoubleFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 }
 
 func doubleFunc[K any](target ottl.FloatLikeGetter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		value, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

@@ -271,7 +271,7 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
 	var resourceAttrs []pcommon.Map
 	expirationTime := time.Now().Add(-a.metricExpiration)
 
-	a.registeredMetrics.Range(func(key, value interface{}) bool {
+	a.registeredMetrics.Range(func(key, value any) bool {
 		v := value.(*accumulatedValue)
 		if expirationTime.After(v.updated) {
 			a.logger.Debug(fmt.Sprintf("metric expired: %s", v.value.Name()))

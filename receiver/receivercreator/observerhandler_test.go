@@ -76,7 +76,7 @@ func TestOnAddForMetrics(t *testing.T) {
 					receiverConfig:     rcvrCfg,
 					rule:               portRule,
 					Rule:               `type == "port"`,
-					ResourceAttributes: map[string]interface{}{},
+					ResourceAttributes: map[string]any{},
 				},
 			}
 
@@ -178,7 +178,7 @@ func TestOnAddForLogs(t *testing.T) {
 					receiverConfig:     rcvrCfg,
 					rule:               portRule,
 					Rule:               `type == "port"`,
-					ResourceAttributes: map[string]interface{}{},
+					ResourceAttributes: map[string]any{},
 				},
 			}
 
@@ -280,7 +280,7 @@ func TestOnAddForTraces(t *testing.T) {
 					receiverConfig:     rcvrCfg,
 					rule:               portRule,
 					Rule:               `type == "port"`,
-					ResourceAttributes: map[string]interface{}{},
+					ResourceAttributes: map[string]any{},
 				},
 			}
 
@@ -337,7 +337,7 @@ func TestOnRemoveForMetrics(t *testing.T) {
 			receiverConfig:     rcvrCfg,
 			rule:               portRule,
 			Rule:               `type == "port"`,
-			ResourceAttributes: map[string]interface{}{},
+			ResourceAttributes: map[string]any{},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
@@ -366,7 +366,7 @@ func TestOnRemoveForLogs(t *testing.T) {
 			receiverConfig:     rcvrCfg,
 			rule:               portRule,
 			Rule:               `type == "port"`,
-			ResourceAttributes: map[string]interface{}{},
+			ResourceAttributes: map[string]any{},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
@@ -395,7 +395,7 @@ func TestOnChange(t *testing.T) {
 			receiverConfig:     rcvrCfg,
 			rule:               portRule,
 			Rule:               `type == "port"`,
-			ResourceAttributes: map[string]interface{}{},
+			ResourceAttributes: map[string]any{},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)

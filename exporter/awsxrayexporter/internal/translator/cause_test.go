@@ -17,7 +17,7 @@ import (
 
 func TestCauseWithExceptions(t *testing.T) {
 	errorMsg := "this is a test"
-	attributeMap := make(map[string]interface{})
+	attributeMap := make(map[string]any)
 
 	span := constructExceptionServerSpan(attributeMap, ptrace.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
@@ -59,6 +59,39 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	assert.Empty(t, cause.Exceptions[2].Message)
 }
 
+func TestMakeCauseAwsSdkSpan(t *testing.T) {
+	errorMsg := "this is a test"
+	attributeMap := make(map[string]any)
+	attributeMap[conventions.AttributeRPCSystem] = "aws-api"
+	span := constructExceptionServerSpan(attributeMap, ptrace.StatusCodeError)
+	span.Status().SetMessage(errorMsg)
+
+	event1 := span.Events().AppendEmpty()
+	event1.SetName(AwsIndividualHTTPEventName)
+	event1.Attributes().PutStr(AwsIndividualHTTPErrorCodeAttr, "503")
+	event1.Attributes().PutStr(AwsIndividualHTTPErrorMsgAttr, "service is temporarily unavailable")
+	timestamp := pcommon.NewTimestampFromTime(time.UnixMicro(1696954761000001))
+	event1.SetTimestamp(timestamp)
+
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, _, cause := makeCause(span, nil, res)
+
+	assert.False(t, isError)
+	assert.True(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, cause)
+
+	assert.Equal(t, 1, len(cause.CauseObject.Exceptions))
+	exception := cause.CauseObject.Exceptions[0]
+	assert.Equal(t, AwsIndividualHTTPErrorEventType, *exception.Type)
+	assert.True(t, *exception.Remote)
+
+	messageParts := strings.SplitN(*exception.Message, "@", 3)
+	assert.Equal(t, "503", messageParts[0])
+	assert.Equal(t, "1696954761.000001", messageParts[1])
+	assert.Equal(t, "service is temporarily unavailable", messageParts[2])
+}
+
 func TestCauseExceptionWithoutError(t *testing.T) {
 	var nonErrorStatusCodes = []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
 
@@ -76,7 +109,7 @@ func ExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.StatusCode) {
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 Caused by: java.lang.IllegalArgumentException: bad argument`
 
-	attributeMap := make(map[string]interface{})
+	attributeMap := make(map[string]any)
 
 	span := constructExceptionServerSpan(attributeMap, statusCode)
 	span.Status().SetMessage(errorMsg)
@@ -116,7 +149,7 @@ func TestEventWithoutExceptionWithoutError(t *testing.T) {
 func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.StatusCode) {
 	errorMsg := "this is a test"
 
-	attributeMap := make(map[string]interface{})
+	attributeMap := make(map[string]any)
 
 	span := constructExceptionServerSpan(attributeMap, statusCode)
 	span.Status().SetMessage(errorMsg)
@@ -140,7 +173,7 @@ func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.Sta
 
 func TestCauseWithStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
@@ -165,7 +198,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 
 func TestCauseWithHttpStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
@@ -190,7 +223,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 
 func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
@@ -214,7 +247,7 @@ func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {
 
 func TestNonHttpUnsetCodeSpan(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
@@ -237,7 +270,7 @@ func TestNonHttpUnsetCodeSpan(t *testing.T) {
 
 func TestNonHttpOkCodeSpan(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
@@ -260,7 +293,7 @@ func TestNonHttpOkCodeSpan(t *testing.T) {
 
 func TestNonHttpErrCodeSpan(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
@@ -283,7 +316,7 @@ func TestNonHttpErrCodeSpan(t *testing.T) {
 
 func TestCauseWithZeroStatusMessageAndFaultErrorCode(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 400
@@ -307,7 +340,7 @@ func TestCauseWithZeroStatusMessageAndFaultErrorCode(t *testing.T) {
 
 func TestCauseWithClientErrorMessage(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 499
@@ -328,7 +361,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 
 func TestCauseWithThrottled(t *testing.T) {
 	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "POST"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
@@ -347,7 +380,7 @@ func TestCauseWithThrottled(t *testing.T) {
 	assert.NotNil(t, cause)
 }
 
-func constructExceptionServerSpan(attributes map[string]interface{}, statuscode ptrace.StatusCode) ptrace.Span {
+func constructExceptionServerSpan(attributes map[string]any, statuscode ptrace.StatusCode) ptrace.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
