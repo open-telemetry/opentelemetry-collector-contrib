@@ -45,16 +45,20 @@ func TestReceiver_endToEnd(t *testing.T) {
 	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
+	ctx, cancel := context.WithTimeout(context.Background(), traceSvcTimeout)
+	defer cancel()
+
+	traceConn, traceClient, err := makeTraceServiceClient(ctx, addr)
 	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
-	defer traceClientDoneFn()
+	defer traceConn.Close()
+
 	td := testdata.GenerateTracesOneSpan()
 	node, resource, spans := opencensus.ResourceSpansToOC(td.ResourceSpans().At(0))
 	assert.NoError(t, traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node, Resource: resource, Spans: spans}))
 
-	assert.Eventually(t, func() bool {
-		return len(spanSink.AllTraces()) != 0
-	}, 10*time.Second, 5*time.Millisecond)
+	err = flush(traceClient)
+	require.NoError(t, err, "Failed to flush responses to the service: %v", err)
+
 	gotTraces := spanSink.AllTraces()
 	require.Len(t, gotTraces, 1)
 	assert.Equal(t, td, gotTraces[0])
@@ -78,9 +82,12 @@ func TestExportMultiplexing(t *testing.T) {
 	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
+	ctx, cancel := context.WithTimeout(context.Background(), traceSvcTimeout)
+	defer cancel()
+
+	traceConn, traceClient, err := makeTraceServiceClient(ctx, addr)
 	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
-	defer traceClientDoneFn()
+	defer traceConn.Close()
 
 	// Step 1) The initiation.
 	initiatingNode := &commonpb.Node{
@@ -133,8 +140,9 @@ func TestExportMultiplexing(t *testing.T) {
 	sLn2b := []*tracepb.Span{{TraceId: []byte("_xxxxxxxxxxxxxx_"), Status: &tracepb.Status{}}, {TraceId: []byte("B234567890abcdAB"), Status: &tracepb.Status{}}}
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil, Spans: sLn2b})
 	require.NoError(t, err, "Failed to send the proxied message without a node: %v", err)
-	// Give the process sometime to send data over the wire and perform batching
-	<-time.After(150 * time.Millisecond)
+
+	err = flush(traceClient)
+	require.NoError(t, err, "Failed to flush responses to the service: %v", err)
 
 	// Examination time!
 	resultsMapping := make(map[string][]*tracepb.Span)
@@ -211,12 +219,15 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 
 	spanSink := new(consumertest.TracesSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
+	ctx, cancel := context.WithTimeout(context.Background(), traceSvcTimeout)
+	defer cancel()
+
+	traceConn, traceClient, err := makeTraceServiceClient(ctx, addr)
 	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
-	defer traceClientDoneFn()
+	defer traceConn.Close()
 
 	// Send a Nodeless first message
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: nil})
@@ -232,7 +243,6 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 		case <-testDone:
 			t.Log("Test ended early enough")
 		case <-time.After(longDuration):
-			traceClientDoneFn()
 			t.Errorf("Test took too long (%s) and is likely still hanging so this is a regression", longDuration)
 		}
 		close(goroutineDone)
@@ -285,12 +295,15 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 
 	spanSink := new(consumertest.TracesSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
-	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
+	ctx, cancel := context.WithTimeout(context.Background(), traceSvcTimeout)
+	defer cancel()
+
+	traceConn, traceClient, err := makeTraceServiceClient(ctx, addr)
 	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
-	defer traceClientDoneFn()
+	defer traceConn.Close()
 
 	sLi := []*tracepb.Span{
 		{TraceId: []byte("1234567890abcdef"), Status: &tracepb.Status{}},
@@ -303,8 +316,9 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: ni, Spans: sLi})
 	require.NoError(t, err, "Failed to send the first message: %v", err)
 
-	// Give it time to be sent over the wire, then exported.
-	<-time.After(100 * time.Millisecond)
+	// wait to be sent over the wire, then exported.
+	err = flush(traceClient)
+	require.NoError(t, err, "Failed to flush responses to the service: %v", err)
 
 	// Examination time!
 	resultsMapping := make(map[string][]*tracepb.Span)
@@ -344,21 +358,19 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 }
 
 // Helper functions from here on below
-func makeTraceServiceClient(addr net.Addr) (agenttracepb.TraceService_ExportClient, func(), error) {
+func makeTraceServiceClient(ctx context.Context, addr net.Addr) (*grpc.ClientConn, agenttracepb.TraceService_ExportClient, error) {
 	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return nil, nil, err
 	}
 
 	svc := agenttracepb.NewTraceServiceClient(cc)
-	traceClient, err := svc.Export(context.Background())
+	traceClient, err := svc.Export(ctx)
 	if err != nil {
-		_ = cc.Close()
 		return nil, nil, err
 	}
 
-	doneFn := func() { _ = cc.Close() }
-	return traceClient, doneFn, nil
+	return cc, traceClient, nil
 }
 
 func nodeToKey(n *commonpb.Node) string {

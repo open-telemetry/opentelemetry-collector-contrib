@@ -5,6 +5,8 @@ package octrace
 
 import (
 	"context"
+	"errors"
+	"io"
 	"runtime"
 	"testing"
 	"time"
@@ -21,6 +23,11 @@ import (
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
+	"google.golang.org/grpc/status"
+)
+
+const (
+	traceSvcTimeout = 10 * time.Second
 )
 
 var receiverID = component.NewID("opencensus")
@@ -45,16 +52,22 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneReceiverFn()
 
+	ctx, cancel := context.WithTimeout(context.Background(), traceSvcTimeout)
+	defer cancel()
+
 	n := 20
 	// Now for the traceExporter that sends 0 length spans
-	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(addr)
+	traceConn, traceClient, err := makeTraceServiceClient(ctx, addr)
 	require.NoError(t, err, "Failed to create the trace service client: %v", err)
+	defer traceConn.Close()
+
 	spans := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte("12345678")}}
 	for i := 0; i < n; i++ {
-		err = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: spans, Node: &commonpb.Node{}})
+		err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: spans, Node: &commonpb.Node{}})
 		require.NoError(t, err, "Failed to send requests to the service: %v", err)
 	}
-	flush(traceSvcDoneFn)
+	err = flush(traceClient)
+	require.NoError(t, err, "Failed to flush responses to the service: %v", err)
 
 	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(n), 0))
 }
@@ -66,18 +79,24 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
+
+	ctx, cancel := context.WithTimeout(context.Background(), traceSvcTimeout)
+	defer cancel()
 
 	n := 20
 	// Now for the traceExporter that sends 0 length spans
-	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
+	traceConn, traceClient, err := makeTraceServiceClient(ctx, addr)
 	require.NoError(t, err, "Failed to create the trace service client: %v", err)
+	defer traceConn.Close()
+
 	for i := 0; i <= n; i++ {
-		err = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: nil, Node: &commonpb.Node{}})
+		err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: nil, Node: &commonpb.Node{}})
 		require.NoError(t, err, "Failed to send requests to the service: %v", err)
 	}
-	flush(traceSvcDoneFn)
+	err = flush(traceClient)
+	require.NoError(t, err, "Failed to flush responses to the service: %v", err)
 
 	require.NoError(t, tt.CheckReceiverTraces("grpc", 0, 0))
 }
@@ -92,20 +111,25 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	otel.SetTracerProvider(tt.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
-	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
+	ctx, cancel := context.WithTimeout(context.Background(), traceSvcTimeout)
+	defer cancel()
+
+	traceConn, traceClient, err := makeTraceServiceClient(ctx, addr)
 	require.NoError(t, err, "Failed to create the trace service client: %v", err)
+	defer traceConn.Close()
 
 	n := 5
 	for i := 0; i < n; i++ {
 		sl := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte{byte(i + 1), 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}}}
-		err = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: sl, Node: &commonpb.Node{}})
+		err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: sl, Node: &commonpb.Node{}})
 		require.NoError(t, err, "Failed to send requests to the service: %v", err)
 	}
 
-	flush(traceSvcDoneFn)
+	err = flush(traceClient)
+	require.NoError(t, err, "Failed to flush responses to the service: %v", err)
 
 	// Inspection time!
 	gotSpanData := tt.SpanRecorder.Ended()
@@ -132,15 +156,21 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	assert.False(t, receiverSpanData.Parent().IsValid())
 }
 
-// TODO: Determine how to do this deterministic.
-func flush(traceSvcDoneFn func()) {
-	// Give it enough time to process the streamed spans.
-	<-time.After(40 * time.Millisecond)
+// flush wait for stream complete
+func flush(traceClient agenttracepb.TraceService_ExportClient) error {
+	if err := traceClient.CloseSend(); err != nil {
+		return err
+	}
 
-	// End the gRPC service to complete the RPC trace so that we
-	// can examine the RPC trace as well.
-	traceSvcDoneFn()
+	for {
+		_, err := traceClient.Recv()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return status.Errorf(status.Code(err), "receiving stream export message: %v", err)
+		}
+	}
 
-	// Give it some more time to complete the RPC trace and export.
-	<-time.After(40 * time.Millisecond)
+	return nil
 }
