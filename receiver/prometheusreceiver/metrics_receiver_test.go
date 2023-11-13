@@ -1423,7 +1423,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, func (c *Config)  {
+	testComponent(t, targets, func(c *Config) {
 		c.UseStartTimeMetric = true
 	})
 }

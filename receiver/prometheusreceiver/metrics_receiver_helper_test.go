@@ -4,7 +4,9 @@
 package prometheusreceiver
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"log"
 	"math"
@@ -17,6 +19,7 @@ import (
 	"time"
 
 	gokitlog "github.com/go-kit/log"
+	"github.com/gogo/protobuf/proto"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
@@ -31,6 +34,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+
+	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 )
 
 type mockPrometheusResponse struct {
@@ -38,8 +43,8 @@ type mockPrometheusResponse struct {
 	data           string
 	useOpenMetrics bool
 
-	useProtoBuf    bool // This overrides data and useOpenMetrics above
-	buf            []byte
+	useProtoBuf bool // This overrides data and useOpenMetrics above
+	buf         []byte
 }
 
 type mockPrometheus struct {
@@ -613,7 +618,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	defer mp.Close()
 
 	config := &Config{
-		PrometheusConfig: cfg,
+		PrometheusConfig:     cfg,
 		StartTimeMetricRegex: "",
 	}
 	if alterConfig != nil {
@@ -707,4 +712,23 @@ func getTS(ms pmetric.MetricSlice) pcommon.Timestamp {
 	case pmetric.MetricTypeEmpty:
 	}
 	return 0
+}
+
+func prometheusMetricFamilyToProtoBuf(t *testing.T, buffer *bytes.Buffer, metricFamily *dto.MetricFamily) *bytes.Buffer {
+	if buffer == nil {
+		buffer = &bytes.Buffer{}
+	}
+
+	data, err := proto.Marshal(metricFamily)
+	require.NoError(t, err)
+
+	varintBuf := make([]byte, binary.MaxVarintLen32)
+	varintLength := binary.PutUvarint(varintBuf, uint64(len(data)))
+
+	_, err = buffer.Write(varintBuf[:varintLength])
+	require.NoError(t, err)
+	_, err = buffer.Write(data)
+	require.NoError(t, err)
+
+	return buffer
 }
