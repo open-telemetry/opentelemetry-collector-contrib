@@ -22,7 +22,7 @@ exporters:
 
 ## AAD/Entra Authentication
 
-Local Authentication can be disabled in [Application Insights](https://learn.microsoft.com/en-us/azure/azure-monitor/app/azure-ad-authentication) and an AAD based identity can be used in conjunction with the instrumentation key. The instrumentation key, while still required by the Exporter in the connection string, but it is no longer sufficient to just have this in order to import data.
+Local Authentication can be disabled in [Application Insights](https://learn.microsoft.com/en-us/azure/azure-monitor/app/azure-ad-authentication) and an AAD based identity can be used in conjunction with the instrumentation key.
 
 The Azure Monitor Exporter does not support this approach directly, but it can be used with the [AAD Authentication Proxy](https://github.com/Azure/aad-auth-proxy) from the Azure Monitor product group.
 
