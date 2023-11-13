@@ -23,6 +23,7 @@ import (
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
+	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,8 +35,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
-
-	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 )
 
 type mockPrometheusResponse struct {
