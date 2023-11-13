@@ -50,6 +50,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.88.0
@@ -297,7 +298,7 @@ require (
 	github.com/apache/thrift v0.19.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.47.5 // indirect
+	github.com/aws/aws-sdk-go v1.47.6 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.22.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.0 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.22.2 // indirect
@@ -1118,6 +1119,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/obse
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor => ../../processor/remotetapprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor => ../../processor/sumologicprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter => ../../exporter/syslogexporter
 
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 

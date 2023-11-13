@@ -97,7 +97,7 @@ func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]s
 		return ctx, fmt.Errorf("failed to verify token: %w", err)
 	}
 
-	claims := map[string]interface{}{}
+	claims := map[string]any{}
 	if err = idToken.Claims(&claims); err != nil {
 		// currently, this isn't a valid condition, the Verify call a few lines above
 		// will already attempt to parse the payload as a json and set it as the claims
@@ -126,7 +126,7 @@ func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]s
 	return client.NewContext(ctx, cl), nil
 }
 
-func getSubjectFromClaims(claims map[string]interface{}, usernameClaim string, fallback string) (string, error) {
+func getSubjectFromClaims(claims map[string]any, usernameClaim string, fallback string) (string, error) {
 	if len(usernameClaim) > 0 {
 		username, found := claims[usernameClaim]
 		if !found {
@@ -144,7 +144,7 @@ func getSubjectFromClaims(claims map[string]interface{}, usernameClaim string, f
 	return fallback, nil
 }
 
-func getGroupsFromClaims(claims map[string]interface{}, groupsClaim string) ([]string, error) {
+func getGroupsFromClaims(claims map[string]any, groupsClaim string) ([]string, error) {
 	if len(groupsClaim) > 0 {
 		var groups []string
 		rawGroup, ok := claims[groupsClaim]
@@ -156,7 +156,7 @@ func getGroupsFromClaims(claims map[string]interface{}, groupsClaim string) ([]s
 			groups = append(groups, v)
 		case []string:
 			groups = v
-		case []interface{}:
+		case []any:
 			groups = make([]string, 0, len(v))
 			for i := range v {
 				groups = append(groups, fmt.Sprintf("%v", v[i]))

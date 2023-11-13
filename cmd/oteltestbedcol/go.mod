@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.88.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.88.0
@@ -72,7 +73,7 @@ require (
 	github.com/antonmedv/expr v1.15.3 // indirect
 	github.com/apache/thrift v0.19.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.47.5 // indirect
+	github.com/aws/aws-sdk-go v1.47.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
@@ -337,6 +338,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/attr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../../receiver/carbonreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../exporter/splunkhecexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter => ../../exporter/syslogexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../../exporter/prometheusexporter
 

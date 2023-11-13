@@ -87,6 +87,9 @@ linters-settings:
   gofmt:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
+    rewrite-rules:
+    - pattern: interface{}
+      replacement: any
 
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
