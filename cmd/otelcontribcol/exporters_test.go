@@ -10,8 +10,6 @@ package main
 import (
 	"context"
 	"errors"
-<<<<<<< HEAD
-=======
 	"path/filepath"
 	"testing"
 
@@ -25,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
->>>>>>> c4baad9d258cb748eb412ed81128d1956bd735a7
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
