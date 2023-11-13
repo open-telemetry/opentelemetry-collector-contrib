@@ -44,7 +44,7 @@ func TestMetricNormalize(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, true, "")
+	testComponent(t, targets, nil)
 }
 
 func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {

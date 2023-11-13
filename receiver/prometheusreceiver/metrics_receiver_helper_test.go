@@ -593,7 +593,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, trimMetricSuffixes bool, startTimeMetricRegex string, cfgMuts ...func(*promcfg.Config)) {
+func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config), cfgMuts ...func(*promcfg.Config)) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
@@ -602,13 +602,16 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, t
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
+	config := &Config{
+		PrometheusConfig: cfg,
+		StartTimeMetricRegex: "",
+	}
+	if alterConfig != nil {
+		alterConfig(config)
+	}
+
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), &Config{
-		PrometheusConfig:     cfg,
-		UseStartTimeMetric:   useStartTimeMetric,
-		StartTimeMetricRegex: startTimeMetricRegex,
-		TrimMetricSuffixes:   trimMetricSuffixes,
-	}, cms)
+	receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), config, cms)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called

@@ -1336,7 +1336,7 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			validateScrapes: true,
 		},
 	}
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 var startTimeMetricPage = `
@@ -1423,7 +1423,9 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, false, "")
+	testComponent(t, targets, func (c *Config)  {
+		c.UseStartTimeMetric = true
+	})
 }
 
 var startTimeMetricRegexPage = `
@@ -1472,7 +1474,10 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, false, "^(.+_)*process_start_time_seconds$")
+	testComponent(t, targets, func(c *Config) {
+		c.StartTimeMetricRegex = "^(.+_)*process_start_time_seconds$"
+		c.UseStartTimeMetric = true
+	})
 }
 
 // metric type is defined as 'untyped' in the first metric
@@ -1501,7 +1506,7 @@ func TestUntypedMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {

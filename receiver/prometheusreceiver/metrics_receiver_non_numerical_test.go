@@ -70,7 +70,7 @@ func TestStaleNaNs(t *testing.T) {
 			validateScrapes: true,
 		},
 	}
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -252,7 +252,7 @@ func TestNormalNaNs(t *testing.T) {
 			validateFunc: verifyNormalNaNs,
 		},
 	}
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -339,7 +339,7 @@ func TestInfValues(t *testing.T) {
 			validateFunc: verifyInfValues,
 		},
 	}
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
