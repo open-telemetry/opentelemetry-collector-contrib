@@ -190,14 +190,14 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 	rw.WriteHeader(http.StatusOK)
 }
 
-func parsePayload(payload []byte) ([]map[string]interface{}, error) {
+func parsePayload(payload []byte) ([]map[string]any, error) {
 	lines := bytes.Split(payload, []byte("\n"))
-	logs := make([]map[string]interface{}, 0, len(lines))
+	logs := make([]map[string]any, 0, len(lines))
 	for _, line := range lines {
 		if len(line) == 0 {
 			continue
 		}
-		var log map[string]interface{}
+		var log map[string]any
 		err := json.Unmarshal(line, &log)
 		if err != nil {
 			return logs, err
@@ -207,11 +207,11 @@ func parsePayload(payload []byte) ([]map[string]interface{}, error) {
 	return logs, nil
 }
 
-func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]interface{}) plog.Logs {
+func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any) plog.Logs {
 	pLogs := plog.NewLogs()
 
 	// Group logs by ZoneName field if it was configured so it can be used as a resource attribute
-	groupedLogs := make(map[string][]map[string]interface{})
+	groupedLogs := make(map[string][]map[string]any)
 	for _, log := range logs {
 		zone := ""
 		if v, ok := log["ZoneName"]; ok {

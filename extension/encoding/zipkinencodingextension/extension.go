@@ -51,7 +51,7 @@ func newExtension(config *Config) (*zipkinExtension, error) {
 				unmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(false, false),
 			}
 		default:
-			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
+			err = fmt.Errorf("protocol: %q, unsupported version: %q", protocol, version)
 		}
 	case zipkinJSONEncoding:
 		switch version {
@@ -77,8 +77,10 @@ func newExtension(config *Config) (*zipkinExtension, error) {
 				unmarshaler: zipkinv1.NewThriftTracesUnmarshaler(),
 			}
 		default:
-			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
+			err = fmt.Errorf("protocol: %q, unsupported version: %q", protocol, version)
 		}
+	default:
+		err = fmt.Errorf("unsupported protocol: %q", protocol)
 	}
 
 	return ex, err

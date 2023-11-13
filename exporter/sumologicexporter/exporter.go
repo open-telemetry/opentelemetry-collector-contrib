@@ -5,6 +5,7 @@ package sumologicexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -15,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 )
 
 type sumologicexporter struct {
@@ -142,7 +142,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 	var (
 		currentMetadata  fields
 		previousMetadata = newFields(pcommon.NewMap())
-		errs             error
+		errs             []error
 		droppedRecords   []plog.LogRecord
 		err              error
 	)
@@ -183,7 +183,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 					var dropped []plog.LogRecord
 					dropped, err = sdr.sendLogs(ctx, previousMetadata)
 					if err != nil {
-						errs = multierr.Append(errs, err)
+						errs = append(errs, err)
 						droppedRecords = append(droppedRecords, dropped...)
 					}
 					sdr.cleanLogsBuffer()
@@ -197,7 +197,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 				dropped, err = sdr.batchLog(ctx, log, previousMetadata)
 				if err != nil {
 					droppedRecords = append(droppedRecords, dropped...)
-					errs = multierr.Append(errs, err)
+					errs = append(errs, err)
 				}
 			}
 		}
@@ -207,7 +207,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 	dropped, err := sdr.sendLogs(ctx, previousMetadata)
 	if err != nil {
 		droppedRecords = append(droppedRecords, dropped...)
-		errs = multierr.Append(errs, err)
+		errs = append(errs, err)
 	}
 
 	if len(droppedRecords) > 0 {
@@ -222,7 +222,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 			log.CopyTo(tgt)
 		}
 
-		return consumererror.NewLogs(errs, droppedLogs)
+		return consumererror.NewLogs(errors.Join(errs...), droppedLogs)
 	}
 
 	return nil
@@ -235,7 +235,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 	var (
 		currentMetadata  fields
 		previousMetadata = newFields(pcommon.NewMap())
-		errs             error
+		errs             []error
 		droppedRecords   []metricPair
 		attributes       pcommon.Map
 	)
@@ -282,7 +282,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 					var dropped []metricPair
 					dropped, err = sdr.sendMetrics(ctx, previousMetadata)
 					if err != nil {
-						errs = multierr.Append(errs, err)
+						errs = append(errs, err)
 						droppedRecords = append(droppedRecords, dropped...)
 					}
 					sdr.cleanMetricBuffer()
@@ -295,7 +295,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 				dropped, err = sdr.batchMetric(ctx, mp, currentMetadata)
 				if err != nil {
 					droppedRecords = append(droppedRecords, dropped...)
-					errs = multierr.Append(errs, err)
+					errs = append(errs, err)
 				}
 			}
 		}
@@ -305,7 +305,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 	dropped, err := sdr.sendMetrics(ctx, previousMetadata)
 	if err != nil {
 		droppedRecords = append(droppedRecords, dropped...)
-		errs = multierr.Append(errs, err)
+		errs = append(errs, err)
 	}
 
 	if len(droppedRecords) > 0 {
@@ -321,7 +321,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 			record.metric.CopyTo(ilms.AppendEmpty().Metrics().AppendEmpty())
 		}
 
-		return consumererror.NewMetrics(errs, droppedMetrics)
+		return consumererror.NewMetrics(errors.Join(errs...), droppedMetrics)
 	}
 
 	return nil

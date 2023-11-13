@@ -26,7 +26,7 @@ type CfgInfo struct {
 	// the component type, e.g. "otlpreceiver.Config"
 	Type component.Type
 	// an instance of the component's configuration struct
-	CfgInstance interface{}
+	CfgInstance any
 }
 
 // GetAllCfgInfos accepts a Factories struct, then creates and returns a CfgInfo
