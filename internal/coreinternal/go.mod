@@ -16,8 +16,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017.0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/receiver v0.88.1-0.20231026220224-6405e152a2d9
 	go.opentelemetry.io/collector/semconv v0.88.1-0.20231026220224-6405e152a2d9
-	go.opentelemetry.io/otel v1.19.0
-	go.opentelemetry.io/otel/trace v1.19.0
+	go.opentelemetry.io/otel v1.20.0
+	go.opentelemetry.io/otel/trace v1.20.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/text v0.14.0
@@ -71,7 +71,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.88.1-0.20231026220224-6405e152a2d9 // indirect
 	go.opentelemetry.io/collector/confmap v0.88.1-0.20231026220224-6405e152a2d9 // indirect
-	go.opentelemetry.io/otel/metric v1.19.0 // indirect
+	go.opentelemetry.io/otel/metric v1.20.0 // indirect
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
