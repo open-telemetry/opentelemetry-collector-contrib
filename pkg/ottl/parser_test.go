@@ -2094,7 +2094,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statements := Statements[any]{
+			statements := StatementSequence[any]{
 				statements: []*Statement[any]{
 					{
 						condition: BoolExpr[any]{tt.condition},
@@ -2115,7 +2115,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 	}
 }
 
-func Test_Statements_Eval(t *testing.T) {
+func Test_Conditions_Eval(t *testing.T) {
 	tests := []struct {
 		name           string
 		conditions     []boolExpressionEvaluator[any]
@@ -2165,32 +2165,27 @@ func Test_Statements_Eval(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[any]
+			var rawStatements []*Condition[any]
 			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[any]{
+				rawStatements = append(rawStatements, &Condition[any]{
 					condition: BoolExpr[any]{condition},
-					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
-							return nil, fmt.Errorf("function should not be called")
-						},
-					},
 				})
 			}
 
-			statements := Statements[any]{
-				statements:        rawStatements,
+			conditions := ConditionSequence[any]{
+				conditions:        rawStatements,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,
 			}
 
-			result, err := statements.Eval(context.Background(), nil)
+			result, err := conditions.Eval(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
 }
 
-func Test_Statements_Eval_Error(t *testing.T) {
+func Test_Conditions_Eval_Error(t *testing.T) {
 	tests := []struct {
 		name       string
 		conditions []boolExpressionEvaluator[any]
@@ -2209,25 +2204,20 @@ func Test_Statements_Eval_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[any]
+			var rawConditions []*Condition[any]
 			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[any]{
+				rawConditions = append(rawConditions, &Condition[any]{
 					condition: BoolExpr[any]{condition},
-					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
-							return nil, fmt.Errorf("function should not be called")
-						},
-					},
 				})
 			}
 
-			statements := Statements[any]{
-				statements:        rawStatements,
+			conditions := ConditionSequence[any]{
+				conditions:        rawConditions,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,
 			}
 
-			result, err := statements.Eval(context.Background(), nil)
+			result, err := conditions.Eval(context.Background(), nil)
 			assert.Error(t, err)
 			assert.False(t, result)
 		})

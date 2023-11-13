@@ -76,20 +76,12 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 	return p, err
 }
 
-type StatementsOption func(*ottl.Statements[TransformContext])
-
-func WithErrorMode(errorMode ottl.ErrorMode) StatementsOption {
-	return func(s *ottl.Statements[TransformContext]) {
-		ottl.WithErrorMode[TransformContext](errorMode)(s)
-	}
+func NewStatementSequence(statements []*ottl.Statement[TransformContext], errorMode ottl.ErrorMode, telemetrySettings component.TelemetrySettings, options ...ottl.StatementSequenceOption[TransformContext]) ottl.StatementSequence[TransformContext] {
+	return ottl.NewStatementSequence(statements, errorMode, telemetrySettings, options...)
 }
 
-func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySettings component.TelemetrySettings, options ...StatementsOption) ottl.Statements[TransformContext] {
-	s := ottl.NewStatements(statements, telemetrySettings)
-	for _, op := range options {
-		op(&s)
-	}
-	return s
+func NewConditionSequence(conditions []*ottl.Condition[TransformContext], errorMode ottl.ErrorMode, telemetrySettings component.TelemetrySettings, options ...ottl.ConditionSequenceOption[TransformContext]) ottl.ConditionSequence[TransformContext] {
+	return ottl.NewConditionSequence(conditions, errorMode, telemetrySettings, options...)
 }
 
 var symbolTable = internal.MetricSymbolTable

@@ -197,11 +197,11 @@ func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
 	}, nil
 }
 
-var parser = newParser[parsedStatement]()
+var statementParser = newParser[parsedStatement]()
 var conditionParser = newParser[booleanExpression]()
 
 func parseStatement(raw string) (*parsedStatement, error) {
-	parsed, err := parser.ParseString("", raw)
+	parsed, err := statementParser.ParseString("", raw)
 
 	if err != nil {
 		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
@@ -244,24 +244,19 @@ func newParser[G any]() *participle.Parser[G] {
 	return parser
 }
 
-// Statements represents a list of statements that will be executed sequentially for a TransformContext.
-type Statements[K any] struct {
+// StatementSequence represents a list of statements that will be executed sequentially for a TransformContext.
+type StatementSequence[K any] struct {
 	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
 }
 
-type StatementsOption[K any] func(*Statements[K])
+type StatementSequenceOption[K any] func(*StatementSequence[K])
 
-func WithErrorMode[K any](errorMode ErrorMode) StatementsOption[K] {
-	return func(s *Statements[K]) {
-		s.errorMode = errorMode
-	}
-}
-
-func NewStatements[K any](statements []*Statement[K], telemetrySettings component.TelemetrySettings, options ...StatementsOption[K]) Statements[K] {
-	s := Statements[K]{
+func NewStatementSequence[K any](statements []*Statement[K], errorMode ErrorMode, telemetrySettings component.TelemetrySettings, options ...StatementSequenceOption[K]) StatementSequence[K] {
+	s := StatementSequence[K]{
 		statements:        statements,
+		errorMode:         errorMode,
 		telemetrySettings: telemetrySettings,
 	}
 	for _, op := range options {
@@ -270,8 +265,8 @@ func NewStatements[K any](statements []*Statement[K], telemetrySettings componen
 	return s
 }
 
-// Execute is a function that will execute all the statements in the Statements list.
-func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
+// Execute is a function that will execute all the statements in the StatementSequence list.
+func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
@@ -285,19 +280,36 @@ func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
 	return nil
 }
 
-// Eval returns true if any statement's condition is true and returns false otherwise.
-// Does not execute the statement's function.
-// When errorMode is `propagate`, errors cause the evaluation to be false and an error is returned.
-// When errorMode is `ignore`, errors cause evaluation to continue to the next statement.
-func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
-	for _, statement := range s.statements {
-		match, err := statement.condition.Eval(ctx, tCtx)
+// ConditionSequence represents a list of conditions that will be executed sequentially for a TransformContext.
+type ConditionSequence[K any] struct {
+	conditions        []*Condition[K]
+	errorMode         ErrorMode
+	telemetrySettings component.TelemetrySettings
+}
+
+type ConditionSequenceOption[K any] func(*ConditionSequence[K])
+
+func NewConditionSequence[K any](conditions []*Condition[K], errorMode ErrorMode, telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption[K]) ConditionSequence[K] {
+	s := ConditionSequence[K]{
+		conditions:        conditions,
+		errorMode:         errorMode,
+		telemetrySettings: telemetrySettings,
+	}
+	for _, op := range options {
+		op(&s)
+	}
+	return s
+}
+
+func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	for _, condition := range c.conditions {
+		match, err := condition.Eval(ctx, tCtx)
 		if err != nil {
-			if s.errorMode == PropagateError {
-				err = fmt.Errorf("failed to eval statement: %v, %w", statement.origText, err)
+			if c.errorMode == PropagateError {
+				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
 				return false, err
 			}
-			s.telemetrySettings.Logger.Warn("failed to eval statement", zap.Error(err), zap.String("statement", statement.origText))
+			c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
 			continue
 		}
 		if match {
