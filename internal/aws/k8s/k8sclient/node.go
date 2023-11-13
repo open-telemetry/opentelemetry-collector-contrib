@@ -137,7 +137,7 @@ func (c *nodeClient) shutdown() {
 	c.stopped = true
 }
 
-func transformFuncNode(obj interface{}) (interface{}, error) {
+func transformFuncNode(obj any) (any, error) {
 	node, ok := obj.(*v1.Node)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Node type", obj)

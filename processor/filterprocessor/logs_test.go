@@ -31,8 +31,8 @@ type logNameTest struct {
 
 type logWithResource struct {
 	logNames           []string
-	resourceAttributes map[string]interface{}
-	recordAttributes   map[string]interface{}
+	resourceAttributes map[string]any
+	recordAttributes   map[string]any
 	severityText       string
 	body               string
 	severityNumber     plog.SeverityNumber
@@ -47,7 +47,7 @@ var (
 	inLogForResourceTest = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 				"attr2": "attr2/val2",
 				"attr3": "attr3/val3",
@@ -58,13 +58,13 @@ var (
 	inLogForTwoResource = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val2",
 			},
 		},
@@ -73,19 +73,19 @@ var (
 	inLogForTwoResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val2",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val2",
 			},
 		},
@@ -93,28 +93,28 @@ var (
 	inLogForThreeResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val2",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val2",
 			},
 		},
 		{
 			logNames: []string{"log5"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val5",
 			},
-			recordAttributes: map[string]interface{}{
+			recordAttributes: map[string]any{
 				"rec": "rec/val5",
 			},
 		},
@@ -123,25 +123,25 @@ var (
 	inLogForFourResource = []logWithResource{
 		{
 			logNames: []string{"log1"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr": "attr/val1",
 			},
 		},
 		{
 			logNames: []string{"log2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr": "attr/val2",
 			},
 		},
 		{
 			logNames: []string{"log3"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr": "attr/val3",
 			},
 		},
 		{
 			logNames: []string{"log4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr": "attr/val4",
 			},
 		},

@@ -24,7 +24,7 @@ func TestEventCallback(t *testing.T) {
 	for _, tt := range []struct {
 		casename         string
 		typ              eventType
-		payload          interface{}
+		payload          any
 		registerCallback func(em *eventMachine, wg *sync.WaitGroup)
 	}{
 		{
@@ -413,7 +413,7 @@ func TestEventShutdown(t *testing.T) {
 
 func TestPeriodicMetrics(t *testing.T) {
 	// prepare
-	views := MetricViews()
+	views := metricViews()
 
 	// ensure that we are starting with a clean state
 	view.Unregister(views...)

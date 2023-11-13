@@ -316,7 +316,7 @@ type metricK8sContainerReady struct {
 func (m *metricK8sContainerReady) init() {
 	m.data.SetName("k8s.container.ready")
 	m.data.SetDescription("Whether a container has passed its readiness probe (0 for no, 1 for yes)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -365,7 +365,7 @@ type metricK8sContainerRestarts struct {
 func (m *metricK8sContainerRestarts) init() {
 	m.data.SetName("k8s.container.restarts")
 	m.data.SetDescription("How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{restart}")
 	m.data.SetEmptyGauge()
 }
 
@@ -512,7 +512,7 @@ type metricK8sCronjobActiveJobs struct {
 func (m *metricK8sCronjobActiveJobs) init() {
 	m.data.SetName("k8s.cronjob.active_jobs")
 	m.data.SetDescription("The number of actively running jobs for a cronjob")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{job}")
 	m.data.SetEmptyGauge()
 }
 
@@ -561,7 +561,7 @@ type metricK8sDaemonsetCurrentScheduledNodes struct {
 func (m *metricK8sDaemonsetCurrentScheduledNodes) init() {
 	m.data.SetName("k8s.daemonset.current_scheduled_nodes")
 	m.data.SetDescription("Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{node}")
 	m.data.SetEmptyGauge()
 }
 
@@ -610,7 +610,7 @@ type metricK8sDaemonsetDesiredScheduledNodes struct {
 func (m *metricK8sDaemonsetDesiredScheduledNodes) init() {
 	m.data.SetName("k8s.daemonset.desired_scheduled_nodes")
 	m.data.SetDescription("Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{node}")
 	m.data.SetEmptyGauge()
 }
 
@@ -659,7 +659,7 @@ type metricK8sDaemonsetMisscheduledNodes struct {
 func (m *metricK8sDaemonsetMisscheduledNodes) init() {
 	m.data.SetName("k8s.daemonset.misscheduled_nodes")
 	m.data.SetDescription("Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{node}")
 	m.data.SetEmptyGauge()
 }
 
@@ -708,7 +708,7 @@ type metricK8sDaemonsetReadyNodes struct {
 func (m *metricK8sDaemonsetReadyNodes) init() {
 	m.data.SetName("k8s.daemonset.ready_nodes")
 	m.data.SetDescription("Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{node}")
 	m.data.SetEmptyGauge()
 }
 
@@ -855,7 +855,7 @@ type metricK8sHpaCurrentReplicas struct {
 func (m *metricK8sHpaCurrentReplicas) init() {
 	m.data.SetName("k8s.hpa.current_replicas")
 	m.data.SetDescription("Current number of pod replicas managed by this autoscaler.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -904,7 +904,7 @@ type metricK8sHpaDesiredReplicas struct {
 func (m *metricK8sHpaDesiredReplicas) init() {
 	m.data.SetName("k8s.hpa.desired_replicas")
 	m.data.SetDescription("Desired number of pod replicas managed by this autoscaler.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -953,7 +953,7 @@ type metricK8sHpaMaxReplicas struct {
 func (m *metricK8sHpaMaxReplicas) init() {
 	m.data.SetName("k8s.hpa.max_replicas")
 	m.data.SetDescription("Maximum number of replicas to which the autoscaler can scale up.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1002,7 +1002,7 @@ type metricK8sHpaMinReplicas struct {
 func (m *metricK8sHpaMinReplicas) init() {
 	m.data.SetName("k8s.hpa.min_replicas")
 	m.data.SetDescription("Minimum number of replicas to which the autoscaler can scale up.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1051,7 +1051,7 @@ type metricK8sJobActivePods struct {
 func (m *metricK8sJobActivePods) init() {
 	m.data.SetName("k8s.job.active_pods")
 	m.data.SetDescription("The number of actively running pods for a job")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1100,7 +1100,7 @@ type metricK8sJobDesiredSuccessfulPods struct {
 func (m *metricK8sJobDesiredSuccessfulPods) init() {
 	m.data.SetName("k8s.job.desired_successful_pods")
 	m.data.SetDescription("The desired number of successfully finished pods the job should be run with")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1149,7 +1149,7 @@ type metricK8sJobFailedPods struct {
 func (m *metricK8sJobFailedPods) init() {
 	m.data.SetName("k8s.job.failed_pods")
 	m.data.SetDescription("The number of pods which reached phase Failed for a job")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1198,7 +1198,7 @@ type metricK8sJobMaxParallelPods struct {
 func (m *metricK8sJobMaxParallelPods) init() {
 	m.data.SetName("k8s.job.max_parallel_pods")
 	m.data.SetDescription("The max desired number of pods the job should run at any given time")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1247,7 +1247,7 @@ type metricK8sJobSuccessfulPods struct {
 func (m *metricK8sJobSuccessfulPods) init() {
 	m.data.SetName("k8s.job.successful_pods")
 	m.data.SetDescription("The number of pods which reached phase Succeeded for a job")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1296,7 +1296,7 @@ type metricK8sNamespacePhase struct {
 func (m *metricK8sNamespacePhase) init() {
 	m.data.SetName("k8s.namespace.phase")
 	m.data.SetDescription("The current phase of namespaces (1 for active and 0 for terminating)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1335,6 +1335,57 @@ func newMetricK8sNamespacePhase(cfg MetricConfig) metricK8sNamespacePhase {
 	return m
 }
 
+type metricK8sNodeCondition struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.condition metric with initial data.
+func (m *metricK8sNodeCondition) init() {
+	m.data.SetName("k8s.node.condition")
+	m.data.SetDescription("The condition of a particular Node.")
+	m.data.SetUnit("{condition}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sNodeCondition) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, conditionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("condition", conditionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeCondition) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeCondition) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeCondition(cfg MetricConfig) metricK8sNodeCondition {
+	m := metricK8sNodeCondition{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sPodPhase struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1345,7 +1396,7 @@ type metricK8sPodPhase struct {
 func (m *metricK8sPodPhase) init() {
 	m.data.SetName("k8s.pod.phase")
 	m.data.SetDescription("Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1394,7 +1445,7 @@ type metricK8sPodStatusReason struct {
 func (m *metricK8sPodStatusReason) init() {
 	m.data.SetName("k8s.pod.status_reason")
 	m.data.SetDescription("Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1443,7 +1494,7 @@ type metricK8sReplicasetAvailable struct {
 func (m *metricK8sReplicasetAvailable) init() {
 	m.data.SetName("k8s.replicaset.available")
 	m.data.SetDescription("Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1492,7 +1543,7 @@ type metricK8sReplicasetDesired struct {
 func (m *metricK8sReplicasetDesired) init() {
 	m.data.SetName("k8s.replicaset.desired")
 	m.data.SetDescription("Number of desired pods in this replicaset")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1541,7 +1592,7 @@ type metricK8sReplicationControllerAvailable struct {
 func (m *metricK8sReplicationControllerAvailable) init() {
 	m.data.SetName("k8s.replication_controller.available")
 	m.data.SetDescription("Total number of available pods (ready for at least minReadySeconds) targeted by this replication_controller")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1590,7 +1641,7 @@ type metricK8sReplicationControllerDesired struct {
 func (m *metricK8sReplicationControllerDesired) init() {
 	m.data.SetName("k8s.replication_controller.desired")
 	m.data.SetDescription("Number of desired pods in this replication_controller")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1639,7 +1690,7 @@ type metricK8sResourceQuotaHardLimit struct {
 func (m *metricK8sResourceQuotaHardLimit) init() {
 	m.data.SetName("k8s.resource_quota.hard_limit")
 	m.data.SetDescription("The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1690,7 +1741,7 @@ type metricK8sResourceQuotaUsed struct {
 func (m *metricK8sResourceQuotaUsed) init() {
 	m.data.SetName("k8s.resource_quota.used")
 	m.data.SetDescription("The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1741,7 +1792,7 @@ type metricK8sStatefulsetCurrentPods struct {
 func (m *metricK8sStatefulsetCurrentPods) init() {
 	m.data.SetName("k8s.statefulset.current_pods")
 	m.data.SetDescription("The number of pods created by the StatefulSet controller from the StatefulSet version")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1790,7 +1841,7 @@ type metricK8sStatefulsetDesiredPods struct {
 func (m *metricK8sStatefulsetDesiredPods) init() {
 	m.data.SetName("k8s.statefulset.desired_pods")
 	m.data.SetDescription("Number of desired pods in the stateful set (the `spec.replicas` field)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1839,7 +1890,7 @@ type metricK8sStatefulsetReadyPods struct {
 func (m *metricK8sStatefulsetReadyPods) init() {
 	m.data.SetName("k8s.statefulset.ready_pods")
 	m.data.SetDescription("Number of pods created by the stateful set that have the `Ready` condition")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1888,7 +1939,7 @@ type metricK8sStatefulsetUpdatedPods struct {
 func (m *metricK8sStatefulsetUpdatedPods) init() {
 	m.data.SetName("k8s.statefulset.updated_pods")
 	m.data.SetDescription("Number of pods created by the StatefulSet controller from the StatefulSet version")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1937,7 +1988,7 @@ type metricOpenshiftAppliedclusterquotaLimit struct {
 func (m *metricOpenshiftAppliedclusterquotaLimit) init() {
 	m.data.SetName("openshift.appliedclusterquota.limit")
 	m.data.SetDescription("The upper limit for a particular resource in a specific namespace.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1989,7 +2040,7 @@ type metricOpenshiftAppliedclusterquotaUsed struct {
 func (m *metricOpenshiftAppliedclusterquotaUsed) init() {
 	m.data.SetName("openshift.appliedclusterquota.used")
 	m.data.SetDescription("The usage for a particular resource in a specific namespace.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2041,7 +2092,7 @@ type metricOpenshiftClusterquotaLimit struct {
 func (m *metricOpenshiftClusterquotaLimit) init() {
 	m.data.SetName("openshift.clusterquota.limit")
 	m.data.SetDescription("The configured upper limit for a particular resource.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2092,7 +2143,7 @@ type metricOpenshiftClusterquotaUsed struct {
 func (m *metricOpenshiftClusterquotaUsed) init() {
 	m.data.SetName("openshift.clusterquota.used")
 	m.data.SetDescription("The usage for a particular resource with a configured limit.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2168,6 +2219,7 @@ type MetricsBuilder struct {
 	metricK8sJobMaxParallelPods               metricK8sJobMaxParallelPods
 	metricK8sJobSuccessfulPods                metricK8sJobSuccessfulPods
 	metricK8sNamespacePhase                   metricK8sNamespacePhase
+	metricK8sNodeCondition                    metricK8sNodeCondition
 	metricK8sPodPhase                         metricK8sPodPhase
 	metricK8sPodStatusReason                  metricK8sPodStatusReason
 	metricK8sReplicasetAvailable              metricK8sReplicasetAvailable
@@ -2229,6 +2281,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sJobMaxParallelPods:               newMetricK8sJobMaxParallelPods(mbc.Metrics.K8sJobMaxParallelPods),
 		metricK8sJobSuccessfulPods:                newMetricK8sJobSuccessfulPods(mbc.Metrics.K8sJobSuccessfulPods),
 		metricK8sNamespacePhase:                   newMetricK8sNamespacePhase(mbc.Metrics.K8sNamespacePhase),
+		metricK8sNodeCondition:                    newMetricK8sNodeCondition(mbc.Metrics.K8sNodeCondition),
 		metricK8sPodPhase:                         newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
 		metricK8sPodStatusReason:                  newMetricK8sPodStatusReason(mbc.Metrics.K8sPodStatusReason),
 		metricK8sReplicasetAvailable:              newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
@@ -2334,6 +2387,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sJobMaxParallelPods.emit(ils.Metrics())
 	mb.metricK8sJobSuccessfulPods.emit(ils.Metrics())
 	mb.metricK8sNamespacePhase.emit(ils.Metrics())
+	mb.metricK8sNodeCondition.emit(ils.Metrics())
 	mb.metricK8sPodPhase.emit(ils.Metrics())
 	mb.metricK8sPodStatusReason.emit(ils.Metrics())
 	mb.metricK8sReplicasetAvailable.emit(ils.Metrics())
@@ -2503,6 +2557,11 @@ func (mb *MetricsBuilder) RecordK8sJobSuccessfulPodsDataPoint(ts pcommon.Timesta
 // RecordK8sNamespacePhaseDataPoint adds a data point to k8s.namespace.phase metric.
 func (mb *MetricsBuilder) RecordK8sNamespacePhaseDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sNamespacePhase.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeConditionDataPoint adds a data point to k8s.node.condition metric.
+func (mb *MetricsBuilder) RecordK8sNodeConditionDataPoint(ts pcommon.Timestamp, val int64, conditionAttributeValue string) {
+	mb.metricK8sNodeCondition.recordDataPoint(mb.startTime, ts, val, conditionAttributeValue)
 }
 
 // RecordK8sPodPhaseDataPoint adds a data point to k8s.pod.phase metric.

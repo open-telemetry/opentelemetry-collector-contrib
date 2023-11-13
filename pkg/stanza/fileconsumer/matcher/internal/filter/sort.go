@@ -5,6 +5,7 @@ package filter // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"time"
@@ -18,24 +19,24 @@ type parseFunc func(string) (any, error)
 
 type compareFunc func(a, b any) bool
 
-type sortOption struct {
+type regexSortOption struct {
 	regexKey string
 	parseFunc
 	compareFunc
 }
 
-func newSortOption(regexKey string, parseFunc parseFunc, compareFunc compareFunc) (Option, error) {
+func newRegexSortOption(regexKey string, parseFunc parseFunc, compareFunc compareFunc) (Option, error) {
 	if regexKey == "" {
 		return nil, fmt.Errorf("regex key must be specified")
 	}
-	return sortOption{
+	return regexSortOption{
 		regexKey:    regexKey,
 		parseFunc:   parseFunc,
 		compareFunc: compareFunc,
 	}, nil
 }
 
-func (o sortOption) apply(items []*item) ([]*item, error) {
+func (o regexSortOption) apply(items []*item) ([]*item, error) {
 	// Special case where sort.Slice will not run the 'less' func.
 	// We still need to ensure it parses in order to ensure the file should be included.
 	if len(items) == 1 {
@@ -80,7 +81,7 @@ func (o sortOption) apply(items []*item) ([]*item, error) {
 }
 
 func SortNumeric(regexKey string, ascending bool) (Option, error) {
-	return newSortOption(regexKey,
+	return newRegexSortOption(regexKey,
 		func(s string) (any, error) {
 			return strconv.Atoi(s)
 		},
@@ -94,7 +95,7 @@ func SortNumeric(regexKey string, ascending bool) (Option, error) {
 }
 
 func SortAlphabetical(regexKey string, ascending bool) (Option, error) {
-	return newSortOption(regexKey,
+	return newRegexSortOption(regexKey,
 		func(s string) (any, error) {
 			return s, nil
 		},
@@ -118,7 +119,7 @@ func SortTemporal(regexKey string, ascending bool, layout string, location strin
 	if err != nil {
 		return nil, fmt.Errorf("load location %s: %w", loc, err)
 	}
-	return newSortOption(regexKey,
+	return newRegexSortOption(regexKey,
 		func(s string) (any, error) {
 			return timeutils.ParseStrptime(layout, s, loc)
 		},
@@ -129,4 +130,47 @@ func SortTemporal(regexKey string, ascending bool, layout string, location strin
 			return a.(time.Time).After(b.(time.Time))
 		},
 	)
+}
+
+type mtimeSortOption struct{}
+
+type mtimeItem struct {
+	mtime time.Time
+	path  string
+	item  *item
+}
+
+func (m mtimeSortOption) apply(items []*item) ([]*item, error) {
+	mtimeItems := make([]mtimeItem, 0, len(items))
+	var errs error
+	for _, item := range items {
+		path := item.value
+		fi, err := os.Stat(path)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+
+		mtimeItems = append(mtimeItems, mtimeItem{
+			mtime: fi.ModTime(),
+			path:  path,
+			item:  item,
+		})
+	}
+
+	sort.SliceStable(mtimeItems, func(i, j int) bool {
+		// This checks if item i > j, in order to reverse the sort (most recently modified file is first in the list)
+		return mtimeItems[i].mtime.After(mtimeItems[j].mtime)
+	})
+
+	filteredValues := make([]*item, 0, len(items))
+	for _, mtimeItem := range mtimeItems {
+		filteredValues = append(filteredValues, mtimeItem.item)
+	}
+
+	return filteredValues, errs
+}
+
+func SortMtime() Option {
+	return mtimeSortOption{}
 }

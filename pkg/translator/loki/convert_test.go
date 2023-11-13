@@ -16,8 +16,8 @@ import (
 func TestConvertAttributesAndMerge(t *testing.T) {
 	testCases := []struct {
 		desc                 string
-		logAttrs             map[string]interface{}
-		resAttrs             map[string]interface{}
+		logAttrs             map[string]any
+		resAttrs             map[string]any
 		expected             model.LabelSet
 		defaultLabelsEnabled map[string]bool
 	}{
@@ -27,7 +27,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "selected log attribute should be included",
-			logAttrs: map[string]interface{}{
+			logAttrs: map[string]any{
 				"host.name":    "guarana",
 				"pod.name":     "should-be-ignored",
 				hintAttributes: "host.name",
@@ -39,10 +39,10 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "selected resource attribute should be included",
-			logAttrs: map[string]interface{}{
+			logAttrs: map[string]any{
 				hintResources: "host.name",
 			},
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"host.name": "guarana",
 				"pod.name":  "should-be-ignored",
 			},
@@ -53,8 +53,8 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc:     "selected attributes from resource attributes should be included",
-			logAttrs: map[string]interface{}{},
-			resAttrs: map[string]interface{}{
+			logAttrs: map[string]any{},
+			resAttrs: map[string]any{
 				hintResources: "host.name",
 				"host.name":   "hostname-from-resources",
 				"pod.name":    "should-be-ignored",
@@ -66,12 +66,12 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "selected attributes from both sources should have most specific win",
-			logAttrs: map[string]interface{}{
+			logAttrs: map[string]any{
 				"host.name":    "hostname-from-attributes",
 				hintAttributes: "host.name",
 				hintResources:  "host.name",
 			},
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"host.name": "hostname-from-resources",
 				"pod.name":  "should-be-ignored",
 			},
@@ -82,7 +82,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "it should be possible to override the exporter label",
-			logAttrs: map[string]interface{}{
+			logAttrs: map[string]any{
 				hintAttributes: "exporter",
 				"exporter":     "overridden",
 			},
@@ -92,7 +92,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "it should add service.namespace/service.name as job label if both of them are present",
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"service.namespace": "my-service-namespace",
 				"service.name":      "my-service-name",
 			},
@@ -103,7 +103,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "it should add service.name as job label if service.namespace is missing",
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"service.name": "my-service-name",
 			},
 			expected: model.LabelSet{
@@ -113,7 +113,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "it shouldn't add service.namespace as job label if service.name is missing",
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"service.namespace": "my-service-namespace",
 			},
 			expected: model.LabelSet{
@@ -122,7 +122,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "it should add service.instance.id as instance label if service.instance.id is present",
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"service.instance.id": "my-service-instance-id",
 			},
 			expected: model.LabelSet{
@@ -132,7 +132,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "it shouldn't add job, instance, exporter labels if they disabled in config",
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"service.instance.id": "my-service-instance-id",
 				"service.namespace":   "my-service-namespace",
 				"service.name":        "my-service-name",
@@ -146,7 +146,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "it should add job label because it is enabled in config, and exporter label because it is not mentioned in config and that's why enabled by default",
-			resAttrs: map[string]interface{}{
+			resAttrs: map[string]any{
 				"service.instance.id": "my-service-instance-id",
 				"service.namespace":   "my-service-namespace",
 				"service.name":        "my-service-name",
@@ -182,13 +182,13 @@ func TestConvertAttributesToLabels(t *testing.T) {
 
 	testCases := []struct {
 		desc           string
-		attrsAvailable map[string]interface{}
+		attrsAvailable map[string]any
 		attrsToSelect  pcommon.Value
 		expected       model.LabelSet
 	}{
 		{
 			desc: "string value",
-			attrsAvailable: map[string]interface{}{
+			attrsAvailable: map[string]any{
 				"host.name": "guarana",
 			},
 			attrsToSelect: pcommon.NewValueStr("host.name"),
@@ -198,7 +198,7 @@ func TestConvertAttributesToLabels(t *testing.T) {
 		},
 		{
 			desc: "list of values as string",
-			attrsAvailable: map[string]interface{}{
+			attrsAvailable: map[string]any{
 				"host.name": "guarana",
 				"pod.name":  "pod-123",
 			},
@@ -210,7 +210,7 @@ func TestConvertAttributesToLabels(t *testing.T) {
 		},
 		{
 			desc: "list of values as slice",
-			attrsAvailable: map[string]interface{}{
+			attrsAvailable: map[string]any{
 				"host.name": "guarana",
 				"pod.name":  "pod-123",
 			},
@@ -222,8 +222,8 @@ func TestConvertAttributesToLabels(t *testing.T) {
 		},
 		{
 			desc: "nested attributes",
-			attrsAvailable: map[string]interface{}{
-				"host": map[string]interface{}{
+			attrsAvailable: map[string]any{
+				"host": map[string]any{
 					"name": "guarana",
 				},
 				"pod.name": "pod-123",
@@ -248,13 +248,13 @@ func TestConvertAttributesToLabels(t *testing.T) {
 func TestRemoveAttributes(t *testing.T) {
 	testCases := []struct {
 		desc     string
-		attrs    map[string]interface{}
+		attrs    map[string]any
 		labels   model.LabelSet
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			desc: "remove hints",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				hintAttributes: "some.field",
 				hintResources:  "some.other.field",
 				hintFormat:     "logfmt",
@@ -262,20 +262,20 @@ func TestRemoveAttributes(t *testing.T) {
 				"host.name":    "guarana",
 			},
 			labels: model.LabelSet{},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"host.name": "guarana",
 			},
 		},
 		{
 			desc: "remove attributes promoted to labels",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name": "guarana",
 				"pod.name":  "guarana-123",
 			},
 			labels: model.LabelSet{
 				"host.name": "guarana",
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"pod.name": "guarana-123",
 			},
 		},
@@ -294,15 +294,15 @@ func TestGetAttribute(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		attr     string
-		attrs    map[string]interface{}
+		attrs    map[string]any
 		expected pcommon.Value
 		ok       bool
 	}{
 		{
 			desc: "attributes don't contain dotted names",
 			attr: "host.name",
-			attrs: map[string]interface{}{
-				"host": map[string]interface{}{
+			attrs: map[string]any{
+				"host": map[string]any{
 					"name": "guarana",
 				},
 			},
@@ -312,8 +312,8 @@ func TestGetAttribute(t *testing.T) {
 		{
 			desc: "attributes contain dotted name on the nested level",
 			attr: "log.file.name",
-			attrs: map[string]interface{}{
-				"log": map[string]interface{}{
+			attrs: map[string]any{
+				"log": map[string]any{
 					"file.name": "foo",
 				},
 			},
@@ -323,8 +323,8 @@ func TestGetAttribute(t *testing.T) {
 		{
 			desc: "attributes contain dotted name on the upper level",
 			attr: "log.file.name",
-			attrs: map[string]interface{}{
-				"log.file": map[string]interface{}{
+			attrs: map[string]any{
+				"log.file": map[string]any{
 					"name": "foo",
 				},
 			},
@@ -334,7 +334,7 @@ func TestGetAttribute(t *testing.T) {
 		{
 			desc: "attributes contain dotted attribute",
 			attr: "log.file.name",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"log.file.name": "foo",
 			},
 			expected: pcommon.NewValueStr("foo"),
@@ -343,7 +343,7 @@ func TestGetAttribute(t *testing.T) {
 		{
 			desc: "dotted name that doesn't match attr",
 			attr: "log.file.name",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"log.file": "foo",
 			},
 			expected: pcommon.Value{},
@@ -352,14 +352,14 @@ func TestGetAttribute(t *testing.T) {
 		{
 			desc: "should get the longest match",
 			attr: "log.file.name",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"log.file.name": "foo",
-				"log": map[string]interface{}{
-					"file": map[string]interface{}{
+				"log": map[string]any{
+					"file": map[string]any{
 						"name": "bar",
 					},
 				},
-				"log.file": map[string]interface{}{
+				"log.file": map[string]any{
 					"name": "baz",
 				},
 			},

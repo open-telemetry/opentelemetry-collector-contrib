@@ -62,6 +62,15 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			err:   errors.New("unrecognized message part: $extra"),
 		},
 		{
+			name:  "integer counter with no tags",
+			input: "test.metric:42|c|#",
+			wantMetric: testStatsDMetric(
+				"test.metric",
+				42,
+				false,
+				"c", 0, nil, nil),
+		},
+		{
 			name:  "integer counter",
 			input: "test.metric:42|c",
 			wantMetric: testStatsDMetric(

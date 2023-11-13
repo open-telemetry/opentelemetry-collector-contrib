@@ -170,11 +170,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			data, err := docs[0].Action.MarshalJSON()
 			assert.Nil(t, err)
 
-			jsonVal := map[string]interface{}{}
+			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
 			assert.Nil(t, err)
 
-			create := jsonVal["create"].(map[string]interface{})
+			create := jsonVal["create"].(map[string]any)
 
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
 			assert.Equal(t, expected, create["_index"].(string))
@@ -404,7 +404,8 @@ func mustSendTracesWithAttributes(t *testing.T, exporter *elasticsearchTracesExp
 	traces := newTracesWithAttributeAndResourceMap(attrMp, resMp)
 	resSpans := traces.ResourceSpans().At(0)
 	span := resSpans.ScopeSpans().At(0).Spans().At(0)
+	scope := resSpans.ScopeSpans().At(0).Scope()
 
-	err := exporter.pushTraceRecord(context.TODO(), resSpans.Resource(), span)
+	err := exporter.pushTraceRecord(context.TODO(), resSpans.Resource(), span, scope)
 	require.NoError(t, err)
 }

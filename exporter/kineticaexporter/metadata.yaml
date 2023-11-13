@@ -1,0 +1,9 @@
+type: kinetica
+
+status:
+  class: exporter
+  stability:
+    development: [metrics, traces, logs]
+  distributions: []
+  codeowners:
+    active: [am-kinetica, TylerHelmuth]

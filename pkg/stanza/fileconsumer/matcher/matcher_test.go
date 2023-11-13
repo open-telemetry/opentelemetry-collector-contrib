@@ -10,13 +10,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestNew(t *testing.T) {
 	cases := []struct {
-		name        string
-		criteria    Criteria
-		expectedErr string
+		name                   string
+		criteria               Criteria
+		expectedErr            string
+		enableMtimeFeatureGate bool
 	}{
 		{
 			name: "IncludeEmpty",
@@ -99,6 +101,23 @@ func TestNew(t *testing.T) {
 			expectedErr: "compile regex: error parsing regexp: missing closing ]: `[a-z`",
 		},
 		{
+			name: "TopN is negative",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					Regex: "[a-z]",
+					TopN:  -1,
+					SortBy: []Sort{
+						{
+							SortType: "numeric",
+							RegexKey: "key",
+						},
+					},
+				},
+			},
+			expectedErr: "'top_n' must be a positive integer",
+		},
+		{
 			name: "SortTypeEmpty",
 			criteria: Criteria{
 				Include: []string{"*.log"},
@@ -162,9 +181,41 @@ func TestNew(t *testing.T) {
 			},
 			expectedErr: "timestamp sort: regex key must be specified",
 		},
+		{
+			name: "SortByMtime",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					SortBy: []Sort{
+						{
+							SortType: "mtime",
+						},
+					},
+				},
+			},
+			enableMtimeFeatureGate: true,
+		},
+		{
+			name: "SortByMtimeGateDisabled",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					SortBy: []Sort{
+						{
+							SortType: "mtime",
+						},
+					},
+				},
+			},
+			expectedErr: `the "filelog.mtimeSortType" feature gate must be enabled to use "mtime" sort type`,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.enableMtimeFeatureGate {
+				enableSortByMTimeFeature(t)
+			}
+
 			matcher, err := New(tc.criteria)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
@@ -250,6 +301,46 @@ func TestMatcher(t *testing.T) {
 			expected: []string{"err.2023020612.log"},
 		},
 		{
+			name:    "TopN > number of files",
+			files:   []string{"err.2023020611.log", "err.2023020612.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				TopN:  3,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeTimestamp,
+						RegexKey:  "value",
+						Ascending: false,
+						Location:  "UTC",
+						Layout:    `%Y%m%d%H`,
+					},
+				},
+			},
+			expected: []string{"err.2023020612.log", "err.2023020611.log"},
+		},
+		{
+			name:    "TopN == number of files",
+			files:   []string{"err.2023020611.log", "err.2023020612.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				TopN:  2,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeTimestamp,
+						RegexKey:  "value",
+						Ascending: false,
+						Location:  "UTC",
+						Layout:    `%Y%m%d%H`,
+					},
+				},
+			},
+			expected: []string{"err.2023020612.log", "err.2023020611.log"},
+		},
+		{
 			name:    "Timestamp Sorting Ascending",
 			files:   []string{"err.2023020612.log", "err.2023020611.log", "err.2023020609.log", "err.2023020610.log"},
 			include: []string{"err.*.log"},
@@ -320,6 +411,24 @@ func TestMatcher(t *testing.T) {
 			expected: []string{"err.d.log"},
 		},
 		{
+			name:    "Alphabetical Sorting - Top 2",
+			files:   []string{"err.a.log", "err.d.log", "err.b.log", "err.c.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
+				TopN:  2,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeAlphabetical,
+						RegexKey:  "value",
+						Ascending: false,
+					},
+				},
+			},
+			expected: []string{"err.d.log", "err.c.log"},
+		},
+		{
 			name:    "Alphabetical Sorting Ascending",
 			files:   []string{"err.b.log", "err.a.log", "err.c.log", "err.d.log"},
 			include: []string{"err.*.log"},
@@ -335,6 +444,45 @@ func TestMatcher(t *testing.T) {
 				},
 			},
 			expected: []string{"err.a.log"},
+		},
+		{
+			name: "Multiple Sorting - timestamp priority sort - Top 4",
+			files: []string{
+				"err.b.1.2023020601.log",
+				"err.b.2.2023020601.log",
+				"err.a.1.2023020601.log",
+				"err.a.2.2023020601.log",
+				"err.b.1.2023020602.log",
+				"err.a.2.2023020602.log",
+				"err.b.2.2023020602.log",
+				"err.a.1.2023020602.log",
+			},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				TopN:  4,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeAlphabetical,
+						RegexKey:  "alpha",
+						Ascending: false,
+					},
+					{
+						SortType:  sortTypeNumeric,
+						RegexKey:  "number",
+						Ascending: false,
+					},
+					{
+						SortType:  sortTypeTimestamp,
+						RegexKey:  "time",
+						Ascending: false,
+						Location:  "UTC",
+						Layout:    `%Y%m%d%H`,
+					},
+				},
+			},
+			expected: []string{"err.b.2.2023020602.log", "err.a.2.2023020602.log", "err.b.1.2023020602.log", "err.a.1.2023020602.log"},
 		},
 		{
 			name: "Multiple Sorting - timestamp priority sort",
@@ -597,6 +745,15 @@ func TestMatcher(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			assert.Equal(t, tc.expected, files)
+		})
+	}
+}
+
+func enableSortByMTimeFeature(t *testing.T) {
+	if !mtimeSortTypeFeatureGate.IsEnabled() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(mtimeSortTypeFeatureGate.ID(), true))
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(mtimeSortTypeFeatureGate.ID(), false))
 		})
 	}
 }

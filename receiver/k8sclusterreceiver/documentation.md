@@ -66,7 +66,7 @@ Whether a container has passed its readiness probe (0 for no, 1 for yes)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ### k8s.container.restarts
 
@@ -74,7 +74,7 @@ How many times the container has restarted in the recent past. This value is pul
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {restart} | Gauge | Int |
 
 ### k8s.container.storage_limit
 
@@ -98,7 +98,7 @@ The number of actively running jobs for a cronjob
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {job} | Gauge | Int |
 
 ### k8s.daemonset.current_scheduled_nodes
 
@@ -106,7 +106,7 @@ Number of nodes that are running at least 1 daemon pod and are supposed to run t
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {node} | Gauge | Int |
 
 ### k8s.daemonset.desired_scheduled_nodes
 
@@ -114,7 +114,7 @@ Number of nodes that should be running the daemon pod (including nodes currently
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {node} | Gauge | Int |
 
 ### k8s.daemonset.misscheduled_nodes
 
@@ -122,7 +122,7 @@ Number of nodes that are running the daemon pod, but are not supposed to run the
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {node} | Gauge | Int |
 
 ### k8s.daemonset.ready_nodes
 
@@ -130,7 +130,7 @@ Number of nodes that should be running the daemon pod and have one or more of th
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {node} | Gauge | Int |
 
 ### k8s.deployment.available
 
@@ -154,7 +154,7 @@ Current number of pod replicas managed by this autoscaler.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.hpa.desired_replicas
 
@@ -162,7 +162,7 @@ Desired number of pod replicas managed by this autoscaler.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.hpa.max_replicas
 
@@ -170,7 +170,7 @@ Maximum number of replicas to which the autoscaler can scale up.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.hpa.min_replicas
 
@@ -178,7 +178,7 @@ Minimum number of replicas to which the autoscaler can scale up.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.active_pods
 
@@ -186,7 +186,7 @@ The number of actively running pods for a job
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.desired_successful_pods
 
@@ -194,7 +194,7 @@ The desired number of successfully finished pods the job should be run with
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.failed_pods
 
@@ -202,7 +202,7 @@ The number of pods which reached phase Failed for a job
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.max_parallel_pods
 
@@ -210,7 +210,7 @@ The max desired number of pods the job should run at any given time
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.successful_pods
 
@@ -218,7 +218,7 @@ The number of pods which reached phase Succeeded for a job
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.namespace.phase
 
@@ -226,7 +226,7 @@ The current phase of namespaces (1 for active and 0 for terminating)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ### k8s.pod.phase
 
@@ -234,7 +234,7 @@ Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ### k8s.replicaset.available
 
@@ -242,7 +242,7 @@ Total number of available pods (ready for at least minReadySeconds) targeted by 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.replicaset.desired
 
@@ -250,7 +250,7 @@ Number of desired pods in this replicaset
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.replication_controller.available
 
@@ -258,7 +258,7 @@ Total number of available pods (ready for at least minReadySeconds) targeted by 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.replication_controller.desired
 
@@ -266,7 +266,7 @@ Number of desired pods in this replication_controller
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.resource_quota.hard_limit
 
@@ -274,7 +274,7 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -288,7 +288,7 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -302,7 +302,7 @@ The number of pods created by the StatefulSet controller from the StatefulSet ve
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.statefulset.desired_pods
 
@@ -310,7 +310,7 @@ Number of desired pods in the stateful set (the `spec.replicas` field)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.statefulset.ready_pods
 
@@ -318,7 +318,7 @@ Number of pods created by the stateful set that have the `Ready` condition
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.statefulset.updated_pods
 
@@ -326,7 +326,7 @@ Number of pods created by the StatefulSet controller from the StatefulSet versio
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### openshift.appliedclusterquota.limit
 
@@ -334,7 +334,7 @@ The upper limit for a particular resource in a specific namespace.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -349,7 +349,7 @@ The usage for a particular resource in a specific namespace.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -364,7 +364,7 @@ The configured upper limit for a particular resource.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -378,7 +378,7 @@ The usage for a particular resource with a configured limit.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {resource} | Gauge | Int |
 
 #### Attributes
 
@@ -396,13 +396,27 @@ metrics:
     enabled: true
 ```
 
+### k8s.node.condition
+
+The condition of a particular Node.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {condition} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str |
+
 ### k8s.pod.status_reason
 
 Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+|  | Gauge | Int |
 
 ## Resource Attributes
 
@@ -429,6 +443,7 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.node.name | The k8s node name. | Any Str | true |
 | k8s.node.uid | The k8s node uid. | Any Str | true |
 | k8s.pod.name | The k8s pod name. | Any Str | true |
+| k8s.pod.qos_class | The k8s pod qos class name. One of Guaranteed, Burstable, BestEffort. | Any Str | false |
 | k8s.pod.uid | The k8s pod uid. | Any Str | true |
 | k8s.replicaset.name | The k8s replicaset name | Any Str | true |
 | k8s.replicaset.uid | The k8s replicaset uid | Any Str | true |
@@ -438,6 +453,5 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |
-| opencensus.resourcetype | The OpenCensus resource type. | Any Str | true |
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |

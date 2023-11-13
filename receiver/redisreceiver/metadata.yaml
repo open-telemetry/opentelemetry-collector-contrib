@@ -45,6 +45,13 @@ attributes:
   cmd:
     description: Redis command name
     type: string
+  percentile:
+    description: Percentile
+    type: string
+    enum:
+      - p50
+      - p99
+      - p99.9
 
 metrics:
   redis.maxmemory:
@@ -83,6 +90,14 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [cmd]
+
+  redis.cmd.latency:
+    enabled: false
+    description: Command execution latency
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [cmd, percentile]
 
   redis.uptime:
     enabled: true

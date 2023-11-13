@@ -23,8 +23,8 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 	tests := []struct {
 		name      string
 		path      []ottl.Field
-		orig      interface{}
-		newVal    interface{}
+		orig      any
+		newVal    any
 		modified  func(cache pcommon.Map)
 		valueType pmetric.NumberDataPointValueType
 	}{
@@ -94,16 +94,16 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
-	newMap := make(map[string]interface{})
-	newMap2 := make(map[string]interface{})
+	newMap := make(map[string]any)
+	newMap2 := make(map[string]any)
 	newMap2["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name      string
 		path      []ottl.Field
-		orig      interface{}
-		newVal    interface{}
+		orig      any
+		newVal    any
 		modified  func(pmetric.NumberDataPoint)
 		valueType pmetric.NumberDataPointValueType
 	}{
@@ -118,6 +118,32 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			newVal: int64(200_000_000),
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "start_time",
+			path: []ottl.Field{
+				{
+					Name: "start_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 86400000000000, time.UTC),
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(86400, 0)))
+			},
+		},
+		{
+			name: "time",
+			path: []ottl.Field{
+				{
+					Name: "time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
@@ -418,7 +444,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes map[string]interface{}",
+			name: "attributes map[string]any",
 			path: []ottl.Field{
 				{
 					Name: "attributes",
@@ -486,7 +512,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 					},
 				},
 			},
-			orig: func() interface{} {
+			orig: func() any {
 				return nil
 			}(),
 			newVal: "new",
@@ -518,6 +544,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
+
 		})
 	}
 }
@@ -549,16 +576,16 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
-	newMap := make(map[string]interface{})
-	newMap2 := make(map[string]interface{})
+	newMap := make(map[string]any)
+	newMap2 := make(map[string]any)
 	newMap2["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(pmetric.HistogramDataPoint)
 	}{
 		{
@@ -897,7 +924,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes map[string]interface{}",
+			name: "attributes map[string]any",
 			path: []ottl.Field{
 				{
 					Name: "attributes",
@@ -965,7 +992,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 					},
 				},
 			},
-			orig: func() interface{} {
+			orig: func() any {
 				return nil
 			}(),
 			newVal: "new",
@@ -1034,16 +1061,16 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
-	newMap := make(map[string]interface{})
-	newMap2 := make(map[string]interface{})
+	newMap := make(map[string]any)
+	newMap2 := make(map[string]any)
 	newMap2["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(pmetric.ExponentialHistogramDataPoint)
 	}{
 		{
@@ -1472,7 +1499,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes map[string]interface{}",
+			name: "attributes map[string]any",
 			path: []ottl.Field{
 				{
 					Name: "attributes",
@@ -1540,7 +1567,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					},
 				},
 			},
-			orig: func() interface{} {
+			orig: func() any {
 				return nil
 			}(),
 			newVal: "new",
@@ -1610,16 +1637,16 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
-	newMap := make(map[string]interface{})
-	newMap2 := make(map[string]interface{})
+	newMap := make(map[string]any)
+	newMap2 := make(map[string]any)
 	newMap2["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(pmetric.SummaryDataPoint)
 	}{
 		{
@@ -1932,7 +1959,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes map[string]interface{}",
+			name: "attributes map[string]any",
 			path: []ottl.Field{
 				{
 					Name: "attributes",
@@ -2000,7 +2027,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					},
 				},
 			},
-			orig: func() interface{} {
+			orig: func() any {
 				return nil
 			}(),
 			newVal: "new",
@@ -2096,8 +2123,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(metric pmetric.Metric)
 	}{
 		{
