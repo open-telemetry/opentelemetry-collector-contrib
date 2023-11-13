@@ -15,7 +15,7 @@ import (
 )
 
 func TestReadFieldsWithDefaults(t *testing.T) {
-	defaults := map[string]interface{}{
+	defaults := map[string]any{
 		"one":           "1",
 		"two":           int64(2),
 		"three":         uint64(3),
@@ -43,7 +43,7 @@ func TestReadFieldsWithDefaults(t *testing.T) {
 }
 
 func TestReadFieldsWithoutDefaults(t *testing.T) {
-	testReadFields(t, testStruct{}, map[string]interface{}{
+	testReadFields(t, testStruct{}, map[string]any{
 		"one":           "",
 		"three":         uint64(0),
 		"four":          false,
@@ -53,7 +53,7 @@ func TestReadFieldsWithoutDefaults(t *testing.T) {
 	})
 }
 
-func testReadFields(t *testing.T, s testStruct, defaults map[string]interface{}) {
+func testReadFields(t *testing.T, s testStruct, defaults map[string]any) {
 	root, _ := ReadFields(
 		reflect.ValueOf(s),
 		testDR(),

@@ -24,7 +24,7 @@ type expectedDataType struct {
 	severityNumber plog.SeverityNumber
 	severityText   string
 	timestamp      pcommon.Timestamp
-	attributes     map[string]interface{}
+	attributes     map[string]any
 }
 
 func TestSyslogComplementaryRFC5424(t *testing.T) {
@@ -34,11 +34,11 @@ func TestSyslogComplementaryRFC5424(t *testing.T) {
 			severityNumber: 10,
 			severityText:   "notice",
 			timestamp:      1065910455003000000,
-			attributes: map[string]interface{}{
+			attributes: map[string]any{
 				"message": "Some message",
 				"msg_id":  "ID47",
-				"structured_data": map[string]interface{}{
-					"exampleSDID@32473": map[string]interface{}{
+				"structured_data": map[string]any{
+					"exampleSDID@32473": map[string]any{
 						"iut": "3",
 					},
 				},
@@ -54,7 +54,7 @@ func TestSyslogComplementaryRFC5424(t *testing.T) {
 			severityNumber: 19,
 			severityText:   "alert",
 			timestamp:      1065910455008000000,
-			attributes: map[string]interface{}{
+			attributes: map[string]any{
 				"priority": int64(17),
 				"version":  int64(3),
 				"facility": int64(2),
@@ -72,7 +72,7 @@ func TestSyslogComplementaryRFC3164(t *testing.T) {
 			timestamp:      1697062455000000000,
 			severityNumber: 18,
 			severityText:   "crit",
-			attributes: map[string]interface{}{
+			attributes: map[string]any{
 				"message":  "'su root' failed for lonvick on /dev/pts/8",
 				"hostname": "mymachine",
 				"appname":  "su",
@@ -85,7 +85,7 @@ func TestSyslogComplementaryRFC3164(t *testing.T) {
 			timestamp:      1697062455000000000,
 			severityNumber: 17,
 			severityText:   "err",
-			attributes: map[string]interface{}{
+			attributes: map[string]any{
 				"message":  "-",
 				"priority": int64(19),
 				"facility": int64(2),
@@ -148,7 +148,7 @@ service:
 	// prepare data
 
 	message := ""
-	expectedAttributes := []map[string]interface{}{}
+	expectedAttributes := []map[string]any{}
 	expectedLogs := plog.NewLogs()
 	rl := expectedLogs.ResourceLogs().AppendEmpty()
 	lrs := rl.ScopeLogs().AppendEmpty().LogRecords()
@@ -181,7 +181,7 @@ service:
 	require.Equal(t, backend.ReceivedLogs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(), len(expectedData))
 
 	// Clean received logs
-	attributes := []map[string]interface{}{}
+	attributes := []map[string]any{}
 
 	lrs = backend.ReceivedLogs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < lrs.Len(); i++ {

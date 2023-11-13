@@ -14,10 +14,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// SumFields takes an array of type map[string]interface{} and do
+// SumFields takes an array of type map[string]any and do
 // the summation on the values corresponding to the same keys.
-// It is assumed that the underlying type of interface{} to be float64.
-func SumFields(fields []map[string]interface{}) map[string]float64 {
+// It is assumed that the underlying type of any to be float64.
+func SumFields(fields []map[string]any) map[string]float64 {
 	if len(fields) == 0 {
 		return nil
 	}
@@ -155,7 +155,7 @@ func GetUnitForMetric(metric string) string {
 }
 
 // ConvertToOTLPMetrics converts a field containing metric values and a tag containing the relevant labels to OTLP metrics
-func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string, logger *zap.Logger) pmetric.Metrics {
+func ConvertToOTLPMetrics(fields map[string]any, tags map[string]string, logger *zap.Logger) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()

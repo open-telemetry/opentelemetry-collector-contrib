@@ -125,7 +125,7 @@ func templatize(tmplFile string, md metadata) *template.Template {
 		template.
 			New(filepath.Base(tmplFile)).
 			Option("missingkey=error").
-			Funcs(map[string]interface{}{
+			Funcs(map[string]any{
 				"publicVar": func(s string) (string, error) {
 					return formatIdentifier(s, true)
 				},

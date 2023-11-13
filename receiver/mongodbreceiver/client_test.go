@@ -24,7 +24,7 @@ import (
 // while also testing with exclusively mtest.
 type fakeClient struct{ mock.Mock }
 
-func (fc *fakeClient) ListDatabaseNames(ctx context.Context, filters interface{}, opts ...*options.ListDatabasesOptions) ([]string, error) {
+func (fc *fakeClient) ListDatabaseNames(ctx context.Context, filters any, opts ...*options.ListDatabasesOptions) ([]string, error) {
 	args := fc.Called(ctx, filters, opts)
 	return args.Get(0).([]string), args.Error(1)
 }

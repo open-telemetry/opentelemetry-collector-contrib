@@ -293,7 +293,7 @@ func TestPushLogsData(tester *testing.T) {
 	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
 	err := testLogsExporter(ld, tester, &cfg)
 	require.NoError(tester, err)
-	var jsonLog map[string]interface{}
+	var jsonLog map[string]any
 	decoded, _ := gUnzipData(recordedRequests)
 	requests := strings.Split(string(decoded), "\n")
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &jsonLog))
