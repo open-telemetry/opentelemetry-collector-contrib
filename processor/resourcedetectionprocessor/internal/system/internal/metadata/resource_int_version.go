@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package metadata
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
 
 // SetHostCPUFamilyAsInt sets provided value as "host.cpu.family" attribute as int.
 func (rb *ResourceBuilder) SetHostCPUFamilyAsInt(val int64) {
