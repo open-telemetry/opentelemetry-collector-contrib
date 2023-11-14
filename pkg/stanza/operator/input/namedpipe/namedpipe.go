@@ -4,7 +4,7 @@
 //go:build linux
 // +build linux
 
-package namedpipe
+package namedpipe // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/namedpipe"
 
 import (
 	"bufio"
