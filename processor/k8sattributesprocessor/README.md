@@ -88,33 +88,40 @@ Additional container level attributes can be extracted provided that certain res
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
 
-The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods and namespaces.
-The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
-This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
+The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces and nodes.
+The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Node annotations/labels is configured via "annotations"  and "labels" keys.
+This config represents a list of annotations/labels that are extracted from pods/namespaces/nodes and added to spans, metrics and logs.
 Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-The "from" field has only two possible values "pod" and "namespace" and defaults to "pod" if none is specified.
+The "from" field has only three possible values "pod", "namespace" and "node" and defaults to "pod" if none is specified.
 
 A few examples to use this config are as follows:
 
 ```yaml
-annotations:
-  - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
-    key: annotation-one
-    from: pod
-  - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
-    key: annotation-two
-    regex: field=(?P<value>.+)
-    from: namespace
-
-labels:
-  - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
-    key: label1
-    from: namespace
-  - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
-    key: label2
-    regex: field=(?P<value>.+)
-    from: pod
+extract:
+  annotations:
+    - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
+      key: annotation-one
+      from: pod
+    - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+      key: annotation-two
+      regex: field=(?P<value>.+)
+      from: namespace
+    - tag_name: a3 # extracts value of annotation from nodes with key `annotation-three` with regexp and inserts it as a tag with key `a3`
+      key: annotation-three
+      regex: field=(?P<value>.+)
+      from: node
+  labels:
+    - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
+      key: label1
+      from: namespace
+    - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
+      key: label2
+      regex: field=(?P<value>.+)
+      from: pod
+    - tag_name: l3 # extracts value of label from nodes with key `label3` and inserts it as a tag with key `l3`
+      key: label3
+      from: node
 ```
 
 ### Config example
@@ -122,34 +129,38 @@ labels:
 ```yaml
 k8sattributes:
 k8sattributes/2:
- auth_type: "serviceAccount"
- passthrough: false
- filter:
-   node_from_env_var: KUBE_NODE_NAME
- extract:
-   metadata:
-     - k8s.pod.name
-     - k8s.pod.uid
-     - k8s.deployment.name
-     - k8s.namespace.name
-     - k8s.node.name
-     - k8s.pod.start_time
- pod_association:
-   - sources:
-       - from: resource_attribute
-         name: k8s.pod.ip
-   - sources:
-       - from: resource_attribute
-         name: k8s.pod.uid
-   - sources:
-       - from: connection
+  auth_type: "serviceAccount"
+  passthrough: false
+  filter:
+    node_from_env_var: KUBE_NODE_NAME
+  extract:
+    metadata:
+      - k8s.pod.name
+      - k8s.pod.uid
+      - k8s.deployment.name
+      - k8s.namespace.name
+      - k8s.node.name
+      - k8s.pod.start_time
+   labels:
+     - tag_name: app.label.component
+       key: app.kubernetes.io/component
+       from: pod
+  pod_association:
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.ip
+    - sources:
+        - from: resource_attribute
+          name: k8s.pod.uid
+    - sources:
+        - from: connection
 ```
 
 ## Role-based access control
 
-The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid` or `k8s.deployment.name` the processor also needs `get`, `watch` and `list` permissions for `replicaset` resources.
+The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid` or `k8s.deployment.name` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources. When extracting metadatas from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources.
 
-Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
+Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 
 ```yaml
 apiVersion: v1
@@ -164,7 +175,7 @@ metadata:
   name: otel-collector
 rules:
 - apiGroups: [""]
-  resources: ["pods", "namespaces"]
+  resources: ["pods", "namespaces", "nodes"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"]
   resources: ["replicasets"]
@@ -209,7 +220,7 @@ to complete the following steps:
 Add the following snippet under the pod env section of the OpenTelemetry container.
 
 ```yaml
-2. spec:
+spec:
   containers:
   - env:
     - name: KUBE_NODE_NAME

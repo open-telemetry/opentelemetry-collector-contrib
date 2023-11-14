@@ -17,20 +17,42 @@ This exporter sends logs, traces and metrics to [Azure Monitor](https://docs.mic
 
 ## Configuration
 
-The following settings are required:
+To configure the Azure Monitor Exporter, you must specify one of the following settings:
 
-- `instrumentation_key` (no default): Application Insights instrumentation key, which can be found in the Application Insights resource in the Azure Portal.
+- `connection_string` (recommended): The Azure Application Insights Connection String is required to send telemetry data to the monitoring service. It is the recommended method for configuring the exporter, aligning with Azure Monitor's best practices. If you need guidance on creating Azure resources, please refer to the step-by-step guides to [Create an Application Insights resource](https://docs.microsoft.com/azure/azure-monitor/app/create-new-resource) and [find your connection string](https://docs.microsoft.com/azure/azure-monitor/app/sdk-connection-string?tabs=net#find-your-connection-string).
+- `instrumentation_key`: Application Insights instrumentation key, which can be found in the Application Insights resource in the Azure Portal. While it is currently supported, its use is discouraged and it is slated for deprecation. It is highly encouraged to use the `connection_string` setting for new configurations and migrate existing configurations to use the `connection_string` as soon as possible.
+
+**Important**: Only one of `connection_string` or `instrumentation_key` should be specified in your configuration. If both are provided, `connection_string` will be used as the priority setting.
 
 The following settings can be optionally configured:
 
-- `endpoint` (default = `https://dc.services.visualstudio.com/v2/track`): The endpoint URL where data will be submitted.
+- `endpoint` (default = `https://dc.services.visualstudio.com/v2/track`): The endpoint URL where data will be submitted. While this option remains available, it is important to note that the use of the `connection_string` is recommended, as it encompasses the endpoint information. The direct configuration of the `endpoint` is considered to be on a deprecation path.
 - `maxbatchsize` (default = 1024): The maximum number of telemetry items that can be submitted in each request. If this many items are buffered, the buffer will be flushed before `maxbatchinterval` expires.
 - `maxbatchinterval` (default = 10s): The maximum time to wait before sending a batch of telemetry.
 - `spaneventsenabled` (default = false): Enables export of span events.
+- `sending_queue`
+  - `enabled` (default = false)
+  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
+  - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`
+  - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
 
 Example:
 
 ```yaml
+# Recommended Configuration:
+# It is highly recommended to use the connection string which includes the InstrumentationKey and IngestionEndpoint
+# This is the preferred method over using 'instrumentation_key' alone.
+exporters:
+  azuremonitor:
+    connection_string: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/"
+```
+
+(or)
+
+```yaml
+# Legacy Configuration:
+# The use of 'instrumentation_key' alone is not recommended and will be deprecated in the future. It is advised to use the connection_string instead.
+# This example is provided primarily for existing configurations that have not yet transitioned to the connection string.
 exporters:
   azuremonitor:
     instrumentation_key: b1cd0778-85fc-4677-a3fa-79d3c23e0efd

@@ -54,7 +54,7 @@ func (i *InitialValue) UnmarshalText(text []byte) error {
 }
 
 var identityBufferPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return bytes.NewBuffer(make([]byte, initialBytes))
 	},
 }
@@ -203,7 +203,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 }
 
 func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
-	t.states.Range(func(key, value interface{}) bool {
+	t.states.Range(func(key, value any) bool {
 		s := value.(*State)
 
 		// There is a known race condition here.

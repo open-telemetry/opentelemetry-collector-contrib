@@ -15,12 +15,12 @@ import (
 
 func TestCAdvisorMetric_Merge(t *testing.T) {
 	src := &CAdvisorMetric{
-		fields: map[string]interface{}{"value1": 1, "value2": 2},
+		fields: map[string]any{"value1": 1, "value2": 2},
 		tags:   map[string]string{ci.Timestamp: "1586331559882"},
 		logger: zap.NewNop(),
 	}
 	dest := &CAdvisorMetric{
-		fields: map[string]interface{}{"value1": 3, "value3": 3},
+		fields: map[string]any{"value1": 3, "value3": 3},
 		tags:   map[string]string{ci.Timestamp: "1586331559973"},
 		logger: zap.NewNop(),
 	}
@@ -83,7 +83,7 @@ func TestGetMetricKey(t *testing.T) {
 
 func TestMergeMetrics(t *testing.T) {
 	cpuMetrics := &CAdvisorMetric{
-		fields: map[string]interface{}{
+		fields: map[string]any{
 			"node_cpu_usage_total": float64(10),
 			"node_cpu_usage_user":  float64(10),
 		},
@@ -93,7 +93,7 @@ func TestMergeMetrics(t *testing.T) {
 	}
 
 	memMetrics := &CAdvisorMetric{
-		fields: map[string]interface{}{
+		fields: map[string]any{
 			"node_memory_cache": uint(25645056),
 		},
 		tags: map[string]string{
@@ -107,7 +107,7 @@ func TestMergeMetrics(t *testing.T) {
 	}
 
 	expected := &CAdvisorMetric{
-		fields: map[string]interface{}{
+		fields: map[string]any{
 			"node_cpu_usage_total": float64(10),
 			"node_cpu_usage_user":  float64(10),
 			"node_memory_cache":    uint(25645056),

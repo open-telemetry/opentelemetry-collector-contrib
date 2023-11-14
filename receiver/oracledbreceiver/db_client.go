@@ -50,7 +50,7 @@ func (cl dbSQLClient) metricRows(ctx context.Context) ([]metricRow, error) {
 	}
 	for _, sqlType := range types {
 		colName := sqlType.Name()
-		var v interface{}
+		var v any
 		row.attrs[colName] = func() string {
 			format := "%v"
 			if v == nil {
@@ -78,7 +78,7 @@ func (cl dbSQLClient) metricRows(ctx context.Context) ([]metricRow, error) {
 
 type reusableRow struct {
 	attrs    map[string]func() string
-	scanDest []interface{}
+	scanDest []any
 }
 
 func (row reusableRow) toMetricRow() metricRow {
