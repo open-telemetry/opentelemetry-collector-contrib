@@ -121,11 +121,12 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 				continue
 			}
 			obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
+			logRecordCount := pLogs.LogRecordCount()
 			cErr := r.consumer.ConsumeLogs(ctx, pLogs)
 			if cErr != nil {
 				r.logger.Error("ConsumeLogs() failed", zap.Error(cErr))
 			}
-			r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", pLogs.LogRecordCount(), cErr)
+			r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", logRecordCount, cErr)
 		}
 	}
 }
