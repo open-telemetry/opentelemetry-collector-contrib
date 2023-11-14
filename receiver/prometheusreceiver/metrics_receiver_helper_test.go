@@ -362,11 +362,13 @@ type metricTypeComparator func(*testing.T, pmetric.Metric)
 type numberPointComparator func(*testing.T, pmetric.NumberDataPoint)
 type histogramPointComparator func(*testing.T, pmetric.HistogramDataPoint)
 type summaryPointComparator func(*testing.T, pmetric.SummaryDataPoint)
+type exponentialHistogramComparator func(*testing.T, pmetric.ExponentialHistogramDataPoint)
 
 type dataPointExpectation struct {
-	numberPointComparator    []numberPointComparator
-	histogramPointComparator []histogramPointComparator
-	summaryPointComparator   []summaryPointComparator
+	numberPointComparator          []numberPointComparator
+	histogramPointComparator       []histogramPointComparator
+	summaryPointComparator         []summaryPointComparator
+	exponentialHistogramComparator []exponentialHistogramComparator
 }
 
 type testExpectation func(*testing.T, pmetric.ResourceMetrics)
@@ -583,6 +585,18 @@ func compareHistogram(count uint64, sum float64, upperBounds []float64, buckets 
 		assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match")
 		assert.Equal(t, upperBounds, histogramDataPoint.ExplicitBounds().AsRaw(), "Histogram upper bounds values do not match")
 		assert.Equal(t, buckets, histogramDataPoint.BucketCounts().AsRaw(), "Histogram bucket count values do not match")
+	}
+}
+
+func compareExponentialHistogram(count uint64, sum float64, zeroCount uint64, negativeOffset int64, negativeBuckets []uint64, positiveOffset int64, positiveBuckets []uint64) exponentialHistogramComparator {
+	return func(t *testing.T, exponentialHistogramDataPoint pmetric.ExponentialHistogramDataPoint) {
+		assert.Equal(t, count, exponentialHistogramDataPoint.Count(), "Exponential Histogram count value does not match")
+		assert.Equal(t, sum, exponentialHistogramDataPoint.Sum(), "Exponential Histogram sum value does not match")
+		assert.Equal(t, zeroCount, exponentialHistogramDataPoint.ZeroCount(), "Exponential Histogram zero count value does not match")
+		assert.Equal(t, negativeOffset, exponentialHistogramDataPoint.Negative().Offset(), "Exponential Histogram negative offset value does not match")
+		assert.Equal(t, negativeBuckets, exponentialHistogramDataPoint.Negative().BucketCounts().AsRaw(), "Exponential Histogram negative bucket count values do not match")
+		assert.Equal(t, positiveOffset, exponentialHistogramDataPoint.Positive().Offset(), "Exponential Histogram positive offset value does not match")
+		assert.Equal(t, positiveBuckets, exponentialHistogramDataPoint.Positive().BucketCounts().AsRaw(), "Exponential Histogram positive bucket count values do not match")
 	}
 }
 
