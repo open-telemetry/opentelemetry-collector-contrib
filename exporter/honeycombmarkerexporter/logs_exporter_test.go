@@ -109,7 +109,7 @@ func TestExportMarkers(t *testing.T) {
 				assert.Contains(t, req.URL.Path, tt.config.Markers[0].DatasetSlug)
 
 				apiKey := req.Header.Get("X-Honeycomb-Team")
-				assert.Equal(t, apiKey, tt.config.APIKey)
+				assert.Equal(t, apiKey, string(tt.config.APIKey))
 
 				rw.WriteHeader(http.StatusAccepted)
 			}))
