@@ -48,6 +48,8 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/frankban/quicktest v1.11.3/go.mod h1:wRf/ReqHper53s+kmmSZizM8NamnL3IM0I9ntUbOk+k=
+github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
+github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/go-kit/log v0.2.1 h1:MRVx0/zhvdseW+Gza6N9rVzU/IVzaeE1SFI4raAhmBU=
 github.com/go-logfmt/logfmt v0.5.1 h1:otpy5pqBCBZ1ng9RQ0dPu4PN7ba75Y/aA+UpowDyNVA=
 github.com/go-logr/logr v1.3.0 h1:2y3SDp0ZXuc6/cjLSZ+Q3ir+QB9T/iG5yYRXqsagWSY=
@@ -208,6 +210,8 @@ go.opentelemetry.io/collector/config/configopaque v0.89.0 h1:Ad6yGcGBHs+J9SNjked
 go.opentelemetry.io/collector/config/configopaque v0.89.0/go.mod h1:TPCHaU+QXiEV+JXbgyr6mSErTI9chwQyasDVMdJr3eY=
 go.opentelemetry.io/collector/config/configtelemetry v0.89.0 h1:NtRknYDfMgP1r8mnByo6qQQK8IBw/lF9Qke5f7VhGZ0=
 go.opentelemetry.io/collector/config/configtelemetry v0.89.0/go.mod h1:+LAXM5WFMW/UbTlAuSs6L/W72WC+q8TBJt/6z39FPOU=
+go.opentelemetry.io/collector/config/configtls v0.89.0 h1:XDeUaTU7LYwnEXz/CSdjbCStJa7n0YR1q0QpK0Vtw9w=
+go.opentelemetry.io/collector/config/configtls v0.89.0/go.mod h1:NlE4elqXoyFfzQvYfzgH6uOU1zNVa+5tt6EIq52TJ9Y=
 go.opentelemetry.io/collector/confmap v0.89.0 h1:N5Vg1+FXEFBHHlGIPg4OSlM9uTHjCI7RlWWrKjtOzWQ=
 go.opentelemetry.io/collector/confmap v0.89.0/go.mod h1:D8FMPvuihtVxwXaz/qp5q9X2lq9l97QyjfsdZD1spmc=
 go.opentelemetry.io/collector/consumer v0.89.0 h1:MteKhkudX2L1ylbtdpSazO8SwyHSxl6fUEElc0rRLDQ=

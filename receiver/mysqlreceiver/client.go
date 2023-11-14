@@ -164,15 +164,10 @@ type ReplicaStatusStats struct {
 var _ client = (*mySQLClient)(nil)
 
 func newMySQLClient(conf *Config) client {
-	tls, err := conf.Tls.LoadTLSConfig()
+	tls, err := conf.TLS.LoadTLSConfig()
 	tlsConfig := ""
-	if err == nil {
-		if conf.Tls.Insecure {
-			tls = nil
-		} else {
-			mysql.RegisterTLSConfig("custom", tls)
-			tlsConfig = "custom"
-		}
+	if err == nil && tls != nil && mysql.RegisterTLSConfig("custom", tls) == nil {
+		tlsConfig = "custom"
 	}
 	driverConf := mysql.Config{
 		User:                 conf.Username,

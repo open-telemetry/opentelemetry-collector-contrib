@@ -35,6 +35,7 @@ require (
 	github.com/docker/docker v24.0.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -72,6 +73,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v0.89.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
 	go.opentelemetry.io/otel v1.20.0 // indirect
 	go.opentelemetry.io/otel/metric v1.20.0 // indirect

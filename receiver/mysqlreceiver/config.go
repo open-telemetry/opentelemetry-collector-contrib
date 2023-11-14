@@ -27,7 +27,7 @@ type Config struct {
 	Database                                string              `mapstructure:"database,omitempty"`
 	AllowNativePasswords                    bool                `mapstructure:"allow_native_passwords,omitempty"`
 	confignet.NetAddr                       `mapstructure:",squash"`
-	Tls                                     configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLS                                     configtls.TLSClientSetting    `mapstructure:"tls,omitempty"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	StatementEvents                         StatementEventsConfig         `mapstructure:"statement_events"`
 }
