@@ -39,6 +39,12 @@ func TestIntegration(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.ChangeResourceAttributeValue("server.address", func(_ string) string {
+				return "localhost"
+			}),
+			pmetrictest.ChangeResourceAttributeValue("server.port", func(_ string) string {
+				return redisPort
+			}),
 		),
 	).Run(t)
 }
