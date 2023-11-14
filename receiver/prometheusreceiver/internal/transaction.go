@@ -155,17 +155,6 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 	}
 
-	if strings.Contains(metricName, "manual_histogram") {
-		t.logger.Info(
-			"added float datapoint",
-			zap.String("metric_name", metricName),
-			zap.String("family_name", curMF.name),
-			zap.Any("labels", ls),
-			zap.Float64("Value", val),
-			zap.Any("mtype", curMF.mtype.String()),
-		)
-	}
-
 	return 0, nil // never return errors, as that fails the whole scrape
 }
 
@@ -266,17 +255,8 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 
 	err := curMF.addExponentialHistogramSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
 	if err != nil {
-		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 	}
-
-	t.logger.Info(
-		"added native histogram datapoint",
-		zap.String("metric_name", metricName),
-		zap.String("family_name", curMF.name),
-		zap.Any("labels", ls),
-		zap.Uint64("count", h.Count), zap.Float64("sum", h.Sum),
-		zap.Any("mtype", curMF.mtype.String()),
-	)
 
 	return 0, nil // never return errors, as that fails the whole scrape
 }
