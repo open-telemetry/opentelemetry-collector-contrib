@@ -3,6 +3,6 @@ type: syslog
 status:
   class: exporter
   stability: 
-    development: [logs]
+    alpha: [logs]
   codeowners:
     active: [kkujawa-sumo, rnishtala-sumo, astencel-sumo]

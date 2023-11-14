@@ -18,24 +18,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-func mathParsePath(val *Path) (GetSetter[interface{}], error) {
+func mathParsePath(val *Path) (GetSetter[any], error) {
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "one" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(context.Context, interface{}) (interface{}, error) {
+		return &StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
 				return int64(1), nil
 			},
 		}, nil
 	}
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "two" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(context.Context, interface{}) (interface{}, error) {
+		return &StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
 				return int64(2), nil
 			},
 		}, nil
 	}
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "three" && val.Fields[1].Name == "one" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(context.Context, interface{}) (interface{}, error) {
+		return &StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
 				return 3.1, nil
 			},
 		}, nil
@@ -44,19 +44,19 @@ func mathParsePath(val *Path) (GetSetter[interface{}], error) {
 }
 
 func one[K any]() (ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
+	return func(context.Context, K) (any, error) {
 		return int64(1), nil
 	}, nil
 }
 
 func two[K any]() (ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
+	return func(context.Context, K) (any, error) {
 		return int64(2), nil
 	}, nil
 }
 
 func threePointOne[K any]() (ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
+	return func(context.Context, K) (any, error) {
 		return 3.1, nil
 	}, nil
 }
@@ -66,7 +66,7 @@ func testTime[K any](time string, format string) (ExprFunc[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	return func(_ context.Context, tCtx K) (interface{}, error) {
+	return func(_ context.Context, tCtx K) (any, error) {
 		timestamp, err := timeutils.ParseStrptime(format, time, loc)
 		return timestamp, err
 	}, nil
@@ -74,7 +74,7 @@ func testTime[K any](time string, format string) (ExprFunc[K], error) {
 
 func testDuration[K any](duration string) (ExprFunc[K], error) {
 	if duration != "" {
-		return func(_ context.Context, tCtx K) (interface{}, error) {
+		return func(_ context.Context, tCtx K) (any, error) {
 			dur, err := time.ParseDuration(duration)
 			return dur, err
 		}, nil
@@ -88,7 +88,7 @@ type sumArguments struct {
 
 //nolint:unparam
 func sum[K any](ints []int64) (ExprFunc[K], error) {
-	return func(context.Context, K) (interface{}, error) {
+	return func(context.Context, K) (any, error) {
 		result := int64(0)
 		for _, x := range ints {
 			result += x
@@ -101,7 +101,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected interface{}
+		expected any
 	}{
 		{
 			name:     "simple subtraction",

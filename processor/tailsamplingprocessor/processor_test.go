@@ -208,16 +208,24 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
 
+	// Limit the concurrency here to avoid creating too many goroutines and hit
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126
+	concurrencyLimiter := make(chan struct{}, 128)
+	defer close(concurrencyLimiter)
 	for _, batch := range batches {
 		// Add the same traceId twice.
 		wg.Add(2)
+		concurrencyLimiter <- struct{}{}
 		go func(td ptrace.Traces) {
 			require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			wg.Done()
+			<-concurrencyLimiter
 		}(batch)
+		concurrencyLimiter <- struct{}{}
 		go func(td ptrace.Traces) {
 			require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			wg.Done()
+			<-concurrencyLimiter
 		}(batch)
 	}
 
@@ -336,7 +344,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	// Since we can't guarantee the order of insertion the only thing that can be checked is
 	// if the number of traces on the map matches the expected value.
 	cnt := 0
-	tsp.idToTrace.Range(func(_ interface{}, _ interface{}) bool {
+	tsp.idToTrace.Range(func(_ any, _ any) bool {
 		cnt++
 		return true
 	})

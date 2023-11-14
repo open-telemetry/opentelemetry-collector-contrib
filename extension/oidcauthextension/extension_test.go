@@ -42,7 +42,7 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	payload, _ := json.Marshal(map[string]interface{}{
+	payload, _ := json.Marshal(map[string]any{
 		"sub":         "jdoe@example.com",
 		"name":        "jdoe",
 		"iss":         oidcServer.URL,
@@ -311,7 +311,7 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 			err = p.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
-			payload, _ := json.Marshal(map[string]interface{}{
+			payload, _ := json.Marshal(map[string]any{
 				"iss":                   oidcServer.URL,
 				"some-non-string-field": 123,
 				"aud":                   "unit-test",
@@ -332,7 +332,7 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 
 func TestSubjectFromClaims(t *testing.T) {
 	// prepare
-	claims := map[string]interface{}{
+	claims := map[string]any{
 		"username": "jdoe",
 	}
 
@@ -346,7 +346,7 @@ func TestSubjectFromClaims(t *testing.T) {
 
 func TestSubjectFallback(t *testing.T) {
 	// prepare
-	claims := map[string]interface{}{
+	claims := map[string]any{
 		"sub": "jdoe",
 	}
 
@@ -362,7 +362,7 @@ func TestGroupsFromClaim(t *testing.T) {
 	// prepare
 	for _, tt := range []struct {
 		casename string
-		input    interface{}
+		input    any
 		expected []string
 	}{
 		{
@@ -377,12 +377,12 @@ func TestGroupsFromClaim(t *testing.T) {
 		},
 		{
 			"multiple-things",
-			[]interface{}{"department-1", 123},
+			[]any{"department-1", 123},
 			[]string{"department-1", "123"},
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
-			claims := map[string]interface{}{
+			claims := map[string]any{
 				"sub":         "jdoe",
 				"memberships": tt.input,
 			}
@@ -397,7 +397,7 @@ func TestGroupsFromClaim(t *testing.T) {
 
 func TestEmptyGroupsClaim(t *testing.T) {
 	// prepare
-	claims := map[string]interface{}{
+	claims := map[string]any{
 		"sub": "jdoe",
 	}
 

@@ -1088,43 +1088,43 @@ func Test_parse(t *testing.T) {
 	}
 }
 
-func testParsePath(val *Path) (GetSetter[interface{}], error) {
+func testParsePath(val *Path) (GetSetter[any], error) {
 	if val != nil && len(val.Fields) > 0 && (val.Fields[0].Name == "name" || val.Fields[0].Name == "attributes") {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+		return &StandardGetSetter[any]{
+			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				return tCtx, nil
 			},
-			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
 				return nil
 			},
 		}, nil
 	}
 	if val.Fields[0].Name == "dur1" || val.Fields[0].Name == "dur2" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+		return &StandardGetSetter[any]{
+			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Duration)
 				if !ok {
 					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
 				}
 				return m[val.Fields[0].Name], nil
 			},
-			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
 				return nil
 			},
 		}, nil
 	}
 	if val.Fields[0].Name == "time1" || val.Fields[0].Name == "time2" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+		return &StandardGetSetter[any]{
+			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Time)
 				if !ok {
 					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
 				}
 				return m[val.Fields[0].Name], nil
 			},
-			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
 				return nil
 			},
@@ -1727,15 +1727,15 @@ func Test_parseStatement(t *testing.T) {
 func Test_Execute(t *testing.T) {
 	tests := []struct {
 		name              string
-		condition         boolExpressionEvaluator[interface{}]
-		function          ExprFunc[interface{}]
+		condition         boolExpressionEvaluator[any]
+		function          ExprFunc[any]
 		expectedCondition bool
-		expectedResult    interface{}
+		expectedResult    any
 	}{
 		{
 			name:      "Condition matched",
-			condition: alwaysTrue[interface{}],
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			condition: alwaysTrue[any],
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, nil
 			},
 			expectedCondition: true,
@@ -1743,8 +1743,8 @@ func Test_Execute(t *testing.T) {
 		},
 		{
 			name:      "Condition not matched",
-			condition: alwaysFalse[interface{}],
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			condition: alwaysFalse[any],
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, nil
 			},
 			expectedCondition: false,
@@ -1752,8 +1752,8 @@ func Test_Execute(t *testing.T) {
 		},
 		{
 			name:      "No result",
-			condition: alwaysTrue[interface{}],
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			condition: alwaysTrue[any],
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return nil, nil
 			},
 			expectedCondition: true,
@@ -1762,7 +1762,7 @@ func Test_Execute(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statement := Statement[interface{}]{
+			statement := Statement[any]{
 				condition: BoolExpr[any]{tt.condition},
 				function:  Expr[any]{exprFunc: tt.function},
 			}
@@ -1778,46 +1778,46 @@ func Test_Execute(t *testing.T) {
 func Test_Statements_Execute_Error(t *testing.T) {
 	tests := []struct {
 		name      string
-		condition boolExpressionEvaluator[interface{}]
-		function  ExprFunc[interface{}]
+		condition boolExpressionEvaluator[any]
+		function  ExprFunc[any]
 		errorMode ErrorMode
 	}{
 		{
 			name: "IgnoreError error from condition",
-			condition: func(context.Context, interface{}) (bool, error) {
+			condition: func(context.Context, any) (bool, error) {
 				return true, fmt.Errorf("test")
 			},
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, nil
 			},
 			errorMode: IgnoreError,
 		},
 		{
 			name: "PropagateError error from condition",
-			condition: func(context.Context, interface{}) (bool, error) {
+			condition: func(context.Context, any) (bool, error) {
 				return true, fmt.Errorf("test")
 			},
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, nil
 			},
 			errorMode: PropagateError,
 		},
 		{
 			name: "IgnoreError error from function",
-			condition: func(context.Context, interface{}) (bool, error) {
+			condition: func(context.Context, any) (bool, error) {
 				return true, nil
 			},
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: IgnoreError,
 		},
 		{
 			name: "PropagateError error from function",
-			condition: func(context.Context, interface{}) (bool, error) {
+			condition: func(context.Context, any) (bool, error) {
 				return true, nil
 			},
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: PropagateError,
@@ -1825,8 +1825,8 @@ func Test_Statements_Execute_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statements := Statements[interface{}]{
-				statements: []*Statement[interface{}]{
+			statements := Statements[any]{
+				statements: []*Statement[any]{
 					{
 						condition: BoolExpr[any]{tt.condition},
 						function:  Expr[any]{exprFunc: tt.function},
@@ -1849,46 +1849,46 @@ func Test_Statements_Execute_Error(t *testing.T) {
 func Test_Statements_Eval(t *testing.T) {
 	tests := []struct {
 		name           string
-		conditions     []boolExpressionEvaluator[interface{}]
-		function       ExprFunc[interface{}]
+		conditions     []boolExpressionEvaluator[any]
+		function       ExprFunc[any]
 		errorMode      ErrorMode
 		expectedResult bool
 	}{
 		{
 			name: "True",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				alwaysTrue[interface{}],
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
 			expectedResult: true,
 		},
 		{
 			name: "At least one True",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				alwaysFalse[interface{}],
-				alwaysFalse[interface{}],
-				alwaysTrue[interface{}],
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				alwaysFalse[any],
+				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
 			expectedResult: true,
 		},
 		{
 			name: "False",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				alwaysFalse[interface{}],
-				alwaysFalse[interface{}],
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				alwaysFalse[any],
 			},
 			errorMode:      IgnoreError,
 			expectedResult: false,
 		},
 		{
 			name: "Error is false when using Ignore",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				alwaysFalse[interface{}],
-				func(context.Context, interface{}) (bool, error) {
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				func(context.Context, any) (bool, error) {
 					return true, fmt.Errorf("test")
 				},
-				alwaysTrue[interface{}],
+				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
 			expectedResult: true,
@@ -1896,19 +1896,19 @@ func Test_Statements_Eval(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[interface{}]
+			var rawStatements []*Statement[any]
 			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[interface{}]{
+				rawStatements = append(rawStatements, &Statement[any]{
 					condition: BoolExpr[any]{condition},
 					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
 							return nil, fmt.Errorf("function should not be called")
 						},
 					},
 				})
 			}
 
-			statements := Statements[interface{}]{
+			statements := Statements[any]{
 				statements:        rawStatements,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,
@@ -1924,14 +1924,14 @@ func Test_Statements_Eval(t *testing.T) {
 func Test_Statements_Eval_Error(t *testing.T) {
 	tests := []struct {
 		name       string
-		conditions []boolExpressionEvaluator[interface{}]
-		function   ExprFunc[interface{}]
+		conditions []boolExpressionEvaluator[any]
+		function   ExprFunc[any]
 		errorMode  ErrorMode
 	}{
 		{
 			name: "Propagate Error from function",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				func(context.Context, interface{}) (bool, error) {
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
 					return true, fmt.Errorf("test")
 				},
 			},
@@ -1940,19 +1940,19 @@ func Test_Statements_Eval_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[interface{}]
+			var rawStatements []*Statement[any]
 			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[interface{}]{
+				rawStatements = append(rawStatements, &Statement[any]{
 					condition: BoolExpr[any]{condition},
 					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
 							return nil, fmt.Errorf("function should not be called")
 						},
 					},
 				})
 			}
 
-			statements := Statements[interface{}]{
+			statements := Statements[any]{
 				statements:        rawStatements,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,

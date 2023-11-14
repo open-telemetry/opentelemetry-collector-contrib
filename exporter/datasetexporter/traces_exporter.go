@@ -46,7 +46,7 @@ func buildEventFromSpan(
 	span := bundle.span
 	resource := bundle.resource
 
-	attrs := make(map[string]interface{})
+	attrs := make(map[string]any)
 	event := add_events.Event{
 		Sev: int(plog.SeverityNumberInfo),
 		Ts:  fmt.Sprintf("%d", span.StartTimestamp().AsTime().UnixNano()),
@@ -84,7 +84,7 @@ func buildEventFromSpan(
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TT", Name: "traces"},
-		Log:    &add_events.Log{Id: "LT", Attrs: map[string]interface{}{}},
+		Log:    &add_events.Log{Id: "LT", Attrs: map[string]any{}},
 	}
 }
 
@@ -98,7 +98,7 @@ const (
 	Process = ResourceType("process")
 )
 
-func updateResource(attrs map[string]interface{}, resource map[string]any) {
+func updateResource(attrs map[string]any, resource map[string]any) {
 	// first detect, whether there is key service.name
 	// if it's there, we are done
 	name, found := resource["service.name"]
