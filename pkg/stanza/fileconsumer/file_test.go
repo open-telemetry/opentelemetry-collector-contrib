@@ -1675,3 +1675,58 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	waitForTokens(t, emitCalls, []byte(content), []byte(newContent1), []byte(newContent))
 	operator.wg.Wait()
 }
+
+func TestPreviousPollFiles(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+	operator.persister = testutil.NewUnscopedMockPersister()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	// Open one files
+	file1 := openTemp(t, tempDir)
+	writeString(t, file1, "testlog1\n")
+	file2 := openTemp(t, tempDir)
+	writeString(t, file2, "testlog2\n")
+
+	operator.poll(context.Background())
+	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
+	require.Len(t, operator.previousPollFiles.Values(), 2)
+
+	file3 := openTemp(t, tempDir)
+	writeString(t, file3, "testlog3\n")
+
+	operator.poll(context.Background())
+	waitForTokens(t, emitCalls, []byte("testlog3"))
+	require.Len(t, operator.previousPollFiles.Values(), 3)
+
+	// Delete file 1
+	require.NoError(t, os.Remove(file1.Name()))
+
+	// Only files 2 and 3 should be detected
+	operator.poll(context.Background())
+	require.Len(t, operator.previousPollFiles.Values(), 2)
+	require.Len(t, operator.knownFiles, 1)
+
+	// Delete file 2
+	require.NoError(t, os.Remove(file2.Name()))
+
+	writeString(t, file3, "testlog4\n")
+	operator.poll(context.Background())
+	waitForTokens(t, emitCalls, []byte("testlog4"))
+	// Only file 3 should be detected
+	require.Len(t, operator.previousPollFiles.Values(), 1)
+	require.Len(t, operator.knownFiles, 2)
+
+	file1_new := openTemp(t, tempDir)
+	writeString(t, file1_new, "testlog1\ntestlog11\n")
+	operator.poll(context.Background())
+	waitForTokens(t, emitCalls, []byte("testlog11"))
+	// file 1 should be added back
+	require.Len(t, operator.previousPollFiles.Values(), 2)
+	require.Len(t, operator.knownFiles, 1)
+}
