@@ -332,7 +332,6 @@ func TestScraperScrape(t *testing.T) {
 
 func TestTopMetricsAggregation(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
 
 	loadedTop, err := loadTop()
 	require.NoError(t, err)

@@ -4,4 +4,3 @@ extension/observer
 processor/servicegraphprocessor
 receiver/journaldreceiver
 receiver/kafkareceiver
-receiver/windowseventlogreceiver
