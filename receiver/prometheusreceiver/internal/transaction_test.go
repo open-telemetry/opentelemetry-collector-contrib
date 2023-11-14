@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -1470,6 +1471,7 @@ func TestMetricBuilderNativeHistogram(t *testing.T) {
 		ZeroThreshold: 0.001,
 		ZeroCount: 0,
 	}
+	h0 := tsdbutil.GenerateTestHistogram(0)
 
 	tests := []buildTestData{
 		{
@@ -1494,6 +1496,45 @@ func TestMetricBuilderNativeHistogram(t *testing.T) {
 				pt0.SetCount(0)
 				pt0.SetSum(0)
 				pt0.SetScale(1)
+
+				return []pmetric.Metrics{md0}
+			},
+		},
+		{
+			name: "integer histogram",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createHistogramDataPoint("hist_test", h0, nil, nil, "foo", "bar"),
+					},
+				},
+			},
+			wants: func() []pmetric.Metrics {
+				md0 := pmetric.NewMetrics()
+				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("hist_test")
+				m0.SetEmptyExponentialHistogram()
+				m0.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt0 := m0.ExponentialHistogram().DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetTimestamp(tsNanos)
+				pt0.SetCount(12)
+				pt0.SetSum(18.4)
+				pt0.SetScale(1)
+				pt0.SetZeroCount(2)
+				pt0.Positive().SetOffset(-1)
+				pt0.Positive().BucketCounts().Append(1)
+				pt0.Positive().BucketCounts().Append(2)
+				pt0.Positive().BucketCounts().Append(0)
+				pt0.Positive().BucketCounts().Append(1)
+				pt0.Positive().BucketCounts().Append(1)
+				pt0.Negative().SetOffset(-1)
+				pt0.Negative().BucketCounts().Append(1)
+				pt0.Negative().BucketCounts().Append(2)
+				pt0.Negative().BucketCounts().Append(0)
+				pt0.Negative().BucketCounts().Append(1)
+				pt0.Negative().BucketCounts().Append(1)
 
 				return []pmetric.Metrics{md0}
 			},

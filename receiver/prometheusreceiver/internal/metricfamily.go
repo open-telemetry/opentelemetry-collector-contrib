@@ -159,6 +159,8 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	mg.setExemplars(point.Exemplars())
 }
 
+// toExponentialHistogramDataPoints is base on
+// https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#exponential-histograms
 func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.ExponentialHistogramDataPointSlice) {
 	if !mg.hasCount {
 		return
@@ -170,26 +172,80 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 	switch {
 	case mg.fhValue != nil:
 		fh := mg.fhValue
-		// Input is float native histogram. This is lose precision in this
-		// conversion but we don't actually expect float histograms in scrape,
+		// Input is a float native histogram. This conversion will lose
+		// precision,but we don't actually expect float histograms in scrape,
 		// since these are typically the result of operations on integer
-		// native histograms.
+		// native histograms in the database.
 		point.SetScale(fh.Schema)
 		point.SetCount(uint64(fh.Count))
 		point.SetSum(fh.Sum)
 		point.SetZeroCount(uint64(fh.ZeroCount))
+
+		if len(fh.PositiveSpans) > 0 {
+			point.Positive().SetOffset(fh.PositiveSpans[0].Offset-1) // -1 because OTEL offset are for the lower bound, not the upper bound
+			convertAbsoluteBuckets(fh.PositiveSpans, fh.PositiveBuckets, point.Positive().BucketCounts())
+		}
+		if len(fh.NegativeSpans) > 0 {
+			point.Negative().SetOffset(fh.NegativeSpans[0].Offset-1) // -1 because OTEL offset are for the lower bound, not the upper bound
+			convertAbsoluteBuckets(fh.NegativeSpans, fh.NegativeBuckets, point.Negative().BucketCounts())
+		}
+
 	case mg.hValue != nil:
 		h := mg.hValue
 		point.SetScale(h.Schema)
 		point.SetCount(h.Count)
 		point.SetSum(h.Sum)
 		point.SetZeroCount(h.ZeroCount)
+
+		if len(h.PositiveSpans) > 0 {
+			point.Positive().SetOffset(h.PositiveSpans[0].Offset-1) // -1 because OTEL offset are for the lower bound, not the upper bound
+			convertDeltaBuckets(h.PositiveSpans, h.PositiveBuckets, point.Positive().BucketCounts())
+		}
+		if len(h.NegativeSpans) > 0 {
+			point.Negative().SetOffset(h.NegativeSpans[0].Offset-1) // -1 because OTEL offset are for the lower bound, not the upper bound
+			convertDeltaBuckets(h.NegativeSpans, h.NegativeBuckets, point.Negative().BucketCounts())
+		}
+
 	default:
 		// This should never happen.
 		return
 	}
 
 	mg.setExemplars(point.Exemplars())
+}
+
+func convertDeltaBuckets(spans []histogram.Span, deltas []int64, buckets pcommon.UInt64Slice) {
+	buckets.EnsureCapacity(len(deltas))
+	bucketIdx := 0
+	bucketCount := int64(0)
+	for spanIdx, span := range spans {
+		if spanIdx > 0 {
+			for i := int32(0); i < span.Offset; i++ {
+				buckets.Append(uint64(0))
+			}
+		}
+		for i := uint32(0); i < span.Length; i++ {
+			bucketCount = bucketCount + deltas[bucketIdx]
+			bucketIdx++
+			buckets.Append(uint64(bucketCount))
+		}
+	}
+}
+
+func convertAbsoluteBuckets(spans []histogram.Span, counts[]float64, buckets pcommon.UInt64Slice) {
+	buckets.EnsureCapacity(len(counts))
+	bucketIdx := 0
+	for spanIdx, span := range spans {
+		if spanIdx > 0 {
+			for i := int32(0); i < span.Offset; i++ {
+				buckets.Append(uint64(0))
+			}
+		}
+		for i := uint32(0); i < span.Length; i++ {
+			buckets.Append(uint64(counts[bucketIdx]))
+			bucketIdx++
+		}
+	}
 }
 
 func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
