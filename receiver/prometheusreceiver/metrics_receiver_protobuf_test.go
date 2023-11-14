@@ -263,7 +263,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 	}{
 		"native only": {
 			expected: []testExpectation{
-				assertMetricPresent(
+				assertMetricPresent( // Scrape classic only histograms as is.
 					"test_classic_histogram",
 					compareMetricType(pmetric.MetricTypeHistogram),
 					compareMetricUnit(""),
@@ -273,7 +273,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 						},
 					}},
 				),
-				assertMetricPresent(
+				assertMetricPresent( // Only scrape native buckets from mixed histograms.
 					"test_mixed_histogram",
 					compareMetricType(pmetric.MetricTypeExponentialHistogram),
 					compareMetricUnit(""),
@@ -283,7 +283,46 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 						},
 					}},
 				),
-				assertMetricPresent(
+				assertMetricPresent( // Scrape native only histograms as is.
+					"test_native_histogram",
+					compareMetricType(pmetric.MetricTypeExponentialHistogram),
+					compareMetricUnit(""),
+					[]dataPointExpectation{{
+						exponentialHistogramComparator: []exponentialHistogramComparator{
+							compareExponentialHistogram(1213, 456, 2, 0, []uint64{1, 0, 2}, -2, []uint64{1, 0, 0, 1}),
+						},
+					}},
+				),
+			},
+		},
+		"classic only": {
+			mutCfg: func(cfg *promcfg.Config) {
+				for _, scrapeConfig := range cfg.ScrapeConfigs {
+					scrapeConfig.ScrapeClassicHistograms = true
+				}
+			},
+			expected: []testExpectation{
+				assertMetricPresent( // Scrape classic only histograms as is.
+					"test_classic_histogram",
+					compareMetricType(pmetric.MetricTypeHistogram),
+					compareMetricUnit(""),
+					[]dataPointExpectation{{
+						histogramPointComparator: []histogramPointComparator{
+							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+						},
+					}},
+				),
+				assertMetricPresent( // Only scrape classic buckets from mixed histograms.
+					"test_mixed_histogram",
+					compareMetricType(pmetric.MetricTypeHistogram),
+					compareMetricUnit(""),
+					[]dataPointExpectation{{
+						histogramPointComparator: []histogramPointComparator{
+							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+						},
+					}},
+				),
+				assertMetricPresent( // Scrape native only histograms as is.
 					"test_native_histogram",
 					compareMetricType(pmetric.MetricTypeExponentialHistogram),
 					compareMetricUnit(""),
@@ -311,9 +350,13 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					},
 				},
 			}
+			mutCfg := tc.mutCfg
+			if mutCfg == nil {
+				mutCfg = func(*promcfg.Config) {}
+			}
 			testComponent(t, targets, func(c *Config) {
 				c.EnableProtobufNegotiation = true
-			})
+			}, mutCfg)
 		})
 	}
 }

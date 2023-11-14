@@ -144,11 +144,10 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 		return 0, nil
 	}
 
-	curMF := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
+	curMF, _ := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
 
 	if curMF.mtype == pmetric.MetricTypeExponentialHistogram {
-		// Prefer exponential histogram over float series.
-		return 0, nil
+		curMF.mtype = pmetric.MetricTypeHistogram
 	}
 
 	err := curMF.addSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, val)
@@ -170,7 +169,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	return 0, nil // never return errors, as that fails the whole scrape
 }
 
-func (t *transaction) getOrCreateMetricFamily(scope scopeID, mn string) *metricFamily {
+func (t *transaction) getOrCreateMetricFamily(scope scopeID, mn string) (*metricFamily, bool) {
 	_, ok := t.families[scope]
 	if !ok {
 		t.families[scope] = make(map[string]*metricFamily)
@@ -186,9 +185,10 @@ func (t *transaction) getOrCreateMetricFamily(scope scopeID, mn string) *metricF
 		} else {
 			curMf = newMetricFamily(mn, t.mc, t.logger)
 			t.families[scope][curMf.name] = curMf
+			return curMf, false
 		}
 	}
-	return curMf
+	return curMf, true
 }
 
 func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
@@ -215,7 +215,7 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 		return 0, errMetricNameNotFound
 	}
 
-	mf := t.getOrCreateMetricFamily(getScopeID(l), mn)
+	mf, _ := t.getOrCreateMetricFamily(getScopeID(l), mn)
 	mf.addExemplar(t.getSeriesRef(l, mf.mtype), e)
 
 	return 0, nil
@@ -255,17 +255,15 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms,
 	// thus we don't check for them here as opposed to the Append function.
 
-	curMF := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
-	switch curMF.mtype {
-	case pmetric.MetricTypeExponentialHistogram:
-		break
-	case pmetric.MetricTypeHistogram:
-		// Assume it was just created, turn into exponential histogram type.
+	curMF, existing := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
+	if !existing {
 		curMF.mtype = pmetric.MetricTypeExponentialHistogram
-	default:
-		// Do not add native histogram datapoints to other metric types.
-		return 0, nil
+	} else {
+		if curMF.mtype != pmetric.MetricTypeExponentialHistogram {
+			return 0, nil
+		}
 	}
+
 	err := curMF.addExponentialHistogramSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
 	if err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
