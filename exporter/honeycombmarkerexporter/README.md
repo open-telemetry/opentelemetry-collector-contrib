@@ -7,10 +7,10 @@ The following configuration options are supported:
 
 * `api_key` (Required): This is the API key for your Honeycomb account.
 * `api_url` (Required): This sets the hostname to send marker data to.
-* `markers` (Required): This specifies the exact configuration to create an event marker. 
+* `markers` (Required): This is a list of configurations to create an event marker. 
   * `type` (Required): Specifies the marker type. 
-  * `message_key`: This attribute will be used as the message. If necessary the value will be converted to a string.
-  * `url_key`: This attribute will be used as the url. If necessary the value will be converted to a string.
+  * `message_key`: This attribute will be used as the message. It describes the event marker. If necessary the value will be converted to a string.
+  * `url_key`: This attribute will be used as the url. It can be accessed through the event marker in Honeycomb. If necessary the value will be converted to a string.
   * `rules` (Required): This is a list of OTTL rules that determine when to create an event marker. 
     * `log_conditions` (Required): A list of ottllog conditions that determine a match
   Example:
@@ -18,11 +18,11 @@ The following configuration options are supported:
 ```yaml
 exporters:
   honeycombmarker:
-    api_key: "my-api-key"
-    api_url: "https://api.honeycomb.io:443"
+    api_key: "environment-api-key"
+    api_url: "https://api.honeycomb.io"
     markers:
-      - type: "test-type"
-        message_key: "test message"
+      - type: "marker-type"
+        message_key: "this message accompanies the event marker"
         url_key: "https://api.testhost.io"
         dataset_slug: "__all__"
         rules:
