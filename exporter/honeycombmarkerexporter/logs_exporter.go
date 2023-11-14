@@ -94,7 +94,7 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 	if err != nil {
 		return err
 	}
-
+	
 	url := fmt.Sprintf("%s/1/markers/%s", e.config.APIURL, marker.DatasetSlug)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
@@ -102,6 +102,7 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Honeycomb-Team", fmt.Sprint(e.config.APIKey))
 
 	resp, err := e.client.Do(req)
 	if err != nil {
