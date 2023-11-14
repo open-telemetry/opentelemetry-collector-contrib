@@ -254,16 +254,17 @@ require (
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.15.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.89 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.49.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.49.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-devel.0.20231030140030-aa8a206e6ac7 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.49.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.49.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.49.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.49.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.50.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.0-rc.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.18.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
+	github.com/DataDog/go-sqllexer v0.0.8 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.8.1 // indirect
@@ -686,7 +687,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20231030173426-d783a09b4405 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231030173426-d783a09b4405 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
