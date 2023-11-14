@@ -157,7 +157,7 @@ service:
 	require.NoError(t, err)
 
 	appSettings := otelcol.CollectorSettings{
-		Factories:      factories,
+		Factories:      func() (otelcol.Factories, error) { return factories, nil },
 		ConfigProvider: configProvider,
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
