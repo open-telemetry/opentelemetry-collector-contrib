@@ -1,4 +1,3 @@
-
 ## Grammar
 
 The OTTL grammar includes function invocations, Values and Boolean Expressions. These parts all fit into a Statement, which is the basis of execution in the OTTL.

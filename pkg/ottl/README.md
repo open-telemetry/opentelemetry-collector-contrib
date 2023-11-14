@@ -13,8 +13,6 @@ The OpenTelemetry Transformation Language is a language for transforming open te
 
 This package reads in OTTL statements and converts them to invokable functions/booleans based on the OTTL's grammar.
 
-The OTTL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the functions/booleans returned by the package must be passed a `TransformContext`, which provide access to the signal's telemetry.
-
 ## Getting Started
 
 If you're looking to write OTTL statements for a component's configuration check out these resources.
@@ -35,7 +33,7 @@ OTTL Contexts define how you access the fields on a piece of telemetry. See the 
 
 ### Component Creators
 
-If you're looking to use OTTL in your component, check out [the OTTL grammar](./GRAMMAR.md).
+If you're looking to use OTTL in your component, check out [the OTTL grammar](./LANGUAGE.md).
 
 ## Examples
 
