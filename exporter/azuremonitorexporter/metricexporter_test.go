@@ -112,6 +112,7 @@ func getDataPoint(t testing.TB, metric pmetric.Metric) *contracts.DataPoint {
 	require.NotNil(t, envelope)
 
 	assert.NotNil(t, envelope.Tags)
+	assert.Contains(t, envelope.Tags[contracts.InternalSdkVersion], "otelc-")
 	assert.NotNil(t, envelope.Time)
 
 	require.NotNil(t, envelope.Data)
