@@ -277,7 +277,7 @@ func TestToMetrics(t *testing.T) {
 	}
 }
 
-func buildDefaultMetrics(t *testing.T, typ pmetric.MetricType, value interface{}, now time.Time) pmetric.Metrics {
+func buildDefaultMetrics(t *testing.T, typ pmetric.MetricType, value any, now time.Time) pmetric.Metrics {
 	out := pmetric.NewMetrics()
 	rm := out.ResourceMetrics().AppendEmpty()
 	ilm := rm.ScopeMetrics().AppendEmpty()

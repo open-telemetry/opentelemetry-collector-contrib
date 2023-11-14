@@ -15,8 +15,8 @@ import (
 // testing. Two MetricDatas, when compared, could produce a list of MetricDiffs containing all of their
 // differences, which could be used to correct the differences between the expected and actual values.
 type MetricDiff struct {
-	ExpectedValue interface{}
-	ActualValue   interface{}
+	ExpectedValue any
+	ActualValue   any
 	Msg           string
 }
 
@@ -308,15 +308,15 @@ func diffMetricAttrs(diffs []*MetricDiff, expected pcommon.Map, actual pcommon.M
 	return diffs
 }
 
-func diff(diffs []*MetricDiff, expected interface{}, actual interface{}, msg string) []*MetricDiff {
+func diff(diffs []*MetricDiff, expected any, actual any, msg string) []*MetricDiff {
 	out, _ := diffValues(diffs, expected, actual, msg)
 	return out
 }
 
 func diffValues(
 	diffs []*MetricDiff,
-	expected interface{},
-	actual interface{},
+	expected any,
+	actual any,
 	msg string,
 ) ([]*MetricDiff, bool) {
 	if !reflect.DeepEqual(expected, actual) {

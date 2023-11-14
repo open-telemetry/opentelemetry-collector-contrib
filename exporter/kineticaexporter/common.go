@@ -583,7 +583,7 @@ const (
 
 // ValueTypePair - struct to wrap a value as [any] and its type [pcommon.ValueType]
 type ValueTypePair struct {
-	value     interface{}
+	value     any
 	valueType pcommon.ValueType
 }
 
@@ -631,8 +631,8 @@ func attributeValueToKineticaFieldValue(value pcommon.Value) (ValueTypePair, err
 //
 //	@param kvList
 //	@return map
-func otlpKeyValueListToMap(kvList pcommon.Map) map[string]interface{} {
-	m := make(map[string]interface{}, kvList.Len())
+func otlpKeyValueListToMap(kvList pcommon.Map) map[string]any {
+	m := make(map[string]any, kvList.Len())
 	kvList.Range(func(k string, v pcommon.Value) bool {
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
@@ -661,8 +661,8 @@ func otlpKeyValueListToMap(kvList pcommon.Map) map[string]interface{} {
 //
 //	@param arr
 //	@return []interface{}
-func otlpArrayToSlice(arr pcommon.Slice) []interface{} {
-	s := make([]interface{}, 0, arr.Len())
+func otlpArrayToSlice(arr pcommon.Slice) []any {
+	s := make([]any, 0, arr.Len())
 	for i := 0; i < arr.Len(); i++ {
 		v := arr.At(i)
 		switch v.Type() {

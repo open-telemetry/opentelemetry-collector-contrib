@@ -72,7 +72,7 @@ func TestScrape(t *testing.T) {
 
 	t.Run("scrape returns nothing", func(t *testing.T) {
 		mockClient := new(mockClient)
-		mockClient.On("GetStats", "_local").Return(map[string]interface{}{}, nil)
+		mockClient.On("GetStats", "_local").Return(map[string]any{}, nil)
 		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.client = mockClient
 
@@ -175,8 +175,8 @@ func TestMetricSettings(t *testing.T) {
 	require.Equal(t, metrics.MetricCount(), 1)
 }
 
-func getStats(filename string) (map[string]interface{}, error) {
-	var stats map[string]interface{}
+func getStats(filename string) (map[string]any, error) {
+	var stats map[string]any
 
 	if filename == "" {
 		return nil, errors.New("bad response")
@@ -226,14 +226,14 @@ func (_m *mockClient) Get(path string) ([]byte, error) {
 }
 
 // GetStats provides a mock function with given fields: nodeName
-func (_m *mockClient) GetStats(nodeName string) (map[string]interface{}, error) {
+func (_m *mockClient) GetStats(nodeName string) (map[string]any, error) {
 	ret := _m.Called(nodeName)
 
-	var r0 map[string]interface{}
-	if rf, ok := ret.Get(0).(func(string) map[string]interface{}); ok {
+	var r0 map[string]any
+	if rf, ok := ret.Get(0).(func(string) map[string]any); ok {
 		r0 = rf(nodeName)
 	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(map[string]interface{})
+		r0 = ret.Get(0).(map[string]any)
 	}
 
 	var r1 error

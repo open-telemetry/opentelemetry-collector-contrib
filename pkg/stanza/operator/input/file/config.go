@@ -44,11 +44,11 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	var toBody toBodyFunc = func(token []byte) interface{} {
+	var toBody toBodyFunc = func(token []byte) any {
 		return string(token)
 	}
 	if decode.IsNop(c.Config.Encoding) {
-		toBody = func(token []byte) interface{} {
+		toBody = func(token []byte) any {
 			copied := make([]byte, len(token))
 			copy(copied, token)
 			return copied

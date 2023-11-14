@@ -46,6 +46,10 @@ func TestAccessLogsIntegration(t *testing.T) {
 			{
 				GroupID: testProjectID,
 				Name:    testClusterName,
+				ProviderSettings: &mongodbatlas.ProviderSettings{
+					ProviderName: testProviderName,
+					RegionName:   testRegionName,
+				},
 			},
 		},
 		nil)

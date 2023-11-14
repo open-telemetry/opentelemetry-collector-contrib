@@ -66,7 +66,7 @@ property_value: '!/property.value/'`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			var conf map[string]interface{}
+			var conf map[string]any
 			err := yaml.Unmarshal([]byte(test.yaml), &conf)
 			require.NoError(t, err)
 
