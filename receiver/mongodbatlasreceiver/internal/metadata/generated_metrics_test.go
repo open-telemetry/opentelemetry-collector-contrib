@@ -314,6 +314,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetMongodbAtlasProcessTypeName("mongodb_atlas.process.type_name-val")
 			rb.SetMongodbAtlasProjectID("mongodb_atlas.project.id-val")
 			rb.SetMongodbAtlasProjectName("mongodb_atlas.project.name-val")
+			rb.SetMongodbAtlasProviderName("mongodb_atlas.provider.name-val")
+			rb.SetMongodbAtlasRegionName("mongodb_atlas.region.name-val")
 			rb.SetMongodbAtlasUserAlias("mongodb_atlas.user.alias-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))

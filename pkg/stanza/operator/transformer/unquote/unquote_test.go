@@ -153,14 +153,14 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			input: func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"foo": "\"val\"",
 				}
 				return e
 			},
 			output: func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"foo": "val",
 				}
 				return e
@@ -175,14 +175,14 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			input: func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"foo": "\"val\"",
 				}
 				return e
 			},
 			output: func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"foo": "\"val\"",
 				}
 				return e

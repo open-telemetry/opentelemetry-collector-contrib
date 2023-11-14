@@ -8,5 +8,5 @@ import (
 
 const (
 	Type          = "syslog"
-	LogsStability = component.StabilityLevelDevelopment
+	LogsStability = component.StabilityLevelAlpha
 )

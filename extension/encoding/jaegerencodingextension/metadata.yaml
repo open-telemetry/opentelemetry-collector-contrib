@@ -1,4 +1,4 @@
-type: jaegerencoding
+type: jaeger_encoding
 
 status:
   class: extension

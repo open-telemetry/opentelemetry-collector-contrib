@@ -11,7 +11,7 @@ import (
 )
 
 func Test_Now(t *testing.T) {
-	exprFunc, err := now[interface{}]()
+	exprFunc, err := now[any]()
 	assert.NoError(t, err)
 
 	value, err := exprFunc(nil, nil)

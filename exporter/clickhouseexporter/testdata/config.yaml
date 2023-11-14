@@ -16,5 +16,6 @@ clickhouse/full:
     max_elapsed_time: 300s
   sending_queue:
     queue_size: 100
+    storage: file_storage/clickhouse
 clickhouse/invalid-endpoint:
   endpoint: 127.0.0.1:9000

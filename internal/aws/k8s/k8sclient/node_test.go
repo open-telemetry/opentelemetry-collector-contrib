@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var nodeArray = []interface{}{
+var nodeArray = []any{
 	&v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "ip-192-168-200-63.eu-west-1.compute.internal",
