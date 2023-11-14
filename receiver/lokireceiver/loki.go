@@ -163,8 +163,9 @@ func (r *lokiReceiver) Push(ctx context.Context, pushRequest *push.PushRequest) 
 		return &push.PushResponse{}, err
 	}
 	ctx = r.obsrepGRPC.StartLogsOp(ctx)
+	logRecordCount := logs.LogRecordCount()
 	err = r.nextConsumer.ConsumeLogs(ctx, logs)
-	r.obsrepGRPC.EndLogsOp(ctx, "protobuf", logs.LogRecordCount(), err)
+	r.obsrepGRPC.EndLogsOp(ctx, "protobuf", logRecordCount, err)
 	return &push.PushResponse{}, nil
 }
 
@@ -218,8 +219,9 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, r *lokiReceiver) {
 		return
 	}
 	ctx := r.obsrepHTTP.StartLogsOp(req.Context())
+	logRecordCount := logs.LogRecordCount()
 	err = r.nextConsumer.ConsumeLogs(ctx, logs)
-	r.obsrepHTTP.EndLogsOp(ctx, "json", logs.LogRecordCount(), err)
+	r.obsrepHTTP.EndLogsOp(ctx, "json", logRecordCount, err)
 
 	resp.WriteHeader(http.StatusNoContent)
 }
