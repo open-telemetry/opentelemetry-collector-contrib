@@ -12,7 +12,6 @@ import (
 )
 
 func TestScrapeViaProtobuf(t *testing.T) {
-	// Create a Prometheus metric families and encode them to protobuf.
 	mf := &dto.MetricFamily{
 		Name: "test_counter",
 		Type: dto.MetricType_COUNTER,
