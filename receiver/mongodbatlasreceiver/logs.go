@@ -168,12 +168,14 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 		for _, hostname := range hostnames {
 			// Defaults to true if not specified
 			if projectCfg.EnableHostLogs == nil || *projectCfg.EnableHostLogs {
+				s.log.Debug("Collecting logs for host", zap.String("hostname", hostname), zap.String("cluster", cluster.Name))
 				s.collectLogs(pc, hostname, "mongodb.gz", clusterInfo)
 				s.collectLogs(pc, hostname, "mongos.gz", clusterInfo)
 			}
 
 			// Defaults to false if not specified
 			if projectCfg.EnableAuditLogs {
+				s.log.Debug("Collecting audit logs for host", zap.String("hostname", hostname), zap.String("cluster", cluster.Name))
 				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", clusterInfo)
 				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", clusterInfo)
 			}
@@ -235,12 +237,12 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) {
 	logs, err := s.getHostLogs(pc.Project.ID, hostname, logName, clusterInfo.MongoDBMajorVersion)
 	if err != nil && !errors.Is(err, io.EOF) {
-		s.log.Warn("Failed to retrieve host logs", zap.Error(err), zap.String("log", logName))
+		s.log.Warn("Failed to retrieve host logs", zap.Error(err), zap.String("hostname", hostname), zap.String("log", logName), zap.Time("startTime", s.start), zap.Time("endTime", s.end))
 		return
 	}
 
 	if len(logs) == 0 {
-		s.log.Warn("Attempted to retrieve host logs but received 0 logs", zap.Error(err), zap.String("log", logName))
+		s.log.Warn("Attempted to retrieve host logs but received 0 logs", zap.Error(err), zap.String("log", logName), zap.String("hostname", hostname), zap.Time("startTime", s.start), zap.Time("endTime", s.end))
 		return
 	}
 
@@ -264,12 +266,12 @@ func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName str
 	)
 
 	if err != nil && !errors.Is(err, io.EOF) {
-		s.log.Warn("Failed to retrieve audit logs", zap.Error(err), zap.String("log", logName))
+		s.log.Warn("Failed to retrieve audit logs", zap.Error(err), zap.String("hostname", hostname), zap.String("log", logName), zap.Time("startTime", s.start), zap.Time("endTime", s.end))
 		return
 	}
 
 	if len(logs) == 0 {
-		s.log.Warn("Attempted to retrieve audit logs but received 0 logs", zap.Error(err), zap.String("log", logName))
+		s.log.Warn("Attempted to retrieve audit logs but received 0 logs", zap.Error(err), zap.String("hostname", hostname), zap.String("log", logName), zap.Time("startTime", s.start), zap.Time("endTime", s.end))
 		return
 	}
 
