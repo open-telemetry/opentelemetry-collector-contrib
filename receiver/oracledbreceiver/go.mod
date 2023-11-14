@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/sijms/go-ora/v2 v2.7.19
+	github.com/sijms/go-ora/v2 v2.7.20
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.88.1-0.20231112151805-b570812b1e06
 	go.opentelemetry.io/collector/confmap v0.88.1-0.20231112151805-b570812b1e06
@@ -37,7 +37,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.88.1-0.20231112151805-b570812b1e06 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017.0.20231112151805-b570812b1e06 // indirect
 	go.opentelemetry.io/otel v1.20.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
