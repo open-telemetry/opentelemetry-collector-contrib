@@ -19,6 +19,9 @@ type Config struct {
 	// InstanceUID is a ULID formatted as a 26 character string in canonical
 	// representation. Auto-generated on start if missing.
 	InstanceUID string `mapstructure:"instance_uid"`
+
+	// Enable the ReportsEffectiveConfig Capability.
+	ReportsEffectiveConfig bool `mapstructure:"reports_effective_config"`
 }
 
 // OpAMPServer contains the OpAMP transport configuration.
