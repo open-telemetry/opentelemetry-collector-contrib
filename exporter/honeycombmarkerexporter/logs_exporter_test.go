@@ -98,6 +98,7 @@ func TestExportMarkers(t *testing.T) {
 			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				decodedBody := map[string]any{}
 				err := json.NewDecoder(req.Body).Decode(&decodedBody)
+
 				require.NoError(t, err)
 
 				assert.Equal(t, len(decodedBody), len(tt.attributeMap))
@@ -106,6 +107,9 @@ func TestExportMarkers(t *testing.T) {
 					assert.Equal(t, decodedBody[attr], tt.attributeMap[attr])
 				}
 				assert.Contains(t, req.URL.Path, tt.config.Markers[0].DatasetSlug)
+
+				apiKey := req.Header.Get("X-Honeycomb-Team")
+				assert.Equal(t, apiKey, tt.config.APIKey)
 
 				rw.WriteHeader(http.StatusAccepted)
 			}))
