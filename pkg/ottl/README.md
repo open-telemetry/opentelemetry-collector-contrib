@@ -17,7 +17,7 @@ The OTTL is signal agnostic; it is not aware of the type of telemetry on which i
 
 ## Getting Started
 
-If you're looking to write OTTL statements for a component's configuration checkout these resources.
+If you're looking to write OTTL statements for a component's configuration check out these resources.
 
 See [OTTL Functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions) for a list of functions available for use in the OTTL statements of most components.
 
@@ -35,7 +35,7 @@ OTTL Contexts define how you access the fields on a piece of telemetry. See the 
 
 ### Component Creators
 
-If you're looking to use OTTL in your component checkout [the OTTL grammar](./GRAMMAR.md).
+If you're looking to use OTTL in your component, check out [the OTTL grammar](./GRAMMAR.md).
 
 ## Examples
 
