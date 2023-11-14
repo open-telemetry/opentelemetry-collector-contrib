@@ -75,9 +75,9 @@ All keys that match the pattern will be deleted from the map.
 Examples:
 
 
-- `delete_key(attributes, "http.request.header.authorization")`
+- `delete_matching_keys(attributes, "(?i).*password.*")`
 
-- `delete_key(resource.attributes, "http.request.header.authorization")`
+- `delete_matching_keys(resource.attributes, "(?i).*password.*")`
 
 ### keep_keys
 
