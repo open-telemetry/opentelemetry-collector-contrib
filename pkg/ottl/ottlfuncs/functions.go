@@ -42,6 +42,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewFnvFactory[K](),
 		NewHoursFactory[K](),
 		NewIntFactory[K](),
+		NewIsBoolFactory[K](),
 		NewIsMapFactory[K](),
 		NewIsMatchFactory[K](),
 		NewIsStringFactory[K](),
