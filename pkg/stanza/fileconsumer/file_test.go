@@ -1722,8 +1722,8 @@ func TestPreviousPollFiles(t *testing.T) {
 	require.Len(t, operator.previousPollFiles.Values(), 1)
 	require.Len(t, operator.knownFiles, 2)
 
-	file1_new := openTemp(t, tempDir)
-	writeString(t, file1_new, "testlog1\ntestlog11\n")
+	file1New := openTemp(t, tempDir)
+	writeString(t, file1New, "testlog1\ntestlog11\n")
 	operator.poll(context.Background())
 	waitForTokens(t, emitCalls, []byte("testlog11"))
 	// file 1 should be added back
