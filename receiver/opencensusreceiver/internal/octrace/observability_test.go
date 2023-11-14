@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 )
 
 var receiverID = component.NewID("opencensus")
@@ -90,7 +90,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	}()
 
 	otel.SetTracerProvider(tt.TracerProvider)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
