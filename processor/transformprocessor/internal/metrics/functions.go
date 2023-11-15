@@ -12,10 +12,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-var useConvertSumToGaugeMetricContext = featuregate.GlobalRegistry().MustRegister(
-	"processor.transform.ConvertSumToGaugeMetricContext",
+var useConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().MustRegister(
+	"processor.transform.ConvertBetweenSumAndGaugeMetricContext",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled will use metric context for convert_sum_to_gauge"),
+	featuregate.WithRegisterDescription("When enabled will use metric context for conversion between sum and gauge"),
 )
 
 func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
@@ -26,7 +26,7 @@ func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext
 		newConvertSummaryCountValToSumFactory(),
 	)
 
-	if !useConvertSumToGaugeMetricContext.IsEnabled() {
+	if !useConvertBetweenSumAndGaugeMetricContext.IsEnabled() {
 		for _, f := range []ottl.Factory[ottldatapoint.TransformContext]{
 			newConvertDatapointSumToGaugeFactory(),
 			newConvertDatapointGaugeToSumFactory(),
@@ -50,7 +50,7 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		newExtractCountMetricFactory(),
 	)
 
-	if useConvertSumToGaugeMetricContext.IsEnabled() {
+	if useConvertBetweenSumAndGaugeMetricContext.IsEnabled() {
 		for _, f := range []ottl.Factory[ottlmetric.TransformContext]{
 			newConvertSumToGaugeFactory(),
 			newConvertGaugeToSumFactory(),
