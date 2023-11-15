@@ -40,34 +40,34 @@ func tValueToProbability(tv string) (float64, error) {
 }
 
 func TestValidProbabilityToTValue(t *testing.T) {
-	require.Equal(t, "", must(probabilityToTValue(1.0)))
+	require.Equal(t, "0", must(probabilityToTValue(1.0)))
 	require.Equal(t, "8", must(probabilityToTValue(0.5)))
-	require.Equal(t, "00000000000001", must(probabilityToTValue(0x1p-56)))
-	require.Equal(t, "55555555555554", must(probabilityToTValue(1/3.)))
-	require.Equal(t, "54", must(probabilityToTValue(0x54p-8))) // 0x54p-8 is approximately 1/3
-	require.Equal(t, "01", must(probabilityToTValue(0x1p-8)))
-	require.Equal(t, "0", must(probabilityToTValue(0)))
+	require.Equal(t, "ffffffffffffff", must(probabilityToTValue(0x1p-56)))
+	require.Equal(t, "aaaaaaaaaaaaac", must(probabilityToTValue(1/3.)))
+	require.Equal(t, "55555555555558", must(probabilityToTValue(2/3.)))
+	require.Equal(t, "54", must(probabilityToTValue(1-0x54p-8))) // 0x54p-8 is approximately 1/3
+	require.Equal(t, "01", must(probabilityToTValue(1-0x1p-8)))
 }
 
-func TestThresholdLessThan(t *testing.T) {
-	require.True(t, ThresholdLessThan(
-		must(TValueToThreshold("4")),
+func TestThresholdGreater(t *testing.T) {
+	require.True(t, ThresholdGreater(
 		must(TValueToThreshold("5")),
+		must(TValueToThreshold("4")),
 	))
 
-	require.True(t, ThresholdLessThan(
+	require.True(t, ThresholdGreater(
+		must(TValueToThreshold("4")),
 		must(TValueToThreshold("04")),
+	))
+
+	require.False(t, ThresholdGreater(
+		must(TValueToThreshold("234")),
 		must(TValueToThreshold("4")),
 	))
 
-	require.False(t, ThresholdLessThan(
+	require.True(t, ThresholdGreater(
 		must(TValueToThreshold("4")),
 		must(TValueToThreshold("234")),
-	))
-
-	require.True(t, ThresholdLessThan(
-		must(TValueToThreshold("234")),
-		must(TValueToThreshold("4")),
 	))
 }
 
@@ -83,11 +83,11 @@ func TestInvalidprobabilityToTValue(t *testing.T) {
 
 func TestTValueToProbability(t *testing.T) {
 	require.Equal(t, 0.5, must(tValueToProbability("8")))
-	require.Equal(t, 0x444p-12, must(tValueToProbability("444")))
-	require.Equal(t, 0.0, must(tValueToProbability("0")))
+	require.Equal(t, 1-0x444p-12, must(tValueToProbability("444")))
+	require.Equal(t, 1.0, must(tValueToProbability("0")))
 
 	// 0x55555554p-32 is very close to 1/3
-	require.InEpsilon(t, 1/3., must(tValueToProbability("55555554")), 1e-9)
+	require.InEpsilon(t, 1-1/3., must(tValueToProbability("55555554")), 1e-9)
 }
 
 func TestProbabilityToThreshold(t *testing.T) {
@@ -95,48 +95,50 @@ func TestProbabilityToThreshold(t *testing.T) {
 		must(TValueToThreshold("8")),
 		must(ProbabilityToThreshold(0.5)))
 	require.Equal(t,
-		must(TValueToThreshold("00000000000001")),
+		must(TValueToThreshold("ffffffffffffff")),
 		must(ProbabilityToThreshold(0x1p-56)))
 	require.Equal(t,
-		must(TValueToThreshold("000000000001")),
+		must(TValueToThreshold("ffffffffffff00")),
 		must(ProbabilityToThreshold(0x100p-56)))
 	require.Equal(t,
-		must(TValueToThreshold("00000000000002")),
-		must(ProbabilityToThreshold(0x1p-55)))
+		must(TValueToThreshold("00000000000010")),
+		must(ProbabilityToThreshold(1.0-0x1p-52)))
 	require.Equal(t,
 		AlwaysSampleThreshold,
 		must(ProbabilityToThreshold(1.0)))
-	require.Equal(t,
-		NeverSampleThreshold,
-		must(ProbabilityToThreshold(0)))
+
+	zt, err := ProbabilityToThreshold(0)
+	require.Equal(t, zt, AlwaysSampleThreshold)
+	require.Error(t, err)
+	require.Equal(t, err, ErrProbabilityRange)
 }
 
 func TestShouldSample(t *testing.T) {
 	// Test four boundary conditions for 50% sampling,
 	thresh := must(ProbabilityToThreshold(0.5))
-	// Smallest TraceID that should sample.
-	require.True(t, thresh.ShouldSample(TraceIDToRandomness(pcommon.TraceID{
+	// Smallest TraceID that should NOT sample.
+	require.False(t, thresh.ShouldSample(TraceIDToRandomness(pcommon.TraceID{
 		// 9 meaningless bytes
 		0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
 		0, // randomness starts here
 		0, 0, 0, 0, 0, 0,
 	})))
-	// Largest TraceID that should sample.
-	require.True(t, thresh.ShouldSample(TraceIDToRandomness(pcommon.TraceID{
+	// Largest TraceID that should NOT sample.
+	require.False(t, thresh.ShouldSample(TraceIDToRandomness(pcommon.TraceID{
 		// 9 meaningless bytes
 		0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
 		0x7f, // randomness starts here
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	})))
-	// Smallest TraceID that should NOT sample.
-	require.False(t, thresh.ShouldSample(TraceIDToRandomness(pcommon.TraceID{
+	// Smallest TraceID that should sample.
+	require.True(t, thresh.ShouldSample(TraceIDToRandomness(pcommon.TraceID{
 		// 9 meaningless bytes
 		0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
 		0x80, // randomness starts here
 		0, 0, 0, 0, 0, 0,
 	})))
-	// Largest TraceID that should NOT sample.
-	require.False(t, thresh.ShouldSample(TraceIDToRandomness(pcommon.TraceID{
+	// Largest TraceID that should sample.
+	require.True(t, thresh.ShouldSample(TraceIDToRandomness(pcommon.TraceID{
 		// 9 meaningless bytes
 		0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
 		0xff, // randomness starts here
@@ -207,10 +209,10 @@ func TestTValueSyntax(t *testing.T) {
 	}
 	for _, test := range []testCase{
 		// correct cases
-		{"", nil},
 		{"1", nil},
 
 		// syntax error
+		{"", ErrTValueEmpty},
 		{"g", strconv.ErrSyntax},
 	} {
 		t.Run(testName(test.in), func(t *testing.T) {

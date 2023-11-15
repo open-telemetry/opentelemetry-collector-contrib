@@ -31,7 +31,7 @@ func TestOTelTraceStateTValueSerialize(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, otts.HasTValue())
 	require.Equal(t, "3", otts.TValue())
-	require.Equal(t, 0x3p-4, otts.TValueThreshold().Probability())
+	require.Equal(t, 1-0x3p-4, otts.TValueThreshold().Probability())
 
 	require.True(t, otts.HasRValue())
 	require.Equal(t, "10000000000000", otts.RValue())
@@ -43,15 +43,14 @@ func TestOTelTraceStateTValueSerialize(t *testing.T) {
 	require.Equal(t, orig, w.String())
 }
 
-func TestOTelTraceStateZeroAdjustedCount(t *testing.T) {
+func TestOTelTraceStateZero(t *testing.T) {
 	const orig = "t:0"
 	otts, err := NewOTelTraceState(orig)
 	require.NoError(t, err)
 	require.True(t, otts.HasAnyValue())
 	require.True(t, otts.HasTValue())
-	require.True(t, otts.HasZeroTValue())
 	require.Equal(t, "0", otts.TValue())
-	require.Equal(t, 0.0, otts.TValueThreshold().Probability())
+	require.Equal(t, 1.0, otts.TValueThreshold().Probability())
 
 	var w strings.Builder
 	otts.Serialize(&w)
@@ -88,7 +87,7 @@ func TestOTelTraceStateTValueUpdate(t *testing.T) {
 	require.NoError(t, otts.UpdateTValueWithSampling(th, "3"))
 
 	require.Equal(t, "3", otts.TValue())
-	require.Equal(t, 0x3p-4, otts.TValueThreshold().Probability())
+	require.Equal(t, 1-0x3p-4, otts.TValueThreshold().Probability())
 
 	const updated = "r:abcdefabcdefab;t:3"
 	var w strings.Builder
@@ -277,29 +276,35 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 		adjCountOut float64
 	}
 	for _, test := range []testCase{
-		// 8/16 in, 2/16 out
-		{"t:8", 2, 0x2p-4, nil, "t:2", 8},
+		// 8/16 in, sampled at (0x10-0xe)/0x10 = 2/16 => adjCount 8
+		{"t:8", 2, 0x2p-4, nil, "t:e", 8},
+
+		// 8/16 in, sampled at 14/16 => no update, adjCount 2
+		{"t:8", 2, 0xep-4, nil, "t:8", 2},
 
 		// 1/16 in, 50% update (error)
-		{"t:1", 16, 0x8p-4, ErrInconsistentSampling, "t:1", 16},
+		{"t:f", 16, 0x8p-4, ErrInconsistentSampling, "t:f", 16},
 
-		// no sampling in, 1/16 update
-		{"", 1, 0x1p-4, nil, "t:1", 16},
+		// 1/1 sampling in, 1/16 update
+		{"t:0", 1, 0x1p-4, nil, "t:f", 16},
 
-		// zero adj count in, 1/16 update (error)
-		{"t:0", 0, 0x1p-4, ErrInconsistentSampling, "t:0", 0},
-
-		// none in, 0% update
-		{"t:0", 0, 0, nil, "t:0", 0},
-
-		// 8/16 in, zero update
-		{"t:8", 2, 0, nil, "t:0", 0},
+		// no t-value in, 1/16 update
+		{"", 0, 0x1p-4, nil, "t:f", 16},
 
 		// none in, 100% update
-		{"", 1, 1, nil, "", 1},
+		{"", 0, 1, nil, "t:0", 1},
 
 		// 1/2 in, 100% update (error)
 		{"t:8", 2, 1, ErrInconsistentSampling, "t:8", 2},
+
+		// 1/1 in, 0x1p-56 update
+		{"t:0", 1, 0x1p-56, nil, "t:ffffffffffffff", 0x1p56},
+
+		// 1/1 in, 0x1p-56 update
+		{"t:0", 1, 0x1p-56, nil, "t:ffffffffffffff", 0x1p56},
+
+		// 2/3 in, 1/3 update.  Note that 0x555 + 0xaab = 0x1000.
+		{"t:555", 1 / (1 - 0x555p-12), 0x555p-12, nil, "t:aab", 1 / (1 - 0xaabp-12)},
 	} {
 		t.Run(test.in+"/"+test.out, func(t *testing.T) {
 			otts := OTelTraceState{}

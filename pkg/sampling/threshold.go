@@ -25,9 +25,9 @@ const (
 // Threshold used to compare with the least-significant 7 bytes of the TraceID.
 type Threshold struct {
 	// unsigned is in the range [0, MaxAdjustedCount]
-	// - 0 represents never sampling (0 TraceID values are less-than)
-	// - 1 represents 1-in-MaxAdjustedCount (1 TraceID value is less-than)
-	// - MaxAdjustedCount represents always sampling (all TraceID values are less-than).
+	// - 0 represents always sampling (0 Random values are less-than)
+	// - 1 represents sampling 1-in-(MaxAdjustedCount-1)
+	// - MaxAdjustedCount represents always sampling 1-in-
 	unsigned uint64
 }
 
@@ -35,8 +35,11 @@ var (
 	// ErrTValueSize is returned for t-values longer than NumHexDigits hex digits.
 	ErrTValueSize = errors.New("t-value exceeds 14 hex digits")
 
-	NeverSampleThreshold  = Threshold{unsigned: 0}
-	AlwaysSampleThreshold = Threshold{unsigned: MaxAdjustedCount}
+	// ErrEmptyTValue indicates no t-value was found, i.e., no threshold available.
+	ErrTValueEmpty = errors.New("t-value is empty")
+
+	// AlwaysSampleThreshold represents 100% sampling.
+	AlwaysSampleThreshold = Threshold{unsigned: 0}
 )
 
 // TValueToThreshold returns a Threshold.  Because TValue strings
@@ -46,7 +49,7 @@ func TValueToThreshold(s string) (Threshold, error) {
 		return AlwaysSampleThreshold, ErrTValueSize
 	}
 	if len(s) == 0 {
-		return AlwaysSampleThreshold, nil
+		return AlwaysSampleThreshold, ErrTValueEmpty
 	}
 
 	// Having checked length above, there are no range errors
@@ -69,19 +72,11 @@ func TValueToThreshold(s string) (Threshold, error) {
 // up to 14 characters.  The empty string is returned for 100%
 // sampling.
 func (th Threshold) TValue() string {
-	// Special cases
-	switch th.unsigned {
-	case MaxAdjustedCount:
-		// 100% sampling.  Samplers are specified not to
-		// include a TValue in this case.
-		return ""
-	case 0:
-		// 0% sampling.  This is a special case, otherwise,
-		// the TrimRight below will return an empty string
-		// matching the case above.
+	// Always-sample is a special case because TrimRight() below
+	// will trim it to the empty string, which represents no t-value.
+	if th == AlwaysSampleThreshold {
 		return "0"
 	}
-
 	// For thresholds other than the extremes, format a full-width
 	// (14 digit) unsigned value with leading zeros, then, remove
 	// the trailing zeros.  Use the logic for (Randomness).RValue().
@@ -94,11 +89,17 @@ func (th Threshold) TValue() string {
 // ShouldSample returns true when the span passes this sampler's
 // consistent sampling decision.
 func (t Threshold) ShouldSample(rnd Randomness) bool {
-	return rnd.unsigned < t.unsigned
+	return rnd.unsigned >= t.unsigned
+}
+
+// ThresholdGreater allows direct comparison of Threshold values.
+// Greater thresholds equate with smaller sampling probabilities.
+func ThresholdGreater(a, b Threshold) bool {
+	return a.unsigned > b.unsigned
 }
 
 // ThresholdLessThan allows direct comparison of Threshold values.
-// Smaller thresholds equate with smaller probabilities.
+// Smaller thresholds equate with greater sampling probabilities.
 func ThresholdLessThan(a, b Threshold) bool {
 	return a.unsigned < b.unsigned
 }

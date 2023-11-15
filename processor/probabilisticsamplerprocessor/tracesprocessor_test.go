@@ -398,6 +398,126 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 	}
 }
 
+// Test_tracesamplerprocessor_TraceState checks if handling of the context
+// tracestate is correct.
+func Test_tracesamplerprocessor_TraceState(t *testing.T) {
+	singleSpanWithAttrib := func(key string, attribValue pcommon.Value) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.TraceState().FromRaw("")
+		return traces
+	}
+	tests := []struct {
+		name    string
+		cfg     *Config
+		td      ptrace.Traces
+		sampled bool
+	}{
+		{
+			name: "must_sample",
+			cfg: &Config{
+				SamplingPercentage: 0.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				pcommon.NewValueInt(2)),
+			sampled: true,
+		},
+		{
+			name: "must_sample_double",
+			cfg: &Config{
+				SamplingPercentage: 0.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				pcommon.NewValueDouble(1)),
+			sampled: true,
+		},
+		{
+			name: "must_sample_string",
+			cfg: &Config{
+				SamplingPercentage: 0.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				pcommon.NewValueStr("1")),
+			sampled: true,
+		},
+		{
+			name: "must_not_sample",
+			cfg: &Config{
+				SamplingPercentage: 100.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				pcommon.NewValueInt(0)),
+		},
+		{
+			name: "must_not_sample_double",
+			cfg: &Config{
+				SamplingPercentage: 100.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				pcommon.NewValueDouble(0)),
+		},
+		{
+			name: "must_not_sample_string",
+			cfg: &Config{
+				SamplingPercentage: 100.0,
+			},
+			td: singleSpanWithAttrib(
+				"sampling.priority",
+				pcommon.NewValueStr("0")),
+		},
+		{
+			name: "defer_sample_expect_not_sampled",
+			cfg: &Config{
+				SamplingPercentage: 0.0,
+			},
+			td: singleSpanWithAttrib(
+				"no.sampling.priority",
+				pcommon.NewValueInt(2)),
+		},
+		{
+			name: "defer_sample_expect_sampled",
+			cfg: &Config{
+				SamplingPercentage: 100.0,
+			},
+			td: singleSpanWithAttrib(
+				"no.sampling.priority",
+				pcommon.NewValueInt(2)),
+			sampled: true,
+		},
+	}
+	for _, tt := range tests {
+		for _, mode := range AllModes {
+			t.Run(tt.name, func(t *testing.T) {
+				sink := new(consumertest.TracesSink)
+				cfg := &Config{}
+				if tt.cfg != nil {
+					*cfg = *tt.cfg
+				}
+				cfg.SamplerMode = mode
+				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+				require.NoError(t, err)
+
+				err = tsp.ConsumeTraces(context.Background(), tt.td)
+				require.NoError(t, err)
+
+				sampledData := sink.AllTraces()
+				if tt.sampled {
+					require.Equal(t, 1, len(sampledData))
+					assert.Equal(t, 1, sink.SpanCount())
+				} else {
+					require.Equal(t, 0, len(sampledData))
+					assert.Equal(t, 0, sink.SpanCount())
+				}
+			})
+		}
+	}
+}
+
 func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
 	span := ptrace.NewSpan()
 	initSpanWithAttribute(key, value, span)
@@ -408,123 +528,6 @@ func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 	dest.SetName("spanName")
 	value.CopyTo(dest.Attributes().PutEmpty(key))
 }
-
-// func Test_tracesamplerprocessor_TraceState(t *testing.T) {
-// 	singleSpanWithAttrib := func(key string, attribValue pcommon.Value) ptrace.Traces {
-// 		traces := ptrace.NewTraces()
-// 		initSpanWithAttribute(key, attribValue, traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty())
-// 		return traces
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		cfg     *Config
-// 		td      ptrace.Traces
-// 		sampled bool
-// 	}{
-// 		{
-// 			name: "must_sample",
-// 			cfg: &Config{
-// 				SamplingPercentage: 0.0,
-// 			},
-// 			td: singleSpanWithAttrib(
-// 				"sampling.priority",
-// 				pcommon.NewValueInt(2)),
-// 			sampled: true,
-// 		},
-// 		{
-// 			name: "must_sample_double",
-// 			cfg: &Config{
-// 				SamplingPercentage: 0.0,
-// 			},
-// 			td: singleSpanWithAttrib(
-// 				"sampling.priority",
-// 				pcommon.NewValueDouble(1)),
-// 			sampled: true,
-// 		},
-// 		{
-// 			name: "must_sample_string",
-// 			cfg: &Config{
-// 				SamplingPercentage: 0.0,
-// 			},
-// 			td: singleSpanWithAttrib(
-// 				"sampling.priority",
-// 				pcommon.NewValueStr("1")),
-// 			sampled: true,
-// 		},
-// 		{
-// 			name: "must_not_sample",
-// 			cfg: &Config{
-// 				SamplingPercentage: 100.0,
-// 			},
-// 			td: singleSpanWithAttrib(
-// 				"sampling.priority",
-// 				pcommon.NewValueInt(0)),
-// 		},
-// 		{
-// 			name: "must_not_sample_double",
-// 			cfg: &Config{
-// 				SamplingPercentage: 100.0,
-// 			},
-// 			td: singleSpanWithAttrib(
-// 				"sampling.priority",
-// 				pcommon.NewValueDouble(0)),
-// 		},
-// 		{
-// 			name: "must_not_sample_string",
-// 			cfg: &Config{
-// 				SamplingPercentage: 100.0,
-// 			},
-// 			td: singleSpanWithAttrib(
-// 				"sampling.priority",
-// 				pcommon.NewValueStr("0")),
-// 		},
-// 		{
-// 			name: "defer_sample_expect_not_sampled",
-// 			cfg: &Config{
-// 				SamplingPercentage: 0.0,
-// 			},
-// 			td: singleSpanWithAttrib(
-// 				"no.sampling.priority",
-// 				pcommon.NewValueInt(2)),
-// 		},
-// 		{
-// 			name: "defer_sample_expect_sampled",
-// 			cfg: &Config{
-// 				SamplingPercentage: 100.0,
-// 			},
-// 			td: singleSpanWithAttrib(
-// 				"no.sampling.priority",
-// 				pcommon.NewValueInt(2)),
-// 			sampled: true,
-// 		},
-// 	}
-// 	for _, mode := range AllModes {
-// 		for _, tt := range tests {
-// 			t.Run(tt.name, func(t *testing.T) {
-// 				sink := new(consumertest.TracesSink)
-// 				cfg := &Config{}
-// 				if tt.cfg != nil {
-// 					*cfg = *tt.cfg
-// 				}
-// 				cfg.SamplerMode = mode
-// 				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
-// 				require.NoError(t, err)
-
-// 				err = tsp.ConsumeTraces(context.Background(), tt.td)
-// 				require.NoError(t, err)
-
-// 				sampledData := sink.AllTraces()
-// 				if tt.sampled {
-// 					require.Equal(t, 1, len(sampledData))
-// 					assert.Equal(t, 1, sink.SpanCount())
-// 				} else {
-// 					require.Equal(t, 0, len(sampledData))
-// 					assert.Equal(t, 0, sink.SpanCount())
-// 				}
-// 			})
-// 		}
-// 	}
-// }
 
 // genRandomTestData generates a slice of ptrace.Traces with the numBatches elements which one with
 // numTracesPerBatch spans (ie.: each span has a different trace ID). All spans belong to the specified

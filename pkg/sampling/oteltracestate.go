@@ -124,10 +124,6 @@ func (otts *OTelTraceState) HasTValue() bool {
 	return otts.tvalue != ""
 }
 
-func (otts *OTelTraceState) HasZeroTValue() bool {
-	return otts.HasTValue() && otts.TValueThreshold() == NeverSampleThreshold
-}
-
 func (otts *OTelTraceState) TValue() string {
 	return otts.tvalue
 }
@@ -137,7 +133,7 @@ func (otts *OTelTraceState) TValueThreshold() Threshold {
 }
 
 func (otts *OTelTraceState) UpdateTValueWithSampling(sampledThreshold Threshold, encodedTValue string) error {
-	if otts.HasTValue() && ThresholdLessThan(otts.threshold, sampledThreshold) {
+	if otts.HasTValue() && ThresholdGreater(otts.threshold, sampledThreshold) {
 		return ErrInconsistentSampling
 	}
 	otts.threshold = sampledThreshold
@@ -147,9 +143,6 @@ func (otts *OTelTraceState) UpdateTValueWithSampling(sampledThreshold Threshold,
 
 func (otts *OTelTraceState) AdjustedCount() float64 {
 	if !otts.HasTValue() {
-		return 1
-	}
-	if otts.TValueThreshold() == NeverSampleThreshold {
 		return 0
 	}
 	return 1.0 / otts.threshold.Probability()
