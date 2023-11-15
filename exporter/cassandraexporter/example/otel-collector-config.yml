@@ -7,7 +7,7 @@ exporters:
   cassandra:
     dsn: 127.0.0.1
     port: 9042
-    timeout: 10
+    timeout: 10s
     keyspace: "otel"
     trace_table: "otel_spans"
     logs_table: "otel_logs"
