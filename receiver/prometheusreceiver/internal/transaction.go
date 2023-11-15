@@ -149,8 +149,32 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 		curMF.mtype = pmetric.MetricTypeHistogram
 	}
 
-	err := curMF.addSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, val)
+	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+	err := curMF.addSeries(seriesRef, metricName, ls, atMs, val)
 	if err != nil {
+		// Handle special case of float sample indicating staleness of native
+		// histogram. TODO: add reference to issue in Prometheus
+		// If there is no "le" label, we assume the sample was for a
+		// native histogram.
+		if err == errEmptyLeLabel && value.IsStaleNaN(val) && curMF.mtype == pmetric.MetricTypeHistogram {
+			mg := curMF.loadMetricGroupOrCreate(seriesRef, ls, atMs)
+			// Double check that previously there was a native histogram stored.
+			if mg.fhValue != nil {
+				curMF.mtype = pmetric.MetricTypeExponentialHistogram
+				mg.mtype = pmetric.MetricTypeExponentialHistogram
+				curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, nil, &histogram.FloatHistogram{Sum: val})
+				// ignore errors here, this is best effort.
+				return 0, nil
+			}
+			if mg.hValue != nil {
+				curMF.mtype = pmetric.MetricTypeExponentialHistogram
+				mg.mtype = pmetric.MetricTypeExponentialHistogram
+				curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: val}, nil)
+				// ignore errors here, this is best effort.
+				return 0, nil
+			}
+		}
+
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 	}
 

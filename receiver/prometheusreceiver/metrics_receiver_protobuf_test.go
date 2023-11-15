@@ -360,3 +360,115 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 		})
 	}
 }
+
+func TestStaleExponentialHistogram(t *testing.T) {
+	mf := &dto.MetricFamily{
+		Name: "test_counter",
+		Type: dto.MetricType_COUNTER,
+		Metric: []dto.Metric{
+			{
+				Label: []dto.LabelPair{
+					{
+						Name:  "foo",
+						Value: "bar",
+					},
+				},
+				Counter: &dto.Counter{
+					Value: 1234,
+				},
+			},
+		},
+	}
+	buffer1 := prometheusMetricFamilyToProtoBuf(t, nil, mf)
+	nativeHistogram := &dto.MetricFamily{
+		Name: "test_native_histogram",
+		Type: dto.MetricType_HISTOGRAM,
+		Metric: []dto.Metric{
+			{
+				Histogram: &dto.Histogram{
+					SampleCount: 1213,
+					SampleSum:   456,
+					// Integer counter histogram definition
+					Schema:        3,
+					ZeroThreshold: 0.001,
+					ZeroCount:     2,
+					NegativeSpan: []dto.BucketSpan{
+						{Offset: 0, Length: 1},
+						{Offset: 1, Length: 1},
+					},
+					NegativeDelta: []int64{1, 1},
+					PositiveSpan: []dto.BucketSpan{
+						{Offset: -2, Length: 1},
+						{Offset: 2, Length: 1},
+					},
+					PositiveDelta: []int64{1, 0},
+				},
+			},
+		},
+	}
+	prometheusMetricFamilyToProtoBuf(t, buffer1, nativeHistogram)
+
+	mf = &dto.MetricFamily{
+		Name: "test_counter",
+		Type: dto.MetricType_COUNTER,
+		Metric: []dto.Metric{
+			{
+				Label: []dto.LabelPair{
+					{
+						Name:  "foo",
+						Value: "bar",
+					},
+				},
+				Counter: &dto.Counter{
+					Value: 2222,
+				},
+			},
+		},
+	}
+	buffer2 := prometheusMetricFamilyToProtoBuf(t, nil, mf)
+
+	expectations1 := []testExpectation{
+		assertMetricPresent(
+			"test_native_histogram",
+			compareMetricType(pmetric.MetricTypeExponentialHistogram),
+			compareMetricUnit(""),
+			[]dataPointExpectation{{
+				exponentialHistogramComparator: []exponentialHistogramComparator{
+					compareExponentialHistogram(1213, 456, 2, 0, []uint64{1, 0, 2}, -2, []uint64{1, 0, 0, 1}),
+				},
+			}},
+		),
+	}
+
+	expectations2 := []testExpectation{
+		assertMetricPresent(
+			"test_native_histogram",
+			compareMetricType(pmetric.MetricTypeExponentialHistogram),
+			compareMetricUnit(""),
+			[]dataPointExpectation{{
+				exponentialHistogramComparator: []exponentialHistogramComparator{
+					assertExponentialHistogramPointFlagNoRecordedValue(),
+				},
+			}},
+		),
+	}
+
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, useProtoBuf: true, buf: buffer1.Bytes()},
+				{code: 200, useProtoBuf: true, buf: buffer2.Bytes()},
+			},
+			validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
+				verifyNumValidScrapeResults(t, td, result)
+				doCompare(t, "target11", td.attributes, result[0], expectations1)
+				doCompare(t, "target12", td.attributes, result[1], expectations2)
+			},
+		},
+	}
+
+	testComponent(t, targets, func(c *Config) {
+		c.EnableProtobufNegotiation = true
+	})
+}

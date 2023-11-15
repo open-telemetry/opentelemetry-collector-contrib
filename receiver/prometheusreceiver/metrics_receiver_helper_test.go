@@ -523,6 +523,13 @@ func assertHistogramPointFlagNoRecordedValue() histogramPointComparator {
 	}
 }
 
+func assertExponentialHistogramPointFlagNoRecordedValue() exponentialHistogramComparator {
+	return func(t *testing.T, histogramDataPoint pmetric.ExponentialHistogramDataPoint) {
+		assert.True(t, histogramDataPoint.Flags().NoRecordedValue(),
+			"Datapoint flag for staleness marker not found as expected")
+	}
+}
+
 func assertSummaryPointFlagNoRecordedValue() summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint pmetric.SummaryDataPoint) {
 		assert.True(t, summaryDataPoint.Flags().NoRecordedValue(),
