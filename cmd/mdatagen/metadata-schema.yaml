@@ -104,3 +104,9 @@ metrics:
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
+
+# Lifecycle tests generated for this component.
+tests:
+  config: # {} by default, specific testing configuration for lifecycle tests.
+  skip_lifecycle: false # false by default
+  expect_consumer_error: true # false by default
