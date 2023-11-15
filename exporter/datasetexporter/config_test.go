@@ -16,7 +16,7 @@ import (
 func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url":       "https://example.com",
 		"api_key":           "secret",
 		"unknown_attribute": "some value",
@@ -32,7 +32,7 @@ func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 func TestConfigUseDefaults(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 	})
@@ -148,7 +148,7 @@ func TestConfigString(t *testing.T) {
 func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 		"logs": map[string]any{
@@ -163,7 +163,7 @@ func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 		"logs": map[string]any{

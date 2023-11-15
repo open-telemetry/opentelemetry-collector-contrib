@@ -13,7 +13,7 @@ import (
 )
 
 // JSONLogs is the type for the array of processed JSON log data from each request
-type JSONLogs []map[string]interface{}
+type JSONLogs []map[string]any
 
 // HasDDTag returns true if every log has the given ddtags
 func (jsonLogs *JSONLogs) HasDDTag(ddtags string) bool {

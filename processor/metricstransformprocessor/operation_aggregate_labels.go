@@ -83,10 +83,10 @@ func mergeDataPoints(to pmetric.Metric, aggType aggregationType, ag aggGroups) {
 
 func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
 	dpsByAttrsAndTs map[string]pmetric.NumberDataPointSlice) {
-	var keyHashParts []interface{}
+	var keyHashParts []any
 	for i := 0; i < dps.Len(); i++ {
 		if useStartTime {
-			keyHashParts = []interface{}{dps.At(i).StartTimestamp().String()}
+			keyHashParts = []any{dps.At(i).StartTimestamp().String()}
 		}
 		key := dataPointHashKey(dps.At(i).Attributes(), dps.At(i).Timestamp(), keyHashParts...)
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
@@ -100,7 +100,7 @@ func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime 
 	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		keyHashParts := make([]interface{}, 0, dp.ExplicitBounds().Len()+4)
+		keyHashParts := make([]any, 0, dp.ExplicitBounds().Len()+4)
 		for b := 0; b < dp.ExplicitBounds().Len(); b++ {
 			keyHashParts = append(keyHashParts, dp.ExplicitBounds().At(b))
 		}
@@ -121,7 +121,7 @@ func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPoi
 	dpsByAttrsAndTs map[string]pmetric.ExponentialHistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		keyHashParts := make([]interface{}, 0, 5)
+		keyHashParts := make([]any, 0, 5)
 		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), uint32(dp.Flags()), dp.Negative().Offset(),
 			dp.Positive().Offset())
 		if useStartTime {
@@ -147,8 +147,8 @@ func filterAttrs(metric pmetric.Metric, filterAttrKeys map[string]bool) {
 	})
 }
 
-func dataPointHashKey(atts pcommon.Map, ts pcommon.Timestamp, other ...interface{}) string {
-	hashParts := []interface{}{atts.AsRaw(), ts.String()}
+func dataPointHashKey(atts pcommon.Map, ts pcommon.Timestamp, other ...any) string {
+	hashParts := []any{atts.AsRaw(), ts.String()}
 	jsonStr, _ := json.Marshal(append(hashParts, other...))
 	return string(jsonStr)
 }

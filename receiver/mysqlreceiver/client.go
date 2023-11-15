@@ -367,7 +367,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	var stats []ReplicaStatusStats
 	for rows.Next() {
 		var s ReplicaStatusStats
-		dest := []interface{}{}
+		dest := []any{}
 		for _, col := range cols {
 			switch strings.ToLower(col) {
 			case "replica_io_state":

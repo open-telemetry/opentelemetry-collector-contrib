@@ -36,7 +36,7 @@ type metricNameTest struct {
 
 type metricWithResource struct {
 	metricNames        []string
-	resourceAttributes map[string]interface{}
+	resourceAttributes map[string]any
 }
 
 var (
@@ -71,7 +71,7 @@ var (
 	inMetricForResourceTest = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 				"attr2": "attr2/val2",
 				"attr3": "attr3/val3",
@@ -82,13 +82,13 @@ var (
 	inMetricForTwoResource = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
 		},
 		{
 			metricNames: []string{"metric3", "metric4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val2",
 			},
 		},

@@ -20,7 +20,7 @@ import (
 
 // transformObject transforms the k8s object by removing the data that is not utilized by the receiver.
 // Only highly utilized objects are transformed here while others are kept as is.
-func transformObject(object interface{}) (interface{}, error) {
+func transformObject(object any) (any, error) {
 	switch o := object.(type) {
 	case *corev1.Pod:
 		return pod.Transform(o), nil

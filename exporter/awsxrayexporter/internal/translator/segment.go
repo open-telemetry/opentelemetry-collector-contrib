@@ -369,10 +369,10 @@ func addSpecialAttributes(attributes map[string]pcommon.Value, indexedAttrs []st
 }
 
 func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
-	string, map[string]interface{}, map[string]map[string]interface{}) {
+	string, map[string]any, map[string]map[string]any) {
 	var (
-		annotations = map[string]interface{}{}
-		metadata    = map[string]map[string]interface{}{}
+		annotations = map[string]any{}
+		metadata    = map[string]map[string]any{}
 		user        string
 	)
 	userid, ok := attributes[conventions.AttributeEnduserID]
@@ -385,7 +385,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		return user, nil, nil
 	}
 
-	defaultMetadata := map[string]interface{}{}
+	defaultMetadata := map[string]any{}
 
 	indexedKeys := map[string]bool{}
 	if !indexAllAttrs {
@@ -445,7 +445,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 				}
 			case strings.HasPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix) && value.Type() == pcommon.ValueTypeStr:
 				namespace := strings.TrimPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix)
-				var metaVal map[string]interface{}
+				var metaVal map[string]any
 				err := json.Unmarshal([]byte(value.Str()), &metaVal)
 				switch {
 				case err != nil:
@@ -474,7 +474,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 	return user, annotations, metadata
 }
 
-func annotationValue(value pcommon.Value) interface{} {
+func annotationValue(value pcommon.Value) any {
 	switch value.Type() {
 	case pcommon.ValueTypeStr:
 		return value.Str()

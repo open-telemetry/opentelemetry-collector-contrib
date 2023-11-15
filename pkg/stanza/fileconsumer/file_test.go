@@ -1662,6 +1662,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	waitForToken(t, emitCalls, []byte(content))
 	expectNoTokens(t, emitCalls)
 	operator.wg.Wait()
+	require.Len(t, operator.previousPollFiles, 1)
 
 	// keep append data to file1 and file2
 	newContent := "bbbbbbbbbbbb"

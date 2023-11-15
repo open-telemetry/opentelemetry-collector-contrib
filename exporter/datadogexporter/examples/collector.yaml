@@ -325,25 +325,40 @@ exporters:
       #
       # span_name_as_resource_name: true
 
-      ## @param compute_stats_by_span_kind - enables APM stats computation based on `span.kind`
+      ## @param compute_stats_by_span_kind - enables APM stats computation based on `span.kind` - optional
       ## If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
       ## If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
       ## NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
       #
       # compute_stats_by_span_kind: true
   
-      ## @param peer_service_aggregation - enables `peer.service` aggregation on trace stats in Datadog exporter
+      ## @param peer_service_aggregation - enables `peer.service` aggregation on trace stats in Datadog exporter - optional
       ## If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
       ## For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
       ## If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
       ## If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
+      ## Deprecated: Please use peer_tags_aggregation instead
       #
       # peer_service_aggregation: true
 
-      ## @param trace_buffer - specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
-      ## If unset, the default value is 0, meaning the Datadog Agent TracerPayloads are unbuffered.
+      ## @param peer_tags_aggregation - enables aggregation of peer related tags in Datadog exporter - optional
+      ## If set to true, enables aggregation of peer related tags (e.g., `peer.service`, `db.instance`, etc.) in Datadog exporter.
+      ## If disabled, aggregated trace stats will not include these tags as dimensions on trace metrics.
+      ## For the best experience with peer tags, Datadog also recommends enabling `compute_stats_by_span_kind`.
+      ## If you are using an OTel tracer, it's best to have both enabled because client/producer spans with relevant peer tags
+      ## may not be marked by Datadog exporter as top-level spans.
+      ## If enabling both causes Datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
+      ## A high cardinality of peer tags or APM resources can also contribute to higher CPU and memory consumption.
+      ## You can check for the cardinality of these fields by making trace search queries in the Datadog UI.
+      ## The default list of peer tags can be found in https://github.com/DataDog/datadog-agent/blob/main/pkg/trace/stats/concentrator.go.
+      #
+      # peer_tags_aggregation: false
+
+      ## @param trace_buffer - specifies the number of outgoing trace payloads to buffer before dropping - optional
+      ## If unset, the default value is 0, meaning the outgoing trace payloads are unbuffered.
       ## If you start seeing log messages like `Payload in channel full. Dropped 1 payload.` in the datadog exporter, consider
-      ## setting a higher `trace_buffer` to avoid traces being dropped. 
+      ## setting a higher `trace_buffer` to avoid traces being dropped.
+      #
       # trace_buffer: 10
 
     ## @param host_metadata - custom object - optional

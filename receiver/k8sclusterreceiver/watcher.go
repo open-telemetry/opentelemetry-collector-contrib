@@ -243,7 +243,7 @@ func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer c
 	rw.metadataStore.Setup(gvk, informer.GetStore())
 }
 
-func (rw *resourceWatcher) onAdd(obj interface{}) {
+func (rw *resourceWatcher) onAdd(obj any) {
 	rw.waitForInitialInformerSync()
 
 	// Sync metadata only if there's at least one destination for it to sent.
@@ -258,7 +258,7 @@ func (rw *resourceWatcher) hasDestination() bool {
 	return len(rw.metadataConsumers) != 0 || rw.entityLogConsumer != nil
 }
 
-func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
+func (rw *resourceWatcher) onUpdate(oldObj, newObj any) {
 	rw.waitForInitialInformerSync()
 
 	// Sync metadata only if there's at least one destination for it to sent.
@@ -270,7 +270,7 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 }
 
 // objMetadata returns the metadata for the given object.
-func (rw *resourceWatcher) objMetadata(obj interface{}) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	switch o := obj.(type) {
 	case *corev1.Pod:
 		return pod.GetMetadata(o, rw.metadataStore, rw.logger)
