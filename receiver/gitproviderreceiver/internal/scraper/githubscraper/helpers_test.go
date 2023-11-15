@@ -117,12 +117,11 @@ func TestGenDefaultSearchQueryUser(t *testing.T) {
 
 func TestCheckOwnerExists(t *testing.T) {
 	testCases := []struct {
-		desc                string
-		login               string
-		expectedError       bool
-		expectedOwnerType   string
-		expectedOwnerExists bool
-		server              *http.ServeMux
+		desc              string
+		login             string
+		expectedError     bool
+		expectedOwnerType string
+		server            *http.ServeMux
 	}{
 		{
 			desc:  "TestOrgOwnerExists",
@@ -135,8 +134,7 @@ func TestCheckOwnerExists(t *testing.T) {
 				},
 				responseCode: http.StatusOK,
 			}),
-			expectedOwnerType:   "org",
-			expectedOwnerExists: true,
+			expectedOwnerType: "org",
 		},
 		{
 			desc:  "TestUserOwnerExists",
@@ -149,8 +147,7 @@ func TestCheckOwnerExists(t *testing.T) {
 				},
 				responseCode: http.StatusOK,
 			}),
-			expectedOwnerType:   "user",
-			expectedOwnerExists: true,
+			expectedOwnerType: "user",
 		},
 		{
 			desc:  "TestLoginError",
@@ -163,9 +160,8 @@ func TestCheckOwnerExists(t *testing.T) {
 				},
 				responseCode: http.StatusNotFound,
 			}),
-			expectedOwnerExists: false,
-			expectedOwnerType:   "",
-			expectedError:       true,
+			expectedOwnerType: "",
+			expectedError:     true,
 		},
 	}
 	for _, tc := range testCases {
@@ -179,10 +175,9 @@ func TestCheckOwnerExists(t *testing.T) {
 			defer server.Close()
 
 			client := graphql.NewClient(server.URL, ghs.client)
-			ownerExists, ownerType, err := ghs.checkOwnerExists(context.Background(), client, tc.login)
+			loginType, err := ghs.login(context.Background(), client, tc.login)
 
-			assert.Equal(t, tc.expectedOwnerExists, ownerExists)
-			assert.Equal(t, tc.expectedOwnerType, ownerType)
+			assert.Equal(t, tc.expectedOwnerType, loginType)
 			if !tc.expectedError {
 				assert.NoError(t, err)
 			}

@@ -5,7 +5,6 @@ package githubscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 
@@ -15,8 +14,8 @@ import (
 )
 
 const (
-    // The default public GitHub GraphQL Endpoint
-    defaultGraphURL = "https://api.github.com/graphql"
+	// The default public GitHub GraphQL Endpoint
+	defaultGraphURL = "https://api.github.com/graphql"
 )
 
 func (ghs *githubScraper) getRepos(
@@ -73,30 +72,29 @@ func (ghs *githubScraper) getBranches(
 	return count, nil
 }
 
-// Check to ensure that the login user (org name or user id) exists or
-// can be logged into.
-func (ghs *githubScraper) checkOwnerExists(ctx context.Context, client graphql.Client, owner string) (exists bool, ownerType string, err error) {
+// Login via the GraphQL checkLogin query in order to ensure that the user
+// and it's credentials are valid and return the type of user being authenticated.
+func (ghs *githubScraper) login(
+	ctx context.Context,
+	client graphql.Client,
+	owner string,
+) (string, error) {
+	var loginType string
 
-	loginResp, err := checkLogin(ctx, client, ghs.cfg.GitHubOrg)
-
-	exists = false
-	ownerType = ""
+	resp, err := checkLogin(ctx, client, ghs.cfg.GitHubOrg)
+	if err != nil {
+		return "", err
+	}
 
 	// These types are used later to generate the default string for the search query
 	// and thus must match the convention for user: and org: searches in GitHub
-	if loginResp.User.Login == owner {
-		exists = true
-		ownerType = "user"
-	} else if loginResp.Organization.Login == owner {
-		exists = true
-		ownerType = "org"
+	if resp.User.Login == owner {
+		loginType = "user"
+	} else if resp.Organization.Login == owner {
+		loginType = "org"
 	}
 
-	if exists {
-		err = nil
-	}
-
-	return
+	return loginType, nil
 }
 
 // Returns the default search query string based on input of owner type
@@ -116,18 +114,18 @@ func genDefaultSearchQuery(ownertype string, ghorg string) string {
 // https://docs.github.com/en/enterprise-server@3.8/rest/guides/getting-started-with-the-rest-api#making-a-request
 func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *github.Client, err error) {
 	rClient = github.NewClient(ghs.client)
-    gClient = graphql.NewClient(defaultGraphURL, ghs.client)
+	gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
 	if ghs.cfg.HTTPClientSettings.Endpoint != "" {
 
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
-        gu, err := url.JoinPath(ghs.cfg.HTTPClientSettings.Endpoint, "api/graphql")
+		gu, err := url.JoinPath(ghs.cfg.HTTPClientSettings.Endpoint, "api/graphql")
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error joining graphql endpoint: %v", err)
 			return nil, nil, err
 		}
-        gClient = graphql.NewClient(gu, ghs.client)
+		gClient = graphql.NewClient(gu, ghs.client)
 
 		// The rest client needs the endpoint to be the root of the server
 		ru := ghs.cfg.HTTPClientSettings.Endpoint

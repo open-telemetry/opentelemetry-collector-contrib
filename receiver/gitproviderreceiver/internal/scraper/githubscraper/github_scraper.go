@@ -72,19 +72,15 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	// Do some basic validation to ensure the values provided actually exist in github
 	// prior to making queries against that org or user value
-	exists, ownertype, err := ghs.checkOwnerExists(ctx, genClient, ghs.cfg.GitHubOrg)
+	loginType, err := ghs.login(ctx, genClient, ghs.cfg.GitHubOrg)
 	if err != nil {
-		ghs.logger.Sugar().Errorf("error checking if owner exists", zap.Error(err))
-	}
-
-	if !exists {
-		ghs.logger.Sugar().Error("error logging in and getting data from github")
+		ghs.logger.Sugar().Errorf("error logging into GitHub via GraphQL", zap.Error(err))
 		return ghs.mb.Emit(), err
 	}
 
 	// Generate the search query based on the type, org/user name, and the search_query
 	// value if provided
-	sq := genDefaultSearchQuery(ownertype, ghs.cfg.GitHubOrg)
+	sq := genDefaultSearchQuery(loginType, ghs.cfg.GitHubOrg)
 
 	if ghs.cfg.SearchQuery != "" {
 		sq = ghs.cfg.SearchQuery
