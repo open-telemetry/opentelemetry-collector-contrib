@@ -172,38 +172,49 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 	switch {
 	case mg.fhValue != nil:
 		fh := mg.fhValue
-		// Input is a float native histogram. This conversion will lose
-		// precision,but we don't actually expect float histograms in scrape,
-		// since these are typically the result of operations on integer
-		// native histograms in the database.
 		point.SetScale(fh.Schema)
-		point.SetCount(uint64(fh.Count))
-		point.SetSum(fh.Sum)
-		point.SetZeroCount(uint64(fh.ZeroCount))
+		if value.IsStaleNaN(fh.Sum) {
+			point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+			// The count and sum are initialized to 0, so we don't need to set them.
+		} else {
+			// Input is a float native histogram. This conversion will lose
+			// precision,but we don't actually expect float histograms in scrape,
+			// since these are typically the result of operations on integer
+			// native histograms in the database.
+			point.SetCount(uint64(fh.Count))
+			point.SetSum(fh.Sum)
+			point.SetZeroCount(uint64(fh.ZeroCount))
 
-		if len(fh.PositiveSpans) > 0 {
-			point.Positive().SetOffset(fh.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertAbsoluteBuckets(fh.PositiveSpans, fh.PositiveBuckets, point.Positive().BucketCounts())
-		}
-		if len(fh.NegativeSpans) > 0 {
-			point.Negative().SetOffset(fh.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertAbsoluteBuckets(fh.NegativeSpans, fh.NegativeBuckets, point.Negative().BucketCounts())
+			if len(fh.PositiveSpans) > 0 {
+				point.Positive().SetOffset(fh.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertAbsoluteBuckets(fh.PositiveSpans, fh.PositiveBuckets, point.Positive().BucketCounts())
+			}
+			if len(fh.NegativeSpans) > 0 {
+				point.Negative().SetOffset(fh.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertAbsoluteBuckets(fh.NegativeSpans, fh.NegativeBuckets, point.Negative().BucketCounts())
+			}
 		}
 
 	case mg.hValue != nil:
 		h := mg.hValue
-		point.SetScale(h.Schema)
-		point.SetCount(h.Count)
-		point.SetSum(h.Sum)
-		point.SetZeroCount(h.ZeroCount)
 
-		if len(h.PositiveSpans) > 0 {
-			point.Positive().SetOffset(h.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertDeltaBuckets(h.PositiveSpans, h.PositiveBuckets, point.Positive().BucketCounts())
-		}
-		if len(h.NegativeSpans) > 0 {
-			point.Negative().SetOffset(h.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
-			convertDeltaBuckets(h.NegativeSpans, h.NegativeBuckets, point.Negative().BucketCounts())
+		if value.IsStaleNaN(h.Sum) {
+			point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+			// The count and sum are initialized to 0, so we don't need to set them.
+		} else {
+			point.SetScale(h.Schema)
+			point.SetCount(h.Count)
+			point.SetSum(h.Sum)
+			point.SetZeroCount(h.ZeroCount)
+
+			if len(h.PositiveSpans) > 0 {
+				point.Positive().SetOffset(h.PositiveSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertDeltaBuckets(h.PositiveSpans, h.PositiveBuckets, point.Positive().BucketCounts())
+			}
+			if len(h.NegativeSpans) > 0 {
+				point.Negative().SetOffset(h.NegativeSpans[0].Offset - 1) // -1 because OTEL offset are for the lower bound, not the upper bound
+				convertDeltaBuckets(h.NegativeSpans, h.NegativeBuckets, point.Negative().BucketCounts())
+			}
 		}
 
 	default:
