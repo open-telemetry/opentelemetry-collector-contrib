@@ -14,6 +14,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+    // The default public GitHub GraphQL Endpoint
+    defaultGraphURL = "https://api.github.com/graphql"
+)
+
 func (ghs *githubScraper) getRepos(
 	ctx context.Context,
 	client graphql.Client,
@@ -118,30 +123,28 @@ func genDefaultSearchQuery(ownertype string, ghorg string) string {
 // https://docs.github.com/en/enterprise-server@3.8/graphql/guides/forming-calls-with-graphql#the-graphql-endpoint
 // https://docs.github.com/en/enterprise-server@3.8/rest/guides/getting-started-with-the-rest-api#making-a-request
 func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *github.Client, err error) {
-
-	gURL := "https://api.github.com/graphql"
 	rClient = github.NewClient(ghs.client)
+    gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
 	if ghs.cfg.HTTPClientSettings.Endpoint != "" {
 
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
-		gURL, err = url.JoinPath(ghs.cfg.HTTPClientSettings.Endpoint, "api/graphql")
+        gu, err := url.JoinPath(ghs.cfg.HTTPClientSettings.Endpoint, "api/graphql")
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error joining graphql endpoint: %v", err)
 			return nil, nil, err
 		}
+        gClient = graphql.NewClient(gu, ghs.client)
 
 		// The rest client needs the endpoint to be the root of the server
-		rURL := ghs.cfg.HTTPClientSettings.Endpoint
-		rClient, err = github.NewEnterpriseClient(rURL, rURL, ghs.client)
+		ru := ghs.cfg.HTTPClientSettings.Endpoint
+		rClient, err = github.NewEnterpriseClient(ru, ru, ghs.client)
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error creating enterprise client: %v", err)
 			return nil, nil, err
 		}
 	}
-
-	gClient = graphql.NewClient(gURL, ghs.client)
 
 	return gClient, rClient, nil
 }
