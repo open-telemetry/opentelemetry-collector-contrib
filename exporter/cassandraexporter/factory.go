@@ -26,7 +26,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		DSN:        "127.0.0.1",
 		Port:       9042,
-		Timeout:    10,
+		Timeout:    10 * time.Second,
 		Keyspace:   "otel",
 		TraceTable: "otel_spans",
 		LogsTable:  "otel_logs",
