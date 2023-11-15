@@ -109,7 +109,7 @@ type K8sService struct {
 	Namespace string
 	// ClusterIP is the IP under which the service is reachable within the cluster.
 	ClusterIP string
-	// The type of the service: ClusterIP, NodePort, LoadBalancer, ExternalName
+	// ServiceType is the type of the service: ClusterIP, NodePort, LoadBalancer, ExternalName
 	ServiceType string
 }
 
