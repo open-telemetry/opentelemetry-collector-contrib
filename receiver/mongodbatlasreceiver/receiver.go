@@ -81,14 +81,7 @@ func (s *mongodbatlasreceiver) shutdown(context.Context) error {
 	return s.client.Shutdown()
 }
 
-type ProjectWithConfig struct {
-	Project       *mongodbatlas.Project
-	ProjectConfig *ProjectConfig
-}
-
 func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) error {
-	var projectsWithConfig []ProjectWithConfig
-
 	if len(s.cfg.Projects) > 0 {
 		for _, projectCfg := range s.cfg.Projects {
 			project, err := s.client.GetProject(ctx, projectCfg.Name)
@@ -96,7 +89,15 @@ func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) e
 				s.log.Error("error retrieving project", zap.String("projectName", projectCfg.Name), zap.Error(err))
 				continue
 			}
-			projectsWithConfig = append(projectsWithConfig, ProjectWithConfig{Project: project, ProjectConfig: projectCfg})
+
+			org, err := s.client.GetOrganization(ctx, project.OrgID)
+			if err != nil {
+				return fmt.Errorf("error retrieving organization: %w", err)
+			}
+
+			if err := s.processProject(ctx, time, org.Name, project, projectCfg); err != nil {
+				s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
+			}
 		}
 	} else {
 		orgs, err := s.client.Organizations(ctx)
@@ -111,26 +112,16 @@ func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) e
 			}
 			for _, project := range proj {
 				// Since there is no specific ProjectConfig for these projects, pass nil.
-				projectsWithConfig = append(projectsWithConfig, ProjectWithConfig{Project: project, ProjectConfig: nil})
+				if err := s.processProject(ctx, time, org.Name, project, nil); err != nil {
+					s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
+				}
 			}
 		}
 	}
-
-	for _, projectWithConfig := range projectsWithConfig {
-		if err := s.processProject(ctx, time, projectWithConfig.Project, projectWithConfig.ProjectConfig); err != nil {
-			s.log.Error("error processing project", zap.String("projectID", projectWithConfig.Project.ID), zap.Error(err))
-		}
-	}
-
 	return nil
 }
 
-func (s *mongodbatlasreceiver) processProject(ctx context.Context, time timeconstraints, project *mongodbatlas.Project, projectCfg *ProjectConfig) error {
-	org, err := s.client.GetOrganization(ctx, project.OrgID)
-	if err != nil {
-		return fmt.Errorf("error retrieving organization: %w", err)
-	}
-
+func (s *mongodbatlasreceiver) processProject(ctx context.Context, time timeconstraints, orgName string, project *mongodbatlas.Project, projectCfg *ProjectConfig) error {
 	nodeClusterMap, providerMap, err := s.getNodeClusterNameMap(ctx, project.ID)
 	if err != nil {
 		return fmt.Errorf("error collecting clusters from project %s: %w", project.ID, err)
@@ -150,15 +141,15 @@ func (s *mongodbatlasreceiver) processProject(ctx context.Context, time timecons
 			continue
 		}
 
-		if err := s.extractProcessMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
+		if err := s.extractProcessMetrics(ctx, time, orgName, project, process, clusterName, providerValues); err != nil {
 			return fmt.Errorf("error when polling process metrics from MongoDB Atlas for process %s: %w", process.ID, err)
 		}
 
-		if err := s.extractProcessDatabaseMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
+		if err := s.extractProcessDatabaseMetrics(ctx, time, orgName, project, process, clusterName, providerValues); err != nil {
 			return fmt.Errorf("error when polling process database metrics from MongoDB Atlas for process %s: %w", process.ID, err)
 		}
 
-		if err := s.extractProcessDiskMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
+		if err := s.extractProcessDiskMetrics(ctx, time, orgName, project, process, clusterName, providerValues); err != nil {
 			return fmt.Errorf("error when polling process disk metrics from MongoDB Atlas for process %s: %w", process.ID, err)
 		}
 	}
