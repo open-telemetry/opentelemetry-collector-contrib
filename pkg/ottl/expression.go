@@ -247,6 +247,41 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 	}
 }
 
+// BoolGetter is a Getter that must return a bool.
+type BoolGetter[K any] interface {
+	// Get retrieves a bool value.
+	Get(ctx context.Context, tCtx K) (bool, error)
+}
+
+// StandardBoolGetter is a basic implementation of BoolGetter
+type StandardBoolGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+// Get retrieves a bool value.
+// If the value is not a bool a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardBoolGetter[K]) Get(ctx context.Context, tCtx K) (bool, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return false, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return false, TypeError("expected bool but got nil")
+	}
+	switch v := val.(type) {
+	case bool:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeBool {
+			return v.Bool(), nil
+		}
+		return false, TypeError(fmt.Sprintf("expected bool but got %v", v.Type()))
+	default:
+		return false, TypeError(fmt.Sprintf("expected bool but got %T", val))
+	}
+}
+
 // FunctionGetter uses a function factory to return an instantiated function as an Expr.
 type FunctionGetter[K any] interface {
 	Get(args Arguments) (Expr[K], error)
@@ -503,6 +538,64 @@ func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, erro
 		}
 	default:
 		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
+	}
+	return &result, nil
+}
+
+// BoolLikeGetter is a Getter that returns a bool by converting the underlying value to a bool if necessary.
+type BoolLikeGetter[K any] interface {
+	// Get retrieves a bool value.
+	// Unlike `BoolGetter`, the expectation is that the underlying value is converted to a bool if possible.
+	// If the value cannot be converted to a bool, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
+	Get(ctx context.Context, tCtx K) (*bool, error)
+}
+
+type StandardBoolLikeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+func (g StandardBoolLikeGetter[K]) Get(ctx context.Context, tCtx K) (*bool, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return nil, nil
+	}
+	var result bool
+	switch v := val.(type) {
+	case bool:
+		result = v
+	case int:
+		result = v != 0
+	case int64:
+		result = v != 0
+	case string:
+		result, err = strconv.ParseBool(v)
+		if err != nil {
+			return nil, err
+		}
+	case float64:
+		result = v != 0.0
+	case pcommon.Value:
+		switch v.Type() {
+		case pcommon.ValueTypeBool:
+			result = v.Bool()
+		case pcommon.ValueTypeInt:
+			result = v.Int() != 0
+		case pcommon.ValueTypeStr:
+			result, err = strconv.ParseBool(v.Str())
+			if err != nil {
+				return nil, err
+			}
+		case pcommon.ValueTypeDouble:
+			result = v.Double() != 0.0
+		default:
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
+		}
+	default:
+		return nil, TypeError(fmt.Sprintf("unsupported type: %T", val))
 	}
 	return &result, nil
 }
