@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-const metricsPictPairsFile = "../../internal/goldendataset/testdata/generated_pict_pairs_metrics.txt"
+const metricsPictPairsFile = "../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_metrics.txt"
 
 func TestGoldenDataProvider(t *testing.T) {
 	dp := NewGoldenDataProvider("", "", metricsPictPairsFile)
