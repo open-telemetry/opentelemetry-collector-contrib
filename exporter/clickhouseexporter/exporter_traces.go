@@ -291,12 +291,12 @@ func renderInsertTracesSQL(cfg *Config) string {
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {
-	ttlExpr := GenerateTTLExpr(cfg.TTLDays, cfg.TTL)
+	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL)
 	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, ttlExpr)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
-	ttlExpr := GenerateTTLExpr(cfg.TTLDays, cfg.TTL)
+	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL)
 	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, ttlExpr)
 }
 
