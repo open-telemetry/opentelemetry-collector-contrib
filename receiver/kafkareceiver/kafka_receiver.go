@@ -676,9 +676,9 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 				return err
 			}
 			c.headerExtractor.extractHeadersLogs(logs, message)
+			logRecordCount := logs.LogRecordCount()
 			err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
-			// TODO
-			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
+			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logRecordCount, err)
 			if err != nil {
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
