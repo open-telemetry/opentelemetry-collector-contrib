@@ -107,6 +107,37 @@ func exponentialHistogramPointRaw(attributes []*kv, startTimestamp, timestamp pc
 	return hdp
 }
 
+func exponentialHistogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, positiveOffset int32, positiveBuckets []uint64, negativeOffset int32, negativeBuckets []uint64) pmetric.ExponentialHistogramDataPoint {
+	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+	hdp.SetScale(scale)
+	hdp.SetZeroCount(zeroCount)
+	hdp.Positive().SetOffset(positiveOffset)
+	hdp.Positive().BucketCounts().FromRaw(positiveBuckets)
+	hdp.Negative().SetOffset(negativeOffset)
+	hdp.Negative().BucketCounts().FromRaw(negativeBuckets)
+
+	count := uint64(0)
+	sum := float64(0)
+	for i, bCount := range positiveBuckets {
+		count += bCount
+		sum += float64(bCount) * float64(i)
+	}
+	for i, bCount := range negativeBuckets {
+		count += bCount
+		sum -= float64(bCount) * float64(i)
+	}
+	hdp.SetCount(count)
+	hdp.SetSum(sum)
+	return hdp
+}
+
+func exponentialHistogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.ExponentialHistogramDataPoint {
+	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+	hdp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+
+	return hdp
+}
+
 // exponentialHistogramPointSimplified let's you define an exponential
 // histogram with just a few parameters.
 // Scale and ZeroCount are set to the provided values.
