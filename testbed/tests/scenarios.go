@@ -357,7 +357,7 @@ func ScenarioSendingQueuesFull(
 	// searchFunc checks for "sending_queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
 	// to generate only successes from that time on
 	tc.WaitForN(func() bool {
-		logFound := tc.SearchText("sending_queue is full")
+		logFound := tc.AgentLogsContains("sending_queue is full")
 		if !logFound {
 			dataChannel <- true
 			return false

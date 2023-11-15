@@ -326,8 +326,8 @@ func (tc *TestCase) logStatsOnce() {
 }
 
 // Used to search for text in agent.log
-// It can be used to verify if we've hit QueuedRetry sender or memory limitter
-func (tc *TestCase) SearchText(text string) bool {
+// It can be used to verify if we've hit QueuedRetry sender or memory limiter
+func (tc *TestCase) AgentLogsContains(text string) bool {
 	filename := tc.composeTestResultFileName("agent.log")
 	cmd := exec.Command("cat", filename)
 	grep := exec.Command("grep", "-E", text)

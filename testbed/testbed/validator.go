@@ -40,7 +40,7 @@ func (v *LogPresentValidator) Validate(tc *TestCase) {
 		successMsg = fmt.Sprintf("Log '%s' not found", logMsg)
 	}
 
-	if assert.True(tc.t, tc.SearchText(logMsg) == v.Present, errorMsg) {
+	if assert.True(tc.t, tc.AgentLogsContains(logMsg) == v.Present, errorMsg) {
 		log.Print(successMsg)
 	}
 }
