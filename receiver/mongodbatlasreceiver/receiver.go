@@ -159,6 +159,10 @@ func (s *mongodbatlasreceiver) processProject(ctx context.Context, time timecons
 
 // shouldProcessCluster checks whether a given cluster should be processed based on the project configuration.
 func shouldProcessCluster(projectCfg *ProjectConfig, clusterName string) bool {
+	if projectCfg == nil {
+		// If there is no project config, process all clusters.
+		return true
+	}
 	// If there are no included clusters specified, process all clusters unless the is an excluded clusters.
 	if len(projectCfg.IncludeClusters) == 0 {
 		// Check if cluster is excluded.
