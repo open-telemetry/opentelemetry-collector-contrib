@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxrec
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.89.0
 	github.com/shirou/gopsutil/v3 v3.23.10
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
@@ -63,8 +63,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.89.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
