@@ -14,8 +14,8 @@ import (
 )
 
 type DeleteMatchingKeysArguments[K any] struct {
-	Target  ottl.PMapGetter[K] `ottlarg:"0"`
-	Pattern string             `ottlarg:"1"`
+	Target  ottl.PMapGetter[K]
+	Pattern string
 }
 
 func NewDeleteMatchingKeysFactory[K any]() ottl.Factory[K] {
@@ -37,7 +37,7 @@ func deleteMatchingKeys[K any](target ottl.PMapGetter[K], pattern string) (ottl.
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)
 	}
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

@@ -7,7 +7,7 @@
 |               | [development]: logs   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8scluster%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8scluster) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8scluster%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8scluster) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@povilasv](https://www.github.com/povilasv) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
@@ -137,7 +137,7 @@ for the format of emitted log records.
 ## Example
 
 Here is an example deployment of the collector that sets up this receiver along with
-the logging exporter.
+the debug exporter.
 
 Follow the below sections to setup various Kubernetes resources required for the deployment.
 
@@ -159,15 +159,15 @@ data:
       k8s_cluster:
         collection_interval: 10s
     exporters:
-      logging:
+      debug:
     service:
       pipelines:
         metrics:
           receivers: [k8s_cluster]
-          exporters: [logging]
+          exporters: [debug]
         logs/entity_events:
           receivers: [k8s_cluster]
-          exporters: [logging]
+          exporters: [debug]
 EOF
 ```
 

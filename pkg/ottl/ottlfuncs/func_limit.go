@@ -13,9 +13,9 @@ import (
 )
 
 type LimitArguments[K any] struct {
-	Target       ottl.PMapGetter[K] `ottlarg:"0"`
-	Limit        int64              `ottlarg:"1"`
-	PriorityKeys []string           `ottlarg:"2"`
+	Target       ottl.PMapGetter[K]
+	Limit        int64
+	PriorityKeys []string
 }
 
 func NewLimitFactory[K any]() ottl.Factory[K] {
@@ -47,7 +47,7 @@ func limit[K any](target ottl.PMapGetter[K], limit int64, priorityKeys []string)
 		keep[key] = struct{}{}
 	}
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

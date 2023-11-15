@@ -118,12 +118,6 @@ func TestIsKindSupported(t *testing.T) {
 			gvk:      gvk.Pod,
 			expected: true,
 		},
-		{
-			name:     "unsupported_kind",
-			client:   fake.NewSimpleClientset(),
-			gvk:      gvk.CronJobBeta,
-			expected: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -179,21 +173,9 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 						},
 					},
 					{
-						GroupVersion: "batch/v1beta1",
-						APIResources: []metav1.APIResource{
-							gvkToAPIResource(gvk.CronJobBeta),
-						},
-					},
-					{
 						GroupVersion: "autoscaling/v2",
 						APIResources: []metav1.APIResource{
 							gvkToAPIResource(gvk.HorizontalPodAutoscaler),
-						},
-					},
-					{
-						GroupVersion: "autoscaling/v2beta2",
-						APIResources: []metav1.APIResource{
-							gvkToAPIResource(gvk.HorizontalPodAutoscalerBeta),
 						},
 					},
 				}
@@ -324,7 +306,7 @@ func TestObjMetadata(t *testing.T) {
 	tests := []struct {
 		name          string
 		metadataStore *metadata.Store
-		resource      interface{}
+		resource      any
 		want          map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata
 	}{
 		{
@@ -381,7 +363,7 @@ func TestObjMetadata(t *testing.T) {
 			metadataStore: func() *metadata.Store {
 				ms := metadata.NewStore()
 				ms.Setup(gvk.Service, &testutils.MockStore{
-					Cache: map[string]interface{}{
+					Cache: map[string]any{
 						"test-namespace/test-service": &corev1.Service{
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      "test-service",
@@ -571,7 +553,7 @@ var allPodMetadata = func(metadata map[string]string) map[string]string {
 	return out
 }
 
-func podWithAdditionalLabels(labels map[string]string, pod *corev1.Pod) interface{} {
+func podWithAdditionalLabels(labels map[string]string, pod *corev1.Pod) any {
 	if pod.Labels == nil {
 		pod.Labels = make(map[string]string, len(labels))
 	}

@@ -13,7 +13,7 @@ import (
 )
 
 type SHA256Arguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
+	Target ottl.StringGetter[K]
 }
 
 func NewSHA256Factory[K any]() ottl.Factory[K] {
@@ -32,7 +32,7 @@ func createSHA256Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 
 func SHA256HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

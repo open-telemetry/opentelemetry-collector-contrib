@@ -12,7 +12,7 @@ import (
 )
 
 type DurationArguments[K any] struct {
-	Duration ottl.StringGetter[K] `ottlarg:"0"`
+	Duration ottl.StringGetter[K]
 }
 
 func NewDurationFactory[K any]() ottl.Factory[K] {
@@ -29,7 +29,7 @@ func createDurationFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 }
 
 func Duration[K any](duration ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

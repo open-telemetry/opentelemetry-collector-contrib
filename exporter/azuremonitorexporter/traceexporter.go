@@ -58,7 +58,7 @@ func (exporter *traceExporter) onTraceData(_ context.Context, traceData ptrace.T
 	}
 
 	visitor := &traceVisitor{exporter: exporter}
-	Accept(traceData, visitor)
+	accept(traceData, visitor)
 	return visitor.err
 }
 
@@ -70,5 +70,10 @@ func newTracesExporter(config *Config, transportChannel transportChannel, set ex
 		logger:           set.Logger,
 	}
 
-	return exporterhelper.NewTracesExporter(context.TODO(), set, config, exporter.onTraceData)
+	return exporterhelper.NewTracesExporter(
+		context.TODO(),
+		set,
+		config,
+		exporter.onTraceData,
+		exporterhelper.WithQueue(config.QueueSettings))
 }

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,7 +50,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Event:      "value",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -70,7 +71,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Event:      12.3,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -92,8 +93,8 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",
-					Event:      []interface{}{"foo", "bar"},
-					Fields: map[string]interface{}{
+					Event:      []any{"foo", "bar"},
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -119,8 +120,8 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",
-					Event:      map[string]interface{}{"foos": []interface{}{"foo", "bar", "foobar"}, "bool": false, "someInt": int64(12)},
-					Fields: map[string]interface{}{
+					Event:      map[string]any{"foos": []any{"foo", "bar", "foobar"}, "bool": false, "someInt": int64(12)},
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -151,7 +152,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Event:      "value",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -171,7 +172,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Event:      "value",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -212,7 +213,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "1",
 					Index:      "1",
 					Event:      "Event-1",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value1",
 					},
 				},
@@ -223,7 +224,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "2",
 					Index:      "2",
 					Event:      "Event-2",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value2",
 					},
 				},
@@ -234,7 +235,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "1",
 					Index:      "1",
 					Event:      "Event-3",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value1",
 					},
 				},
@@ -245,7 +246,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "2",
 					Index:      "2",
 					Event:      "Event-4",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value2",
 					},
 				},
@@ -256,7 +257,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "1",
 					Index:      "2",
 					Event:      "Event-5",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value1-2",
 					},
 				},
@@ -267,7 +268,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "2",
 					Index:      "1",
 					Event:      "Event-6",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value2-1",
 					},
 				},
@@ -341,6 +342,9 @@ func Test_SplunkHecToLogData(t *testing.T) {
 }
 
 func Test_SplunkHecRawToLogData(t *testing.T) {
+	const (
+		testTimestampVal = 1695146885
+	)
 	hecConfig := &Config{
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     "mysource",
@@ -355,6 +359,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 		query          map[string][]string
 		assertResource func(t *testing.T, got plog.Logs, slLen int)
 		config         *Config
+		time           pcommon.Timestamp
 	}{
 		{
 			name: "all_mapping",
@@ -369,6 +374,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 				m[sourcetype] = k
 				m[source] = k
 				m[index] = k
+				m[queryTime] = []string{"1695146885"}
 				return m
 			}(),
 			assertResource: func(t *testing.T, got plog.Logs, slLen int) {
@@ -395,8 +401,10 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 				} else {
 					assert.Fail(t, "index is not added to attributes")
 				}
+				assert.Equal(t, time.Unix(testTimestampVal, 0).Unix(), got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Timestamp().AsTime().Unix())
 			},
 			config: hecConfig,
+			time:   pcommon.NewTimestampFromTime(time.Unix(testTimestampVal, 0)),
 		},
 		{
 			name: "some_mapping",
@@ -425,6 +433,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 				} else {
 					assert.Fail(t, "sourcetype is not added to attributes")
 				}
+				assert.Equal(t, time.Unix(0, 0).Unix(), got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Timestamp().AsTime().Unix())
 			},
 			config: hecConfig,
 		},
@@ -439,12 +448,14 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 			}(),
 			assertResource: func(t *testing.T, got plog.Logs, slLen int) {
 				assert.Equal(t, 1, got.LogRecordCount())
+				assert.Equal(t, time.Unix(testTimestampVal, 0).Unix(), got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Timestamp().AsTime().Unix())
 			},
 			config: func() *Config {
 				return &Config{
 					Splitting: SplittingStrategyNone,
 				}
 			}(),
+			time: pcommon.NewTimestampFromTime(time.Unix(testTimestampVal, 0)),
 		},
 		{
 			name: "line splitting",
@@ -466,7 +477,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, slLen, err := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, tt.config)
+			result, slLen, err := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, tt.config, tt.time)
 			require.NoError(t, err)
 			tt.assertResource(t, result, slLen)
 		})
@@ -519,7 +530,7 @@ func TestConvertToValueFloat(t *testing.T) {
 
 func TestConvertToValueMap(t *testing.T) {
 	value := pcommon.NewValueEmpty()
-	assert.NoError(t, convertToValue(zap.NewNop(), map[string]interface{}{"foo": "bar"}, value))
+	assert.NoError(t, convertToValue(zap.NewNop(), map[string]any{"foo": "bar"}, value))
 	atts := pcommon.NewValueMap()
 	attMap := atts.Map()
 	attMap.PutStr("foo", "bar")
@@ -528,7 +539,7 @@ func TestConvertToValueMap(t *testing.T) {
 
 func TestConvertToValueArray(t *testing.T) {
 	value := pcommon.NewValueEmpty()
-	assert.NoError(t, convertToValue(zap.NewNop(), []interface{}{"foo"}, value))
+	assert.NoError(t, convertToValue(zap.NewNop(), []any{"foo"}, value))
 	arrValue := pcommon.NewValueSlice()
 	arr := arrValue.Slice()
 	arr.AppendEmpty().SetStr("foo")
@@ -540,9 +551,9 @@ func TestConvertToValueInvalid(t *testing.T) {
 }
 
 func TestConvertToValueInvalidInMap(t *testing.T) {
-	assert.Error(t, convertToValue(zap.NewNop(), map[string]interface{}{"foo": splunk.Event{}}, pcommon.NewValueEmpty()))
+	assert.Error(t, convertToValue(zap.NewNop(), map[string]any{"foo": splunk.Event{}}, pcommon.NewValueEmpty()))
 }
 
 func TestConvertToValueInvalidInArray(t *testing.T) {
-	assert.Error(t, convertToValue(zap.NewNop(), []interface{}{splunk.Event{}}, pcommon.NewValueEmpty()))
+	assert.Error(t, convertToValue(zap.NewNop(), []any{splunk.Event{}}, pcommon.NewValueEmpty()))
 }

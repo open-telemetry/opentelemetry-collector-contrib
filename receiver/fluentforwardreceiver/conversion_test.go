@@ -23,11 +23,11 @@ func TestMessageEventConversion(t *testing.T) {
 	err := event.DecodeMsg(reader)
 	require.Nil(t, err)
 
-	expectedLog := Logs(
+	expectedLog := logConstructor(
 		Log{
 			Timestamp: 1593031012000000000,
 			Body:      pcommon.NewValueStr("..."),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"container_id":   "b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d",
 				"container_name": "/unruffled_cannon",
 				"fluent.tag":     "b00a67eb6458",
@@ -90,11 +90,11 @@ func TestAttributeTypeConversion(t *testing.T) {
 
 	le := event.LogRecords().At(0)
 
-	require.NoError(t, plogtest.CompareLogRecord(Logs(
+	require.NoError(t, plogtest.CompareLogRecord(logConstructor(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      pcommon.NewValueEmpty(),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"a":          5.0,
 				"b":          6.0,
 				"c":          true,
@@ -109,7 +109,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 				"k":          -1,
 				"l":          "(0+0i)",
 				"m":          "\001e\002",
-				"n":          []interface{}{"first", "second"},
+				"n":          []any{"first", "second"},
 				"o":          "cde",
 				"p":          nil,
 			},
@@ -236,11 +236,11 @@ func TestBodyConversion(t *testing.T) {
 	cv := body.Map().PutEmptyMap("c")
 	cv.PutInt("d", 24)
 
-	require.NoError(t, plogtest.CompareLogRecord(Logs(
+	require.NoError(t, plogtest.CompareLogRecord(logConstructor(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      body,
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "my-tag",
 			},
 		},

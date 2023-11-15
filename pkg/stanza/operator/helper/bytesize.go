@@ -20,7 +20,7 @@ func (h *ByteSize) UnmarshalText(text []byte) (err error) {
 	slice[0] = byte('"')
 	slice = append(slice, text...)
 	slice = append(slice, byte('"'))
-	unmarshal := func(i interface{}) error {
+	unmarshal := func(i any) error {
 		return json.Unmarshal(slice, &i)
 	}
 

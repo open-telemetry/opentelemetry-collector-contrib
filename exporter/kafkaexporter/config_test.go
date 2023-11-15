@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -56,8 +57,8 @@ func TestLoadConfig(t *testing.T) {
 				Topic:    "spans",
 				Encoding: "otlp_proto",
 				Brokers:  []string{"foo:123", "bar:456"},
-				Authentication: Authentication{
-					PlainText: &PlainTextConfig{
+				Authentication: kafka.Authentication{
+					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
 						Password: "pass",
 					},
@@ -79,8 +80,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			option: func(conf *Config) {
-				conf.Authentication = Authentication{
-					SASL: &SASLConfig{
+				conf.Authentication = kafka.Authentication{
+					SASL: &kafka.SASLConfig{
 						Username:  "jdoe",
 						Password:  "pass",
 						Mechanism: "PLAIN",
@@ -108,16 +109,62 @@ func TestLoadConfig(t *testing.T) {
 				Topic:    "spans",
 				Encoding: "otlp_proto",
 				Brokers:  []string{"foo:123", "bar:456"},
-				Authentication: Authentication{
-					PlainText: &PlainTextConfig{
+				Authentication: kafka.Authentication{
+					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
 						Password: "pass",
 					},
-					SASL: &SASLConfig{
+					SASL: &kafka.SASLConfig{
 						Username:  "jdoe",
 						Password:  "pass",
 						Mechanism: "PLAIN",
 						Version:   0,
+					},
+				},
+				Metadata: Metadata{
+					Full: false,
+					Retry: MetadataRetry{
+						Max:     15,
+						Backoff: defaultMetadataRetryBackoff,
+					},
+				},
+				Producer: Producer{
+					MaxMessageBytes: 10000000,
+					RequiredAcks:    sarama.WaitForAll,
+					Compression:     "none",
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, ""),
+			option: func(conf *Config) {
+				conf.ResolveCanonicalBootstrapServersOnly = true
+			},
+			expected: &Config{
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 10 * time.Second,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ResolveCanonicalBootstrapServersOnly: true,
+				Authentication: kafka.Authentication{
+					PlainText: &kafka.PlainTextConfig{
+						Username: "jdoe",
+						Password: "pass",
 					},
 				},
 				Metadata: Metadata{
@@ -166,8 +213,8 @@ func TestValidate_sasl_username(t *testing.T) {
 		Producer: Producer{
 			Compression: "none",
 		},
-		Authentication: Authentication{
-			SASL: &SASLConfig{
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
 				Username:  "",
 				Password:  "pass",
 				Mechanism: "PLAIN",
@@ -184,8 +231,8 @@ func TestValidate_sasl_password(t *testing.T) {
 		Producer: Producer{
 			Compression: "none",
 		},
-		Authentication: Authentication{
-			SASL: &SASLConfig{
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
 				Username:  "jdoe",
 				Password:  "",
 				Mechanism: "PLAIN",
@@ -202,8 +249,8 @@ func TestValidate_sasl_mechanism(t *testing.T) {
 		Producer: Producer{
 			Compression: "none",
 		},
-		Authentication: Authentication{
-			SASL: &SASLConfig{
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
 				Username:  "jdoe",
 				Password:  "pass",
 				Mechanism: "FAKE",
@@ -220,8 +267,8 @@ func TestValidate_sasl_version(t *testing.T) {
 		Producer: Producer{
 			Compression: "none",
 		},
-		Authentication: Authentication{
-			SASL: &SASLConfig{
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
 				Username:  "jdoe",
 				Password:  "pass",
 				Mechanism: "PLAIN",

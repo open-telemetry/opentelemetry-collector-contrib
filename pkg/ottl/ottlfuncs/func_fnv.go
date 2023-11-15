@@ -12,7 +12,7 @@ import (
 )
 
 type FnvArguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
+	Target ottl.StringGetter[K]
 }
 
 func NewFnvFactory[K any]() ottl.Factory[K] {
@@ -31,7 +31,7 @@ func createFnvFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 
 func FNVHashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

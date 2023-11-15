@@ -14,8 +14,8 @@ import (
 )
 
 type convertSummarySumValToSumArguments struct {
-	StringAggTemp string `ottlarg:"0"`
-	Monotonic     bool   `ottlarg:"1"`
+	StringAggTemp string
+	Monotonic     bool
 }
 
 func newConvertSummarySumValToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
@@ -42,7 +42,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprF
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
-	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSummary {
 			return nil, nil

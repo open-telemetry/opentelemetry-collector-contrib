@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -46,10 +47,14 @@ var (
 )
 
 const (
+	// defaultMetadataNamespace is used for non-namespaced non-indexed attributes.
+	defaultMetadataNamespace = "default"
 	// defaultSpanName will be used if there are no valid xray characters in the span name
 	defaultSegmentName = "span"
 	// maxSegmentNameLength the maximum length of a Segment name
 	maxSegmentNameLength = 200
+	// rpc.system value for AWS service remotes
+	awsAPIRPCSystem = "aws-api"
 )
 
 const (
@@ -74,6 +79,14 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 	jsonStr := w.String()
 	writers.release(w)
 	return jsonStr, nil
+}
+
+func isAwsSdkSpan(span ptrace.Span) bool {
+	attributes := span.Attributes()
+	if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
+		return rpcSystem.Str() == awsAPIRPCSystem
+	}
+	return false
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
@@ -127,6 +140,10 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
 		if remoteServiceName, ok := attributes.Get(awsRemoteService); ok {
 			name = remoteServiceName.Str()
+			// only strip the prefix for AWS spans
+			if isAwsSdkSpan(span) && strings.HasPrefix(name, "AWS.SDK.") {
+				name = strings.TrimPrefix(name, "AWS.SDK.")
+			}
 		}
 	}
 
@@ -139,10 +156,8 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	if namespace == "" {
-		if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
-			if rpcSystem.Str() == "aws-api" {
-				namespace = conventions.AttributeCloudProviderAWS
-			}
+		if isAwsSdkSpan(span) {
+			namespace = conventions.AttributeCloudProviderAWS
 		}
 	}
 
@@ -354,10 +369,10 @@ func addSpecialAttributes(attributes map[string]pcommon.Value, indexedAttrs []st
 }
 
 func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
-	string, map[string]interface{}, map[string]map[string]interface{}) {
+	string, map[string]any, map[string]map[string]any) {
 	var (
-		annotations = map[string]interface{}{}
-		metadata    = map[string]map[string]interface{}{}
+		annotations = map[string]any{}
+		metadata    = map[string]map[string]any{}
 		user        string
 	)
 	userid, ok := attributes[conventions.AttributeEnduserID]
@@ -370,7 +385,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		return user, nil, nil
 	}
 
-	defaultMetadata := map[string]interface{}{}
+	defaultMetadata := map[string]any{}
 
 	indexedKeys := map[string]bool{}
 	if !indexAllAttrs {
@@ -421,13 +436,29 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		}
 	} else {
 		for key, value := range attributes {
-			if indexedKeys[key] {
+			switch {
+			case indexedKeys[key]:
 				key = fixAnnotationKey(key)
 				annoVal := annotationValue(value)
 				if annoVal != nil {
 					annotations[key] = annoVal
 				}
-			} else {
+			case strings.HasPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix) && value.Type() == pcommon.ValueTypeStr:
+				namespace := strings.TrimPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix)
+				var metaVal map[string]any
+				err := json.Unmarshal([]byte(value.Str()), &metaVal)
+				switch {
+				case err != nil:
+					// if unable to unmarshal, keep the original key/value
+					defaultMetadata[key] = value.Str()
+				case strings.EqualFold(namespace, defaultMetadataNamespace):
+					for k, v := range metaVal {
+						defaultMetadata[k] = v
+					}
+				default:
+					metadata[namespace] = metaVal
+				}
+			default:
 				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
@@ -437,13 +468,13 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 	}
 
 	if len(defaultMetadata) > 0 {
-		metadata["default"] = defaultMetadata
+		metadata[defaultMetadataNamespace] = defaultMetadata
 	}
 
 	return user, annotations, metadata
 }
 
-func annotationValue(value pcommon.Value) interface{} {
+func annotationValue(value pcommon.Value) any {
 	switch value.Type() {
 	case pcommon.ValueTypeStr:
 		return value.Str()

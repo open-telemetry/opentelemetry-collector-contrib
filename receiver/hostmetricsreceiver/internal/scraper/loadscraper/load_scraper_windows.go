@@ -136,12 +136,17 @@ func stopSampling(_ context.Context) error {
 	startupLock.Lock()
 	defer startupLock.Unlock()
 
+	if scraperCount == 0 {
+		// no load scraper is running nothing to do
+		return nil
+	}
 	// only stop sampling if all load scrapers have been closed
 	scraperCount--
 	if scraperCount > 0 {
 		return nil
 	}
 
+	// no more load scrapers are running, stop the sampler
 	close(samplerInstance.done)
 	return nil
 }

@@ -56,14 +56,13 @@ func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
 	td := constructXrayAndW3CSpanData()
 	logger, _ := zap.NewProduction()
-	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have xay trace id")
+	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 4, "4 spans have xray/w3c trace id")
 }
 
 func TestW3CSpanTraceResourceExtraction(t *testing.T) {
-	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9255")
 	td := constructW3CSpanData()
 	logger, _ := zap.NewProduction()
-	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 0, "0 spans have xray trace id")
+	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 2, "2 spans have w3c trace id")
 }
 
 func TestTelemetryEnabled(t *testing.T) {
@@ -137,7 +136,6 @@ func constructSpanData() ptrace.Traces {
 	return traces
 }
 
-// nolint:unused
 func constructW3CSpanData() ptrace.Traces {
 	resource := constructResource()
 	traces := ptrace.NewTraces()
@@ -184,7 +182,7 @@ func constructResource() pcommon.Resource {
 }
 
 func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
@@ -211,7 +209,7 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 }
 
 func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -238,7 +236,7 @@ func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	return span
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
+func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {

@@ -42,8 +42,8 @@ func TestSpanPathGetSetter(t *testing.T) {
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(span ptrace.Span)
 	}{
 		{
@@ -523,7 +523,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 					},
 				},
 			},
-			orig: func() interface{} {
+			orig: func() any {
 				return nil
 			}(),
 			newVal: "new",
@@ -648,6 +648,32 @@ func TestSpanPathGetSetter(t *testing.T) {
 			newVal: "bad span",
 			modified: func(span ptrace.Span) {
 				span.Status().SetMessage("bad span")
+			},
+		},
+		{
+			name: "start_time",
+			path: []ottl.Field{
+				{
+					Name: "start_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
+			modified: func(span ptrace.Span) {
+				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "end_time",
+			path: []ottl.Field{
+				{
+					Name: "end_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
+			modified: func(span ptrace.Span) {
+				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 	}

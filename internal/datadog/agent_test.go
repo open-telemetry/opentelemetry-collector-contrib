@@ -41,7 +41,7 @@ func TestTraceAgent(t *testing.T) {
 		{
 			LibName:    "libname",
 			LibVersion: "1.2",
-			Attributes: map[string]interface{}{},
+			Attributes: map[string]any{},
 			Spans: []*testutil.OTLPSpan{
 				{Name: "1"},
 				{Name: "2"},
@@ -51,7 +51,7 @@ func TestTraceAgent(t *testing.T) {
 		{
 			LibName:    "other-libname",
 			LibVersion: "2.1",
-			Attributes: map[string]interface{}{},
+			Attributes: map[string]any{},
 			Spans: []*testutil.OTLPSpan{
 				{Name: "4", TraceID: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}},
 				{Name: "5", TraceID: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}},

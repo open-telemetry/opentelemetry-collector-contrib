@@ -17,13 +17,15 @@ import (
 )
 
 type severityTestCase struct {
-	name       string
-	sample     interface{}
-	mappingSet string
-	mapping    map[string]interface{}
-	buildErr   bool
-	parseErr   bool
-	expected   entry.Severity
+	name          string
+	sample        any
+	mappingSet    string
+	mapping       map[string]any
+	buildErr      bool
+	parseErr      bool
+	expected      entry.Severity
+	expectedText  string
+	overwriteText bool
 }
 
 // These tests ensure that users may build a mapping that
@@ -66,7 +68,7 @@ func validMappingKeyCases() []severityTestCase {
 			severityTestCase{
 				name:     k,
 				sample:   "my_custom_value",
-				mapping:  map[string]interface{}{k: "my_custom_value"},
+				mapping:  map[string]any{k: "my_custom_value"},
 				expected: v,
 			})
 	}
@@ -131,13 +133,13 @@ func otlpSevCases() []severityTestCase {
 	return cases
 }
 
-var allTheThingsMap = map[string]interface{}{
+var allTheThingsMap = map[string]any{
 	"info":   "3xx",
 	"error3": "4xx",
 	"debug4": "5xx",
-	"trace2": []interface{}{
+	"trace2": []any{
 		"ttttttracer",
-		map[string]interface{}{"min": 1111, "max": 1234},
+		map[string]any{"min": 1111, "max": 1234},
 	},
 	"12":     "infooo",
 	"fatal2": "",
@@ -146,16 +148,26 @@ var allTheThingsMap = map[string]interface{}{
 func TestSeverityParser(t *testing.T) {
 	testCases := []severityTestCase{
 		{
-			name:     "unknown",
-			sample:   "blah",
-			mapping:  nil,
-			expected: entry.Default,
+			name:         "unknown",
+			sample:       "blah",
+			mapping:      nil,
+			expected:     entry.Default,
+			expectedText: "blah",
 		},
 		{
-			name:     "error",
-			sample:   "error",
-			mapping:  nil,
-			expected: entry.Error,
+			name:         "error",
+			sample:       "error",
+			mapping:      nil,
+			expected:     entry.Error,
+			expectedText: "error",
+		},
+		{
+			name:          "error-overwrite-text",
+			sample:        "error",
+			mapping:       nil,
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
 		},
 		{
 			name:     "error2",
@@ -182,6 +194,14 @@ func TestSeverityParser(t *testing.T) {
 			expected: entry.Error,
 		},
 		{
+			name:          "error-capitalized-overwrite-text",
+			sample:        "Error",
+			mapping:       nil,
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
+		},
+		{
 			name:     "error-all-caps",
 			sample:   "ERROR",
 			mapping:  nil,
@@ -190,128 +210,168 @@ func TestSeverityParser(t *testing.T) {
 		{
 			name:     "custom-string",
 			sample:   "NOOOOOOO",
-			mapping:  map[string]interface{}{"error": "NOOOOOOO"},
+			mapping:  map[string]any{"error": "NOOOOOOO"},
 			expected: entry.Error,
+		},
+		{
+			name:          "custom-string-overwrite-text",
+			sample:        "NOOOOOOO",
+			mapping:       map[string]any{"error": "NOOOOOOO"},
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
 		},
 		{
 			name:     "custom-string-caps-key",
 			sample:   "NOOOOOOO",
-			mapping:  map[string]interface{}{"ErRoR": "NOOOOOOO"},
+			mapping:  map[string]any{"ErRoR": "NOOOOOOO"},
 			expected: entry.Error,
 		},
 		{
 			name:     "custom-int",
 			sample:   1234,
-			mapping:  map[string]interface{}{"error": 1234},
+			mapping:  map[string]any{"error": 1234},
 			expected: entry.Error,
+		},
+		{
+			name:          "custom-int-overwrite-text",
+			sample:        1234,
+			mapping:       map[string]any{"error": 1234},
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
 		},
 		{
 			name:     "mixed-list-string",
 			sample:   "ThiS Is BaD",
-			mapping:  map[string]interface{}{"error": []interface{}{"NOOOOOOO", "this is bad", 1234}},
+			mapping:  map[string]any{"error": []any{"NOOOOOOO", "this is bad", 1234}},
 			expected: entry.Error,
 		},
 		{
 			name:     "custom-float64",
 			sample:   float64(6),
-			mapping:  map[string]interface{}{"error": 6},
+			mapping:  map[string]any{"error": 6},
 			expected: entry.Error,
 		},
 		{
 			name:     "mixed-list-int",
 			sample:   1234,
-			mapping:  map[string]interface{}{"error": []interface{}{"NOOOOOOO", "this is bad", 1234}},
+			mapping:  map[string]any{"error": []any{"NOOOOOOO", "this is bad", 1234}},
 			expected: entry.Error,
 		},
 		{
 			name:     "numbered-level",
 			sample:   "critical",
-			mapping:  map[string]interface{}{"error2": "critical"},
+			mapping:  map[string]any{"error2": "critical"},
 			expected: entry.Error2,
+		},
+		{
+			name:          "numbered-level-overwrite-text",
+			sample:        "critical",
+			mapping:       map[string]any{"error2": "critical"},
+			expected:      entry.Error2,
+			expectedText:  "ERROR2",
+			overwriteText: true,
 		},
 		{
 			name:     "override-standard",
 			sample:   "error",
-			mapping:  map[string]interface{}{"error3": []interface{}{"error"}},
+			mapping:  map[string]any{"error3": []any{"error"}},
 			expected: entry.Error3,
 		},
 		{
 			name:     "level-unfound",
 			sample:   "not-in-the-list-but-thats-ok",
-			mapping:  map[string]interface{}{"error4": []interface{}{"hey!", 1234}},
+			mapping:  map[string]any{"error4": []any{"hey!", 1234}},
 			expected: entry.Default,
 		},
 		{
 			name:     "in-range",
 			sample:   123,
-			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]any{"error": map[string]any{"min": 120, "max": 125}},
 			expected: entry.Error,
+		},
+		{
+			name:          "in-range-overwrite-text",
+			sample:        123,
+			mapping:       map[string]any{"error": map[string]any{"min": 120, "max": 125}},
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
 		},
 		{
 			name:     "in-range-min",
 			sample:   120,
-			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]any{"error": map[string]any{"min": 120, "max": 125}},
 			expected: entry.Error,
 		},
 		{
 			name:     "in-range-max",
 			sample:   125,
-			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]any{"error": map[string]any{"min": 120, "max": 125}},
 			expected: entry.Error,
 		},
 		{
 			name:     "out-of-range-min-minus",
 			sample:   119,
-			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]any{"error": map[string]any{"min": 120, "max": 125}},
 			expected: entry.Default,
 		},
 		{
 			name:     "out-of-range-max-plus",
 			sample:   126,
-			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]any{"error": map[string]any{"min": 120, "max": 125}},
 			expected: entry.Default,
 		},
 		{
 			name:     "range-out-of-order",
 			sample:   123,
-			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 125, "max": 120}},
+			mapping:  map[string]any{"error": map[string]any{"min": 125, "max": 120}},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http2xx-hit",
 			sample:   201,
-			mapping:  map[string]interface{}{"error": "2xx"},
+			mapping:  map[string]any{"error": "2xx"},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http2xx-miss",
 			sample:   301,
-			mapping:  map[string]interface{}{"error": "2xx"},
+			mapping:  map[string]any{"error": "2xx"},
 			expected: entry.Default,
 		},
 		{
 			name:     "Http3xx-hit",
 			sample:   301,
-			mapping:  map[string]interface{}{"error": "3xx"},
+			mapping:  map[string]any{"error": "3xx"},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http4xx-hit",
 			sample:   "404",
-			mapping:  map[string]interface{}{"error": "4xx"},
+			mapping:  map[string]any{"error": "4xx"},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http5xx-hit",
 			sample:   555,
-			mapping:  map[string]interface{}{"error": "5xx"},
+			mapping:  map[string]any{"error": "5xx"},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http-All",
 			sample:   "301",
-			mapping:  map[string]interface{}{"debug": "2xx", "info": "3xx", "error": "4xx", "warn": "5xx"},
+			mapping:  map[string]any{"debug": "2xx", "info": "3xx", "error": "4xx", "warn": "5xx"},
 			expected: entry.Info,
+		},
+		{
+			name:          "Http-All-Overwrite-Text",
+			sample:        "301",
+			mapping:       map[string]any{"debug": "2xx", "info": "3xx", "error": "4xx", "warn": "5xx"},
+			expected:      entry.Info,
+			expectedText:  "INFO",
+			overwriteText: true,
 		},
 		{
 			name:     "all-the-things-midrange",
@@ -336,6 +396,14 @@ func TestSeverityParser(t *testing.T) {
 			sample:   "miss",
 			mapping:  allTheThingsMap,
 			expected: entry.Default,
+		},
+		{
+			name:          "all-the-things-miss-never-overwrite-unknown",
+			sample:        "miss",
+			mapping:       allTheThingsMap,
+			expected:      entry.Default,
+			expectedText:  "miss",
+			overwriteText: true,
 		},
 		{
 			name:       "base-mapping-none",
@@ -438,9 +506,10 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 		t.Parallel()
 
 		cfg := &SeverityConfig{
-			ParseFrom: &parseFrom,
-			Preset:    tc.mappingSet,
-			Mapping:   tc.mapping,
+			ParseFrom:     &parseFrom,
+			Preset:        tc.mappingSet,
+			Mapping:       tc.mapping,
+			OverwriteText: tc.overwriteText,
 		}
 
 		severityParser, err := cfg.Build(testutil.Logger(t))
@@ -460,6 +529,11 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, tc.expected, ent.Severity)
+		if tc.overwriteText {
+			require.Equal(t, tc.expectedText, ent.SeverityText)
+		} else {
+			require.Equal(t, fmt.Sprint(tc.sample), ent.SeverityText)
+		}
 	}
 }
 

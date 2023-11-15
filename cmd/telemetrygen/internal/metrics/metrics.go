@@ -17,60 +17,31 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 // Start starts the metric telemetry generator
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
+	logger.Info("starting the metrics generator with configuration", zap.Any("config", cfg))
 
-	grpcExpOpt := []otlpmetricgrpc.Option{
-		otlpmetricgrpc.WithEndpoint(cfg.Endpoint),
-		otlpmetricgrpc.WithDialOption(
-			grpc.WithBlock(),
-		),
-	}
-
-	httpExpOpt := []otlpmetrichttp.Option{
-		otlpmetrichttp.WithEndpoint(cfg.Endpoint),
-		otlpmetrichttp.WithURLPath(cfg.HTTPPath),
-	}
-
-	if cfg.Insecure {
-		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithInsecure())
-		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithInsecure())
-	}
-
-	if len(cfg.Headers) > 0 {
-		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithHeaders(cfg.Headers))
-		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithHeaders(cfg.Headers))
-	}
-
-	var exp sdkmetric.Exporter
-	if cfg.UseHTTP {
-		logger.Info("starting HTTP exporter")
-		exp, err = otlpmetrichttp.New(context.Background(), httpExpOpt...)
-	} else {
-		logger.Info("starting gRPC exporter")
-		exp, err = otlpmetricgrpc.New(context.Background(), grpcExpOpt...)
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to obtain OTLP exporter: %w", err)
-	}
-	defer func() {
-		logger.Info("stopping the exporter")
-		if tempError := exp.Shutdown(context.Background()); tempError != nil {
-			logger.Error("failed to stop the exporter", zap.Error(tempError))
+	expFunc := func() (sdkmetric.Exporter, error) {
+		var exp sdkmetric.Exporter
+		if cfg.UseHTTP {
+			logger.Info("starting HTTP exporter")
+			exp, err = otlpmetrichttp.New(context.Background(), httpExporterOptions(cfg)...)
+		} else {
+			logger.Info("starting gRPC exporter")
+			exp, err = otlpmetricgrpc.New(context.Background(), grpcExporterOptions(cfg)...)
 		}
-	}()
+		return exp, err
+	}
 
-	if err = Run(cfg, exp, logger); err != nil {
+	if err = Run(cfg, expFunc, logger); err != nil {
 		logger.Error("failed to stop the exporter", zap.Error(err))
 		return err
 	}
@@ -79,7 +50,7 @@ func Start(cfg *Config) error {
 }
 
 // Run executes the test scenario.
-func Run(c *Config, exp sdkmetric.Exporter, logger *zap.Logger) error {
+func Run(c *Config, exp func() (sdkmetric.Exporter, error), logger *zap.Logger) error {
 	if c.TotalDuration > 0 {
 		c.NumMetrics = 0
 	} else if c.NumMetrics <= 0 {
@@ -104,6 +75,7 @@ func Run(c *Config, exp sdkmetric.Exporter, logger *zap.Logger) error {
 		wg.Add(1)
 		w := worker{
 			numMetrics:     c.NumMetrics,
+			metricType:     c.MetricType,
 			limitPerSecond: limit,
 			totalDuration:  c.TotalDuration,
 			running:        running,
@@ -112,7 +84,7 @@ func Run(c *Config, exp sdkmetric.Exporter, logger *zap.Logger) error {
 			index:          i,
 		}
 
-		go w.simulateMetrics(res, exp)
+		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes())
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)

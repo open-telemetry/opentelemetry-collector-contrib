@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -40,8 +40,8 @@ type lokiReceiver struct {
 	serverGRPC   *grpc.Server
 	shutdownWG   sync.WaitGroup
 
-	obsrepGRPC *obsreport.Receiver
-	obsrepHTTP *obsreport.Receiver
+	obsrepGRPC *receiverhelper.ObsReport
+	obsrepHTTP *receiverhelper.ObsReport
 }
 
 func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver.CreateSettings) (*lokiReceiver, error) {
@@ -52,7 +52,7 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 	}
 
 	var err error
-	r.obsrepGRPC, err = obsreport.NewReceiver(obsreport.ReceiverSettings{
+	r.obsrepGRPC, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "grpc",
 		ReceiverCreateSettings: settings,
@@ -60,7 +60,7 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 	if err != nil {
 		return nil, err
 	}
-	r.obsrepHTTP, err = obsreport.NewReceiver(obsreport.ReceiverSettings{
+	r.obsrepHTTP, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "http",
 		ReceiverCreateSettings: settings,
@@ -163,8 +163,9 @@ func (r *lokiReceiver) Push(ctx context.Context, pushRequest *push.PushRequest) 
 		return &push.PushResponse{}, err
 	}
 	ctx = r.obsrepGRPC.StartLogsOp(ctx)
+	logRecordCount := logs.LogRecordCount()
 	err = r.nextConsumer.ConsumeLogs(ctx, logs)
-	r.obsrepGRPC.EndLogsOp(ctx, "protobuf", logs.LogRecordCount(), err)
+	r.obsrepGRPC.EndLogsOp(ctx, "protobuf", logRecordCount, err)
 	return &push.PushResponse{}, nil
 }
 
@@ -218,8 +219,9 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, r *lokiReceiver) {
 		return
 	}
 	ctx := r.obsrepHTTP.StartLogsOp(req.Context())
+	logRecordCount := logs.LogRecordCount()
 	err = r.nextConsumer.ConsumeLogs(ctx, logs)
-	r.obsrepHTTP.EndLogsOp(ctx, "json", logs.LogRecordCount(), err)
+	r.obsrepHTTP.EndLogsOp(ctx, "json", logRecordCount, err)
 
 	resp.WriteHeader(http.StatusNoContent)
 }

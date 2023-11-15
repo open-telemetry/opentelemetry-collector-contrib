@@ -125,9 +125,6 @@ func enabledAttributes() (attributes []string) {
 // If no fields explicitly provided, the defaults are pulled from metadata.yaml.
 func withExtractMetadata(fields ...string) option {
 	return func(p *kubernetesprocessor) error {
-		if len(fields) == 0 {
-			fields = enabledAttributes()
-		}
 		for _, field := range fields {
 			switch field {
 			case conventions.AttributeK8SNamespaceName:
@@ -215,11 +212,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 
 		if name == "" && a.Key != "" {
 			// name for KeyRegex case is set at extraction time/runtime, skipped here
-			if a.From == kube.MetadataFromPod {
-				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
-			} else if a.From == kube.MetadataFromNamespace {
-				name = fmt.Sprintf("k8s.namespace.%s.%s", fieldType, a.Key)
-			}
+			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldType, a.Key)
 		}
 
 		var r *regexp.Regexp
