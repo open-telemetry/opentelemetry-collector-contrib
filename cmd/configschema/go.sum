@@ -1604,8 +1604,8 @@ go.opentelemetry.io/collector/consumer v0.89.0 h1:MteKhkudX2L1ylbtdpSazO8SwyHSxl
 go.opentelemetry.io/collector/consumer v0.89.0/go.mod h1:aOaoi6R0qVvfHu0pEPCzSE74gIPNJoCQM8Ml4Bc9NHE=
 go.opentelemetry.io/collector/exporter v0.89.0 h1:8sYpJdKDQ2RuYOPKDsMz/lMJqp4WEWZgfJzyn9IgOag=
 go.opentelemetry.io/collector/exporter v0.89.0/go.mod h1:zR8PFXMHlG0qPIEdRPNaefxDNj4UVP47uJ4vbHs+YME=
-go.opentelemetry.io/collector/exporter/debugexporter v0.88.1-0.20231112151805-b570812b1e06 h1:1+ro/X/7O9aVhmm1nlzqZTCk3A9OEJ51uhdRnURlC1w=
-go.opentelemetry.io/collector/exporter/debugexporter v0.88.1-0.20231112151805-b570812b1e06/go.mod h1:0Pufc1yUlNATc9Id+EEjvxXiXnfK8LtEm2H08Hw5fZg=
+go.opentelemetry.io/collector/exporter/debugexporter v0.89.0 h1:MQUEX4OWszJQqQMqtYERiiw02Ta9QMWPe/hHWoD4YBU=
+go.opentelemetry.io/collector/exporter/debugexporter v0.89.0/go.mod h1:eLoVrKOjgPvAmg0XJuellJ03zEpEol26l8i48Rhv53Q=
 go.opentelemetry.io/collector/exporter/loggingexporter v0.89.0 h1:AdMGaH1p9D1Kvjkd/sXMg/Hkc5M1lqBdhXY5WfmiGSE=
 go.opentelemetry.io/collector/exporter/loggingexporter v0.89.0/go.mod h1:N4zI/Zkjz5hx774uM3RdQTIeiw59FMmOdHrpbOK5UvE=
 go.opentelemetry.io/collector/exporter/otlpexporter v0.89.0 h1:0oYIeiRTURjIIYXs1OsaMAyNgg6Vc/CNa882YCYS/04=
@@ -1622,8 +1622,8 @@ go.opentelemetry.io/collector/extension/zpagesextension v0.89.0 h1:opvHcGANx+dS4
 go.opentelemetry.io/collector/extension/zpagesextension v0.89.0/go.mod h1:RlhcZHBMg86y1hgBf+j1lNvnZ8ihWiYTYXFiy5InwyY=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 h1:iK4muX3KIMqKk0xwKcRzu4ravgCtUdzsvuxxdz6A27g=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018/go.mod h1:xGbRuw+GbutRtVVSEy3YR2yuOlEyiUMhN2M9DJljgqY=
-go.opentelemetry.io/collector/otelcol v0.88.1-0.20231112151805-b570812b1e06 h1:RVkv3JH7p4IBsO77a4padJROQQ3nFGNcl8qfhA/N248=
-go.opentelemetry.io/collector/otelcol v0.88.1-0.20231112151805-b570812b1e06/go.mod h1:YB90FCTUkepOksPdr51DQocHdj+HdFmH97bASY9FaG4=
+go.opentelemetry.io/collector/otelcol v0.89.0 h1:b3kC0zM9T6GxjhTcNEHIzXDd4zTIc7cBpexCPZ9nPzg=
+go.opentelemetry.io/collector/otelcol v0.89.0/go.mod h1:BILxDcJe32wK+paX7ssnt4jyjOmTkIHvXe9JNjlHUk8=
 go.opentelemetry.io/collector/pdata v1.0.0-rcv0018 h1:a2IHOZKphRzPagcvOHQHHUE0DlITFSKlIBwaWhPZpl4=
 go.opentelemetry.io/collector/pdata v1.0.0-rcv0018/go.mod h1:oNIcTRyEJYIfMcRYyyh5lquDU0Vl+ktTL6ka+p+dYvg=
 go.opentelemetry.io/collector/processor v0.89.0 h1:ypMnoOqBYbXgbDnAm9/Cb4uN3kxvmI05Vf6o4u/riBU=

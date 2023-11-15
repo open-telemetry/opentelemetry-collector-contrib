@@ -13,8 +13,8 @@ require (
 	go.opentelemetry.io/collector/confmap v0.89.0
 	go.opentelemetry.io/collector/connector v0.89.0
 	go.opentelemetry.io/collector/exporter v0.89.0
-	go.opentelemetry.io/collector/exporter/debugexporter v0.88.1-0.20231112151805-b570812b1e06
-	go.opentelemetry.io/collector/otelcol v0.88.1-0.20231112151805-b570812b1e06
+	go.opentelemetry.io/collector/exporter/debugexporter v0.89.0
+	go.opentelemetry.io/collector/otelcol v0.89.0
 	go.opentelemetry.io/collector/processor v0.89.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.89.0
 	go.opentelemetry.io/collector/receiver v0.89.0
