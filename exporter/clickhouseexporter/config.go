@@ -49,7 +49,7 @@ const defaultDatabase = "default"
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
-	errConfigTTL             = errors.New("Both 'ttl_days' and 'ttl' can not be provided. 'ttl_days' is deprecated, use 'ttl' instead.")
+	errConfigTTL             = errors.New("both 'ttl_days' and 'ttl' can not be provided. 'ttl_days' is deprecated, use 'ttl' instead")
 )
 
 // Validate the clickhouse server configuration.
