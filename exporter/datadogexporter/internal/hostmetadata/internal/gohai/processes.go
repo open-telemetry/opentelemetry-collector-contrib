@@ -20,8 +20,8 @@ func NewProcessesPayload(hostname string, logger *zap.Logger) *gohai.ProcessesPa
 		return nil
 	}
 
-	processesPayload := map[string]interface{}{
-		"snaps": []interface{}{proc},
+	processesPayload := map[string]any{
+		"snaps": []any{proc},
 	}
 	return &gohai.ProcessesPayload{
 		Processes: processesPayload,

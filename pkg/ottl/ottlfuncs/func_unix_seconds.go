@@ -28,7 +28,7 @@ func createUnixSecondsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 }
 
 func UnixSeconds[K any](inputTime ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

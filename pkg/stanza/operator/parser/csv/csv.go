@@ -113,7 +113,7 @@ type Parser struct {
 	parse           parseFunc
 }
 
-type parseFunc func(interface{}) (interface{}, error)
+type parseFunc func(any) (any, error)
 
 // Process will parse an entry for csv.
 func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
@@ -152,7 +152,7 @@ func generateParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool, i
 
 // generateCSVParseFunc returns a parse function for a given header and field delimiter, which parses a line of CSV text.
 func generateCSVParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool) parseFunc {
-	return func(value interface{}) (interface{}, error) {
+	return func(value any) (any, error) {
 		csvLine, err := valueAsString(value)
 		if err != nil {
 			return nil, err
@@ -209,7 +209,7 @@ func generateCSVParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool
 
 // generateSplitParseFunc returns a parse function (which ignores quotes) for a given header and field delimiter.
 func generateSplitParseFunc(headers []string, fieldDelimiter rune) parseFunc {
-	return func(value interface{}) (interface{}, error) {
+	return func(value any) (any, error) {
 		csvLine, err := valueAsString(value)
 		if err != nil {
 			return nil, err
@@ -222,7 +222,7 @@ func generateSplitParseFunc(headers []string, fieldDelimiter rune) parseFunc {
 }
 
 // valueAsString interprets the given value as a string.
-func valueAsString(value interface{}) (string, error) {
+func valueAsString(value any) (string, error) {
 	var s string
 	switch t := value.(type) {
 	case string:
@@ -237,8 +237,8 @@ func valueAsString(value interface{}) (string, error) {
 }
 
 // headersMap creates a map of headers[i] -> fields[i].
-func headersMap(headers []string, fields []string) (map[string]interface{}, error) {
-	parsedValues := make(map[string]interface{})
+func headersMap(headers []string, fields []string) (map[string]any, error) {
+	parsedValues := make(map[string]any)
 
 	if len(fields) != len(headers) {
 		return nil, fmt.Errorf("wrong number of fields: expected %d, found %d", len(headers), len(fields))

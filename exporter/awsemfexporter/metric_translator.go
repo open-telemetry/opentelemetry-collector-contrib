@@ -42,7 +42,7 @@ var fieldPrometheusTypes = map[pmetric.MetricType]string{
 type cWMetrics struct {
 	measurements []cWMeasurement
 	timestampMs  int64
-	fields       map[string]interface{}
+	fields       map[string]any
 }
 
 type cWMeasurement struct {
@@ -112,7 +112,7 @@ func (mt metricTranslator) Shutdown() error {
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
-func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
+func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[any]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var instrumentationScopeName string
 	cWNamespace := getNamespace(rm, config.Namespace)
@@ -163,7 +163,7 @@ func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Conf
 	if isPrometheusMetric {
 		fieldsLength++
 	}
-	fields := make(map[string]interface{}, fieldsLength)
+	fields := make(map[string]any, fieldsLength)
 
 	// Add labels to fields
 	for k, v := range labels {
@@ -363,7 +363,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 		}
 
 		if val, ok := fieldMap[key].(string); ok {
-			var f interface{}
+			var f any
 			err := json.Unmarshal([]byte(val), &f)
 			if err != nil {
 				config.logger.Debug(
@@ -402,7 +402,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 			  	}
 			*/
 			fieldMap["Version"] = "1"
-			fieldMap["_aws"] = map[string]interface{}{
+			fieldMap["_aws"] = map[string]any{
 				"CloudWatchMetrics": cWMetric.measurements,
 				"Timestamp":         cWMetric.timestampMs,
 			}

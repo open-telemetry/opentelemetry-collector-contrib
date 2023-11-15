@@ -123,7 +123,7 @@ func convertTimestamp(sec float64) pcommon.Timestamp {
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point attributes.
-func buildAttributes(dimensions map[string]interface{}) pcommon.Map {
+func buildAttributes(dimensions map[string]any) pcommon.Map {
 	attributes := pcommon.NewMap()
 	attributes.EnsureCapacity(len(dimensions))
 	for key, val := range dimensions {

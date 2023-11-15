@@ -115,7 +115,7 @@ type testData struct {
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
 // config
 func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
-	jobs := make([]map[string]interface{}, 0, len(tds))
+	jobs := make([]map[string]any, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
 	metricPaths := make([]string, len(tds))
 	for i, t := range tds {
@@ -126,18 +126,18 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	mp := newMockPrometheus(endpoints)
 	u, _ := url.Parse(mp.srv.URL)
 	for i := 0; i < len(tds); i++ {
-		job := make(map[string]interface{})
+		job := make(map[string]any)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
 		job["scrape_interval"] = "1s"
 		job["scrape_timeout"] = "500ms"
-		job["static_configs"] = []map[string]interface{}{{"targets": []string{u.Host}}}
+		job["static_configs"] = []map[string]any{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)
 	}
 	if len(jobs) != len(tds) {
 		log.Fatal("len(jobs) != len(targets), make sure job names are unique")
 	}
-	configP := make(map[string]interface{})
+	configP := make(map[string]any)
 	configP["scrape_configs"] = jobs
 	cfg, err := yaml.Marshal(&configP)
 	if err != nil {

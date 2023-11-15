@@ -43,6 +43,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/exporter/alertmanagerexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/exporter/alibabacloudlogserviceexporter"
     schedule:
       interval: "weekly"
@@ -163,6 +168,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/exporter/kineticaexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/exporter/loadbalancingexporter"
     schedule:
       interval: "weekly"
@@ -243,11 +253,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/exporter/syslogexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/exporter/tanzuobservabilityexporter"
     schedule:
       interval: "weekly"
@@ -284,16 +289,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/encoding"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/extension/encoding/jaegerencodingextension"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/extension/encoding/jsonlogencodingextension"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -369,6 +364,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/storage"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/internal/collectd"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -513,6 +513,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/pkg/translator/skywalking"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/pkg/translator/zipkin"
     schedule:
       interval: "weekly"
@@ -588,7 +593,7 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/processor/remoteobserverprocessor"
+    directory: "/processor/remotetapprocessor"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1009,11 +1014,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/solacereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/splunkenterprisereceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

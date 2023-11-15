@@ -29,26 +29,19 @@ func Start(cfg *Config) error {
 	}
 	logger.Info("starting the metrics generator with configuration", zap.Any("config", cfg))
 
-	var exp sdkmetric.Exporter
-	if cfg.UseHTTP {
-		logger.Info("starting HTTP exporter")
-		exp, err = otlpmetrichttp.New(context.Background(), httpExporterOptions(cfg)...)
-	} else {
-		logger.Info("starting gRPC exporter")
-		exp, err = otlpmetricgrpc.New(context.Background(), grpcExporterOptions(cfg)...)
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to obtain OTLP exporter: %w", err)
-	}
-	defer func() {
-		logger.Info("stopping the exporter")
-		if tempError := exp.Shutdown(context.Background()); tempError != nil {
-			logger.Error("failed to stop the exporter", zap.Error(tempError))
+	expFunc := func() (sdkmetric.Exporter, error) {
+		var exp sdkmetric.Exporter
+		if cfg.UseHTTP {
+			logger.Info("starting HTTP exporter")
+			exp, err = otlpmetrichttp.New(context.Background(), httpExporterOptions(cfg)...)
+		} else {
+			logger.Info("starting gRPC exporter")
+			exp, err = otlpmetricgrpc.New(context.Background(), grpcExporterOptions(cfg)...)
 		}
-	}()
+		return exp, err
+	}
 
-	if err = Run(cfg, exp, logger); err != nil {
+	if err = Run(cfg, expFunc, logger); err != nil {
 		logger.Error("failed to stop the exporter", zap.Error(err))
 		return err
 	}
@@ -57,7 +50,7 @@ func Start(cfg *Config) error {
 }
 
 // Run executes the test scenario.
-func Run(c *Config, exp sdkmetric.Exporter, logger *zap.Logger) error {
+func Run(c *Config, exp func() (sdkmetric.Exporter, error), logger *zap.Logger) error {
 	if c.TotalDuration > 0 {
 		c.NumMetrics = 0
 	} else if c.NumMetrics <= 0 {

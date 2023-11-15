@@ -62,7 +62,7 @@ func (u *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // parse will parse a uri from a field and attach it to an entry.
-func (u *Parser) parse(value interface{}) (interface{}, error) {
+func (u *Parser) parse(value any) (any, error) {
 	switch m := value.(type) {
 	case string:
 		return parseURI(m)
@@ -72,8 +72,8 @@ func (u *Parser) parse(value interface{}) (interface{}, error) {
 }
 
 // parseURI takes an absolute or relative uri and returns the parsed values.
-func parseURI(value string) (map[string]interface{}, error) {
-	m := make(map[string]interface{})
+func parseURI(value string) (map[string]any, error) {
+	m := make(map[string]any)
 
 	if strings.HasPrefix(value, "?") {
 		// remove the query string '?' prefix before parsing
@@ -92,7 +92,7 @@ func parseURI(value string) (map[string]interface{}, error) {
 }
 
 // urlToMap converts a url.URL to a map, excludes any values that are not set.
-func urlToMap(p *url.URL, m map[string]interface{}) map[string]interface{} {
+func urlToMap(p *url.URL, m map[string]any) map[string]any {
 	scheme := p.Scheme
 	if scheme != "" {
 		m["scheme"] = scheme
@@ -122,25 +122,25 @@ func urlToMap(p *url.URL, m map[string]interface{}) map[string]interface{} {
 }
 
 // queryToMap converts a query string url.Values to a map.
-func queryToMap(query url.Values, m map[string]interface{}) map[string]interface{} {
+func queryToMap(query url.Values, m map[string]any) map[string]any {
 	// no-op if query is empty, do not create the key m["query"]
 	if len(query) == 0 {
 		return m
 	}
 
 	/* 'parameter' will represent url.Values
-	map[string]interface{}{
-		"parameter-a": []interface{}{
+	map[string]any{
+		"parameter-a": []any{
 			"a",
 			"b",
 		},
-		"parameter-b": []interface{}{
+		"parameter-b": []any{
 			"x",
 			"y",
 		},
 	}
 	*/
-	parameters := map[string]interface{}{}
+	parameters := map[string]any{}
 	for param, values := range query {
 		parameters[param] = queryParamValuesToMap(values)
 	}
@@ -150,8 +150,8 @@ func queryToMap(query url.Values, m map[string]interface{}) map[string]interface
 
 // queryParamValuesToMap takes query string parameter values and
 // returns an []interface populated with the values
-func queryParamValuesToMap(values []string) []interface{} {
-	v := make([]interface{}, len(values))
+func queryParamValuesToMap(values []string) []any {
+	v := make([]any, len(values))
 	for i, value := range values {
 		v[i] = value
 	}
