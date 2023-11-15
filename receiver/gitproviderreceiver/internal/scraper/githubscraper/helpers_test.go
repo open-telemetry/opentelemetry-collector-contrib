@@ -115,28 +115,6 @@ func TestGenDefaultSearchQueryUser(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestCheckOwnerTypeValid(t *testing.T) {
-	validOptions := []string{"org", "user"}
-
-	for _, option := range validOptions {
-		valid, err := checkOwnerTypeValid(option)
-
-		assert.True(t, valid)
-		assert.Nil(t, err)
-	}
-}
-
-func TestCheckOwnerTypeValidRandom(t *testing.T) {
-	invalidOptions := []string{"sorg", "suser", "users", "orgs", "invalid", "text"}
-
-	for _, option := range invalidOptions {
-		valid, err := checkOwnerTypeValid(option)
-
-		assert.False(t, valid)
-		assert.NotNil(t, err)
-	}
-}
-
 func TestCheckOwnerExists(t *testing.T) {
 	testCases := []struct {
 		desc                string

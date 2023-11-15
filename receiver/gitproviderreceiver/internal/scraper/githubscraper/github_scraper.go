@@ -77,12 +77,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		ghs.logger.Sugar().Errorf("error checking if owner exists", zap.Error(err))
 	}
 
-	typeValid, err := checkOwnerTypeValid(ownertype)
-	if err != nil {
-		ghs.logger.Sugar().Errorf("error checking if owner type is valid", zap.Error(err))
-	}
-
-	if !exists || !typeValid {
+	if !exists {
 		ghs.logger.Sugar().Error("error logging in and getting data from github")
 		return ghs.mb.Emit(), err
 	}

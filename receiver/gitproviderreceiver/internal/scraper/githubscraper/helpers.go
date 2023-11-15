@@ -73,14 +73,6 @@ func (ghs *githubScraper) getBranches(
 	return count, nil
 }
 
-// Ensure that the type of owner is user or organization
-func checkOwnerTypeValid(ownertype string) (bool, error) {
-	if ownertype == "org" || ownertype == "user" {
-		return true, nil
-	}
-	return false, errors.New("ownertype must be either org or user")
-}
-
 // Check to ensure that the login user (org name or user id) exists or
 // can be logged into.
 func (ghs *githubScraper) checkOwnerExists(ctx context.Context, client graphql.Client, owner string) (exists bool, ownerType string, err error) {
