@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.89.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018
 	gopkg.in/yaml.v3 v3.0.1
