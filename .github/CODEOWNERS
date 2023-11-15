@@ -215,7 +215,7 @@ receiver/gitproviderreceiver/                                           @open-te
 receiver/googlecloudpubsubreceiver/                                     @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/googlecloudspannerreceiver/                                    @open-telemetry/collector-contrib-approvers @architjugran @varunraiko @kiranmayib
 receiver/haproxyreceiver/                                               @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
-receiver/hostmetricsreceiver/                                           @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/hostmetricsreceiver/                                           @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/httpcheckreceiver/                                             @open-telemetry/collector-contrib-approvers @codeboten
 receiver/iisreceiver/                                                   @open-telemetry/collector-contrib-approvers @Mrod1598 @djaglowski
 receiver/influxdbreceiver/                                              @open-telemetry/collector-contrib-approvers @jacobmarble
