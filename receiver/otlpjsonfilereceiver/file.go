@@ -80,10 +80,11 @@ func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, con
 		if err != nil {
 			obsrecv.EndLogsOp(ctx, metadata.Type, 0, err)
 		} else {
-			if l.ResourceLogs().Len() != 0 {
+			logRecordCount := l.LogRecordCount()
+			if logRecordCount != 0 {
 				err = logs.ConsumeLogs(ctx, l)
 			}
-			obsrecv.EndLogsOp(ctx, metadata.Type, l.LogRecordCount(), err)
+			obsrecv.EndLogsOp(ctx, metadata.Type, logRecordCount, err)
 		}
 		return nil
 	})

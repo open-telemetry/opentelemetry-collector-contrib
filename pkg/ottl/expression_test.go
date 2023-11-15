@@ -1449,6 +1449,239 @@ func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func Test_StandardBoolGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardBoolGetter[any]
+		want             bool
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "primitive bool type",
+			getter: StandardBoolGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return true, nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "ValueTypeBool type",
+			getter: StandardBoolGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return pcommon.NewValueBool(true), nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardBoolGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return 1, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected bool but got int",
+		},
+		{
+			name: "nil",
+			getter: StandardBoolGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected bool but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardBoolGetter_WrappedError(t *testing.T) {
+	getter := StandardBoolGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
+func Test_StandardBoolLikeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           BoolLikeGetter[any]
+		want             any
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "string type true",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return "true", nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "string type false",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return "false", nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "int type",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return 0, nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "float64 type",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return float64(0.0), nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type int",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					v := pcommon.NewValueInt(int64(0))
+					return v, nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type string",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					v := pcommon.NewValueStr("false")
+					return v, nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type bool",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					v := pcommon.NewValueBool(true)
+					return v, nil
+				},
+			},
+			want:  true,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type double",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					v := pcommon.NewValueDouble(float64(0.0))
+					return v, nil
+				},
+			},
+			want:  false,
+			valid: true,
+		},
+		{
+			name: "nil",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return nil, nil
+				},
+			},
+			want:  nil,
+			valid: true,
+		},
+		{
+			name: "invalid type",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return []byte{}, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: []uint8",
+		},
+		{
+			name: "invalid pcommon.value type",
+			getter: StandardBoolLikeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					v := pcommon.NewValueMap()
+					return v, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported value type: Map",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				if tt.want == nil {
+					assert.Nil(t, val)
+				} else {
+					assert.Equal(t, tt.want, *val)
+				}
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardBoolLikeGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
 func Test_StandardPMapGetter(t *testing.T) {
 	tests := []struct {
 		name             string
