@@ -96,7 +96,7 @@ func (m *mockEventBroadcaster) StartRecordingToSink(_ record.EventSink) watch.In
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...interface{})) watch.Interface {
+func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...any)) watch.Interface {
 	return watch.NewFake()
 }
 

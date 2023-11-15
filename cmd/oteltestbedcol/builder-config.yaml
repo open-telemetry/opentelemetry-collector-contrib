@@ -3,37 +3,37 @@ dist:
   name: oteltestbedcol
   description: OpenTelemetry Collector binary for testbed only tests.
   version: 0.88.0-dev
-  otelcol_version: 0.88.1-0.20231026220224-6405e152a2d9
+  otelcol_version: 0.88.1-0.20231112151805-b570812b1e06
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.88.1-0.20231026220224-6405e152a2d9
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.88.1-0.20231026220224-6405e152a2d9
+  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.88.1-0.20231112151805-b570812b1e06
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.88.1-0.20231112151805-b570812b1e06
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.88.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.88.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.88.1-0.20231026220224-6405e152a2d9
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.88.1-0.20231026220224-6405e152a2d9
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.88.1-0.20231026220224-6405e152a2d9
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.88.1-0.20231026220224-6405e152a2d9
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.88.1-0.20231112151805-b570812b1e06
+  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.88.1-0.20231112151805-b570812b1e06
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.88.1-0.20231112151805-b570812b1e06
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.88.1-0.20231112151805-b570812b1e06
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.88.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.85.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.88.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.88.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.88.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.88.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.88.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.88.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.88.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.88.1-0.20231026220224-6405e152a2d9
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.88.1-0.20231026220224-6405e152a2d9
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.88.1-0.20231112151805-b570812b1e06
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.88.1-0.20231112151805-b570812b1e06
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.88.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.88.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.88.1-0.20231026220224-6405e152a2d9
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.88.1-0.20231112151805-b570812b1e06
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.88.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.88.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.88.0
@@ -72,6 +72,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor => ../../processor/attributesprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../../receiver/carbonreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../exporter/splunkhecexporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter => ../../exporter/syslogexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../../exporter/prometheusexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ../../exporter/zipkinexporter

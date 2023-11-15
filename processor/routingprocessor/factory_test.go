@@ -20,14 +20,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/otel/metric/noop"
-	"go.opentelemetry.io/otel/trace"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
 
 var noopTelemetrySettings = component.TelemetrySettings{
-	TracerProvider: trace.NewNoopTracerProvider(),
-	MeterProvider:  noop.NewMeterProvider(),
+	TracerProvider: nooptrace.NewTracerProvider(),
+	MeterProvider:  noopmetric.NewMeterProvider(),
 	Logger:         zap.NewNop(),
 }
 

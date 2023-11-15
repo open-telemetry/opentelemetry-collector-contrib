@@ -27,7 +27,7 @@ func TestLambda(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, res)
 
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, map[string]any{
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
 		conventions.AttributeCloudPlatform: conventions.AttributeCloudPlatformAWSLambda,
 		conventions.AttributeFaaSName:      functionName,
