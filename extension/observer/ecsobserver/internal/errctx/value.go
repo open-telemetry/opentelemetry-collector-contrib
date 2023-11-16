@@ -21,7 +21,7 @@ type ErrorWithValue interface {
 	//
 	// It does NOT do recursive Value calls (like context.Context).
 	// For getting value from entire error chain, use ValueFrom.
-	Value(key string) (v interface{}, ok bool)
+	Value(key string) (v any, ok bool)
 }
 
 // WithValue attaches a single key value pair to a non nil error.
@@ -35,7 +35,7 @@ type ErrorWithValue interface {
 //		const taskErrKey = "task"
 //		return errctx.WithValue(taskErrKey, myTask)
 //	 task, ok := errctx.ValueFrom(err, taskErrKey)
-func WithValue(err error, key string, val interface{}) error {
+func WithValue(err error, key string, val any) error {
 	if err == nil {
 		return nil
 	}
@@ -57,12 +57,12 @@ func WithValue(err error, key string, val interface{}) error {
 }
 
 // WithValues attaches multiple key value pairs. The behavior is similar to WithValue.
-func WithValues(err error, kvs map[string]interface{}) error {
+func WithValues(err error, kvs map[string]any) error {
 	if err == nil {
 		return nil
 	}
 	// make a shallow copy, and hope the values in map are not map ...
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	for k, v := range kvs {
 		if k == "" {
 			panic("empty key in WithValues")
@@ -79,7 +79,7 @@ func WithValues(err error, kvs map[string]interface{}) error {
 // from the first ErrorWithValue that contains the key.
 // e.g. for an error created using errctx.WithValue(errctx.WithValue(base, "k", "v1"), "k", "v2")
 // ValueFrom(err, "k") returns "v2".
-func ValueFrom(err error, key string) (interface{}, bool) {
+func ValueFrom(err error, key string) (any, bool) {
 	if err == nil {
 		return nil, false
 	}
@@ -99,7 +99,7 @@ func ValueFrom(err error, key string) (interface{}, bool) {
 // valueError only contains one pair, which is common
 type valueError struct {
 	key   string
-	val   interface{}
+	val   any
 	inner error
 }
 
@@ -107,7 +107,7 @@ func (e *valueError) Error() string {
 	return fmt.Sprintf("%s %s=%v", e.inner.Error(), e.key, e.val)
 }
 
-func (e *valueError) Value(key string) (interface{}, bool) {
+func (e *valueError) Value(key string) (any, bool) {
 	if key == e.key {
 		return e.val, true
 	}
@@ -120,7 +120,7 @@ func (e *valueError) Unwrap() error {
 
 // valuesError contains multiple pairs
 type valuesError struct {
-	values map[string]interface{}
+	values map[string]any
 	inner  error
 }
 
@@ -141,7 +141,7 @@ func (e *valuesError) Error() string {
 	return sb.String()
 }
 
-func (e *valuesError) Value(key string) (interface{}, bool) {
+func (e *valuesError) Value(key string) (any, bool) {
 	v, ok := e.values[key]
 	return v, ok
 }

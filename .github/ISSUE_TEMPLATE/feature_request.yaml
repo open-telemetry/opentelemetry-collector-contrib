@@ -23,10 +23,12 @@ body:
       - connector/count
       - connector/datadog
       - connector/exceptions
+      - connector/failover
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
+      - exporter/alertmanager
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
       - exporter/awsemf
@@ -77,8 +79,10 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
+      - extension/encoding/otlpencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
       - extension/headerssetter
@@ -96,11 +100,13 @@ body:
       - extension/oidcauth
       - extension/opamp
       - extension/pprof
+      - extension/remotetap
       - extension/sigv4auth
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
       - internal/aws
+      - internal/collectd
       - internal/core
       - internal/datadog
       - internal/docker
@@ -129,6 +135,7 @@ body:
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
+      - pkg/translator/skywalking
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
@@ -144,7 +151,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
-      - processor/remoteobserver
+      - processor/remotetap
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
@@ -155,6 +162,7 @@ body:
       - processor/servicegraph
       - processor/span
       - processor/spanmetrics
+      - processor/sumologic
       - processor/tailsampling
       - processor/transform
       - receiver/activedirectoryds

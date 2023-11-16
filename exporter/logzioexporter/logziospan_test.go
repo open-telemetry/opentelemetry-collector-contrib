@@ -27,7 +27,7 @@ func TestTransformToLogzioSpanBytes(tester *testing.T) {
 	if err != nil {
 		tester.Fatalf(err.Error())
 	}
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	err = json.Unmarshal(newSpan, &m)
 	if err != nil {
 		tester.Fatalf(err.Error())

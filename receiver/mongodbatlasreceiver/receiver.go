@@ -88,7 +88,7 @@ func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) e
 			return fmt.Errorf("error retrieving projects: %w", err)
 		}
 		for _, project := range projects {
-			nodeClusterMap, err := s.getNodeClusterNameMap(ctx, project.ID)
+			nodeClusterMap, providerMap, err := s.getNodeClusterNameMap(ctx, project.ID)
 			if err != nil {
 				return fmt.Errorf("error collecting clusters from project %s: %w", project.ID, err)
 			}
@@ -99,16 +99,17 @@ func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) e
 			}
 			for _, process := range processes {
 				clusterName := nodeClusterMap[process.UserAlias]
+				providerValues := providerMap[clusterName]
 
-				if err := s.extractProcessMetrics(ctx, time, org.Name, project, process, clusterName); err != nil {
+				if err := s.extractProcessMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
 					return fmt.Errorf("error when polling process metrics from MongoDB Atlas for process %s: %w", process.ID, err)
 				}
 
-				if err := s.extractProcessDatabaseMetrics(ctx, time, org.Name, project, process, clusterName); err != nil {
+				if err := s.extractProcessDatabaseMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
 					return fmt.Errorf("error when polling process database metrics from MongoDB Atlas for process %s: %w", process.ID, err)
 				}
 
-				if err := s.extractProcessDiskMetrics(ctx, time, org.Name, project, process, clusterName); err != nil {
+				if err := s.extractProcessDiskMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
 					return fmt.Errorf("error when polling process disk metrics from MongoDB Atlas for process %s: %w", process.ID, err)
 				}
 			}
@@ -117,14 +118,20 @@ func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) e
 	return nil
 }
 
+type providerValues struct {
+	RegionName   string
+	ProviderName string
+}
+
 func (s *mongodbatlasreceiver) getNodeClusterNameMap(
 	ctx context.Context,
 	projectID string,
-) (map[string]string, error) {
+) (map[string]string, map[string]providerValues, error) {
+	providerMap := make(map[string]providerValues)
 	clusterMap := make(map[string]string)
 	clusters, err := s.client.GetClusters(ctx, projectID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for _, cluster := range clusters {
@@ -134,10 +141,16 @@ func (s *mongodbatlasreceiver) getNodeClusterNameMap(
 			// Remove the port from the node
 			n, _, _ := strings.Cut(node, ":")
 			clusterMap[n] = cluster.Name
+
+		}
+
+		providerMap[cluster.Name] = providerValues{
+			RegionName:   cluster.ProviderSettings.RegionName,
+			ProviderName: cluster.ProviderSettings.ProviderName,
 		}
 	}
 
-	return clusterMap, nil
+	return clusterMap, providerMap, nil
 }
 
 func (s *mongodbatlasreceiver) extractProcessMetrics(
@@ -147,6 +160,7 @@ func (s *mongodbatlasreceiver) extractProcessMetrics(
 	project *mongodbatlas.Project,
 	process *mongodbatlas.Process,
 	clusterName string,
+	providerValues providerValues,
 ) error {
 	if err := s.client.ProcessMetrics(
 		ctx,
@@ -171,6 +185,8 @@ func (s *mongodbatlasreceiver) extractProcessMetrics(
 	rb.SetMongodbAtlasProcessPort(strconv.Itoa(process.Port))
 	rb.SetMongodbAtlasProcessTypeName(process.TypeName)
 	rb.SetMongodbAtlasProcessID(process.ID)
+	rb.SetMongodbAtlasRegionName(providerValues.RegionName)
+	rb.SetMongodbAtlasProviderName(providerValues.ProviderName)
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return nil
@@ -183,6 +199,7 @@ func (s *mongodbatlasreceiver) extractProcessDatabaseMetrics(
 	project *mongodbatlas.Project,
 	process *mongodbatlas.Process,
 	clusterName string,
+	providerValues providerValues,
 ) error {
 	processDatabases, err := s.client.ProcessDatabases(
 		ctx,
@@ -219,6 +236,8 @@ func (s *mongodbatlasreceiver) extractProcessDatabaseMetrics(
 		rb.SetMongodbAtlasProcessTypeName(process.TypeName)
 		rb.SetMongodbAtlasProcessID(process.ID)
 		rb.SetMongodbAtlasDbName(db.DatabaseName)
+		rb.SetMongodbAtlasRegionName(providerValues.RegionName)
+		rb.SetMongodbAtlasProviderName(providerValues.ProviderName)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return nil
@@ -231,6 +250,7 @@ func (s *mongodbatlasreceiver) extractProcessDiskMetrics(
 	project *mongodbatlas.Project,
 	process *mongodbatlas.Process,
 	clusterName string,
+	providerValues providerValues,
 ) error {
 	for _, disk := range s.client.ProcessDisks(ctx, project.ID, process.Hostname, process.Port) {
 		if err := s.client.ProcessDiskMetrics(
@@ -257,6 +277,8 @@ func (s *mongodbatlasreceiver) extractProcessDiskMetrics(
 		rb.SetMongodbAtlasProcessTypeName(process.TypeName)
 		rb.SetMongodbAtlasProcessID(process.ID)
 		rb.SetMongodbAtlasDiskPartition(disk.PartitionName)
+		rb.SetMongodbAtlasRegionName(providerValues.RegionName)
+		rb.SetMongodbAtlasProviderName(providerValues.ProviderName)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return nil

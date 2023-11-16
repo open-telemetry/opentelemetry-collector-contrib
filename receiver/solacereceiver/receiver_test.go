@@ -29,7 +29,7 @@ import (
 func TestReceiveMessage(t *testing.T) {
 	someError := errors.New("some error")
 
-	validateMetrics := func(receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan interface{}) func(t *testing.T, receiver *solaceTracesReceiver) {
+	validateMetrics := func(receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan any) func(t *testing.T, receiver *solaceTracesReceiver) {
 		return func(t *testing.T, receiver *solaceTracesReceiver) {
 			validateReceiverMetrics(t, receiver, receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan)
 		}
@@ -549,7 +549,7 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 	return receiver, service, unmarshaller
 }
 
-func validateReceiverMetrics(t *testing.T, receiver *solaceTracesReceiver, receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan interface{}) {
+func validateReceiverMetrics(t *testing.T, receiver *solaceTracesReceiver, receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan any) {
 	validateMetric(t, receiver.metrics.views.receivedSpanMessages, receivedMsgVal)
 	validateMetric(t, receiver.metrics.views.droppedSpanMessages, droppedMsgVal)
 	validateMetric(t, receiver.metrics.views.fatalUnmarshallingErrors, fatalUnmarshalling)

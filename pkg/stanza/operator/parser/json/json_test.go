@@ -77,7 +77,7 @@ func TestParser(t *testing.T) {
 				Body: `{}`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{},
+				Attributes: map[string]any{},
 				Body:       `{}`,
 			},
 		},
@@ -88,7 +88,7 @@ func TestParser(t *testing.T) {
 				Body: `{"superkey":"superval"}`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"superkey": "superval",
 				},
 				Body: `{"superkey":"superval"}`,
@@ -108,7 +108,7 @@ func TestParser(t *testing.T) {
 				Body: `{"superkey":"superval","timestamp":1136214245}`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"superkey":  "superval",
 					"timestamp": float64(1136214245),
 				},
@@ -127,7 +127,7 @@ func TestParser(t *testing.T) {
 				Body: `{"superkey":"superval","logger_name":"logger"}`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"superkey":    "superval",
 					"logger_name": "logger",
 				},

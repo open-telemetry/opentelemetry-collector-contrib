@@ -44,7 +44,7 @@ func TestEKS(t *testing.T) {
 	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, map[string]any{
 		"cloud.provider": "aws",
 		"cloud.platform": "aws_eks",
 	}, res.Attributes().AsRaw(), "Resource object returned is incorrect")

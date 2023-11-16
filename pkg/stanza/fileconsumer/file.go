@@ -34,14 +34,25 @@ type Manager struct {
 
 	previousPollFiles []*reader.Reader
 	knownFiles        []*reader.Metadata
-	seenPaths         map[string]struct{}
 
-	currentFps []*fingerprint.Fingerprint
+	// This value approximates the expected number of files which we will find in a single poll cycle.
+	// It is updated each poll cycle using a simple moving average calculation which assigns 20% weight
+	// to the most recent poll cycle.
+	// It is used to regulate the size of knownFiles. The goal is to allow knownFiles
+	// to contain checkpoints from a few previous poll cycles, but not grow unbounded.
+	movingAverageMatches int
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
+
+	if matches, err := m.fileMatcher.MatchFiles(); err != nil {
+		m.Warnf("finding files: %v", err)
+	} else {
+		m.movingAverageMatches = len(matches)
+		m.knownFiles = make([]*reader.Metadata, 0, 4*len(matches))
+	}
 
 	if persister != nil {
 		m.persister = persister
@@ -56,10 +67,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 		}
 	}
 
-	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.Warnf("finding files: %v", err)
-	}
-
 	// Start polling goroutine
 	m.startPoller(ctx)
 
@@ -67,8 +74,8 @@ func (m *Manager) Start(persister operator.Persister) error {
 }
 
 func (m *Manager) closePreviousFiles() {
-	if forgetNum := len(m.previousPollFiles) + len(m.knownFiles) - cap(m.knownFiles); forgetNum > 0 {
-		m.knownFiles = m.knownFiles[forgetNum:]
+	if len(m.knownFiles) > 4*m.movingAverageMatches {
+		m.knownFiles = m.knownFiles[m.movingAverageMatches:]
 	}
 	for _, r := range m.previousPollFiles {
 		m.knownFiles = append(m.knownFiles, r.Close())
@@ -119,6 +126,8 @@ func (m *Manager) poll(ctx context.Context) {
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
 		m.Debugf("finding files: %v", err)
+	} else {
+		m.movingAverageMatches = (m.movingAverageMatches*3 + len(matches)) / 4
 	}
 	m.Debugf("matched files", zap.Strings("paths", matches))
 
@@ -147,14 +156,8 @@ func (m *Manager) poll(ctx context.Context) {
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
-	m.Debug("Consuming files")
-	readers := make([]*reader.Reader, 0, len(paths))
-	for _, path := range paths {
-		r := m.makeReader(path)
-		if r != nil {
-			readers = append(readers, r)
-		}
-	}
+	m.Debug("Consuming files", zap.Strings("paths", paths))
+	readers := m.makeReaders(paths)
 
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
@@ -174,18 +177,9 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	wg.Wait()
 
 	m.previousPollFiles = readers
-	m.clearCurrentFingerprints()
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
-	if _, ok := m.seenPaths[path]; !ok {
-		if m.readerFactory.FromBeginning {
-			m.Infow("Started watching file", "path", path)
-		} else {
-			m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
-		}
-		m.seenPaths[path] = struct{}{}
-	}
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
 		m.Errorw("Failed to open file", zap.Error(err))
@@ -210,45 +204,38 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	return fp, file
 }
 
-func (m *Manager) checkDuplicates(fp *fingerprint.Fingerprint) bool {
-	for i := 0; i < len(m.currentFps); i++ {
-		if fp.Equal(m.currentFps[i]) {
-			return true
-		}
-	}
-	return false
-}
-
 // makeReader take a file path, then creates reader,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
-func (m *Manager) makeReader(path string) *reader.Reader {
-	// Open the files first to minimize the time between listing and opening
-	fp, file := m.makeFingerprint(path)
-	if fp == nil {
-		return nil
-	}
-
-	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
-	if m.checkDuplicates(fp) {
-		if err := file.Close(); err != nil {
-			m.Debugw("problem closing file", zap.Error(err))
+func (m *Manager) makeReaders(paths []string) []*reader.Reader {
+	readers := make([]*reader.Reader, 0, len(paths))
+OUTER:
+	for _, path := range paths {
+		fp, file := m.makeFingerprint(path)
+		if fp == nil {
+			continue
 		}
-		return nil
+
+		// Exclude duplicate paths with the same content. This can happen when files are
+		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
+		for _, r := range readers {
+			if fp.Equal(r.Fingerprint) {
+				if err := file.Close(); err != nil {
+					m.Debugw("problem closing file", zap.Error(err))
+				}
+				continue OUTER
+			}
+		}
+
+		r, err := m.newReader(file, fp)
+		if err != nil {
+			m.Errorw("Failed to create reader", zap.Error(err))
+			continue
+		}
+
+		readers = append(readers, r)
 	}
-
-	m.currentFps = append(m.currentFps, fp)
-	reader, err := m.newReader(file, fp)
-	if err != nil {
-		m.Errorw("Failed to create reader", zap.Error(err))
-		return nil
-	}
-
-	return reader
-}
-
-func (m *Manager) clearCurrentFingerprints() {
-	m.currentFps = make([]*fingerprint.Fingerprint, 0)
+	return readers
 }
 
 func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
@@ -274,5 +261,6 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
+	m.Infow("Started watching file", "path", file.Name())
 	return m.readerFactory.NewReader(file, fp)
 }

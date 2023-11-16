@@ -21,10 +21,11 @@ that blocks and does not batch messages, therefore it should be used with batch 
 processors for higher throughput and resiliency. Message payload encoding is configurable.
 
 The following settings are required:
-- `protocol_version` (no default): Kafka protocol version e.g. 2.0.0
+- `protocol_version` (no default): Kafka protocol version e.g. `2.0.0`.
 
 The following settings can be optionally configured:
-- `brokers` (default = localhost:9092): The list of kafka brokers
+- `brokers` (default = localhost:9092): The list of kafka brokers.
+- `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
 - `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the kafka topic to export to.
 - `encoding` (default = otlp_proto): The encoding of the traces sent to kafka. All available encodings:
   - `otlp_proto`: payload is Protobuf serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs.

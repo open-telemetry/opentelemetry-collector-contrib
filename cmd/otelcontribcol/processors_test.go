@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package main
 
 import (
@@ -24,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 )
@@ -139,12 +135,15 @@ func TestDefaultProcessors(t *testing.T) {
 			processor: "redaction",
 		},
 		{
-			processor: "remoteobserver",
+			processor: "remotetap",
 			getConfigFn: func() component.Config {
-				cfg := procFactories["remoteobserver"].CreateDefaultConfig().(*remoteobserverprocessor.Config)
+				cfg := procFactories["remotetap"].CreateDefaultConfig().(*remotetapprocessor.Config)
 				cfg.Endpoint = "localhost:0"
 				return cfg
 			},
+		},
+		{
+			processor: "sumologic",
 		},
 	}
 

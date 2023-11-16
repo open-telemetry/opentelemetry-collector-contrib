@@ -16,5 +16,5 @@ type Queue struct {
 	ReadyMessages          int64 `json:"messages_ready"`
 
 	// Embedded Metrics
-	MessageStats map[string]interface{} `json:"message_stats"`
+	MessageStats map[string]any `json:"message_stats"`
 }
