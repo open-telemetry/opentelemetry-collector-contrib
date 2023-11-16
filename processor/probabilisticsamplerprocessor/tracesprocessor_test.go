@@ -5,6 +5,7 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/rand"
 	"testing"
@@ -401,98 +402,49 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 // Test_tracesamplerprocessor_TraceState checks if handling of the context
 // tracestate is correct.
 func Test_tracesamplerprocessor_TraceState(t *testing.T) {
+	sid := idutils.UInt64ToSpanID(0xfefefefe)
 	singleSpanWithAttrib := func(key string, attribValue pcommon.Value) ptrace.Traces {
 		traces := ptrace.NewTraces()
 		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.TraceState().FromRaw("")
+		span.SetTraceID(pcommon.TraceID{
+			// Don't care (9 bytes)
+			0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe,
+			// Trace randomness (7 bytes)
+			0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		})
+		span.SetSpanID(sid)
 		return traces
 	}
 	tests := []struct {
 		name    string
 		cfg     *Config
-		td      ptrace.Traces
+		key     string
+		value   pcommon.Value
 		sampled bool
 	}{
 		{
-			name: "must_sample",
+			name: "yes_sample",
 			cfg: &Config{
-				SamplingPercentage: 0.0,
+				SamplingPercentage: 50,
 			},
-			td: singleSpanWithAttrib(
-				"sampling.priority",
-				pcommon.NewValueInt(2)),
+			key:     "n/a",
+			value:   pcommon.NewValueInt(2),
 			sampled: true,
 		},
 		{
-			name: "must_sample_double",
+			name: "no_sample",
 			cfg: &Config{
-				SamplingPercentage: 0.0,
+				SamplingPercentage: 49,
 			},
-			td: singleSpanWithAttrib(
-				"sampling.priority",
-				pcommon.NewValueDouble(1)),
-			sampled: true,
-		},
-		{
-			name: "must_sample_string",
-			cfg: &Config{
-				SamplingPercentage: 0.0,
-			},
-			td: singleSpanWithAttrib(
-				"sampling.priority",
-				pcommon.NewValueStr("1")),
-			sampled: true,
-		},
-		{
-			name: "must_not_sample",
-			cfg: &Config{
-				SamplingPercentage: 100.0,
-			},
-			td: singleSpanWithAttrib(
-				"sampling.priority",
-				pcommon.NewValueInt(0)),
-		},
-		{
-			name: "must_not_sample_double",
-			cfg: &Config{
-				SamplingPercentage: 100.0,
-			},
-			td: singleSpanWithAttrib(
-				"sampling.priority",
-				pcommon.NewValueDouble(0)),
-		},
-		{
-			name: "must_not_sample_string",
-			cfg: &Config{
-				SamplingPercentage: 100.0,
-			},
-			td: singleSpanWithAttrib(
-				"sampling.priority",
-				pcommon.NewValueStr("0")),
-		},
-		{
-			name: "defer_sample_expect_not_sampled",
-			cfg: &Config{
-				SamplingPercentage: 0.0,
-			},
-			td: singleSpanWithAttrib(
-				"no.sampling.priority",
-				pcommon.NewValueInt(2)),
-		},
-		{
-			name: "defer_sample_expect_sampled",
-			cfg: &Config{
-				SamplingPercentage: 100.0,
-			},
-			td: singleSpanWithAttrib(
-				"no.sampling.priority",
-				pcommon.NewValueInt(2)),
-			sampled: true,
+			key:     "n/a",
+			value:   pcommon.NewValueInt(2),
+			sampled: false,
 		},
 	}
 	for _, tt := range tests {
-		for _, mode := range AllModes {
-			t.Run(tt.name, func(t *testing.T) {
+		for _, mode := range []SamplerMode{Equalizing, Proportional} {
+			t.Run(fmt.Sprint(mode, "_", tt.name), func(t *testing.T) {
 				sink := new(consumertest.TracesSink)
 				cfg := &Config{}
 				if tt.cfg != nil {
@@ -501,8 +453,9 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				cfg.SamplerMode = mode
 				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 				require.NoError(t, err)
+				td := singleSpanWithAttrib(tt.key, tt.value)
 
-				err = tsp.ConsumeTraces(context.Background(), tt.td)
+				err = tsp.ConsumeTraces(context.Background(), td)
 				require.NoError(t, err)
 
 				sampledData := sink.AllTraces()
