@@ -8,6 +8,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -40,7 +41,7 @@ func createDefaultConfig() component.Config {
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
-		TTLDays:          0,
+		TTL:              0,
 	}
 }
 
@@ -118,4 +119,24 @@ func createMetricExporter(
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
 	)
+}
+
+func generateTTLExpr(ttlDays uint, ttl time.Duration) string {
+	if ttlDays > 0 {
+		return fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, ttlDays)
+	}
+
+	if ttl > 0 {
+		switch {
+		case ttl%(24*time.Hour) == 0:
+			return fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, ttl/(24*time.Hour))
+		case ttl%(time.Hour) == 0:
+			return fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalHour(%d)`, ttl/time.Hour)
+		case ttl%(time.Minute) == 0:
+			return fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalMinute(%d)`, ttl/time.Minute)
+		default:
+			return fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalSecond(%d)`, ttl/time.Second)
+		}
+	}
+	return ""
 }

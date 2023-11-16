@@ -22,8 +22,8 @@ exporters:
     api_url: "https://api.honeycomb.io"
     markers:
       - type: "marker-type"
-        message_key: "this message accompanies the event marker"
-        url_key: "https://api.testhost.io"
+        message_key: "marker-message"
+        url_key: "marker-url"
         dataset_slug: "__all__"
         rules:
           - log_conditions:
