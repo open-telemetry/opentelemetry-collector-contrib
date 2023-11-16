@@ -1,0 +1,70 @@
+query getRepoDataBySearch(
+  $searchQuery: String!
+  # @genqlient(pointer: true)
+  $repoCursor: String
+) {
+  search(
+    query: $searchQuery
+    type: REPOSITORY
+    first: 100
+    after: $repoCursor
+  ) {
+    repositoryCount
+    # @genqlient(typename: "SearchNode")
+    nodes {
+      ... on Repository {
+        id
+        name
+        defaultBranchRef {
+          name
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query checkLogin($login: String!) {
+  user(login: $login) {
+    login
+  }
+  organization(login: $login) {
+    login
+  }
+}
+
+query getBranchData(
+  $name: String!
+  $owner: String!
+  $branchFirst: Int!
+  $targetBranch: String!
+  # @genqlient(pointer: true)
+  $branchCursor: String
+) {
+  repository(name: $name, owner: $owner) {
+    refs(refPrefix: "refs/heads/", first: $branchFirst, after: $branchCursor) {
+      totalCount
+      # @genqlient(typename: "BranchNode")
+      nodes {
+        name
+        compare(headRef: $targetBranch) {
+          aheadBy
+          behindBy
+        }
+        repository{
+          name
+          defaultBranchRef {
+            name
+          }
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+    }
+  }
+}
