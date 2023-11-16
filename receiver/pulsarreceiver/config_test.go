@@ -30,7 +30,6 @@ func TestLoadConfig(t *testing.T) {
 		Endpoint:              "pulsar://localhost:6500",
 		ConsumerName:          "otel-collector",
 		Subscription:          "otel-collector",
-		Encoding:              defaultEncoding,
 		TLSTrustCertsFilePath: "ca.pem",
 		Authentication:        Authentication{TLS: &TLS{CertFile: "cert.pem", KeyFile: "key.pem"}},
 	},

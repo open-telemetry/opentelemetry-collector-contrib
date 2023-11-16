@@ -23,63 +23,18 @@ const (
 	defaultServiceURL   = "pulsar://localhost:6650"
 )
 
-// FactoryOption applies changes to PulsarExporterFactory.
-type FactoryOption func(factory *pulsarReceiverFactory)
-
-// withTracesUnmarshalers adds Unmarshalers.
-func withTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
-	return func(factory *pulsarReceiverFactory) {
-		for _, unmarshaler := range tracesUnmarshalers {
-			factory.tracesUnmarshalers[unmarshaler.Encoding()] = unmarshaler
-		}
-	}
-}
-
-// withMetricsUnmarshalers adds MetricsUnmarshalers.
-func withMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryOption {
-	return func(factory *pulsarReceiverFactory) {
-		for _, unmarshaler := range metricsUnmarshalers {
-			factory.metricsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
-		}
-	}
-}
-
-// withLogsUnmarshalers adds LogsUnmarshalers.
-func withLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
-	return func(factory *pulsarReceiverFactory) {
-		for _, unmarshaler := range logsUnmarshalers {
-			factory.logsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
-		}
-	}
-}
-
 // NewFactory creates Pulsar receiver factory.
-func NewFactory(options ...FactoryOption) receiver.Factory {
-
-	f := &pulsarReceiverFactory{
-		tracesUnmarshalers:  defaultTracesUnmarshalers(),
-		metricsUnmarshalers: defaultMetricsUnmarshalers(),
-		logsUnmarshalers:    defaultLogsUnmarshalers(),
-	}
-	for _, o := range options {
-		o(f)
-	}
+func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
-		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 
-type pulsarReceiverFactory struct {
-	tracesUnmarshalers  map[string]TracesUnmarshaler
-	metricsUnmarshalers map[string]MetricsUnmarshaler
-	logsUnmarshalers    map[string]LogsUnmarshaler
-}
-
-func (f *pulsarReceiverFactory) createTracesReceiver(
+func createTracesReceiver(
 	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
@@ -89,14 +44,14 @@ func (f *pulsarReceiverFactory) createTracesReceiver(
 	if len(c.Topic) == 0 {
 		c.Topic = defaultTraceTopic
 	}
-	r, err := newTracesReceiver(c, set, f.tracesUnmarshalers, nextConsumer)
+	r, err := newTracesReceiver(c, set, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-func (f *pulsarReceiverFactory) createMetricsReceiver(
+func createMetricsReceiver(
 	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
@@ -106,14 +61,14 @@ func (f *pulsarReceiverFactory) createMetricsReceiver(
 	if len(c.Topic) == 0 {
 		c.Topic = defaultMeticsTopic
 	}
-	r, err := newMetricsReceiver(c, set, f.metricsUnmarshalers, nextConsumer)
+	r, err := newMetricsReceiver(c, set, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
 	return r, nil
 }
 
-func (f *pulsarReceiverFactory) createLogsReceiver(
+func createLogsReceiver(
 	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
@@ -123,7 +78,7 @@ func (f *pulsarReceiverFactory) createLogsReceiver(
 	if len(c.Topic) == 0 {
 		c.Topic = defaultLogsTopic
 	}
-	r, err := newLogsReceiver(c, set, f.logsUnmarshalers, nextConsumer)
+	r, err := newLogsReceiver(c, set, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +87,6 @@ func (f *pulsarReceiverFactory) createLogsReceiver(
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Encoding:     defaultEncoding,
 		ConsumerName: defaultConsumerName,
 		Subscription: defaultSubscription,
 		Endpoint:     defaultServiceURL,

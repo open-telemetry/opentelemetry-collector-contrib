@@ -6,8 +6,11 @@ package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
@@ -16,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var errUnrecognizedEncoding = errors.New("unrecognized encoding")
+var errIncorrectEncoding = "encoding %s doesn't implement %s"
 
 const alreadyClosedError = "AlreadyClosedError"
 
@@ -26,17 +29,13 @@ type pulsarTracesConsumer struct {
 	client          pulsar.Client
 	cancel          context.CancelFunc
 	consumer        pulsar.Consumer
-	unmarshaler     TracesUnmarshaler
+	unmarshaler     encoding.TracesUnmarshalerExtension
 	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
+	encoding        *component.ID
 }
 
-func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
-	unmarshaler := unmarshalers[config.Encoding]
-	if nil == unmarshaler {
-		return nil, errUnrecognizedEncoding
-	}
-
+func newTracesReceiver(config Config, set receiver.CreateSettings, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
 	options := config.clientOptions()
 	client, err := pulsar.NewClient(options)
 	if err != nil {
@@ -51,16 +50,26 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 	return &pulsarTracesConsumer{
 		tracesConsumer:  nextConsumer,
 		topic:           config.Topic,
-		unmarshaler:     unmarshaler,
+		encoding:        config.EncodingID,
 		settings:        set,
 		client:          client,
 		consumerOptions: consumerOptions,
 	}, nil
 }
 
-func (c *pulsarTracesConsumer) Start(context.Context, component.Host) error {
+func (c *pulsarTracesConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
+
+	extension, ok := host.GetExtensions()[*c.encoding]
+	if !ok {
+		return fmt.Errorf("extension '%s' not found", c.encoding)
+	}
+	unmarshaler, ok := extension.(encoding.TracesUnmarshalerExtension)
+	if !ok {
+		return fmt.Errorf(errIncorrectEncoding, c.encoding, "TracesUnmarshaler")
+	}
+	c.unmarshaler = unmarshaler
 
 	_consumer, err := c.client.Subscribe(c.consumerOptions)
 	if err == nil {
@@ -94,7 +103,7 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 			continue
 		}
 
-		traces, err := unmarshaler.Unmarshal(message.Payload())
+		traces, err := unmarshaler.UnmarshalTraces(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler traces message", zap.Error(err))
 			c.consumer.Ack(message)
@@ -120,21 +129,17 @@ func (c *pulsarTracesConsumer) Shutdown(context.Context) error {
 
 type pulsarMetricsConsumer struct {
 	metricsConsumer consumer.Metrics
-	unmarshaler     MetricsUnmarshaler
+	unmarshaler     encoding.MetricsUnmarshalerExtension
 	topic           string
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
 	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
+	encoding        *component.ID
 }
 
-func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
-	unmarshaler := unmarshalers[config.Encoding]
-	if nil == unmarshaler {
-		return nil, errUnrecognizedEncoding
-	}
-
+func newMetricsReceiver(config Config, set receiver.CreateSettings, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
 	options := config.clientOptions()
 	client, err := pulsar.NewClient(options)
 	if err != nil {
@@ -149,16 +154,26 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 	return &pulsarMetricsConsumer{
 		metricsConsumer: nextConsumer,
 		topic:           config.Topic,
-		unmarshaler:     unmarshaler,
+		encoding:        config.EncodingID,
 		settings:        set,
 		client:          client,
 		consumerOptions: consumerOptions,
 	}, nil
 }
 
-func (c *pulsarMetricsConsumer) Start(context.Context, component.Host) error {
+func (c *pulsarMetricsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
+	extension, ok := host.GetExtensions()[*c.encoding]
+	if !ok {
+		return fmt.Errorf("extension '%s' not found", c.encoding)
+	}
+	unmarshaler, ok := extension.(encoding.MetricsUnmarshalerExtension)
+	if !ok {
+		return fmt.Errorf(errIncorrectEncoding, c.encoding, "MetricsUnmarshaler")
+
+	}
+	c.unmarshaler = unmarshaler
 
 	_consumer, err := c.client.Subscribe(c.consumerOptions)
 	if err == nil {
@@ -194,7 +209,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 			continue
 		}
 
-		metrics, err := unmarshaler.Unmarshal(message.Payload())
+		metrics, err := unmarshaler.UnmarshalMetrics(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler metrics message", zap.Error(err))
 			c.consumer.Ack(message)
@@ -221,21 +236,17 @@ func (c *pulsarMetricsConsumer) Shutdown(context.Context) error {
 
 type pulsarLogsConsumer struct {
 	logsConsumer    consumer.Logs
-	unmarshaler     LogsUnmarshaler
+	unmarshaler     encoding.LogsUnmarshalerExtension
 	topic           string
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
 	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
+	encoding        *component.ID
 }
 
-func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
-	unmarshaler := unmarshalers[config.Encoding]
-	if nil == unmarshaler {
-		return nil, errUnrecognizedEncoding
-	}
-
+func newLogsReceiver(config Config, set receiver.CreateSettings, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
 	options := config.clientOptions()
 	client, err := pulsar.NewClient(options)
 	if err != nil {
@@ -250,17 +261,26 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 	return &pulsarLogsConsumer{
 		logsConsumer:    nextConsumer,
 		topic:           config.Topic,
-		cancel:          nil,
-		unmarshaler:     unmarshaler,
+		encoding:        config.EncodingID,
 		settings:        set,
 		client:          client,
 		consumerOptions: consumerOptions,
 	}, nil
 }
 
-func (c *pulsarLogsConsumer) Start(context.Context, component.Host) error {
+func (c *pulsarLogsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
+
+	extension, ok := host.GetExtensions()[*c.encoding]
+	if !ok {
+		return fmt.Errorf("extension '%s' not found", c.encoding)
+	}
+	unmarshaler, ok := extension.(encoding.LogsUnmarshalerExtension)
+	if !ok {
+		return fmt.Errorf(errIncorrectEncoding, c.encoding, "LogsUnmarshaler")
+	}
+	c.unmarshaler = unmarshaler
 
 	_consumer, err := c.client.Subscribe(c.consumerOptions)
 	if err == nil {
@@ -294,7 +314,7 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 			continue
 		}
 
-		logs, err := unmarshaler.Unmarshal(message.Payload())
+		logs, err := unmarshaler.UnmarshalLogs(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler logs message", zap.Error(err))
 			c.consumer.Ack(message)
