@@ -71,6 +71,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `signalfxexporter`: Add an option to control the dimension client timeout (#27815)
 - `signalfxexporter`: Add the build version to the user agent of the SignalFx exporter (#16841)
 - `splunkentreceiver`: Users can now use auth settings and basicauth extension to connect to their Splunk enterprise deployments (#27026)
+- `processor/transform`: Convert between sum and gauge in metric context when alpha feature gate `processor.transform.ConvertBetweenSumAndGaugeMetricContext` enabled (#29091)
 
 ### 🧰 Bug fixes 🧰
 
