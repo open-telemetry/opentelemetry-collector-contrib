@@ -284,7 +284,7 @@ func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *types.C
 	return nil
 }
 
-func (r *receiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) error {
+func (r *metricsReceiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) error {
 	r.mb.RecordContainerCPUSharesDataPoint(now, containerJSON.HostConfig.CPUShares)
 
 	cpuLimit, err := calculateCPULimit(containerJSON.HostConfig)
