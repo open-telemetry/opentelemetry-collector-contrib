@@ -105,7 +105,7 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 		datasetSlug = defaultDatasetSlug
 	}
 
-	url := fmt.Sprintf("%s/1/markers/%s", strings.TrimRight(e.config.APIURL, "/"), marker.DatasetSlug)
+	url := fmt.Sprintf("%s/1/markers/%s", strings.TrimRight(e.config.APIURL, "/"), datasetSlug)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
 		return err
