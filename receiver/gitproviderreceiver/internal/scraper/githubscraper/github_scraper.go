@@ -85,7 +85,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	if ghs.cfg.SearchQuery != "" {
 		sq = ghs.cfg.SearchQuery
-		ghs.logger.Sugar().Debugf("using search query where query is: %v", ghs.cfg.SearchQuery)
+		ghs.logger.Sugar().Debugf("using search query where query is: %q", ghs.cfg.SearchQuery)
 	}
 
 	// Get the repository data based on the search query retrieving a slice of branches
