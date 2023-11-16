@@ -143,7 +143,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 		return 0, nil
 	}
 
-	curMF, _ := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
+	curMF, existing := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
 
 	if curMF.mtype == pmetric.MetricTypeExponentialHistogram {
 		curMF.mtype = pmetric.MetricTypeHistogram
@@ -153,29 +153,18 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	err := curMF.addSeries(seriesRef, metricName, ls, atMs, val)
 	if err != nil {
 		// Handle special case of float sample indicating staleness of native
-		// histogram. TODO: add reference to issue in Prometheus
-		// If there is no "le" label, we assume the sample was for a
-		// native histogram.
-		if err == errEmptyLeLabel && value.IsStaleNaN(val) && curMF.mtype == pmetric.MetricTypeHistogram {
+		// histogram. This is similar to how Prometheus handles it, but we
+		// don't have access to the previous value so we're applying some
+		// heuristics to figure out if this is native histogram or not.
+		if errors.Is(err, errEmptyLeLabel) && !existing && value.IsStaleNaN(val) && curMF.mtype == pmetric.MetricTypeHistogram {
 			mg := curMF.loadMetricGroupOrCreate(seriesRef, ls, atMs)
-			// Double check that previously there was a native histogram stored.
-			if mg.fhValue != nil {
-				curMF.mtype = pmetric.MetricTypeExponentialHistogram
-				mg.mtype = pmetric.MetricTypeExponentialHistogram
-				curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, nil, &histogram.FloatHistogram{Sum: val})
-				// ignore errors here, this is best effort.
-				return 0, nil
-			}
-			if mg.hValue != nil {
-				curMF.mtype = pmetric.MetricTypeExponentialHistogram
-				mg.mtype = pmetric.MetricTypeExponentialHistogram
-				curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: val}, nil)
-				// ignore errors here, this is best effort.
-				return 0, nil
-			}
+			curMF.mtype = pmetric.MetricTypeExponentialHistogram
+			mg.mtype = pmetric.MetricTypeExponentialHistogram
+			curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: val}, nil)
+			// ignore errors here, this is best effort.
+		} else {
+			t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 		}
-
-		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 	}
 
 	return 0, nil // never return errors, as that fails the whole scrape
