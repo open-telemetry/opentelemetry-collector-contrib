@@ -226,9 +226,8 @@ docker-telemetrygen:
 	COMPONENT=telemetrygen $(MAKE) docker-component
 
 .PHONY: generate
-generate:
+generate: install-tools
 	cd cmd/mdatagen && $(GOCMD) install .
-	$(GOCMD) install github.com/Khan/genqlient@v0.6.0
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
 .PHONY: mdatagen-test
