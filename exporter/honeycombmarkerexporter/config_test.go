@@ -29,6 +29,23 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				APIKey: "test-apikey",
+				APIURL: "https://api.honeycomb.io",
+				Markers: []Marker{
+					{
+						Type: "fooType",
+						Rules: Rules{
+							LogConditions: []string{
+								`body == "test"`,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "all_fields"),
+			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 				APIKey:        "test-apikey",
@@ -43,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 								`body == "test"`,
 							},
 						},
-						DatasetSlug: "__all__",
+						DatasetSlug: "testing",
 					},
 				},
 			},
@@ -59,9 +76,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "no_markers_supplied"),
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "no_dataset_slug"),
 		},
 	}
 
