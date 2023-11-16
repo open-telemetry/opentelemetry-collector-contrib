@@ -1088,6 +1088,152 @@ func Test_parse(t *testing.T) {
 	}
 }
 
+func Test_parseCondition_full(t *testing.T) {
+	tests := []struct {
+		name      string
+		condition string
+		expected  *booleanExpression
+	}{
+		{
+			name:      "where == clause",
+			condition: `name == "fido"`,
+			expected: &booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Comparison: &comparison{
+							Left: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+							},
+							Op: EQ,
+							Right: value{
+								String: ottltest.Strp("fido"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "where != clause",
+			condition: `name != "fido"`,
+			expected: &booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Comparison: &comparison{
+							Left: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+							},
+							Op: NE,
+							Right: value{
+								String: ottltest.Strp("fido"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "Converter math mathExpression",
+			condition: `1 + 1 * 2 == three / One()`,
+			expected: &booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Comparison: &comparison{
+							Left: value{
+								MathExpression: &mathExpression{
+									Left: &addSubTerm{
+										Left: &mathValue{
+											Literal: &mathExprLiteral{
+												Int: ottltest.Intp(1),
+											},
+										},
+									},
+									Right: []*opAddSubTerm{
+										{
+											Operator: ADD,
+											Term: &addSubTerm{
+												Left: &mathValue{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(1),
+													},
+												},
+												Right: []*opMultDivValue{
+													{
+														Operator: MULT,
+														Value: &mathValue{
+															Literal: &mathExprLiteral{
+																Int: ottltest.Intp(2),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Op: EQ,
+							Right: value{
+								MathExpression: &mathExpression{
+									Left: &addSubTerm{
+										Left: &mathValue{
+											Literal: &mathExprLiteral{
+												Path: &Path{
+													Fields: []Field{
+														{
+															Name: "three",
+														},
+													},
+												},
+											},
+										},
+										Right: []*opMultDivValue{
+											{
+												Operator: DIV,
+												Value: &mathValue{
+													Literal: &mathExprLiteral{
+														Converter: &converter{
+															Function: "One",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.condition, func(t *testing.T) {
+			parsed, err := parseCondition(tt.condition)
+			assert.NoError(t, err)
+			assert.EqualValues(t, tt.expected, parsed)
+		})
+	}
+}
+
 func testParsePath(val *Path) (GetSetter[any], error) {
 	if val != nil && len(val.Fields) > 0 && (val.Fields[0].Name == "name" || val.Fields[0].Name == "attributes") {
 		return &StandardGetSetter[any]{
@@ -1652,6 +1798,33 @@ func Test_ParseStatements_Error(t *testing.T) {
 	}
 }
 
+func Test_ParseConditions_Error(t *testing.T) {
+	conditions := []string{
+		`True(`,
+		`"foo == "foo"`,
+		`set()`,
+	}
+
+	p, _ := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath,
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	_, err := p.ParseConditions(conditions)
+
+	assert.Error(t, err)
+
+	multiErrs := multierr.Errors(err)
+
+	assert.Len(t, multiErrs, len(conditions), "ParseConditions didn't return an error per condition")
+
+	for i, statementErr := range multiErrs {
+		assert.ErrorContains(t, statementErr, fmt.Sprintf("unable to parse OTTL condition %q", conditions[i]))
+	}
+}
+
 // This test doesn't validate parser results, simply checks whether the parse succeeds or not.
 // It's a fast way to check a large range of possible syntaxes.
 func Test_parseStatement(t *testing.T) {
@@ -1717,6 +1890,65 @@ func Test_parseStatement(t *testing.T) {
 			ast, err := parseStatement(tt.statement)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseStatement(%s) error = %v, wantErr %v", tt.statement, err, tt.wantErr)
+				t.Errorf("AST: %+v", ast)
+				return
+			}
+		})
+	}
+}
+
+// This test doesn't validate parser results, simply checks whether the parse succeeds or not.
+// It's a fast way to check a large range of possible syntaxes.
+func Test_parseCondition(t *testing.T) {
+	tests := []struct {
+		condition string
+		wantErr   bool
+	}{
+		{`set(`, true},
+		{`set("foo)`, true},
+		{`set(name.)`, true},
+		{`("foo")`, true},
+		{`name =||= "fido"`, true},
+		{`name = "fido"`, true},
+		{`name or "fido"`, true},
+		{`name and "fido"`, true},
+		{`name and`, true},
+		{`name or`, true},
+		{`(`, true},
+		{`)`, true},
+		{`(name == "fido"))`, true},
+		{`((name == "fido")`, true},
+		{`set()`, true},
+		{`Int() == 1`, false},
+		{`1 == Int()`, false},
+		{`true and 1 == Int() `, false},
+		{`false or 1 == Int() `, false},
+		{`service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`animal > "cat"`, false},
+		{`animal >= "cat"`, false},
+		{`animal <= "cat"`, false},
+		{`animal < "cat"`, false},
+		{`animal =< "dog"`, true},
+		{`animal => "dog"`, true},
+		{`animal <> "dog"`, true},
+		{`animal = "dog"`, true},
+		{`animal`, true},
+		{`animal ==`, true},
+		{`==`, true},
+		{`== animal`, true},
+		{`attributes["path"] == "/healthcheck"`, false},
+		{`One() == 1`, false},
+		{`test(fail())`, true},
+		{`Test()`, false},
+	}
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
+	for _, tt := range tests {
+		name := pat.ReplaceAllString(tt.condition, "_")
+		t.Run(name, func(t *testing.T) {
+			ast, err := parseCondition(tt.condition)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseCondition(%s) error = %v, wantErr %v", tt.condition, err, tt.wantErr)
 				t.Errorf("AST: %+v", ast)
 				return
 			}

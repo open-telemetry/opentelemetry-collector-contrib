@@ -32,13 +32,6 @@ func (e *ErrorMode) UnmarshalText(text []byte) error {
 	}
 }
 
-type Parser[K any] struct {
-	functions         map[string]Factory[K]
-	pathParser        PathExpressionParser[K]
-	enumParser        EnumParser
-	telemetrySettings component.TelemetrySettings
-}
-
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the boolean expression to match telemetry for invoking the function.
 type Statement[K any] struct {
@@ -64,6 +57,26 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 		}
 	}
 	return result, condition, nil
+}
+
+// Condition holds a top level Condition. A Condition is a boolean expression to match telemetry.
+type Condition[K any] struct {
+	condition BoolExpr[K]
+	origText  string
+}
+
+// Eval returns true if the condition was met for the given TransformContext and false otherwise.
+func (c *Condition[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	return c.condition.Eval(ctx, tCtx)
+}
+
+// Parser provides the means to parse OTTL Statements and Conditions given a specific set of functions,
+// a PathExpressionParser, and an EnumParser.
+type Parser[K any] struct {
+	functions         map[string]Factory[K]
+	pathParser        PathExpressionParser[K]
+	enumParser        EnumParser
+	telemetrySettings component.TelemetrySettings
 }
 
 func NewParser[K any](
@@ -141,13 +154,70 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	}, nil
 }
 
+// ParseConditions parses string conditions into a ottl.Condition slice ready for execution.
+// Returns a slice of conditions and a nil error on successful parsing.
+// If parsing fails, returns an empty slice  with a multierr error containing
+// an error per failed condition.
+func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error) {
+	parsedConditions := make([]*Condition[K], 0, len(conditions))
+	var parseErr error
+
+	for _, condition := range conditions {
+		ps, err := p.ParseCondition(condition)
+		if err != nil {
+			parseErr = multierr.Append(parseErr, fmt.Errorf("unable to parse OTTL condition %q: %w", condition, err))
+			continue
+		}
+		parsedConditions = append(parsedConditions, ps)
+	}
+
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
+	return parsedConditions, nil
+}
+
+// ParseCondition parses a single string condition into an ottl.Condition objects ready for execution.
+// Returns an ottl.Condition and a nil error on successful parsing.
+// If parsing fails, returns nil with a multierr error containing an error per failed condition.
+func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
+	parsed, err := parseCondition(condition)
+	if err != nil {
+		return nil, err
+	}
+	expression, err := p.newBoolExpr(parsed)
+	if err != nil {
+		return nil, err
+	}
+	return &Condition[K]{
+		condition: expression,
+		origText:  condition,
+	}, nil
+}
+
 var parser = newParser[parsedStatement]()
+var conditionParser = newParser[booleanExpression]()
 
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
 
 	if err != nil {
 		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
+	}
+	err = parsed.checkForCustomError()
+	if err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func parseCondition(raw string) (*booleanExpression, error) {
+	parsed, err := conditionParser.ParseString("", raw)
+
+	if err != nil {
+		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
@@ -234,4 +304,104 @@ func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+type collection[K any] struct {
+	statements        []*Statement[K]
+	conditions        []*Condition[K]
+	errorMode         ErrorMode
+	telemetrySettings component.TelemetrySettings
+}
+
+// CollectionOption allows modifying the options of a StatementCollection or ConditionCollection
+type CollectionOption[K any] func(*collection[K])
+
+// Add back once we're ready to remove Statements
+//func WithErrorMode[K any](errorMode ErrorMode) CollectionOption[K] {
+//	return func(c *collection[K]) {
+//		c.errorMode = errorMode
+//	}
+//}
+
+func (c *collection[K]) Execute(ctx context.Context, tCtx K) error {
+	for _, statement := range c.statements {
+		_, _, err := statement.Execute(ctx, tCtx)
+		if err != nil {
+			if c.errorMode == PropagateError {
+				err = fmt.Errorf("failed to execute condition: %v, %w", statement.origText, err)
+				return err
+			}
+			c.telemetrySettings.Logger.Warn("failed to execute condition", zap.Error(err), zap.String("condition", statement.origText))
+		}
+	}
+	return nil
+}
+
+func (c *collection[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	for _, condition := range c.conditions {
+		match, err := condition.Eval(ctx, tCtx)
+		if err != nil {
+			if c.errorMode == PropagateError {
+				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
+				return false, err
+			}
+			c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
+			continue
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (c *collection[K]) GetErrorMode() ErrorMode {
+	return c.errorMode
+}
+
+// StatementCollection represent a collection of OTTL statements.
+type StatementCollection[K any] interface {
+	// Execute will execute each statement for the supplied TransformContext.
+	Execute(ctx context.Context, tCtx K) error
+
+	// GetErrorMode returns this collection's error mode
+	GetErrorMode() ErrorMode
+}
+
+// NewStatementCollection creates a new StatementCollection based on the supplied values.
+// By default the collection will ignore errors when executing statements, moving on to the next statement.
+func NewStatementCollection[K any](statements []*Statement[K], telemetrySettings component.TelemetrySettings, options ...CollectionOption[K]) StatementCollection[K] {
+	s := collection[K]{
+		statements:        statements,
+		telemetrySettings: telemetrySettings,
+		errorMode:         IgnoreError,
+	}
+	for _, opt := range options {
+		opt(&s)
+	}
+	return &s
+}
+
+// ConditionCollection represent a collection of OTTL conditions.
+type ConditionCollection[K any] interface {
+	// Eval will evaluate the result of all the conditions against the supplied TransformContext.
+	// If any condition is true, the result is true.
+	Eval(ctx context.Context, tCtx K) (bool, error)
+
+	// GetErrorMode returns this collection's error mode
+	GetErrorMode() ErrorMode
+}
+
+// NewConditionCollection creates a new ConditionCollection based on the supplied values.
+// By default the collection will ignore errors when executing conditions, moving on to the next condition.
+func NewConditionCollection[K any](conditions []*Condition[K], telemetrySettings component.TelemetrySettings, options ...CollectionOption[K]) ConditionCollection[K] {
+	c := collection[K]{
+		conditions:        conditions,
+		telemetrySettings: telemetrySettings,
+		errorMode:         IgnoreError,
+	}
+	for _, opt := range options {
+		opt(&c)
+	}
+	return &c
 }
