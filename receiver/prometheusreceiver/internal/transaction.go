@@ -265,6 +265,10 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 		}
 	}
 
+	if h != nil && h.CounterResetHint == histogram.GaugeType || fh != nil && fh.CounterResetHint == histogram.GaugeType {
+		t.logger.Warn("dropping unsupported gauge histogram datapoint", zap.String("metric_name", metricName), zap.Any("labels", ls))
+	}
+
 	err := curMF.addExponentialHistogramSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, h, fh)
 	if err != nil {
 		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
