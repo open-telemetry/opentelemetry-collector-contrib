@@ -86,7 +86,7 @@ func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) e
 	if len(s.cfg.Projects) == 0 {
 		return s.pollAllProjects(ctx, time)
 	}
-	return s.pollProject(ctx, time)
+	return s.pollProjects(ctx, time)
 }
 
 // pollAllProjects handles polling across all projects within the organizations.
@@ -112,7 +112,7 @@ func (s *mongodbatlasreceiver) pollAllProjects(ctx context.Context, time timecon
 }
 
 // pollProject handles polling for specific projects as configured.
-func (s *mongodbatlasreceiver) pollProject(ctx context.Context, time timeconstraints) error {
+func (s *mongodbatlasreceiver) pollProjects(ctx context.Context, time timeconstraints) error {
 	for _, projectCfg := range s.cfg.Projects {
 		project, err := s.client.GetProject(ctx, projectCfg.Name)
 		if err != nil {
