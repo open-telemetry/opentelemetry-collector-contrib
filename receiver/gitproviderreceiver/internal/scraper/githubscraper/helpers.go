@@ -81,10 +81,10 @@ func (ghs *githubScraper) login(
 ) (string, error) {
 	var loginType string
 
+    // The checkLogin GraphQL query will always return an error. We only return
+    // the error if the login response for User and Organization are both nil.
+    // This is represented by checking to see if each resp.*.Login resolves to equal the owner.
 	resp, err := checkLogin(ctx, client, ghs.cfg.GitHubOrg)
-	if err != nil {
-		return "", err
-	}
 
 	// These types are used later to generate the default string for the search query
 	// and thus must match the convention for user: and org: searches in GitHub
@@ -92,7 +92,9 @@ func (ghs *githubScraper) login(
 		loginType = "user"
 	} else if resp.Organization.Login == owner {
 		loginType = "org"
-	}
+	} else {
+        return "", err
+    }
 
 	return loginType, nil
 }

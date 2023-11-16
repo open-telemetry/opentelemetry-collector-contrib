@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+    "sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -98,17 +99,17 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	ghs.mb.RecordGitRepositoryCountDataPoint(now, int64(count))
 
 	// Get the branch count (future branch data) for each repo and record the given metrics
-	max := 5
-	sem := make(chan int, max)
+    var wg sync.WaitGroup
 
-	for i, repo := range repos {
-		i := i
+	for _, repo := range repos {
 		repo := repo
 		name := repo.Name
 		trunk := repo.DefaultBranchRef.Name
 
-		sem <- i
+        wg.Add(1)
 		go func() {
+            defer wg.Done()
+
 			count, err := ghs.getBranches(ctx, genClient, name, trunk)
 			if err != nil {
 				ghs.logger.Sugar().Errorf("error getting branch count for repo %s", zap.Error(err), repo.Name)
@@ -121,14 +122,9 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				ghs.logger.Sugar().Errorf("error getting contributor count for repo %s", zap.Error(err), repo.Name)
 			}
 			ghs.mb.RecordGitRepositoryContributorCountDataPoint(now, int64(contribs), name)
-			<-sem
 		}()
 	}
-
-	// send dummy values to channel to wait for all goroutines to finish
-	for i := 0; i < max; i++ {
-		sem <- i
-	}
+    wg.Wait()
 
 	// Set the resource attributes and emit metrics with those resources
 	ghs.rb.SetGitVendorName("github")
