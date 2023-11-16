@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.89.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.89.0
 	go.opentelemetry.io/collector/config/confighttp v0.89.0

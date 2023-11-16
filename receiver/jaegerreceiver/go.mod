@@ -6,8 +6,8 @@ require (
 	github.com/apache/thrift v0.19.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jaegertracing/jaeger v1.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.89.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.89.0
 	go.opentelemetry.io/collector/config/configgrpc v0.89.0
@@ -49,7 +49,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect

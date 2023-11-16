@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-rc.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.89.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tinylib/msgp v1.1.9
 	go.opentelemetry.io/collector/component v0.89.0
@@ -111,15 +111,15 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.89.0 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0-rc.3 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect

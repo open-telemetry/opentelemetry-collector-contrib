@@ -5,11 +5,11 @@ go 1.20
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.88.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.88.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.89.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.89.0
 	go.opentelemetry.io/collector/config/confighttp v0.89.0
@@ -44,9 +44,9 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.88.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.88.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.89.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
