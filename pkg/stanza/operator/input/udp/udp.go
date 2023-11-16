@@ -314,10 +314,14 @@ func truncateMaxLog(data []byte) (token []byte) {
 }
 
 func (u *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *decode.Decoder, log []byte) {
-	decoded, err := dec.Decode(log)
-	if err != nil {
-		u.Errorw("Failed to decode data", zap.Error(err))
-		return
+	decoded := log
+	if u.encoding != encoding.Nop {
+		var err error
+		decoded, err = dec.Decode(log)
+		if err != nil {
+			u.Errorw("Failed to decode data", zap.Error(err))
+			return
+		}
 	}
 
 	entry, err := u.NewEntry(string(decoded))
