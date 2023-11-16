@@ -104,6 +104,67 @@ func TestPodEndpointsChanged(t *testing.T) {
 	}, th.ListEndpoints())
 }
 
+func TestServiceEndpointsAdded(t *testing.T) {
+	th := newTestHandler()
+	th.OnAdd(serviceWithClusterIP, true)
+	assert.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/service-1-UID",
+			Target: "service-1.default.svc.cluster.local",
+			Details: &observer.K8sService{
+				Name:        "service-1",
+				Namespace:   "default",
+				UID:         "service-1-UID",
+				Labels:      map[string]string{"env": "prod"},
+				ServiceType: "ClusterIP",
+				ClusterIP:   "1.2.3.4",
+			},
+		}}, th.ListEndpoints())
+}
+
+func TestServiceEndpointsRemoved(t *testing.T) {
+	th := newTestHandler()
+	th.OnAdd(serviceWithClusterIP, true)
+	th.OnDelete(serviceWithClusterIP)
+	assert.Empty(t, th.ListEndpoints())
+}
+
+func TestServiceEndpointsChanged(t *testing.T) {
+	th := newTestHandler()
+	// Nothing changed.
+	th.OnUpdate(serviceWithClusterIP, serviceWithClusterIP)
+	require.Empty(t, th.ListEndpoints())
+
+	// Labels changed.
+	changedLabels := serviceWithClusterIP.DeepCopy()
+	changedLabels.Labels["new-label"] = "value"
+	th.OnUpdate(serviceWithClusterIP, changedLabels)
+
+	endpoints := th.ListEndpoints()
+	require.ElementsMatch(t,
+		[]observer.EndpointID{"test-1/service-1-UID"},
+		[]observer.EndpointID{endpoints[0].ID},
+	)
+
+	// Running state changed, one added and one removed.
+	updatedService := serviceWithClusterIP.DeepCopy()
+	updatedService.Labels["updated-label"] = "true"
+	th.OnUpdate(serviceWithClusterIP, updatedService)
+	require.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/service-1-UID",
+			Target: "service-1.default.svc.cluster.local",
+			Details: &observer.K8sService{
+				Name:        "service-1",
+				Namespace:   "default",
+				UID:         "service-1-UID",
+				Labels:      map[string]string{"env": "prod", "updated-label": "true"},
+				ServiceType: "ClusterIP",
+				ClusterIP:   "1.2.3.4",
+			}},
+	}, th.ListEndpoints())
+}
+
 func TestNodeEndpointsAdded(t *testing.T) {
 	th := newTestHandler()
 	th.OnAdd(node1V1, true)
