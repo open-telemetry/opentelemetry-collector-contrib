@@ -22,8 +22,16 @@ type Config struct {
 
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
+
+	// ResolveCanonicalBootstrapServersOnly makes Sarama do a DNS lookup for
+	// each of the provided brokers. It will then do a PTR lookup for each
+	// returned IP, and that set of names becomes the broker list. This can be
+	// required in SASL environments.
+	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
+
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
+
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 

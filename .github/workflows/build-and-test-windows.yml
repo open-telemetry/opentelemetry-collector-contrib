@@ -37,6 +37,11 @@ jobs:
           - other
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
+    env:
+      # Limit memory usage via GC environment variables to avoid OOM on GH runners, especially for `cmd/otelcontribcol`,
+      # see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28682#issuecomment-1802296776
+      GOGC: 50
+      GOMEMLIMIT: 2GiB
     steps:
       - uses: actions/checkout@v4
       - if: matrix.group == 'receiver-0'
