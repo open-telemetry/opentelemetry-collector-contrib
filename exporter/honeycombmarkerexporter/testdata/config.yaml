@@ -1,5 +1,12 @@
 honeycombmarker:
   api_key: "test-apikey"
+  markers:
+    - type: "fooType"
+      rules:
+        log_conditions:
+          - body == "test"
+honeycombmarker/all_fields:
+  api_key: "test-apikey"
   api_url: "https://api.testhost.io"
   sending_queue:
     enabled: true
@@ -16,7 +23,7 @@ honeycombmarker:
     - type: "fooType"
       message_key: "test message"
       url_key: "https://api.testhost.io"
-      dataset_slug: "__all__"
+      dataset_slug: "testing"
       rules:
         log_conditions:
           - body == "test"
