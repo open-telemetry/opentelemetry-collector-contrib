@@ -5,7 +5,6 @@ package aks // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
@@ -44,8 +43,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return res, "", nil
 	}
 
+	m, err := d.provider.Metadata(ctx)
 	// If we can't get a response from the metadata endpoint, we're not running in Azure
-	if !azureMetadataAvailable(ctx, d.provider) {
+	if err != nil {
 		return res, "", nil
 	}
 
@@ -57,10 +57,6 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureAKS)
 	}
 	if d.resourceAttributes.K8sClusterName.Enabled {
-		m, err := d.provider.Metadata(ctx)
-		if err != nil {
-			return res, "", fmt.Errorf("failed to get IMDS metadata: %w", err)
-		}
 		attrs.PutStr(conventions.AttributeK8SClusterName, parseClusterName(m.ResourceGroupName))
 	}
 
@@ -69,11 +65,6 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 func onK8s() bool {
 	return os.Getenv(kubernetesServiceHostEnvVar) != ""
-}
-
-func azureMetadataAvailable(ctx context.Context, p azure.Provider) bool {
-	_, err := p.Metadata(ctx)
-	return err == nil
 }
 
 // parseClusterName parses the cluster name from the infrastructure
