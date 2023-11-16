@@ -73,10 +73,6 @@ func (cfg *Config) Validate() error {
 				return fmt.Errorf("marker must have a type %v", m)
 			}
 
-			if m.DatasetSlug == "" {
-				return fmt.Errorf("marker must have a dataset slug %v", m)
-			}
-
 			if len(m.Rules.LogConditions) == 0 {
 				return fmt.Errorf("marker must have rules %v", m)
 			}
