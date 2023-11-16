@@ -81,41 +81,53 @@ func (s *mongodbatlasreceiver) shutdown(context.Context) error {
 	return s.client.Shutdown()
 }
 
+// poll decides whether to poll all projects or a specific project based on the configuration.
 func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) error {
-	if len(s.cfg.Projects) > 0 {
-		for _, projectCfg := range s.cfg.Projects {
-			project, err := s.client.GetProject(ctx, projectCfg.Name)
-			if err != nil {
-				s.log.Error("error retrieving project", zap.String("projectName", projectCfg.Name), zap.Error(err))
-				continue
-			}
+	if len(s.cfg.Projects) == 0 {
+		return s.pollAllProjects(ctx, time)
+	}
+	return s.pollProject(ctx, time)
+}
 
-			org, err := s.client.GetOrganization(ctx, project.OrgID)
-			if err != nil {
-				return fmt.Errorf("error retrieving organization: %w", err)
-			}
-
-			if err := s.processProject(ctx, time, org.Name, project, projectCfg); err != nil {
+// pollAllProjects handles polling across all projects within the organizations.
+func (s *mongodbatlasreceiver) pollAllProjects(ctx context.Context, time timeconstraints) error {
+	orgs, err := s.client.Organizations(ctx)
+	if err != nil {
+		return fmt.Errorf("error retrieving organizations: %w", err)
+	}
+	for _, org := range orgs {
+		proj, err := s.client.Projects(ctx, org.ID)
+		if err != nil {
+			s.log.Error("error retrieving projects", zap.String("orgID", org.ID), zap.Error(err))
+			continue
+		}
+		for _, project := range proj {
+			// Since there is no specific ProjectConfig for these projects, pass nil.
+			if err := s.processProject(ctx, time, org.Name, project, nil); err != nil {
 				s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
 			}
 		}
-	} else {
-		orgs, err := s.client.Organizations(ctx)
+	}
+	return nil
+}
+
+// pollProject handles polling for specific projects as configured.
+func (s *mongodbatlasreceiver) pollProject(ctx context.Context, time timeconstraints) error {
+	for _, projectCfg := range s.cfg.Projects {
+		project, err := s.client.GetProject(ctx, projectCfg.Name)
 		if err != nil {
-			return fmt.Errorf("error retrieving organizations: %w", err)
+			s.log.Error("error retrieving project", zap.String("projectName", projectCfg.Name), zap.Error(err))
+			continue
 		}
-		for _, org := range orgs {
-			proj, err := s.client.Projects(ctx, org.ID)
-			if err != nil {
-				s.log.Error("error retrieving projects", zap.String("orgID", org.ID), zap.Error(err))
-				continue
-			}
-			for _, project := range proj {
-				// Since there is no specific ProjectConfig for these projects, pass nil.
-				if err := s.processProject(ctx, time, org.Name, project, nil); err != nil {
-					s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
-				}
-			}
+
+		org, err := s.client.GetOrganization(ctx, project.OrgID)
+		if err != nil {
+			s.log.Error("error retrieving organization from project", zap.String("projectName", projectCfg.Name), zap.Error(err))
+			continue
+		}
+
+		if err := s.processProject(ctx, time, org.Name, project, projectCfg); err != nil {
+			s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
 		}
 	}
 	return nil
@@ -163,17 +175,17 @@ func shouldProcessCluster(projectCfg *ProjectConfig, clusterName string) bool {
 		// If there is no project config, process all clusters.
 		return true
 	}
-	// If there are no included clusters specified, process all clusters unless the is an excluded clusters.
-	if len(projectCfg.IncludeClusters) == 0 {
-		// Check if cluster is excluded.
-		_, isExcluded := projectCfg.excludesByClusterName[clusterName]
-		return !isExcluded
-	}
 
-	// If included clusters are specified, only process clusters that are included and not excluded.
 	_, isIncluded := projectCfg.includesByClusterName[clusterName]
 	_, isExcluded := projectCfg.excludesByClusterName[clusterName]
-	return isIncluded && !isExcluded
+
+	// Return false immediately if the cluster is excluded.
+	if isExcluded {
+		return false
+	}
+
+	// If IncludeClusters is empty, or the cluster is explicitly included, return true.
+	return len(projectCfg.IncludeClusters) == 0 || isIncluded
 }
 
 type providerValues struct {

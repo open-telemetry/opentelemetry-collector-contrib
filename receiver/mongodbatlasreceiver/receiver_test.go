@@ -117,11 +117,19 @@ func TestShouldProcessCluster(t *testing.T) {
 			clusterName: "Cluster1",
 			want:        true,
 		},
+		{
+			name:        "cluster should be processed when no includes or excludes are set and cluster name is empty",
+			projectCfg:  nil,
+			clusterName: "Cluster1",
+			want:        true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.projectCfg.populateIncludesAndExcludes()
+			if tt.projectCfg != nil {
+				tt.projectCfg.populateIncludesAndExcludes()
+			}
 
 			if got := shouldProcessCluster(tt.projectCfg, tt.clusterName); got != tt.want {
 				t.Errorf("shouldProcessCluster() = %v, want %v", got, tt.want)
