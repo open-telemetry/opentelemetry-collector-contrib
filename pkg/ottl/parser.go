@@ -317,11 +317,11 @@ type collection[K any] struct {
 type CollectionOption[K any] func(*collection[K])
 
 // Add back once we're ready to remove Statements
-//func WithErrorMode[K any](errorMode ErrorMode) CollectionOption[K] {
-//	return func(c *collection[K]) {
-//		c.errorMode = errorMode
-//	}
-//}
+// func WithErrorMode[K any](errorMode ErrorMode) CollectionOption[K] {
+//    return func(c *collection[K]) {
+//      c.errorMode = errorMode
+//    }
+// }
 
 func (c *collection[K]) Execute(ctx context.Context, tCtx K) error {
 	for _, statement := range c.statements {
