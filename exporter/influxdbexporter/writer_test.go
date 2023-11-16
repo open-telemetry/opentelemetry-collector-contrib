@@ -186,3 +186,24 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 		assert.Equal(t, "m,k=v f=1i 1000000002000", strings.TrimSpace(string(recordedRequestBody)))
 	}
 }
+
+func Test_composeWriteURL_doesNotPanic(t *testing.T) {
+	assert.NotPanics(t, func() {
+		cfg := &Config{}
+		_, err := composeWriteURL(cfg)
+		assert.NoError(t, err)
+	})
+
+	assert.NotPanics(t, func() {
+		cfg := &Config{
+			V1Compatibility: V1Compatibility{
+				Enabled:  true,
+				DB:       "my-db",
+				Username: "my-username",
+				Password: "my-password",
+			},
+		}
+		_, err := composeWriteURL(cfg)
+		assert.NoError(t, err)
+	})
+}
