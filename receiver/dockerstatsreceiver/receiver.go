@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 
@@ -35,22 +35,22 @@ type resultV2 struct {
 	err       error
 }
 
-type receiver struct {
+type metricsReceiver struct {
 	config   *Config
-	settings rcvr.CreateSettings
+	settings receiver.CreateSettings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
 }
 
-func newReceiver(set rcvr.CreateSettings, config *Config) *receiver {
-	return &receiver{
+func newMetricsReceiver(set receiver.CreateSettings, config *Config) *metricsReceiver {
+	return &metricsReceiver{
 		config:   config,
 		settings: set,
 		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
 }
 
-func (r *receiver) start(ctx context.Context, _ component.Host) error {
+func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages, r.config.DockerAPIVersion)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (r *receiver) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
+func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	containers := r.client.Containers()
 	results := make(chan resultV2, len(containers))
 
@@ -111,7 +111,7 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	return r.mb.Emit(), errs
 }
 
-func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) error {
+func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) error {
 	var errs error
 	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
@@ -148,7 +148,7 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	return errs
 }
 
-func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
+func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
 	totalUsage := calculateMemUsageNoCache(memoryStats)
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
 
@@ -204,7 +204,7 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 
 type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string, operation string)
 
-func (r *receiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *dtypes.BlkioStats) {
+func (r *metricsReceiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *dtypes.BlkioStats) {
 	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, r.mb.RecordContainerBlockioIoMergedRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoQueuedRecursive, r.mb.RecordContainerBlockioIoQueuedRecursiveDataPoint)
 	recordSingleBlkioStat(now, blkioStats.IoServiceBytesRecursive, r.mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint)
@@ -226,7 +226,7 @@ func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []dtypes.BlkioStat
 	}
 }
 
-func (r *receiver) recordNetworkMetrics(now pcommon.Timestamp, networks *map[string]dtypes.NetworkStats) {
+func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *map[string]dtypes.NetworkStats) {
 	if networks == nil || *networks == nil {
 		return
 	}
@@ -243,7 +243,7 @@ func (r *receiver) recordNetworkMetrics(now pcommon.Timestamp, networks *map[str
 	}
 }
 
-func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUStats, prevStats *dtypes.CPUStats) {
+func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUStats, prevStats *dtypes.CPUStats) {
 	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
@@ -252,14 +252,13 @@ func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUS
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
 	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
-	r.mb.RecordContainerCPUPercentDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
 		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))
 	}
 }
 
-func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.PidsStats) {
+func (r *metricsReceiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.PidsStats) {
 	// pidsStats are available when kernel version is >= 4.3 and pids_cgroup is supported, it is empty otherwise.
 	if pidsStats.Current != 0 {
 		r.mb.RecordContainerPidsCountDataPoint(now, int64(pidsStats.Current))
@@ -269,7 +268,7 @@ func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.Pi
 	}
 }
 
-func (r *receiver) recordBaseMetrics(now pcommon.Timestamp, base *types.ContainerJSONBase) error {
+func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *types.ContainerJSONBase) error {
 	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
 	if err != nil {
 		// value not available or invalid

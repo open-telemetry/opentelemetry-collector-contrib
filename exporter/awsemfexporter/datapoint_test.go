@@ -223,11 +223,11 @@ func generateTestSummaryMetricWithNaN(name string) pmetric.Metrics {
 		summaryDatapoint.SetCount(uint64(5 * i))
 		summaryDatapoint.SetSum(math.NaN())
 		firstQuantile := summaryDatapoint.QuantileValues().AppendEmpty()
-		firstQuantile.SetQuantile(0.0)
-		firstQuantile.SetValue(1)
+		firstQuantile.SetQuantile(math.NaN())
+		firstQuantile.SetValue(math.NaN())
 		secondQuantile := summaryDatapoint.QuantileValues().AppendEmpty()
-		secondQuantile.SetQuantile(100.0)
-		secondQuantile.SetValue(5)
+		secondQuantile.SetQuantile(math.NaN())
+		secondQuantile.SetValue(math.NaN())
 	}
 
 	return otelMetrics
@@ -276,7 +276,7 @@ func TestIsStaleOrNaN_NumberDataPointSlice(t *testing.T) {
 	testCases := []struct {
 		name           string
 		metricName     string
-		metricValue    interface{}
+		metricValue    any
 		expectedAssert assert.BoolAssertionFunc
 		setFlagsFunc   func(point pmetric.NumberDataPoint) pmetric.NumberDataPoint
 	}{
@@ -338,7 +338,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 			name              string
 			adjustToDelta     bool
 			metricName        string
-			metricValue       interface{}
+			metricValue       any
 			expectedDatapoint dataPoint
 			expectedRetained  bool
 		}{
@@ -543,13 +543,55 @@ func TestIsStaleOrNaN_HistogramDataPointSlice(t *testing.T) {
 		setFlagsFunc   func(point pmetric.HistogramDataPoint) pmetric.HistogramDataPoint
 	}{
 		{
-			name: "Histogram with NaNs",
+			name: "Histogram with all NaNs",
 			histogramDPS: func() pmetric.HistogramDataPointSlice {
 				histogramDPS := pmetric.NewHistogramDataPointSlice()
 				histogramDP := histogramDPS.AppendEmpty()
 				histogramDP.SetCount(uint64(17))
 				histogramDP.SetSum(math.NaN())
 				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(math.NaN())
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Histogram with NaN Sum",
+			histogramDPS: func() pmetric.HistogramDataPointSlice {
+				histogramDPS := pmetric.NewHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(math.NaN())
+				histogramDP.SetMin(1234)
+				histogramDP.SetMax(1234)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Histogram with NaN Min",
+			histogramDPS: func() pmetric.HistogramDataPointSlice {
+				histogramDPS := pmetric.NewHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(123)
+				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(123)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Histogram with nan Max",
+			histogramDPS: func() pmetric.HistogramDataPointSlice {
+				histogramDPS := pmetric.NewHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(123)
+				histogramDP.SetMin(123)
 				histogramDP.SetMax(math.NaN())
 				histogramDP.Attributes().PutStr("label1", "value1")
 				return histogramDPS
@@ -728,6 +770,62 @@ func TestIsStaleOrNaN_ExponentialHistogramDataPointSlice(t *testing.T) {
 			boolAssertFunc: assert.False,
 		},
 		{
+			name: "Exponential histogram with all possible NaN",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(math.NaN())
+				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(math.NaN())
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Exponential histogram with NaN Sum",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(math.NaN())
+				histogramDP.SetMin(1245)
+				histogramDP.SetMax(1234556)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Exponential histogram with NaN Min",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(1255)
+				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(12545)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Exponential histogram with NaN Max",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(512444)
+				histogramDP.SetMin(123)
+				histogramDP.SetMax(math.NaN())
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
 			name: "Exponential histogram with NaNs",
 			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
 				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
@@ -784,13 +882,13 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 
 		testCases := []struct {
 			name               string
-			summaryMetricValue map[string]interface{}
+			summaryMetricValue map[string]any
 			expectedDatapoint  []dataPoint
 			expectedRetained   bool
 		}{
 			{
 				name:               fmt.Sprintf("Detailed summary with 1st delta sum count calculation retainInitialValueOfDeltaMetric=%t", retainInitialValueOfDeltaMetric),
-				summaryMetricValue: map[string]interface{}{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+				summaryMetricValue: map[string]any{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
 				expectedDatapoint: []dataPoint{
 					{name: fmt.Sprint("foo", summarySumSuffix), value: float64(17.3), labels: map[string]string{"label1": "value1"}},
 					{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(17), labels: map[string]string{"label1": "value1"}},
@@ -801,7 +899,7 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 			},
 			{
 				name:               "Detailed summary with 2nd delta sum count calculation",
-				summaryMetricValue: map[string]interface{}{"sum": float64(100), "count": uint64(25), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+				summaryMetricValue: map[string]any{"sum": float64(100), "count": uint64(25), "firstQuantile": float64(1), "secondQuantile": float64(5)},
 				expectedDatapoint: []dataPoint{
 					{name: fmt.Sprint("foo", summarySumSuffix), value: float64(82.7), labels: map[string]string{"label1": "value1"}},
 					{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(8), labels: map[string]string{"label1": "value1"}},
@@ -812,7 +910,7 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 			},
 			{
 				name:               "Detailed summary with 3rd delta sum count calculation",
-				summaryMetricValue: map[string]interface{}{"sum": float64(120), "count": uint64(26), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+				summaryMetricValue: map[string]any{"sum": float64(120), "count": uint64(26), "firstQuantile": float64(1), "secondQuantile": float64(5)},
 				expectedDatapoint: []dataPoint{
 					{name: fmt.Sprint("foo", summarySumSuffix), value: float64(20), labels: map[string]string{"label1": "value1"}},
 					{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(1), labels: map[string]string{"label1": "value1"}},
@@ -862,49 +960,131 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 }
 
 func TestIsStaleOrNaN_SummaryDataPointSlice(t *testing.T) {
+	type qMetricObject struct {
+		value    float64
+		quantile float64
+	}
+	type quantileTestObj struct {
+		sum      float64
+		count    uint64
+		qMetrics []qMetricObject
+	}
 	testCases := []struct {
 		name               string
-		summaryMetricValue map[string]interface{}
+		summaryMetricValue quantileTestObj
 		expectedBoolAssert assert.BoolAssertionFunc
 		setFlagsFunc       func(point pmetric.SummaryDataPoint) pmetric.SummaryDataPoint
 	}{
 		{
-			name:               "summary with no nan values",
-			summaryMetricValue: map[string]interface{}{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+			name: "summary with no nan values",
+			summaryMetricValue: quantileTestObj{
+				sum:   17.3,
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    5,
+						quantile: 2.0,
+					},
+				},
+			},
 			expectedBoolAssert: assert.False,
 		},
 		{
-			name:               "Summary with nan values",
-			summaryMetricValue: map[string]interface{}{"sum": math.NaN(), "count": uint64(25), "firstQuantile": math.NaN(), "secondQuantile": math.NaN()},
+			name: "Summary with nan sum",
+			summaryMetricValue: quantileTestObj{
+				sum:   math.NaN(),
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    5,
+						quantile: 2.0,
+					},
+				},
+			},
 			expectedBoolAssert: assert.True,
 		},
 		{
-			name:               "Summary with set flag func",
-			summaryMetricValue: map[string]interface{}{"sum": math.NaN(), "count": uint64(25), "firstQuantile": math.NaN(), "secondQuantile": math.NaN()},
+			name: "Summary with no recorded value flag set to true",
+			summaryMetricValue: quantileTestObj{
+				sum:   1245.65,
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    5,
+						quantile: 2.0,
+					},
+				},
+			},
 			expectedBoolAssert: assert.True,
 			setFlagsFunc: func(point pmetric.SummaryDataPoint) pmetric.SummaryDataPoint {
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				return point
 			},
 		},
+		{
+			name: "Summary with nan quantile value",
+			summaryMetricValue: quantileTestObj{
+				sum:   1245.65,
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    math.NaN(),
+						quantile: 2.0,
+					},
+				},
+			},
+			expectedBoolAssert: assert.True,
+		},
+		{
+			name: "Summary with nan quantile",
+			summaryMetricValue: quantileTestObj{
+				sum:   1245.65,
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    7.8,
+						quantile: math.NaN(),
+					},
+				},
+			},
+			expectedBoolAssert: assert.True,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Given the summary datapoints with quantile 0, quantile 100, sum and count
 			summaryDPS := pmetric.NewSummaryDataPointSlice()
 			summaryDP := summaryDPS.AppendEmpty()
-			summaryDP.SetSum(tc.summaryMetricValue["sum"].(float64))
-			summaryDP.SetCount(tc.summaryMetricValue["count"].(uint64))
+			summaryDP.SetSum(tc.summaryMetricValue.sum)
+			summaryDP.SetCount(tc.summaryMetricValue.count)
 			summaryDP.Attributes().PutStr("label1", "value1")
 
-			summaryDP.QuantileValues().EnsureCapacity(2)
-			firstQuantileValue := summaryDP.QuantileValues().AppendEmpty()
-			firstQuantileValue.SetQuantile(0)
-			firstQuantileValue.SetValue(tc.summaryMetricValue["firstQuantile"].(float64))
-			secondQuantileValue := summaryDP.QuantileValues().AppendEmpty()
-			secondQuantileValue.SetQuantile(100)
-			secondQuantileValue.SetValue(tc.summaryMetricValue["secondQuantile"].(float64))
+			summaryDP.QuantileValues().EnsureCapacity(len(tc.summaryMetricValue.qMetrics))
+			for _, qMetric := range tc.summaryMetricValue.qMetrics {
+				newQ := summaryDP.QuantileValues().AppendEmpty()
+				newQ.SetValue(qMetric.value)
+				newQ.SetQuantile(qMetric.quantile)
+			}
 
 			summaryDatapointSlice := summaryDataPointSlice{deltaMetricMetadata{}, summaryDPS}
 			if tc.setFlagsFunc != nil {
@@ -924,7 +1104,7 @@ func TestCreateLabels(t *testing.T) {
 		"c": "C",
 	}
 	labelsMap := pcommon.NewMap()
-	assert.NoError(t, labelsMap.FromRaw(map[string]interface{}{
+	assert.NoError(t, labelsMap.FromRaw(map[string]any{
 		"a": "A",
 		"b": "B",
 		"c": "C",
@@ -950,49 +1130,49 @@ func TestGetDataPoints(t *testing.T) {
 		isPrometheusMetrics    bool
 		metric                 pmetric.Metrics
 		expectedDatapointSlice dataPoints
-		expectedAttributes     map[string]interface{}
+		expectedAttributes     map[string]any
 	}{
 		{
 			name:                   "Int gauge",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestGaugeMetric("foo", intValueType),
 			expectedDatapointSlice: numberDataPointSlice{normalDeltraMetricMetadata, pmetric.NumberDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "Double sum",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestSumMetric("foo", doubleValueType),
 			expectedDatapointSlice: numberDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.NumberDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "Histogram",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestHistogramMetric("foo"),
 			expectedDatapointSlice: histogramDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.HistogramDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "ExponentialHistogram",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestExponentialHistogramMetric("foo"),
 			expectedDatapointSlice: exponentialHistogramDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.ExponentialHistogramDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "Summary from SDK",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestSummaryMetric("foo"),
 			expectedDatapointSlice: summaryDataPointSlice{normalDeltraMetricMetadata, pmetric.SummaryDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
 			name:                   "Summary from Prometheus",
 			isPrometheusMetrics:    true,
 			metric:                 generateTestSummaryMetric("foo"),
 			expectedDatapointSlice: summaryDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.SummaryDataPointSlice{}},
-			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 	}
 

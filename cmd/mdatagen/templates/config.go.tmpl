@@ -2,8 +2,11 @@
 
 package {{ .Package }}
 
-{{ if .Metrics -}}
+{{ if or .Metrics .ResourceAttributes -}}
 import "go.opentelemetry.io/collector/confmap"
+{{- end }}
+
+{{ if .Metrics -}}
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -46,6 +49,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for {{ .Type }} resource attributes.

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestCompareMetrics(t *testing.T) {
@@ -305,9 +305,40 @@ func TestCompareMetrics(t *testing.T) {
 			),
 		},
 		{
+			name: "match-one-attribute-value",
+			compareOptions: []CompareMetricsOption{
+				MatchMetricAttributeValue("hostname", "also", "gauge.one", "sum.one"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value A hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value B hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value A hostname:random]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value B hostname:random]`),
+				errors.New(`resource "map[]": scope "": metric "sum.one": missing expected datapoint: map[hostname:also unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "sum.one": unexpected datapoint: map[hostname:also random]`),
+			),
+			withOptions: multierr.Combine(
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value A hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": missing expected datapoint: map[attribute.two:value B hostname:unpredictable]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value A hostname:random]`),
+				errors.New(`resource "map[]": scope "": metric "gauge.one": unexpected datapoint: map[attribute.two:value B hostname:random]`),
+			),
+		},
+		{
 			name: "ignore-one-resource-attribute",
 			compareOptions: []CompareMetricsOption{
 				IgnoreResourceAttributeValue("node_id"),
+			},
+			withoutOptions: multierr.Combine(
+				errors.New("missing expected resource: map[node_id:a-different-random-id]"),
+				errors.New("unexpected resource: map[node_id:a-random-id]"),
+			),
+			withOptions: nil,
+		},
+		{
+			name: "match-one-resource-attribute",
+			compareOptions: []CompareMetricsOption{
+				MatchResourceAttributeValue("node_id", "random"),
 			},
 			withoutOptions: multierr.Combine(
 				errors.New("missing expected resource: map[node_id:a-different-random-id]"),

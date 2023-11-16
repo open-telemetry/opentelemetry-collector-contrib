@@ -9,15 +9,16 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 )
 
 type Config struct {
@@ -29,6 +30,7 @@ type Config struct {
 	IncludeFileNameResolved bool
 	IncludeFilePathResolved bool
 	DeleteAtEOF             bool
+	FlushTimeout            time.Duration
 }
 
 type Metadata struct {
@@ -36,13 +38,14 @@ type Metadata struct {
 	Offset          int64
 	FileAttributes  map[string]any
 	HeaderFinalized bool
+	FlushState      *flush.State
 }
 
 // Reader manages a single file
 type Reader struct {
 	*Config
 	*Metadata
-	FileName      string
+	fileName      string
 	logger        *zap.SugaredLogger
 	file          *os.File
 	lineSplitFunc bufio.SplitFunc
@@ -138,13 +141,13 @@ func (r *Reader) finalizeHeader() {
 // Delete will close and delete the file
 func (r *Reader) delete() {
 	r.Close()
-	if err := os.Remove(r.FileName); err != nil {
-		r.logger.Errorf("could not delete %s", r.FileName)
+	if err := os.Remove(r.fileName); err != nil {
+		r.logger.Errorf("could not delete %s", r.fileName)
 	}
 }
 
-// Close will close the file
-func (r *Reader) Close() {
+// Close will close the file and return the metadata
+func (r *Reader) Close() *Metadata {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.logger.Debugw("Problem closing reader", zap.Error(err))
@@ -157,6 +160,9 @@ func (r *Reader) Close() {
 			r.logger.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
+	m := r.Metadata
+	r.Metadata = nil
+	return m
 }
 
 // Read from the file and update the fingerprint if necessary
@@ -188,27 +194,21 @@ func min0(a, b int) int {
 	return b
 }
 
-// ValidateOrClose returns true if the reader still has a valid file handle, false otherwise.
-// If false is returned, the file handle should be considered closed.
-//
-// It may create a new fingerprint from the old file handle and compare it to the
-// previously known fingerprint. If there has been a change to the fingerprint
-// (other than appended data), the file is considered truncated. Consequently, the
-// reader will automatically close the file and drop the handle.
-func (r *Reader) ValidateOrClose() bool {
+func (r *Reader) NameEquals(other *Reader) bool {
+	return r.fileName == other.fileName
+}
+
+// Validate returns true if the reader still has a valid file handle, false otherwise.
+func (r *Reader) Validate() bool {
 	if r.file == nil {
 		return false
 	}
 	refreshedFingerprint, err := fingerprint.New(r.file, r.FingerprintSize)
 	if err != nil {
-		r.logger.Debugw("Closing unreadable file", zap.Error(err), zap.String(attrs.LogFileName, r.FileName))
-		r.Close()
 		return false
 	}
 	if refreshedFingerprint.StartsWith(r.Fingerprint) {
 		return true
 	}
-	r.logger.Debugw("Closing truncated file", zap.String(attrs.LogFileName, r.FileName))
-	r.Close()
 	return false
 }

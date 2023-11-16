@@ -98,6 +98,8 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 	logRecord.SetTimestamp(event.Timestamp())
 	logRecord.SetSeverityNumber(plog.SeverityNumberError)
 	logRecord.SetSeverityText("ERROR")
+	logRecord.SetSpanID(span.SpanID())
+	logRecord.SetTraceID(span.TraceID())
 	eventAttrs := event.Attributes()
 	spanAttrs := span.Attributes()
 

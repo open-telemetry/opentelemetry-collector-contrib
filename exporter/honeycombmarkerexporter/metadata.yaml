@@ -1,0 +1,9 @@
+type: honeycombmarker
+
+status:
+  class: exporter
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [TylerHelmuth, fchikwekwe]
