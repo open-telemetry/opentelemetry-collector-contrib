@@ -2,5 +2,4 @@ connector/servicegraphconnector
 extension/encoding
 extension/observer
 processor/servicegraphprocessor
-receiver/journaldreceiver
 receiver/kafkareceiver
