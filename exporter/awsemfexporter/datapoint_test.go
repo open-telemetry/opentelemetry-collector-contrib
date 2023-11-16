@@ -223,11 +223,11 @@ func generateTestSummaryMetricWithNaN(name string) pmetric.Metrics {
 		summaryDatapoint.SetCount(uint64(5 * i))
 		summaryDatapoint.SetSum(math.NaN())
 		firstQuantile := summaryDatapoint.QuantileValues().AppendEmpty()
-		firstQuantile.SetQuantile(0.0)
-		firstQuantile.SetValue(1)
+		firstQuantile.SetQuantile(math.NaN())
+		firstQuantile.SetValue(math.NaN())
 		secondQuantile := summaryDatapoint.QuantileValues().AppendEmpty()
-		secondQuantile.SetQuantile(100.0)
-		secondQuantile.SetValue(5)
+		secondQuantile.SetQuantile(math.NaN())
+		secondQuantile.SetValue(math.NaN())
 	}
 
 	return otelMetrics
@@ -543,13 +543,55 @@ func TestIsStaleOrNaN_HistogramDataPointSlice(t *testing.T) {
 		setFlagsFunc   func(point pmetric.HistogramDataPoint) pmetric.HistogramDataPoint
 	}{
 		{
-			name: "Histogram with NaNs",
+			name: "Histogram with all NaNs",
 			histogramDPS: func() pmetric.HistogramDataPointSlice {
 				histogramDPS := pmetric.NewHistogramDataPointSlice()
 				histogramDP := histogramDPS.AppendEmpty()
 				histogramDP.SetCount(uint64(17))
 				histogramDP.SetSum(math.NaN())
 				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(math.NaN())
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Histogram with NaN Sum",
+			histogramDPS: func() pmetric.HistogramDataPointSlice {
+				histogramDPS := pmetric.NewHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(math.NaN())
+				histogramDP.SetMin(1234)
+				histogramDP.SetMax(1234)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Histogram with NaN Min",
+			histogramDPS: func() pmetric.HistogramDataPointSlice {
+				histogramDPS := pmetric.NewHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(123)
+				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(123)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Histogram with nan Max",
+			histogramDPS: func() pmetric.HistogramDataPointSlice {
+				histogramDPS := pmetric.NewHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(123)
+				histogramDP.SetMin(123)
 				histogramDP.SetMax(math.NaN())
 				histogramDP.Attributes().PutStr("label1", "value1")
 				return histogramDPS
@@ -728,6 +770,62 @@ func TestIsStaleOrNaN_ExponentialHistogramDataPointSlice(t *testing.T) {
 			boolAssertFunc: assert.False,
 		},
 		{
+			name: "Exponential histogram with all possible NaN",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(math.NaN())
+				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(math.NaN())
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Exponential histogram with NaN Sum",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(math.NaN())
+				histogramDP.SetMin(1245)
+				histogramDP.SetMax(1234556)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Exponential histogram with NaN Min",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(1255)
+				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(12545)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Exponential histogram with NaN Max",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(512444)
+				histogramDP.SetMin(123)
+				histogramDP.SetMax(math.NaN())
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
 			name: "Exponential histogram with NaNs",
 			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
 				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
@@ -862,49 +960,131 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 }
 
 func TestIsStaleOrNaN_SummaryDataPointSlice(t *testing.T) {
+	type qMetricObject struct {
+		value    float64
+		quantile float64
+	}
+	type quantileTestObj struct {
+		sum      float64
+		count    uint64
+		qMetrics []qMetricObject
+	}
 	testCases := []struct {
 		name               string
-		summaryMetricValue map[string]any
+		summaryMetricValue quantileTestObj
 		expectedBoolAssert assert.BoolAssertionFunc
 		setFlagsFunc       func(point pmetric.SummaryDataPoint) pmetric.SummaryDataPoint
 	}{
 		{
-			name:               "summary with no nan values",
-			summaryMetricValue: map[string]any{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+			name: "summary with no nan values",
+			summaryMetricValue: quantileTestObj{
+				sum:   17.3,
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    5,
+						quantile: 2.0,
+					},
+				},
+			},
 			expectedBoolAssert: assert.False,
 		},
 		{
-			name:               "Summary with nan values",
-			summaryMetricValue: map[string]any{"sum": math.NaN(), "count": uint64(25), "firstQuantile": math.NaN(), "secondQuantile": math.NaN()},
+			name: "Summary with nan sum",
+			summaryMetricValue: quantileTestObj{
+				sum:   math.NaN(),
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    5,
+						quantile: 2.0,
+					},
+				},
+			},
 			expectedBoolAssert: assert.True,
 		},
 		{
-			name:               "Summary with set flag func",
-			summaryMetricValue: map[string]any{"sum": math.NaN(), "count": uint64(25), "firstQuantile": math.NaN(), "secondQuantile": math.NaN()},
+			name: "Summary with no recorded value flag set to true",
+			summaryMetricValue: quantileTestObj{
+				sum:   1245.65,
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    5,
+						quantile: 2.0,
+					},
+				},
+			},
 			expectedBoolAssert: assert.True,
 			setFlagsFunc: func(point pmetric.SummaryDataPoint) pmetric.SummaryDataPoint {
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				return point
 			},
 		},
+		{
+			name: "Summary with nan quantile value",
+			summaryMetricValue: quantileTestObj{
+				sum:   1245.65,
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    math.NaN(),
+						quantile: 2.0,
+					},
+				},
+			},
+			expectedBoolAssert: assert.True,
+		},
+		{
+			name: "Summary with nan quantile",
+			summaryMetricValue: quantileTestObj{
+				sum:   1245.65,
+				count: 17,
+				qMetrics: []qMetricObject{
+					{
+						value:    1,
+						quantile: 0.5,
+					},
+					{
+						value:    7.8,
+						quantile: math.NaN(),
+					},
+				},
+			},
+			expectedBoolAssert: assert.True,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Given the summary datapoints with quantile 0, quantile 100, sum and count
 			summaryDPS := pmetric.NewSummaryDataPointSlice()
 			summaryDP := summaryDPS.AppendEmpty()
-			summaryDP.SetSum(tc.summaryMetricValue["sum"].(float64))
-			summaryDP.SetCount(tc.summaryMetricValue["count"].(uint64))
+			summaryDP.SetSum(tc.summaryMetricValue.sum)
+			summaryDP.SetCount(tc.summaryMetricValue.count)
 			summaryDP.Attributes().PutStr("label1", "value1")
 
-			summaryDP.QuantileValues().EnsureCapacity(2)
-			firstQuantileValue := summaryDP.QuantileValues().AppendEmpty()
-			firstQuantileValue.SetQuantile(0)
-			firstQuantileValue.SetValue(tc.summaryMetricValue["firstQuantile"].(float64))
-			secondQuantileValue := summaryDP.QuantileValues().AppendEmpty()
-			secondQuantileValue.SetQuantile(100)
-			secondQuantileValue.SetValue(tc.summaryMetricValue["secondQuantile"].(float64))
+			summaryDP.QuantileValues().EnsureCapacity(len(tc.summaryMetricValue.qMetrics))
+			for _, qMetric := range tc.summaryMetricValue.qMetrics {
+				newQ := summaryDP.QuantileValues().AppendEmpty()
+				newQ.SetValue(qMetric.value)
+				newQ.SetQuantile(qMetric.quantile)
+			}
 
 			summaryDatapointSlice := summaryDataPointSlice{deltaMetricMetadata{}, summaryDPS}
 			if tc.setFlagsFunc != nil {
