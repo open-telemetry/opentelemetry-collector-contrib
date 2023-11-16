@@ -65,14 +65,14 @@ type traceProcessor struct {
 	logger  *zap.Logger
 }
 
-type traceHashSampler struct {
+type traceHasher struct {
 	// Hash-based calculation
 	hashScaledSamplerate uint32
 	hashSeed             uint32
 	probability          float64
-	svalueEncoding       string
 }
 
+// traceEqualizer adjusts thresholds absolutely.  Cannot be used with zero.
 type traceEqualizer struct {
 	// TraceID-randomness-based calculation
 	traceIDThreshold sampling.Threshold
@@ -81,8 +81,13 @@ type traceEqualizer struct {
 	tValueEncoding string
 }
 
+// traceEqualizer adjusts thresholds relatively.  Cannot be used with zero.
 type traceProportionalizer struct {
 	ratio float64
+}
+
+// zeroProbability is a bypass for all cases with Percent==0.
+type zeroProbability struct {
 }
 
 func randomnessFromSpan(s ptrace.Span) (sampling.Randomness, *sampling.W3CTraceState, error) {
@@ -141,31 +146,34 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		}
 	}
 
-	ratio := pct / 100
-	switch cfg.SamplerMode {
-	case HashSeed:
-		ts := &traceHashSampler{}
+	if pct == 0 {
+		tp.sampler = &zeroProbability{}
+	} else {
+		ratio := pct / 100
+		switch cfg.SamplerMode {
+		case HashSeed:
+			ts := &traceHasher{}
 
-		// Adjust sampling percentage on private so recalculations are avoided.
-		ts.hashScaledSamplerate = uint32(pct * percentageScaleFactor)
-		ts.hashSeed = cfg.HashSeed
-		ts.probability = ratio
-		ts.svalueEncoding = strconv.FormatFloat(ratio, 'g', 4, 64)
+			// Adjust sampling percentage on private so recalculations are avoided.
+			ts.hashScaledSamplerate = uint32(pct * percentageScaleFactor)
+			ts.hashSeed = cfg.HashSeed
+			ts.probability = ratio
 
-		tp.sampler = ts
-	case Equalizing:
-		threshold, err := sampling.ProbabilityToThreshold(ratio)
-		if err != nil {
-			return nil, err
-		}
+			tp.sampler = ts
+		case Equalizing:
+			threshold, err := sampling.ProbabilityToThreshold(ratio)
+			if err != nil {
+				return nil, err
+			}
 
-		tp.sampler = &traceEqualizer{
-			tValueEncoding:   threshold.TValue(),
-			traceIDThreshold: threshold,
-		}
-	case Proportional:
-		tp.sampler = &traceProportionalizer{
-			ratio: ratio,
+			tp.sampler = &traceEqualizer{
+				tValueEncoding:   threshold.TValue(),
+				traceIDThreshold: threshold,
+			}
+		case Proportional:
+			tp.sampler = &traceProportionalizer{
+				ratio: ratio,
+			}
 		}
 	}
 
@@ -178,7 +186,7 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (ts *traceHashSampler) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
+func (ts *traceHasher) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
 	// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 	// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 	// Hashing here prevents bias due to such systems.
@@ -187,9 +195,8 @@ func (ts *traceHashSampler) decide(s ptrace.Span) (bool, *sampling.W3CTraceState
 	return decision, nil, nil
 }
 
-func (ts *traceHashSampler) updateTracestate(_ pcommon.TraceID, should bool, _ *sampling.W3CTraceState) error {
-	// Note: Sampling SIG will not like this idea.  What about using
-	// r:00000000000000;t:{ProbabilityToThreshold(pct/100.0)}?
+func (ts *traceHasher) updateTracestate(_ pcommon.TraceID, _ bool, _ *sampling.W3CTraceState) error {
+	// No changes; any t-value will pass through.
 	return nil
 }
 
@@ -215,7 +222,8 @@ func (ts *traceEqualizer) updateTracestate(tid pcommon.TraceID, should bool, wts
 	// When this sampler decided not to sample, the t-value becomes zero.
 	// Incoming TValue consistency is not checked when this happens.
 	if !should {
-		return wts.OTelValue().UpdateTValueWithSampling(sampling.NeverSampleThreshold, sampling.NeverSampleTValue)
+		wts.OTelValue().ClearTValue()
+		return nil
 	}
 	// Spans that appear consistently sampled but arrive w/ zero
 	// adjusted count remain zero.
@@ -243,8 +251,16 @@ func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTrace
 
 func (ts *traceProportionalizer) updateTracestate(tid pcommon.TraceID, should bool, wts *sampling.W3CTraceState) error {
 	if !should {
-		return wts.OTelValue().UpdateTValueWithSampling(sampling.NeverSampleThreshold, sampling.NeverSampleTValue)
+		wts.OTelValue().ClearTValue()
 	}
+	return nil
+}
+
+func (*zeroProbability) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
+	return false, nil, nil
+}
+
+func (*zeroProbability) updateTracestate(_ pcommon.TraceID, _ bool, _ *sampling.W3CTraceState) error {
 	return nil
 }
 
@@ -270,7 +286,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					tp.logger.Error("trace-state", zap.Error(err))
 				}
 
-				forceSample := priority == mustSampleSpan || (wts != nil && wts.OTelValue().HasZeroTValue())
+				forceSample := priority == mustSampleSpan
 				sampled := forceSample || probSample
 
 				if forceSample {
