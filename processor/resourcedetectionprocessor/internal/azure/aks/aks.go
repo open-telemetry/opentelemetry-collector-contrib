@@ -55,14 +55,13 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 	if d.resourceAttributes.CloudPlatform.Enabled {
 		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureAKS)
-
-		if d.resourceAttributes.K8sClusterName.Enabled {
-			m, err := d.provider.Metadata(ctx)
-			if err != nil {
-				return res, "", fmt.Errorf("failed to get IMDS metadata: %w", err)
-			}
-			attrs.PutStr(conventions.AttributeK8SClusterName, parseClusterName(m.ResourceGroupName))
+	}
+	if d.resourceAttributes.K8sClusterName.Enabled {
+		m, err := d.provider.Metadata(ctx)
+		if err != nil {
+			return res, "", fmt.Errorf("failed to get IMDS metadata: %w", err)
 		}
+		attrs.PutStr(conventions.AttributeK8SClusterName, parseClusterName(m.ResourceGroupName))
 	}
 
 	return res, conventions.SchemaURL, nil
