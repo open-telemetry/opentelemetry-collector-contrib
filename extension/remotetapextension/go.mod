@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/remot
 go 1.20
 
 require (
-	go.opentelemetry.io/collector/component v0.88.1-0.20231112151805-b570812b1e06
-	go.opentelemetry.io/collector/config/confighttp v0.88.1-0.20231112151805-b570812b1e06
-	go.opentelemetry.io/collector/extension v0.88.1-0.20231112151805-b570812b1e06
+	go.opentelemetry.io/collector/component v0.89.0
+	go.opentelemetry.io/collector/config/confighttp v0.89.0
+	go.opentelemetry.io/collector/extension v0.89.0
 )
 
 require (
@@ -25,17 +25,17 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/rs/cors v1.10.1 // indirect
-	go.opentelemetry.io/collector v0.88.1-0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.88.1-0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/config/configcompression v0.88.1-0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.88.1-0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.88.1-0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/config/configtls v0.88.1-0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/config/internal v0.88.1-0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/confmap v0.88.1-0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.88.1-0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017.0.20231112151805-b570812b1e06 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0017.0.20231112151805-b570812b1e06 // indirect
+	go.opentelemetry.io/collector v0.89.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.89.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v0.89.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.89.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v0.89.0 // indirect
+	go.opentelemetry.io/collector/config/internal v0.89.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.89.0 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.89.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.0 // indirect
 	go.opentelemetry.io/otel v1.20.0 // indirect
 	go.opentelemetry.io/otel/metric v1.20.0 // indirect
