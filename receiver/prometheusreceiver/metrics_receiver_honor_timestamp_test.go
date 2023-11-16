@@ -150,7 +150,7 @@ func TestHonorTimeStampsWithTrue(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 // TestHonorTimeStampsWithFalse validates that with honor_timestamp config set to false,
@@ -168,7 +168,7 @@ func TestHonorTimeStampsWithFalse(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.HonorTimestamps = false
 		}
@@ -246,7 +246,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []pme
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(ts4))),
 						compareHistogramTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(ts4))),
-						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+						compareHistogram(2500, 5000, []float64{0.05, 0.5, 1}, []uint64{1000, 500, 500, 500}),
 					},
 				},
 			}),
@@ -310,7 +310,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []pme
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(ts9))),
 						compareHistogramTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(ts9))),
-						compareHistogram(2400, 4950, []uint64{900, 500, 500, 500}),
+						compareHistogram(2400, 4950, []float64{0.05, 0.5, 1}, []uint64{900, 500, 500, 500}),
 					},
 				},
 			}),
@@ -374,7 +374,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []pme
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(ts9))),
 						compareHistogramTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(ts14))),
-						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+						compareHistogram(2500, 5000, []float64{0.05, 0.5, 1}, []uint64{1000, 500, 500, 500}),
 					},
 				},
 			}),
@@ -446,7 +446,7 @@ func verifyHonorTimeStampsFalse(t *testing.T, td *testData, resourceMetrics []pm
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(ts1),
 						compareHistogramTimestamp(ts1),
-						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+						compareHistogram(2500, 5000, []float64{0.05, 0.5, 1}, []uint64{1000, 500, 500, 500}),
 					},
 				},
 			}),
@@ -512,7 +512,7 @@ func verifyHonorTimeStampsFalse(t *testing.T, td *testData, resourceMetrics []pm
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(ts2),
 						compareHistogramTimestamp(ts2),
-						compareHistogram(2400, 4950, []uint64{900, 500, 500, 500}),
+						compareHistogram(2400, 4950, []float64{0.05, 0.5, 1}, []uint64{900, 500, 500, 500}),
 					},
 				},
 			}),
