@@ -400,6 +400,7 @@ processors:
 
   * cloud.provider ("azure")
   * cloud.platform ("azure_aks")
+  * k8s.cluster.name
 
 ```yaml
 processors:
