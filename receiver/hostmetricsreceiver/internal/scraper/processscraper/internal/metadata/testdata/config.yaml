@@ -28,6 +28,8 @@ all_set:
     process.threads:
       enabled: true
   resource_attributes:
+    process.cgroup:
+      enabled: true
     process.command:
       enabled: true
     process.command_line:
@@ -71,6 +73,8 @@ none_set:
     process.threads:
       enabled: false
   resource_attributes:
+    process.cgroup:
+      enabled: false
     process.command:
       enabled: false
     process.command_line:

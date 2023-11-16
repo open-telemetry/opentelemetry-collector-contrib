@@ -38,6 +38,15 @@ func getProcessName(ctx context.Context, proc processHandle, _ string) (string, 
 	return name, nil
 }
 
+func getProcessCgroup(ctx context.Context, proc processHandle) (string, error) {
+	cgroup, err := proc.CgroupWithContext(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return cgroup, nil
+}
+
 func getProcessExecutable(ctx context.Context, proc processHandle) (string, error) {
 	cmdline, err := proc.CmdlineWithContext(ctx)
 	if err != nil {

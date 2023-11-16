@@ -31,8 +31,9 @@ type processMetadata struct {
 }
 
 type executableMetadata struct {
-	name string
-	path string
+	name   string
+	path   string
+	cgroup string
 }
 
 type commandMetadata struct {
@@ -46,6 +47,7 @@ func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Re
 	rb.SetProcessParentPid(int64(m.parentPid))
 	rb.SetProcessExecutableName(m.executable.name)
 	rb.SetProcessExecutablePath(m.executable.path)
+	rb.SetProcessCgroup(m.executable.cgroup)
 	if m.command != nil {
 		rb.SetProcessCommand(m.command.command)
 		if m.command.commandLineSlice != nil {
@@ -73,6 +75,7 @@ type processHandles interface {
 
 type processHandle interface {
 	NameWithContext(context.Context) (string, error)
+	CgroupWithContext(context.Context) (string, error)
 	ExeWithContext(context.Context) (string, error)
 	UsernameWithContext(context.Context) (string, error)
 	CmdlineWithContext(context.Context) (string, error)
