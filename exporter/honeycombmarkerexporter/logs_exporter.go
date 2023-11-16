@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -17,6 +18,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+)
+
+const (
+	defaultDatasetSlug = "__all__"
 )
 
 type honeycombLogsExporter struct {
@@ -95,7 +100,12 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 		return err
 	}
 
-	url := fmt.Sprintf("%s/1/markers/%s", e.config.APIURL, marker.DatasetSlug)
+	datasetSlug := marker.DatasetSlug
+	if datasetSlug == "" {
+		datasetSlug = defaultDatasetSlug
+	}
+
+	url := fmt.Sprintf("%s/1/markers/%s", strings.TrimRight(e.config.APIURL, "/"), datasetSlug)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
 		return err
