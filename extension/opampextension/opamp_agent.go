@@ -112,14 +112,19 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 }
 
 func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
-	o.eclk.Lock()
-	o.effectiveConfig = conf
-	o.eclk.Unlock()
+	o.updateEffectiveConfig(conf)
 
 	if o.reportsEffectiveConfig {
 		return o.opampClient.UpdateEffectiveConfig(ctx)
 	}
 	return nil
+}
+
+func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
+	o.eclk.Lock()
+	defer o.eclk.Unlock()
+
+	o.effectiveConfig = conf
 }
 
 func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, res pcommon.Resource) (*opampAgent, error) {
