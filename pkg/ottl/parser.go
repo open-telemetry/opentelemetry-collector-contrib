@@ -5,6 +5,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -154,10 +155,9 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	}, nil
 }
 
-// ParseConditions parses string conditions into a ottl.Condition slice ready for execution.
-// Returns a slice of conditions and a nil error on successful parsing.
-// If parsing fails, returns an empty slice  with a multierr error containing
-// an error per failed condition.
+// ParseConditions parses string conditions into a Condition slice ready for execution.
+// Returns a slice of Condition and a nil error on successful parsing.
+// If parsing fails, returns nil and an error containing each error per failed condition.
 func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error) {
 	parsedConditions := make([]*Condition[K], 0, len(conditions))
 	var parseErr error
@@ -165,7 +165,7 @@ func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error
 	for _, condition := range conditions {
 		ps, err := p.ParseCondition(condition)
 		if err != nil {
-			parseErr = multierr.Append(parseErr, fmt.Errorf("unable to parse OTTL condition %q: %w", condition, err))
+			parseErr = errors.Join(parseErr, fmt.Errorf("unable to parse OTTL condition %q: %w", condition, err))
 			continue
 		}
 		parsedConditions = append(parsedConditions, ps)
@@ -178,9 +178,9 @@ func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error
 	return parsedConditions, nil
 }
 
-// ParseCondition parses a single string condition into an ottl.Condition objects ready for execution.
-// Returns an ottl.Condition and a nil error on successful parsing.
-// If parsing fails, returns nil with a multierr error containing an error per failed condition.
+// ParseCondition parses a single string condition into a Condition objects ready for execution.
+// Returns an Condition and a nil error on successful parsing.
+// If parsing fails, returns nil and an error.
 func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
 	parsed, err := parseCondition(condition)
 	if err != nil {
