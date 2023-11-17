@@ -306,3 +306,50 @@ func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	}
 	return false, nil
 }
+
+// ConditionSequence represents a list of Condition that will be executed sequentially for a TransformContext
+// and will handle errors returned by conditions based on an ErrorMode.
+type ConditionSequence[K any] struct {
+	conditions        []*Condition[K]
+	errorMode         ErrorMode
+	telemetrySettings component.TelemetrySettings
+}
+
+type ConditionSequenceOption[K any] func(*ConditionSequence[K])
+
+// NewConditionSequence creates a new ConditionSequence with the provided Condition slice, ErrorMode, and component.TelemetrySettings.
+// You may also augment the ConditionSequence with a slice of ConditionSequenceOption.
+func NewConditionSequence[K any](conditions []*Condition[K], errorMode ErrorMode, telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption[K]) ConditionSequence[K] {
+	s := ConditionSequence[K]{
+		conditions:        conditions,
+		errorMode:         errorMode,
+		telemetrySettings: telemetrySettings,
+	}
+	for _, op := range options {
+		op(&s)
+	}
+	return s
+}
+
+// Eval evaluates the result of each Condition in the ConditionSequence.
+// If any Condition evaluates to true, then true is returned.
+// If all Condition evaluate to false, then false is returned.
+// When the ErrorMode of the ConditionSequence is `propagate`, errors cause the evaluation to be false and an error is returned.
+// When the ErrorMode of the ConditionSequence is `ignore`, errors cause the evaluation to continue to the next condition.
+func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	for _, condition := range c.conditions {
+		match, err := condition.Eval(ctx, tCtx)
+		if err != nil {
+			if c.errorMode == PropagateError {
+				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
+				return false, err
+			}
+			c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
+			continue
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
+}

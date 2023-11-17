@@ -2233,3 +2233,112 @@ func Test_Statements_Eval_Error(t *testing.T) {
 		})
 	}
 }
+
+func Test_ConditionSequence_Eval(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []boolExpressionEvaluator[any]
+		function       ExprFunc[any]
+		errorMode      ErrorMode
+		expectedResult bool
+	}{
+		{
+			name: "True",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysTrue[any],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+		{
+			name: "At least one True",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				alwaysFalse[any],
+				alwaysTrue[any],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+		{
+			name: "False",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				alwaysFalse[any],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: false,
+		},
+		{
+			name: "Error is false when using Ignore",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+				alwaysTrue[any],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rawStatements []*Condition[any]
+			for _, condition := range tt.conditions {
+				rawStatements = append(rawStatements, &Condition[any]{
+					condition: BoolExpr[any]{condition},
+				})
+			}
+
+			conditions := ConditionSequence[any]{
+				conditions:        rawStatements,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				errorMode:         tt.errorMode,
+			}
+
+			result, err := conditions.Eval(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_ConditionSequence_Eval_Error(t *testing.T) {
+	tests := []struct {
+		name       string
+		conditions []boolExpressionEvaluator[any]
+		function   ExprFunc[any]
+		errorMode  ErrorMode
+	}{
+		{
+			name: "Propagate Error from function",
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode: PropagateError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rawConditions []*Condition[any]
+			for _, condition := range tt.conditions {
+				rawConditions = append(rawConditions, &Condition[any]{
+					condition: BoolExpr[any]{condition},
+				})
+			}
+
+			conditions := ConditionSequence[any]{
+				conditions:        rawConditions,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				errorMode:         tt.errorMode,
+			}
+
+			result, err := conditions.Eval(context.Background(), nil)
+			assert.Error(t, err)
+			assert.False(t, result)
+		})
+	}
+}

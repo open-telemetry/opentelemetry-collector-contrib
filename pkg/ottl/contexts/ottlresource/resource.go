@@ -71,6 +71,10 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 	return s
 }
 
+func NewConditionSequence(conditions []*ottl.Condition[TransformContext], errorMode ottl.ErrorMode, telemetrySettings component.TelemetrySettings, options ...ottl.ConditionSequenceOption[TransformContext]) ottl.ConditionSequence[TransformContext] {
+	return ottl.NewConditionSequence(conditions, errorMode, telemetrySettings, options...)
+}
+
 func parseEnum(_ *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("resource context does not provide Enum support")
 }

@@ -24,17 +24,16 @@ func NewBoolExprForSpan(conditions []string, functions map[string]ottl.Factory[o
 	if _, ok := functions[match.Name()]; !ok {
 		functions[match.Name()] = match
 	}
-	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottlspan.NewParser(functions, set)
 	if err != nil {
 		return nil, err
 	}
-	statements, err := parser.ParseStatements(statmentsStr)
+	statements, err := parser.ParseConditions(conditions)
 	if err != nil {
 		return nil, err
 	}
-	s := ottlspan.NewStatements(statements, set, ottlspan.WithErrorMode(errorMode))
-	return &s, nil
+	c := ottlspan.NewConditionSequence(statements, errorMode, set)
+	return &c, nil
 }
 
 // NewBoolExprForSpanEvent creates a BoolExpr[ottlspanevent.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
@@ -45,17 +44,16 @@ func NewBoolExprForSpanEvent(conditions []string, functions map[string]ottl.Fact
 	if _, ok := functions[match.Name()]; !ok {
 		functions[match.Name()] = match
 	}
-	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottlspanevent.NewParser(functions, set)
 	if err != nil {
 		return nil, err
 	}
-	statements, err := parser.ParseStatements(statmentsStr)
+	statements, err := parser.ParseConditions(conditions)
 	if err != nil {
 		return nil, err
 	}
-	s := ottlspanevent.NewStatements(statements, set, ottlspanevent.WithErrorMode(errorMode))
-	return &s, nil
+	c := ottlspanevent.NewConditionSequence(statements, errorMode, set)
+	return &c, nil
 }
 
 // NewBoolExprForMetric creates a BoolExpr[ottlmetric.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
@@ -66,17 +64,16 @@ func NewBoolExprForMetric(conditions []string, functions map[string]ottl.Factory
 	if _, ok := functions[match.Name()]; !ok {
 		functions[match.Name()] = match
 	}
-	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottlmetric.NewParser(functions, set)
 	if err != nil {
 		return nil, err
 	}
-	statements, err := parser.ParseStatements(statmentsStr)
+	statements, err := parser.ParseConditions(conditions)
 	if err != nil {
 		return nil, err
 	}
-	s := ottlmetric.NewStatements(statements, set, ottlmetric.WithErrorMode(errorMode))
-	return &s, nil
+	c := ottlmetric.NewConditionSequence(statements, errorMode, set)
+	return &c, nil
 }
 
 // NewBoolExprForDataPoint creates a BoolExpr[ottldatapoint.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
@@ -87,17 +84,16 @@ func NewBoolExprForDataPoint(conditions []string, functions map[string]ottl.Fact
 	if _, ok := functions[match.Name()]; !ok {
 		functions[match.Name()] = match
 	}
-	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottldatapoint.NewParser(functions, set)
 	if err != nil {
 		return nil, err
 	}
-	statements, err := parser.ParseStatements(statmentsStr)
+	statements, err := parser.ParseConditions(conditions)
 	if err != nil {
 		return nil, err
 	}
-	s := ottldatapoint.NewStatements(statements, set, ottldatapoint.WithErrorMode(errorMode))
-	return &s, nil
+	c := ottldatapoint.NewConditionSequence(statements, errorMode, set)
+	return &c, nil
 }
 
 // NewBoolExprForLog creates a BoolExpr[ottllog.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
@@ -108,17 +104,16 @@ func NewBoolExprForLog(conditions []string, functions map[string]ottl.Factory[ot
 	if _, ok := functions[match.Name()]; !ok {
 		functions[match.Name()] = match
 	}
-	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottllog.NewParser(functions, set)
 	if err != nil {
 		return nil, err
 	}
-	statements, err := parser.ParseStatements(statmentsStr)
+	statements, err := parser.ParseConditions(conditions)
 	if err != nil {
 		return nil, err
 	}
-	s := ottllog.NewStatements(statements, set, ottllog.WithErrorMode(errorMode))
-	return &s, nil
+	c := ottllog.NewConditionSequence(statements, errorMode, set)
+	return &c, nil
 }
 
 // NewBoolExprForResource creates a BoolExpr[ottlresource.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
@@ -129,23 +124,14 @@ func NewBoolExprForResource(conditions []string, functions map[string]ottl.Facto
 	if _, ok := functions[match.Name()]; !ok {
 		functions[match.Name()] = match
 	}
-	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottlresource.NewParser(functions, set)
 	if err != nil {
 		return nil, err
 	}
-	statements, err := parser.ParseStatements(statmentsStr)
+	statements, err := parser.ParseConditions(conditions)
 	if err != nil {
 		return nil, err
 	}
-	s := ottlresource.NewStatements(statements, set, ottlresource.WithErrorMode(errorMode))
-	return &s, nil
-}
-
-func conditionsToStatements(conditions []string) []string {
-	statements := make([]string, len(conditions))
-	for i, condition := range conditions {
-		statements[i] = "match() where " + condition
-	}
-	return statements
+	c := ottlresource.NewConditionSequence(statements, errorMode, set)
+	return &c, nil
 }

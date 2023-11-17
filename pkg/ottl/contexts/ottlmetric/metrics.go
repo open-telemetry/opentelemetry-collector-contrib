@@ -92,6 +92,10 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 	return s
 }
 
+func NewConditionSequence(conditions []*ottl.Condition[TransformContext], errorMode ottl.ErrorMode, telemetrySettings component.TelemetrySettings, options ...ottl.ConditionSequenceOption[TransformContext]) ottl.ConditionSequence[TransformContext] {
+	return ottl.NewConditionSequence(conditions, errorMode, telemetrySettings, options...)
+}
+
 var symbolTable = internal.MetricSymbolTable
 
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
