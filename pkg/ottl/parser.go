@@ -160,19 +160,19 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 // If parsing fails, returns nil and an error containing each error per failed condition.
 func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error) {
 	parsedConditions := make([]*Condition[K], 0, len(conditions))
-	var parseErr error
+	var parseErrs []error
 
 	for _, condition := range conditions {
 		ps, err := p.ParseCondition(condition)
 		if err != nil {
-			parseErr = errors.Join(parseErr, fmt.Errorf("unable to parse OTTL condition %q: %w", condition, err))
+			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL condition %q: %w", condition, err))
 			continue
 		}
 		parsedConditions = append(parsedConditions, ps)
 	}
 
-	if parseErr != nil {
-		return nil, parseErr
+	if len(parseErrs) > 0 {
+		return nil, errors.Join(parseErrs...)
 	}
 
 	return parsedConditions, nil

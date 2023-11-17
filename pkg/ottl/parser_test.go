@@ -5,6 +5,7 @@ package ottl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -1816,12 +1817,16 @@ func Test_ParseConditions_Error(t *testing.T) {
 
 	assert.Error(t, err)
 
-	multiErrs := multierr.Errors(err)
+	var e interface{ Unwrap() []error }
+	if errors.As(err, &e) {
+		uw := e.Unwrap()
+		assert.Len(t, uw, len(conditions), "ParseConditions didn't return an error per condition")
 
-	assert.Len(t, multiErrs, len(conditions), "ParseConditions didn't return an error per condition")
-
-	for i, statementErr := range multiErrs {
-		assert.ErrorContains(t, statementErr, fmt.Sprintf("unable to parse OTTL condition %q", conditions[i]))
+		for i, conditionErr := range uw {
+			assert.ErrorContains(t, conditionErr, fmt.Sprintf("unable to parse OTTL condition %q", conditions[i]))
+		}
+	} else {
+		assert.Fail(t, "ParseConditions didn't return an error per condition")
 	}
 }
 
