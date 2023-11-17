@@ -247,5 +247,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-replace golang.org/x/exp => golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
