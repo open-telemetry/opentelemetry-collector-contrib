@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.89.0
