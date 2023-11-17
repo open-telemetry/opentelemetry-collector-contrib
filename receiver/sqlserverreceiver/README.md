@@ -17,6 +17,8 @@
 The `sqlserver` receiver grabs metrics about a Microsoft SQL Server instance using the Windows Performance Counters.
 Because of this, it is a Windows only receiver.
 
+Make sure to run the collector as administrator in order to collect all performance counters for metrics. 
+
 ## Configuration
 
 The following settings are optional:

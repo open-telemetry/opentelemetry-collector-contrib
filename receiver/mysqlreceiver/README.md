@@ -16,6 +16,9 @@
 
 This receiver queries MySQL's global status and InnoDB tables.
 
+Some metrics will not appear if their corresponding feature is inactive.  
+There are also optional metrics that you must specify in your configuration to collect,  listed in [documentation.md](./documentation.md) 
+
 ## Prerequisites
 
 This receiver supports MySQL version 8.0
@@ -27,6 +30,10 @@ Collecting most metrics requires the ability to execute `SHOW GLOBAL STATUS`.
 
 The following settings are optional:
 - `endpoint`: (default = `localhost:3306`)
+- `tls`: Defines the TLS configuration to use. If `tls` is not set, the default is to disable TLS connections.
+  - `insecure`: (default = `false`) Set this to `true` to disable TLS connections.
+  - `insecure_skip_verify`: (default = `false`) Set this to `true` to enable TLS but not verify the certificate.
+  - `server_name_override`: This sets the ServerName in the TLSConfig.  
 - `username`: (default = `root`)
 - `password`: The password to the username.
 - `allow_native_passwords`: (default = `true`)

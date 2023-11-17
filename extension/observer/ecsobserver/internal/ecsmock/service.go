@@ -455,7 +455,7 @@ func getPage(p pageInput) (*pageOutput, error) {
 // 'generic' Start
 
 // getArns is used by both ListTasks and ListServices
-func getArns(items interface{}, arnGetter func(i int) *string) []*string {
+func getArns(items any, arnGetter func(i int) *string) []*string {
 	rv := reflect.ValueOf(items)
 	var arns []*string
 	for i := 0; i < rv.Len(); i++ {

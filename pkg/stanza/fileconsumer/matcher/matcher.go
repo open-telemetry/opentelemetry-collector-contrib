@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"go.opentelemetry.io/collector/featuregate"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/filter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
 )
@@ -16,6 +18,18 @@ const (
 	sortTypeNumeric      = "numeric"
 	sortTypeTimestamp    = "timestamp"
 	sortTypeAlphabetical = "alphabetical"
+	sortTypeMtime        = "mtime"
+)
+
+const (
+	defaultOrderingCriteriaTopN = 1
+)
+
+var mtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.mtimeSortType",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of `ordering_criteria.mode` = `mtime`."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812"),
 )
 
 type Criteria struct {
@@ -26,6 +40,7 @@ type Criteria struct {
 
 type OrderingCriteria struct {
 	Regex  string `mapstructure:"regex,omitempty"`
+	TopN   int    `mapstructure:"top_n,omitempty"`
 	SortBy []Sort `mapstructure:"sort_by,omitempty"`
 }
 
@@ -58,13 +73,25 @@ func New(c Criteria) (*Matcher, error) {
 		}, nil
 	}
 
-	if c.OrderingCriteria.Regex == "" {
-		return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
+	if c.OrderingCriteria.TopN < 0 {
+		return nil, fmt.Errorf("'top_n' must be a positive integer")
 	}
 
-	regex, err := regexp.Compile(c.OrderingCriteria.Regex)
-	if err != nil {
-		return nil, fmt.Errorf("compile regex: %w", err)
+	if c.OrderingCriteria.TopN == 0 {
+		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
+	}
+
+	var regex *regexp.Regexp
+	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
+		if c.OrderingCriteria.Regex == "" {
+			return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
+		}
+
+		var err error
+		regex, err = regexp.Compile(c.OrderingCriteria.Regex)
+		if err != nil {
+			return nil, fmt.Errorf("compile regex: %w", err)
+		}
 	}
 
 	var filterOpts []filter.Option
@@ -88,6 +115,11 @@ func New(c Criteria) (*Matcher, error) {
 				return nil, fmt.Errorf("timestamp sort: %w", err)
 			}
 			filterOpts = append(filterOpts, f)
+		case sortTypeMtime:
+			if !mtimeSortTypeFeatureGate.IsEnabled() {
+				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
+			}
+			filterOpts = append(filterOpts, filter.SortMtime())
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
@@ -97,14 +129,27 @@ func New(c Criteria) (*Matcher, error) {
 		include:    c.Include,
 		exclude:    c.Exclude,
 		regex:      regex,
+		topN:       c.OrderingCriteria.TopN,
 		filterOpts: filterOpts,
 	}, nil
+}
+
+// orderingCriteriaNeedsRegex returns true if any of the sort options require a regex to be set.
+func orderingCriteriaNeedsRegex(sorts []Sort) bool {
+	for _, s := range sorts {
+		switch s.SortType {
+		case sortTypeNumeric, sortTypeAlphabetical, sortTypeTimestamp:
+			return true
+		}
+	}
+	return false
 }
 
 type Matcher struct {
 	include    []string
 	exclude    []string
 	regex      *regexp.Regexp
+	topN       int
 	filterOpts []filter.Option
 }
 
@@ -127,7 +172,9 @@ func (m Matcher) MatchFiles() ([]string, error) {
 		return result, errors.Join(err, errs)
 	}
 
-	// Return only the first item.
-	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23788
-	return result[:1], errors.Join(err, errs)
+	if len(result) <= m.topN {
+		return result, errors.Join(err, errs)
+	}
+
+	return result[:m.topN], errors.Join(err, errs)
 }

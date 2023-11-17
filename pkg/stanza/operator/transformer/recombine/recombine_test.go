@@ -27,7 +27,7 @@ func TestTransformer(t *testing.T) {
 	t1 := time.Date(2020, time.April, 11, 21, 34, 01, 0, time.UTC)
 	t2 := time.Date(2020, time.April, 11, 21, 34, 02, 0, time.UTC)
 
-	entryWithBody := func(ts time.Time, body interface{}) *entry.Entry {
+	entryWithBody := func(ts time.Time, body any) *entry.Entry {
 		e := entry.New()
 		e.ObservedTimestamp = now
 		e.Timestamp = ts
@@ -35,7 +35,7 @@ func TestTransformer(t *testing.T) {
 		return e
 	}
 
-	entryWithBodyAttr := func(ts time.Time, body interface{}, Attr map[string]string) *entry.Entry {
+	entryWithBodyAttr := func(ts time.Time, body any, Attr map[string]string) *entry.Entry {
 		e := entryWithBody(ts, body)
 		for k, v := range Attr {
 			e.AddAttribute(k, v)
@@ -477,7 +477,7 @@ func TestTransformer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			op, err := tc.config.Build(testutil.Logger(t))
 			require.NoError(t, err)
-			require.NoError(t, op.Start(testutil.NewMockPersister("test")))
+			require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
 			recombine := op.(*Transformer)
 
 			fake := testutil.NewFakeOutput(t)

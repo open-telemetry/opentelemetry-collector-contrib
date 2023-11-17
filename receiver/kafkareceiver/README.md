@@ -30,6 +30,7 @@ The following settings are required:
 The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers
+- `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `topic` (default = otlp_spans): The name of the kafka topic to read from
 - `encoding` (default = otlp_proto): The encoding of the payload received from kafka. Available encodings:
   - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`, `ExportLogsServiceRequest` or `ExportMetricsServiceRequest` respectively.
@@ -56,11 +57,11 @@ The following settings can be optionally configured:
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
   - `tls`
     - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `cert_file`: path to the TLS cert to use for TLS required connections. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `key_file`: path to the TLS key to use for TLS required connections. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `insecure` (default = false): Disable verifying the server's certificate
       chain and host name (`InsecureSkipVerify` in the tls config)
     - `server_name_override`: ServerName indicates the name of the server requested by the client

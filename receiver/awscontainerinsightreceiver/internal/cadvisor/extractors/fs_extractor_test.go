@@ -11,14 +11,14 @@ import (
 	cinfo "github.com/google/cadvisor/info/v1"
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
 func TestFSStats(t *testing.T) {
 	result := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 	// container type
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric
@@ -26,7 +26,7 @@ func TestFSStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}
 
-	expectedFields := map[string]interface{}{
+	expectedFields := map[string]any{
 		"container_filesystem_usage":       uint64(25661440),
 		"container_filesystem_capacity":    uint64(21462233088),
 		"container_filesystem_available":   uint64(0),
@@ -40,7 +40,7 @@ func TestFSStats(t *testing.T) {
 	AssertContainsTaggedField(t, cMetrics[0], expectedFields, expectedTags)
 
 	// pod type
-	containerType = TypePod
+	containerType = containerinsight.TypePod
 	extractor = NewFileSystemMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -52,14 +52,14 @@ func TestFSStats(t *testing.T) {
 	// node type for eks
 
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoNode.json")
-	containerType = TypeNode
+	containerType = containerinsight.TypeNode
 	extractor = NewFileSystemMetricExtractor(nil)
 
 	if extractor.HasValue(result2[0]) {
 		cMetrics = extractor.GetValue(result2[0], nil, containerType)
 	}
 
-	expectedFields = map[string]interface{}{
+	expectedFields = map[string]any{
 		"node_filesystem_available":   uint64(67108864),
 		"node_filesystem_capacity":    uint64(67108864),
 		"node_filesystem_inodes":      uint64(2052980),
@@ -74,7 +74,7 @@ func TestFSStats(t *testing.T) {
 	}
 	AssertContainsTaggedField(t, cMetrics[0], expectedFields, expectedTags)
 
-	expectedFields = map[string]interface{}{
+	expectedFields = map[string]any{
 		"node_filesystem_available":   uint64(6925574144),
 		"node_filesystem_capacity":    uint64(21462233088),
 		"node_filesystem_inodes":      uint64(10484672),
@@ -89,7 +89,7 @@ func TestFSStats(t *testing.T) {
 	}
 	AssertContainsTaggedField(t, cMetrics[1], expectedFields, expectedTags)
 
-	expectedFields = map[string]interface{}{
+	expectedFields = map[string]any{
 		"node_filesystem_available":   uint64(10682417152),
 		"node_filesystem_capacity":    uint64(10726932480),
 		"node_filesystem_inodes":      uint64(5242880),
@@ -122,7 +122,7 @@ func TestFSStatsWithAllowList(t *testing.T) {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	assert.NoError(t, enc.Encode(result))
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric

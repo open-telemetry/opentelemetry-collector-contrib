@@ -29,11 +29,11 @@ resource_attributes:
     enabled: false
   host.cpu.family:
     description: The host.cpu.family
-    type: int
+    type: string
     enabled: false
   host.cpu.model.id:
     description: The host.cpu.model.id
-    type: int
+    type: string
     enabled: false
   host.cpu.model.name:
     description: The host.cpu.model.name
