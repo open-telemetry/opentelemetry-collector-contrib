@@ -237,7 +237,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 
 	go func() {
 		r.settings.Logger.Info("Starting discovery manager")
-		if err := r.discoveryManager.Run(); err != nil {
+		if err := r.discoveryManager.Run(); err != nil && err != context.Canceled {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
 			host.ReportFatalError(err)
 		}

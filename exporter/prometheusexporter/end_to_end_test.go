@@ -18,7 +18,6 @@ import (
 
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -71,7 +70,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = exporter.Start(ctx, componenttest.NewNopHost()); err != nil {
+	if err = exporter.Start(ctx, nil); err != nil {
 		t.Fatalf("Failed to start the Prometheus exporter: %v", err)
 	}
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(ctx)) })
@@ -104,7 +103,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = prometheusReceiver.Start(ctx, componenttest.NewNopHost()); err != nil {
+	if err = prometheusReceiver.Start(ctx, nil); err != nil {
 		t.Fatalf("Failed to start the Prometheus receiver: %v", err)
 	}
 	t.Cleanup(func() { require.NoError(t, prometheusReceiver.Shutdown(ctx)) })
