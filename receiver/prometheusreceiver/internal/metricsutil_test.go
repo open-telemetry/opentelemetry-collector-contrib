@@ -107,14 +107,14 @@ func exponentialHistogramPointRaw(attributes []*kv, startTimestamp, timestamp pc
 	return hdp
 }
 
-func exponentialHistogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, positiveOffset int32, positiveBuckets []uint64, negativeOffset int32, negativeBuckets []uint64) pmetric.ExponentialHistogramDataPoint {
+func exponentialHistogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, negativeOffset int32, negativeBuckets []uint64, positiveOffset int32, positiveBuckets []uint64) pmetric.ExponentialHistogramDataPoint {
 	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
 	hdp.SetScale(scale)
 	hdp.SetZeroCount(zeroCount)
-	hdp.Positive().SetOffset(positiveOffset)
-	hdp.Positive().BucketCounts().FromRaw(positiveBuckets)
 	hdp.Negative().SetOffset(negativeOffset)
 	hdp.Negative().BucketCounts().FromRaw(negativeBuckets)
+	hdp.Positive().SetOffset(positiveOffset)
+	hdp.Positive().BucketCounts().FromRaw(positiveBuckets)
 
 	count := uint64(0)
 	sum := float64(0)

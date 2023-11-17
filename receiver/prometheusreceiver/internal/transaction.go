@@ -160,7 +160,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 			mg := curMF.loadMetricGroupOrCreate(seriesRef, ls, atMs)
 			curMF.mtype = pmetric.MetricTypeExponentialHistogram
 			mg.mtype = pmetric.MetricTypeExponentialHistogram
-			curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: val}, nil)
+			_ = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: val}, nil)
 			// ignore errors here, this is best effort.
 		} else {
 			t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
@@ -259,10 +259,9 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	curMF, existing := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
 	if !existing {
 		curMF.mtype = pmetric.MetricTypeExponentialHistogram
-	} else {
-		if curMF.mtype != pmetric.MetricTypeExponentialHistogram {
-			return 0, nil
-		}
+	} else if curMF.mtype != pmetric.MetricTypeExponentialHistogram {
+		// Already scraped as classic histogram.
+		return 0, nil
 	}
 
 	if h != nil && h.CounterResetHint == histogram.GaugeType || fh != nil && fh.CounterResetHint == histogram.GaugeType {

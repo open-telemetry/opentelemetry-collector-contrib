@@ -255,20 +255,20 @@ func TestExponentialHistogram(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Exponential Histogram: round 1 - initial instance, start time is established",
-			metrics:     metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, -2, []uint64{4, 2, 3, 7}, 0, []uint64{}))),
-			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, -2, []uint64{4, 2, 3, 7}, 0, []uint64{}))),
+			metrics:     metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
+			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
 		}, {
 			description: "Exponential Histogram: round 2 - instance adjusted based on round 1",
-			metrics:     metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t2, t2, 3, 1, -2, []uint64{6, 2, 3, 7}, 0, []uint64{}))),
-			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 1, -2, []uint64{6, 2, 3, 7}, 0, []uint64{}))),
+			metrics:     metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t2, t2, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7}))),
+			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7}))),
 		}, {
 			description: "Exponential Histogram: round 3 - instance reset (value less than previous value), start time is reset",
-			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t3, 3, 1, -2, []uint64{5, 3, 2, 7}, 0, []uint64{}))),
-			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t3, 3, 1, -2, []uint64{5, 3, 2, 7}, 0, []uint64{}))),
+			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t3, 3, 1, 0, []uint64{}, -2, []uint64{5, 3, 2, 7}))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t3, 3, 1, 0, []uint64{}, -2, []uint64{5, 3, 2, 7}))),
 		}, {
 			description: "Exponential Histogram: round 4 - instance adjusted based on round 3",
-			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t4, t4, 3, 1, -2, []uint64{7, 4, 2, 12}, 0, []uint64{}))),
-			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t4, 3, 1, -2, []uint64{7, 4, 2, 12}, 0, []uint64{}))),
+			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t4, t4, 3, 1, 0, []uint64{}, -2, []uint64{7, 4, 2, 12}))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t4, 3, 1, 0, []uint64{}, -2, []uint64{7, 4, 2, 12}))),
 		},
 	}
 	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
@@ -278,8 +278,8 @@ func TestExponentialHistogramFlagNoRecordedValue(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Histogram: round 1 - initial instance, start time is established",
-			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, -2, []uint64{7, 4, 2, 12}, 0, []uint64{}))),
-			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, -2, []uint64{7, 4, 2, 12}, 0, []uint64{}))),
+			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 0, 2, 2, []uint64{7, 4, 2, 12}, 3, []uint64{}))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 0, 2, 2, []uint64{7, 4, 2, 12}, 3, []uint64{}))),
 		},
 		{
 			description: "Histogram: round 2 - instance adjusted based on round 1",

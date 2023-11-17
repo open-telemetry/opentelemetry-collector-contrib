@@ -428,7 +428,12 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric '%s' does not match to testdata", name)
 						spc(t, m.Summary().DataPoints().At(i))
 					}
-				case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
+					for _, ehc := range de.exponentialHistogramComparator {
+						require.Equal(t, m.ExponentialHistogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Exponential Histogram metric '%s' does not match to testdata", name)
+						ehc(t, m.ExponentialHistogram().DataPoints().At(i))
+					}
+				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}
@@ -595,7 +600,7 @@ func compareHistogram(count uint64, sum float64, upperBounds []float64, buckets 
 	}
 }
 
-func compareExponentialHistogram(count uint64, sum float64, zeroCount uint64, negativeOffset int64, negativeBuckets []uint64, positiveOffset int64, positiveBuckets []uint64) exponentialHistogramComparator {
+func compareExponentialHistogram(count uint64, sum float64, zeroCount uint64, negativeOffset int32, negativeBuckets []uint64, positiveOffset int32, positiveBuckets []uint64) exponentialHistogramComparator {
 	return func(t *testing.T, exponentialHistogramDataPoint pmetric.ExponentialHistogramDataPoint) {
 		assert.Equal(t, count, exponentialHistogramDataPoint.Count(), "Exponential Histogram count value does not match")
 		assert.Equal(t, sum, exponentialHistogramDataPoint.Sum(), "Exponential Histogram sum value does not match")

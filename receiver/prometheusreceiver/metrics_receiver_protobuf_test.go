@@ -235,19 +235,19 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 		Metric: []dto.Metric{
 			{
 				Histogram: &dto.Histogram{
-					SampleCount: 1213,
-					SampleSum:   456,
+					SampleCount: 1214,
+					SampleSum:   3456,
 					// Integer counter histogram definition
 					Schema:        3,
 					ZeroThreshold: 0.001,
-					ZeroCount:     2,
+					ZeroCount:     5,
 					NegativeSpan: []dto.BucketSpan{
-						{Offset: 0, Length: 1},
+						{Offset: -2, Length: 1},
 						{Offset: 1, Length: 1},
 					},
 					NegativeDelta: []int64{1, 1},
 					PositiveSpan: []dto.BucketSpan{
-						{Offset: -2, Length: 1},
+						{Offset: 3, Length: 1},
 						{Offset: 2, Length: 1},
 					},
 					PositiveDelta: []int64{1, 0},
@@ -279,7 +279,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					compareMetricUnit(""),
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
-							compareExponentialHistogram(1213, 456, 2, 0, []uint64{1, 0, 2}, -2, []uint64{1, 0, 0, 1}),
+							compareExponentialHistogram(1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
 						},
 					}},
 				),
@@ -289,7 +289,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					compareMetricUnit(""),
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
-							compareExponentialHistogram(1213, 456, 2, 0, []uint64{1, 0, 2}, -2, []uint64{1, 0, 0, 1}),
+							compareExponentialHistogram(1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
 						},
 					}},
 				),
@@ -328,7 +328,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					compareMetricUnit(""),
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
-							compareExponentialHistogram(1213, 456, 2, 0, []uint64{1, 0, 2}, -2, []uint64{1, 0, 0, 1}),
+							compareExponentialHistogram(1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
 						},
 					}},
 				),
@@ -434,7 +434,7 @@ func TestStaleExponentialHistogram(t *testing.T) {
 			compareMetricUnit(""),
 			[]dataPointExpectation{{
 				exponentialHistogramComparator: []exponentialHistogramComparator{
-					compareExponentialHistogram(1213, 456, 2, 0, []uint64{1, 0, 2}, -2, []uint64{1, 0, 0, 1}),
+					compareExponentialHistogram(1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 1}),
 				},
 			}},
 		),
