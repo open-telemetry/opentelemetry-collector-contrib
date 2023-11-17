@@ -31,7 +31,7 @@ type EndpointsWatcher struct {
 	logger            *zap.Logger
 }
 
-func NewEndpointsWatcher(endpointsLister EndpointsLister, refreshInterval time.Duration, logger *zap.Logger) *EndpointsWatcher {
+var NewEndpointsWatcher = func(endpointsLister EndpointsLister, refreshInterval time.Duration, logger *zap.Logger) *EndpointsWatcher {
 	return &EndpointsWatcher{
 		EndpointsLister:   endpointsLister,
 		RefreshInterval:   refreshInterval,
