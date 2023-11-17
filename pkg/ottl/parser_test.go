@@ -1961,7 +1961,7 @@ func Test_parseCondition(t *testing.T) {
 	}
 }
 
-func Test_Execute(t *testing.T) {
+func Test_Statement_Execute(t *testing.T) {
 	tests := []struct {
 		name              string
 		condition         boolExpressionEvaluator[any]
@@ -2007,6 +2007,36 @@ func Test_Execute(t *testing.T) {
 			result, condition, err := statement.Execute(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_Condition_Eval(t *testing.T) {
+	tests := []struct {
+		name           string
+		condition      boolExpressionEvaluator[any]
+		expectedResult bool
+	}{
+		{
+			name:           "Condition matched",
+			condition:      alwaysTrue[any],
+			expectedResult: true,
+		},
+		{
+			name:           "Condition not matched",
+			condition:      alwaysFalse[any],
+			expectedResult: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			condition := Condition[any]{
+				condition: BoolExpr[any]{tt.condition},
+			}
+
+			result, err := condition.Eval(context.Background(), nil)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
