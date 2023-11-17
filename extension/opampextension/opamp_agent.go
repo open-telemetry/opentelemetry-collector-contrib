@@ -10,8 +10,6 @@ import (
 	"runtime"
 	"sync"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -22,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 type opampAgent struct {
