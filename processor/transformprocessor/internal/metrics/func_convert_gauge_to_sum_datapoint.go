@@ -13,16 +13,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-type convertDatapointGaugeToSumArguments struct {
-	StringAggTemp string
-	Monotonic     bool
-}
-
 func newConvertDatapointGaugeToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
 	return ottl.NewFactory("convert_gauge_to_sum", &convertGaugeToSumArguments{}, createConvertDatapointGaugeToSumFunction)
 }
 
 func createConvertDatapointGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	// use the same args as in metric context
 	args, ok := oArgs.(*convertGaugeToSumArguments)
 
 	if !ok {
