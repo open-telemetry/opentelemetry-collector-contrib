@@ -5,12 +5,12 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -99,28 +99,30 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 
 // ParseStatements parses string statements into ottl.Statement objects ready for execution.
 // Returns a slice of statements and a nil error on successful parsing.
-// If parsing fails, returns an empty slice  with a multierr error containing
-// an error per failed statement.
+// If parsing fails, returns nil and a joined error containing each error per failed statement.
 func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
 	parsedStatements := make([]*Statement[K], 0, len(statements))
-	var parseErr error
+	var parseErrs []error
 
 	for _, statement := range statements {
 		ps, err := p.ParseStatement(statement)
 		if err != nil {
-			parseErr = multierr.Append(parseErr, fmt.Errorf("unable to parse OTTL statement %q: %w", statement, err))
+			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL statement %q: %w", statement, err))
 			continue
 		}
 		parsedStatements = append(parsedStatements, ps)
 	}
 
-	if parseErr != nil {
-		return nil, parseErr
+	if len(parseErrs) > 0 {
+		return nil, errors.Join(parseErrs...)
 	}
 
 	return parsedStatements, nil
 }
 
+// ParseStatement parses a single string statement into a Statement struct ready for execution.
+// Returns a Statement and a nil error on successful parsing.
+// If parsing fails, returns nil and an error.
 func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	parsed, err := parseStatement(statement)
 	if err != nil {

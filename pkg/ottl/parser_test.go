@@ -5,6 +5,7 @@ package ottl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -1640,15 +1640,18 @@ func Test_ParseStatements_Error(t *testing.T) {
 	)
 
 	_, err := p.ParseStatements(statements)
-
 	assert.Error(t, err)
 
-	multiErrs := multierr.Errors(err)
+	var e interface{ Unwrap() []error }
+	if errors.As(err, &e) {
+		uw := e.Unwrap()
+		assert.Len(t, uw, len(statements), "ParseStatements didn't return an error per statement")
 
-	assert.Len(t, multiErrs, len(statements), "ParseStatements didn't return an error per statement")
-
-	for i, statementErr := range multiErrs {
-		assert.ErrorContains(t, statementErr, fmt.Sprintf("unable to parse OTTL statement %q", statements[i]))
+		for i, statementErr := range uw {
+			assert.ErrorContains(t, statementErr, fmt.Sprintf("unable to parse OTTL statement %q", statements[i]))
+		}
+	} else {
+		assert.Fail(t, "ParseStatements didn't return an error per statement")
 	}
 }
 
