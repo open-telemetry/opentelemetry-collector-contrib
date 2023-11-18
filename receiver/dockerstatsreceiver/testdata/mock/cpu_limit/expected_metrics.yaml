@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: 78de07328aff
         - key: container.id
           value:
-            stringValue: 78de07328afff50a9777b07dd36a28c709dffe081baaf67235db618843399643
+            stringValue: 9b842c47c1c3e4ee931e2c9713cf4e77aa09acc2201aea60fba04b6dbba6c674
         - key: container.image.name
           value:
             stringValue: busybox
@@ -104,6 +104,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
+          - description: CPU limit set for the container.
+            gauge:
+              dataPoints:
+                - asDouble: 2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: container.cpu.limit
+            unit: '{cpus}'
           - description: CPU shares set for the container.
             gauge:
               dataPoints:
@@ -213,7 +221,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "114688"
+                - asInt: "61440"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -222,7 +230,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1892352"
+                - asInt: "233848832"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -451,7 +459,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 1.5532782694550516e+07
+                - asDouble: 1.5532824571167516e+07
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
