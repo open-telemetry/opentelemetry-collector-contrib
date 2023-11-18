@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	defaultDockerAPIVersion         = 1.23
-	minimalRequiredDockerAPIVersion = 1.22
+	defaultDockerAPIVersion         = 1.25
+	minimalRequiredDockerAPIVersion = 1.25
 )
 
 type resultV2 struct {
@@ -121,6 +121,10 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
 		errs = multierr.Append(errs, err)
 	}
+	if err := r.recordHostConfigMetrics(now, container.ContainerJSON); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
 
 	// Always-present resource attrs + the user-configured resource attrs
 	rb := r.mb.NewResourceBuilder()
@@ -276,6 +280,19 @@ func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *types.C
 	}
 	if v := now.AsTime().Sub(t); v > 0 {
 		r.mb.RecordContainerUptimeDataPoint(now, v.Seconds())
+	}
+	return nil
+}
+
+func (r *metricsReceiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) error {
+	r.mb.RecordContainerCPUSharesDataPoint(now, containerJSON.HostConfig.CPUShares)
+
+	cpuLimit, err := calculateCPULimit(containerJSON.HostConfig)
+	if err != nil {
+		return scrapererror.NewPartialScrapeError(fmt.Errorf("error retrieving container.cpu.limit: %w", err), 1)
+	}
+	if cpuLimit > 0 {
+		r.mb.RecordContainerCPULimitDataPoint(now, cpuLimit)
 	}
 	return nil
 }

@@ -351,6 +351,15 @@ func (dps summaryDataPointSlice) IsStaleOrNaN(i int) (bool, pcommon.Map) {
 	if math.IsNaN(metric.Sum()) {
 		return true, metric.Attributes()
 	}
+
+	values := metric.QuantileValues()
+	for i := 0; i < values.Len(); i++ {
+		quantile := values.At(i)
+		if math.IsNaN(quantile.Value()) || math.IsNaN(quantile.Quantile()) {
+			return true, metric.Attributes()
+		}
+	}
+
 	return false, metric.Attributes()
 }
 
