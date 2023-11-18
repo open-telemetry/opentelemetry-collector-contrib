@@ -112,7 +112,7 @@ func (r *router[C]) registerDefaultConsumer(pipelineIDs []component.ID) error {
 // registerRouteConsumers registers a consumer for the pipelines configured
 // for each route
 func (r *router[C]) registerRouteConsumers() error {
-	for _, item := range r.table {
+	for index, item := range r.table {
 		statement, err := r.getStatementFrom(item)
 		if err != nil {
 			return err
@@ -128,7 +128,7 @@ func (r *router[C]) registerRouteConsumers() error {
 			return fmt.Errorf("%w: %s", errPipelineNotFound, err.Error())
 		}
 		route.consumer = consumer
-		route.order = item.Order
+		route.order = index
 
 		r.routes[key(item)] = route
 	}

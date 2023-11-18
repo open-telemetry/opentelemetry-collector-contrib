@@ -216,17 +216,14 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 			{
 				Statement: `route() where attributes["value"] > 0 and attributes["value"] < 4`,
 				Pipelines: []component.ID{traces0},
-				Order:     1,
 			},
 			{
 				Statement: `route() where attributes["value"] > 1 and attributes["value"] < 4`,
 				Pipelines: []component.ID{traces1},
-				Order:     2,
 			},
 			{
 				Statement: `route() where attributes["value"] == 5`,
 				Pipelines: []component.ID{tracesDefault, traces0},
-				Order:     3,
 			},
 		},
 	}

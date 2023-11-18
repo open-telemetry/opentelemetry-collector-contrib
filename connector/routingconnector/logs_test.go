@@ -240,17 +240,14 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 			{
 				Statement: `route() where IsMatch(attributes["X-Tenant"], ".*acme") == true`,
 				Pipelines: []component.ID{logs0},
-				Order:     1,
 			},
 			{
 				Statement: `route() where IsMatch(attributes["X-Tenant"], "_acme") == true`,
 				Pipelines: []component.ID{logs1},
-				Order:     2,
 			},
 			{
 				Statement: `route() where attributes["X-Tenant"] == "ecorp"`,
 				Pipelines: []component.ID{logsDefault, logs0},
-				Order:     3,
 			},
 		},
 		MatchOnce: true,

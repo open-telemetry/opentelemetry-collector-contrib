@@ -255,17 +255,14 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 			{
 				Statement: `route() where attributes["value"] > 2.5`,
 				Pipelines: []component.ID{metrics0},
-				Order:     1,
 			},
 			{
 				Statement: `route() where attributes["value"] > 3.0`,
 				Pipelines: []component.ID{metrics1},
-				Order:     2,
 			},
 			{
 				Statement: `route() where attributes["value"] == 1.0`,
 				Pipelines: []component.ID{metricsDefault, metrics0},
-				Order:     3,
 			},
 		},
 		MatchOnce: true,
