@@ -27,6 +27,6 @@ type Compression struct {
 }
 
 type Auth struct {
-	UserName string `mapstructure:"username"`
+	UserName string              `mapstructure:"username"`
 	Password configopaque.String `mapstructure:"password"`
 }
