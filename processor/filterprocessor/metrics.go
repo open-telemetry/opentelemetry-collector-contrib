@@ -41,7 +41,7 @@ func newFilterMetricProcessor(set component.TelemetrySettings, cfg *Config) (*fi
 
 	fpt, err := newfilterProcessorTelemetry(set)
 	if err != nil {
-		return nil, fmt.Errorf("error creating batch processor telemetry: %w", err)
+		return nil, fmt.Errorf("error creating filter processor telemetry: %w", err)
 	}
 	fsp.telemetry = fpt
 

@@ -17,14 +17,13 @@ import (
 )
 
 const (
-	processorKey = "filter_processor"
-	scopeName    = "go.opentelemetry.io/collector/processor/filterprocessor"
+	scopeName = "go.opentelemetry.io/collector/processor/filterprocessor"
 )
 
 var (
-	processorTagKey      = tag.MustNewKey(processorKey)
-	statMetricsFiltered  = stats.Int64("metrics_filtered", "Number of metrics dropped by the filter processor", stats.UnitDimensionless)
-	statMetricsProcessed = stats.Int64("metrics_processed", "Number of metrics processed by the filter processor", stats.UnitDimensionless)
+	processorTagKey      = tag.MustNewKey(typeStr)
+	statMetricsFiltered  = stats.Int64("metrics.filtered", "Number of metrics dropped by the filter processor", stats.UnitDimensionless)
+	statMetricsProcessed = stats.Int64("metrics.processed", "Number of metrics processed by the filter processor", stats.UnitDimensionless)
 )
 
 func init() {
@@ -73,7 +72,7 @@ func newfilterProcessorTelemetry(set component.TelemetrySettings) (*filterProces
 
 	fpt := &filterProcessorTelemetry{
 		useOtel:       false,
-		processorAttr: []attribute.KeyValue{attribute.String(processorKey, id.Str())},
+		processorAttr: []attribute.KeyValue{attribute.String(typeStr, id.Str())},
 		exportCtx:     exportCtx,
 	}
 
