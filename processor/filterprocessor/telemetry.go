@@ -18,12 +18,13 @@ import (
 
 const (
 	scopeName = "go.opentelemetry.io/collector/processor/filterprocessor"
+
+	metricFilteredDesc = "Number of metrics dropped by the filter processor"
 )
 
 var (
-	processorTagKey      = tag.MustNewKey(typeStr)
-	statMetricsFiltered  = stats.Int64("metrics.filtered", "Number of metrics dropped by the filter processor", stats.UnitDimensionless)
-	statMetricsProcessed = stats.Int64("metrics.processed", "Number of metrics processed by the filter processor", stats.UnitDimensionless)
+	processorTagKey     = tag.MustNewKey(typeStr)
+	statMetricsFiltered = stats.Int64("metrics.filtered", metricFilteredDesc, stats.UnitDimensionless)
 )
 
 func init() {
@@ -42,13 +43,6 @@ func metricViews() []*view.View {
 			Aggregation: view.Count(),
 			TagKeys:     processorTagKeys,
 		},
-		{
-			Name:        statMetricsProcessed.Name(),
-			Measure:     statMetricsProcessed,
-			Description: statMetricsProcessed.Description(),
-			Aggregation: view.Count(),
-			TagKeys:     processorTagKeys,
-		},
 	}
 }
 
@@ -57,9 +51,8 @@ type filterProcessorTelemetry struct {
 
 	exportCtx context.Context
 
-	processorAttr     []attribute.KeyValue
-	droppedByFilter   metric.Int64Counter
-	processedByFilter metric.Int64Counter
+	processorAttr   []attribute.KeyValue
+	droppedByFilter metric.Int64Counter
 }
 
 func newfilterProcessorTelemetry(set component.TelemetrySettings) (*filterProcessorTelemetry, error) {
@@ -93,13 +86,7 @@ func (fpt *filterProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) 
 
 	fpt.droppedByFilter, err = meter.Int64Counter(
 		processorhelper.BuildCustomMetricName(typeStr, "metrics_filtered"),
-		metric.WithDescription("Number of metrics dropped by the filter processor"),
-		metric.WithUnit("1"),
-	)
-	errors = multierr.Append(errors, err)
-	fpt.processedByFilter, err = meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(typeStr, "metrics_processed"),
-		metric.WithDescription("Number of metrics processed by the filter processor"),
+		metric.WithDescription(metricFilteredDesc),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
@@ -107,20 +94,18 @@ func (fpt *filterProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) 
 	return errors
 }
 
-func (fpt *filterProcessorTelemetry) record(dropped, total int64) {
+func (fpt *filterProcessorTelemetry) record(dropped int64) {
 	if fpt.useOtel {
-		fpt.recordWithOtel(dropped, total)
+		fpt.recordWithOtel(dropped)
 	} else {
-		fpt.recordWithOC(dropped, total)
+		fpt.recordWithOC(dropped)
 	}
 }
 
-func (fpt *filterProcessorTelemetry) recordWithOC(dropped, total int64) {
+func (fpt *filterProcessorTelemetry) recordWithOC(dropped int64) {
 	stats.Record(fpt.exportCtx, statMetricsFiltered.M(dropped))
-	stats.Record(fpt.exportCtx, statMetricsProcessed.M(total))
 }
 
-func (fpt *filterProcessorTelemetry) recordWithOtel(dropped, total int64) {
+func (fpt *filterProcessorTelemetry) recordWithOtel(dropped int64) {
 	fpt.droppedByFilter.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
-	fpt.processedByFilter.Add(fpt.exportCtx, total, metric.WithAttributes(fpt.processorAttr...))
 }
