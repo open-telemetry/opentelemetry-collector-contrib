@@ -35,7 +35,7 @@ var (
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("Remove duplicate database name attribute"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24972"),
-		featuregate.WithRegisterFromVersion("v0.89.0"))
+		featuregate.WithRegisterFromVersion("v0.90.0"))
 )
 
 type mongodbScraper struct {
@@ -134,7 +134,7 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch database stats metrics: %w", err))
 	} else {
-		s.recordDBStats(now, dbStats, errs)
+		s.recordDBStats(now, dbStats, databaseName, errs)
 	}
 
 	serverStatus, err := s.client.ServerStatus(ctx, databaseName)
@@ -142,7 +142,7 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 		errs.AddPartial(1, fmt.Errorf("failed to fetch server status metrics: %w", err))
 		return
 	}
-	s.recordNormalServerStats(now, serverStatus, errs)
+	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetDatabase(databaseName)
@@ -178,31 +178,35 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 		errs.AddPartial(1, fmt.Errorf("failed to fetch index stats metrics: %w", err))
 		return
 	}
-	s.recordIndexStats(now, indexStats, collectionName, errs)
+	s.recordIndexStats(now, indexStats, databaseName, collectionName, errs)
 
-	rb := s.mb.NewResourceBuilder()
-	rb.SetDatabase(databaseName)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	if s.removeDatabaseAttr {
+		rb := s.mb.NewResourceBuilder()
+		rb.SetDatabase(databaseName)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	} else {
+		s.mb.EmitForResource()
+	}
 }
 
-func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	s.recordCollections(now, doc, errs)
-	s.recordDataSize(now, doc, errs)
-	s.recordExtentCount(now, doc, errs)
-	s.recordIndexSize(now, doc, errs)
-	s.recordIndexCount(now, doc, errs)
-	s.recordObjectCount(now, doc, errs)
-	s.recordStorageSize(now, doc, errs)
+func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+	s.recordCollections(now, doc, dbName, errs)
+	s.recordDataSize(now, doc, dbName, errs)
+	s.recordExtentCount(now, doc, dbName, errs)
+	s.recordIndexSize(now, doc, dbName, errs)
+	s.recordIndexCount(now, doc, dbName, errs)
+	s.recordObjectCount(now, doc, dbName, errs)
+	s.recordStorageSize(now, doc, dbName, errs)
 }
 
-func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	s.recordConnections(now, doc, errs)
-	s.recordDocumentOperations(now, doc, errs)
-	s.recordMemoryUsage(now, doc, errs)
-	s.recordLockAcquireCounts(now, doc, errs)
-	s.recordLockAcquireWaitCounts(now, doc, errs)
-	s.recordLockTimeAcquiringMicros(now, doc, errs)
-	s.recordLockDeadlockCount(now, doc, errs)
+func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+	s.recordConnections(now, doc, dbName, errs)
+	s.recordDocumentOperations(now, doc, dbName, errs)
+	s.recordMemoryUsage(now, doc, dbName, errs)
+	s.recordLockAcquireCounts(now, doc, dbName, errs)
+	s.recordLockAcquireWaitCounts(now, doc, dbName, errs)
+	s.recordLockTimeAcquiringMicros(now, doc, dbName, errs)
+	s.recordLockDeadlockCount(now, doc, dbName, errs)
 }
 
 func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errs *scrapererror.ScrapeErrors) {
@@ -219,6 +223,6 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordHealth(now, document, errs)
 }
 
-func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, collectionName string, errs *scrapererror.ScrapeErrors) {
-	s.recordIndexAccess(now, indexStats, collectionName, errs)
+func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
 }
