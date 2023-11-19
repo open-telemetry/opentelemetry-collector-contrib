@@ -340,7 +340,7 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	require.NoError(t, err)
 
 	attrs := pcommon.NewMap()
-	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]any{
 		"id":             5,
 		"redundant":      1.2,
 		"mystery":        "mystery ****",

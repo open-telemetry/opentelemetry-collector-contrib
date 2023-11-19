@@ -333,7 +333,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 }
 
 func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, error) {
-	var body map[string]interface{}
+	var body map[string]any
 	err := operator.json.Unmarshal(line, &body)
 	if err != nil {
 		return nil, "", err

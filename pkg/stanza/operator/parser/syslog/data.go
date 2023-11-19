@@ -71,7 +71,7 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 				Timestamp:    time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), 0, location["utc"]),
 				Severity:     entry.Error2,
 				SeverityText: "crit",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"appname":  "apache_server",
 					"facility": 4,
 					"hostname": "1.2.3.4",
@@ -98,7 +98,7 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 				Timestamp:    time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), 0, location["detroit"]),
 				Severity:     entry.Error2,
 				SeverityText: "crit",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"appname":  "apache_server",
 					"facility": 4,
 					"hostname": "1.2.3.4",
@@ -125,7 +125,7 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 				Timestamp:    time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), 0, location["athens"]),
 				Severity:     entry.Error2,
 				SeverityText: "crit",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"appname":  "apache_server",
 					"facility": 4,
 					"hostname": "1.2.3.4",
@@ -151,7 +151,7 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
 				Severity:     entry.Info,
 				SeverityText: "info",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"appname":  "SecureAuth0",
 					"facility": 10,
 					"hostname": "192.168.2.132",
@@ -159,8 +159,8 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 					"msg_id":   "ID52020",
 					"priority": 86,
 					"proc_id":  "23108",
-					"structured_data": map[string]interface{}{
-						"SecureAuth@27389": map[string]interface{}{
+					"structured_data": map[string]any{
+						"SecureAuth@27389": map[string]any{
 							"PEN":             "27389",
 							"Realm":           "SecureAuth0",
 							"UserHostAddress": "192.168.2.132",
@@ -189,7 +189,7 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
 				Severity:     entry.Info,
 				SeverityText: "info",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"appname":  "SecureAuth0",
 					"facility": 10,
 					"hostname": "192.168.2.132",
@@ -197,8 +197,8 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 					"msg_id":   "ID52020",
 					"priority": 86,
 					"proc_id":  "23108",
-					"structured_data": map[string]interface{}{
-						"SecureAuth@27389": map[string]interface{}{
+					"structured_data": map[string]any{
+						"SecureAuth@27389": map[string]any{
 							"PEN":             "27389",
 							"Realm":           "SecureAuth0",
 							"UserHostAddress": "192.168.2.132",
@@ -227,7 +227,7 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
 				Severity:     entry.Info,
 				SeverityText: "info",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"appname":  "SecureAuth0",
 					"facility": 10,
 					"hostname": "192.168.2.132",
@@ -235,8 +235,8 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 					"msg_id":   "ID52020",
 					"priority": 86,
 					"proc_id":  "23108",
-					"structured_data": map[string]interface{}{
-						"SecureAuth@27389": map[string]interface{}{
+					"structured_data": map[string]any{
+						"SecureAuth@27389": map[string]any{
 							"PEN":             "27389",
 							"Realm":           "SecureAuth0",
 							"UserHostAddress": "192.168.2.132",

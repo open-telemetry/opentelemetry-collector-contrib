@@ -11,8 +11,8 @@ import (
 )
 
 // convertLogRecordToJSON Takes `plog.LogRecord` and `pcommon.Resource` input, outputs byte array that represents the log record as json string
-func convertLogRecordToJSON(log plog.LogRecord, resource pcommon.Resource) map[string]interface{} {
-	jsonLog := map[string]interface{}{}
+func convertLogRecordToJSON(log plog.LogRecord, resource pcommon.Resource) map[string]any {
+	jsonLog := map[string]any{}
 	if spanID := log.SpanID(); !spanID.IsEmpty() {
 		jsonLog["spanID"] = hex.EncodeToString(spanID[:])
 	}

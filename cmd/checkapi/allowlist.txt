@@ -1,8 +1,4 @@
 connector/servicegraphconnector
-extension/encoding
 extension/observer
 processor/servicegraphprocessor
-receiver/dockerstatsreceiver
-receiver/journaldreceiver
 receiver/kafkareceiver
-receiver/windowseventlogreceiver

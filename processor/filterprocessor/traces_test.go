@@ -26,8 +26,8 @@ type testTrace struct {
 	spanName           string
 	libraryName        string
 	libraryVersion     string
-	resourceAttributes map[string]interface{}
-	tags               map[string]interface{}
+	resourceAttributes map[string]any
+	tags               map[string]any
 }
 
 // All the data we need to define a test
@@ -46,10 +46,10 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "test_service",
 			},
-			tags: map[string]interface{}{
+			tags: map[string]any{
 				"db.type": "redis",
 			},
 		},
@@ -60,7 +60,7 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "keep",
 			},
 		},
@@ -68,7 +68,7 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "dont_keep",
 			},
 		},
@@ -76,7 +76,7 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "keep",
 			},
 		},

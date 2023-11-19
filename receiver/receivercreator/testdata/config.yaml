@@ -25,5 +25,7 @@ receiver_creator/1:
       port.key: port.value
     hostport:
       hostport.key: hostport.value
+    k8s.service:
+      k8s.service.key: k8s.service.value
     k8s.node:
       k8s.node.key: k8s.node.value

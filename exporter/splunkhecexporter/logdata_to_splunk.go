@@ -28,7 +28,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 	source := config.Source
 	sourcetype := config.SourceType
 	index := config.Index
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	sourceKey := config.HecToOtelAttrs.Source
 	sourceTypeKey := config.HecToOtelAttrs.SourceType
 	indexKey := config.HecToOtelAttrs.Index
