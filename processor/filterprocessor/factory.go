@@ -15,11 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "filter"
-)
-
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Filter processor.

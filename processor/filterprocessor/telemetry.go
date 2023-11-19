@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 const (
@@ -33,6 +35,7 @@ const (
 )
 
 var (
+	typeStr             = metadata.Type
 	processorTagKey     = tag.MustNewKey(typeStr)
 	statMetricsFiltered = stats.Int64("metrics.filtered", metricsFilteredDesc, stats.UnitDimensionless)
 	statLogsFiltered    = stats.Int64("logs.filtered", logsFilteredDesc, stats.UnitDimensionless)
