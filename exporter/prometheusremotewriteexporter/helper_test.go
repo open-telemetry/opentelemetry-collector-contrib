@@ -116,7 +116,7 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 			},
 		},
 	}
-	got := convertTimeseriesToRequest(outOfOrder, nil)
+	got := convertTimeseriesToRequest(outOfOrder)
 
 	// We must ensure that the resulting Timeseries' sample points are sorted by Timestamp.
 	want := &prompb.WriteRequest{
