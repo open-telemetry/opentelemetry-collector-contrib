@@ -40,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -420,6 +421,18 @@ func TestDefaultExporters(t *testing.T) {
 		{
 			exporter:      "googlecloudpubsub",
 			skipLifecycle: true,
+		},
+		{
+			exporter: "honeycombmarker",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["honeycombmarker"].CreateDefaultConfig().(*honeycombmarkerexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
+				return cfg
+			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "influxdb",

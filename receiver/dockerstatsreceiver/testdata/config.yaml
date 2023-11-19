@@ -3,7 +3,7 @@ docker_stats/allsettings:
   endpoint: http://example.com/
   collection_interval: 2s
   timeout: 20s
-  api_version: 1.24
+  api_version: 1.25
   container_labels_to_metric_labels:
     my.container.label: my-metric-label
     my.other.container.label: my-other-metric-label
