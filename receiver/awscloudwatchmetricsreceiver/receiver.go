@@ -200,14 +200,14 @@ func (m *metricReceiver) poll(ctx context.Context) error {
 	var errs error
 	startTime := m.nextStartTime
 	endTime := time.Now()
-	if err := m.pollForMetrics(ctx, m.requests, startTime, endTime); err != nil {
+	if err := m.pollForMetrics(ctx, startTime, endTime); err != nil {
 		errs = errors.Join(errs, err)
 	}
 	m.nextStartTime = endTime
 	return errs
 }
 
-func (m *metricReceiver) pollForMetrics(ctx context.Context, r []request, startTime time.Time, endTime time.Time) error {
+func (m *metricReceiver) pollForMetrics(ctx context.Context, startTime time.Time, endTime time.Time) error {
 	select {
 	case _, ok := <-m.doneChan:
 		if !ok {
@@ -215,8 +215,13 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context, r []request, startT
 		}
 	default:
 		filters := m.request(startTime, endTime)
+		nextToken := aws.String("")
 		for idx, filter := range filters {
+			if *nextToken != "" {
+				filter.NextToken = nextToken
+			}
 			output, err := m.client.GetMetricData(ctx, &filter)
+			nextToken = output.NextToken
 			if err != nil {
 				m.logger.Error("unable to retrieve metric data from cloudwatch", zap.Error(err))
 				continue
@@ -280,7 +285,11 @@ func (m *metricReceiver) autoDiscoverRequests(ctx context.Context, auto *AutoDis
 		Namespace: aws.String(auto.Namespace),
 	}
 
+	nextToken := aws.String("")
 	for {
+		if *nextToken != "" {
+			input.NextToken = nextToken
+		}
 		out, err := m.client.ListMetrics(ctx, input)
 		if err != nil {
 			return nil, err

@@ -85,9 +85,9 @@ func TestAutoDiscoverConfig(t *testing.T) {
 	cfg.PollInterval = time.Second * 1
 	cfg.Metrics = &MetricsConfig{
 		AutoDiscover: &AutoDiscoverConfig{
-			Namespace:      "AWS/EC2",
+			Namespace:      namespace,
 			Limit:          20,
-			AwsAggregation: "Average",
+			AwsAggregation: agg,
 			Period:         time.Second * 60 * 5,
 		},
 	}
@@ -106,17 +106,60 @@ func TestAutoDiscoverConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-const (
-	testNamespace      = "EC2"
-	testMetricName     = "CPUUtilization"
-	TestDimensionName  = "InstanceId"
-	TestDimensionValue = "i-1234567890abcdef0"
-)
+func TestShutdownWhileStreaming(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "eu-west-1"
+	cfg.PollInterval = time.Second * 1
+	cfg.Metrics = &MetricsConfig{
+		Group: []GroupConfig{
+			{
+				Namespace: namespace,
+				Period:    time.Second * 60 * 5,
+				MetricName: []NamedConfig{
+					{
+						MetricName:     metricname,
+						AwsAggregation: agg,
+						Dimensions: []MetricDimensionsConfig{
+							{
+								Name:  DimName,
+								Value: DimValue,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	sink := &consumertest.MetricsSink{}
+	mtrcRcvr := newMetricReceiver(cfg, zap.NewNop(), sink)
+	doneChan := make(chan time.Time, 1)
+	mc := &MockClient{}
+	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatch.GetMetricDataOutput{
+			MetricDataResults: []types.MetricDataResult{
+				{},
+			},
+			NextToken: aws.String("next"),
+		}, nil).WaitUntil(doneChan)
+	mtrcRcvr.client = mc
+
+	err := mtrcRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Never(t, func() bool {
+		return sink.DataPointCount() > 0
+	}, 5*time.Second, 10*time.Millisecond)
+
+	close(doneChan)
+	require.NoError(t, mtrcRcvr.Shutdown(context.Background()))
+
+}
 
 var testDimensions = []types.Dimension{
 	{
-		Name:  aws.String(TestDimensionName),
-		Value: aws.String(TestDimensionValue),
+		Name:  aws.String(DimName),
+		Value: aws.String(DimValue),
 	},
 }
 
@@ -127,8 +170,8 @@ func defaultMockCloudWatchClient() client {
 		&cloudwatch.ListMetricsOutput{
 			Metrics: []types.Metric{
 				{
-					MetricName: aws.String(testMetricName),
-					Namespace:  aws.String(testNamespace),
+					MetricName: aws.String(metricname),
+					Namespace:  aws.String(namespace),
 					Dimensions: testDimensions,
 				},
 			},
