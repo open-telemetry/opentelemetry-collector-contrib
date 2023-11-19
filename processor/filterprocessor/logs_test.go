@@ -763,6 +763,22 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	}
 }
 
+func TestFilterLogProcessorTelemetry(t *testing.T) {
+	telemetryTest(t, "FilterLogProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
+		processor, err := newFilterLogsProcessor(processortest.NewNopCreateSettings(), &Config{
+			Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
+		})
+		assert.NoError(t, err)
+
+		_, err = processor.processLogs(context.Background(), constructLogs())
+		assert.NoError(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			logsFiltered: 2,
+		})
+	})
+}
+
 func constructLogs() plog.Logs {
 	td := plog.NewLogs()
 	rs0 := td.ResourceLogs().AppendEmpty()

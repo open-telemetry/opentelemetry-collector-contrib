@@ -365,6 +365,77 @@ func TestFilterMetricProcessor(t *testing.T) {
 	}
 }
 
+func TestFilterMetricProcessorTelemetry(t *testing.T) {
+	telemetryTest(t, "FilterMetricProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
+		next := new(consumertest.MetricsSink)
+		cfg := &Config{
+			Metrics: MetricFilters{
+				MetricConditions: []string{
+					"name==\"metric1\"",
+				},
+			},
+		}
+		factory := NewFactory()
+		fmp, err := factory.CreateMetricsProcessor(
+			context.Background(),
+			processortest.NewNopCreateSettings(),
+			cfg,
+			next,
+		)
+		assert.NotNil(t, fmp)
+		assert.Nil(t, err)
+
+		caps := fmp.Capabilities()
+		assert.True(t, caps.MutatesData)
+		ctx := context.Background()
+		assert.NoError(t, fmp.Start(ctx, nil))
+
+		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+			{
+				metricNames: []string{"foo", "bar"},
+				resourceAttributes: map[string]any{
+					"attr1": "attr1/val1",
+				},
+			},
+		}))
+		assert.Nil(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			metricsFiltered: float64(0),
+		})
+
+		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+			{
+				metricNames: []string{"metric1", "metric2"},
+				resourceAttributes: map[string]any{
+					"attr1": "attr1/val1",
+				},
+			},
+		}))
+		assert.Nil(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			metricsFiltered: float64(1),
+		})
+
+		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+			{
+				metricNames: []string{"metric1"},
+				resourceAttributes: map[string]any{
+					"attr1": "attr1/val1",
+				},
+			},
+		}))
+		assert.Nil(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			metricsFiltered: float64(2),
+		})
+
+		assert.NoError(t, fmp.Shutdown(ctx))
+	})
+}
+
 func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	now := time.Now()

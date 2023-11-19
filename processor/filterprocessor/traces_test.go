@@ -280,6 +280,26 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	}
 }
 
+func TestFilterTraceProcessorTelemetry(t *testing.T) {
+	telemetryTest(t, "FilterTraceProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
+		processor, err := newFilterSpansProcessor(processortest.NewNopCreateSettings(), &Config{
+			Traces: TraceFilters{
+				SpanConditions: []string{
+					`name == "operationA"`,
+				},
+			}, ErrorMode: ottl.IgnoreError,
+		})
+		assert.NoError(t, err)
+
+		_, err = processor.processTraces(context.Background(), constructTraces())
+		assert.NoError(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			spansFiltered: 2,
+		})
+	})
+}
+
 func constructTraces() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
