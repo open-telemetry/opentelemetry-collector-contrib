@@ -21,7 +21,7 @@ const (
 
 	metricsFilteredDesc = "Number of metrics dropped by the filter processor"
 	logsFilteredDesc    = "Number of logs dropped by the filter processor"
-	tracesFilteredDesc  = "Number of traces dropped by the filter processor"
+	spansFilteredDesc   = "Number of spans dropped by the filter processor"
 )
 
 type trigger int
@@ -29,14 +29,14 @@ type trigger int
 const (
 	triggerMetricsDropped trigger = iota
 	triggerLogsDropped
-	triggerTracesDropped
+	triggerSpansDropped
 )
 
 var (
 	processorTagKey     = tag.MustNewKey(typeStr)
 	statMetricsFiltered = stats.Int64("metrics.filtered", metricsFilteredDesc, stats.UnitDimensionless)
 	statLogsFiltered    = stats.Int64("logs.filtered", logsFilteredDesc, stats.UnitDimensionless)
-	statTracesFiltered  = stats.Int64("traces.filtered", tracesFilteredDesc, stats.UnitDimensionless)
+	statSpansFiltered   = stats.Int64("spans.filtered", spansFilteredDesc, stats.UnitDimensionless)
 )
 
 func init() {
@@ -63,9 +63,9 @@ func metricViews() []*view.View {
 			TagKeys:     processorTagKeys,
 		},
 		{
-			Name:        statTracesFiltered.Name(),
-			Measure:     statTracesFiltered,
-			Description: statTracesFiltered.Description(),
+			Name:        statSpansFiltered.Name(),
+			Measure:     statSpansFiltered,
+			Description: statSpansFiltered.Description(),
 			Aggregation: view.Count(),
 			TagKeys:     processorTagKeys,
 		},
@@ -81,7 +81,7 @@ type filterProcessorTelemetry struct {
 
 	metricsFiltered metric.Int64Counter
 	logsFiltered    metric.Int64Counter
-	tracesFiltered  metric.Int64Counter
+	spansFiltered   metric.Int64Counter
 }
 
 func newfilterProcessorTelemetry(set processor.CreateSettings) (*filterProcessorTelemetry, error) {
@@ -125,9 +125,9 @@ func (fpt *filterProcessorTelemetry) createOtelMetrics(mp metric.MeterProvider) 
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
-	fpt.tracesFiltered, err = meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(typeStr, "traces_filtered"),
-		metric.WithDescription(tracesFilteredDesc),
+	fpt.spansFiltered, err = meter.Int64Counter(
+		processorhelper.BuildCustomMetricName(typeStr, "spans_filtered"),
+		metric.WithDescription(spansFilteredDesc),
 		metric.WithUnit("1"),
 	)
 	errors = multierr.Append(errors, err)
@@ -150,8 +150,8 @@ func (fpt *filterProcessorTelemetry) recordWithOC(trigger trigger, dropped int64
 		triggerMeasure = statMetricsFiltered
 	case triggerLogsDropped:
 		triggerMeasure = statLogsFiltered
-	case triggerTracesDropped:
-		triggerMeasure = statTracesFiltered
+	case triggerSpansDropped:
+		triggerMeasure = statSpansFiltered
 	}
 
 	stats.Record(fpt.exportCtx, triggerMeasure.M(dropped))
@@ -163,7 +163,7 @@ func (fpt *filterProcessorTelemetry) recordWithOtel(trigger trigger, dropped int
 		fpt.metricsFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
 	case triggerLogsDropped:
 		fpt.logsFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
-	case triggerTracesDropped:
-		fpt.tracesFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
+	case triggerSpansDropped:
+		fpt.spansFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
 	}
 }

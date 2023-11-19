@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -748,7 +747,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterLogsProcessor(componenttest.NewNopTelemetrySettings(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
+			processor, err := newFilterLogsProcessor(processortest.NewNopCreateSettings(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
 			assert.NoError(t, err)
 
 			got, err := processor.processLogs(context.Background(), constructLogs())
