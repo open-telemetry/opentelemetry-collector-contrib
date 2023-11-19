@@ -173,7 +173,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	})
 
 	metricCountAfterFilters := md.MetricCount()
-	fmp.telemetry.record(int64(metricCountBeforeFilters - metricCountAfterFilters))
+	fmp.telemetry.record(triggerMetricsDropped, int64(metricCountBeforeFilters-metricCountAfterFilters))
 
 	if errors != nil {
 		fmp.logger.Error("failed processing metrics", zap.Error(errors))
