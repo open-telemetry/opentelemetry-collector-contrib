@@ -10,6 +10,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
@@ -41,24 +42,24 @@ func metricViews() []*view.View {
 
 	return []*view.View{
 		{
-			Name:        statMetricsFiltered.Name(),
+			Name:        processorhelper.BuildCustomMetricName(typeStr, statMetricsFiltered.Name()),
 			Measure:     statMetricsFiltered,
 			Description: statMetricsFiltered.Description(),
-			Aggregation: view.Count(),
+			Aggregation: view.Sum(),
 			TagKeys:     processorTagKeys,
 		},
 		{
-			Name:        statLogsFiltered.Name(),
+			Name:        processorhelper.BuildCustomMetricName(typeStr, statLogsFiltered.Name()),
 			Measure:     statLogsFiltered,
 			Description: statLogsFiltered.Description(),
-			Aggregation: view.Count(),
+			Aggregation: view.Sum(),
 			TagKeys:     processorTagKeys,
 		},
 		{
-			Name:        statSpansFiltered.Name(),
+			Name:        processorhelper.BuildCustomMetricName(typeStr, statSpansFiltered.Name()),
 			Measure:     statSpansFiltered,
 			Description: statSpansFiltered.Description(),
-			Aggregation: view.Count(),
+			Aggregation: view.Sum(),
 			TagKeys:     processorTagKeys,
 		},
 	}
