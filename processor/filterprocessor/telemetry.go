@@ -9,7 +9,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -55,17 +55,17 @@ type filterProcessorTelemetry struct {
 	droppedByFilter metric.Int64Counter
 }
 
-func newfilterProcessorTelemetry(set component.TelemetrySettings) (*filterProcessorTelemetry, error) {
-	id, _ := set.Resource.Attributes().Get("ID")
+func newfilterProcessorTelemetry(set processor.CreateSettings) (*filterProcessorTelemetry, error) {
+	processorID := set.ID.String()
 
-	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, id.Str()))
+	exportCtx, err := tag.New(context.Background(), tag.Insert(processorTagKey, processorID))
 	if err != nil {
 		return nil, err
 	}
 
 	fpt := &filterProcessorTelemetry{
 		useOtel:       false,
-		processorAttr: []attribute.KeyValue{attribute.String(typeStr, id.Str())},
+		processorAttr: []attribute.KeyValue{attribute.String(typeStr, processorID)},
 		exportCtx:     exportCtx,
 	}
 

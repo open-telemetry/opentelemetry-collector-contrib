@@ -45,7 +45,7 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	fp, err := newFilterMetricProcessor(set.TelemetrySettings, cfg.(*Config))
+	fp, err := newFilterMetricProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
