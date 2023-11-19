@@ -1,8 +1,12 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "labels": [
+      "renovatebot",
       "dependencies"
     ],
+    "constraints": {
+      "go": "1.20"
+    },
     "extends": [
       "config:base"
     ],
@@ -30,7 +34,7 @@
       },
       {
         "matchManagers": ["gomod"],
-        "enabled": false
+        "matchUpdateTypes": ["minor", "major"]
       }
     ],
     "ignoreDeps": [

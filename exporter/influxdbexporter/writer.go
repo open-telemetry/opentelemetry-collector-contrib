@@ -88,15 +88,21 @@ func composeWriteURL(config *Config) (string, error) {
 		queryValues.Set("db", config.V1Compatibility.DB)
 
 		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
-			var basicAuth []byte
-			base64.StdEncoding.Encode(basicAuth, []byte(config.V1Compatibility.Username+":"+string(config.V1Compatibility.Password)))
-			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Basic " + string(basicAuth))
+			basicAuth := base64.StdEncoding.EncodeToString(
+				[]byte(config.V1Compatibility.Username + ":" + string(config.V1Compatibility.Password)))
+			if config.HTTPClientSettings.Headers == nil {
+				config.HTTPClientSettings.Headers = make(map[string]configopaque.String, 1)
+			}
+			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Basic " + basicAuth)
 		}
 	} else {
 		queryValues.Set("org", config.Org)
 		queryValues.Set("bucket", config.Bucket)
 
 		if config.Token != "" {
+			if config.HTTPClientSettings.Headers == nil {
+				config.HTTPClientSettings.Headers = make(map[string]configopaque.String, 1)
+			}
 			config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
 		}
 	}
