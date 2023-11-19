@@ -25,7 +25,7 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 		sizeOfSeries := v.Size()
 
 		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
-			wrapped := convertTimeseriesToRequest(tsArray, nil)
+			wrapped := convertTimeseriesToRequest(tsArray)
 			requests = append(requests, wrapped)
 
 			tsArray = make([]prompb.TimeSeries, 0, len(tsMap)-i)
@@ -38,7 +38,7 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 	}
 
 	if len(tsArray) != 0 {
-		wrapped := convertTimeseriesToRequest(tsArray, nil)
+		wrapped := convertTimeseriesToRequest(tsArray)
 		requests = append(requests, wrapped)
 	}
 
@@ -49,7 +49,7 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 		sizeOfM := v.Size()
 
 		if sizeOfCurrentBatch+sizeOfM >= maxBatchByteSize {
-			wrapped := convertTimeseriesToRequest(nil, mArray)
+			wrapped := convertMetadataToRequest(mArray)
 			requests = append(requests, wrapped)
 
 			mArray = make([]prompb.MetricMetadata, 0, len(m)-i)
@@ -62,44 +62,28 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 	}
 
 	if len(mArray) != 0 {
-		wrapped := convertTimeseriesToRequest(nil, mArray)
+		wrapped := convertMetadataToRequest(mArray)
 		requests = append(requests, wrapped)
 	}
 
 	return requests, nil
 }
 
-func convertTimeseriesToRequest(tsArray []prompb.TimeSeries, m []prompb.MetricMetadata) *prompb.WriteRequest {
+func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteRequest {
 	// the remote_write endpoint only requires the timeseries.
 	// otlp defines it's own way to handle metric metadata
-
-	if m != nil && tsArray != nil {
-		return &prompb.WriteRequest{
-			// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
-			// See:
-			// * https://github.com/open-telemetry/wg-prometheus/issues/10
-			// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
-			Timeseries: orderBySampleTimestamp(tsArray),
-			Metadata:   m,
-		}
-	}
-
-	if m != nil {
-		return &prompb.WriteRequest{
-			// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
-			// See:
-			// * https://github.com/open-telemetry/wg-prometheus/issues/10
-			// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
-			Metadata: m,
-		}
-	}
-
 	return &prompb.WriteRequest{
 		// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
 		// See:
 		// * https://github.com/open-telemetry/wg-prometheus/issues/10
 		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
 		Timeseries: orderBySampleTimestamp(tsArray),
+	}
+}
+
+func convertMetadataToRequest(m []prompb.MetricMetadata) *prompb.WriteRequest {
+	return &prompb.WriteRequest{
+		Metadata: m,
 	}
 }
 
