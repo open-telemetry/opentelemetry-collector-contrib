@@ -11,18 +11,18 @@ import (
 	"testing"
 
 	ocprom "contrib.go.opencensus.io/exporter/prometheus"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 func TestFilterProcessorMetrics(t *testing.T) {
