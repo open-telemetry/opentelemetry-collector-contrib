@@ -145,6 +145,12 @@ service:
 	})
 	require.NoError(t, err)
 
+	t.Cleanup(func() {
+		stopped, e := collector.Stop()
+		require.NoError(t, e)
+		require.True(t, stopped)
+	})
+
 	// prepare data
 
 	message := ""
