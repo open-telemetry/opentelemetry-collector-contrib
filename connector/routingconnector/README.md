@@ -70,10 +70,8 @@ connectors:
     table:
       - statement: route() where attributes["X-Tenant"] == "acme"
         pipelines: [traces/jaeger-acme]
-        order: 1
       - statement: route() where attributes["X-Tenant"] == ".*acme"
         pipelines: [traces/jaeger-ecorp]
-        order: 2
 
 service:
   pipelines:
