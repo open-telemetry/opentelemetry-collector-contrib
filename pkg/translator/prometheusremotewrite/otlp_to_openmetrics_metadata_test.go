@@ -114,7 +114,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 	}{
 		{
 			name:    "all types§",
-			metrics: GenerateMetricsAllTypesNoDataPointsHelpAndUnit(),
+			metrics: GenerateMetricsAllTypesNoDataPointsHelp(),
 			want: []*prompb.MetricMetadata{
 				{
 					Type: prompb.MetricMetadata_GAUGE,
@@ -124,7 +124,6 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						1, ts,
 					), "", false),
 					Help: "gauge description",
-					Unit: "testing_unit1",
 				},
 				{
 					Type: prompb.MetricMetadata_GAUGE,
@@ -134,7 +133,6 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						1, ts,
 					), "", false),
 					Help: "gauge description",
-					Unit: "testing_unit",
 				},
 				{
 					Type: prompb.MetricMetadata_COUNTER,
@@ -144,7 +142,6 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						1, ts,
 					), "", false),
 					Help: "sum description",
-					Unit: "testing_unit",
 				},
 				{
 					Type: prompb.MetricMetadata_COUNTER,
@@ -154,7 +151,6 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						1, ts,
 					), "", false),
 					Help: "sum description",
-					Unit: "testing_unit",
 				},
 				{
 					Type: prompb.MetricMetadata_HISTOGRAM,
@@ -164,7 +160,6 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						1, ts,
 					), "", false),
 					Help: "histogram description",
-					Unit: "testing_unit",
 				},
 				{
 					Type: prompb.MetricMetadata_SUMMARY,
@@ -174,7 +169,6 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						1, ts,
 					), "", false),
 					Help: "summary description",
-					Unit: "testing_unit",
 				},
 			},
 		},
@@ -187,30 +181,28 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
 				assert.Equal(t, tt.want[i].MetricFamilyName, metaData[i].MetricFamilyName)
 				assert.Equal(t, tt.want[i].Help, metaData[i].Help)
-				assert.Equal(t, tt.want[i].Unit, metaData[i].Unit)
 			}
 
 		})
 	}
 }
 
-func GenerateMetricsAllTypesNoDataPointsHelpAndUnit() pmetric.Metrics {
+func GenerateMetricsAllTypesNoDataPointsHelp() pmetric.Metrics {
 	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
 	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
 	ms := ilm0.Metrics()
-	initMetric(ms.AppendEmpty(), testdata.TestGaugeDoubleMetricName, pmetric.MetricTypeGauge, "gauge description", "testing_unit1")
-	initMetric(ms.AppendEmpty(), testdata.TestGaugeIntMetricName, pmetric.MetricTypeGauge, "gauge description", "testing_unit")
-	initMetric(ms.AppendEmpty(), testdata.TestSumDoubleMetricName, pmetric.MetricTypeSum, "sum description", "testing_unit")
-	initMetric(ms.AppendEmpty(), testdata.TestSumIntMetricName, pmetric.MetricTypeSum, "sum description", "testing_unit")
-	initMetric(ms.AppendEmpty(), testdata.TestDoubleHistogramMetricName, pmetric.MetricTypeHistogram, "histogram description", "testing_unit")
-	initMetric(ms.AppendEmpty(), testdata.TestDoubleSummaryMetricName, pmetric.MetricTypeSummary, "summary description", "testing_unit")
+	initMetric(ms.AppendEmpty(), testdata.TestGaugeDoubleMetricName, pmetric.MetricTypeGauge, "gauge description")
+	initMetric(ms.AppendEmpty(), testdata.TestGaugeIntMetricName, pmetric.MetricTypeGauge, "gauge description")
+	initMetric(ms.AppendEmpty(), testdata.TestSumDoubleMetricName, pmetric.MetricTypeSum, "sum description")
+	initMetric(ms.AppendEmpty(), testdata.TestSumIntMetricName, pmetric.MetricTypeSum, "sum description")
+	initMetric(ms.AppendEmpty(), testdata.TestDoubleHistogramMetricName, pmetric.MetricTypeHistogram, "histogram description")
+	initMetric(ms.AppendEmpty(), testdata.TestDoubleSummaryMetricName, pmetric.MetricTypeSummary, "summary description")
 	return md
 }
 
-func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType, desc string, unit string) {
+func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType, desc string) {
 	m.SetName(name)
 	m.SetDescription(desc)
-	m.SetUnit(unit)
 	//exhaustive:enforce
 	switch ty {
 	case pmetric.MetricTypeGauge:
