@@ -197,8 +197,3 @@ misspell-correction: $(TOOLS_BIN_DIR)/misspell
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
-
-.PHONY: updatedep
-updatedep:
-	$(PWD)/internal/buildscripts/update-dep
-	@$(MAKE) tidy
