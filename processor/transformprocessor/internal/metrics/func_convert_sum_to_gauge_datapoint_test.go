@@ -10,10 +10,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func Test_convertSumToGauge(t *testing.T) {
+func Test_convertDatapointSumToGauge(t *testing.T) {
 	sumInput := pmetric.NewMetric()
 
 	dp1 := sumInput.SetEmptySum().DataPoints().AppendEmpty()
@@ -83,9 +83,9 @@ func Test_convertSumToGauge(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			exprFunc, _ := convertSumToGauge()
+			exprFunc, _ := convertDatapointSumToGauge()
 
 			_, err := exprFunc(nil, ctx)
 			assert.Nil(t, err)
