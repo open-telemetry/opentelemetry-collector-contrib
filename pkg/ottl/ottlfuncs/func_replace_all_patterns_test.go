@@ -60,7 +60,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			function: optionalArg,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad world")
-				expectedMap.PutStr("test2", "4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad")
+				expectedMap.PutStr("test2", "09648f12e7a3940f539bb65d32321c2f96aa94ef698d87816e94d822c6f9d7c4")
 				expectedMap.PutStr("test3", "goodbye world1 and world2")
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)

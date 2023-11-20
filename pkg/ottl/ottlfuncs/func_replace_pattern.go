@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -47,32 +49,44 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 		if err != nil {
 			return nil, err
 		}
-		if fn.IsEmpty() {
-			replacementVal, err = replacement.Get(ctx, tCtx)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			fnVal := fn.Get()
-			replacementExpr, errNew := fnVal.Get(&replacePatternFuncArgs[K]{Input: replacement})
-			if errNew != nil {
-				return nil, errNew
-			}
-			replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
-			if errNew != nil {
-				return nil, errNew
-			}
-			replacementValStr, ok := replacementValRaw.(string)
-			if !ok {
-				return nil, fmt.Errorf("replacement value is not a string")
-			}
-			replacementVal = replacementValStr
+		replacementVal, err = replacement.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
 		}
 		if originalVal == nil {
 			return nil, nil
 		}
 		if originalValStr, ok := originalVal.(string); ok {
 			if compiledPattern.MatchString(originalValStr) {
+				if !fn.IsEmpty() {
+					match := compiledPattern.FindStringSubmatch(originalValStr)
+					if match != nil {
+						if strings.Contains(replacementVal, "$") {
+							groupNum := strings.ReplaceAll(replacementVal, "$", "")
+							num, _ := strconv.Atoi(groupNum)
+							replacementVal = match[num]
+						}
+					}
+					fnVal := fn.Get()
+					replaceValGetter := ottl.StandardStringGetter[K]{
+						Getter: func(context.Context, K) (any, error) {
+							return replacementVal, nil
+						},
+					}
+					replacementExpr, errNew := fnVal.Get(&replacePatternFuncArgs[K]{Input: replaceValGetter})
+					if errNew != nil {
+						return nil, errNew
+					}
+					replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+					if errNew != nil {
+						return nil, errNew
+					}
+					replacementValStr, ok := replacementValRaw.(string)
+					if !ok {
+						return nil, fmt.Errorf("replacement value is not a string")
+					}
+					replacementVal = replacementValStr
+				}
 				updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
 				err = target.Set(ctx, tCtx, updatedStr)
 				if err != nil {

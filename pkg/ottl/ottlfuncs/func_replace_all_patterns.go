@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -59,26 +61,9 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 		if err != nil {
 			return nil, err
 		}
-		if fn.IsEmpty() {
-			replacementVal, err = replacement.Get(ctx, tCtx)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			fnVal := fn.Get()
-			replacementExpr, errNew := fnVal.Get(&replaceAllPatternFuncArgs[K]{Input: replacement})
-			if errNew != nil {
-				return nil, errNew
-			}
-			replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
-			if errNew != nil {
-				return nil, errNew
-			}
-			replacementValStr, ok := replacementValRaw.(string)
-			if !ok {
-				return nil, fmt.Errorf("replacement value is not a string")
-			}
-			replacementVal = replacementValStr
+		replacementVal, err = replacement.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
 		}
 		updated := pcommon.NewMap()
 		updated.EnsureCapacity(val.Len())
@@ -86,6 +71,35 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 			switch mode {
 			case modeValue:
 				if compiledPattern.MatchString(originalValue.Str()) {
+					if !fn.IsEmpty() {
+						match := compiledPattern.FindStringSubmatch(originalValue.Str())
+						if match != nil {
+							if strings.Contains(replacementVal, "$") {
+								groupNum := strings.ReplaceAll(replacementVal, "$", "")
+								num, _ := strconv.Atoi(groupNum)
+								replacementVal = match[num]
+							}
+						}
+						fnVal := fn.Get()
+						replaceValGetter := ottl.StandardStringGetter[K]{
+							Getter: func(context.Context, K) (any, error) {
+								return replacementVal, nil
+							},
+						}
+						replacementExpr, errNew := fnVal.Get(&replaceAllPatternFuncArgs[K]{Input: replaceValGetter})
+						if errNew != nil {
+							return false
+						}
+						replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+						if errNew != nil {
+							return false
+						}
+						replacementValStr, ok := replacementValRaw.(string)
+						if !ok {
+							return false
+						}
+						replacementVal = replacementValStr
+					}
 					updatedString := compiledPattern.ReplaceAllString(originalValue.Str(), replacementVal)
 					updated.PutStr(key, updatedString)
 				} else {
@@ -93,6 +107,35 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 				}
 			case modeKey:
 				if compiledPattern.MatchString(key) {
+					if !fn.IsEmpty() {
+						match := compiledPattern.FindStringSubmatch(originalValue.Str())
+						if match != nil {
+							if strings.Contains(replacementVal, "$") {
+								groupNum := strings.ReplaceAll(replacementVal, "$", "")
+								num, _ := strconv.Atoi(groupNum)
+								replacementVal = match[num]
+							}
+						}
+						fnVal := fn.Get()
+						replaceValGetter := ottl.StandardStringGetter[K]{
+							Getter: func(context.Context, K) (any, error) {
+								return replacementVal, nil
+							},
+						}
+						replacementExpr, errNew := fnVal.Get(&replaceAllPatternFuncArgs[K]{Input: replaceValGetter})
+						if errNew != nil {
+							return false
+						}
+						replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+						if errNew != nil {
+							return false
+						}
+						replacementValStr, ok := replacementValRaw.(string)
+						if !ok {
+							return false
+						}
+						replacementVal = replacementValStr
+					}
 					updatedKey := compiledPattern.ReplaceAllString(key, replacementVal)
 					originalValue.CopyTo(updated.PutEmpty(updatedKey))
 				} else {

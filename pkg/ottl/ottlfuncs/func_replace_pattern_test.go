@@ -45,15 +45,15 @@ func Test_replacePattern(t *testing.T) {
 		{
 			name:    "replace regex match (with hash function)",
 			target:  target,
-			pattern: `passwd\=[^\s]*(\s?)`,
+			pattern: `passwd\=([^\s]*)(\s?)`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
 				Getter: func(context.Context, pcommon.Value) (any, error) {
-					return "passwd=*** ", nil
+					return "$1", nil
 				},
 			},
 			function: optionalArg,
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("application 0f2407f2d83337b1f757eb1754a7643ce0e8fba620bc605c54566cd6dfd838beotherarg=notsensitive key1 key2")
+				expectedValue.SetStr("application 148b08b1ec2b1e41bca4c63ec80de7ea13d594a1b2583f0cb6833449f40c5ceeotherarg=notsensitive key1 key2")
 			},
 		},
 		{
@@ -228,7 +228,7 @@ func Test_replacePattern_bad_function_result(t *testing.T) {
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "replacement value is not a string")
+	assert.ErrorContains(t, err, "expected string but got nil")
 	assert.Nil(t, result)
 }
 
