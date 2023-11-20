@@ -39,6 +39,21 @@
       },
       {
         "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/azure"],
+        "groupName": "All github.com/azure packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/datadog"],
+        "groupName": "All github.com/datadog packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
+        "groupName": "All github.com/googlecloudplatform packages"
+      },
+      {
+        "matchManagers": ["gomod"],
         "matchUpdateTypes": ["minor", "major"]
       }
     ],
