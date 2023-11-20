@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
@@ -230,8 +231,10 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		compressedData := snappy.Encode(buf, data)
 
 		// Create the HTTP POST request to send to the endpoint
+		prwe.settings.Logger.Info("Peparing to make HTTP request,", zap.String("url", prwe.endpointURL.String()))
 		req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
+			prwe.settings.Logger.Error("error", zap.Error(err))
 			return backoff.Permanent(consumererror.NewPermanent(err))
 		}
 
