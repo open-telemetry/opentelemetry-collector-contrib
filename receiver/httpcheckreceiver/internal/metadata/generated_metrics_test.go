@@ -56,7 +56,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordHttpcheckBodyDataPoint(ts, 1, "http.url-val")
+			mb.RecordHttpcheckBodyDataPoint(ts, 1, "http.url-val", "name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -109,6 +109,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("http.url")
 					assert.True(t, ok)
 					assert.EqualValues(t, "http.url-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "name-val", attrVal.Str())
 				case "httpcheck.duration":
 					assert.False(t, validatedMetrics["httpcheck.duration"], "Found a duplicate in the metrics slice: httpcheck.duration")
 					validatedMetrics["httpcheck.duration"] = true

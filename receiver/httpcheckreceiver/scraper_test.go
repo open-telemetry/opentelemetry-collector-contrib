@@ -257,12 +257,14 @@ func TestScraperBody(t *testing.T) {
 			Endpoint: ms1.URL,
 		},
 		Body: "foo",
+		Name: "foo",
 	})
 	cfg.Targets = append(cfg.Targets, &targetConfig{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: ms2.URL,
 		},
 		Body: "far",
+		Name: "",
 	})
 	cfg.MetricsBuilderConfig.Metrics.HttpcheckBody.Enabled = true
 

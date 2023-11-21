@@ -193,6 +193,9 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
+                    - key: name
+                      value:
+                        stringValue: foo    
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
@@ -200,6 +203,9 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
+                    - key: name
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"

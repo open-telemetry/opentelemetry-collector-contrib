@@ -27,6 +27,9 @@ attributes:
   error.message:
     description: Error message recorded during check
     type: string
+  name:
+    description: HTTP response body exact matches string
+    type: string
 
 metrics:
   httpcheck.status:

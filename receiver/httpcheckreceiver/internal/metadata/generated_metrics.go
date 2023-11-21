@@ -28,7 +28,7 @@ func (m *metricHttpcheckBody) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHttpcheckBody) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
+func (m *metricHttpcheckBody) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, nameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -37,6 +37,7 @@ func (m *metricHttpcheckBody) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+	dp.Attributes().PutStr("name", nameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -340,8 +341,8 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordHttpcheckBodyDataPoint adds a data point to httpcheck.body metric.
-func (mb *MetricsBuilder) RecordHttpcheckBodyDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
-	mb.metricHttpcheckBody.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue)
+func (mb *MetricsBuilder) RecordHttpcheckBodyDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, nameAttributeValue string) {
+	mb.metricHttpcheckBody.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, nameAttributeValue)
 }
 
 // RecordHttpcheckDurationDataPoint adds a data point to httpcheck.duration metric.

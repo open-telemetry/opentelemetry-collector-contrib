@@ -95,9 +95,9 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					defer resp.Body.Close()
 
 					if strings.Contains(string(body), h.cfg.Targets[targetIndex].Body) {
-						h.mb.RecordHttpcheckBodyDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint)
+						h.mb.RecordHttpcheckBodyDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint, h.cfg.Targets[targetIndex].Name)
 					} else {
-						h.mb.RecordHttpcheckBodyDataPoint(now, int64(0), h.cfg.Targets[targetIndex].Endpoint)
+						h.mb.RecordHttpcheckBodyDataPoint(now, int64(0), h.cfg.Targets[targetIndex].Endpoint, h.cfg.Targets[targetIndex].Name)
 					}
 				}
 			}
