@@ -337,6 +337,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				}
 				// aggregate sums metrics
 				s := sums.GetOrCreate(key, attributes)
+				if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
+				}
 				s.Add(1)
 
 				// aggregate events metrics

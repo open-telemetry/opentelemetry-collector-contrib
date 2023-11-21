@@ -35,7 +35,7 @@ func TestTimeParser(t *testing.T) {
 
 	testCases := []struct {
 		name           string
-		sample         interface{}
+		sample         any
 		expected       time.Time
 		gotimeLayout   string
 		strptimeLayout string
@@ -288,7 +288,7 @@ func TestTimeParser(t *testing.T) {
 func TestTimeEpochs(t *testing.T) {
 	testCases := []struct {
 		name     string
-		sample   interface{}
+		sample   any
 		layout   string
 		expected time.Time
 		maxLoss  time.Duration
@@ -449,7 +449,7 @@ func TestTimeEpochs(t *testing.T) {
 func TestTimeErrors(t *testing.T) {
 	testCases := []struct {
 		name       string
-		sample     interface{}
+		sample     any
 		layoutType string
 		layout     string
 		location   string
@@ -559,7 +559,7 @@ func parseTimeTestConfig(layoutType, layout, location string, parseFrom entry.Fi
 	}
 }
 
-func makeTestEntry(field entry.Field, value interface{}) *entry.Entry {
+func makeTestEntry(field entry.Field, value any) *entry.Entry {
 	e := entry.New()
 	_ = e.Set(field, value)
 	return e

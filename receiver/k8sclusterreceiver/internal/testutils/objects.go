@@ -281,7 +281,7 @@ func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID strin
 		},
 	}
 }
-func WithOwnerReferences(or []v1.OwnerReference, obj interface{}) interface{} {
+func WithOwnerReferences(or []v1.OwnerReference, obj any) any {
 	switch o := obj.(type) {
 	case *corev1.Pod:
 		o.OwnerReferences = or

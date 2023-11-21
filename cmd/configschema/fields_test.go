@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package configschema
 
 import (
@@ -15,7 +11,7 @@ import (
 )
 
 func TestReadFieldsWithDefaults(t *testing.T) {
-	defaults := map[string]interface{}{
+	defaults := map[string]any{
 		"one":           "1",
 		"two":           int64(2),
 		"three":         uint64(3),
@@ -43,7 +39,7 @@ func TestReadFieldsWithDefaults(t *testing.T) {
 }
 
 func TestReadFieldsWithoutDefaults(t *testing.T) {
-	testReadFields(t, testStruct{}, map[string]interface{}{
+	testReadFields(t, testStruct{}, map[string]any{
 		"one":           "",
 		"three":         uint64(0),
 		"four":          false,
@@ -53,7 +49,7 @@ func TestReadFieldsWithoutDefaults(t *testing.T) {
 	})
 }
 
-func testReadFields(t *testing.T, s testStruct, defaults map[string]interface{}) {
+func testReadFields(t *testing.T, s testStruct, defaults map[string]any) {
 	root, _ := ReadFields(
 		reflect.ValueOf(s),
 		testDR(),

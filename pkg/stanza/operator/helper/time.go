@@ -168,7 +168,7 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 	return nil
 }
 
-func (t *TimeParser) parseEpochTime(value interface{}) (time.Time, error) {
+func (t *TimeParser) parseEpochTime(value any) (time.Time, error) {
 	stamp, err := getEpochStamp(t.Layout, value)
 	if err != nil {
 		return time.Time{}, err
@@ -197,7 +197,7 @@ func (t *TimeParser) parseEpochTime(value interface{}) (time.Time, error) {
 	}
 }
 
-func getEpochStamp(layout string, value interface{}) (string, error) {
+func getEpochStamp(layout string, value any) (string, error) {
 	switch v := value.(type) {
 	case string:
 		return v, nil

@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sflowreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
@@ -349,6 +350,11 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "redis",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["redis"].CreateDefaultConfig().(*redisreceiver.Config)
+				cfg.Endpoint = "localhost:6379"
+				return cfg
+			},
 		},
 		{
 			receiver: "riak",

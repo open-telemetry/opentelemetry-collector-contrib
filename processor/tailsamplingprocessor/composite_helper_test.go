@@ -50,11 +50,11 @@ func TestCompositeHelper(t *testing.T) {
 
 		expected := sampling.NewComposite(zap.NewNop(), 1000, []sampling.SubPolicyEvalParams{
 			{
-				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100),
+				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100, 0),
 				MaxSpansPerSecond: 250,
 			},
 			{
-				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 200),
+				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 200, 0),
 				MaxSpansPerSecond: 500,
 			},
 		}, sampling.MonotonicClock{})

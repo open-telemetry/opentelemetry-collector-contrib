@@ -38,7 +38,7 @@ var (
 	seed = maphash.MakeSeed()
 
 	hashPool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			var hash maphash.Hash
 			hash.SetSeed(seed)
 			return &hash
@@ -51,7 +51,7 @@ var (
 type eventType int
 type event struct {
 	typ     eventType
-	payload interface{}
+	payload any
 }
 
 type tracesWithID struct {
