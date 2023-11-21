@@ -91,7 +91,7 @@ Add a value to the body using an expression
   "attributes": { },
   "body": {
     "key1": "val1",
-    "key2": "val_suffix"
+    "key2": "val1_suffix"
   }
 }
 ```
