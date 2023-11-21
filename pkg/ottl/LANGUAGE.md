@@ -2,6 +2,12 @@
 
 The OTTL grammar includes function invocations, Values and Boolean Expressions. These parts all fit into a Statement, which is the basis of execution in the OTTL.
 
+### Design principles
+
+The OTTL and built-in [ottlfuncs](//github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs) are designed according to these principles:
+- OTTL programs operating in separate contexts cannot influence one another -- an OTTL program may have side-effects only within its own execution [context](#contexts).
+- OTTL programs cannot loop forever, except through the use of non built-in functions.
+
 ### Editors
 
 Editors are functions that transform the underlying telemetry payload. They may return a value, but typically do not. There must be a single Editor Invocation in each OTTL statement.
