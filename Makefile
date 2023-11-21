@@ -146,7 +146,7 @@ DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: gendependabot
 gendependabot:
 	cd cmd/githubgen && $(GOCMD) install .
-	githubgen -dependabot
+	githubgen dependabot
 
 
 # Define a delegation target for each module
@@ -398,10 +398,5 @@ genconfigdocs:
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
-	for FILE in bug_report feature_request other; do \
-		YAML_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml"; \
-		TMP_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml.tmp"; \
-		cat "$${YAML_FILE}" > "$${TMP_FILE}"; \
-	 	FILE="$${TMP_FILE}" ./.github/workflows/scripts/add-component-options.sh > "$${YAML_FILE}"; \
-		rm "$${TMP_FILE}"; \
-	done
+	cd cmd/githubgen && $(GOCMD) install .
+	githubgen issue-templates
