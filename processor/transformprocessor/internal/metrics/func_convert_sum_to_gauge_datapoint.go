@@ -9,19 +9,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func newConvertSumToGaugeFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("convert_sum_to_gauge", nil, createConvertSumToGaugeFunction)
+func newConvertDatapointSumToGaugeFactory() ottl.Factory[ottldatapoint.TransformContext] {
+	return ottl.NewFactory("convert_sum_to_gauge", nil, createDatapointConvertSumToGaugeFunction)
 }
 
-func createConvertSumToGaugeFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	return convertSumToGauge()
+func createDatapointConvertSumToGaugeFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	return convertDatapointSumToGauge()
 }
 
-func convertSumToGauge() (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+func convertDatapointSumToGauge() (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSum {
 			return nil, nil
