@@ -170,6 +170,8 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	return 0, nil // never return errors, as that fails the whole scrape
 }
 
+// getOrCreateMetricFamily returns the metric family for the given metric name and scope,
+// and true if an existing family was found.
 func (t *transaction) getOrCreateMetricFamily(scope scopeID, mn string) (*metricFamily, bool) {
 	_, ok := t.families[scope]
 	if !ok {

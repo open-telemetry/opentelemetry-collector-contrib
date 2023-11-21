@@ -159,7 +159,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	mg.setExemplars(point.Exemplars())
 }
 
-// toExponentialHistogramDataPoints is base on
+// toExponentialHistogramDataPoints is based on
 // https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#exponential-histograms
 func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.ExponentialHistogramDataPointSlice) {
 	if !mg.hasCount {
