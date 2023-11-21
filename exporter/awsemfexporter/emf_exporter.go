@@ -91,7 +91,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 			})
 		}
 	}
-	emf.config.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
+	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
 
 	groupedMetrics := make(map[any]*groupedMetric)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
@@ -142,7 +142,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		}
 	}
 
-	emf.config.logger.Info("Finish processing resource metrics", zap.Any("labels", labels))
+	emf.config.logger.Debug("Finish processing resource metrics", zap.Any("labels", labels))
 
 	return nil
 }

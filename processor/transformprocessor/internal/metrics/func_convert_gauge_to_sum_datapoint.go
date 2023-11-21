@@ -10,29 +10,25 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-type convertGaugeToSumArguments struct {
-	StringAggTemp string
-	Monotonic     bool
+func newConvertDatapointGaugeToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
+	return ottl.NewFactory("convert_gauge_to_sum", &convertGaugeToSumArguments{}, createConvertDatapointGaugeToSumFunction)
 }
 
-func newConvertGaugeToSumFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("convert_gauge_to_sum", &convertGaugeToSumArguments{}, createConvertGaugeToSumFunction)
-}
-
-func createConvertGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createConvertDatapointGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	// use the same args as in metric context
 	args, ok := oArgs.(*convertGaugeToSumArguments)
 
 	if !ok {
 		return nil, fmt.Errorf("ConvertGaugeToSumFactory args must be of type *ConvertGaugeToSumArguments")
 	}
 
-	return convertGaugeToSum(args.StringAggTemp, args.Monotonic)
+	return convertDatapointGaugeToSum(args.StringAggTemp, args.Monotonic)
 }
 
-func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func convertDatapointGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -43,7 +39,7 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottl
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeGauge {
 			return nil, nil
