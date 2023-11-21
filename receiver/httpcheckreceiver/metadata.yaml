@@ -28,7 +28,7 @@ attributes:
     description: Error message recorded during check
     type: string
   name:
-    description: HTTP response body exact matches string
+    description: Optional name of this check.
     type: string
 
 metrics:

@@ -81,4 +81,4 @@ Reports 1 if the HTTP response body exact matches the `body` configuration item,
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | http.url | Full HTTP request URL. | Any Str |
-| name | HTTP response body exact matches string | Any Str |
+| name | Optional name of this check. | Any Str |
