@@ -410,6 +410,14 @@ processors:
     override: false
 ```
 
+#### Cluster Name
+
+Azure AKS cluster name is derived from the Azure Instance Metadata Service's (IMDS) infrastructure resource group field. This field contains the resource group and name of the cluster, separated by underscores. e.g: `MC_<resource group>_<cluster name>_<location>`.
+
+The cluster name is accurately detected if underscores are not present in the resource group name or the cluster name.
+
+If accurate parsing cannot be performed, the infrastructure resource group value is returned. This value can be used to accurately identify the cluster, as Azure will not allow users to create multiple clusters with the same infrastructure resource group.
+
 ### Consul
 
 Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve the following resource attributes:
