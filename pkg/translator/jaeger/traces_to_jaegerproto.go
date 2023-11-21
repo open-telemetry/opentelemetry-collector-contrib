@@ -384,7 +384,7 @@ func getTagsFromInstrumentationScope(il pcommon.InstrumentationScope) ([]model.K
 	var keyValues []model.KeyValue
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
-			Key:   conventions.OtelScopeName,
+			Key:   conventions.AttributeOtelScopeName,
 			VStr:  ilName,
 			VType: model.ValueType_STRING,
 		}
@@ -392,7 +392,7 @@ func getTagsFromInstrumentationScope(il pcommon.InstrumentationScope) ([]model.K
 	}
 	if ilVersion := il.Version(); ilVersion != "" {
 		kv := model.KeyValue{
-			Key:   conventions.OtelScopeVersion,
+			Key:   conventions.AttributeOtelScopeVersion,
 			VStr:  ilVersion,
 			VType: model.ValueType_STRING,
 		}
