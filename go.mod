@@ -3,6 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.20
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.89.0
@@ -164,6 +170,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.89.0
+	go.opentelemetry.io/collector/connector v0.89.0
+	go.opentelemetry.io/collector/connector/forwardconnector v0.89.0
 	go.opentelemetry.io/collector/exporter v0.89.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.89.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.89.0
@@ -630,7 +638,6 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.89.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.89.0 // indirect
-	go.opentelemetry.io/collector/connector v0.89.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.89.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.89.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
@@ -1136,3 +1143,12 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azure
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ./pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ./internal/collectd
+
+replace (
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector => ./connector/countconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector => ./connector/datadogconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector => ./connector/exceptionsconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ./connector/routingconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ./connector/servicegraphconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ./connector/spanmetricsconnector
+)
