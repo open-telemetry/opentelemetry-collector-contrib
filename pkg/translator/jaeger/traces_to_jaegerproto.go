@@ -9,7 +9,7 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -169,7 +169,7 @@ func getJaegerProtoSpanTags(span ptrace.Span, scope pcommon.InstrumentationScope
 	var spanKindTag, statusCodeTag, errorTag, statusMsgTag model.KeyValue
 	var spanKindTagFound, statusCodeTagFound, errorTagFound, statusMsgTagFound bool
 
-	libraryTags, libraryTagsFound := getTagsFromInstrumentationLibrary(scope)
+	libraryTags, libraryTagsFound := getTagsFromInstrumentationScope(scope)
 
 	tagsCount := span.Attributes().Len() + len(libraryTags)
 
@@ -380,11 +380,11 @@ func getTagsFromTraceState(traceState string) ([]model.KeyValue, bool) {
 	return keyValues, exists
 }
 
-func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model.KeyValue, bool) {
+func getTagsFromInstrumentationScope(il pcommon.InstrumentationScope) ([]model.KeyValue, bool) {
 	var keyValues []model.KeyValue
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
-			Key:   conventions.OtelLibraryName,
+			Key:   conventions.OtelScopeName,
 			VStr:  ilName,
 			VType: model.ValueType_STRING,
 		}
@@ -392,7 +392,7 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 	}
 	if ilVersion := il.Version(); ilVersion != "" {
 		kv := model.KeyValue{
-			Key:   conventions.OtelLibraryVersion,
+			Key:   conventions.OtelScopeVersion,
 			VStr:  ilVersion,
 			VType: model.ValueType_STRING,
 		}
