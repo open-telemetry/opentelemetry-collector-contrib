@@ -472,3 +472,62 @@ func TestStaleExponentialHistogram(t *testing.T) {
 		c.EnableProtobufNegotiation = true
 	})
 }
+
+func TestFloatCounterHistogram(t *testing.T) {
+	nativeHistogram := &dto.MetricFamily{
+		Name: "test_native_histogram",
+		Type: dto.MetricType_HISTOGRAM,
+		Metric: []dto.Metric{
+			{
+				Histogram: &dto.Histogram{
+					SampleCountFloat: 1213.0,
+					SampleSum:        456,
+					// Float counter histogram definition
+					Schema:         3,
+					ZeroThreshold:  0.001,
+					ZeroCountFloat: 2.0,
+					NegativeSpan: []dto.BucketSpan{
+						{Offset: 0, Length: 1},
+						{Offset: 1, Length: 1},
+					},
+					NegativeCount: []float64{1.5, 2.5},
+					PositiveSpan: []dto.BucketSpan{
+						{Offset: -2, Length: 1},
+						{Offset: 2, Length: 1},
+					},
+					PositiveCount: []float64{1.0, 3.0},
+				},
+			},
+		},
+	}
+	buffer := prometheusMetricFamilyToProtoBuf(t, nil, nativeHistogram)
+
+	expectations1 := []testExpectation{
+		assertMetricPresent(
+			"test_native_histogram",
+			compareMetricType(pmetric.MetricTypeExponentialHistogram),
+			compareMetricUnit(""),
+			[]dataPointExpectation{{
+				exponentialHistogramComparator: []exponentialHistogramComparator{
+					compareExponentialHistogram(1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 3}),
+				},
+			}},
+		),
+	}
+
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, useProtoBuf: true, buf: buffer.Bytes()},
+			},
+			validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
+				verifyNumValidScrapeResults(t, td, result)
+				doCompare(t, "target1", td.attributes, result[0], expectations1)
+			},
+		},
+	}
+	testComponent(t, targets, func(c *Config) {
+		c.EnableProtobufNegotiation = true
+	})
+}

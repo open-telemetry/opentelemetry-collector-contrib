@@ -431,13 +431,21 @@ func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricNa
 	if mg.mtype != pmetric.MetricTypeExponentialHistogram {
 		return fmt.Errorf("metric type mismatch for exponential histogram metric %v type %s", metricName, mg.mtype.String())
 	}
-	if h != nil {
+	switch {
+	case fh != nil:
+		mg.count = fh.Count
+		mg.sum = fh.Sum
+		mg.hasCount = true
+		mg.hasSum = true
+		mg.hValue = nil
+		mg.fhValue = fh
+	case h != nil:
 		mg.count = float64(h.Count)
 		mg.sum = h.Sum
 		mg.hasCount = true
 		mg.hasSum = true
 		mg.hValue = h
-		mg.fhValue = fh
+		mg.fhValue = nil
 	}
 	return nil
 }
