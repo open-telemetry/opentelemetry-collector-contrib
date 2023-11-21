@@ -10,10 +10,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func Test_convertGaugeToSum(t *testing.T) {
+func Test_convertDatapointGaugeToSum(t *testing.T) {
 	gaugeInput := pmetric.NewMetric()
 
 	dp1 := gaugeInput.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -115,9 +115,9 @@ func Test_convertGaugeToSum(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
-			exprFunc, _ := convertGaugeToSum(tt.stringAggTemp, tt.monotonic)
+			exprFunc, _ := convertDatapointGaugeToSum(tt.stringAggTemp, tt.monotonic)
 
 			_, err := exprFunc(nil, ctx)
 			assert.Nil(t, err)
@@ -130,7 +130,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 	}
 }
 
-func Test_convertGaugeToSum_validation(t *testing.T) {
+func Test_convertDatapointGaugeToSum_validation(t *testing.T) {
 	tests := []struct {
 		name          string
 		stringAggTemp string
@@ -142,7 +142,7 @@ func Test_convertGaugeToSum_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := convertGaugeToSum(tt.stringAggTemp, true)
+			_, err := convertDatapointGaugeToSum(tt.stringAggTemp, true)
 			assert.Error(t, err, "unknown aggregation temporality: not a real aggregation temporality")
 		})
 	}

@@ -179,6 +179,70 @@ func Scenario10kItemsPerSecond(
 	tc.ValidateData()
 }
 
+// Scenario10kItemsPerSecondAlternateBackend runs 10k data items/sec test using specified sender and receiver protocols.
+// The only difference from Scenario10kItemsPerSecond is that this method can be used to specify a different backend. This
+// is useful when testing components for which there is no exporter that emits the same format as the receiver format.
+func Scenario10kItemsPerSecondAlternateBackend(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	backend testbed.DataReceiver,
+	resourceSpec testbed.ResourceSpec,
+	resultsSummary testbed.TestResultsSummary,
+	processors map[string]string,
+	extensions map[string]string,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	options := testbed.LoadOptions{
+		DataItemsPerSecond: 10_000,
+		ItemsPerBatch:      100,
+		Parallel:           1,
+	}
+	agentProc := testbed.NewChildProcessCollector()
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
+	fmt.Println(configStr)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+
+	dataProvider := testbed.NewPerfTestDataProvider(options)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.PerfTestValidator{},
+		resultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
+	)
+	defer tc.Stop()
+
+	// for some scenarios, the mockbackend isn't the same as the receiver
+	// therefore, the backend must be initialized with the correct receiver
+	tc.MockBackend = testbed.NewMockBackend(tc.ComposeTestResultFileName("backend.log"), backend)
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(options)
+
+	tc.Sleep(tc.Duration)
+
+	tc.StopLoad()
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+		"all data items received")
+
+	tc.StopAgent()
+
+	tc.ValidateData()
+}
+
 // TestCase for Scenario1kSPSWithAttrs func.
 type TestCase struct {
 	attrCount      int
