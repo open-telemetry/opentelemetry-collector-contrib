@@ -172,11 +172,12 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 	switch {
 	case mg.fhValue != nil:
 		fh := mg.fhValue
-		point.SetScale(fh.Schema)
+
 		if value.IsStaleNaN(fh.Sum) {
 			point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 			// The count and sum are initialized to 0, so we don't need to set them.
 		} else {
+			point.SetScale(fh.Schema)
 			// Input is a float native histogram. This conversion will lose
 			// precision,but we don't actually expect float histograms in scrape,
 			// since these are typically the result of operations on integer
