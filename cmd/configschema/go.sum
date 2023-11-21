@@ -233,8 +233,9 @@ github.com/ReneKroon/ttlcache/v2 v2.11.0 h1:OvlcYFYi941SBN3v9dsDcC2N8vRxyHcCmJb3
 github.com/ReneKroon/ttlcache/v2 v2.11.0/go.mod h1:mBxvsNY+BT8qLLd6CuAJubbKo6r0jh3nb5et22bbfGY=
 github.com/SAP/go-hdb v1.5.10 h1:xK6feDCBxpT0UTYc8z4amGJMVsFfNFIbOfEj53grhPc=
 github.com/SAP/go-hdb v1.5.10/go.mod h1:Vcp8cnLTb3oVRdm3tulcrs6ain/g2gSvuTZ1t4EDQFU=
-github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 h1:koK7z0nSsRiRiBWwa+E714Puh+DO+ZRdIyAXiXzL+lg=
 github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F3poXOp/fA=
+github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc h1:MhBvG7RLaLqlyjxMR6of35vt6MVQ+eXMcgn9X/sy0FE=
+github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F3poXOp/fA=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
 github.com/Showmax/go-fqdn v1.0.0 h1:0rG5IbmVliNT5O19Mfuvna9LL7zlHyRfsSvBPZmF9tM=
