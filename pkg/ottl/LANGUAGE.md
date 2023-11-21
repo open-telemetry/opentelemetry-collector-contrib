@@ -4,7 +4,7 @@ The OTTL grammar includes function invocations, Values and Boolean Expressions. 
 
 ### Design principles
 
-The OTTL and built-in [ottlfuncs](//github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs) are designed according to these principles:
+The OTTL and built-in [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs) are designed according to these principles:
 - OTTL programs operating in separate contexts cannot influence one another -- an OTTL program may have side-effects only within its own execution [context](#contexts).
 - OTTL programs cannot loop forever, except through the use of non built-in functions.
 
