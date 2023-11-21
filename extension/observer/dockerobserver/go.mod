@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/docker/docker v24.0.7+incompatible
-	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
+	github.com/docker/go-connections v0.4.1-0.20231110212414-fa09c952e3ea
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.89.0
