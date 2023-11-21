@@ -114,6 +114,7 @@ func spanToEnvelopes(
 	applyResourcesToDataProperties(dataProperties, resourceAttributes)
 	applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
 	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+	applyInternalSdkVersionTagToEnvelope(envelope)
 
 	// Sanitize the base data, the envelope and envelope tags
 	sanitize(dataSanitizeFunc, logger)
@@ -158,6 +159,7 @@ func spanToEnvelopes(
 		applyResourcesToDataProperties(dataProperties, resourceAttributes)
 		applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
 		applyCloudTagsToEnvelope(spanEventEnvelope, resourceAttributes)
+		applyInternalSdkVersionTagToEnvelope(envelope)
 
 		// Sanitize the base data, the envelope and envelope tags
 		sanitize(dataSanitizeFunc, logger)

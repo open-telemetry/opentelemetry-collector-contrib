@@ -47,7 +47,7 @@ func TestMetricRenaming(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -90,7 +90,7 @@ func TestMetricRenamingKeepAction(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -232,7 +232,7 @@ func TestLabelRenaming(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -362,7 +362,7 @@ func TestLabelRenamingKeepAction(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{

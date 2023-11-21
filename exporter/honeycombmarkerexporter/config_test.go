@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter/internal/metadata"
 )
@@ -26,19 +27,14 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName("honeycomb", ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				APIKey: "test-apikey",
-				APIURL: "https://api.testhost.io",
+				APIURL: "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
-						Type:         "fooType",
-						MessageField: "test message",
-						URLField:     "https://api.testhost.io",
+						Type: "fooType",
 						Rules: Rules{
-							ResourceConditions: []string{
-								`IsMatch(attributes["test"], ".*")`,
-							},
 							LogConditions: []string{
 								`body == "test"`,
 							},
@@ -48,23 +44,23 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("honeycomb", "color_no_type"),
+			id: component.NewIDWithName(metadata.Type, "all_fields"),
 			expected: &Config{
-				APIKey: "test-apikey",
-				APIURL: "https://api.testhost.io",
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				APIKey:        "test-apikey",
+				APIURL:        "https://api.testhost.io",
 				Markers: []Marker{
 					{
-						Color:        "green",
-						MessageField: "test message",
-						URLField:     "https://api.testhost.io",
+						Type:       "fooType",
+						MessageKey: "test message",
+						URLKey:     "https://api.testhost.io",
 						Rules: Rules{
-							ResourceConditions: []string{
-								`IsMatch(attributes["test"], ".*")`,
-							},
 							LogConditions: []string{
 								`body == "test"`,
 							},
 						},
+						DatasetSlug: "testing",
 					},
 				},
 			},
