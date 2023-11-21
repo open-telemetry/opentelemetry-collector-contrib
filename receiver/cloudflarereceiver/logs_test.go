@@ -53,7 +53,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 				for idx, line := range strings.Split(payload, "\n") {
 					lr := sl.LogRecords().AppendEmpty()
 
-					require.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+					require.NoError(t, lr.Attributes().FromRaw(map[string]any{
 						"http_request.client_ip": fmt.Sprintf("89.163.253.%d", 200+idx),
 					}))
 
@@ -63,7 +63,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 					lr.SetSeverityNumber(plog.SeverityNumberInfo)
 					lr.SetSeverityText(plog.SeverityNumberInfo.String())
 
-					var log map[string]interface{}
+					var log map[string]any
 					err := json.Unmarshal([]byte(line), &log)
 					require.NoError(t, err)
 
@@ -81,7 +81,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 				logs := plog.NewLogs()
 				rl := logs.ResourceLogs().AppendEmpty()
 
-				require.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				require.NoError(t, rl.Resource().Attributes().FromRaw(map[string]any{
 					"cloudflare.zone": "otlpdev.net",
 				}))
 
@@ -89,7 +89,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 				sl.Scope().SetName(receiverScopeName)
 				lr := sl.LogRecords().AppendEmpty()
 
-				require.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+				require.NoError(t, lr.Attributes().FromRaw(map[string]any{
 					"http_request.client_ip": "47.35.104.49",
 				}))
 
@@ -99,7 +99,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 				lr.SetSeverityNumber(plog.SeverityNumberWarn)
 				lr.SetSeverityText(plog.SeverityNumberWarn.String())
 
-				var log map[string]interface{}
+				var log map[string]any
 				err := json.Unmarshal([]byte(payload), &log)
 				require.NoError(t, err)
 
@@ -143,7 +143,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 }
 
 func payloadToExpectedBody(t *testing.T, payload string, lr plog.LogRecord) {
-	var body map[string]interface{}
+	var body map[string]any
 	err := json.Unmarshal([]byte(payload), &body)
 	require.NoError(t, err)
 	require.NoError(t, lr.Body().SetEmptyMap().FromRaw(body))

@@ -5,6 +5,7 @@ package ottl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -1088,43 +1088,189 @@ func Test_parse(t *testing.T) {
 	}
 }
 
-func testParsePath(val *Path) (GetSetter[interface{}], error) {
+func Test_parseCondition_full(t *testing.T) {
+	tests := []struct {
+		name      string
+		condition string
+		expected  *booleanExpression
+	}{
+		{
+			name:      "where == clause",
+			condition: `name == "fido"`,
+			expected: &booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Comparison: &comparison{
+							Left: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+							},
+							Op: EQ,
+							Right: value{
+								String: ottltest.Strp("fido"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "where != clause",
+			condition: `name != "fido"`,
+			expected: &booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Comparison: &comparison{
+							Left: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+							},
+							Op: NE,
+							Right: value{
+								String: ottltest.Strp("fido"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "Converter math mathExpression",
+			condition: `1 + 1 * 2 == three / One()`,
+			expected: &booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Comparison: &comparison{
+							Left: value{
+								MathExpression: &mathExpression{
+									Left: &addSubTerm{
+										Left: &mathValue{
+											Literal: &mathExprLiteral{
+												Int: ottltest.Intp(1),
+											},
+										},
+									},
+									Right: []*opAddSubTerm{
+										{
+											Operator: ADD,
+											Term: &addSubTerm{
+												Left: &mathValue{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(1),
+													},
+												},
+												Right: []*opMultDivValue{
+													{
+														Operator: MULT,
+														Value: &mathValue{
+															Literal: &mathExprLiteral{
+																Int: ottltest.Intp(2),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Op: EQ,
+							Right: value{
+								MathExpression: &mathExpression{
+									Left: &addSubTerm{
+										Left: &mathValue{
+											Literal: &mathExprLiteral{
+												Path: &Path{
+													Fields: []Field{
+														{
+															Name: "three",
+														},
+													},
+												},
+											},
+										},
+										Right: []*opMultDivValue{
+											{
+												Operator: DIV,
+												Value: &mathValue{
+													Literal: &mathExprLiteral{
+														Converter: &converter{
+															Function: "One",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.condition, func(t *testing.T) {
+			parsed, err := parseCondition(tt.condition)
+			assert.NoError(t, err)
+			assert.EqualValues(t, tt.expected, parsed)
+		})
+	}
+}
+
+func testParsePath(val *Path) (GetSetter[any], error) {
 	if val != nil && len(val.Fields) > 0 && (val.Fields[0].Name == "name" || val.Fields[0].Name == "attributes") {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+		return &StandardGetSetter[any]{
+			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				return tCtx, nil
 			},
-			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
 				return nil
 			},
 		}, nil
 	}
 	if val.Fields[0].Name == "dur1" || val.Fields[0].Name == "dur2" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+		return &StandardGetSetter[any]{
+			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Duration)
 				if !ok {
 					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
 				}
 				return m[val.Fields[0].Name], nil
 			},
-			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
 				return nil
 			},
 		}, nil
 	}
 	if val.Fields[0].Name == "time1" || val.Fields[0].Name == "time2" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+		return &StandardGetSetter[any]{
+			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Time)
 				if !ok {
 					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
 				}
 				return m[val.Fields[0].Name], nil
 			},
-			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
 				return nil
 			},
@@ -1640,15 +1786,49 @@ func Test_ParseStatements_Error(t *testing.T) {
 	)
 
 	_, err := p.ParseStatements(statements)
+	assert.Error(t, err)
+
+	var e interface{ Unwrap() []error }
+	if errors.As(err, &e) {
+		uw := e.Unwrap()
+		assert.Len(t, uw, len(statements), "ParseStatements didn't return an error per statement")
+
+		for i, statementErr := range uw {
+			assert.ErrorContains(t, statementErr, fmt.Sprintf("unable to parse OTTL statement %q", statements[i]))
+		}
+	} else {
+		assert.Fail(t, "ParseStatements didn't return an error per statement")
+	}
+}
+
+func Test_ParseConditions_Error(t *testing.T) {
+	conditions := []string{
+		`True(`,
+		`"foo == "foo"`,
+		`set()`,
+	}
+
+	p, _ := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath,
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	_, err := p.ParseConditions(conditions)
 
 	assert.Error(t, err)
 
-	multiErrs := multierr.Errors(err)
+	var e interface{ Unwrap() []error }
+	if errors.As(err, &e) {
+		uw := e.Unwrap()
+		assert.Len(t, uw, len(conditions), "ParseConditions didn't return an error per condition")
 
-	assert.Len(t, multiErrs, len(statements), "ParseStatements didn't return an error per statement")
-
-	for i, statementErr := range multiErrs {
-		assert.ErrorContains(t, statementErr, fmt.Sprintf("unable to parse OTTL statement %q", statements[i]))
+		for i, conditionErr := range uw {
+			assert.ErrorContains(t, conditionErr, fmt.Sprintf("unable to parse OTTL condition %q", conditions[i]))
+		}
+	} else {
+		assert.Fail(t, "ParseConditions didn't return an error per condition")
 	}
 }
 
@@ -1724,18 +1904,77 @@ func Test_parseStatement(t *testing.T) {
 	}
 }
 
-func Test_Execute(t *testing.T) {
+// This test doesn't validate parser results, simply checks whether the parse succeeds or not.
+// It's a fast way to check a large range of possible syntaxes.
+func Test_parseCondition(t *testing.T) {
+	tests := []struct {
+		condition string
+		wantErr   bool
+	}{
+		{`set(`, true},
+		{`set("foo)`, true},
+		{`set(name.)`, true},
+		{`("foo")`, true},
+		{`name =||= "fido"`, true},
+		{`name = "fido"`, true},
+		{`name or "fido"`, true},
+		{`name and "fido"`, true},
+		{`name and`, true},
+		{`name or`, true},
+		{`(`, true},
+		{`)`, true},
+		{`(name == "fido"))`, true},
+		{`((name == "fido")`, true},
+		{`set()`, true},
+		{`Int() == 1`, false},
+		{`1 == Int()`, false},
+		{`true and 1 == Int() `, false},
+		{`false or 1 == Int() `, false},
+		{`service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`animal > "cat"`, false},
+		{`animal >= "cat"`, false},
+		{`animal <= "cat"`, false},
+		{`animal < "cat"`, false},
+		{`animal =< "dog"`, true},
+		{`animal => "dog"`, true},
+		{`animal <> "dog"`, true},
+		{`animal = "dog"`, true},
+		{`animal`, true},
+		{`animal ==`, true},
+		{`==`, true},
+		{`== animal`, true},
+		{`attributes["path"] == "/healthcheck"`, false},
+		{`One() == 1`, false},
+		{`test(fail())`, true},
+		{`Test()`, false},
+	}
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
+	for _, tt := range tests {
+		name := pat.ReplaceAllString(tt.condition, "_")
+		t.Run(name, func(t *testing.T) {
+			ast, err := parseCondition(tt.condition)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseCondition(%s) error = %v, wantErr %v", tt.condition, err, tt.wantErr)
+				t.Errorf("AST: %+v", ast)
+				return
+			}
+		})
+	}
+}
+
+func Test_Statement_Execute(t *testing.T) {
 	tests := []struct {
 		name              string
-		condition         boolExpressionEvaluator[interface{}]
-		function          ExprFunc[interface{}]
+		condition         boolExpressionEvaluator[any]
+		function          ExprFunc[any]
 		expectedCondition bool
-		expectedResult    interface{}
+		expectedResult    any
 	}{
 		{
 			name:      "Condition matched",
-			condition: alwaysTrue[interface{}],
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			condition: alwaysTrue[any],
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, nil
 			},
 			expectedCondition: true,
@@ -1743,8 +1982,8 @@ func Test_Execute(t *testing.T) {
 		},
 		{
 			name:      "Condition not matched",
-			condition: alwaysFalse[interface{}],
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			condition: alwaysFalse[any],
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, nil
 			},
 			expectedCondition: false,
@@ -1752,8 +1991,8 @@ func Test_Execute(t *testing.T) {
 		},
 		{
 			name:      "No result",
-			condition: alwaysTrue[interface{}],
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			condition: alwaysTrue[any],
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return nil, nil
 			},
 			expectedCondition: true,
@@ -1762,7 +2001,7 @@ func Test_Execute(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statement := Statement[interface{}]{
+			statement := Statement[any]{
 				condition: BoolExpr[any]{tt.condition},
 				function:  Expr[any]{exprFunc: tt.function},
 			}
@@ -1775,49 +2014,79 @@ func Test_Execute(t *testing.T) {
 	}
 }
 
+func Test_Condition_Eval(t *testing.T) {
+	tests := []struct {
+		name           string
+		condition      boolExpressionEvaluator[any]
+		expectedResult bool
+	}{
+		{
+			name:           "Condition matched",
+			condition:      alwaysTrue[any],
+			expectedResult: true,
+		},
+		{
+			name:           "Condition not matched",
+			condition:      alwaysFalse[any],
+			expectedResult: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			condition := Condition[any]{
+				condition: BoolExpr[any]{tt.condition},
+			}
+
+			result, err := condition.Eval(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
 func Test_Statements_Execute_Error(t *testing.T) {
 	tests := []struct {
 		name      string
-		condition boolExpressionEvaluator[interface{}]
-		function  ExprFunc[interface{}]
+		condition boolExpressionEvaluator[any]
+		function  ExprFunc[any]
 		errorMode ErrorMode
 	}{
 		{
 			name: "IgnoreError error from condition",
-			condition: func(context.Context, interface{}) (bool, error) {
+			condition: func(context.Context, any) (bool, error) {
 				return true, fmt.Errorf("test")
 			},
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, nil
 			},
 			errorMode: IgnoreError,
 		},
 		{
 			name: "PropagateError error from condition",
-			condition: func(context.Context, interface{}) (bool, error) {
+			condition: func(context.Context, any) (bool, error) {
 				return true, fmt.Errorf("test")
 			},
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, nil
 			},
 			errorMode: PropagateError,
 		},
 		{
 			name: "IgnoreError error from function",
-			condition: func(context.Context, interface{}) (bool, error) {
+			condition: func(context.Context, any) (bool, error) {
 				return true, nil
 			},
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: IgnoreError,
 		},
 		{
 			name: "PropagateError error from function",
-			condition: func(context.Context, interface{}) (bool, error) {
+			condition: func(context.Context, any) (bool, error) {
 				return true, nil
 			},
-			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			function: func(ctx context.Context, tCtx any) (any, error) {
 				return 1, fmt.Errorf("test")
 			},
 			errorMode: PropagateError,
@@ -1825,8 +2094,8 @@ func Test_Statements_Execute_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statements := Statements[interface{}]{
-				statements: []*Statement[interface{}]{
+			statements := Statements[any]{
+				statements: []*Statement[any]{
 					{
 						condition: BoolExpr[any]{tt.condition},
 						function:  Expr[any]{exprFunc: tt.function},
@@ -1849,46 +2118,46 @@ func Test_Statements_Execute_Error(t *testing.T) {
 func Test_Statements_Eval(t *testing.T) {
 	tests := []struct {
 		name           string
-		conditions     []boolExpressionEvaluator[interface{}]
-		function       ExprFunc[interface{}]
+		conditions     []boolExpressionEvaluator[any]
+		function       ExprFunc[any]
 		errorMode      ErrorMode
 		expectedResult bool
 	}{
 		{
 			name: "True",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				alwaysTrue[interface{}],
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
 			expectedResult: true,
 		},
 		{
 			name: "At least one True",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				alwaysFalse[interface{}],
-				alwaysFalse[interface{}],
-				alwaysTrue[interface{}],
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				alwaysFalse[any],
+				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
 			expectedResult: true,
 		},
 		{
 			name: "False",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				alwaysFalse[interface{}],
-				alwaysFalse[interface{}],
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				alwaysFalse[any],
 			},
 			errorMode:      IgnoreError,
 			expectedResult: false,
 		},
 		{
 			name: "Error is false when using Ignore",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				alwaysFalse[interface{}],
-				func(context.Context, interface{}) (bool, error) {
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				func(context.Context, any) (bool, error) {
 					return true, fmt.Errorf("test")
 				},
-				alwaysTrue[interface{}],
+				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
 			expectedResult: true,
@@ -1896,19 +2165,19 @@ func Test_Statements_Eval(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[interface{}]
+			var rawStatements []*Statement[any]
 			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[interface{}]{
+				rawStatements = append(rawStatements, &Statement[any]{
 					condition: BoolExpr[any]{condition},
 					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
 							return nil, fmt.Errorf("function should not be called")
 						},
 					},
 				})
 			}
 
-			statements := Statements[interface{}]{
+			statements := Statements[any]{
 				statements:        rawStatements,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,
@@ -1924,14 +2193,14 @@ func Test_Statements_Eval(t *testing.T) {
 func Test_Statements_Eval_Error(t *testing.T) {
 	tests := []struct {
 		name       string
-		conditions []boolExpressionEvaluator[interface{}]
-		function   ExprFunc[interface{}]
+		conditions []boolExpressionEvaluator[any]
+		function   ExprFunc[any]
 		errorMode  ErrorMode
 	}{
 		{
 			name: "Propagate Error from function",
-			conditions: []boolExpressionEvaluator[interface{}]{
-				func(context.Context, interface{}) (bool, error) {
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
 					return true, fmt.Errorf("test")
 				},
 			},
@@ -1940,19 +2209,19 @@ func Test_Statements_Eval_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[interface{}]
+			var rawStatements []*Statement[any]
 			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[interface{}]{
+				rawStatements = append(rawStatements, &Statement[any]{
 					condition: BoolExpr[any]{condition},
 					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
 							return nil, fmt.Errorf("function should not be called")
 						},
 					},
 				})
 			}
 
-			statements := Statements[interface{}]{
+			statements := Statements[any]{
 				statements:        rawStatements,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,

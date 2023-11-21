@@ -146,7 +146,7 @@ DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: gendependabot
 gendependabot:
 	cd cmd/githubgen && $(GOCMD) install .
-	githubgen -dependabot
+	githubgen dependabot
 
 
 # Define a delegation target for each module
@@ -289,14 +289,11 @@ telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
-.PHONY: update-dep
-update-dep:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="updatedep"
-	$(MAKE) otelcontribcol
-
 .PHONY: update-otel
-update-otel:
-	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION) RC_VERSION=$(OTEL_RC_VERSION) STABLE_VERSION=$(OTEL_STABLE_VERSION)
+update-otel:$(MULTIMOD)
+	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
+	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
+	$(MAKE) gotidy
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -401,10 +398,5 @@ genconfigdocs:
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
-	for FILE in bug_report feature_request other; do \
-		YAML_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml"; \
-		TMP_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml.tmp"; \
-		cat "$${YAML_FILE}" > "$${TMP_FILE}"; \
-	 	FILE="$${TMP_FILE}" ./.github/workflows/scripts/add-component-options.sh > "$${YAML_FILE}"; \
-		rm "$${TMP_FILE}"; \
-	done
+	cd cmd/githubgen && $(GOCMD) install .
+	githubgen issue-templates

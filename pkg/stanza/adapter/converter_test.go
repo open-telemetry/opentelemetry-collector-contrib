@@ -50,32 +50,32 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	for i := 0; i < count; i++ {
 		e := entry.New()
 		e.Severity = entry.Error
-		e.Resource = map[string]interface{}{
+		e.Resource = map[string]any{
 			"host":   fmt.Sprintf("host-%d", i%n),
 			"bool":   true,
 			"int":    123,
 			"double": 12.34,
 			"string": "hello",
-			"object": map[string]interface{}{
+			"object": map[string]any{
 				"bool":   true,
 				"int":    123,
 				"double": 12.34,
 				"string": "hello",
 			},
 		}
-		e.Body = map[string]interface{}{
+		e.Body = map[string]any{
 			"bool":   true,
 			"int":    123,
 			"double": 12.34,
 			"string": "hello",
 			"bytes":  []byte("asdf"),
-			"object": map[string]interface{}{
+			"object": map[string]any{
 				"bool":   true,
 				"int":    123,
 				"double": 12.34,
 				"string": "hello",
 				"bytes":  []byte("asdf"),
-				"object": map[string]interface{}{
+				"object": map[string]any{
 					"bool":   true,
 					"int":    123,
 					"double": 12.34,
@@ -92,43 +92,43 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 func complexEntry() *entry.Entry {
 	e := entry.New()
 	e.Severity = entry.Error
-	e.Resource = map[string]interface{}{
+	e.Resource = map[string]any{
 		"bool":   true,
 		"int":    123,
 		"double": 12.34,
 		"string": "hello",
-		"object": map[string]interface{}{
+		"object": map[string]any{
 			"bool":   true,
 			"int":    123,
 			"double": 12.34,
 			"string": "hello",
 		},
 	}
-	e.Attributes = map[string]interface{}{
+	e.Attributes = map[string]any{
 		"bool":   true,
 		"int":    123,
 		"double": 12.34,
 		"string": "hello",
-		"object": map[string]interface{}{
+		"object": map[string]any{
 			"bool":   true,
 			"int":    123,
 			"double": 12.34,
 			"string": "hello",
 		},
 	}
-	e.Body = map[string]interface{}{
+	e.Body = map[string]any{
 		"bool":   true,
 		"int":    123,
 		"double": 12.34,
 		"string": "hello",
 		// "bytes":  []byte("asdf"),
-		"object": map[string]interface{}{
+		"object": map[string]any{
 			"bool":   true,
 			"int":    123,
 			"double": 12.34,
 			"string": "hello",
 			// "bytes":  []byte("asdf"),
-			"object": map[string]interface{}{
+			"object": map[string]any{
 				"bool": true,
 				"int":  123,
 				// "double": 12.34,
@@ -143,17 +143,17 @@ func complexEntry() *entry.Entry {
 func TestHashResource(t *testing.T) {
 	testcases := []struct {
 		name     string
-		baseline map[string]interface{}
-		same     []map[string]interface{}
-		diff     []map[string]interface{}
+		baseline map[string]any
+		same     []map[string]any
+		diff     []map[string]any
 	}{
 		{
 			name:     "empty",
-			baseline: map[string]interface{}{},
-			same: []map[string]interface{}{
+			baseline: map[string]any{},
+			same: []map[string]any{
 				{},
 			},
-			diff: []map[string]interface{}{
+			diff: []map[string]any{
 				{
 					"a": "b",
 				},
@@ -164,15 +164,15 @@ func TestHashResource(t *testing.T) {
 		},
 		{
 			name: "single_string",
-			baseline: map[string]interface{}{
+			baseline: map[string]any{
 				"one": "two",
 			},
-			same: []map[string]interface{}{
+			same: []map[string]any{
 				{
 					"one": "two",
 				},
 			},
-			diff: []map[string]interface{}{
+			diff: []map[string]any{
 				{
 					"a": "b",
 				},
@@ -187,11 +187,11 @@ func TestHashResource(t *testing.T) {
 		},
 		{
 			name: "multi_string",
-			baseline: map[string]interface{}{
+			baseline: map[string]any{
 				"one": "two",
 				"a":   "b",
 			},
-			same: []map[string]interface{}{
+			same: []map[string]any{
 				{
 					"one": "two",
 					"a":   "b",
@@ -201,7 +201,7 @@ func TestHashResource(t *testing.T) {
 					"one": "two",
 				},
 			},
-			diff: []map[string]interface{}{
+			diff: []map[string]any{
 				{
 					"a": "b",
 				},
@@ -212,36 +212,36 @@ func TestHashResource(t *testing.T) {
 		},
 		{
 			name: "multi_type",
-			baseline: map[string]interface{}{
+			baseline: map[string]any{
 				"bool":   true,
 				"int":    123,
 				"double": 12.34,
 				"string": "hello",
-				"object": map[string]interface{}{},
+				"object": map[string]any{},
 			},
-			same: []map[string]interface{}{
+			same: []map[string]any{
 				{
 					"bool":   true,
 					"int":    123,
 					"double": 12.34,
 					"string": "hello",
-					"object": map[string]interface{}{},
+					"object": map[string]any{},
 				},
 				{
-					"object": map[string]interface{}{},
+					"object": map[string]any{},
 					"double": 12.34,
 					"int":    123,
 					"bool":   true,
 					"string": "hello",
 				},
 			},
-			diff: []map[string]interface{}{
+			diff: []map[string]any{
 				{
 					"bool":   true,
 					"int":    123,
 					"double": 12.34,
 					"string": "hello",
-					"object": map[string]interface{}{
+					"object": map[string]any{
 						"string": "hello",
 					},
 				},
@@ -249,58 +249,58 @@ func TestHashResource(t *testing.T) {
 		},
 		{
 			name: "nested",
-			baseline: map[string]interface{}{
+			baseline: map[string]any{
 				"bool":   true,
 				"int":    123,
 				"double": 12.34,
 				"string": "hello",
-				"object": map[string]interface{}{
+				"object": map[string]any{
 					"bool":   true,
 					"int":    123,
 					"double": 12.34,
 					"string": "hello",
-					"object": map[string]interface{}{
+					"object": map[string]any{
 						"bool":   true,
 						"int":    123,
 						"double": 12.34,
 						"string": "hello",
-						"object": map[string]interface{}{},
+						"object": map[string]any{},
 					},
 				},
 			},
-			same: []map[string]interface{}{
+			same: []map[string]any{
 				{
 					"bool":   true,
 					"int":    123,
 					"double": 12.34,
 					"string": "hello",
-					"object": map[string]interface{}{
+					"object": map[string]any{
 						"bool":   true,
 						"int":    123,
 						"double": 12.34,
 						"string": "hello",
-						"object": map[string]interface{}{
+						"object": map[string]any{
 							"bool":   true,
 							"int":    123,
 							"double": 12.34,
 							"string": "hello",
-							"object": map[string]interface{}{},
+							"object": map[string]any{},
 						},
 					},
 				},
 			},
-			diff: []map[string]interface{}{
+			diff: []map[string]any{
 				{
 					"bool":   true,
 					"int":    123,
 					"double": 12.34,
 					"string": "hello",
-					"object": map[string]interface{}{
+					"object": map[string]any{
 						"bool":   true,
 						"int":    123,
 						"double": 12.34,
 						"string": "hello",
-						"object": map[string]interface{}{},
+						"object": map[string]any{},
 					},
 				},
 			},
@@ -438,12 +438,12 @@ func TestConvertMetadata(t *testing.T) {
 	e.Timestamp = now
 	e.Severity = entry.Error
 	e.AddResourceKey("type", "global")
-	e.Attributes = map[string]interface{}{
+	e.Attributes = map[string]any{
 		"bool":   true,
 		"int":    123,
 		"double": 12.34,
 		"string": "hello",
-		"object": map[string]interface{}{
+		"object": map[string]any{
 			"bool":   true,
 			"int":    123,
 			"double": 12.34,
@@ -524,7 +524,7 @@ func TestConvertSimpleBody(t *testing.T) {
 }
 
 func TestConvertMapBody(t *testing.T) {
-	structuredBody := map[string]interface{}{
+	structuredBody := map[string]any{
 		"true":    true,
 		"false":   false,
 		"string":  "string",
@@ -569,7 +569,7 @@ func TestConvertMapBody(t *testing.T) {
 }
 
 func TestConvertArrayBody(t *testing.T) {
-	structuredBody := []interface{}{
+	structuredBody := []any{
 		true,
 		false,
 		"string",
@@ -586,8 +586,8 @@ func TestConvertArrayBody(t *testing.T) {
 		uint64(1),
 		float32(1),
 		float64(1),
-		[]interface{}{"string", 1},
-		map[string]interface{}{"one": 1, "yes": true},
+		[]any{"string", 1},
+		map[string]any{"one": 1, "yes": true},
 	}
 
 	result := anyToBody(structuredBody).Slice()
@@ -634,9 +634,9 @@ func TestConvertUnknownBody(t *testing.T) {
 func TestConvertNestedMapBody(t *testing.T) {
 	unknownType := map[string]int{"0": 0, "1": 1}
 
-	structuredBody := map[string]interface{}{
-		"array":   []interface{}{0, 1},
-		"map":     map[string]interface{}{"0": 0, "1": "one"},
+	structuredBody := map[string]any{
+		"array":   []any{0, 1},
+		"map":     map[string]any{"0": 0, "1": "one"},
 		"unknown": unknownType,
 	}
 
@@ -658,7 +658,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("%v", unknownType), unknownAttVal.Str())
 }
 
-func anyToBody(body interface{}) pcommon.Value {
+func anyToBody(body any) pcommon.Value {
 	entry := entry.New()
 	entry.Body = body
 	return convert(entry).Body()
@@ -885,7 +885,7 @@ func BenchmarkGetResourceID(b *testing.B) {
 }
 
 func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
-	res := map[string]interface{}{}
+	res := map[string]any{}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -894,7 +894,7 @@ func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 }
 
 func BenchmarkGetResourceIDSingleResource(b *testing.B) {
-	res := map[string]interface{}{
+	res := map[string]any{
 		"resource": "value",
 	}
 	b.ReportAllocs()
@@ -905,9 +905,9 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 }
 
 func BenchmarkGetResourceIDComplexResource(b *testing.B) {
-	res := map[string]interface{}{
+	res := map[string]any{
 		"resource": "value",
-		"object": map[string]interface{}{
+		"object": map[string]any{
 			"one":   "two",
 			"three": 4,
 		},
@@ -919,8 +919,8 @@ func BenchmarkGetResourceIDComplexResource(b *testing.B) {
 	}
 }
 
-func getResource() map[string]interface{} {
-	return map[string]interface{}{
+func getResource() map[string]any {
+	return map[string]any{
 		"file.name":        "filename.log",
 		"file.directory":   "/some_directory",
 		"host.name":        "localhost",
@@ -954,7 +954,7 @@ func (r resourceIDOutputSlice) Swap(i, j int) {
 func TestGetResourceID(t *testing.T) {
 	testCases := []struct {
 		name  string
-		input map[string]interface{}
+		input map[string]any
 	}{
 		{
 			name:  "Typical Resource",
@@ -962,28 +962,28 @@ func TestGetResourceID(t *testing.T) {
 		},
 		{
 			name: "Empty value/key",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"SomeKey": "",
 				"":        "Ooops",
 			},
 		},
 		{
 			name: "Empty value/key (reversed)",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"":      "SomeKey",
 				"Ooops": "",
 			},
 		},
 		{
 			name: "Ambiguous map 1",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"AB": "CD",
 				"EF": "G",
 			},
 		},
 		{
 			name: "Ambiguous map 2",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"ABC": "DE",
 				"F":   "G",
 			},
@@ -994,7 +994,7 @@ func TestGetResourceID(t *testing.T) {
 		},
 		{
 			name: "Long resource value",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"key": "This is a really long resource value; It's so long that the internal pre-allocated buffer doesn't hold it.",
 			},
 		},
@@ -1019,6 +1019,6 @@ func TestGetResourceID(t *testing.T) {
 
 func TestGetResourceIDEmptyAndNilAreEqual(t *testing.T) {
 	nilID := HashResource(nil)
-	emptyID := HashResource(map[string]interface{}{})
+	emptyID := HashResource(map[string]any{})
 	require.Equal(t, nilID, emptyID)
 }

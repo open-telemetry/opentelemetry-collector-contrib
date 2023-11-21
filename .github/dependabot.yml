@@ -28,6 +28,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/connector/failoverconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/connector/routingconnector"
     schedule:
       interval: "weekly"
@@ -153,6 +158,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/exporter/honeycombmarkerexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/exporter/influxdbexporter"
     schedule:
       interval: "weekly"
@@ -164,11 +174,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/kafkaexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/kineticaexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -199,11 +204,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/opencensusexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/opensearchexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -249,6 +249,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/sumologicexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/syslogexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -504,11 +509,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/prometheusremotewrite"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/pkg/translator/signalfx"
     schedule:
       interval: "weekly"
       day: "wednesday"

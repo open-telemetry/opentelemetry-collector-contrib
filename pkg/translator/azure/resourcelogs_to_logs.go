@@ -59,10 +59,10 @@ type azureLogRecord struct {
 	DurationMs        *json.Number `json:"durationMs"`
 	CallerIPAddress   *string      `json:"callerIpAddress"`
 	CorrelationID     *string      `json:"correlationId"`
-	Identity          *interface{} `json:"identity"`
+	Identity          *any         `json:"identity"`
 	Level             *json.Number `json:"Level"`
 	Location          *string      `json:"location"`
-	Properties        *interface{} `json:"properties"`
+	Properties        *any         `json:"properties"`
 }
 
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
@@ -173,8 +173,8 @@ func asSeverity(number json.Number) plog.SeverityNumber {
 	}
 }
 
-func extractRawAttributes(log azureLogRecord) map[string]interface{} {
-	var attrs = map[string]interface{}{}
+func extractRawAttributes(log azureLogRecord) map[string]any {
+	var attrs = map[string]any{}
 
 	attrs[azureCategory] = log.Category
 	setIf(attrs, azureCorrelationID, log.CorrelationID)
@@ -204,7 +204,7 @@ func extractRawAttributes(log azureLogRecord) map[string]interface{} {
 	return attrs
 }
 
-func setIf(attrs map[string]interface{}, key string, value *string) {
+func setIf(attrs map[string]any, key string, value *string) {
 	if value != nil && *value != "" {
 		attrs[key] = *value
 	}

@@ -20,7 +20,7 @@ func Test_limit(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -131,18 +131,18 @@ func Test_limit(t *testing.T) {
 func Test_limit_validation(t *testing.T) {
 	tests := []struct {
 		name   string
-		target ottl.PMapGetter[interface{}]
+		target ottl.PMapGetter[any]
 		keep   []string
 		limit  int64
 	}{
 		{
 			name:   "limit less than zero",
-			target: &ottl.StandardPMapGetter[interface{}]{},
+			target: &ottl.StandardPMapGetter[any]{},
 			limit:  int64(-1),
 		},
 		{
 			name:   "limit less than # of keep attrs",
-			target: &ottl.StandardPMapGetter[interface{}]{},
+			target: &ottl.StandardPMapGetter[any]{},
 			keep:   []string{"test", "test"},
 			limit:  int64(1),
 		},
@@ -157,26 +157,26 @@ func Test_limit_validation(t *testing.T) {
 
 func Test_limit_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
 
-	exprFunc, err := limit[interface{}](target, 1, []string{})
+	exprFunc, err := limit[any](target, 1, []string{})
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
 }
 
 func Test_limit_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
 
-	exprFunc, err := limit[interface{}](target, 1, []string{})
+	exprFunc, err := limit[any](target, 1, []string{})
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)

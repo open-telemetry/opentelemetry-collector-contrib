@@ -15,25 +15,25 @@ import (
 func Test_substring(t *testing.T) {
 	tests := []struct {
 		name     string
-		target   ottl.StringGetter[interface{}]
-		start    ottl.IntGetter[interface{}]
-		length   ottl.IntGetter[interface{}]
-		expected interface{}
+		target   ottl.StringGetter[any]
+		start    ottl.IntGetter[any]
+		length   ottl.IntGetter[any]
+		expected any
 	}{
 		{
 			name: "substring",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "123456789", nil
 				},
 			},
-			start: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(3), nil
 				},
 			},
-			length: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(3), nil
 				},
 			},
@@ -41,18 +41,18 @@ func Test_substring(t *testing.T) {
 		},
 		{
 			name: "substring with result of total string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "123456789", nil
 				},
 			},
-			start: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(0), nil
 				},
 			},
-			length: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(9), nil
 				},
 			},
@@ -72,42 +72,42 @@ func Test_substring(t *testing.T) {
 func Test_substring_validation(t *testing.T) {
 	tests := []struct {
 		name   string
-		target ottl.StringGetter[interface{}]
-		start  ottl.IntGetter[interface{}]
-		length ottl.IntGetter[interface{}]
+		target ottl.StringGetter[any]
+		start  ottl.IntGetter[any]
+		length ottl.IntGetter[any]
 	}{
 		{
 			name: "substring with result of empty string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "123456789", nil
 				},
 			},
-			start: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(0), nil
 				},
 			},
-			length: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(0), nil
 				},
 			},
 		},
 		{
 			name: "substring with invalid start index",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "123456789", nil
 				},
 			},
-			start: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(-1), nil
 				},
 			},
-			length: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(6), nil
 				},
 			},
@@ -126,78 +126,78 @@ func Test_substring_validation(t *testing.T) {
 func Test_substring_error(t *testing.T) {
 	tests := []struct {
 		name   string
-		target ottl.StringGetter[interface{}]
-		start  ottl.IntGetter[interface{}]
-		length ottl.IntGetter[interface{}]
+		target ottl.StringGetter[any]
+		start  ottl.IntGetter[any]
+		length ottl.IntGetter[any]
 	}{
 		{
 			name: "substring empty string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "", nil
 				},
 			},
-			start: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(3), nil
 				},
 			},
-			length: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(6), nil
 				},
 			},
 		},
 		{
 			name: "substring with invalid length index",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "123456789", nil
 				},
 			},
-			start: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(3), nil
 				},
 			},
-			length: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(20), nil
 				},
 			},
 		},
 		{
 			name: "substring non-string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return 123456789, nil
 				},
 			},
-			start: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(3), nil
 				},
 			},
-			length: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(6), nil
 				},
 			},
 		},
 		{
 			name: "substring nil string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return nil, nil
 				},
 			},
-			start: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(3), nil
 				},
 			},
-			length: &ottl.StandardIntGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return int64(6), nil
 				},
 			},

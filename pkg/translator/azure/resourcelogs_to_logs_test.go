@@ -239,7 +239,7 @@ func TestAsSeverity(t *testing.T) {
 }
 
 func TestSetIf(t *testing.T) {
-	m := map[string]interface{}{}
+	m := map[string]any{}
 
 	setIf(m, "key", nil)
 	actual, found := m["key"]
@@ -273,9 +273,9 @@ func TestExtractRawAttributes(t *testing.T) {
 	level := json.Number("Informational")
 	location := "location"
 
-	identity := interface{}("someone")
+	identity := any("someone")
 
-	properties := interface{}(map[string]interface{}{
+	properties := any(map[string]any{
 		"a": uint64(1),
 		"b": true,
 		"c": 1.23,
@@ -285,7 +285,7 @@ func TestExtractRawAttributes(t *testing.T) {
 	tests := []struct {
 		name     string
 		log      azureLogRecord
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			name: "minimal",
@@ -296,7 +296,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				Category:      "category",
 				DurationMs:    &badDuration,
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				azureOperationName:                 "operation.name",
 				azureCategory:                      "category",
 				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
@@ -311,7 +311,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				Category:      "category",
 				DurationMs:    &badDuration,
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				azureOperationName:                 "operation.name",
 				azureCategory:                      "category",
 				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
@@ -337,7 +337,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				Location:          &location,
 				Properties:        &properties,
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				azureTenantID:                        "tenant.id",
 				azureOperationName:                   "operation.name",
 				azureOperationVersion:                "operation.version",
