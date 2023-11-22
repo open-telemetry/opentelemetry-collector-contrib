@@ -3,6 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.20
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.89.0
@@ -164,6 +170,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.89.0
+	go.opentelemetry.io/collector/connector v0.89.0
+	go.opentelemetry.io/collector/connector/forwardconnector v0.89.0
 	go.opentelemetry.io/collector/exporter v0.89.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.89.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.89.0
@@ -260,7 +268,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
 	github.com/SAP/go-hdb v1.5.10 // indirect
-	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 // indirect
+	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/aerospike/aerospike-client-go/v6 v6.13.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.0 // indirect
@@ -325,7 +333,7 @@ require (
 	github.com/digitalocean/godo v1.104.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.7+incompatible // indirect
-	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
+	github.com/docker/go-connections v0.4.1-0.20231110212414-fa09c952e3ea // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
@@ -630,7 +638,6 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.89.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.89.0 // indirect
-	go.opentelemetry.io/collector/connector v0.89.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.89.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.89.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
@@ -1136,3 +1143,12 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azure
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ./pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ./internal/collectd
+
+replace (
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector => ./connector/countconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector => ./connector/datadogconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector => ./connector/exceptionsconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ./connector/routingconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ./connector/servicegraphconnector
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ./connector/spanmetricsconnector
+)

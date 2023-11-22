@@ -1,7 +1,8 @@
 bitbucket.org/atlassian/go-asap/v2 v2.6.0 h1:KiLw3IgbzFLqNxCrVZoKUDJKMxUGoOd+NEOYXGEBhJ0=
 bitbucket.org/atlassian/go-asap/v2 v2.6.0/go.mod h1:cuRgWb7eeGtsocKmqY2kPlMMlwpkeNh+QOIkjAMlUBc=
-github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 h1:koK7z0nSsRiRiBWwa+E714Puh+DO+ZRdIyAXiXzL+lg=
 github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F3poXOp/fA=
+github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc h1:MhBvG7RLaLqlyjxMR6of35vt6MVQ+eXMcgn9X/sy0FE=
+github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F3poXOp/fA=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
