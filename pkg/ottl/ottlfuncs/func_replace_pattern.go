@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strconv"
-	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -49,24 +47,20 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 		if err != nil {
 			return nil, err
 		}
+		if originalVal == nil {
+			return nil, nil
+		}
 		replacementVal, err = replacement.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		if originalVal == nil {
-			return nil, nil
-		}
 		if originalValStr, ok := originalVal.(string); ok {
 			if compiledPattern.MatchString(originalValStr) {
 				if !fn.IsEmpty() {
-					match := compiledPattern.FindStringSubmatch(originalValStr)
-					if match != nil {
-						if strings.Contains(replacementVal, "$") {
-							groupNum := strings.ReplaceAll(replacementVal, "$", "")
-							num, _ := strconv.Atoi(groupNum)
-							replacementVal = match[num]
-						}
-					}
+					result := []byte{}
+					submatches := compiledPattern.FindStringSubmatchIndex(originalValStr)
+					result = compiledPattern.ExpandString(result, replacementVal, originalValStr, submatches)
+					replacementVal = string(result)
 					fnVal := fn.Get()
 					replaceValGetter := ottl.StandardStringGetter[K]{
 						Getter: func(context.Context, K) (any, error) {

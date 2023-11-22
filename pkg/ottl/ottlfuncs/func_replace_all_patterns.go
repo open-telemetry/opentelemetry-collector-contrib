@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strconv"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -72,14 +70,10 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 			case modeValue:
 				if compiledPattern.MatchString(originalValue.Str()) {
 					if !fn.IsEmpty() {
-						match := compiledPattern.FindStringSubmatch(originalValue.Str())
-						if match != nil {
-							if strings.Contains(replacementVal, "$") {
-								groupNum := strings.ReplaceAll(replacementVal, "$", "")
-								num, _ := strconv.Atoi(groupNum)
-								replacementVal = match[num]
-							}
-						}
+						result := []byte{}
+						submatches := compiledPattern.FindStringSubmatchIndex(originalValue.Str())
+						result = compiledPattern.ExpandString(result, replacementVal, originalValue.Str(), submatches)
+						replacementVal = string(result)
 						fnVal := fn.Get()
 						replaceValGetter := ottl.StandardStringGetter[K]{
 							Getter: func(context.Context, K) (any, error) {
@@ -108,14 +102,10 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 			case modeKey:
 				if compiledPattern.MatchString(key) {
 					if !fn.IsEmpty() {
-						match := compiledPattern.FindStringSubmatch(originalValue.Str())
-						if match != nil {
-							if strings.Contains(replacementVal, "$") {
-								groupNum := strings.ReplaceAll(replacementVal, "$", "")
-								num, _ := strconv.Atoi(groupNum)
-								replacementVal = match[num]
-							}
-						}
+						result := []byte{}
+						submatches := compiledPattern.FindStringSubmatchIndex(originalValue.Str())
+						result = compiledPattern.ExpandString(result, replacementVal, originalValue.Str(), submatches)
+						replacementVal = string(result)
 						fnVal := fn.Get()
 						replaceValGetter := ottl.StandardStringGetter[K]{
 							Getter: func(context.Context, K) (any, error) {
