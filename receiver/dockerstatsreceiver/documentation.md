@@ -296,13 +296,23 @@ Number of sectors transferred to/from disk by the group and descendant groups (O
 | device_minor | Device minor number for block IO operations. | Any Str |
 | operation | Type of BlockIO operation. | Any Str |
 
-### container.cpu.percent
+### container.cpu.limit
 
-[DEPRECATED] Use `container.cpu.utilization` metric instead. Percent of CPU used by the container.
+CPU limit set for the container.
+
+This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| {cpus} | Gauge | Double |
+
+### container.cpu.shares
+
+CPU shares set for the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
 
 ### container.cpu.throttling_data.periods
 
@@ -705,6 +715,14 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {pids} | Sum | Int | Cumulative | false |
+
+### container.restarts
+
+Number of restarts for the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {restarts} | Sum | Int | Cumulative | true |
 
 ### container.uptime
 

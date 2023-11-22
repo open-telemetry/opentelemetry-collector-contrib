@@ -232,6 +232,7 @@ func (h *exponentialHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcomm
 type Sum struct {
 	attributes pcommon.Map
 	count      uint64
+	exemplars  pmetric.ExemplarSlice
 }
 
 func (s *Sum) Add(value uint64) {
@@ -251,10 +252,18 @@ func (m *SumMetrics) GetOrCreate(key Key, attributes pcommon.Map) *Sum {
 	if !ok {
 		s = &Sum{
 			attributes: attributes,
+			exemplars:  pmetric.NewExemplarSlice(),
 		}
 		m.metrics[key] = s
 	}
 	return s
+}
+
+func (s *Sum) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
+	e := s.exemplars.AppendEmpty()
+	e.SetTraceID(traceID)
+	e.SetSpanID(spanID)
+	e.SetDoubleValue(value)
 }
 
 func (m *SumMetrics) BuildMetrics(
@@ -273,6 +282,10 @@ func (m *SumMetrics) BuildMetrics(
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(timestamp)
 		dp.SetIntValue(int64(s.count))
+		for i := 0; i < s.exemplars.Len(); i++ {
+			s.exemplars.At(i).SetTimestamp(timestamp)
+		}
+		s.exemplars.CopyTo(dp.Exemplars())
 		s.attributes.CopyTo(dp.Attributes())
 	}
 }

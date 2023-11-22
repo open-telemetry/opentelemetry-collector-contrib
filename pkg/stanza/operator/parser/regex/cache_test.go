@@ -23,7 +23,7 @@ func TestNewMemoryCache(t *testing.T) {
 			"size-50",
 			50,
 			&memoryCache{
-				cache: make(map[string]interface{}),
+				cache: make(map[string]any),
 				keys:  make(chan string, 50),
 			},
 			50,
@@ -43,7 +43,7 @@ func TestMemory(t *testing.T) {
 	cases := []struct {
 		name   string
 		cache  *memoryCache
-		input  map[string]interface{}
+		input  map[string]any
 		expect *memoryCache
 	}{
 		{
@@ -51,7 +51,7 @@ func TestMemory(t *testing.T) {
 			func() *memoryCache {
 				return newMemoryCache(3, 0)
 			}(),
-			map[string]interface{}{
+			map[string]any{
 				"key": "value",
 				"map-value": map[string]string{
 					"x":   "y",
@@ -59,7 +59,7 @@ func TestMemory(t *testing.T) {
 				},
 			},
 			&memoryCache{
-				cache: map[string]interface{}{
+				cache: map[string]any{
 					"key": "value",
 					"map-value": map[string]string{
 						"x":   "y",
@@ -103,7 +103,7 @@ func TestCleanupLast(t *testing.T) {
 	}
 
 	// make sure the cache looks the way we expect
-	expectCache := map[string]interface{}{
+	expectCache := map[string]any{
 		"1":  1, // oldest key, will be removed when 11 is added
 		"2":  2,
 		"3":  3,
@@ -132,7 +132,7 @@ func TestCleanupLast(t *testing.T) {
 	}
 
 	// All entries should have been replaced by now
-	expectCache = map[string]interface{}{
+	expectCache = map[string]any{
 		"11": 11,
 		"12": 12,
 		"13": 13,

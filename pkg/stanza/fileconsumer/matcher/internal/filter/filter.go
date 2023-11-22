@@ -11,7 +11,7 @@ import (
 )
 
 type Option interface {
-	// Returned error is for explanitory purposes only.
+	// Returned error is for explanatory purposes only.
 	// All options will be called regardless of error.
 	apply([]*item) ([]*item, error)
 }
@@ -49,6 +49,12 @@ type item struct {
 }
 
 func newItem(value string, regex *regexp.Regexp) (*item, error) {
+	if regex == nil {
+		return &item{
+			value: value,
+		}, nil
+	}
+
 	match := regex.FindStringSubmatch(value)
 	if match == nil {
 		return nil, fmt.Errorf("'%s' does not match regex", value)

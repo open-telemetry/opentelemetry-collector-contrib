@@ -313,24 +313,25 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 
 ### Label Definitions
 
-| Label                | When to apply                                                                                                                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bug`                | Something that is advertised or intended to work isn't working as expected.                                                                                                                             |
-| `enhancement`        | Something that isn't an advertised feature that would be useful to users or maintainers.                                                                                                                |
-| `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                    |
-| `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                               |
-| `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                             |
-| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
-| `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work.                                            |
-| `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                            |
-| `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                         |
-| `priority:p1`        | An urgent issue that should be worked on quickly, before most other issues.                                                                                                                             |
-| `priority:p2`        | A standard bug or enhancement.                                                                                                                                                                          |
-| `priority:p3`        | A technical improvement, lower priority bug, or other minor issue. Generally something that is considered a "nice to have."                                                                               |
-| `release:blocker`    | This issue must be resolved before the next Collector version can be released.                                                                                                                          |
-| `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided. |
-| `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                      |
-| `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor. |
+| Label                | When to apply                                                                                                                                                                                                  |
+| -------------------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `bug`                | Something that is advertised or intended to work isn't working as expected.                                                                                                                                    |
+| `enhancement`        | Something that isn't an advertised feature that would be useful to users or maintainers.                                                                                                                       |
+| `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                           |
+| `documentation`      | This is a collector usability issue that could likely be resolved by providing relevant documentation. Please consider adding new or improving existing documentation before closing issues with this label.   |
+| `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                                      |
+| `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                                    |
+| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                                      |
+| `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work. See also the [triaging process](#triage-process). |
+| `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                                   |
+| `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                                |
+| `priority:p1`        | An urgent issue that should be worked on quickly, before most other issues.                                                                                                                                    |
+| `priority:p2`        | A standard bug or enhancement.                                                                                                                                                                                 |
+| `priority:p3`        | A technical improvement, lower priority bug, or other minor issue. Generally something that is considered a "nice to have."                                                                                    |
+| `release:blocker`    | This issue must be resolved before the next Collector version can be released.                                                                                                                                 |
+| `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided.        |
+| `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                             |
+| `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor.                                                                                          |
 
 ### Adding Labels via Comments
 

@@ -8,5 +8,5 @@ import (
 
 const (
 	Type          = "honeycombmarker"
-	LogsStability = component.StabilityLevelDevelopment
+	LogsStability = component.StabilityLevelAlpha
 )

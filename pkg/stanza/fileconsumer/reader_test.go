@@ -45,7 +45,7 @@ func TestPersistFlusher(t *testing.T) {
 	expectNoTokensUntil(t, emitChan, 2*flushPeriod)
 
 	// A copy of the reader should remember that we last emitted about 200ms ago.
-	copyReader, err := f.Copy(r, temp)
+	copyReader, err := f.NewReaderFromMetadata(temp, r.Metadata)
 	assert.NoError(t, err)
 
 	// This time, the flusher will kick in and we should emit the unfinished log.

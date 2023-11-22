@@ -1,0 +1,9 @@
+type: failover
+
+status:
+  class: connector
+  stability:
+    development: [metrics_to_metrics, traces_to_traces, logs_to_logs]
+  distributions: [contrib]
+  codeowners:
+    active: [djaglowski, fatsheep9146]
