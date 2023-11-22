@@ -295,8 +295,7 @@ telemetrygen:
 
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
-	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
-	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
+	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector --commit-hash $(OTEL_STABLE_VERSION)
 	$(MAKE) gotidy
 
 .PHONY: otel-from-tree
