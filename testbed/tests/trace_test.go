@@ -38,15 +38,6 @@ func TestTrace10kSPS(t *testing.T) {
 		resourceSpec testbed.ResourceSpec
 	}{
 		{
-			"JaegerGRPC",
-			datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 100,
-			},
-		},
-		{
 			"OpenCensus",
 			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
@@ -157,6 +148,28 @@ func TestTrace10kSPS(t *testing.T) {
 			)
 		})
 	}
+}
+
+func TestTrace10kSPSJaegerGRPC(t *testing.T) {
+	port := testbed.GetAvailablePort(t)
+	receiver := datareceivers.NewJaegerDataReceiver(port)
+	Scenario10kItemsPerSecondAlternateBackend(
+		t,
+		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		receiver,
+		testbed.NewOTLPDataReceiver(port),
+		testbed.ResourceSpec{
+			ExpectedMaxCPU: 40,
+			ExpectedMaxRAM: 100,
+		},
+		performanceResultsSummary,
+		map[string]string{
+			"batch": `
+  batch:
+`,
+		},
+		nil,
+	)
 }
 
 func TestTraceNoBackend10kSPS(t *testing.T) {

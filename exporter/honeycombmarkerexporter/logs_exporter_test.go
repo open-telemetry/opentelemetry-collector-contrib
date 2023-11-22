@@ -22,6 +22,7 @@ func TestExportMarkers(t *testing.T) {
 		name         string
 		config       Config
 		attributeMap map[string]string
+		expectedURL  string
 	}{
 		{
 			name: "all fields",
@@ -46,6 +47,7 @@ func TestExportMarkers(t *testing.T) {
 				"url":     "https://api.testhost.io",
 				"type":    "test-type",
 			},
+			expectedURL: "/1/markers/test-dataset",
 		},
 		{
 			name: "no message key",
@@ -68,6 +70,7 @@ func TestExportMarkers(t *testing.T) {
 				"url":  "https://api.testhost.io",
 				"type": "test-type",
 			},
+			expectedURL: "/1/markers/test-dataset",
 		},
 		{
 			name: "no url",
@@ -90,6 +93,27 @@ func TestExportMarkers(t *testing.T) {
 				"message": "this is a test message",
 				"type":    "test-type",
 			},
+			expectedURL: "/1/markers/test-dataset",
+		},
+		{
+			name: "no dataset_slug",
+			config: Config{
+				APIKey: "test-apikey",
+				Markers: []Marker{
+					{
+						Type: "test-type",
+						Rules: Rules{
+							LogConditions: []string{
+								`body == "test"`,
+							},
+						},
+					},
+				},
+			},
+			attributeMap: map[string]string{
+				"type": "test-type",
+			},
+			expectedURL: "/1/markers/__all__",
 		},
 	}
 
@@ -106,7 +130,7 @@ func TestExportMarkers(t *testing.T) {
 				for attr := range tt.attributeMap {
 					assert.Equal(t, decodedBody[attr], tt.attributeMap[attr])
 				}
-				assert.Contains(t, req.URL.Path, tt.config.Markers[0].DatasetSlug)
+				assert.Contains(t, req.URL.Path, tt.expectedURL)
 
 				apiKey := req.Header.Get("X-Honeycomb-Team")
 				assert.Equal(t, apiKey, string(tt.config.APIKey))

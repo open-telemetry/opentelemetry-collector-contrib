@@ -23,9 +23,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		APIKey:  "",
-		APIURL:  "api.honeycomb.io:443",
-		Markers: []Marker{},
+		APIURL: "https://api.honeycomb.io",
 	}
 }
 
