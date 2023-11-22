@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
@@ -37,6 +38,13 @@ func withAPIConfig(cfg k8sconfig.APIConfig) option {
 	return func(p *kubernetesprocessor) error {
 		p.apiConfig = cfg
 		return p.apiConfig.Validate()
+	}
+}
+
+func withClientConfig(cfg kubelet.ClientConfig) option {
+	return func(p *kubernetesprocessor) error {
+		p.clientConfig = cfg
+		return p.clientConfig.Validate()
 	}
 }
 

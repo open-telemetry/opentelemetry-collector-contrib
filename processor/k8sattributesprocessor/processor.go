@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
@@ -27,6 +28,8 @@ const (
 type kubernetesprocessor struct {
 	logger          *zap.Logger
 	apiConfig       k8sconfig.APIConfig
+	clientConfig    kubelet.ClientConfig
+	endpoint        string
 	kc              kube.Client
 	passthroughMode bool
 	rules           kube.ExtractionRules
@@ -40,7 +43,18 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
+		kc, err := kubeClient(logger, kp.apiConfig, kp.clientConfig, kp.endpoint, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
+		if err != nil {
+			return err
+		}
+		kp.kc = kc
+	}
+	return nil
+}
+
+func (kp *kubernetesprocessor) initKubeletClient(logger *zap.Logger) error {
+	if !kp.passthroughMode {
+		kc, err := kube.NewKubeletClient(logger, kp.clientConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore)
 		if err != nil {
 			return err
 		}

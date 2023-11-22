@@ -181,6 +181,7 @@ func createProcessorOpts(cfg component.Config) []option {
 	opts = append(opts, withFilterLabels(oCfg.Filter.Labels...))
 	opts = append(opts, withFilterFields(oCfg.Filter.Fields...))
 	opts = append(opts, withAPIConfig(oCfg.APIConfig))
+	opts = append(opts, withClientConfig(oCfg.Kubelet))
 
 	opts = append(opts, withExtractPodAssociations(oCfg.Association...))
 

@@ -4,6 +4,7 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -23,6 +25,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
 )
 
@@ -40,6 +43,7 @@ type WatchClient struct {
 	deleteMut          sync.Mutex
 	logger             *zap.Logger
 	kc                 kubernetes.Interface
+	kubeletClient      kubelet.Client
 	informer           cache.SharedInformer
 	namespaceInformer  cache.SharedInformer
 	nodeInformer       cache.SharedInformer
@@ -79,7 +83,7 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, clientCfg kubelet.ClientConfig, endpoint string, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
 	c := &WatchClient{
 		logger:          logger,
 		Rules:           rules,
@@ -115,9 +119,6 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		zap.String("labelSelector", labelSelector.String()),
 		zap.String("fieldSelector", fieldSelector.String()),
 	)
-	if newInformer == nil {
-		newInformer = newSharedInformer
-	}
 
 	if newNamespaceInformer == nil {
 		// if rules to extract metadata from namespace is configured use namespace shared informer containing
@@ -131,19 +132,33 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		}
 	}
 
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
-	err = c.informer.SetTransform(
-		func(object any) (any, error) {
-			originalPod, success := object.(*api_v1.Pod)
-			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-				return object, nil
-			}
+	if clientCfg.APIConfig.AuthType != k8sconfig.AuthTypeNone {
+		clientProvider, err := kubelet.NewClientProvider(endpoint, &clientCfg, logger)
+		if err != nil {
+			return nil, err
+		}
+		c.kubeletClient, err = clientProvider.BuildClient()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if newInformer == nil {
+			newInformer = newSharedInformer
+		}
+		c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+		err = c.informer.SetTransform(
+			func(object any) (any, error) {
+				originalPod, success := object.(*api_v1.Pod)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
 
-			return removeUnnecessaryPodData(originalPod, c.Rules), nil
-		},
-	)
-	if err != nil {
-		return nil, err
+				return removeUnnecessaryPodData(originalPod, c.Rules), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	c.namespaceInformer = newNamespaceInformer(c.kc)
@@ -177,17 +192,21 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
-	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handlePodAdd,
-		UpdateFunc: c.handlePodUpdate,
-		DeleteFunc: c.handlePodDelete,
-	})
-	if err != nil {
-		c.logger.Error("error adding event handler to pod informer", zap.Error(err))
-	}
-	go c.informer.Run(c.stopCh)
+	if c.informer != nil {
+		_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handlePodAdd,
+			UpdateFunc: c.handlePodUpdate,
+			DeleteFunc: c.handlePodDelete,
+		})
+		if err != nil {
+			c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+		}
+		go c.informer.Run(c.stopCh)
+	} else {
 
-	_, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	}
+
+	_, err := c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
@@ -366,8 +385,26 @@ func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Durati
 	}
 }
 
+func (c *WatchClient) syncPodsFromKubelet() error {
+	pods, err := c.kubeletClient.Get("/pods")
+	if err != nil {
+		return fmt.Errorf("get pods from kubelet failed: %s", err)
+	}
+	podList := v1.PodList{}
+	err = json.Unmarshal(pods, &podList)
+	if err != nil {
+		return fmt.Errorf("unmarshel pod list failed: %v", err)
+	}
+
+	for _, pod := range podList.Items {
+		c.addOrUpdatePod(&pod)
+	}
+	return nil
+}
+
 // GetPod takes an IP address or Pod UID and returns the pod the identifier is associated with.
 func (c *WatchClient) GetPod(identifier PodIdentifier) (*Pod, bool) {
+	c.syncPodsFromKubelet()
 	c.m.RLock()
 	pod, ok := c.Pods[identifier]
 	c.m.RUnlock()
