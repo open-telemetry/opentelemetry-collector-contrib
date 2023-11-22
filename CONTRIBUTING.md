@@ -380,7 +380,7 @@ Code Ownership is ultimately up to the judgement of the existing Code Owners and
 To become a Code Owner, open a PR adding your GitHub username to the active codeowners entry in the component's `metadata.yaml` file. 
 Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
 
-### Makefile Guidelines
+## Makefile Guidelines
 
 When adding or modifying the `Makefile`'s in this repository, consider the following design guidelines.
 
@@ -389,7 +389,7 @@ The [Makefile](./Makefile) SHOULD contain "repo-level" targets. (i.e. targets th
 Likewise, `Makefile.Common` SHOULD contain "module-level" targets. (i.e. targets that apply to one module at a time.)
 Each module should have a `Makefile` at its root that includes `Makefile.Common`.
 
-#### Module-level targets
+### Module-level targets
 
 Module-level targets SHOULD NOT act on nested modules. For example, running `make lint` at the root of the repo will
 *only* evaluate code that is part of the `go.opentelemetry.io/collector` module. This excludes nested modules such as
@@ -399,7 +399,7 @@ Each module-level target SHOULD have a corresponding repo-level target. For exam
 in each module. In this way, the entire repository is covered. The root `Makefile` contains some "for each module" targets
 that can wrap a module-level target into a repo-level target.
 
-#### Repo-level targets
+### Repo-level targets
 
 Whenever reasonable, targets SHOULD be implemented as module-level targets (and wrapped with a repo-level target).
 However, there are many valid justifications for implementing a standalone repo-level target.
@@ -409,7 +409,7 @@ However, there are many valid justifications for implementing a standalone repo-
 3. A necessary tool does not provide a mechanism for scoping its application. (e.g. `porto` cannot be limited to a specific module.)
 4. The "for each module" pattern would result in incomplete coverage of the codebase. (e.g. A target that scans all file, not just `.go` files.)
 
-#### Default targets
+### Default targets
 
 The default module-level target (i.e. running `make` in the context of an individual module), should run a substantial set of module-level
 targets for an individual module. Ideally, this would include *all* module-level targets, but exceptions should be made if a particular
