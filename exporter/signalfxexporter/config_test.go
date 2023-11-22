@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				AccessToken: "testToken",
 				Realm:       "ap0",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Timeout:             5 * time.Second,
+					Timeout:             10 * time.Second,
 					Headers:             nil,
 					MaxIdleConns:        &hundred,
 					MaxIdleConnsPerHost: &hundred,
