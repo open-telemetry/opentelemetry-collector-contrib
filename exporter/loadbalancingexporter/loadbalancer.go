@@ -85,6 +85,15 @@ func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, facto
 			return nil, err
 		}
 	}
+	if oCfg.Resolver.SRV != nil {
+		srvLogger := params.Logger.With(zap.String("resolver", "DNS SRV"))
+
+		var err error
+		res, err = newSRVResolver(srvLogger, oCfg.Resolver.SRV.Hostname, oCfg.Resolver.SRV.Port, oCfg.Resolver.SRV.Interval, oCfg.Resolver.SRV.Timeout)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if res == nil {
 		return nil, errNoResolver

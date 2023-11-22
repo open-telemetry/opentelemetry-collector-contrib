@@ -60,7 +60,7 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
 
 * The `otlp` property configures the template used for building the OTLP exporter. Refer to the OTLP Exporter documentation for information on which options are available. Note that the `endpoint` property should not be set and will be overridden by this exporter with the backend endpoint.
-* The `resolver` accepts a `static` node, a `dns` or a `k8s` service. If all three are specified, `k8s` takes precedence.
+* The `resolver` accepts a `static` node, a `dns`, `srv`, or a `k8s` service. If all four are specified, `k8s` takes precedence.
 * The `hostname` property inside a `dns` node specifies the hostname to query in order to obtain the list of IP addresses.
 * The `dns` node also accepts the following optional properties:
   * `hostname` DNS hostname to resolve.
@@ -71,9 +71,14 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `service` Kubernetes service to resolve, e.g. `lb-svc.lb-ns`. If no namespace is specified, an attempt will be made to infer the namespace for this collector, and if this fails it will fall back to the `default` namespace.
   * `ports` port to be used for exporting the traces to the addresses resolved from `service`. If `ports` is not specified, the default port 4317 is used. When multiple ports are specified, two backends are added to the load balancer as if they were at different pods.
 * The `routing_key` property is used to route spans to exporters based on different parameters. This functionality is currently enabled only for `trace` pipeline types. It supports one of the following values:
-    * `service`: exports spans based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate. 
-    * `traceID` (default): exports spans based on their `traceID`.
-    * If not configured, defaults to `traceID` based routing.
+  * `service`: exports spans based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate. 
+  * `traceID` (default): exports spans based on their `traceID`.
+  * If not configured, defaults to `traceID` based routing.
+* The `srv` node accepts the following optional properties:
+  * `hostname` DNS SRV hostname to resolve.
+  * `port` port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
+  * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
+  * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
 
 Simple example
 ```yaml
@@ -155,6 +160,36 @@ service:
       exporters:
         - loadbalancing
     logs:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - loadbalancing
+```
+
+The SRV Resolver is useful in situations when you want to return hostnames instead of IPs for endpoints. An example would be a `StatefulSet`-backed headless kubernetes `Service` with istio. Example:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+
+processors:
+
+exporters:
+  loadbalancing:
+    protocol:
+      otlp: {}
+    resolver:
+      srv:
+        hostname: _<svc-port-name>._<svc-port-protocol>.<svc-name>.<svc-namespace>.svc.cluster.local
+    routing_key: traceID
+
+service:
+  pipelines:
+    traces:
       receivers:
         - otlp
       processors: []

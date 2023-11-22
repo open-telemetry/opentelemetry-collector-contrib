@@ -35,6 +35,7 @@ type ResolverSettings struct {
 	Static *StaticResolver `mapstructure:"static"`
 	DNS    *DNSResolver    `mapstructure:"dns"`
 	K8sSvc *K8sSvcResolver `mapstructure:"k8s"`
+	SRV    *SRVResolver    `mapstructure:"srv"`
 }
 
 // StaticResolver defines the configuration for the resolver providing a fixed list of backends
@@ -50,8 +51,17 @@ type DNSResolver struct {
 	Timeout  time.Duration `mapstructure:"timeout"`
 }
 
-// K8sSvcResolver defines the configuration for the DNS resolver
+// K8sSvcResolver defines the configuration for the kubernetes Service resolver
 type K8sSvcResolver struct {
 	Service string  `mapstructure:"service"`
 	Ports   []int32 `mapstructure:"ports"`
+}
+
+// TODO: Should a common struct be used for dns-based resolvers?
+// SRVResolver defines the configuration for the DNS resolver of SRV records for headless Services
+type SRVResolver struct {
+	Hostname string        `mapstructure:"hostname"`
+	Port     string        `mapstructure:"port"`
+	Interval time.Duration `mapstructure:"interval"`
+	Timeout  time.Duration `mapstructure:"timeout"`
 }
