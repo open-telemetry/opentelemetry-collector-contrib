@@ -9,8 +9,8 @@ import (
 
 // Partition allows for switching our partitioning behavior
 // when sending data to kinesis.
-type Partition func(v interface{}) string
+type Partition func(v any) string
 
-func Randomized(_ interface{}) string {
+func Randomized(_ any) string {
 	return uuid.NewString()
 }

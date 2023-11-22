@@ -40,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -58,6 +59,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
@@ -421,6 +423,18 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true,
 		},
 		{
+			exporter: "honeycombmarker",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["honeycombmarker"].CreateDefaultConfig().(*honeycombmarkerexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
+				return cfg
+			},
+			expectConsumeErr: true,
+		},
+		{
 			exporter: "influxdb",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
@@ -520,6 +534,18 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "sumologic",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["sumologic"].CreateDefaultConfig().(*sumologicexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.RetrySettings.Enabled = false
+				return cfg
+			},
+			expectConsumeErr: true,
+		},
+		{
+			exporter: "syslog",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["syslog"].CreateDefaultConfig().(*syslogexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false

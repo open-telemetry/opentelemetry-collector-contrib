@@ -33,11 +33,11 @@ func (_m *Node) GetName() string {
 
 // RequestInfo provides a mock function with given fields: _a0, _a1
 func (_m *Node) RequestInfo(_a0 *aerospike.InfoPolicy, _a1 ...string) (map[string]string, aerospike.Error) {
-	_va := make([]interface{}, len(_a1))
+	_va := make([]any, len(_a1))
 	for _i := range _a1 {
 		_va[_i] = _a1[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, _a0)
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)

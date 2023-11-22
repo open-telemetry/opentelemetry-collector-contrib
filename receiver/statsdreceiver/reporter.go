@@ -92,7 +92,7 @@ func (r *reporter) OnMetricsProcessed(
 	r.obsrecv.EndMetricsOp(ctx, "statsd", numReceivedMessages, err)
 }
 
-func (r *reporter) OnDebugf(template string, args ...interface{}) {
+func (r *reporter) OnDebugf(template string, args ...any) {
 	if r.logger.Check(zap.DebugLevel, "debug") != nil {
 		r.sugaredLogger.Debugf(template, args...)
 	}

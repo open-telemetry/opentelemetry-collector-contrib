@@ -23,6 +23,7 @@ body:
       - connector/count
       - connector/datadog
       - connector/exceptions
+      - connector/failover
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -105,6 +106,7 @@ body:
       - extension/storage/dbstorage
       - extension/storage/filestorage
       - internal/aws
+      - internal/collectd
       - internal/core
       - internal/datadog
       - internal/docker

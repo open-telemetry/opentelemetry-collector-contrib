@@ -48,7 +48,7 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 
 		batchPoints, err := influxdb1.NewBatchPoints(influxdb1.BatchPointsConfig{Precision: "µs"})
 		require.NoError(t, err)
-		point, err := influxdb1.NewPoint("cpu_temp", map[string]string{"foo": "bar"}, map[string]interface{}{"gauge": 87.332})
+		point, err := influxdb1.NewPoint("cpu_temp", map[string]string{"foo": "bar"}, map[string]any{"gauge": 87.332})
 		require.NoError(t, err)
 		batchPoints.AddPoint(point)
 		err = client.Write(batchPoints)

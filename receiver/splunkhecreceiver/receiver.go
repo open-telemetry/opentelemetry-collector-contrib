@@ -125,7 +125,7 @@ func newMetricsReceiver(
 			WriteTimeout:      defaultServerTimeout,
 		},
 		obsrecv:        obsrecv,
-		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
+		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
 	}
 
 	return r, nil
@@ -169,7 +169,7 @@ func newLogsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
+		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
 		obsrecv:        obsrecv,
 	}
 
@@ -464,14 +464,14 @@ func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Req
 	_, _ = writer.Write([]byte(responseHecHealthy))
 }
 
-func isFlatJSONField(field interface{}) bool {
+func isFlatJSONField(field any) bool {
 	switch value := field.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		return false
-	case []interface{}:
+	case []any:
 		for _, v := range value {
 			switch v.(type) {
-			case map[string]interface{}, []interface{}:
+			case map[string]any, []any:
 				return false
 			}
 		}

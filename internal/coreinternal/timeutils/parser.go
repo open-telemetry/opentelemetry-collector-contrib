@@ -49,7 +49,7 @@ func ParseGotime(layout string, value any, location *time.Location) (time.Time, 
 	return SetTimestampYear(timeValue), nil
 }
 
-func parseGotime(layout string, value interface{}, location *time.Location) (time.Time, error) {
+func parseGotime(layout string, value any, location *time.Location) (time.Time, error) {
 	var str string
 	switch v := value.(type) {
 	case string:

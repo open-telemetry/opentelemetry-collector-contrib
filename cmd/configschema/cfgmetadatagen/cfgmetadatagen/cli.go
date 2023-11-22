@@ -31,7 +31,7 @@ func GenerateFiles(factories otelcol.Factories, sourceDir string, outputDir stri
 func writeComponentYAML(yw metadataWriter, cfg configschema.CfgInfo, dr configschema.DirResolver) error {
 	fields, err := configschema.ReadFields(reflect.ValueOf(cfg.CfgInstance), dr)
 	if err != nil {
-		return fmt.Errorf("error reading fields for component: %w", err)
+		return fmt.Errorf("error reading fields for component %v/%v: %w", cfg.Group, cfg.Type, err)
 	}
 	yamlBytes, err := yaml.Marshal(fields)
 	if err != nil {

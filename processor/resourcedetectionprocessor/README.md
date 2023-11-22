@@ -318,6 +318,10 @@ processors:
 
     * cloud.provider ("aws")
     * cloud.platform ("aws_eks")
+    * k8s.cluster.name
+
+Note: The kubernetes cluster name is only available when running on EC2 instances, and requires permission to run the `EC2:DescribeInstances` [action](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html).
+If you see an error with the message `context deadline exceeded`, please increase the timeout setting in your config.
 
 Example:
 
@@ -325,7 +329,7 @@ Example:
 processors:
   resourcedetection/eks:
     detectors: [env, eks]
-    timeout: 2s
+    timeout: 15s
     override: false
 ```
 

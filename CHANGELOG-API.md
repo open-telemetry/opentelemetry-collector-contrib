@@ -7,6 +7,20 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.89.0
+
+### 🛑 Breaking changes 🛑
+
+- `carbonreceiver`: Do not export function New and pass checkapi. (#26304)
+- `collectdreceiver`: Move to use confighttp.HTTPServerSettings (#28811)
+- `kafkaexporter`: Do not export function WithTracesMarshalers, WithMetricsMarshalers, WithLogsMarshalers and pass checkapi (#26304)
+- `remoteobserverprocessor`: Rename remoteobserverprocessor to remotetapprocessor (#27873)
+
+### 💡 Enhancements 💡
+
+- `extension/encoding`: Introduce interfaces for encoding extensions. (#28686)
+- `exporter/awss3exporter`: This feature allows role assumption for s3 exportation. It is especially useful on Kubernetes clusters that are using IAM roles for service accounts (#28674)
+
 ## v0.88.0
 
 ### 🚩 Deprecations 🚩

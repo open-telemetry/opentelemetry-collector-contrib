@@ -287,7 +287,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 	}
 
 	store := &testutils.MockStore{
-		Cache:   map[string]interface{}{},
+		Cache:   map[string]any{},
 		WantErr: to.wantErrFromCache,
 	}
 
