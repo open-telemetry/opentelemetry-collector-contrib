@@ -480,8 +480,8 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/deepmap/oapi-codegen v1.12.4 h1:pPmn6qI9MuOtCz82WY2Xaw46EQjgvxednXXrP7g5Q2s=
-github.com/denisenkom/go-mssqldb v0.12.2 h1:1OcPn5GBIobjWNd+8yjfHNIaFX14B1pWI3F9HZy5KXw=
-github.com/denisenkom/go-mssqldb v0.12.2/go.mod h1:lnIw1mZukFRZDJYQ0Pb833QS2IaC3l5HkEfra2LJ+sk=
+github.com/denisenkom/go-mssqldb v0.12.3 h1:pBSGx9Tq67pBOTLmxNuirNTeB8Vjmf886Kx+8Y+8shw=
+github.com/denisenkom/go-mssqldb v0.12.3/go.mod h1:k0mtMFOnU+AihqFxPMiF05rtiDrorD1Vrm1KEz5hxDo=
 github.com/dennwc/varint v1.0.0 h1:kGNFFSSw8ToIy3obO/kKr8U9GZYUAxQEVuix4zfDWzE=
 github.com/dennwc/varint v1.0.0/go.mod h1:hnItb35rvZvJrbTALZtY/iQfDs48JKRG1RPpgziApxA=
 github.com/devigned/tab v0.1.1 h1:3mD6Kb1mUOYeLpJvTVSDwSg5ZsfSxfvxGRTxRsJsITA=
@@ -550,8 +550,8 @@ github.com/euank/go-kmsg-parser v2.0.0+incompatible/go.mod h1:MhmAMZ8V4CYH4ybgdR
 github.com/evanphx/json-patch v4.9.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch v5.6.0+incompatible h1:jBYDEEiFBPxA0v50tFdvOzQQTCvpL6mnFh5mB2/l16U=
 github.com/evanphx/json-patch/v5 v5.6.0 h1:b91NhWfaz02IuVxO9faSllyAtNXHMPkC5J8sJCLunww=
-github.com/facebook/time v0.0.0-20231108195549-620e14e718fb h1:5sihTI/ZuTyL9vudiEnP0kcNLZIv9TQwRlZ1x0bc33E=
-github.com/facebook/time v0.0.0-20231108195549-620e14e718fb/go.mod h1:O8nuAUhv2TubINRTU9kKPsqOoQtUts0Q81yac6PlQfE=
+github.com/facebook/time v0.0.0-20231121165353-cb922d512a84 h1:87gsSLLeg/ZkN6s71BFd+vmVCvIn7HN+PJSkDHqzFmw=
+github.com/facebook/time v0.0.0-20231121165353-cb922d512a84/go.mod h1:O8nuAUhv2TubINRTU9kKPsqOoQtUts0Q81yac6PlQfE=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
@@ -811,8 +811,8 @@ github.com/grafana/loki/pkg/push v0.0.0-20230321110627-5c3d204ebf5d/go.mod h1:Bj
 github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd h1:PpuIBO5P3e9hpqBD0O/HjhShYuM6XE0i/lbE6J94kww=
 github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd/go.mod h1:M5qHK+eWfAv8VR/265dIuEpL3fNfeC21tXXp9itM24A=
 github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
-github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 h1:LONJvPBBd9wBmzSUmNHI7XpLE2qQ5tzUimeBadiVDuA=
-github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665/go.mod h1:L69/dBlPQlWkcnU76WgcppK5e4rrxzQdi6LhLnK/ytA=
+github.com/grobie/gomemcache v0.0.0-20230213081705-239240bbc445 h1:FlKQKUYPZ5yDCN248M3R7x8yu2E3yEZ0H7aLomE4EoE=
+github.com/grobie/gomemcache v0.0.0-20230213081705-239240bbc445/go.mod h1:L69/dBlPQlWkcnU76WgcppK5e4rrxzQdi6LhLnK/ytA=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 h1:UH//fgunKIs4JdUbpDl1VZCDaL56wXCB/5+wF6uHfaI=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
@@ -902,8 +902,8 @@ github.com/imdario/mergo v0.3.16/go.mod h1:WBLT9ZmE3lPoWsEzCh9LPo3TiwVN+ZKEjmz+h
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 h1:s9ZL6ZhFF8y6ebnm1FLvobkzoIu5xwDQUcRPk/IEhpM=
-github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6/go.mod h1:aXdIdfn2OcGnMhOTojXmwZqXKgC3MU5riiNvzwwG9OY=
+github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4 h1:2r2WiFeAwiJ/uyx1qIKnV1L4C9w/2V8ehlbJY4gjFaM=
+github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4/go.mod h1:1yEQhaLb/cETXCqQmdh7lDjupNAReO7c83AHyK2dJ48=
 github.com/influxdata/influxdb-client-go/v2 v2.12.4 h1:9qJLqetEmhIlqaF/N9KUtdmRKSbNy6IohggyS3bxWlE=
 github.com/influxdata/influxdb-observability/common v0.5.8 h1:nyk4dqnKbPGIyr1vAs6oEsFQEHWi5jkSQ7PtP4v//lc=
 github.com/influxdata/influxdb-observability/common v0.5.8/go.mod h1:aG8A2gbtXbl/P2FePd6QNsCUSOkcvz1n+NL5dJLUO1s=
