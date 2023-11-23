@@ -1,0 +1,22 @@
+dist:
+  name: otelcol-dev
+  description: GitHub Actions to OTLP Custom Collector
+  version: 0.0.1
+  output_path: /tmp/dist
+
+receivers:
+  # - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.89.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubactionsreceiver v0.0.0
+    path: ./
+
+processors:
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.89.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.89.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.89.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.89.0
+
+extensions:
+  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.89.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.89.0
