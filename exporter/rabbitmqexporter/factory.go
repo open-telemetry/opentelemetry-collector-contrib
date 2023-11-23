@@ -8,8 +8,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"runtime"
-	"time"
 )
 
 type rabbitmqExporterFactory struct {
@@ -25,16 +23,6 @@ func NewFactory() exporter.Factory {
 		createDefaultConfig,
 		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
 	)
-}
-
-func createDefaultConfig() component.Config {
-	return &config{
-		connectionUrl:               "amqp://swar8080amqp:swar8080amqp@localhost:5672/",
-		connectionTimeout:           time.Second * 10,
-		connectionHeartbeatInterval: time.Second * 5,
-		channelPoolSize:             runtime.NumCPU(),
-		confirmMode:                 true,
-	}
 }
 
 func (f *rabbitmqExporterFactory) createLogsExporter(
