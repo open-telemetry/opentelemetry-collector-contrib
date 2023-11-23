@@ -1,3 +1,0 @@
-githubactionsevent/valid_config:
-  endpoint: localhost:8080
-  secret: "mysecret"
