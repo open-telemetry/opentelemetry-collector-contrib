@@ -94,10 +94,13 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 
 // Start creates the prometheus client
 func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
+	prwe.settings.Logger.Info("Starting Prometheus Remote Write Exporter...")
 	prwe.client, err = prwe.clientSettings.ToClient(host, prwe.settings)
 	if err != nil {
+		prwe.settings.Logger.Error("Failed to create HTTP client", zap.Error(err))
 		return err
 	}
+
 	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
 }
 
@@ -254,7 +257,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 		resp, err := prwe.client.Do(req)
 		if err != nil {
-			return err
+			prwe.settings.Logger.Error("error", zap.Error(err))
 		}
 		defer resp.Body.Close()
 
@@ -269,6 +272,8 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+			prwe.settings.Logger.Error("http status code", zap.Int("code", resp.StatusCode))
+			prwe.settings.Logger.Error("error", zap.Error(rerr))
 			return rerr
 		}
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
