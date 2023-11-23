@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/shirou/gopsutil/v3/cpu"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -18,6 +19,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
+)
+
+var (
+	hostCPUModelAndFamilyAsStringID          = "processor.resourcedetection.hostCPUModelAndFamilyAsString"
+	hostCPUModelAndFamilyAsStringFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		hostCPUModelAndFamilyAsStringID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("Change type of host.cpu.model.id and host.cpu.model.family to string."),
+		featuregate.WithRegisterFromVersion("v0.89.0"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/495"),
+	)
 )
 
 const (
@@ -147,21 +159,39 @@ func reverseLookupHost(d *Detector) (string, error) {
 func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
 	d.logger.Debug("getting host's cpuinfo", zap.String("coreID", cpuInfo.CoreID))
 	d.rb.SetHostCPUVendorID(cpuInfo.VendorID)
-	family, err := strconv.ParseInt(cpuInfo.Family, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to convert cpuinfo family to integer: %w", err)
+	if hostCPUModelAndFamilyAsStringFeatureGate.IsEnabled() {
+		d.rb.SetHostCPUFamily(cpuInfo.Family)
+	} else {
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29025
+		d.logger.Warn("This attribute will change from int to string. Switch now using the feature gate.",
+			zap.String("attribute", "host.cpu.family"),
+			zap.String("feature gate", hostCPUModelAndFamilyAsStringID),
+		)
+		family, err := strconv.ParseInt(cpuInfo.Family, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to convert cpuinfo family to integer: %w", err)
+		}
+		d.rb.SetHostCPUFamilyAsInt(family)
 	}
-	d.rb.SetHostCPUFamily(family)
 
 	// For windows, this field is left blank. See https://github.com/shirou/gopsutil/blob/v3.23.9/cpu/cpu_windows.go#L113
 	// Skip setting modelId if the field is blank.
 	// ISSUE: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27675
 	if cpuInfo.Model != "" {
-		model, err := strconv.ParseInt(cpuInfo.Model, 10, 64)
-		if err != nil {
-			return fmt.Errorf("failed to convert cpuinfo model to integer: %w", err)
+		if hostCPUModelAndFamilyAsStringFeatureGate.IsEnabled() {
+			d.rb.SetHostCPUModelID(cpuInfo.Model)
+		} else {
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29025
+			d.logger.Warn("This attribute will change from int to string. Switch now using the feature gate.",
+				zap.String("attribute", "host.cpu.model.id"),
+				zap.String("feature gate", hostCPUModelAndFamilyAsStringID),
+			)
+			model, err := strconv.ParseInt(cpuInfo.Model, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to convert cpuinfo model to integer: %w", err)
+			}
+			d.rb.SetHostCPUModelIDAsInt(model)
 		}
-		d.rb.SetHostCPUModelID(model)
 	}
 
 	d.rb.SetHostCPUModelName(cpuInfo.ModelName)

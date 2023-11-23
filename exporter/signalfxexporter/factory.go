@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	defaultHTTPTimeout = time.Second * 5
+	defaultHTTPTimeout = time.Second * 10
 	defaultMaxConns    = 100
 
 	defaultDimMaxBuffered         = 10000

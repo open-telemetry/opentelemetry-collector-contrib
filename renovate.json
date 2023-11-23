@@ -1,8 +1,12 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "labels": [
+      "renovatebot",
       "dependencies"
     ],
+    "constraints": {
+      "go": "1.20"
+    },
     "extends": [
       "config:base"
     ],
@@ -30,7 +34,27 @@
       },
       {
         "matchManagers": ["gomod"],
-        "enabled": false
+        "matchSourceUrlPrefixes": ["https://github.com/aws"],
+        "groupName": "All github.com/aws packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/azure"],
+        "groupName": "All github.com/azure packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/datadog"],
+        "groupName": "All github.com/datadog packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
+        "groupName": "All github.com/googlecloudplatform packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["minor", "major"]
       }
     ],
     "ignoreDeps": [

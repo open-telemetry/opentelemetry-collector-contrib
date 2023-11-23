@@ -192,7 +192,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	require.NoError(t, r.Shutdown(ctx))
 }
 
-func getUpdatedPod(pod *corev1.Pod) interface{} {
+func getUpdatedPod(pod *corev1.Pod) any {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      pod.Name,
