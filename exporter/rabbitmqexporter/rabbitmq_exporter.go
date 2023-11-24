@@ -16,7 +16,7 @@ type rabbitMqLogsProducer struct {
 	set           component.TelemetrySettings
 	config        config
 	channelCacher *amqpChannelCacher
-	marshaller    func(plog.Logs) (*publishingData, error)
+	marshaller    LogsMarshaler
 }
 
 func newLogsExporter(conf config, set exporter.CreateSettings) (*rabbitMqLogsProducer, error) {
@@ -29,7 +29,7 @@ func newLogsExporter(conf config, set exporter.CreateSettings) (*rabbitMqLogsPro
 		set:           set.TelemetrySettings,
 		config:        conf,
 		channelCacher: amqpChannelCacher,
-		marshaller:    marshalLogs,
+		marshaller:    newLogMarshaler(),
 	}
 	return logsProducer, nil
 }
@@ -61,7 +61,7 @@ func (e *rabbitMqLogsProducer) logsDataPusher(ctx context.Context, data plog.Log
 }
 
 func (e *rabbitMqLogsProducer) pushData(ctx context.Context, data plog.Logs, wrapper *amqpChannelWrapper) (err error, healthyChannel bool) {
-	publishingData, err := e.marshaller(data)
+	publishingData, err := e.marshaller.Marshal(data)
 
 	if err != nil {
 		return err, true
