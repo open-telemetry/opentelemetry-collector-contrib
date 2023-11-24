@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 go 1.20
 
 require (
-	github.com/SAP/go-hdb v1.5.10
+	github.com/SAP/go-hdb v1.6.1
 	github.com/denisenkom/go-mssqldb v0.12.3
 	github.com/docker/go-connections v0.4.0
 	github.com/go-sql-driver/mysql v1.7.1
@@ -13,7 +13,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.89.0
 	github.com/sijms/go-ora/v2 v2.7.22
-	github.com/snowflakedb/gosnowflake v1.6.25
+	github.com/snowflakedb/gosnowflake v1.7.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
 	go.opentelemetry.io/collector/component v0.89.0
@@ -38,7 +38,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Microsoft/hcsshim v0.11.1 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/antonmedv/expr v1.15.3 // indirect
+	github.com/antonmedv/expr v1.15.4 // indirect
 	github.com/apache/arrow/go/v12 v12.0.1 // indirect
 	github.com/apache/thrift v0.19.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.22.2 // indirect

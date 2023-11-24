@@ -45,11 +45,11 @@ func armClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*arm
 	return &armresources.Client{}, nil
 }
 
-func armMonitorDefinitionsClientFuncMock(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error) {
+func armMonitorDefinitionsClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error) {
 	return &armmonitor.MetricDefinitionsClient{}, nil
 }
 
-func armMonitorMetricsClientFuncMock(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error) {
+func armMonitorMetricsClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error) {
 	return &armmonitor.MetricsClient{}, nil
 }
 
@@ -451,7 +451,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
 	name1, name2, name3, name4, name5, name6, name7, dimension1, dimension2, dimensionValue := "metric1", "metric2",
 		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension1", "dimension2", "dimension value"
-	var unit1 armmonitor.MetricUnit = "unit1"
+	var unit1 armmonitor.Unit = "unit1"
 	var value1 float64 = 1
 
 	return map[string]map[string]armmonitor.MetricsClientListResponse{
