@@ -23,7 +23,10 @@ type tracesExporter struct {
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-	cluster := newCluster(cfg)
+	cluster, err := newCluster(cfg)
+	if err != nil {
+		return nil, err
+	}
 	cluster.Keyspace = cfg.Keyspace
 
 	session, err := cluster.CreateSession()
@@ -36,7 +39,10 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 
 func initializeTraceKernel(cfg *Config) error {
 	ctx := context.Background()
-	cluster := newCluster(cfg)
+	cluster, err := newCluster(cfg)
+	if err != nil {
+		return err
+	}
 
 	session, err := cluster.CreateSession()
 	if err != nil {

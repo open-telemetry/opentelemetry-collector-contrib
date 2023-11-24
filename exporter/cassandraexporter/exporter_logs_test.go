@@ -4,6 +4,7 @@
 package cassandraexporter
 
 import (
+	"errors"
 	"github.com/gocql/gocql"
 	"testing"
 
@@ -14,6 +15,7 @@ func TestNewCluster(t *testing.T) {
 	testCases := map[string]struct {
 		cfg                   *Config
 		expectedAuthenticator gocql.Authenticator
+		expectedErr           error
 	}{
 		"empty_auth": {
 			cfg:                   withDefaultConfig(),
@@ -24,12 +26,14 @@ func TestNewCluster(t *testing.T) {
 				config.Auth.Password = "pass"
 			}),
 			expectedAuthenticator: nil,
+			expectedErr:           errors.New("empty auth.username"),
 		},
 		"empty_password": {
 			cfg: withDefaultConfig(func(config *Config) {
 				config.Auth.UserName = "user"
 			}),
 			expectedAuthenticator: nil,
+			expectedErr:           errors.New("empty auth.password"),
 		},
 		"success_auth": {
 			cfg: withDefaultConfig(func(config *Config) {
@@ -44,8 +48,11 @@ func TestNewCluster(t *testing.T) {
 	}
 	for name, test := range testCases {
 		t.Run(name, func(t *testing.T) {
-			c := newCluster(test.cfg)
-			require.Equal(t, test.expectedAuthenticator, c.Authenticator)
+			c, err := newCluster(test.cfg)
+			if err == nil {
+				require.Equal(t, test.expectedAuthenticator, c.Authenticator)
+			}
+			require.Equal(t, test.expectedErr, err)
 		})
 	}
 }
