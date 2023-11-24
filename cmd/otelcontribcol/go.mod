@@ -42,6 +42,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.89.0
@@ -188,6 +189,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.89.0
 	go.opentelemetry.io/collector/config/configgrpc v0.89.0
+	go.opentelemetry.io/collector/config/confighttp v0.89.0
 	go.opentelemetry.io/collector/config/configopaque v0.89.0
 	go.opentelemetry.io/collector/confmap v0.89.0
 	go.opentelemetry.io/collector/connector v0.89.0
@@ -557,6 +559,7 @@ require (
 	github.com/opencontainers/runc v1.1.9 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0-rc.3 // indirect
 	github.com/opencontainers/selinux v1.10.0 // indirect
+	github.com/opensearch-project/opensearch-go/v2 v2.3.0 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
@@ -645,7 +648,6 @@ require (
 	go.opentelemetry.io/collector v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.89.0 // indirect
-	go.opentelemetry.io/collector/config/confighttp v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.89.0 // indirect
@@ -1025,6 +1027,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourceto
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../../exporter/opencensusexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter => ../../exporter/opensearchexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../../internal/metadataproviders
 
