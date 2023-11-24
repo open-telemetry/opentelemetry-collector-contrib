@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/chloggen v0.12.0
 	go.opentelemetry.io/build-tools/crosslink v0.12.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.12.0
-	go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231017203252-9b589220490e
+	go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231124155756-0ec5f4bfc9d9
 	go.opentelemetry.io/collector/cmd/builder v0.89.0
 	golang.org/x/tools v0.15.0
 	golang.org/x/vuln v1.0.1
@@ -77,7 +77,7 @@ require (
 	github.com/go-critic/go-critic v0.9.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
-	github.com/go-git/go-git/v5 v5.9.0 // indirect
+	github.com/go-git/go-git/v5 v5.10.0 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
 	github.com/go-toolsmith/astequal v1.1.0 // indirect
