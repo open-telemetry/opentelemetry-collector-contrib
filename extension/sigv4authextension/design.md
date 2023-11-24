@@ -563,7 +563,6 @@ Additionally, a few other files will be modified to reflect changes made, for ex
 * `go.sum`
 * `versions.yaml`
 * `.github/CODEOWNERS`
-* `.github/dependabot.yml` will be generated with "make dependabot" and not modified directly
 * `cmd/configschema/go.mod`
 * `internal/components/components.go`
 * `internal/components/extensions_test.go`
