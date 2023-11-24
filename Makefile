@@ -146,13 +146,6 @@ push-tags: $(MULTIMOD)
 		git push ${REMOTE} $${tag}; \
 	done;
 
-DEPENDABOT_PATH=".github/dependabot.yml"
-.PHONY: gendependabot
-gendependabot:
-	cd cmd/githubgen && $(GOCMD) install .
-	githubgen dependabot
-
-
 # Define a delegation target for each module
 .PHONY: $(ALL_MODS)
 $(ALL_MODS):
