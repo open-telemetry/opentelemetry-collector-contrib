@@ -36,5 +36,10 @@ func (f *rabbitmqExporterFactory) createLogsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(ctx, set, cfg, exp.logsDataPusher)
+	return exporterhelper.NewLogsExporter(
+		ctx,
+		set,
+		cfg,
+		exp.logsDataPusher,
+		exporterhelper.WithRetry(customConfig.retrySettings))
 }

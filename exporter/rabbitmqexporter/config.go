@@ -2,6 +2,7 @@ package rabbitmqexporter
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"runtime"
 	"time"
 )
@@ -15,9 +16,13 @@ type config struct {
 	confirmMode                 bool
 	durable                     bool
 	routingKey                  string
+	retrySettings               exporterhelper.RetrySettings
 }
 
 func createDefaultConfig() component.Config {
+	retrySettings := exporterhelper.RetrySettings{
+		Enabled: false,
+	}
 	return &config{
 		connectionUrl:               "amqp://swar8080amqp:swar8080amqp@localhost:5672/",
 		connectionTimeout:           time.Second * 10,
@@ -27,5 +32,6 @@ func createDefaultConfig() component.Config {
 		confirmMode:                 true,
 		durable:                     true,
 		routingKey:                  "otel",
+		retrySettings:               retrySettings,
 	}
 }
