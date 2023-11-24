@@ -233,8 +233,8 @@ github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbt
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/ReneKroon/ttlcache/v2 v2.11.0 h1:OvlcYFYi941SBN3v9dsDcC2N8vRxyHcCmJb3Vl4QMoM=
 github.com/ReneKroon/ttlcache/v2 v2.11.0/go.mod h1:mBxvsNY+BT8qLLd6CuAJubbKo6r0jh3nb5et22bbfGY=
-github.com/SAP/go-hdb v1.5.10 h1:xK6feDCBxpT0UTYc8z4amGJMVsFfNFIbOfEj53grhPc=
-github.com/SAP/go-hdb v1.5.10/go.mod h1:Vcp8cnLTb3oVRdm3tulcrs6ain/g2gSvuTZ1t4EDQFU=
+github.com/SAP/go-hdb v1.6.1 h1:FrH4aeiZ5Qlp4l0WPVH03CaVHY1d4RbJhtsZziaUNjk=
+github.com/SAP/go-hdb v1.6.1/go.mod h1:Vcp8cnLTb3oVRdm3tulcrs6ain/g2gSvuTZ1t4EDQFU=
 github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F3poXOp/fA=
 github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc h1:MhBvG7RLaLqlyjxMR6of35vt6MVQ+eXMcgn9X/sy0FE=
 github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F3poXOp/fA=
