@@ -4,12 +4,17 @@
 package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/config/configtls"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 )
@@ -20,6 +25,16 @@ type Authentication struct {
 	SASL      *SASLConfig                 `mapstructure:"sasl"`
 	TLS       *configtls.TLSClientSetting `mapstructure:"tls"`
 	Kerberos  *KerberosConfig             `mapstructure:"kerberos"`
+	OAuth2    *OAuth2                     `mapstructure:"oauth2"`
+}
+
+type OAuth2 struct {
+	IssuerURL    string   `mapstructure:"issuer_url"`
+	ClientID     string   `mapstructure:"client_id"`
+	ClientSecret string   `mapstructure:"client_secret"`
+	Audience     string   `mapstructure:"audience"`
+	Scopes       []string `mapstructure:"scopes"`
+	TokenURL     string   `mapstructure:"tokenURL"`
 }
 
 // PlainTextConfig defines plaintext authentication.
@@ -80,6 +95,10 @@ func ConfigureAuthentication(config Authentication, saramaConfig *sarama.Config)
 
 	if config.Kerberos != nil {
 		configureKerberos(*config.Kerberos, saramaConfig)
+	}
+
+	if config.OAuth2 != nil {
+		configureOauth2(*config.OAuth2, saramaConfig)
 	}
 	return nil
 }
@@ -158,4 +177,46 @@ func configureKerberos(config KerberosConfig, saramaConfig *sarama.Config) {
 	saramaConfig.Net.SASL.GSSAPI.Username = config.Username
 	saramaConfig.Net.SASL.GSSAPI.Realm = config.Realm
 	saramaConfig.Net.SASL.GSSAPI.ServiceName = config.ServiceName
+}
+
+func configureOauth2(config OAuth2, saramaConfig *sarama.Config) {
+	saramaConfig.Net.SASL.Enable = true
+	saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+	provider := newTokenProvider(config)
+	saramaConfig.Net.SASL.TokenProvider = provider
+}
+
+type TokenProvider struct {
+	tokenSource oauth2.TokenSource
+}
+
+func newTokenProvider(o OAuth2) sarama.AccessTokenProvider {
+
+	q := url.Values{}
+	q.Set("client_id", o.ClientID)
+	q.Set("client_secret", o.ClientSecret)
+	q.Set("grant_type", "client_credentials")
+	q.Set("scope", strings.Join(o.Scopes, ","))
+
+	cfg := clientcredentials.Config{
+		ClientID:       o.ClientID,
+		ClientSecret:   o.ClientSecret,
+		TokenURL:       o.TokenURL,
+		EndpointParams: q,
+	}
+
+	return &TokenProvider{
+		tokenSource: cfg.TokenSource(context.Background()),
+	}
+}
+
+// Token returns a new *sarama.AccessToken or an error as appropriate.
+func (t *TokenProvider) Token() (*sarama.AccessToken, error) {
+
+	token, err := t.tokenSource.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	return &sarama.AccessToken{Token: token.AccessToken}, nil
 }
