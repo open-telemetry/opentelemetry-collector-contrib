@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
-	"os"
 	"path/filepath"
 	"sort"
 
@@ -118,7 +117,6 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 			key := currentFolder
 			components[key] = m
 			foldersList = append(foldersList, key)
-			_, err = os.Stat(filepath.Join(currentFolder, "go.mod"))
 
 			for stability := range m.Status.Stability {
 				if stability == unmaintainedStatus {
