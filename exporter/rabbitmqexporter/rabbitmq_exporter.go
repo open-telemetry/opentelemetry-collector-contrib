@@ -80,6 +80,10 @@ func (e *rabbitMqLogsProducer) pushData(ctx context.Context, data plog.Logs, wra
 		Body:            publishingData.Body,
 	})
 
+	if err != nil {
+		return err, false
+	}
+
 	select {
 	case <-confirmation.Done():
 		if confirmation.Acked() {
