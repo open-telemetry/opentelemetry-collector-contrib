@@ -19,15 +19,15 @@ type connectionConfig struct {
 }
 
 type amqpChannelCacher struct {
-	logger            *zap.Logger
-	config            *connectionConfig
-	connection        *amqp.Connection
-	connLock          *sync.Mutex
-	cachedChannelPool chan *amqpChannelWrapper
-	connectionErrors  chan *amqp.Error
+	logger             *zap.Logger
+	config             *connectionConfig
+	connection         *amqp.Connection
+	connLock           *sync.Mutex
+	channelManagerPool chan *amqpChannelManager
+	connectionErrors   chan *amqp.Error
 }
 
-type amqpChannelWrapper struct {
+type amqpChannelManager struct {
 	id         int
 	channel    *amqp.Channel
 	wasHealthy bool
@@ -37,10 +37,10 @@ type amqpChannelWrapper struct {
 
 func newAmqpChannelCacher(config *connectionConfig) (*amqpChannelCacher, error) {
 	acc := &amqpChannelCacher{
-		logger:            config.logger,
-		config:            config,
-		connLock:          &sync.Mutex{},
-		cachedChannelPool: make(chan *amqpChannelWrapper, config.channelPoolSize),
+		logger:             config.logger,
+		config:             config,
+		connLock:           &sync.Mutex{},
+		channelManagerPool: make(chan *amqpChannelManager, config.channelPoolSize),
 	}
 
 	err := acc.connect()
@@ -50,7 +50,7 @@ func newAmqpChannelCacher(config *connectionConfig) (*amqpChannelCacher, error) 
 
 	// Synchronously create and connect to channels
 	for i := 0; i < acc.config.channelPoolSize; i++ {
-		acc.cachedChannelPool <- acc.createChannelWrapper(i)
+		acc.channelManagerPool <- acc.createChannelWrapper(i)
 	}
 
 	return acc, nil
@@ -123,13 +123,13 @@ func (acc *amqpChannelCacher) restoreConnectionIfUnhealthy() {
 	}
 }
 
-func (acc *amqpChannelCacher) createChannelWrapper(id int) *amqpChannelWrapper {
-	channelWrapper := &amqpChannelWrapper{id: id, logger: acc.logger, lock: &sync.Mutex{}}
+func (acc *amqpChannelCacher) createChannelWrapper(id int) *amqpChannelManager {
+	channelWrapper := &amqpChannelManager{id: id, logger: acc.logger, lock: &sync.Mutex{}}
 	channelWrapper.tryReplacingChannel(acc.connection, acc.config.confirmationMode)
 	return channelWrapper
 }
 
-func (acw *amqpChannelWrapper) tryReplacingChannel(connection *amqp.Connection, confirmAcks bool) error {
+func (acw *amqpChannelManager) tryReplacingChannel(connection *amqp.Connection, confirmAcks bool) error {
 	// TODO consider confirmation mode
 
 	acw.lock.Lock()
@@ -166,8 +166,8 @@ func (acw *amqpChannelWrapper) tryReplacingChannel(connection *amqp.Connection, 
 	return nil
 }
 
-func (acc *amqpChannelCacher) requestHealthyChannelFromPool() (*amqpChannelWrapper, error) {
-	channelWrapper := <-acc.cachedChannelPool
+func (acc *amqpChannelCacher) requestHealthyChannelFromPool() (*amqpChannelManager, error) {
+	channelWrapper := <-acc.channelManagerPool
 	if !channelWrapper.wasHealthy {
 		err := acc.reconnectChannel(channelWrapper)
 		if err != nil {
@@ -178,13 +178,13 @@ func (acc *amqpChannelCacher) requestHealthyChannelFromPool() (*amqpChannelWrapp
 	return channelWrapper, nil
 }
 
-func (acc *amqpChannelCacher) returnChannelToPool(channelWrapper *amqpChannelWrapper, wasHealthy bool) {
+func (acc *amqpChannelCacher) returnChannelToPool(channelWrapper *amqpChannelManager, wasHealthy bool) {
 	channelWrapper.wasHealthy = wasHealthy
-	acc.cachedChannelPool <- channelWrapper
+	acc.channelManagerPool <- channelWrapper
 	return
 }
 
-func (acc *amqpChannelCacher) reconnectChannel(channel *amqpChannelWrapper) error {
+func (acc *amqpChannelCacher) reconnectChannel(channel *amqpChannelManager) error {
 	acc.restoreConnectionIfUnhealthy()
 	return channel.tryReplacingChannel(acc.connection, acc.config.confirmationMode)
 }

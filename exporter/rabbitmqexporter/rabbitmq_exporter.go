@@ -60,7 +60,7 @@ func (e *rabbitMqLogsProducer) logsDataPusher(ctx context.Context, data plog.Log
 	return err
 }
 
-func (e *rabbitMqLogsProducer) pushData(ctx context.Context, data plog.Logs, wrapper *amqpChannelWrapper) (err error, healthyChannel bool) {
+func (e *rabbitMqLogsProducer) pushData(ctx context.Context, data plog.Logs, wrapper *amqpChannelManager) (err error, healthyChannel bool) {
 	publishingData, err := e.marshaller.Marshal(data)
 
 	if err != nil {
