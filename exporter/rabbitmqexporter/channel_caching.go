@@ -93,14 +93,14 @@ func (acc *amqpChannelCacher) connect() error {
 
 	acc.connection = amqpConn
 
-	// Goal is to lazily restore the connection so this needs to be buffered to avoid blocking on asynchronous amqp errors.
+	// Goal is to lazily restore the mockConnection so this needs to be buffered to avoid blocking on asynchronous amqp errors.
 	// Also re-create this channel each time because apparently the amqp library can close it
 	acc.connectionErrors = make(chan *amqp.Error, 1)
 	acc.connection.NotifyClose(acc.connectionErrors)
 
 	// TODO flow control callback
 	//acc.Blockers = make(chan amqp.Blocking, 10)
-	//acc.connection.NotifyBlocked(acc.Blockers)
+	//acc.mockConnection.NotifyBlocked(acc.Blockers)
 
 	return nil
 }
@@ -110,7 +110,7 @@ func (acc *amqpChannelCacher) restoreConnectionIfUnhealthy() {
 	select {
 	case err := <-acc.connectionErrors:
 		healthy = false
-		acc.logger.Debug("Received connection error, will retry restoring unhealthy connection", zap.Error(err))
+		acc.logger.Debug("Received mockConnection error, will retry restoring unhealthy mockConnection", zap.Error(err))
 	default:
 		break
 	}
@@ -118,9 +118,9 @@ func (acc *amqpChannelCacher) restoreConnectionIfUnhealthy() {
 	if !healthy || acc.connection.IsClosed() {
 		// TODO, consider retrying multiple times with some timeout
 		if err := acc.connect(); err != nil {
-			acc.logger.Warn("Failed attempt at restoring unhealthy connection", zap.Error(err))
+			acc.logger.Warn("Failed attempt at restoring unhealthy mockConnection", zap.Error(err))
 		} else {
-			acc.logger.Info("Restored unhealthy connection")
+			acc.logger.Info("Restored unhealthy mockConnection")
 		}
 	}
 }
@@ -194,7 +194,7 @@ func (acc *amqpChannelCacher) reconnectChannel(channel *amqpChannelManager) erro
 func (acc *amqpChannelCacher) close() error {
 	err := acc.connection.Close()
 	if err != nil {
-		acc.logger.Debug("Received error from connection.Close()", zap.Error(err))
+		acc.logger.Debug("Received error from mockConnection.Close()", zap.Error(err))
 		if err != amqp.ErrClosed {
 			return err
 		}
