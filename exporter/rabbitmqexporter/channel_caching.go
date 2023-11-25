@@ -21,6 +21,7 @@ type connectionConfig struct {
 type amqpChannelCacher struct {
 	logger             *zap.Logger
 	config             *connectionConfig
+	client             *AmqpDialer
 	connection         *amqp.Connection
 	connLock           *sync.Mutex
 	channelManagerPool chan *amqpChannelManager
