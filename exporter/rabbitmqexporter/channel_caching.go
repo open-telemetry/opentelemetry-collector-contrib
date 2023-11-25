@@ -162,10 +162,6 @@ func (acw *amqpChannelWrapper) tryReplacingChannel(connection *amqp.Connection, 
 		}
 	}
 
-	// TODO consider error callbacks
-	//ch.Errors = make(chan *amqp.Error, 100)
-	//ch.Channel.NotifyClose(ch.Errors)
-
 	acw.wasHealthy = true
 	return nil
 }
