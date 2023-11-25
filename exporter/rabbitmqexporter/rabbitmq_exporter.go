@@ -15,12 +15,13 @@ import (
 type rabbitMqLogsProducer struct {
 	set           component.TelemetrySettings
 	config        config
+	amqpClient    *AmqpClient
 	channelCacher *amqpChannelCacher
 	marshaller    LogsMarshaler
 }
 
-func newLogsExporter(conf config, set exporter.CreateSettings) (*rabbitMqLogsProducer, error) {
-	amqpChannelCacher, err := newExporterChannelCacher(conf, set, "otel-logs")
+func newLogsExporter(conf config, set exporter.CreateSettings, amqpClient AmqpClient) (*rabbitMqLogsProducer, error) {
+	amqpChannelCacher, err := newExporterChannelCacher(conf, set, "otel-logs", amqpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +35,7 @@ func newLogsExporter(conf config, set exporter.CreateSettings) (*rabbitMqLogsPro
 	return logsProducer, nil
 }
 
-func newExporterChannelCacher(conf config, set exporter.CreateSettings, connectionName string) (*amqpChannelCacher, error) {
+func newExporterChannelCacher(conf config, set exporter.CreateSettings, connectionName string, client AmqpClient) (*amqpChannelCacher, error) {
 	connectionConfig := &connectionConfig{
 		logger:            set.Logger,
 		connectionUrl:     conf.connectionUrl,
@@ -44,7 +45,7 @@ func newExporterChannelCacher(conf config, set exporter.CreateSettings, connecti
 		heartbeatInterval: conf.connectionHeartbeatInterval,
 		confirmationMode:  conf.confirmMode,
 	}
-	return newAmqpChannelCacher(connectionConfig)
+	return newAmqpChannelCacher(connectionConfig, client)
 }
 
 func (e *rabbitMqLogsProducer) logsDataPusher(ctx context.Context, data plog.Logs) error {

@@ -31,7 +31,7 @@ func (f *rabbitmqExporterFactory) createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	customConfig := *(cfg.(*config))
-	exp, err := newLogsExporter(customConfig, set)
+	exp, err := newLogsExporter(customConfig, set, newAmqpClient())
 	if err != nil {
 		return nil, err
 	}

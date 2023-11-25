@@ -3,10 +3,13 @@ package rabbitmqexporter
 import (
 	"context"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"net"
+	"time"
 )
 
-type AmqpDialer interface {
+type AmqpClient interface {
 	DialConfig(url string, config amqp.Config) (WrappedConnection, error)
+	DefaultDial(connectionTimeout time.Duration) func(network, addr string) (net.Conn, error)
 }
 
 type WrappedConnection interface {
@@ -19,12 +22,13 @@ type WrappedConnection interface {
 type WrappedChannel interface {
 	Confirm(noWait bool) error
 	PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (*amqp.DeferredConfirmation, error)
+	Close() error
 }
 
-type amqpDialer struct{}
+type amqpClient struct{}
 
-func newAmqpDialer() AmqpDialer {
-	return &amqpDialer{}
+func newAmqpClient() AmqpClient {
+	return &amqpClient{}
 }
 
 type wrappedConnection struct {
@@ -35,7 +39,7 @@ type wrappedChannel struct {
 	channel *amqp.Channel
 }
 
-func (*amqpDialer) DialConfig(url string, config amqp.Config) (WrappedConnection, error) {
+func (*amqpClient) DialConfig(url string, config amqp.Config) (WrappedConnection, error) {
 	connection, err := amqp.DialConfig(url, config)
 	if err != nil {
 		return nil, err
@@ -44,6 +48,10 @@ func (*amqpDialer) DialConfig(url string, config amqp.Config) (WrappedConnection
 	return &wrappedConnection{
 		connection: connection,
 	}, nil
+}
+
+func (*amqpClient) DefaultDial(connectionTimeout time.Duration) func(network, addr string) (net.Conn, error) {
+	return amqp.DefaultDial(connectionTimeout)
 }
 
 func (c *wrappedConnection) Channel() (WrappedChannel, error) {
@@ -72,4 +80,8 @@ func (c *wrappedChannel) Confirm(noWait bool) error {
 
 func (c *wrappedChannel) PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (*amqp.DeferredConfirmation, error) {
 	return c.channel.PublishWithDeferredConfirmWithContext(ctx, exchange, key, mandatory, immediate, msg)
+}
+
+func (c *wrappedChannel) Close() error {
+	return c.channel.Close()
 }

@@ -21,8 +21,8 @@ type connectionConfig struct {
 type amqpChannelCacher struct {
 	logger             *zap.Logger
 	config             *connectionConfig
-	client             *AmqpDialer
-	connection         *amqp.Connection
+	amqpClient         AmqpClient
+	connection         WrappedConnection
 	connLock           *sync.Mutex
 	channelManagerPool chan *amqpChannelManager
 	connectionErrors   chan *amqp.Error
@@ -30,16 +30,17 @@ type amqpChannelCacher struct {
 
 type amqpChannelManager struct {
 	id         int
-	channel    *amqp.Channel
+	channel    WrappedChannel
 	wasHealthy bool
 	lock       *sync.Mutex
 	logger     *zap.Logger
 }
 
-func newAmqpChannelCacher(config *connectionConfig) (*amqpChannelCacher, error) {
+func newAmqpChannelCacher(config *connectionConfig, amqpClient AmqpClient) (*amqpChannelCacher, error) {
 	acc := &amqpChannelCacher{
 		logger:             config.logger,
 		config:             config,
+		amqpClient:         amqpClient,
 		connLock:           &sync.Mutex{},
 		channelManagerPool: make(chan *amqpChannelManager, config.channelPoolSize),
 	}
@@ -75,13 +76,13 @@ func (acc *amqpChannelCacher) connect() error {
 	}
 
 	// Proceed with reconnectivity
-	var amqpConn *amqp.Connection
+	var amqpConn WrappedConnection
 	var err error
 
 	// TODO TLS config
-	amqpConn, err = amqp.DialConfig(acc.config.connectionUrl, amqp.Config{
+	amqpConn, err = acc.amqpClient.DialConfig(acc.config.connectionUrl, amqp.Config{
 		Heartbeat: acc.config.heartbeatInterval,
-		Dial:      amqp.DefaultDial(acc.config.connectionTimeout),
+		Dial:      acc.amqpClient.DefaultDial(acc.config.connectionTimeout),
 		Properties: amqp.Table{
 			"connection_name": acc.config.connectionName,
 		},
@@ -130,7 +131,7 @@ func (acc *amqpChannelCacher) createChannelWrapper(id int) *amqpChannelManager {
 	return channelWrapper
 }
 
-func (acw *amqpChannelManager) tryReplacingChannel(connection *amqp.Connection, confirmAcks bool) error {
+func (acw *amqpChannelManager) tryReplacingChannel(connection WrappedConnection, confirmAcks bool) error {
 	// TODO consider confirmation mode
 
 	acw.lock.Lock()
