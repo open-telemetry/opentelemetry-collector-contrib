@@ -71,7 +71,6 @@ func (config *Config) Validate() error {
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}
-
 	return cwlogs.ValidateTagsInput(config.Tags)
 
 }
