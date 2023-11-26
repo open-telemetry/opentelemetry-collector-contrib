@@ -237,6 +237,10 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 		if metricInfo.unit != "" {
 			metrics[idx]["Unit"] = metricInfo.unit
 		}
+		if metricInfo.storageResolution == 1 {
+			metrics[idx]["StorageResolution"] = "1"
+		}
+
 		idx++
 	}
 
@@ -304,6 +308,9 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 		}
 		if metricInfo.unit != "" {
 			metric["Unit"] = metricInfo.unit
+		}
+		if metricInfo.storageResolution == 1 {
+			metric["StorageResolution"] = "1"
 		}
 		metricDeclKey := fmt.Sprint(metricDeclIdx)
 		if group, ok := metricDeclGroups[metricDeclKey]; ok {

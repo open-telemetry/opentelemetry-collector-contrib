@@ -41,6 +41,12 @@ type Config struct {
 	// Values must be between 1-256 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$
 	Tags map[string]*string `mapstructure:"tags"`
 
+	// StorageResolution is an OPTIONAL integer value representing the storage resolution for the corresponding metric. Setting this to 1 specifies this metric as
+	// a high-resolution metric, so that CloudWatch stores the metric with sub-minute resolution down to one second. Setting this to 60 specifies this metric as
+	// standard-resolution, which CloudWatch stores at 1-minute resolution. Values SHOULD be valid CloudWatch supported resolutions, 1 or 60. If a value is not
+	// provided, then a default value of 60 is assumed.
+	StorageResolution int `mapstructure:"storage_resolution"`
+
 	// Queue settings frm the exporterhelper
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 
@@ -71,6 +77,10 @@ func (config *Config) Validate() error {
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}
+	if retErr := cwlogs.ValidateStorageResolution(config.); retErr != nil {
+		return retErr
+	}
+
 	return cwlogs.ValidateTagsInput(config.Tags)
 
 }

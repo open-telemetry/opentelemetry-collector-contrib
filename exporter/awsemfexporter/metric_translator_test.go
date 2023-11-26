@@ -427,6 +427,19 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 			measurements:        nil,
 			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
 		},
+		"WithMeasurementAndStorageResolution": {
+			emfVersion: "1",
+			measurements: []cWMeasurement{{
+				Namespace:  "test-emf",
+				Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
+				Metrics: []map[string]string{{
+					"Name":              "spanCounter",
+					"Unit":              "Count",
+					"StorageResolution": "1",
+				}},
+			}},
+			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Version\":\"1\",\"_aws\":{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"StorageResolution\":\"1\",\"Unit\":\"Count\"}]}],\"Timestamp\":1596151098037},\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+		},
 	}
 
 	for name, tc := range testCases {
@@ -762,6 +775,48 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					"label1":                  "value1",
 					"metric1":                 1,
 					fieldPrometheusMetricType: "gauge",
+				},
+			},
+		},
+		{
+			"single metric with storage resolution = 1",
+			&groupedMetric{
+				labels: map[string]string{
+					"label1": "value1",
+				},
+				metrics: map[string]*metricInfo{
+					"metric1": {
+						value:             1,
+						unit:              "Count",
+						storageResolution: 1,
+					},
+				},
+				metadata: cWMetricMetadata{
+					groupedMetricMetadata: groupedMetricMetadata{
+						namespace:   namespace,
+						timestampMs: timestamp,
+					},
+				},
+			},
+			nil,
+			&cWMetrics{
+				measurements: []cWMeasurement{
+					{
+						Namespace:  namespace,
+						Dimensions: [][]string{{"label1"}},
+						Metrics: []map[string]string{
+							{
+								"Name":              "metric1",
+								"Unit":              "Count",
+								"StorageResolution": "1",
+							},
+						},
+					},
+				},
+				timestampMs: timestamp,
+				fields: map[string]any{
+					"label1":  "value1",
+					"metric1": 1,
 				},
 			},
 		},

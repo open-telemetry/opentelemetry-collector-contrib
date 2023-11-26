@@ -22,8 +22,9 @@ type groupedMetric struct {
 
 // metricInfo defines value and unit for OT Metrics
 type metricInfo struct {
-	value any
-	unit  string
+	value             any
+	unit              string
+	storageResolution int
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
@@ -72,6 +73,10 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[any]*groupedMetri
 			metric := &metricInfo{
 				value: dp.value,
 				unit:  translateUnit(pmd, descriptor),
+			}
+
+			if config.StorageResolution == 1 {
+				metric.storageResolution = 1
 			}
 
 			if dp.timestampMs > 0 {

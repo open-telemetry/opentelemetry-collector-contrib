@@ -177,6 +177,35 @@ func TestRetentionValidateWrong(t *testing.T) {
 
 }
 
+func TestStorageResolutionValidateCorrect(t *testing.T) {
+	cfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+		StorageResolution:           1,
+	}
+	assert.NoError(t, component.ValidateConfig(cfg))
+}
+
+func TestStorageResolutionValidateWrong(t *testing.T) {
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+		StorageResolution:           2,
+	}
+	assert.Error(t, component.ValidateConfig(wrongcfg))
+
+}
+
 func TestValidateTags(t *testing.T) {
 	// Create *string values for tags inputs
 	basicValue := "avalue"
