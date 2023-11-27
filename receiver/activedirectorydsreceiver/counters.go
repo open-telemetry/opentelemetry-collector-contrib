@@ -70,7 +70,7 @@ func (w *watchers) Scrape(name string) (float64, error) {
 }
 
 func (w *watchers) Close() error {
-	if w.closed {
+	if w == nil || w.closed {
 		return nil
 	}
 

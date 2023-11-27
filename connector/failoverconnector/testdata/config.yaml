@@ -1,0 +1,22 @@
+failover:
+
+failover/default:
+  priority_levels: [traces]
+
+failover/full:
+  priority_levels:
+    - [ traces/first, traces/also_first ]
+    - [ traces/second ]
+    - [ traces/third ]
+    - [ traces/fourth ]
+  retry_interval: 5m
+  retry_gap: 1m
+  max_retries: 10
+
+failover/invalid:
+  priority_levels:
+    - [ traces/first ]
+    - [ traces/second ]
+  retry_interval: 3m
+  retry_gap: 2m
+  max_retries: 10

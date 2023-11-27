@@ -47,6 +47,8 @@ func (h *handler) OnAdd(objectInterface any, _ bool) {
 	switch object := objectInterface.(type) {
 	case *v1.Pod:
 		endpoints = convertPodToEndpoints(h.idNamespace, object)
+	case *v1.Service:
+		endpoints = convertServiceToEndpoints(h.idNamespace, object)
 	case *v1.Node:
 		endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
 	default: // unsupported
@@ -67,6 +69,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	case *v1.Pod:
 		newPod, ok := newObjectInterface.(*v1.Pod)
 		if !ok {
+			h.logger.Warn("skip updating endpoint for pod as the update is of different type", zap.Any("oldPod", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		for _, e := range convertPodToEndpoints(h.idNamespace, oldObject) {
@@ -76,9 +79,23 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 			newEndpoints[e.ID] = e
 		}
 
+	case *v1.Service:
+		newService, ok := newObjectInterface.(*v1.Service)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for service as the update is of different type", zap.Any("oldService", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, newService) {
+			newEndpoints[e.ID] = e
+		}
+
 	case *v1.Node:
 		newNode, ok := newObjectInterface.(*v1.Node)
 		if !ok {
+			h.logger.Warn("skip updating endpoint for node as the update is of different type", zap.Any("oldNode", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		oldEndpoint := convertNodeToEndpoint(h.idNamespace, oldObject)
@@ -143,6 +160,10 @@ func (h *handler) OnDelete(objectInterface any) {
 	case *v1.Pod:
 		if object != nil {
 			endpoints = convertPodToEndpoints(h.idNamespace, object)
+		}
+	case *v1.Service:
+		if object != nil {
+			endpoints = convertServiceToEndpoints(h.idNamespace, object)
 		}
 	case *v1.Node:
 		if object != nil {
