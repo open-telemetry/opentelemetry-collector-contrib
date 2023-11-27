@@ -14,24 +14,28 @@
 
 The Git Provider receiver scrapes data from Git vendors.
 
-As a starting point, this receiver can infer many of the same core git
-metrics across vendors, while being able to receive additional data specific to
-vendors. 
+As a starting point, this receiver can infer many of the same core git metrics across vendors, while being able to receive additional data specific to vendors.
 
-The current default set of metrics common across all vendors can be found in
-[documentation.md](./documentation.md).
+The current default set of metrics common across all vendors can be found in [documentation.md](./documentation.md).
 
-These default metrics can be used as leading indicators to the DORA metrics; helping 
-provide insight into modern-day engineering practices.
+These default metrics can be used as leading indicators to the DORA metrics; helping provide insight into modern-day engineering practices.
+
+## GitHub Metrics
 
 The current metrics available via scraping from GitHub are:
-* repository branch count
-* repository branch time 
-* repository count
-* repository branch count
-* repository contributor count
-* repository pull request time
 
+- [x] Repository count
+- [ ] Repository branch time
+- [x] Repository branch count
+- [x] Repository contributor count
+- [ ] Repository pull request time
+- [ ] Repository pull request merge time
+- [ ] Repository pull request approval time
+- [ ] Repository pull request deployment time
+
+> Note: Some metrics may be disabled by default and have to be explicitly enabled.
+> For example, the repository contributor count metric is one such metric. This is
+> because this metric relies on the REST API which is subject to lower rate limits.
 
 ## Getting Started
 
@@ -50,13 +54,12 @@ gitprovider:
         ...
 ```
 
-A more complete example using the GitHub scraper with an authenticator is as follows:
+A more complete example using the GitHub & GitLab scrapers with authentication is as follows:
+
 ```yaml
 extensions:
-    basicauth/github:
-        client_auth:
-            username: ${env:GH_USER}
-            password: ${env:GH_PAT}
+    bearertokenauth/github:
+        token: ${env:GH_PAT}
 
 receivers:
     gitprovider:
@@ -64,11 +67,16 @@ receivers:
         collection_interval: 60s
         scrapers:
             github:
+                metrics:
+                    git.repository.contributor.count:
+                        enabled: true
                 github_org: myfancyorg
+                search_query: "org:myfancyorg topic:o11yalltheway" #optional query override, defaults to "{org,user}:<github_org>"
+                endpoint: "https://selfmanagedenterpriseserver.com"
                 auth:
-                    authenticator: basicauth/github
+                    authenticator: bearertokenauth/github
 service:
-    extensions: [basicauth/github]
+    extensions: [bearertokenauth/github]
     pipelines:
         metrics:
             receivers: [..., gitprovider]
@@ -83,4 +91,3 @@ The available scrapers are:
 | Scraper  | Description             |
 |----------|-------------------------|
 | [github] | Git Metrics from [GitHub](https://github.com/) |
-

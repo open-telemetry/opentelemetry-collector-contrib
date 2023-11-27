@@ -160,6 +160,7 @@ type Input struct {
 	connection net.PacketConn
 	cancel     context.CancelFunc
 	wg         sync.WaitGroup
+	wgReader   sync.WaitGroup
 
 	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
@@ -200,7 +201,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 	}
 
 	for i := 0; i < u.AsyncConfig.Readers; i++ {
-		u.wg.Add(1)
+		u.wgReader.Add(1)
 		go u.readMessagesAsync(ctx)
 	}
 
@@ -255,7 +256,7 @@ func (u *Input) processMessage(ctx context.Context, message []byte, remoteAddr n
 }
 
 func (u *Input) readMessagesAsync(ctx context.Context) {
-	defer u.wg.Done()
+	defer u.wgReader.Done()
 
 	for {
 		readBuffer := u.readBufferPool.Get().(*[]byte) // Can't reuse the same buffer since same references would be written multiple times to the messageQueue (and cause data override of previous entries)
@@ -314,10 +315,14 @@ func truncateMaxLog(data []byte) (token []byte) {
 }
 
 func (u *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *decode.Decoder, log []byte) {
-	decoded, err := dec.Decode(log)
-	if err != nil {
-		u.Errorw("Failed to decode data", zap.Error(err))
-		return
+	decoded := log
+	if u.encoding != encoding.Nop {
+		var err error
+		decoded, err = dec.Decode(log)
+		if err != nil {
+			u.Errorw("Failed to decode data", zap.Error(err))
+			return
+		}
 	}
 
 	entry, err := u.NewEntry(string(decoded))
@@ -368,10 +373,6 @@ func (u *Input) removeTrailingCharactersAndNULsFromBuffer(buffer []byte, n int) 
 // Stop will stop listening for udp messages.
 func (u *Input) Stop() error {
 	u.stopOnce.Do(func() {
-		if u.AsyncConfig != nil {
-			close(u.messageQueue)
-		}
-
 		if u.cancel == nil {
 			return
 		}
@@ -381,6 +382,11 @@ func (u *Input) Stop() error {
 				u.Errorf("failed to close UDP connection: %s", err)
 			}
 		}
+		if u.AsyncConfig != nil {
+			u.wgReader.Wait() // only when all async readers are finished, so there's no risk of sending to a closed channel, do we close messageQueue (which allows the async processors to finish)
+			close(u.messageQueue)
+		}
+
 		u.wg.Wait()
 		if u.resolver != nil {
 			u.resolver.Stop()
