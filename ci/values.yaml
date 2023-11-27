@@ -83,6 +83,7 @@ config:
         span_name_as_resource_name: true
         compute_stats_by_span_kind: true
         peer_service_aggregation: true
+        trace_buffer: 1000
       api:
         key: "$DD_API_KEY"
   processors:
