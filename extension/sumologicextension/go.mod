@@ -1,4 +1,4 @@
-module github.com/SumoLogic/sumologic-otel-collector/pkg/extension/sumologicextension
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
 
 go 1.20
 

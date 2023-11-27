@@ -110,6 +110,7 @@ body:
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
+      - extension/sumologic
       - internal/aws
       - internal/collectd
       - internal/core

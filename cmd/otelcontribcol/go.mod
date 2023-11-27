@@ -295,7 +295,6 @@ require (
 	github.com/SAP/go-hdb v1.6.7 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/SumoLogic/sumologic-otel-collector/pkg/extension/sumologicextension v0.91.0-sumo-0-rc.0 // indirect
 	github.com/aerospike/aerospike-client-go/v6 v6.13.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
