@@ -307,7 +307,7 @@ func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return false, nil
 }
 
-// ConditionSequence represents a list of Condition that will be executed sequentially for a TransformContext
+// ConditionSequence represents a list of Conditions that will be evaluated sequentially for a TransformContext
 // and will handle errors returned by conditions based on an ErrorMode.
 type ConditionSequence[K any] struct {
 	conditions        []*Condition[K]
@@ -333,7 +333,7 @@ func NewConditionSequence[K any](conditions []*Condition[K], errorMode ErrorMode
 
 // Eval evaluates the result of each Condition in the ConditionSequence.
 // If any Condition evaluates to true, then true is returned.
-// If all Condition evaluate to false, then false is returned.
+// If all Conditions evaluate to false, then false is returned.
 // When the ErrorMode of the ConditionSequence is `propagate`, errors cause the evaluation to be false and an error is returned.
 // When the ErrorMode of the ConditionSequence is `ignore`, errors cause the evaluation to continue to the next condition.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
