@@ -376,7 +376,12 @@ Code Ownership is ultimately up to the judgement of the existing Code Owners and
 
 ### How to become a Code Owner
 
-To become a Code Owner, open a PR adding your GitHub username to the active codeowners entry in the component's `metadata.yaml` file. 
+To become a Code Owner, open a PR with the following changes:
+
+1. Add your GitHub username to the active codeowners entry in the component's `metadata.yaml` file.
+2. Run the command `make gengithub`. This will add your GitHub username to the component's row in the [CODEOWNERS](.github/CODEOWNERS) file. You can do this update manually if the command is unsuccessful.
+   * Note: A GitHub [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) must be configured for this command to work.
+
 Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
 
 ## Makefile Guidelines
