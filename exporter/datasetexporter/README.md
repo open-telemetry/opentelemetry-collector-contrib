@@ -284,7 +284,7 @@ Based on the given configuration and scenarios, here's the expected behavior:
 
 To enable metrics you have to:
 1. Run collector with enabled feature gate `telemetry.useOtelForInternalMetrics`. This can be done by executing it with one additional parameter - `--feature-gates=telemetry.useOtelForInternalMetrics`.
-2. Enable metrics scraping as part of the configuration with and add receiver into services:
+2. Enable metrics scraping as part of the configuration and add receiver into services:
    ```yaml
    receivers:
      prometheus:
