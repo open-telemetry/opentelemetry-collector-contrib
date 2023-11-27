@@ -6,6 +6,7 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
+	"github.com/scalyr/dataset-go/pkg/meter_config"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -32,6 +33,8 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 	logger.Info("Creating new DataSetExporter",
 		zap.String("config", config.String()),
 		zap.String("entity", entity),
+		zap.String("id.string", set.ID.String()),
+		zap.String("id.name", set.ID.Name()),
 	)
 	exporterCfg, err := config.convert()
 	if err != nil {
@@ -48,13 +51,18 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 	)
 
 	meter := set.MeterProvider.Meter("datasetexporter")
+	meterConfig := meter_config.NewMeterConfig(
+		&meter,
+		entity,
+		set.ID.Name(),
+	)
 
 	client, err := client.NewClient(
 		exporterCfg.datasetConfig,
 		&http.Client{Timeout: time.Second * 60},
 		logger,
 		&userAgent,
-		&meter,
+		meterConfig,
 	)
 	if err != nil {
 		logger.Error("Cannot create DataSetClient: ", zap.Error(err))
