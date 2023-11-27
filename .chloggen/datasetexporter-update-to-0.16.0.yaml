@@ -7,7 +7,7 @@ change_type: enhancement
 component: datasetexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Collect usage metrics with Otel and sent grouped attributes in session info.
+note: Collect usage metrics with Otel and send grouped attributes in session info.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [27650, 27652]
