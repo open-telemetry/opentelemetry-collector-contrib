@@ -7,10 +7,10 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.89.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.89.0
-	go.opentelemetry.io/collector/connector v0.89.0
-	go.opentelemetry.io/collector/consumer v0.89.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018
+	go.opentelemetry.io/collector/component v0.89.1-0.20231127181443-575c5f5e2531
+	go.opentelemetry.io/collector/connector v0.89.1-0.20231127181443-575c5f5e2531
+	go.opentelemetry.io/collector/consumer v0.89.1-0.20231127181443-575c5f5e2531
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018.0.20231127181443-575c5f5e2531
 	go.uber.org/zap v1.26.0
 )
 
@@ -67,14 +67,14 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/collector v0.89.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.89.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
-	go.opentelemetry.io/collector/semconv v0.89.0 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/collector v0.89.1-0.20231127181443-575c5f5e2531 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.89.1-0.20231127181443-575c5f5e2531 // indirect
+	go.opentelemetry.io/collector/confmap v0.89.1-0.20231127181443-575c5f5e2531 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018.0.20231127181443-575c5f5e2531 // indirect
+	go.opentelemetry.io/collector/semconv v0.89.1-0.20231127181443-575c5f5e2531 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
