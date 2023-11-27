@@ -201,7 +201,6 @@ When submitting a component to the community, consider breaking it down into sep
     * `make genotelcontribcol`
     * `make genoteltestbedcol`
     * `make generate`
-    * `make  gendependabot`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
 * **Second PR** should include the concrete implementation of the component. If the

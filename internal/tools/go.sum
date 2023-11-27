@@ -197,9 +197,9 @@ github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 h1:+zs/tPmkDkHx3U66D
 github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376/go.mod h1:an3vInlBmSxCcxctByoQdvwPiA7DTK7jaaFDBTtu0ic=
 github.com/go-git/go-billy/v5 v5.5.0 h1:yEY4yhzCDuMGSv83oGxiBotRzhwhNr8VZyphhiu+mTU=
 github.com/go-git/go-billy/v5 v5.5.0/go.mod h1:hmexnoNsr2SJU1Ju67OaNz5ASJY3+sHgFRpCtpDCKow=
-github.com/go-git/go-git-fixtures/v4 v4.3.2-0.20230305113008-0c11038e723f h1:Pz0DHeFij3XFhoBRGUDPzSJ+w2UcK5/0JvF8DRI58r8=
-github.com/go-git/go-git/v5 v5.9.0 h1:cD9SFA7sHVRdJ7AYck1ZaAa/yeuBvGPxwXDL8cxrObY=
-github.com/go-git/go-git/v5 v5.9.0/go.mod h1:RKIqga24sWdMGZF+1Ekv9kylsDz6LzdTSI2s/OsZWE0=
+github.com/go-git/go-git-fixtures/v4 v4.3.2-0.20231010084843-55a94097c399 h1:eMje31YglSBqCdIqdhKBW8lokaMrL3uTkpGYlE2OOT4=
+github.com/go-git/go-git/v5 v5.10.0 h1:F0x3xXrAWmhwtzoCokU4IMPcBdncG+HAAqi9FcOOjbQ=
+github.com/go-git/go-git/v5 v5.10.0/go.mod h1:1FOZ/pQnqw24ghP2n7cunVl0ON55BsjPYvhWHvZGhoo=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
@@ -674,8 +674,8 @@ go.opentelemetry.io/build-tools/crosslink v0.12.0 h1:GNJQURuabE5rAkIbnrqndIKyXrr
 go.opentelemetry.io/build-tools/crosslink v0.12.0/go.mod h1:QE8Kxf4Ygg2ltSHE+Vdys/67jtQM26j7spJLyjNA2DU=
 go.opentelemetry.io/build-tools/issuegenerator v0.12.0 h1:KRP7aSUR9JoqNwv+Pp595vj9NtyTlkgi+vKrYM6ZnhA=
 go.opentelemetry.io/build-tools/issuegenerator v0.12.0/go.mod h1:G71Og7dZJoIC+MjuY1InQ/oeAOkM1S5Nv6CCnlOdqns=
-go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231017203252-9b589220490e h1:Fjz9ZXO0B0VkonFgzw+wraJDdvAWqfOadIWMGF2ijas=
-go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231017203252-9b589220490e/go.mod h1:Blnlc/MP8qfX6mLF4a2j+rRnlNd94spxEuKux/mPV7E=
+go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231124155756-0ec5f4bfc9d9 h1:ynbNLbYNBv+jtaWS4ZigV4vie/Me/q4lYQ8rgYc5Vys=
+go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231124155756-0ec5f4bfc9d9/go.mod h1:TkQS6372YLmcbNkk3WWBTuBElS8q+ZVnXAkg8LQtiq8=
 go.opentelemetry.io/collector/cmd/builder v0.89.0 h1:L5rnsOAL5UX/EZgzJt6d6p0QKHf6bVSsnGRqfEPV1yM=
 go.opentelemetry.io/collector/cmd/builder v0.89.0/go.mod h1:wcxXrQyLrzvYKXCG3CqDkFpbL35cBCHke6wk2RFvmZk=
 go.tmz.dev/musttag v0.7.2 h1:1J6S9ipDbalBSODNT5jCep8dhZyMr4ttnjQagmGYR5s=
