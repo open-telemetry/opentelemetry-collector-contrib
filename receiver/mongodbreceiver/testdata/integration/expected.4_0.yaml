@@ -218,10 +218,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{collections}'
@@ -232,9 +228,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                     - key: type
                       value:
                         stringValue: active
@@ -242,9 +235,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "838857"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                     - key: type
                       value:
                         stringValue: available
@@ -252,9 +242,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "3"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                     - key: type
                       value:
                         stringValue: current
@@ -267,10 +254,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "59"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: By
@@ -281,9 +264,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                     - key: operation
                       value:
                         stringValue: insert
@@ -291,9 +271,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                     - key: operation
                       value:
                         stringValue: update
@@ -301,9 +278,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                     - key: operation
                       value:
                         stringValue: delete
@@ -316,10 +290,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
@@ -329,10 +299,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{indexes}'
@@ -342,10 +308,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4096"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: By
@@ -356,9 +318,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                     - key: type
                       value:
                         stringValue: virtual
@@ -366,9 +325,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "82837504"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                     - key: type
                       value:
                         stringValue: resident
@@ -381,10 +337,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{objects}'
@@ -394,10 +346,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4096"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
               isMonotonic: true
@@ -406,7 +354,10 @@ resourceMetrics:
           name: otelcol/mongodbreceiver
           version: latest
   - resource:
-      attributes: []
+      attributes:
+        - key: database
+          value:
+            stringValue: admin
     scopeMetrics:
       - metrics:
           - description: The number of times an index has been accessed.
@@ -416,9 +367,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: admin
                     - key: collection
                       value:
                         stringValue: system.version
@@ -441,10 +389,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{collections}'
@@ -455,9 +399,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                     - key: type
                       value:
                         stringValue: active
@@ -465,9 +406,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "838857"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                     - key: type
                       value:
                         stringValue: available
@@ -475,9 +413,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "3"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                     - key: type
                       value:
                         stringValue: current
@@ -490,10 +425,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: By
@@ -504,9 +435,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                     - key: operation
                       value:
                         stringValue: insert
@@ -514,9 +442,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                     - key: operation
                       value:
                         stringValue: update
@@ -524,9 +449,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                     - key: operation
                       value:
                         stringValue: delete
@@ -539,10 +461,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
@@ -552,10 +470,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{indexes}'
@@ -565,10 +479,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "8192"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: By
@@ -579,9 +489,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "82837504"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                     - key: type
                       value:
                         stringValue: resident
@@ -589,9 +496,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                     - key: type
                       value:
                         stringValue: virtual
@@ -604,10 +508,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{objects}'
@@ -617,10 +517,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4096"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
               isMonotonic: true
@@ -629,7 +525,10 @@ resourceMetrics:
           name: otelcol/mongodbreceiver
           version: latest
   - resource:
-      attributes: []
+      attributes:
+        - key: database
+          value:
+            stringValue: config
     scopeMetrics:
       - metrics:
           - description: The number of times an index has been accessed.
@@ -639,9 +538,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: config
                     - key: collection
                       value:
                         stringValue: system.sessions
@@ -664,10 +560,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{collections}'
@@ -678,9 +570,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "838857"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                     - key: type
                       value:
                         stringValue: available
@@ -688,9 +577,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "3"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                     - key: type
                       value:
                         stringValue: current
@@ -698,9 +584,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                     - key: type
                       value:
                         stringValue: active
@@ -713,10 +596,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1445"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: By
@@ -727,9 +606,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                     - key: operation
                       value:
                         stringValue: update
@@ -737,9 +613,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                     - key: operation
                       value:
                         stringValue: delete
@@ -747,9 +620,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                     - key: operation
                       value:
                         stringValue: insert
@@ -762,10 +632,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
@@ -775,10 +641,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{indexes}'
@@ -788,10 +650,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4096"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: By
@@ -802,9 +660,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "82837504"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                     - key: type
                       value:
                         stringValue: resident
@@ -812,9 +667,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                     - key: type
                       value:
                         stringValue: virtual
@@ -827,10 +679,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{objects}'
@@ -840,10 +688,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4096"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
               isMonotonic: true
@@ -864,10 +708,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{collections}'
@@ -878,9 +718,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                     - key: type
                       value:
                         stringValue: active
@@ -888,9 +725,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "838857"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                     - key: type
                       value:
                         stringValue: available
@@ -898,9 +732,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "3"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                     - key: type
                       value:
                         stringValue: current
@@ -913,10 +744,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: By
@@ -927,9 +754,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                     - key: operation
                       value:
                         stringValue: insert
@@ -937,9 +761,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                     - key: operation
                       value:
                         stringValue: update
@@ -947,9 +768,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                     - key: operation
                       value:
                         stringValue: delete
@@ -962,10 +780,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
@@ -975,10 +789,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{indexes}'
@@ -988,10 +798,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4096"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: By
@@ -1002,9 +808,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "82837504"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                     - key: type
                       value:
                         stringValue: resident
@@ -1012,9 +815,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                     - key: type
                       value:
                         stringValue: virtual
@@ -1027,10 +827,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{objects}'
@@ -1040,10 +836,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4096"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
               isMonotonic: true
@@ -1052,7 +844,10 @@ resourceMetrics:
           name: otelcol/mongodbreceiver
           version: latest
   - resource:
-      attributes: []
+      attributes:
+        - key: database
+          value:
+            stringValue: testdb
     scopeMetrics:
       - metrics:
           - description: The number of times an index has been accessed.
@@ -1062,9 +857,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
                     - key: collection
                       value:
                         stringValue: orders
