@@ -13,8 +13,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
-func (m *Manager) readLostFiles(ctx context.Context, newReaders []*reader.Reader) {
-	// Detect files that have been rotated out of matching pattern
+// Take care of files which disappeared from the pattern since the last poll cycle
+// this can mean either files which were removed, or rotated into a name not matching the pattern
+// we do this before reading existing files to ensure we emit older log lines before newer ones
+func (m *Manager) preConsume(ctx context.Context, newReaders []*reader.Reader) {
 	lostReaders := make([]*reader.Reader, 0, len(m.previousPollFiles))
 OUTER:
 	for _, oldReader := range m.previousPollFiles {
@@ -47,4 +49,11 @@ OUTER:
 		}(lostReader)
 	}
 	lostWG.Wait()
+}
+
+// On non-windows platforms, we keep files open between poll cycles so that we can detect
+// and read "lost" files, which have been moved out of the matching pattern.
+func (m *Manager) postConsume(readers []*reader.Reader) {
+	m.closePreviousFiles()
+	m.previousPollFiles = readers
 }

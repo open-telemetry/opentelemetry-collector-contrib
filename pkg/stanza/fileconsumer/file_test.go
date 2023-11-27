@@ -1071,6 +1071,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 
 	operator, emitChan := buildTestManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.movingAverageMatches = 10
 
 	temps := make([]*os.File, 0, initFiles+moreFiles)
 	for i := 0; i < initFiles; i++ {
@@ -1662,7 +1663,10 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	waitForToken(t, emitCalls, []byte(content))
 	expectNoTokens(t, emitCalls)
 	operator.wg.Wait()
-	require.Len(t, operator.previousPollFiles, 1)
+	if runtime.GOOS != "windows" {
+		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
+		require.Len(t, operator.previousPollFiles, 1)
+	}
 
 	// keep append data to file1 and file2
 	newContent := "bbbbbbbbbbbb"
@@ -1674,4 +1678,23 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	// be ingested from the beginning
 	waitForTokens(t, emitCalls, []byte(content), []byte(newContent1), []byte(newContent))
 	operator.wg.Wait()
+}
+
+func TestWindowsFilesClosedImmediately(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "testlog\n")
+	require.NoError(t, temp.Close())
+
+	operator.poll(context.Background())
+	waitForToken(t, emitCalls, []byte("testlog"))
+
+	// On Windows, poll should close the file after reading it. We can test this by trying to move it.
+	require.NoError(t, os.Rename(temp.Name(), temp.Name()+"_renamed"))
 }
