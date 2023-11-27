@@ -87,8 +87,6 @@ github.com/prometheus/common v0.45.0 h1:2BGz0eBc2hdMDLnO/8n0jeB3oPrt2D08CekT0lne
 github.com/prometheus/procfs v0.11.1 h1:xRC8Iq1yyca5ypa9n1EZnWZkt7dwcoRPQwX/5gwaUuI=
 github.com/prometheus/statsd_exporter v0.22.7 h1:7Pji/i2GuhK6Lu7DHrtTkFmNBCudCPT1pX2CziuyQR0=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
-github.com/scalyr/dataset-go v0.16.0 h1:69FIJzavveWAgaH4kzngI6xxxI5qn3MdevXCXmJEqo4=
-github.com/scalyr/dataset-go v0.16.0/go.mod h1:ehHlPsZSgFWxOkud1eKwmKd5bLF9LcUFrU01XuCnh+8=
 github.com/scalyr/dataset-go v0.17.0 h1:5YI/VlbLHr4Ui6SegWm0yjZYioypWB68U7nFQBKNOn8=
 github.com/scalyr/dataset-go v0.17.0/go.mod h1:ehHlPsZSgFWxOkud1eKwmKd5bLF9LcUFrU01XuCnh+8=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
