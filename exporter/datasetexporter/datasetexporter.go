@@ -6,7 +6,6 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
-	"github.com/scalyr/dataset-go/pkg/meter_config"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -15,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/scalyr/dataset-go/pkg/client"
+	"github.com/scalyr/dataset-go/pkg/meter_config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
