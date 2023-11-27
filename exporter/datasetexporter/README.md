@@ -304,7 +304,7 @@ To enable metrics you have to:
          exporters: [otlphttp/prometheus, debug]
    ```
 
-#### Available Metrics
+### Available Metrics
 
 Available metrics contain `dataset` in their name. There are counters related to the
 number of processed events (`events`), buffers (`buffer`), and transferred bytes (`bytes`).
