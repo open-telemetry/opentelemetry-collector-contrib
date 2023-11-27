@@ -6,7 +6,7 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/grafana/loki/pkg/push v0.0.0-20230321110627-5c3d204ebf5d
+	github.com/grafana/loki/pkg/push v0.0.0-20231120232741-658f4f1f2650
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0 // indirect
@@ -63,7 +63,7 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/prometheus/prometheus v0.47.2 // indirect
+	github.com/prometheus/prometheus v0.48.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.89.0 // indirect
@@ -78,12 +78,12 @@ require (
 	go.opentelemetry.io/collector/semconv v0.89.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.0 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

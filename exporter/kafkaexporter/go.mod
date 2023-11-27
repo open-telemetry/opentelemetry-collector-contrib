@@ -26,7 +26,7 @@ require (
 
 require (
 	github.com/apache/thrift v0.19.0 // indirect
-	github.com/aws/aws-sdk-go v1.47.10 // indirect
+	github.com/aws/aws-sdk-go v1.48.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eapache/go-resiliency v1.4.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
@@ -70,9 +70,9 @@ require (
 	go.opentelemetry.io/collector/extension v0.89.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
 	go.opentelemetry.io/collector/receiver v0.89.0 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/net v0.18.0 // indirect

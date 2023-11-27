@@ -77,6 +77,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
 			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
+			SendMetadata:        cfg.SendMetadata,
 		},
 	}
 	if cfg.WAL == nil {
@@ -130,12 +131,18 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
+
 		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
 			err = consumererror.NewPermanent(err)
 		}
+
+		var m []*prompb.MetricMetadata
+		if prwe.exporterSettings.SendMetadata {
+			m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
+		}
 		// Call export even if a conversion error, since there may be points that were successfully converted.
-		return multierr.Combine(err, prwe.handleExport(ctx, tsMap))
+		return multierr.Combine(err, prwe.handleExport(ctx, tsMap, m))
 	}
 }
 
@@ -151,14 +158,14 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	return sanitizedLabels, nil
 }
 
-func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []*prompb.MetricMetadata) error {
 	// There are no metrics to export, so return.
 	if len(tsMap) == 0 {
 		return nil
 	}
 
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m)
 	if err != nil {
 		return err
 	}

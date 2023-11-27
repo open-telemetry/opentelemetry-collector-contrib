@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
 go 1.20
 
 require (
-	github.com/antonmedv/expr v1.15.3
+	github.com/antonmedv/expr v1.15.5
 	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/fsnotify/fsnotify v1.7.0
-	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
+	github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
@@ -51,9 +51,9 @@ require (
 	go.opentelemetry.io/collector v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v0.89.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/grpc v1.59.0 // indirect

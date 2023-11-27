@@ -28,6 +28,7 @@ type Config struct {
 	PrivateKey                              configopaque.String           `mapstructure:"private_key"`
 	Granularity                             string                        `mapstructure:"granularity"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Projects                                []*ProjectConfig              `mapstructure:"projects"`
 	Alerts                                  AlertConfig                   `mapstructure:"alerts"`
 	Events                                  *EventsConfig                 `mapstructure:"events"`
 	Logs                                    LogConfig                     `mapstructure:"logs"`
@@ -132,6 +133,12 @@ var (
 
 func (c *Config) Validate() error {
 	var errs error
+
+	for _, project := range c.Projects {
+		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
+			errs = multierr.Append(errs, errClusterConfig)
+		}
+	}
 
 	errs = multierr.Append(errs, c.Alerts.validate())
 	errs = multierr.Append(errs, c.Logs.validate())

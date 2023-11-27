@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 go 1.20
 
 require (
-	github.com/antonmedv/expr v1.15.3
+	github.com/antonmedv/expr v1.15.5
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.89.0
@@ -38,9 +38,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
 	golang.org/x/net v0.18.0 // indirect

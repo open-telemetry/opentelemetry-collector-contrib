@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package configschema
 
 import (
@@ -48,7 +44,7 @@ func TestTypeToPackagePath_Local(t *testing.T) {
 
 func TestTypeToPackagePath_External(t *testing.T) {
 	packageDir := testTypeToPackagePath(t, otlpreceiver.Config{})
-	assert.Contains(t, packageDir, "pkg/mod/go.opentelemetry.io/collector/receiver@")
+	assert.Contains(t, packageDir, filepath.Join("pkg", "mod", "go.opentelemetry.io", "collector", "receiver@"))
 }
 
 func TestTypeToPackagePath_Error(t *testing.T) {
@@ -59,7 +55,7 @@ func TestTypeToPackagePath_Error(t *testing.T) {
 
 func TestTypeToProjectPath(t *testing.T) {
 	dir := testDR().ReflectValueToProjectPath(reflect.ValueOf(&redisreceiver.Config{}))
-	assert.Equal(t, "../../receiver/redisreceiver", dir)
+	assert.Equal(t, filepath.Join("..", "..", "receiver", "redisreceiver"), dir)
 }
 
 func TestTypetoProjectPath_External(t *testing.T) {

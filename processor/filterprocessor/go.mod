@@ -18,7 +18,7 @@ require (
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.0 // indirect
-	github.com/antonmedv/expr v1.15.3 // indirect
+	github.com/antonmedv/expr v1.15.5 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
@@ -44,9 +44,9 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
 	go.opentelemetry.io/collector/semconv v0.89.0 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect

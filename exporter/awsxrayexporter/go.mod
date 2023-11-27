@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxra
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.47.10
+	github.com/aws/aws-sdk-go v1.48.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0
@@ -40,9 +40,9 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
 	go.opentelemetry.io/collector/extension v0.89.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.89.0 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect

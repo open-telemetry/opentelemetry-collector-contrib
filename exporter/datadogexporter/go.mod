@@ -14,8 +14,8 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.8.1
 	github.com/DataDog/sketches-go v1.4.3
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.20.0
-	github.com/aws/aws-sdk-go v1.47.10
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
+	github.com/aws/aws-sdk-go v1.48.3
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0
@@ -46,8 +46,8 @@ require (
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
-	k8s.io/apimachinery v0.28.3
-	k8s.io/client-go v0.28.3
+	k8s.io/apimachinery v0.28.4
+	k8s.io/client-go v0.28.4
 )
 
 require (
@@ -66,7 +66,7 @@ require (
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/antonmedv/expr v1.15.3 // indirect
+	github.com/antonmedv/expr v1.15.5 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
@@ -106,7 +106,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1 // indirect
-	github.com/hashicorp/consul/api v1.25.1 // indirect
+	github.com/hashicorp/consul/api v1.26.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
@@ -118,7 +118,7 @@ require (
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
+	github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -190,7 +190,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.20.0 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v0.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.43.0 // indirect
@@ -200,14 +200,14 @@ require (
 	go.opentelemetry.io/otel/exporters/prometheus v0.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.20.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.21.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
+	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect
@@ -223,7 +223,7 @@ require (
 	google.golang.org/grpc v1.59.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.28.3 // indirect
+	k8s.io/api v0.28.4 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileex
 go 1.20
 
 require (
-	github.com/klauspost/compress v1.17.2
+	github.com/klauspost/compress v1.17.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.89.0
 	github.com/stretchr/testify v1.8.4
@@ -37,9 +37,9 @@ require (
 	go.opentelemetry.io/collector/extension v0.89.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
 	go.opentelemetry.io/collector/receiver v0.89.0 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/net v0.18.0 // indirect

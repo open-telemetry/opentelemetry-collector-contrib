@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphan
 go 1.20
 
 require (
-	github.com/SAP/go-hdb v1.3.10
+	github.com/SAP/go-hdb v1.6.1
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.89.0
@@ -47,7 +47,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.20.0 // indirect
 	go.opentelemetry.io/otel/trace v1.20.0 // indirect
 	golang.org/x/crypto v0.15.0 // indirect
-	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

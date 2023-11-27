@@ -10,15 +10,15 @@ require (
 	go.opentelemetry.io/collector/component v0.89.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018
 	go.opentelemetry.io/collector/semconv v0.89.0
-	go.opentelemetry.io/otel v1.20.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.43.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.43.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.20.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.20.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.20.0
-	go.opentelemetry.io/otel/sdk v1.20.0
-	go.opentelemetry.io/otel/sdk/metric v1.20.0
-	go.opentelemetry.io/otel/trace v1.20.0
+	go.opentelemetry.io/otel v1.21.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.44.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.44.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.21.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.21.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.21.0
+	go.opentelemetry.io/otel/sdk v1.21.0
+	go.opentelemetry.io/otel/sdk/metric v1.21.0
+	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/time v0.4.0
 	google.golang.org/grpc v1.59.0
@@ -47,7 +47,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.89.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
