@@ -48,7 +48,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
-- `num_traces` (default = 50000): Number of traces kept in memory. Increasing this value can help to resolve `sampling_trace_dropped_too_early` errors.
+- `num_traces` (default = 50000): Number of traces kept in memory. Increasing this value can help in resolving `sampling_trace_dropped_too_early` errors.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
