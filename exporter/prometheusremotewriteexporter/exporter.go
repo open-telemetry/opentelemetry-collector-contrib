@@ -260,8 +260,6 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 			return err
 		}
 		defer resp.Body.Close()
-		prwe.settings.Logger.Debug(fmt.Sprintf("HTTP request returned with status: %v", resp.Status))
-
 		// 2xx status code is considered a success
 		// 5xx errors are recoverable and the exporter should retry
 		// Reference for different behavior according to status code:
@@ -272,10 +270,12 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		}
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
-		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
+		rerr := fmt.Errorf("remote write returned HTTP status %v; url: %s; err = %w: %s", resp.Status, req.URL, err, body)
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return rerr
 		}
+
+		prwe.settings.Logger.Error("error sending metrics: ", zap.Error(rerr))
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 
@@ -296,7 +296,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	}
 
 	if err != nil {
-		prwe.settings.Logger.Error("error sending metrics: ", zap.Error(err))
+		// prwe.settings.Logger.Error("error sending metrics: ", zap.Error(err))
 		return consumererror.NewPermanent(err)
 	}
 
