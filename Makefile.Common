@@ -203,3 +203,8 @@ moddownload:
 gci: $(TOOLS_BIN_DIR)/gci
 	@echo "running $(GCI)"
 	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $(ALL_SRC_AND_DOC)
+
+.PHONY: updatedep
+updatedep:
+	$(PWD)/internal/buildscripts/update-dep
+	@$(MAKE) tidy
