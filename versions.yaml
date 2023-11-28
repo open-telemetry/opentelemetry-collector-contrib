@@ -55,6 +55,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
@@ -261,4 +262,4 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
-  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
+

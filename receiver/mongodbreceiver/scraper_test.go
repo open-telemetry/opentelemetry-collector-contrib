@@ -289,6 +289,9 @@ func TestScraperScrape(t *testing.T) {
 
 			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), scraperCfg)
 
+			// Set removeDatabaseAttr as true to simulate enable removeDatabaseAttrFeatureGate
+			scraper.removeDatabaseAttr = true
+
 			mc := tc.setupMockClient(t)
 			if mc != nil {
 				scraper.client = mc

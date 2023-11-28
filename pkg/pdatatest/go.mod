@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.89.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018.0.20231127181443-575c5f5e2531
 	go.uber.org/multierr v1.11.0
 )
 
