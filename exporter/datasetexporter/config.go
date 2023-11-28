@@ -5,7 +5,6 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -184,9 +183,10 @@ func (c *Config) Validate() error {
 // String returns a string representation of the Config object.
 // It includes all the fields and their values in the format "field_name: field_value".
 func (c *Config) String() string {
+	apiKey, _ := c.APIKey.MarshalText()
 	s := ""
 	s += fmt.Sprintf("%s: %s; ", "DatasetURL", c.DatasetURL)
-	s += fmt.Sprintf("%s: %s (%d); ", "APIKey", strings.Repeat("*", len(c.APIKey)), len(c.APIKey))
+	s += fmt.Sprintf("%s: %s (%d); ", "APIKey", apiKey, len(c.APIKey))
 	s += fmt.Sprintf("%s: %t; ", "Debug", c.Debug)
 	s += fmt.Sprintf("%s: %+v; ", "BufferSettings", c.BufferSettings)
 	s += fmt.Sprintf("%s: %+v; ", "LogsSettings", c.LogsSettings)
