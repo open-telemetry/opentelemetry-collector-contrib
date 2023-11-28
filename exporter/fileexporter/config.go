@@ -5,6 +5,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -67,6 +68,7 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	fmt.Println("this is a test", cfg)
 	if cfg.Path == "" {
 		return errors.New("path must be non-empty")
 	}

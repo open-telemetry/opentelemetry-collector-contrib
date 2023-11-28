@@ -21,8 +21,14 @@ type WrappedConnection interface {
 
 type WrappedChannel interface {
 	Confirm(noWait bool) error
-	PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (*amqp.DeferredConfirmation, error)
+	PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (WrappedDeferredConfirmation, error)
 	Close() error
+}
+
+type WrappedDeferredConfirmation interface {
+	DeliveryTag() uint64
+	Done() chan struct{}
+	Acked() bool
 }
 
 type amqpClient struct{}
@@ -37,6 +43,10 @@ type wrappedConnection struct {
 
 type wrappedChannel struct {
 	channel *amqp.Channel
+}
+
+type wrappedDeferredConfirmation struct {
+	confirmation *amqp.DeferredConfirmation
 }
 
 func (*amqpClient) DialConfig(url string, config amqp.Config) (WrappedConnection, error) {
@@ -78,10 +88,27 @@ func (c *wrappedChannel) Confirm(noWait bool) error {
 	return c.channel.Confirm(noWait)
 }
 
-func (c *wrappedChannel) PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (*amqp.DeferredConfirmation, error) {
-	return c.channel.PublishWithDeferredConfirmWithContext(ctx, exchange, key, mandatory, immediate, msg)
+func (c *wrappedChannel) PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg amqp.Publishing) (WrappedDeferredConfirmation, error) {
+	confirmation, err := c.channel.PublishWithDeferredConfirmWithContext(ctx, exchange, key, mandatory, immediate, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wrappedDeferredConfirmation{confirmation: confirmation}, nil
 }
 
 func (c *wrappedChannel) Close() error {
 	return c.channel.Close()
+}
+
+func (c *wrappedDeferredConfirmation) DeliveryTag() uint64 {
+	return c.confirmation.DeliveryTag
+}
+
+func (c *wrappedDeferredConfirmation) Done() chan struct{} {
+	return c.Done()
+}
+
+func (c *wrappedDeferredConfirmation) Acked() bool {
+	return c.Acked()
 }

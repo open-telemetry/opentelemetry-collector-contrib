@@ -174,8 +174,8 @@ func (acc *amqpChannelCacher) requestHealthyChannelFromPool() (*amqpChannelManag
 		err := acc.reconnectChannel(channelWrapper)
 		if err != nil {
 			acc.returnChannelToPool(channelWrapper, false)
+			return nil, err
 		}
-		return nil, err
 	}
 	return channelWrapper, nil
 }

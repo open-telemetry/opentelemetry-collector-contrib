@@ -88,15 +88,15 @@ func (e *rabbitMqLogsProducer) pushData(ctx context.Context, data plog.Logs, wra
 	select {
 	case <-confirmation.Done():
 		if confirmation.Acked() {
-			e.set.Logger.Debug("Received ack", zap.Int("channelId", wrapper.id), zap.Uint64("deliveryTag", confirmation.DeliveryTag))
+			e.set.Logger.Debug("Received ack", zap.Int("channelId", wrapper.id), zap.Uint64("deliveryTag", confirmation.DeliveryTag()))
 			return nil, true
 		}
-		e.set.Logger.Warn("Received nack from rabbitmq publishing confirmation", zap.Uint64("deliveryTag", confirmation.DeliveryTag))
+		e.set.Logger.Warn("Received nack from rabbitmq publishing confirmation", zap.Uint64("deliveryTag", confirmation.DeliveryTag()))
 		err := errors.New("received nack from rabbitmq publishing confirmation")
 		return err, true
 
 	case <-time.After(e.config.publishConfirmationTimeout):
-		e.set.Logger.Warn("Timeout waiting for publish confirmation", zap.Duration("timeout", e.config.publishConfirmationTimeout), zap.Uint64("deliveryTag", confirmation.DeliveryTag))
+		e.set.Logger.Warn("Timeout waiting for publish confirmation", zap.Duration("timeout", e.config.publishConfirmationTimeout), zap.Uint64("deliveryTag", confirmation.DeliveryTag()))
 		err := fmt.Errorf("timeout waiting for publish confirmation after %s", e.config.publishConfirmationTimeout)
 		return err, false
 	}
