@@ -34,7 +34,7 @@ type OAuth2 struct {
 	ClientSecret string   `mapstructure:"client_secret"`
 	Audience     string   `mapstructure:"audience"`
 	Scopes       []string `mapstructure:"scopes"`
-	TokenURL     string   `mapstructure:"tokenURL"`
+	TokenURL     string   `mapstructure:"token_url"`
 }
 
 // PlainTextConfig defines plaintext authentication.
@@ -184,6 +184,7 @@ func configureOauth2(config OAuth2, saramaConfig *sarama.Config) {
 	saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 	provider := newTokenProvider(config)
 	saramaConfig.Net.SASL.TokenProvider = provider
+
 }
 
 type TokenProvider struct {
