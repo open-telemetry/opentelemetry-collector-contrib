@@ -22,7 +22,7 @@ resource_attributes:
       description: The name of the Git vendor/provider (ie. GitHub / GitLab)
       type: string
 
-## Attritbutes that will be uncommented when the rest of the metrics are added
+## Attributes that will be uncommented when the rest of the metrics are added
 attributes:
   repository.name:
       description: The full name of the Git repository
