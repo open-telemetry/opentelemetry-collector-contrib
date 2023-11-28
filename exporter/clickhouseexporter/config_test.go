@@ -31,6 +31,8 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
+	storageID := component.NewIDWithName(component.Type("file_storage"), "clickhouse")
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -63,8 +65,11 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				ConnectionParams: map[string]string{},
-				QueueSettings: QueueSettings{
-					QueueSize: 100,
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 1,
+					QueueSize:    100,
+					StorageID:    &storageID,
 				},
 			},
 		},

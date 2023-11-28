@@ -102,7 +102,7 @@ receivers:
 processors:
 
 exporters:
-  logging:
+  debug:
     verbosity: detailed
 
 service:
@@ -110,7 +110,7 @@ service:
     metrics:
       receivers: [awscloudwatchmetrics]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 ## AWS Costs

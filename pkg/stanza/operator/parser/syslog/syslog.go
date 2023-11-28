@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	sl "github.com/influxdata/go-syslog/v3"
@@ -77,17 +78,21 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
+	proto := strings.ToLower(c.Protocol)
+
 	switch {
-	case c.Protocol == "":
+	case proto == "":
 		return nil, fmt.Errorf("missing field 'protocol'")
-	case c.Protocol != RFC5424 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
+	case proto != RFC5424 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
 		return nil, errors.New("octet_counting and non_transparent_framing are only compatible with protocol rfc5424")
-	case c.Protocol == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
+	case proto == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
 		return nil, errors.New("only one of octet_counting or non_transparent_framing can be enabled")
-	case c.Protocol == RFC5424 && c.NonTransparentFramingTrailer != nil:
+	case proto == RFC5424 && c.NonTransparentFramingTrailer != nil:
 		if *c.NonTransparentFramingTrailer != NULTrailer && *c.NonTransparentFramingTrailer != LFTrailer {
 			return nil, fmt.Errorf("invalid non_transparent_framing_trailer '%s'. Must be either 'LF' or 'NUL'", *c.NonTransparentFramingTrailer)
 		}
+	case proto != RFC5424 && proto != RFC3164:
+		return nil, fmt.Errorf("unsupported protocol version: %s", proto)
 	}
 
 	if c.Location == "" {
@@ -101,7 +106,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	return &Parser{
 		ParserOperator:               parserOperator,
-		protocol:                     c.Protocol,
+		protocol:                     proto,
 		location:                     location,
 		enableOctetCounting:          c.EnableOctetCounting,
 		nonTransparentFramingTrailer: c.NonTransparentFramingTrailer,
@@ -154,7 +159,7 @@ func (s *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // parse will parse a value as syslog.
-func (s *Parser) parse(value interface{}) (interface{}, error) {
+func (s *Parser) parse(value any) (any, error) {
 	bytes, err := toBytes(value)
 	if err != nil {
 		return nil, err
@@ -181,8 +186,8 @@ func (s *Parser) parse(value interface{}) (interface{}, error) {
 }
 
 // parseRFC3164 will parse an RFC3164 syslog message.
-func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]interface{}, error) {
-	value := map[string]interface{}{
+func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]any, error) {
+	value := map[string]any{
 		"timestamp": syslogMessage.Timestamp,
 		"priority":  syslogMessage.Priority,
 		"facility":  syslogMessage.Facility,
@@ -197,8 +202,8 @@ func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]
 }
 
 // parseRFC5424 will parse an RFC5424 syslog message.
-func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]interface{}, error) {
-	value := map[string]interface{}{
+func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]any, error) {
+	value := map[string]any{
 		"timestamp":       syslogMessage.Timestamp,
 		"priority":        syslogMessage.Priority,
 		"facility":        syslogMessage.Facility,
@@ -215,7 +220,7 @@ func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]
 }
 
 // toSafeMap will dereference any pointers on the supplied map.
-func (s *Parser) toSafeMap(message map[string]interface{}) (map[string]interface{}, error) {
+func (s *Parser) toSafeMap(message map[string]any) (map[string]any, error) {
 	for key, val := range message {
 		switch v := val.(type) {
 		case *string:
@@ -243,7 +248,7 @@ func (s *Parser) toSafeMap(message map[string]interface{}) (map[string]interface
 				delete(message, key)
 				continue
 			}
-			message[key] = *v
+			message[key] = convertMap(*v)
 		default:
 			return nil, fmt.Errorf("key %s has unknown field of type %T", key, v)
 		}
@@ -252,7 +257,23 @@ func (s *Parser) toSafeMap(message map[string]interface{}) (map[string]interface
 	return message, nil
 }
 
-func toBytes(value interface{}) ([]byte, error) {
+// convertMap converts map[string]map[string]string to map[string]any
+// which is expected by stanza converter
+func convertMap(data map[string]map[string]string) map[string]any {
+	ret := map[string]any{}
+	for key, value := range data {
+		ret[key] = map[string]any{}
+		r := ret[key].(map[string]any)
+
+		for k, v := range value {
+			r[k] = v
+		}
+	}
+
+	return ret
+}
+
+func toBytes(value any) ([]byte, error) {
 	switch v := value.(type) {
 	case string:
 		return []byte(v), nil

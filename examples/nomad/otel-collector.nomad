@@ -96,14 +96,14 @@ processors:
     check_interval: 5s
 
 exporters:
-  logging:
-    logLevel: debug
+  debug:
+    verbosity: detailed
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [logging]
+      exporters: [debug]
 
 EOH
 

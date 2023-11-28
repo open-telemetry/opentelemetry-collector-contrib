@@ -111,7 +111,7 @@ func (d *deploymentClient) shutdown() {
 	d.stopped = true
 }
 
-func transformFuncDeployment(obj interface{}) (interface{}, error) {
+func transformFuncDeployment(obj any) (any, error) {
 	deployment, ok := obj.(*appsv1.Deployment)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Deployment type", obj)

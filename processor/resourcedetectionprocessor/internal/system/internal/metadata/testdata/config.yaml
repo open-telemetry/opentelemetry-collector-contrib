@@ -3,6 +3,18 @@ all_set:
   resource_attributes:
     host.arch:
       enabled: true
+    host.cpu.cache.l2.size:
+      enabled: true
+    host.cpu.family:
+      enabled: true
+    host.cpu.model.id:
+      enabled: true
+    host.cpu.model.name:
+      enabled: true
+    host.cpu.stepping:
+      enabled: true
+    host.cpu.vendor.id:
+      enabled: true
     host.id:
       enabled: true
     host.name:
@@ -14,6 +26,18 @@ all_set:
 none_set:
   resource_attributes:
     host.arch:
+      enabled: false
+    host.cpu.cache.l2.size:
+      enabled: false
+    host.cpu.family:
+      enabled: false
+    host.cpu.model.id:
+      enabled: false
+    host.cpu.model.name:
+      enabled: false
+    host.cpu.stepping:
+      enabled: false
+    host.cpu.vendor.id:
       enabled: false
     host.id:
       enabled: false

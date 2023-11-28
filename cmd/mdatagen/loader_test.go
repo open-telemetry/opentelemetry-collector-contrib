@@ -74,7 +74,41 @@ func Test_loadMetadata(t *testing.T) {
 						},
 						FullName: "map.resource.attr",
 					},
+					"string.resource.attr_disable_warning": {
+						Description: "Resource attribute with any string value.",
+						Warnings: warnings{
+							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
+						},
+						Enabled: true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.resource.attr_disable_warning",
+					},
+					"string.resource.attr_remove_warning": {
+						Description: "Resource attribute with any string value.",
+						Warnings: warnings{
+							IfConfigured: "This resource_attribute is deprecated and will be removed soon.",
+						},
+						Enabled: false,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.resource.attr_remove_warning",
+					},
+					"string.resource.attr_to_be_removed": {
+						Description: "Resource attribute with any string value.",
+						Warnings: warnings{
+							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
+						},
+						Enabled: true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.resource.attr_to_be_removed",
+					},
 				},
+
 				Attributes: map[attributeName]attribute{
 					"enum_attr": {
 						Description:  "Attribute with a known set of string values.",
@@ -131,7 +165,7 @@ func Test_loadMetadata(t *testing.T) {
 						Warnings: warnings{
 							IfEnabledNotSet: "This metric will be disabled by default soon.",
 						},
-						Unit: "s",
+						Unit: strPtr("s"),
 						Sum: &sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -145,12 +179,25 @@ func Test_loadMetadata(t *testing.T) {
 						Warnings: warnings{
 							IfConfigured: "This metric is deprecated and will be removed soon.",
 						},
-						Unit: "1",
+						Unit: strPtr("1"),
 						Gauge: &gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
 						Attributes: []attributeName{"string_attr", "boolean_attr"},
 					},
+					"optional.metric.empty_unit": {
+						Enabled:     false,
+						Description: "[DEPRECATED] Gauge double metric disabled by default.",
+						Warnings: warnings{
+							IfConfigured: "This metric is deprecated and will be removed soon.",
+						},
+						Unit: strPtr(""),
+						Gauge: &gauge{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+						},
+						Attributes: []attributeName{"string_attr", "boolean_attr"},
+					},
+
 					"default.metric.to_be_removed": {
 						Enabled:               true,
 						Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
@@ -158,7 +205,7 @@ func Test_loadMetadata(t *testing.T) {
 						Warnings: warnings{
 							IfEnabled: "This metric is deprecated and will be removed soon.",
 						},
-						Unit: "s",
+						Unit: strPtr("s"),
 						Sum: &sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityDelta},
@@ -227,4 +274,8 @@ func Test_loadMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+func strPtr(s string) *string {
+	return &s
 }

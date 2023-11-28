@@ -168,7 +168,7 @@ func newParser[G any]() *participle.Parser[G] {
 		participle.UseLookahead(participle.MaxLookahead), // Allows negative lookahead to work properly in 'value' for 'mathExprLiteral'.
 	)
 	if err != nil {
-		panic("Unable to initialize parser; this is a programming error in the transformprocessor:" + err.Error())
+		panic("Unable to initialize parser; this is a programming error in OTTL:" + err.Error())
 	}
 	return parser
 }

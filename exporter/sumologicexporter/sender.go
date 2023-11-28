@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 )
 
 type appendResponse struct {
@@ -181,7 +180,7 @@ func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
 func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, error) {
 	var (
 		body           strings.Builder
-		errs           error
+		errs           []error
 		droppedRecords []plog.LogRecord
 		currentRecords []plog.LogRecord
 	)
@@ -201,13 +200,13 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, e
 
 		if err != nil {
 			droppedRecords = append(droppedRecords, record)
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		ar, err := s.appendAndSend(ctx, formattedLine, LogsPipeline, &body, flds)
 		if err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			if ar.sent {
 				droppedRecords = append(droppedRecords, currentRecords...)
 			}
@@ -230,19 +229,19 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, e
 
 	if body.Len() > 0 {
 		if err := s.send(ctx, LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			droppedRecords = append(droppedRecords, currentRecords...)
 		}
 	}
 
-	return droppedRecords, errs
+	return droppedRecords, errors.Join(errs...)
 }
 
 // sendMetrics sends metrics in right format basing on the s.config.MetricFormat
 func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, error) {
 	var (
 		body           strings.Builder
-		errs           error
+		errs           []error
 		droppedRecords []metricPair
 		currentRecords []metricPair
 	)
@@ -264,13 +263,13 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 
 		if err != nil {
 			droppedRecords = append(droppedRecords, record)
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		ar, err := s.appendAndSend(ctx, formattedLine, MetricsPipeline, &body, flds)
 		if err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			if ar.sent {
 				droppedRecords = append(droppedRecords, currentRecords...)
 			}
@@ -293,12 +292,12 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 
 	if body.Len() > 0 {
 		if err := s.send(ctx, MetricsPipeline, strings.NewReader(body.String()), flds); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			droppedRecords = append(droppedRecords, currentRecords...)
 		}
 	}
 
-	return droppedRecords, errs
+	return droppedRecords, errors.Join(errs...)
 }
 
 // appendAndSend appends line to the request body that will be sent and sends
@@ -311,19 +310,19 @@ func (s *sender) appendAndSend(
 	body *strings.Builder,
 	flds fields,
 ) (appendResponse, error) {
-	var errs error
+	var errs []error
 	ar := newAppendResponse()
 
 	if body.Len() > 0 && body.Len()+len(line) >= s.config.MaxRequestBodySize {
 		ar.sent = true
-		errs = multierr.Append(errs, s.send(ctx, pipeline, strings.NewReader(body.String()), flds))
+		errs = append(errs, s.send(ctx, pipeline, strings.NewReader(body.String()), flds))
 		body.Reset()
 	}
 
 	if body.Len() > 0 {
 		// Do not add newline if the body is empty
 		if _, err := body.WriteString("\n"); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			ar.appended = false
 		}
 	}
@@ -331,12 +330,12 @@ func (s *sender) appendAndSend(
 	if ar.appended {
 		// Do not append new line if separator was not appended
 		if _, err := body.WriteString(line); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			ar.appended = false
 		}
 	}
 
-	return ar, errs
+	return ar, errors.Join(errs...)
 }
 
 // cleanLogsBuffer zeroes logBuffer

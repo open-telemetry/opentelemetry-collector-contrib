@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var podArray = []interface{}{
+var podArray = []any{
 	&v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
@@ -196,7 +196,7 @@ func TestPodClient_PodNameToPodMap(t *testing.T) {
 	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
 	setOption := podSyncCheckerOption(&mockReflectorSyncChecker{})
 
-	samplePodArray := []interface{}{
+	samplePodArray := []any{
 		&v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
@@ -219,7 +219,7 @@ func TestPodClient_PodNameToPodMap(t *testing.T) {
 		{
 			Name:      "kube-proxy-csm88",
 			Namespace: "kube-system",
-			Uid:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
+			UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 			Labels:    map[string]string{},
 			Phase:     v1.PodRunning,
 		},

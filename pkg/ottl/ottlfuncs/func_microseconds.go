@@ -11,7 +11,7 @@ import (
 )
 
 type MicrosecondsArguments[K any] struct {
-	Duration ottl.DurationGetter[K] `ottlarg:"0"`
+	Duration ottl.DurationGetter[K]
 }
 
 func NewMicrosecondsFactory[K any]() ottl.Factory[K] {
@@ -28,7 +28,7 @@ func createMicrosecondsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argume
 }
 
 func Microseconds[K any](duration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

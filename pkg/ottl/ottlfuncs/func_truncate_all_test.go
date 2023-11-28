@@ -21,7 +21,7 @@ func Test_truncateAll(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -94,20 +94,20 @@ func Test_truncateAll(t *testing.T) {
 }
 
 func Test_truncateAll_validation(t *testing.T) {
-	_, err := TruncateAll[interface{}](&ottl.StandardPMapGetter[interface{}]{}, -1)
+	_, err := TruncateAll[any](&ottl.StandardPMapGetter[any]{}, -1)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
 }
 
 func Test_truncateAll_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
 
-	exprFunc, err := TruncateAll[interface{}](target, 1)
+	exprFunc, err := TruncateAll[any](target, 1)
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -115,13 +115,13 @@ func Test_truncateAll_bad_input(t *testing.T) {
 }
 
 func Test_truncateAll_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
 
-	exprFunc, err := TruncateAll[interface{}](target, 1)
+	exprFunc, err := TruncateAll[any](target, 1)
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, nil)

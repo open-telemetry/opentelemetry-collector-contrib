@@ -168,7 +168,7 @@ func (m *mockEventBroadcaster) StartRecordingToSink(_ record.EventSink) watch.In
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...interface{})) watch.Interface {
+func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...any)) watch.Interface {
 	return watch.NewFake()
 }
 
@@ -301,7 +301,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		{
 			Name:      "kube-proxy-csm88",
 			Namespace: "kube-system",
-			Uid:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
+			UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 			Phase:     v1.PodPending,
 		},
 	})

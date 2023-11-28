@@ -24,9 +24,9 @@ If `ignore_host_key` is not set then host key validation requires the agent eith
 The following settings are required:
 - `endpoint`
 - `username`
-- `password` or `keyfile`
+- `password` or `key_file`
 
-Either `password` or `keyfile` must be set. But if both are set then password is treated as the `passphrase` and the key is assumed to be encrypted.
+Either `password` or `key_file` must be set. But if both are set then password is treated as the `passphrase` and the key is assumed to be encrypted.
 
 The following settings are optional:
 

@@ -452,55 +452,6 @@ func newMetricContainerBlockioSectorsRecursive(cfg MetricConfig) metricContainer
 	return m
 }
 
-type metricContainerCPUPercent struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills container.cpu.percent metric with initial data.
-func (m *metricContainerCPUPercent) init() {
-	m.data.SetName("container.cpu.percent")
-	m.data.SetDescription("Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricContainerCPUPercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerCPUPercent) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerCPUPercent) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricContainerCPUPercent(cfg MetricConfig) metricContainerCPUPercent {
-	m := metricContainerCPUPercent{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricContainerCPUThrottlingDataPeriods struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3487,7 +3438,6 @@ type MetricsBuilder struct {
 	metricContainerBlockioIoTimeRecursive            metricContainerBlockioIoTimeRecursive
 	metricContainerBlockioIoWaitTimeRecursive        metricContainerBlockioIoWaitTimeRecursive
 	metricContainerBlockioSectorsRecursive           metricContainerBlockioSectorsRecursive
-	metricContainerCPUPercent                        metricContainerCPUPercent
 	metricContainerCPUThrottlingDataPeriods          metricContainerCPUThrottlingDataPeriods
 	metricContainerCPUThrottlingDataThrottledPeriods metricContainerCPUThrottlingDataThrottledPeriods
 	metricContainerCPUThrottlingDataThrottledTime    metricContainerCPUThrottlingDataThrottledTime
@@ -3559,12 +3509,6 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if mbc.Metrics.ContainerCPUPercent.Enabled {
-		settings.Logger.Warn("[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.")
-	}
-	if !mbc.Metrics.ContainerCPUUtilization.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.")
-	}
 	mb := &MetricsBuilder{
 		config:                                  mbc,
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
@@ -3578,7 +3522,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(mbc.Metrics.ContainerBlockioIoTimeRecursive),
 		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(mbc.Metrics.ContainerBlockioIoWaitTimeRecursive),
 		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(mbc.Metrics.ContainerBlockioSectorsRecursive),
-		metricContainerCPUPercent:                        newMetricContainerCPUPercent(mbc.Metrics.ContainerCPUPercent),
 		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(mbc.Metrics.ContainerCPUThrottlingDataPeriods),
 		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(mbc.Metrics.ContainerCPUThrottlingDataThrottledPeriods),
 		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(mbc.Metrics.ContainerCPUThrottlingDataThrottledTime),
@@ -3707,7 +3650,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerBlockioIoTimeRecursive.emit(ils.Metrics())
 	mb.metricContainerBlockioIoWaitTimeRecursive.emit(ils.Metrics())
 	mb.metricContainerBlockioSectorsRecursive.emit(ils.Metrics())
-	mb.metricContainerCPUPercent.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataPeriods.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataThrottledPeriods.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataThrottledTime.emit(ils.Metrics())
@@ -3824,11 +3766,6 @@ func (mb *MetricsBuilder) RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts 
 // RecordContainerBlockioSectorsRecursiveDataPoint adds a data point to container.blockio.sectors_recursive metric.
 func (mb *MetricsBuilder) RecordContainerBlockioSectorsRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	mb.metricContainerBlockioSectorsRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
-}
-
-// RecordContainerCPUPercentDataPoint adds a data point to container.cpu.percent metric.
-func (mb *MetricsBuilder) RecordContainerCPUPercentDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricContainerCPUPercent.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerCPUThrottlingDataPeriodsDataPoint adds a data point to container.cpu.throttling_data.periods metric.

@@ -40,9 +40,9 @@ func TestNewTracesProcessor(t *testing.T) {
 type testCase struct {
 	serviceName      string
 	inputName        string
-	inputAttributes  map[string]interface{}
+	inputAttributes  map[string]any
 	outputName       string
-	outputAttributes map[string]interface{}
+	outputAttributes map[string]any
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -55,7 +55,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp processor.Traces) {
 	})
 }
 
-func generateTraceData(serviceName, inputName string, attrs map[string]interface{}) ptrace.Traces {
+func generateTraceData(serviceName, inputName string, attrs map[string]any) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
@@ -137,47 +137,47 @@ func TestSpanProcessor_Values(t *testing.T) {
 		},
 		{
 			inputName:        "empty-attributes",
-			inputAttributes:  map[string]interface{}{},
+			inputAttributes:  map[string]any{},
 			outputName:       "empty-attributes",
-			outputAttributes: map[string]interface{}{},
+			outputAttributes: map[string]any{},
 		},
 		{
 			inputName: "string-type",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": "bob",
 			},
 			outputName: "bob",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": "bob",
 			},
 		},
 		{
 			inputName: "int-type",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": 123,
 			},
 			outputName: "123",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": 123,
 			},
 		},
 		{
 			inputName: "double-type",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": 234.129312,
 			},
 			outputName: "234.129312",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": 234.129312,
 			},
 		},
 		{
 			inputName: "bool-type",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": true,
 			},
 			outputName: "true",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": true,
 			},
 		},
@@ -224,13 +224,13 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	testCases := []testCase{
 		{
 			inputName: "first-keys-missing",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key2": 123,
 				"key3": 234.129312,
 				"key4": true,
 			},
 			outputName: "first-keys-missing",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key2": 123,
 				"key3": 234.129312,
 				"key4": true,
@@ -238,13 +238,13 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 		},
 		{
 			inputName: "middle-key-missing",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key4": true,
 			},
 			outputName: "middle-key-missing",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key4": true,
@@ -252,13 +252,13 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 		},
 		{
 			inputName: "last-key-missing",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key3": 234.129312,
 			},
 			outputName: "last-key-missing",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key3": 234.129312,
@@ -266,14 +266,14 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 		},
 		{
 			inputName: "all-keys-exists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key3": 234.129312,
 				"key4": true,
 			},
 			outputName: "bob::123::234.129312::true",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"key1": "bob",
 				"key2": 123,
 				"key3": 234.129312,
@@ -312,7 +312,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"ensure no separator in the rename with one key",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
@@ -320,7 +320,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 		}), traceData))
 }
@@ -340,7 +340,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 
 	traceData := generateTraceData(
 		"",
-		"ensure no separator in the rename with two keys", map[string]interface{}{
+		"ensure no separator in the rename with two keys", map[string]any{
 			"key1": "bob",
 			"key2": 123,
 		})
@@ -349,7 +349,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob123",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 			"key2": 123,
 		}), traceData))
@@ -371,7 +371,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"rename with separators and multiple keys",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 			"key2": 123,
 			"key3": 234.129312,
@@ -382,7 +382,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob::123::234.129312::true",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 			"key2": 123,
 			"key3": 234.129312,
@@ -406,7 +406,7 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
@@ -414,7 +414,7 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob",
-		map[string]interface{}{
+		map[string]any{
 			"key1": "bob",
 		}), traceData))
 }
@@ -431,9 +431,9 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update\/1$`},
 			testCase: testCase{
 				inputName:       "/api/v1/document/321083210/update/1",
-				inputAttributes: map[string]interface{}{},
+				inputAttributes: map[string]any{},
 				outputName:      "/api/v1/document/{documentId}/update/1",
-				outputAttributes: map[string]interface{}{
+				outputAttributes: map[string]any{
 					"documentId": "321083210",
 				},
 			},
@@ -444,7 +444,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/2",
 				outputName: "/api/{version}/document/{documentId}/update/2",
-				outputAttributes: map[string]interface{}{
+				outputAttributes: map[string]any{
 					"documentId": "321083210",
 					"version":    "v1",
 				},
@@ -457,7 +457,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/3",
 				outputName: "/api/{version}/document/{documentId}/update/3",
-				outputAttributes: map[string]interface{}{
+				outputAttributes: map[string]any{
 					"documentId": "321083210",
 					"version":    "v1",
 				},
@@ -471,7 +471,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/4",
 				outputName: "/api/v1/document/{documentId}/update/4",
-				outputAttributes: map[string]interface{}{
+				outputAttributes: map[string]any{
 					"documentId": "321083210",
 				},
 			},
@@ -520,29 +520,29 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 			serviceName: "banks",
 			inputName:   "www.test.com/code",
 			outputName:  "{operation_website}",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"operation_website": "www.test.com/code",
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"operation_website": "www.test.com/code",
 			},
 			outputName: "{operation_website}",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"operation_website": "donot/",
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/change",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"operation_website": "www.test.com/code",
 			},
 			outputName: "donot/change",
-			outputAttributes: map[string]interface{}{
+			outputAttributes: map[string]any{
 				"operation_website": "www.test.com/code",
 			},
 		},
@@ -572,7 +572,7 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	}
 }
 
-func generateTraceDataSetStatus(code ptrace.StatusCode, description string, attrs map[string]interface{}) ptrace.Traces {
+func generateTraceDataSetStatus(code ptrace.StatusCode, description string, attrs map[string]any) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -624,7 +624,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 	require.NotNil(t, tp)
 
 	testCases := []struct {
-		inputAttributes         map[string]interface{}
+		inputAttributes         map[string]any
 		inputStatusCode         ptrace.StatusCode
 		outputStatusCode        ptrace.StatusCode
 		outputStatusDescription string
@@ -635,7 +635,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 			outputStatusCode: ptrace.StatusCodeOk,
 		},
 		{
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"http.status_code": 400,
 			},
 			inputStatusCode:         ptrace.StatusCodeOk,

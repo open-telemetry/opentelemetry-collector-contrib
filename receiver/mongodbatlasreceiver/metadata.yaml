@@ -33,6 +33,14 @@ resource_attributes:
     description: Cluster Name
     enabled: false
     type: string
+  mongodb_atlas.region.name:
+    description: Region Name
+    enabled: false
+    type: string
+  mongodb_atlas.provider.name:
+    description: Provider Name
+    enabled: false
+    type: string
   mongodb_atlas.process.port:
     description: Port process is bound to
     enabled: true

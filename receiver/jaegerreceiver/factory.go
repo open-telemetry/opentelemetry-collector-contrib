@@ -87,11 +87,11 @@ func createDefaultConfig() component.Config {
 			},
 			ThriftBinary: &ProtocolUDP{
 				Endpoint:        defaultThriftBinaryBindEndpoint,
-				ServerConfigUDP: DefaultServerConfigUDP(),
+				ServerConfigUDP: defaultServerConfigUDP(),
 			},
 			ThriftCompact: &ProtocolUDP{
 				Endpoint:        defaultThriftCompactBindEndpoint,
-				ServerConfigUDP: DefaultServerConfigUDP(),
+				ServerConfigUDP: defaultServerConfigUDP(),
 			},
 		},
 	}

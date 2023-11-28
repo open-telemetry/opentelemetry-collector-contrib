@@ -117,7 +117,7 @@ func TestRemote(t *testing.T) {
 
 			// make test case defined number of calls
 			for i := 0; i < tc.performedClientCallCount; i++ {
-				resp, err := http.Get("http://127.0.0.1:5778/sampling?service=foo")
+				resp, err := http.Get("http://127.0.0.1:5779/sampling?service=foo")
 				assert.NoError(t, err)
 				assert.Equal(t, 200, resp.StatusCode)
 			}
@@ -163,7 +163,7 @@ func (s *samplingServer) GetSamplingStrategy(ctx context.Context, params *api_v2
 
 func testConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPServerSettings.Endpoint = "127.0.0.1:5778"
-	cfg.GRPCServerSettings.NetAddr.Endpoint = "127.0.0.1:14250"
+	cfg.HTTPServerSettings.Endpoint = "127.0.0.1:5779"
+	cfg.GRPCServerSettings.NetAddr.Endpoint = "127.0.0.1:14251"
 	return cfg
 }

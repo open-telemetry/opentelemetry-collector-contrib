@@ -58,7 +58,7 @@ func TestDeploymentClient(t *testing.T) {
 	fakeClientSet := fake.NewSimpleClientset(deploymentObjects...)
 	client, _ := newDeploymentClient(fakeClientSet, zap.NewNop(), options)
 
-	deployments := make([]interface{}, len(deploymentObjects))
+	deployments := make([]any, len(deploymentObjects))
 	for i := range deploymentObjects {
 		deployments[i] = deploymentObjects[i]
 	}

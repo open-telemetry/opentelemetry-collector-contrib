@@ -27,6 +27,8 @@ README](https://github.com/open-telemetry/opentelemetry-collector/blob/main/conf
 - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`idle_conn_timeout`](https://golang.org/pkg/net/http/#Transport)
+- [`auth`](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md)
+- [`disable_keep_alives`](https://golang.org/pkg/net/http/#Transport)
 
 Example:
 
@@ -34,6 +36,8 @@ Example:
 exporter:
   otlp:
     endpoint: otelcol2:55690
+    auth:
+      authenticator: some-authenticator-extension
     tls:
       ca_file: ca.pem
       cert_file: cert.pem
@@ -50,22 +54,23 @@ exporter:
 leverage server configuration.
 
 - [`cors`](https://github.com/rs/cors#parameters): Configure [CORS][cors],
-allowing the receiver to accept traces from web browsers, even if the receiver
-is hosted at a different [origin][origin]. If left blank or set to `null`, CORS
-will not be enabled.
+  allowing the receiver to accept traces from web browsers, even if the receiver
+  is hosted at a different [origin][origin]. If left blank or set to `null`, CORS
+  will not be enabled.
   - `allowed_origins`: A list of [origins][origin] allowed to send requests to
-  the receiver. An origin may contain a wildcard (`*`) to replace 0 or more
-  characters (e.g., `https://*.example.com`). To allow any origin, set to
-  `["*"]`. If no origins are listed, CORS will not be enabled.
+    the receiver. An origin may contain a wildcard (`*`) to replace 0 or more
+    characters (e.g., `https://*.example.com`). To allow any origin, set to
+    `["*"]`. If no origins are listed, CORS will not be enabled.
   - `allowed_headers`: Allow CORS requests to include headers outside the
-  [default safelist][cors-headers]. By default, safelist headers and
-  `X-Requested-With` will be allowed. To allow any request header, set to
-  `["*"]`.
+    [default safelist][cors-headers]. By default, safelist headers and
+    `X-Requested-With` will be allowed. To allow any request header, set to
+    `["*"]`.
   - `max_age`: Sets the value of the [`Access-Control-Max-Age`][cors-cache]
-  header, allowing clients to cache the response to CORS preflight requests. If
-  not set, browsers use a default of 5 seconds.
+    header, allowing clients to cache the response to CORS preflight requests. If
+    not set, browsers use a default of 5 seconds.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+- [`auth`](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md)
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 
@@ -77,6 +82,8 @@ receivers:
     protocols:
       http:
         include_metadata: true
+        auth:
+          authenticator: some-authenticator-extension
         cors:
           allowed_origins:
             - https://foo.bar.com

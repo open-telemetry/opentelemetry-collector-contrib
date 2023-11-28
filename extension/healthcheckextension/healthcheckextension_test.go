@@ -196,6 +196,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 				},
 				{
 					step: func(hcExt *healthCheckExtension) error {
+						hcExt.exporter.mu.Lock()
+						defer hcExt.exporter.mu.Unlock()
 						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
 						return hcExt.Ready()
 					},
@@ -207,6 +209,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 				},
 				{
 					step: func(hcExt *healthCheckExtension) error {
+						hcExt.exporter.mu.Lock()
+						defer hcExt.exporter.mu.Unlock()
 						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
 						return hcExt.Ready()
 					},
@@ -233,6 +237,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 				},
 				{
 					step: func(hcExt *healthCheckExtension) error {
+						hcExt.exporter.mu.Lock()
+						defer hcExt.exporter.mu.Unlock()
 						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
 						return hcExt.Ready()
 					},
@@ -244,6 +250,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 				},
 				{
 					step: func(hcExt *healthCheckExtension) error {
+						hcExt.exporter.mu.Lock()
+						defer hcExt.exporter.mu.Unlock()
 						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
 						return hcExt.Ready()
 					},
@@ -272,6 +280,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 				},
 				{
 					step: func(hcExt *healthCheckExtension) error {
+						hcExt.exporter.mu.Lock()
+						defer hcExt.exporter.mu.Unlock()
 						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
 						return hcExt.Ready()
 					},
@@ -285,6 +295,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 				},
 				{
 					step: func(hcExt *healthCheckExtension) error {
+						hcExt.exporter.mu.Lock()
+						defer hcExt.exporter.mu.Unlock()
 						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
 						return hcExt.Ready()
 					},

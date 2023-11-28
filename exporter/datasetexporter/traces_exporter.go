@@ -41,11 +41,12 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 func buildEventFromSpan(
 	bundle spanBundle,
 	serverHost string,
+	settings TracesSettings,
 ) *add_events.EventBundle {
 	span := bundle.span
 	resource := bundle.resource
 
-	attrs := make(map[string]interface{})
+	attrs := make(map[string]any)
 	event := add_events.Event{
 		Sev: int(plog.SeverityNumberInfo),
 		Ts:  fmt.Sprintf("%d", span.StartTimestamp().AsTime().UnixNano()),
@@ -74,8 +75,7 @@ func buildEventFromSpan(
 	updateResource(attrs, resource.Attributes().AsRaw())
 
 	// since attributes are overwriting existing keys, they have to be at the end
-	// updateWithPrefixedValues(attrs, "attributes_", "_", span.Attributes().AsRaw(), 0)
-	updateWithPrefixedValues(attrs, "", "_", span.Attributes().AsRaw(), 0)
+	updateWithPrefixedValues(attrs, "", settings.ExportSeparator, settings.ExportDistinguishingSuffix, span.Attributes().AsRaw(), 0)
 
 	event.Attrs = attrs
 	event.Log = "LT"
@@ -84,7 +84,7 @@ func buildEventFromSpan(
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TT", Name: "traces"},
-		Log:    &add_events.Log{Id: "LT", Attrs: map[string]interface{}{}},
+		Log:    &add_events.Log{Id: "LT", Attrs: map[string]any{}},
 	}
 }
 
@@ -98,7 +98,7 @@ const (
 	Process = ResourceType("process")
 )
 
-func updateResource(attrs map[string]interface{}, resource map[string]any) {
+func updateResource(attrs map[string]any, resource map[string]any) {
 	// first detect, whether there is key service.name
 	// if it's there, we are done
 	name, found := resource["service.name"]
@@ -133,7 +133,7 @@ type spanBundle struct {
 	scope    pcommon.InstrumentationScope
 }
 
-func buildEventsFromTraces(ld ptrace.Traces, serverHost string) []*add_events.EventBundle {
+func buildEventsFromTraces(ld ptrace.Traces, serverHost string, settings TracesSettings) []*add_events.EventBundle {
 	var spans = make([]spanBundle, 0)
 
 	// convert spans into events
@@ -153,12 +153,12 @@ func buildEventsFromTraces(ld ptrace.Traces, serverHost string) []*add_events.Ev
 
 	events := make([]*add_events.EventBundle, len(spans))
 	for i, span := range spans {
-		events[i] = buildEventFromSpan(span, serverHost)
+		events[i] = buildEventFromSpan(span, serverHost, settings)
 	}
 
 	return events
 }
 
 func (e *DatasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
-	return sendBatch(buildEventsFromTraces(ld, e.serverHost), e.client)
+	return sendBatch(buildEventsFromTraces(ld, e.serverHost, e.exporterCfg.tracesSettings), e.client)
 }

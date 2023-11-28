@@ -53,14 +53,152 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
   - `retry_shutdown_timeout` (default = 30s): The maximum time for which it will try to send data to the DataSet during shutdown. This value should be shorter than container's grace period.
 - `logs`:
-    - `export_scope_info_on_event` (default = false): Include LogRecord scope information (if available) on the DataSet event.
-    - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
+    - `export_resource_info_on_event` (default = false): Include LogRecord resource information (if available) on the DataSet event.
+    - `export_resource_prefix` (default = 'resource.attributes.'): A prefix string for the resource, if `export_resource_info_on_event` is enabled.
+    - `export_scope_info_on_event` (default = true): Include LogRecord scope information (if available) on the DataSet event.
+    - `export_scope_prefix` (default = 'scope.attributes.'):  A prefix string for the scope, if `export_scope_info_on_event` is enabled.
+    - `export_separator` (default = '.'): The separator to add between keys when flattening nested structures (maps, arrays).
+    - `export_distinguishing_suffix` (default = '_'): A suffix string to resolve naming collisions when flattening.
+    - `decompose_complex_message_field` (default = false): Decompose complex body / message field types (e.g. a maps, arrays) into separate fields.
+    - `decomposed_complex_message_prefix` (default = 'body.map.'): A prefix string to use when a complex message is decomposed.
+- `traces`:
+    - `export_separator` (default = '.'): The separator to add between keys when flattening nested structures (maps, arrays).
+    - `export_distinguishing_suffix` (default = '_'): A suffix string to resolve naming collisions when flattening.
 - `server_host`:
   - `server_host` (default = ''): Specifies the server host to be used for the events.
   - `use_hostname` (default = true): Determines whether the `hostname` of the node should be used as the server host for the events. When set to `true`, the node's `hostname` is automatically used.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+
+
+### Attributes
+
+Enabled attributes are exported in the order:
+
+1. Log properties
+2. Body
+3. Resource attributes
+4. Scope attributes
+5. Log attributes
+
+If there is a name conflict, the `export_distinguishing_suffix` value is appended to the later attribute's name. If the `export_distinguishing_suffix` value is an empty string, then the value from the last attribute is used.
+
+#### Example
+
+Example LogRecord:
+```
+Log
+- body:
+  - b: 1
+  - x: "b"
+- resource:
+  - r: 2
+  - x: "r"
+- scope:
+  - s: 3
+  - x: "s"
+- attribute:
+  - a: 4
+  - x: "a"
+  - map:
+    - m1: 5
+    - m2: 6
+```
+
+Then the event will look like:
+* Default settings for `logs`:
+  * Event:
+    ```
+    - message: "{\"b\": 1, \"x\": \"b\"}"
+    - scope.attributes.s: 3
+    - scope.attributes.x: "s"
+    - a: 4
+    - x: "a"
+    - map.m1: 5
+    - map.m2: 6
+    ```
+* Everything enabled:
+  * Configuration:
+    ```
+      logs:
+        export_resource_info_on_event: true
+        export_resource_prefix: "r."
+        export_scope_info_on_event: true
+        export_scope_prefix: "s."
+        decompose_complex_message_field: true
+        decomposed_complex_message_prefix: "m."
+        export_separator: "-"
+        export_distinguishing_suffix: "_"
+    ```
+  * Event:
+    ```
+    - message: "{\"b\": 1, \"x\": \"b\"}"
+    - m.b: 1
+    - m.x: "b"
+    - r.r: 2
+    - r.x: "r"
+    - s.s: 3
+    - s.x: "s"
+    - a: 4
+    - x: "a"
+    - map-m1: 5
+    - map-m2: 6
+    ```
+* Everything enabled, prefixes are empty strings:
+  * Configuration:
+    ```
+      logs:
+        export_resource_info_on_event: true
+        export_resource_prefix: ""
+        export_scope_info_on_event: true
+        export_scope_prefix: ""
+        decompose_complex_message_field: true
+        decomposed_complex_message_prefix: ""
+        export_separator: "-"
+        export_distinguishing_suffix: "_"
+    ```
+  * Event:
+    ```
+    - message: "{\"b\": 1, \"x\": \"b\"}"
+    - b: 1
+    - x: "b"
+    - r: 2
+    - x_: "r"
+    - s: 3
+    - x__: "s"
+    - a: 4
+    - x___: "a"
+    - map-m1: 5
+    - map-m2: 6
+    ```
+* Everything enabled, prefixes are empty strings, suffix is empty string:
+    * Configuration:
+      ```
+        logs:
+          export_resource_info_on_event: true
+          export_resource_prefix: ""
+          export_scope_info_on_event: true
+          export_scope_prefix: ""
+          decompose_complex_message_field: true
+          decomposed_complex_message_prefix: ""
+          export_separator: "-"
+          export_distinguishing_suffix: ""
+      ```
+    * Event:
+      ```
+      - message: "{\"b\": 1, \"x\": \"b\"}"
+      - b: 1
+      - r: 2
+      - s: 3
+      - a: 4
+      - x: "a"
+      - map-m1: 5
+      - map-m2: 6
+      ```
+
+Field names can have `.` dots, `_` underscores, and `-` hyphens. You must escape slashes in Search and PowerQueries. For example, search the field name `app.kubernetes.io/component` as `app.kubernetes.io\/component`.
+
 
 ### Example
 

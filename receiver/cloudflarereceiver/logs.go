@@ -47,18 +47,20 @@ func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.
 		id:       params.ID,
 	}
 
-	tlsConfig, err := recv.cfg.TLS.LoadTLSConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	s := &http.Server{
-		TLSConfig:         tlsConfig,
+	recv.server = &http.Server{
 		Handler:           http.HandlerFunc(recv.handleRequest),
 		ReadHeaderTimeout: 20 * time.Second,
 	}
 
-	recv.server = s
+	if recv.cfg.TLS != nil {
+		tlsConfig, err := recv.cfg.TLS.LoadTLSConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		recv.server.TLSConfig = tlsConfig
+	}
+
 	return recv, nil
 }
 
@@ -93,18 +95,34 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 	go func() {
 		defer l.wg.Done()
 
-		l.logger.Debug("Starting ServeTLS",
-			zap.String("address", l.cfg.Endpoint),
-			zap.String("certfile", l.cfg.TLS.CertFile),
-			zap.String("keyfile", l.cfg.TLS.KeyFile))
+		if l.cfg.TLS != nil {
+			l.logger.Debug("Starting ServeTLS",
+				zap.String("address", l.cfg.Endpoint),
+				zap.String("certfile", l.cfg.TLS.CertFile),
+				zap.String("keyfile", l.cfg.TLS.KeyFile))
 
-		err := l.server.ServeTLS(listener, l.cfg.TLS.CertFile, l.cfg.TLS.KeyFile)
+			err := l.server.ServeTLS(listener, l.cfg.TLS.CertFile, l.cfg.TLS.KeyFile)
 
-		l.logger.Debug("Serve TLS done")
+			l.logger.Debug("ServeTLS done")
 
-		if err != http.ErrServerClosed {
-			l.logger.Error("ServeTLS failed", zap.Error(err))
-			host.ReportFatalError(err)
+			if err != http.ErrServerClosed {
+				l.logger.Error("ServeTLS failed", zap.Error(err))
+				host.ReportFatalError(err)
+			}
+
+		} else {
+			l.logger.Debug("Starting Serve",
+				zap.String("address", l.cfg.Endpoint))
+
+			err := l.server.Serve(listener)
+
+			l.logger.Debug("Serve done")
+
+			if err != http.ErrServerClosed {
+				l.logger.Error("Serve failed", zap.Error(err))
+				host.ReportFatalError(err)
+			}
+
 		}
 	}()
 	return nil
@@ -172,14 +190,14 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 	rw.WriteHeader(http.StatusOK)
 }
 
-func parsePayload(payload []byte) ([]map[string]interface{}, error) {
+func parsePayload(payload []byte) ([]map[string]any, error) {
 	lines := bytes.Split(payload, []byte("\n"))
-	logs := make([]map[string]interface{}, 0, len(lines))
+	logs := make([]map[string]any, 0, len(lines))
 	for _, line := range lines {
 		if len(line) == 0 {
 			continue
 		}
-		var log map[string]interface{}
+		var log map[string]any
 		err := json.Unmarshal(line, &log)
 		if err != nil {
 			return logs, err
@@ -189,11 +207,11 @@ func parsePayload(payload []byte) ([]map[string]interface{}, error) {
 	return logs, nil
 }
 
-func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]interface{}) plog.Logs {
+func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any) plog.Logs {
 	pLogs := plog.NewLogs()
 
 	// Group logs by ZoneName field if it was configured so it can be used as a resource attribute
-	groupedLogs := make(map[string][]map[string]interface{})
+	groupedLogs := make(map[string][]map[string]any)
 	for _, log := range logs {
 		zone := ""
 		if v, ok := log["ZoneName"]; ok {

@@ -57,9 +57,9 @@ func (cfg *Config) Validate() error {
 		}
 
 		switch f.From {
-		case "", kube.MetadataFromPod, kube.MetadataFromNamespace:
+		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode:
 		default:
-			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace", f.From)
+			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, node", f.From)
 		}
 
 		if f.Regex != "" {
@@ -117,7 +117,7 @@ func (cfg *Config) Validate() error {
 // ExtractConfig section allows specifying extraction rules to extract
 // data from k8s pod specs.
 type ExtractConfig struct {
-	// Metadata allows to extract pod/namespace metadata from a list of metadata fields.
+	// Metadata allows to extract pod/namespace/node metadata from a list of metadata fields.
 	// The field accepts a list of strings.
 	//
 	// Metadata fields supported right now are,

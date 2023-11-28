@@ -19,8 +19,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 )
 
-// NewFactory creates a factory for windowseventlog receiver
-func NewFactory() receiver.Factory {
+// newFactoryAdapter creates a dummy factory for windowseventlog receiver
+func newFactoryAdapter() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,

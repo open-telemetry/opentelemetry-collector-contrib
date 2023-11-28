@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
@@ -132,6 +134,10 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
 	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
 
+	if config.ResolveCanonicalBootstrapServersOnly {
+		c.Net.ResolveCanonicalBootstrapServers = true
+	}
+
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -140,7 +146,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 		c.Version = version
 	}
 
-	if err := ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 

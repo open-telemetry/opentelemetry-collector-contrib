@@ -63,8 +63,8 @@ func (j *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 }
 
 // parse will parse a value as JSON.
-func (j *Parser) parse(value interface{}) (interface{}, error) {
-	var parsedValue map[string]interface{}
+func (j *Parser) parse(value any) (any, error) {
+	var parsedValue map[string]any
 	switch m := value.(type) {
 	case string:
 		err := j.json.UnmarshalFromString(m, &parsedValue)

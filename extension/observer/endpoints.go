@@ -13,7 +13,7 @@ type (
 	// EndpointID unique identifies an endpoint per-observer instance.
 	EndpointID string
 	// EndpointEnv is a map of endpoint attributes.
-	EndpointEnv map[string]interface{}
+	EndpointEnv map[string]any
 	// EndpointType is a type of an endpoint like a port or pod.
 	EndpointType string
 )
@@ -107,7 +107,7 @@ type Pod struct {
 }
 
 func (p *Pod) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"uid":         p.UID,
 		"name":        p.Name,
 		"labels":      p.Labels,
@@ -133,7 +133,7 @@ type Port struct {
 }
 
 func (p *Port) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"name":      p.Name,
 		"port":      p.Port,
 		"pod":       p.Pod.Env(),
@@ -162,7 +162,7 @@ type HostPort struct {
 }
 
 func (h *HostPort) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"process_name": h.ProcessName,
 		"command":      h.Command,
 		"is_ipv6":      h.IsIPv6,
@@ -201,7 +201,7 @@ type Container struct {
 }
 
 func (c *Container) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"name":           c.Name,
 		"image":          c.Image,
 		"tag":            c.Tag,
@@ -245,7 +245,7 @@ type K8sNode struct {
 }
 
 func (n *K8sNode) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"name":                  n.Name,
 		"uid":                   n.UID,
 		"annotations":           n.Annotations,

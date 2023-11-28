@@ -63,7 +63,7 @@ func TestGeneratorAndBackend(t *testing.T) {
 
 // WaitFor the specific condition for up to 10 seconds. Records a test error
 // if condition does not become true.
-func WaitFor(t *testing.T, cond func() bool, errMsg ...interface{}) bool {
+func WaitFor(t *testing.T, cond func() bool, errMsg ...any) bool {
 	startTime := time.Now()
 
 	// Start with 5 ms waiting interval between condition re-evaluation.

@@ -38,7 +38,7 @@ type ActionKeyValue struct {
 
 	// Value specifies the value to populate for the key.
 	// The type of the value is inferred from the configuration.
-	Value interface{} `mapstructure:"value"`
+	Value any `mapstructure:"value"`
 
 	// A regex pattern  must be specified for the action EXTRACT.
 	// It uses the attribute specified by `key' to extract values from

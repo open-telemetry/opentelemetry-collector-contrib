@@ -31,7 +31,7 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, map[string]any{
 		"cloud.provider": "azure",
 		"cloud.platform": "azure_aks",
 	}, res.Attributes().AsRaw(), "Resource attrs returned are incorrect")

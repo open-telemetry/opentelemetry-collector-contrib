@@ -44,7 +44,7 @@ var fieldPrometheusTypes = map[pmetric.MetricType]string{
 type cWMetrics struct {
 	measurements []cWMeasurement
 	timestampMs  int64
-	fields       map[string]interface{}
+	fields       map[string]any
 }
 
 type cWMeasurement struct {
@@ -114,7 +114,7 @@ func (mt metricTranslator) Shutdown() error {
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
-func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
+func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[any]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var instrumentationScopeName string
 	cWNamespace := getNamespace(rm, config.Namespace)
@@ -173,7 +173,7 @@ func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Conf
 	if isPrometheusMetric {
 		fieldsLength++
 	}
-	fields := make(map[string]interface{}, fieldsLength)
+	fields := make(map[string]any, fieldsLength)
 
 	// Add labels to fields
 	for k, v := range labels {
@@ -375,7 +375,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 		}
 
 		if val, ok := fieldMap[key].(string); ok {
-			var f interface{}
+			var f any
 			err := json.Unmarshal([]byte(val), &f)
 			if err != nil {
 				config.logger.Debug(
@@ -420,7 +420,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 			  	}
 			*/
 			fieldMap["Version"] = "1"
-			fieldMap["_aws"] = map[string]interface{}{
+			fieldMap["_aws"] = map[string]any{
 				"CloudWatchMetrics": cWMetric.measurements,
 				"Timestamp":         cWMetric.timestampMs,
 			}
@@ -447,7 +447,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 	}
 
 	// remove metrics from fieldMap
-	metricsMap := make(map[string]interface{})
+	metricsMap := make(map[string]any)
 	for _, measurement := range cWMetric.measurements {
 		for _, metric := range measurement.Metrics {
 			metricName, exist := metric["Name"]
@@ -484,4 +484,26 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 	logEvent.GeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
 
 	return logEvent, nil
+}
+
+// Utility function that converts from groupedMetric to a cloudwatch event
+func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, defaultLogStream string) (*cwlogs.Event, error) {
+	cWMetric := translateGroupedMetricToCWMetric(groupedMetric, config)
+	event, err := translateCWMetricToEMF(cWMetric, config)
+
+	if err != nil {
+		return nil, err
+	}
+
+	logGroup := groupedMetric.metadata.logGroup
+	logStream := groupedMetric.metadata.logStream
+
+	if logStream == "" {
+		logStream = defaultLogStream
+	}
+
+	event.LogGroupName = logGroup
+	event.LogStreamName = logStream
+
+	return event, nil
 }

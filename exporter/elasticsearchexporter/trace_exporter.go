@@ -7,11 +7,11 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -76,9 +76,10 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 		resource := il.Resource()
 		scopeSpans := il.ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
+			scope := scopeSpans.At(j).Scope()
 			spans := scopeSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				if err := e.pushTraceRecord(ctx, resource, spans.At(k)); err != nil {
+				if err := e.pushTraceRecord(ctx, resource, spans.At(k), scope); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -88,10 +89,10 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 		}
 	}
 
-	return multierr.Combine(errs...)
+	return errors.Join(errs...)
 }
 
-func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span) error {
+func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
 		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, span)
@@ -100,7 +101,7 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
 	}
 
-	document, err := e.model.encodeSpan(resource, span)
+	document, err := e.model.encodeSpan(resource, span, scope)
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}

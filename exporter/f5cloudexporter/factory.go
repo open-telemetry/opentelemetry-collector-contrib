@@ -27,10 +27,10 @@ type f5cloudFactory struct {
 
 // NewFactory returns a factory of the F5 Cloud exporter that can be registered to the Collector.
 func NewFactory() exporter.Factory {
-	return NewFactoryWithTokenSourceGetter(getTokenSourceFromConfig)
+	return newFactoryWithTokenSourceGetter(getTokenSourceFromConfig)
 }
 
-func NewFactoryWithTokenSourceGetter(tsg TokenSourceGetter) exporter.Factory {
+func newFactoryWithTokenSourceGetter(tsg TokenSourceGetter) exporter.Factory {
 	return &f5cloudFactory{Factory: otlphttp.NewFactory(), getTokenSource: tsg}
 }
 

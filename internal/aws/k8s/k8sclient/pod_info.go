@@ -11,7 +11,7 @@ import (
 type PodInfo struct {
 	Name            string
 	Namespace       string
-	Uid             string
+	UID             string
 	Labels          map[string]string
 	OwnerReferences []metaV1.OwnerReference
 	Phase           v1.PodPhase

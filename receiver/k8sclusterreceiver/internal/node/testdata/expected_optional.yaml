@@ -1,0 +1,33 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.node.name
+          value:
+            stringValue: test-node-2
+        - key: k8s.node.uid
+          value:
+            stringValue: test-node-2-uid
+        - key: k8s.kubelet.version
+          value:
+            stringValue: v1.25.3
+        - key: k8s.kubeproxy.version
+          value:
+            stringValue: v1.25.3
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Amount of cpu allocatable on the node
+            gauge:
+              dataPoints:
+                - asDouble: 0.123
+            name: k8s.node.allocatable_cpu
+            unit: '{cpu}'
+          - description: Amount of memory allocatable on the node
+            gauge:
+              dataPoints:
+                - asInt: "456"
+            name: k8s.node.allocatable_memory
+            unit: By
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

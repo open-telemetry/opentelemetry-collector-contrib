@@ -107,6 +107,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -129,6 +130,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -175,6 +177,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -197,6 +200,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -219,6 +223,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -265,6 +270,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -287,6 +293,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -333,6 +340,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -355,6 +363,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 	}

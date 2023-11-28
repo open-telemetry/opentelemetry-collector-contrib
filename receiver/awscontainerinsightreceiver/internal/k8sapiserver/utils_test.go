@@ -24,17 +24,17 @@ func TestUtils_parseCronJobFromJob(t *testing.T) {
 }
 
 func TestPodStore_addPodStatusMetrics(t *testing.T) {
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	testPodInfo := k8sclient.PodInfo{
 		Name:      "kube-proxy-csm88",
 		Namespace: "kube-system",
-		Uid:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
+		UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 		Labels:    map[string]string{},
 		Phase:     v1.PodRunning,
 	}
 	addPodStatusMetrics(fields, &testPodInfo)
 
-	expectedFieldsArray := map[string]interface{}{
+	expectedFieldsArray := map[string]any{
 		"pod_status_pending":   0,
 		"pod_status_running":   1,
 		"pod_status_succeeded": 0,
@@ -44,17 +44,17 @@ func TestPodStore_addPodStatusMetrics(t *testing.T) {
 }
 
 func TestPodStore_addPodConditionMetrics(t *testing.T) {
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	testPodInfo := k8sclient.PodInfo{
 		Name:      "kube-proxy-csm88",
 		Namespace: "kube-system",
-		Uid:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
+		UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
 		Labels:    map[string]string{},
 		Phase:     v1.PodRunning,
 	}
 	addPodConditionMetrics(fields, &testPodInfo)
 
-	expectedFieldsArray := map[string]interface{}{
+	expectedFieldsArray := map[string]any{
 		"pod_status_ready":     0,
 		"pod_status_scheduled": 0,
 		"pod_status_unknown":   0,

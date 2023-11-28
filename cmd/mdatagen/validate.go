@@ -60,7 +60,7 @@ func (s *Status) validateClass() error {
 	if s.Class == "" {
 		return errors.New("missing class")
 	}
-	if s.Class != "receiver" && s.Class != "processor" && s.Class != "exporter" && s.Class != "connector" && s.Class != "extension" && s.Class != "cmd" {
+	if s.Class != "receiver" && s.Class != "processor" && s.Class != "exporter" && s.Class != "connector" && s.Class != "extension" && s.Class != "cmd" && s.Class != "pkg" {
 		return fmt.Errorf("invalid class: %v", s.Class)
 	}
 	return nil
@@ -152,7 +152,7 @@ func (m *metric) validate() error {
 	if m.Description == "" {
 		errs = multierr.Append(errs, errors.New(`missing metric description`))
 	}
-	if m.Unit == "" {
+	if m.Unit == nil {
 		errs = multierr.Append(errs, errors.New(`missing metric unit`))
 	}
 	if m.Sum != nil {

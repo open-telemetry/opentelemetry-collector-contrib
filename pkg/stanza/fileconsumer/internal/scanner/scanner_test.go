@@ -73,30 +73,6 @@ func TestScanner(t *testing.T) {
 				[]byte(""),
 			},
 		},
-		{
-			name:       "overflow_maxlogsize",
-			stream:     []byte("testlog1islongerthanmaxlogsize\n"),
-			delimiter:  []byte("\n"),
-			maxSize:    20,
-			bufferSize: DefaultBufferSize,
-			expected: [][]byte{
-				[]byte("testlog1islongerthan"),
-				[]byte("maxlogsize"),
-			},
-			skipFirstDelimiter: true,
-		},
-		{
-			name:       "overflow_buffer",
-			stream:     []byte("testlog1islongerthanbuffer\n"),
-			delimiter:  []byte("\n"),
-			maxSize:    20,
-			bufferSize: 20,
-			expected: [][]byte{
-				[]byte("testlog1islongerthan"),
-				[]byte("buffer"),
-			},
-			skipFirstDelimiter: true,
-		},
 	}
 
 	for _, tc := range testCases {

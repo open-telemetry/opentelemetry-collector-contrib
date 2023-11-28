@@ -1,6 +1,6 @@
 ## `noop` operator
 
-The `noop` operator makes no changes to a entry. It is sometimes useful as a terminal node in [non-linear pipelines](../types/pipeline.md#non-linear-pipelines).
+The `noop` operator makes no changes to a entry. It is sometimes useful as a terminal node in [non-linear pipelines](../types/operators.md#non-linear-sequences).
 
 ### Configuration Fields
 

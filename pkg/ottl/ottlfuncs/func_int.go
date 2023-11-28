@@ -11,7 +11,7 @@ import (
 )
 
 type IntArguments[K any] struct {
-	Target ottl.IntLikeGetter[K] `ottlarg:"0"`
+	Target ottl.IntLikeGetter[K]
 }
 
 func NewIntFactory[K any]() ottl.Factory[K] {
@@ -29,7 +29,7 @@ func createIntFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 }
 
 func intFunc[K any](target ottl.IntLikeGetter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		value, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

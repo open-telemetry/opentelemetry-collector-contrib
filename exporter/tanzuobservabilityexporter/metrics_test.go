@@ -30,7 +30,7 @@ func TestEndToEndGaugeConsumer(t *testing.T) {
 	addDataPoint(
 		432.25,
 		1640123456,
-		map[string]interface{}{"source": "renamed", "host.name": "my_source", "env": "prod"},
+		map[string]any{"source": "renamed", "host.name": "my_source", "env": "prod"},
 		dataPoints,
 	)
 	// test if service.name gets converted to service
@@ -83,7 +83,7 @@ func TestEndToEndGaugeConsumerWithResAttrsIncluded(t *testing.T) {
 	addDataPoint(
 		432.25,
 		1640123456,
-		map[string]interface{}{"source": "renamed", "host.name": "my_source", "env": "prod"},
+		map[string]any{"source": "renamed", "host.name": "my_source", "env": "prod"},
 		dataPoints,
 	)
 	// test if service.name gets converted to service
@@ -136,7 +136,7 @@ func TestEndToEndGaugeConsumerWithAppResAttrsExcluded(t *testing.T) {
 	addDataPoint(
 		432.25,
 		1640123456,
-		map[string]interface{}{"source": "renamed", "host.name": "my_source", "env": "prod"},
+		map[string]any{"source": "renamed", "host.name": "my_source", "env": "prod"},
 		dataPoints,
 	)
 	// test if service.name gets converted to service
@@ -436,7 +436,7 @@ func TestSumConsumerDelta(t *testing.T) {
 	addDataPoint(
 		35,
 		1635205001,
-		map[string]interface{}{
+		map[string]any{
 			"env": "dev",
 		},
 		dataPoints,
@@ -444,7 +444,7 @@ func TestSumConsumerDelta(t *testing.T) {
 	addDataPoint(
 		52.375,
 		1635205002,
-		map[string]interface{}{
+		map[string]any{
 			"env": "prod",
 		},
 		dataPoints,
@@ -488,7 +488,7 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 	addDataPoint(
 		35,
 		1635205001,
-		map[string]interface{}{
+		map[string]any{
 			"env": "dev",
 		},
 		dataPoints,
@@ -496,7 +496,7 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 	addDataPoint(
 		52.375,
 		1635205002,
-		map[string]interface{}{
+		map[string]any{
 			"env": "prod",
 		},
 		dataPoints,
@@ -524,7 +524,7 @@ func TestSumConsumerCumulative(t *testing.T) {
 	addDataPoint(
 		62.25,
 		1634205001,
-		map[string]interface{}{
+		map[string]any{
 			"env": "dev",
 		},
 		dataPoints,
@@ -562,7 +562,7 @@ func TestSumConsumerUnspecified(t *testing.T) {
 	addDataPoint(
 		72.25,
 		1634206001,
-		map[string]interface{}{
+		map[string]any{
 			"env": "qa",
 		},
 		dataPoints,
@@ -1343,13 +1343,13 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 	addDataPoint(
 		7,
 		1631205001,
-		map[string]interface{}{"env": "prod", "bucket": 73},
+		map[string]any{"env": "prod", "bucket": 73},
 		dataPoints,
 	)
 	addDataPoint(
 		7.5,
 		1631205002,
-		map[string]interface{}{"env": "prod", "bucket": 73},
+		map[string]any{"env": "prod", "bucket": 73},
 		dataPoints,
 	)
 	expected := []tobsMetric{
@@ -1430,9 +1430,9 @@ func newMetric(name string, typ pmetric.MetricType) pmetric.Metric {
 }
 
 func addDataPoint(
-	value interface{},
+	value any,
 	ts int64,
-	tags map[string]interface{},
+	tags map[string]any,
 	slice pmetric.NumberDataPointSlice,
 ) {
 	dataPoint := slice.AppendEmpty()
@@ -1453,7 +1453,7 @@ func setDataPointTimestamp(ts int64, dataPoint dataPointWithTimestamp) {
 		pcommon.NewTimestampFromTime(time.Unix(ts, 0)))
 }
 
-func setDataPointValue(value interface{}, dataPoint pmetric.NumberDataPoint) {
+func setDataPointValue(value any, dataPoint pmetric.NumberDataPoint) {
 	switch v := value.(type) {
 	case int:
 		dataPoint.SetIntValue(int64(v))

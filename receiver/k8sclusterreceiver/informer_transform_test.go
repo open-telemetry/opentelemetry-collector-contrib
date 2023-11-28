@@ -19,8 +19,8 @@ func TestTransformObject(t *testing.T) {
 	intPtr := &i
 	tests := []struct {
 		name   string
-		object interface{}
-		want   interface{}
+		object any
+		want   any
 		same   bool
 	}{
 		{

@@ -11,10 +11,10 @@ import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
@@ -42,7 +42,7 @@ type eventhubReceiver struct {
 	metricsUnmarshaler  eventMetricsUnmarshaler
 	nextLogsConsumer    consumer.Logs
 	nextMetricsConsumer consumer.Metrics
-	obsrecv             *obsreport.Receiver
+	obsrecv             *receiverhelper.ObsReport
 }
 
 func (receiver *eventhubReceiver) Start(ctx context.Context, host component.Host) error {
@@ -137,7 +137,7 @@ func newReceiver(
 	settings receiver.CreateSettings,
 ) (component.Component, error) {
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "event",
 		ReceiverCreateSettings: settings,

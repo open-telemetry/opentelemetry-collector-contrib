@@ -5,8 +5,11 @@ package filter
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -167,5 +170,73 @@ func TestSort(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestMTimeFilter(t *testing.T) {
+	epoch := time.Unix(0, 0)
+	cases := []struct {
+		name        string
+		files       []string
+		fileMTimes  []time.Time
+		expectedErr string
+		expect      []string
+	}{
+		{
+			name:       "No files",
+			files:      []string{},
+			fileMTimes: []time.Time{},
+			expect:     []string{},
+		},
+		{
+			name:       "Single file",
+			files:      []string{"a.log"},
+			fileMTimes: []time.Time{epoch},
+			expect:     []string{"a.log"},
+		},
+		{
+			name:       "Multiple files",
+			files:      []string{"a.log", "b.log"},
+			fileMTimes: []time.Time{epoch, epoch.Add(time.Hour)},
+			expect:     []string{"b.log", "a.log"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			items := []*item{}
+			// Create files with specified mtime
+			for i, file := range tc.files {
+				mtime := tc.fileMTimes[i]
+				fullPath := filepath.Join(tmpDir, file)
+
+				f, err := os.Create(fullPath)
+				require.NoError(t, err)
+				require.NoError(t, f.Close())
+				require.NoError(t, os.Chtimes(fullPath, epoch, mtime))
+
+				it, err := newItem(fullPath, nil)
+				require.NoError(t, err)
+
+				items = append(items, it)
+			}
+
+			f := SortMtime()
+			result, err := f.apply(items)
+			if tc.expectedErr != "" {
+				require.EqualError(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+
+			relativeResult := []string{}
+			for _, r := range result {
+				rel, err := filepath.Rel(tmpDir, r.value)
+				require.NoError(t, err)
+				relativeResult = append(relativeResult, rel)
+			}
+
+			require.Equal(t, tc.expect, relativeResult)
+		})
 	}
 }

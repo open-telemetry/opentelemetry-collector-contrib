@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var nodeArray = []interface{}{
+var nodeArray = []any{
 	&v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "ip-192-168-200-63.eu-west-1.compute.internal",
@@ -310,13 +310,13 @@ var nodeArray = []interface{}{
 func TestNodeClient(t *testing.T) {
 	testCases := map[string]struct {
 		options []nodeClientOption
-		want    map[string]interface{}
+		want    map[string]any
 	}{
 		"Default": {
 			options: []nodeClientOption{
 				nodeSyncCheckerOption(&mockReflectorSyncChecker{}),
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"clusterNodeCount":       3,
 				"clusterFailedNodeCount": 1,
 				"nodeToCapacityMap":      map[string]v1.ResourceList{},                             // Node level info is not captured by default
@@ -329,7 +329,7 @@ func TestNodeClient(t *testing.T) {
 				nodeSyncCheckerOption(&mockReflectorSyncChecker{}),
 				captureNodeLevelInfoOption(true),
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"clusterNodeCount":       3,
 				"clusterFailedNodeCount": 1,
 				"nodeToCapacityMap": map[string]v1.ResourceList{

@@ -11,7 +11,7 @@ import (
 )
 
 type UnixNanoArguments[K any] struct {
-	Time ottl.TimeGetter[K] `ottlarg:"0"`
+	Time ottl.TimeGetter[K]
 }
 
 func NewUnixNanoFactory[K any]() ottl.Factory[K] {
@@ -28,7 +28,7 @@ func createUnixNanoFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 }
 
 func UnixNano[K any](inputTime ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

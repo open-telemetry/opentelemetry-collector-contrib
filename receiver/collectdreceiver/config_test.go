@@ -4,6 +4,7 @@
 package collectdreceiver
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -11,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
@@ -23,6 +24,7 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		id       component.ID
 		expected component.Config
+		wantErr  error
 	}{
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
@@ -31,13 +33,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "one"),
 			expected: &Config{
-				TCPAddr: confignet.TCPAddr{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "localhost:12345",
 				},
-				Timeout:          time.Second * 50,
+				Timeout:          50 * time.Second,
 				AttributesPrefix: "dap_",
 				Encoding:         "command",
 			},
+			wantErr: errors.New("CollectD only support JSON encoding format. command is not supported"),
 		},
 	}
 
@@ -53,7 +56,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			if tt.wantErr == nil {
+				assert.NoError(t, component.ValidateConfig(cfg))
+			} else {
+				assert.Equal(t, tt.wantErr, component.ValidateConfig(cfg))
+			}
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

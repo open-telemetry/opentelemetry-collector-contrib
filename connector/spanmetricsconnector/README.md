@@ -102,6 +102,9 @@ The following settings can be optionally configured:
 - `metrics_flush_interval` (default: `15s`): Defines the flush interval of the generated metrics.
 - `exemplars`:  Use to configure how to attach exemplars to histograms
   - `enabled` (default: `false`): enabling will add spans as Exemplars.
+- `events`: Use to configure the events metric.
+  - `enabled`: (default: `false`): enabling will add the events metric.
+  - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the events metric, which will be included _on top of_ the common and configured `dimensions` for span and resource attributes.
 
 ## Examples
 
@@ -132,7 +135,12 @@ connectors:
     exclude_dimensions: ['status.code']
     dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
-    metrics_flush_interval: 15s 
+    metrics_flush_interval: 15s
+    events:
+      enabled: true
+      dimensions:
+        - name: exception.type
+        - name: exception.message
 
 service:
   pipelines:
@@ -164,8 +172,8 @@ receivers:
 exporters:
   prometheusremotewrite:
     endpoint: http://localhost:9090/api/v1/write
-     target_info:
-       enabled: true
+    target_info:
+      enabled: true
 
 connectors:
   spanmetrics:

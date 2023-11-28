@@ -1,0 +1,49 @@
+default:
+all_set:
+  metrics:
+    splunk.data.indexes.extended.bucket.count:
+      enabled: true
+    splunk.data.indexes.extended.bucket.event.count:
+      enabled: true
+    splunk.data.indexes.extended.bucket.hot.count:
+      enabled: true
+    splunk.data.indexes.extended.bucket.warm.count:
+      enabled: true
+    splunk.data.indexes.extended.event.count:
+      enabled: true
+    splunk.data.indexes.extended.raw.size:
+      enabled: true
+    splunk.data.indexes.extended.total.size:
+      enabled: true
+    splunk.indexer.throughput:
+      enabled: true
+    splunk.license.index.usage:
+      enabled: true
+    splunk.server.introspection.queues.current:
+      enabled: true
+    splunk.server.introspection.queues.current.bytes:
+      enabled: true
+none_set:
+  metrics:
+    splunk.data.indexes.extended.bucket.count:
+      enabled: false
+    splunk.data.indexes.extended.bucket.event.count:
+      enabled: false
+    splunk.data.indexes.extended.bucket.hot.count:
+      enabled: false
+    splunk.data.indexes.extended.bucket.warm.count:
+      enabled: false
+    splunk.data.indexes.extended.event.count:
+      enabled: false
+    splunk.data.indexes.extended.raw.size:
+      enabled: false
+    splunk.data.indexes.extended.total.size:
+      enabled: false
+    splunk.indexer.throughput:
+      enabled: false
+    splunk.license.index.usage:
+      enabled: false
+    splunk.server.introspection.queues.current:
+      enabled: false
+    splunk.server.introspection.queues.current.bytes:
+      enabled: false

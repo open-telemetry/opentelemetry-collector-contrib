@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 		Client:             DefaultClient,
 		GraphiteTemplate:   DefaultGraphiteTemplate,
 
-		HTTPClientSettings: CreateDefaultHTTPClientSettings(),
+		HTTPClientSettings: createDefaultHTTPClientSettings(),
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:      qs,
 	}

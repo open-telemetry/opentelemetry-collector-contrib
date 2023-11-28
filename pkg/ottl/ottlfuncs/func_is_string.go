@@ -11,7 +11,7 @@ import (
 )
 
 type IsStringArguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
+	Target ottl.StringGetter[K]
 }
 
 func NewIsStringFactory[K any]() ottl.Factory[K] {
@@ -30,7 +30,7 @@ func createIsStringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 
 // nolint:errorlint
 func isString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		_, err := target.Get(ctx, tCtx)
 		// Use type assertion because we don't want to check wrapped errors
 		switch err.(type) {

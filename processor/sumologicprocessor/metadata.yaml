@@ -1,0 +1,9 @@
+type: sumologic
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [sumo]
+  codeowners:
+    active: [aboguszewski-sumo, astencel-sumo, sumo-drosiek]

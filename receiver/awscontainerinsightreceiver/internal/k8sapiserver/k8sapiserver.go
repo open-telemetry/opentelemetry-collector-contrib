@@ -100,7 +100,7 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 }
 
 func (k *K8sAPIServer) getClusterMetrics(clusterName, timestampNs string) pmetric.Metrics {
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"cluster_failed_node_count": k.leaderElection.nodeClient.ClusterFailedNodeCount(),
 		"cluster_node_count":        k.leaderElection.nodeClient.ClusterNodeCount(),
 	}
@@ -128,7 +128,7 @@ func (k *K8sAPIServer) getClusterMetrics(clusterName, timestampNs string) pmetri
 func (k *K8sAPIServer) getNamespaceMetrics(clusterName, timestampNs string) []pmetric.Metrics {
 	var metrics []pmetric.Metrics
 	for namespace, podNum := range k.leaderElection.podClient.NamespaceToRunningPodNum() {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			"namespace_number_of_running_pods": podNum,
 		}
 		attributes := map[string]string{
@@ -153,7 +153,7 @@ func (k *K8sAPIServer) getDeploymentMetrics(clusterName, timestampNs string) []p
 	var metrics []pmetric.Metrics
 	deployments := k.leaderElection.deploymentClient.DeploymentInfos()
 	for _, deployment := range deployments {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			ci.ReplicasDesired:           deployment.Spec.Replicas,              // replicas_desired
 			ci.ReplicasReady:             deployment.Status.ReadyReplicas,       // replicas_ready
 			ci.StatusReplicasAvailable:   deployment.Status.AvailableReplicas,   // status_replicas_available
@@ -183,7 +183,7 @@ func (k *K8sAPIServer) getDaemonSetMetrics(clusterName, timestampNs string) []pm
 	var metrics []pmetric.Metrics
 	daemonSets := k.leaderElection.daemonSetClient.DaemonSetInfos()
 	for _, daemonSet := range daemonSets {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			ci.StatusReplicasAvailable:   daemonSet.Status.NumberAvailable,        // status_replicas_available
 			ci.StatusReplicasUnavailable: daemonSet.Status.NumberUnavailable,      // status_replicas_unavailable
 			ci.ReplicasDesired:           daemonSet.Status.DesiredNumberScheduled, // replicas_desired
@@ -212,7 +212,7 @@ func (k *K8sAPIServer) getDaemonSetMetrics(clusterName, timestampNs string) []pm
 func (k *K8sAPIServer) getServiceMetrics(clusterName, timestampNs string) []pmetric.Metrics {
 	var metrics []pmetric.Metrics
 	for service, podNum := range k.leaderElection.epClient.ServiceToPodNum() {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			"service_number_of_running_pods": podNum,
 		}
 		attributes := map[string]string{
@@ -239,7 +239,7 @@ func (k *K8sAPIServer) getStatefulSetMetrics(clusterName, timestampNs string) []
 	var metrics []pmetric.Metrics
 	statefulSets := k.leaderElection.statefulSetClient.StatefulSetInfos()
 	for _, statefulSet := range statefulSets {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			ci.ReplicasDesired:         statefulSet.Spec.Replicas,            // replicas_desired
 			ci.ReplicasReady:           statefulSet.Status.ReadyReplicas,     // replicas_ready
 			ci.StatusReplicasAvailable: statefulSet.Status.AvailableReplicas, // status_replicas_available
@@ -266,7 +266,7 @@ func (k *K8sAPIServer) getReplicaSetMetrics(clusterName, timestampNs string) []p
 	var metrics []pmetric.Metrics
 	replicaSets := k.leaderElection.replicaSetClient.ReplicaSetInfos()
 	for _, replicaSet := range replicaSets {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			ci.ReplicasDesired:         replicaSet.Spec.Replicas,            // replicas_desired
 			ci.ReplicasReady:           replicaSet.Status.ReadyReplicas,     // replicas_ready
 			ci.StatusReplicasAvailable: replicaSet.Status.AvailableReplicas, // status_replicas_available
@@ -297,7 +297,7 @@ func (k *K8sAPIServer) getPendingPodStatusMetrics(clusterName, timestampNs strin
 
 	for _, podInfo := range podsList {
 		if podInfo.Phase == corev1.PodPending {
-			fields := map[string]interface{}{}
+			fields := map[string]any{}
 
 			if k.includeEnhancedMetrics {
 				addPodStatusMetrics(fields, podInfo)
@@ -323,7 +323,7 @@ func (k *K8sAPIServer) getPendingPodStatusMetrics(clusterName, timestampNs strin
 			attributes[ci.PodStatus] = string(corev1.PodPending)
 			attributes["k8s.node.name"] = "pending"
 
-			kubernetesBlob := map[string]interface{}{}
+			kubernetesBlob := map[string]any{}
 			k.getKubernetesBlob(podInfo, kubernetesBlob, attributes)
 			if k.nodeName != "" {
 				kubernetesBlob["host"] = k.nodeName
@@ -345,8 +345,8 @@ func (k *K8sAPIServer) getPendingPodStatusMetrics(clusterName, timestampNs strin
 }
 
 // TODO this is duplicated code from podstore.go, move this to a common package to re-use
-func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob map[string]interface{}, attributes map[string]string) {
-	var owners []interface{}
+func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob map[string]any, attributes map[string]string) {
+	var owners []any
 	podName := ""
 	for _, owner := range pod.OwnerReferences {
 		if owner.Kind != "" && owner.Name != "" {
@@ -394,7 +394,7 @@ func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob 
 		kubernetesBlob["labels"] = labels
 	}
 	kubernetesBlob["namespace_name"] = pod.Namespace
-	kubernetesBlob["pod_id"] = pod.Uid
+	kubernetesBlob["pod_id"] = pod.UID
 
 	// if podName is not set according to a well-known controllers, then set it to its own name
 	if podName == "" {
