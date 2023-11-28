@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/aws/aws-sdk-go-v2 v1.23.1
 	github.com/aws/aws-sdk-go-v2/config v1.25.5
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.44.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.45.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/confmap v0.89.1-0.20231127181443-575c5f5e2531
 	gopkg.in/yaml.v2 v2.4.0
