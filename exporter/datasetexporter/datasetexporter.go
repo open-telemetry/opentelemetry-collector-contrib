@@ -14,15 +14,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/scalyr/dataset-go/pkg/client"
+	"github.com/scalyr/dataset-go/pkg/meter_config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
-	"golang.org/x/time/rate"
 )
 
 type DatasetExporter struct {
 	client      *client.DataSetClient
-	limiter     *rate.Limiter
 	logger      *zap.Logger
 	session     string
 	exporterCfg *ExporterConfig
@@ -34,6 +33,8 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 	logger.Info("Creating new DataSetExporter",
 		zap.String("config", config.String()),
 		zap.String("entity", entity),
+		zap.String("id.string", set.ID.String()),
+		zap.String("id.name", set.ID.Name()),
 	)
 	exporterCfg, err := config.convert()
 	if err != nil {
@@ -48,11 +49,20 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 		set.BuildInfo.Version,
 		entity,
 	)
+
+	meter := set.MeterProvider.Meter("datasetexporter")
+	meterConfig := meter_config.NewMeterConfig(
+		&meter,
+		entity,
+		set.ID.Name(),
+	)
+
 	client, err := client.NewClient(
 		exporterCfg.datasetConfig,
 		&http.Client{Timeout: time.Second * 60},
 		logger,
 		&userAgent,
+		meterConfig,
 	)
 	if err != nil {
 		logger.Error("Cannot create DataSetClient: ", zap.Error(err))
@@ -61,7 +71,6 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 
 	return &DatasetExporter{
 		client:      client,
-		limiter:     rate.NewLimiter(100*rate.Every(1*time.Minute), 100), // 100 requests / minute
 		session:     uuid.New().String(),
 		logger:      logger,
 		exporterCfg: exporterCfg,

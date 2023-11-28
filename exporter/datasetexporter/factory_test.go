@@ -84,6 +84,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				DatasetURL: "https://app.scalyr.com",
 				APIKey:     "key-full",
+				Debug:      true,
 				BufferSettings: BufferSettings{
 					MaxLifetime:          3456 * time.Millisecond,
 					GroupBy:              []string{"body.map.kubernetes.pod_id", "body.map.kubernetes.docker_id", "body.map.stream"},
@@ -160,7 +161,7 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:false ExportResourcePrefix: ExportScopeInfo:false ExportScopePrefix: DecomposeComplexMessageField:false DecomposedComplexMessagePrefix: exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; TracesSettings: {exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; ServerHostSettings: {UseHostName:false ServerHost:}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExporter: cannot convert config: DatasetURL: ; APIKey: [REDACTED] (0); Debug: false; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:false ExportResourcePrefix: ExportScopeInfo:false ExportScopePrefix: DecomposeComplexMessageField:false DecomposedComplexMessagePrefix: exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; TracesSettings: {exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; ServerHostSettings: {UseHostName:false ServerHost:}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",

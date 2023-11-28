@@ -361,6 +361,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 							p.metricKeyToDimensions.Add(eKey, eAttributes)
 						}
 						e := events.GetOrCreate(eKey, eAttributes)
+						if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
+						}
 						e.Add(1)
 					}
 				}
