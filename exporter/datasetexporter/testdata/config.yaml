@@ -14,6 +14,7 @@ dataset/lib:
 dataset/full:
   dataset_url: https://app.scalyr.com
   api_key: key-full
+  debug: true
   buffer:
     max_lifetime: 3456ms
     group_by:

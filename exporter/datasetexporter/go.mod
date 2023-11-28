@@ -6,14 +6,13 @@ require (
 	github.com/google/uuid v1.4.0
 	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0
-	github.com/scalyr/dataset-go v0.14.0
+	github.com/scalyr/dataset-go v0.17.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.89.1-0.20231127181443-575c5f5e2531
 	go.opentelemetry.io/collector/confmap v0.89.1-0.20231127181443-575c5f5e2531
 	go.opentelemetry.io/collector/exporter v0.89.1-0.20231127181443-575c5f5e2531
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018.0.20231127181443-575c5f5e2531
 	go.uber.org/zap v1.26.0
-	golang.org/x/time v0.4.0
 
 )
 
