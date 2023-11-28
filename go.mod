@@ -68,7 +68,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.89.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.89.0
@@ -527,6 +526,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.89.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.89.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.89.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.89.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.89.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.89.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.89.0 // indirect
