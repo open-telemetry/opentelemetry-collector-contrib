@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018.0.20231127181443-575c5f5e2531
 	go.opentelemetry.io/collector/semconv v0.89.1-0.20231127181443-575c5f5e2531
 	google.golang.org/grpc v1.59.0
-	skywalking.apache.org/repo/goapi v0.0.0-20211122071111-ffc517fbfe21
+	skywalking.apache.org/repo/goapi v0.0.0-20231026090926-09378dd56587
 )
 
 require (
