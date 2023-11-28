@@ -7,6 +7,21 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `kafkareceiver`: Do not export the function `WithTracesUnmarshalers`, `WithMetricsUnmarshalers`, `WithLogsUnmarshalers` (#26304)
+
+### 💡 Enhancements 💡
+
+- `datadogreceiver`: The datadogreceiver supports the new datadog protocol that is sent by the datadog agent API/v0.2/traces. (#27045)
+- `pkg/ottl`: Add ability to independently parse OTTL conditions. (#29315)
+
+### 🧰 Bug fixes 🧰
+
+- `cassandraexporter`: Exist check for keyspace and dynamic timeout (#27633)
+
 ## v0.89.0
 
 ### 🛑 Breaking changes 🛑

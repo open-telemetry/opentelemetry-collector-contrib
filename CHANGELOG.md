@@ -7,6 +7,68 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `dockerstatsreceiver`: Add [container.cpu.limit], [container.cpu.shares] and [container.restarts] metrics from docker container api (#21087)
+  It requires API version 1.25 or greater.
+
+### 🚀 New components 🚀
+
+- `failoverconnector`: New component that will allow for pipeline failover triggered by the health of target downstream exporters (#20766)
+- `gitproviderreceiver`: add repo, branch, and contributor count metrics (#22028)
+
+### 💡 Enhancements 💡
+
+- `opensearchexporter`: Promote opensearchexporter to alpha. (#24668)
+- `awsemfexporter`: Improve NaN value checking for Summary metric types. (#28894)
+- `awsemfexporter`: Logs relating to the start and finish of processing metrics have been reduced to debug level (#29337)
+- `azuremonitorreceiver`: Support Azure gov cloud (#27573)
+- `clickhouseexporter`: Added support for more control over TTL configuration. Currently, it supports timelines only in days, now also in hours, minutes and seconds (propertyName ttl_days --> ttl). (#28675)
+- `datasetexporter`: Collect usage metrics with Otel and send grouped attributes in session info. (#27650, #27652)
+- `resourcedetectionprocessor`: Add k8s cluster name detection when running in EKS (#26794)
+- `pkg/ottl`: Add new IsDouble function to facilitate type checking. (#27895)
+- `configschema`: Generate metadata for connectors. (#26990)
+- `telemetrygen`: Exposes the span duration as a command line argument `--span-duration` (#29116)
+- `honeycombmarkerexporter`: Change honeycombmarkerexporter to alpha (#27666)
+- `mysqlreceiver`: expose tls in mysqlreceiver (#29269)
+  If `tls` is not set, the default is to disable TLS connections.
+- `processor/transform`: Convert between sum and gauge in metric context when alpha feature gate `processor.transform.ConvertBetweenSumAndGaugeMetricContext` enabled (#20773)
+- `receiver/mongodbatlasreceiver`: adds project config to mongodbatlas metrics to filter by project name and clusters. (#28865)
+- `pkg/stanza`: Add "namedpipe" operator. (#27234)
+- `pkg/resourcetotelemetry`: Do not clone data in pkg/resourcetotelemetry by default (#29327)
+  - The resulting consumer will be marked as `MutatesData` instead
+  
+- `pkg/stanza`: Improve performance by not calling decode when nop encoding is defined (#28899)
+- `exporter/prometheusremotewrite`: prometheusremotewrite exporter add option to send metadata (#13849)
+- `receivercreator`: Added support for discovery of endpoints based on K8s services (#29022)
+  By discovering endpoints based on K8s services, a dynamic probing of K8s service leveraging for example the httpcheckreceiver get enabled
+- `signalfxexporter`: change default timeout to 10 seconds (#29436)
+- `awss3exporter`: add support for `s3_force_path_style` and `disable_ssl` parameters (#29331)
+  In order to support alternative object-storage, these parameters are useful and help to leverage those systems not
+  compatible with domain style path, or just hosted without ssl (like just deployed in a k8s namespace).
+  
+- `hostmetricsreceiver`: Add optional Linux-only metric `system.linux.memory.available` (#7417)
+  This is an alternative to `system.memory.usage` metric with `state=free`.
+  Linux starting from 3.14 exports "available" memory. It takes "free" memory as a baseline, and then factors in kernel-specific values.
+  This is supposed to be more accurate than just "free" memory.
+  For reference, see the calculations [here](https://superuser.com/a/980821).
+  See also `MemAvailable` in [/proc/meminfo](https://man7.org/linux/man-pages/man5/proc.5.html).
+  
+- `azuremonitorexporter`: Updated Azure Monitor Exporter service version from v2.0 to v2.1. (#29234)
+
+### 🧰 Bug fixes 🧰
+
+- `cassandraexporter`: Exist check for keyspace and dynamic timeout (#27633)
+- `datadogreceiver`: Fix set telemetry.sdk.language=dotnet instead of .NET (#29459)
+- `filelogreceiver`: Fix issue where files were unnecessarily kept open on Windows (#29149)
+- `receiver/activedirectoryds`: Fix shutdown of `activedirectorydsreceiver` when shutdown was called right after creation, without a corresponding start call. (#29505)
+- `honeycombmarkerexporter`: Fix default api_url and dataset_slug (#29309)
+- `influxdbexporter`: When InfluxDB v1 compatibility is enabled AND username&password are set, the exporter panics. Not any more! (#27084)
+- `mongodbreceiver`: add `receiver.mongodb.removeDatabaseAttr` Alpha feature gate to remove duplicate database name attribute (#24972)
+- `pkg/stanza`: Fix panic during stop for udp async mode only. (#29120)
+
 ## v0.89.0
 
 ### 🛑 Breaking changes 🛑
