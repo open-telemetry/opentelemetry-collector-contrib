@@ -286,10 +286,14 @@ telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
+.PHONY: update-dep
+update-dep:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="updatedep"
+	$(MAKE) otelcontribcol
+
 .PHONY: update-otel
-update-otel:$(MULTIMOD)
-	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector --commit-hash $(OTEL_STABLE_VERSION)
-	$(MAKE) gotidy
+update-otel:
+	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION) RC_VERSION=$(OTEL_RC_VERSION) STABLE_VERSION=$(OTEL_STABLE_VERSION)
 
 .PHONY: otel-from-tree
 otel-from-tree:
