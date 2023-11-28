@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.4.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.89.1-0.20231127181443-575c5f5e2531
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018.0.20231127181443-575c5f5e2531
