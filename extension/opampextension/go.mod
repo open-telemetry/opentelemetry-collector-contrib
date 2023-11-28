@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/google/uuid v1.4.0
 	github.com/oklog/ulid/v2 v2.1.0
-	github.com/open-telemetry/opamp-go v0.9.0
+	github.com/open-telemetry/opamp-go v0.10.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.89.1-0.20231127181443-575c5f5e2531
 	go.opentelemetry.io/collector/config/configopaque v0.89.1-0.20231127181443-575c5f5e2531
