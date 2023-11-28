@@ -434,4 +434,4 @@ As a rule of thumb, if you want to add probabilistic sampling and...
 
 **A.** This is likely a load issue. If the collector is processing more traces in-memory than the `num_traces` configuration
 option allows, some will have to be dropped before they can be sampled. Increasing the value of `num_traces` can
-help resolve this error.
+help resolve this error, at the expense of increased memory usage.
