@@ -76,11 +76,7 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 			},
 			OnMessageFunc: o.onMessage,
 		},
-		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
-	}
-
-	if o.capabilities.ReportsEffectiveConfig {
-		settings.Capabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
+		Capabilities: o.capabilities.toAgentCapabilities(),
 	}
 
 	if err := o.createAgentDescription(); err != nil {

@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"github.com/oklog/ulid/v2"
+	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -27,6 +28,17 @@ type Config struct {
 type Capabilities struct {
 	// ReportsEffectiveConfig enables the OpAMP ReportsEffectiveConfig Capability. (default: true)
 	ReportsEffectiveConfig bool `mapstructure:"reports_effective_config"`
+}
+
+func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
+	// All Agents MUST report status.
+	agentCapabilities := protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus
+
+	if caps.ReportsEffectiveConfig {
+		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
+	}
+
+	return agentCapabilities
 }
 
 // OpAMPServer contains the OpAMP transport configuration.
