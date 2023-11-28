@@ -173,3 +173,34 @@ func (ghs *githubScraper) getContributorCount(
 
 	return len(all), nil
 }
+
+// Get the pull request data from the GraphQL API.
+func (ghs *githubScraper) getPullRequests(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+) ([]PullRequestNode, error) {
+	var prCursor *string
+	var pullRequests []PullRequestNode
+
+	for hasNextPage := true; hasNextPage; {
+		prs, err := getPullRequestData(
+			ctx,
+			client,
+			repoName,
+			ghs.cfg.GitHubOrg,
+			100,
+			prCursor,
+			[]PullRequestState{"OPEN", "MERGED"},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		pullRequests = append(pullRequests, prs.Repository.PullRequests.Nodes...)
+		prCursor = &prs.Repository.PullRequests.PageInfo.EndCursor
+		hasNextPage = prs.Repository.PullRequests.PageInfo.HasNextPage
+	}
+
+	return pullRequests, nil
+}
