@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemf
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.48.3
+	github.com/aws/aws-sdk-go v1.48.5
 	github.com/google/uuid v1.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.89.0
@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.89.1-0.20231127181443-575c5f5e2531
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22
+	golang.org/x/exp v0.0.0-20231127185646-65229373498e
 )
 
 require (
