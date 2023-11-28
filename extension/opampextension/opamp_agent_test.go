@@ -27,7 +27,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.Equal(t, "otelcoltest", o.agentType)
 	assert.Equal(t, "test version", o.agentVersion)
 	assert.NotEmpty(t, o.instanceID.String())
-	assert.True(t, o.reportsEffectiveConfig)
+	assert.True(t, o.capabilities.ReportsEffectiveConfig)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 }

@@ -32,9 +32,10 @@ type opampAgent struct {
 
 	instanceID ulid.ULID
 
-	eclk                   sync.RWMutex
-	effectiveConfig        *confmap.Conf
-	reportsEffectiveConfig bool
+	eclk            sync.RWMutex
+	effectiveConfig *confmap.Conf
+
+	capabilities Capabilities
 
 	agentDescription *protobufs.AgentDescription
 
@@ -78,7 +79,7 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 	}
 
-	if o.reportsEffectiveConfig {
+	if o.capabilities.ReportsEffectiveConfig {
 		settings.Capabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
 	}
 
@@ -111,7 +112,7 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 }
 
 func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
-	if o.reportsEffectiveConfig {
+	if o.capabilities.ReportsEffectiveConfig {
 		o.updateEffectiveConfig(conf)
 		return o.opampClient.UpdateEffectiveConfig(ctx)
 	}
@@ -160,12 +161,12 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 	}
 
 	agent := &opampAgent{
-		cfg:                    cfg,
-		logger:                 logger,
-		agentType:              agentType,
-		agentVersion:           agentVersion,
-		instanceID:             uid,
-		reportsEffectiveConfig: cfg.Capabilities.ReportsEffectiveConfig,
+		cfg:          cfg,
+		logger:       logger,
+		agentType:    agentType,
+		agentVersion: agentVersion,
+		instanceID:   uid,
+		capabilities: cfg.Capabilities,
 	}
 
 	return agent, nil
@@ -217,7 +218,7 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	o.eclk.RLock()
 	defer o.eclk.RUnlock()
 
-	if !o.reportsEffectiveConfig || o.effectiveConfig == nil {
+	if !o.capabilities.ReportsEffectiveConfig || o.effectiveConfig == nil {
 		return nil
 	}
 
