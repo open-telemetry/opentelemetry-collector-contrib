@@ -629,7 +629,7 @@ func TestPodStore_decorateNode_multiplePodStates(t *testing.T) {
 	defer require.NoError(t, podStore.Shutdown())
 
 	tags := map[string]string{ci.MetricType: ci.TypeNode}
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(100),
 		ci.MetricName(ci.TypeNode, ci.CPULimit):      uint64(4000),
 		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(100 * 1024 * 1024),
