@@ -114,6 +114,7 @@ func (prwe *prwExporter) shutdownWALIfEnabled() error {
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
 func (prwe *prwExporter) Shutdown(context.Context) error {
+	prwe.settings.Logger.Info("Shutting down Prometheus Remote Write Exporter...")
 	select {
 	case <-prwe.closeChan:
 	default:
@@ -188,6 +189,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
+	prwe.settings.Logger.Debug(fmt.Sprintf("Preparing to make HTTP request to: %s", prwe.clientSettings.Endpoint))
 	input := make(chan *prompb.WriteRequest, len(requests))
 	for _, request := range requests {
 		input <- request
@@ -241,10 +243,8 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		compressedData := snappy.Encode(buf, data)
 
 		// Create the HTTP POST request to send to the endpoint
-		prwe.settings.Logger.Info("Peparing to make HTTP request,", zap.String("url", prwe.endpointURL.String()))
 		req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
-			prwe.settings.Logger.Error("error", zap.Error(err))
 			return backoff.Permanent(consumererror.NewPermanent(err))
 		}
 
@@ -257,23 +257,23 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 		resp, err := prwe.client.Do(req)
 		if err != nil {
-			prwe.settings.Logger.Error("error", zap.Error(err))
+			return err
 		}
 		defer resp.Body.Close()
+		prwe.settings.Logger.Debug(fmt.Sprintf("HTTP request returned with status: %v", resp.Status))
 
 		// 2xx status code is considered a success
 		// 5xx errors are recoverable and the exporter should retry
 		// Reference for different behavior according to status code:
 		// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			prwe.settings.Logger.Debug(fmt.Sprintf("Successfully sent metrics to %s", prwe.clientSettings.Endpoint))
 			return nil
 		}
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-			prwe.settings.Logger.Error("http status code", zap.Int("code", resp.StatusCode))
-			prwe.settings.Logger.Error("error", zap.Error(rerr))
 			return rerr
 		}
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
@@ -296,6 +296,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	}
 
 	if err != nil {
+		prwe.settings.Logger.Error("error sending metrics: ", zap.Error(err))
 		return consumererror.NewPermanent(err)
 	}
 

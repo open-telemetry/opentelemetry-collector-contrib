@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -61,6 +62,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
 	if err != nil {
+		prwe.settings.Logger.Error("Failed to create metrics exporter: %v", zap.Error(err))
 		return nil, err
 	}
 	return resourcetotelemetry.WrapMetricsExporter(prwCfg.ResourceToTelemetrySettings, exporter), nil
