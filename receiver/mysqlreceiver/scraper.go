@@ -355,6 +355,14 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlTableOpenCacheDataPoint(now, v, metadata.AttributeCacheStatusOverflow))
 
 		// queries
+		case "Qcache_queries_in_cache":
+			addPartialIfError(errs, m.mb.RecordMysqlQcacheQueriesDataPoint(now, v))
+		case "Qcache_hits":
+			addPartialIfError(errs, m.mb.RecordMysqlQcacheHitsDataPoint(now, v))
+		case "Qcache_not_cached":
+			addPartialIfError(errs, m.mb.RecordMysqlQcacheNotCachedDataPoint(now, v))
+
+		// qcache
 		case "Queries":
 			addPartialIfError(errs, m.mb.RecordMysqlQueryCountDataPoint(now, v))
 		case "Questions":

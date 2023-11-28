@@ -142,6 +142,15 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommandExecute)
 
 			allMetricsCount++
+			mb.RecordMysqlQcacheHitsDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordMysqlQcacheNotCachedDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordMysqlQcacheQueriesDataPoint(ts, "1")
+
+			allMetricsCount++
 			mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 
 			allMetricsCount++
@@ -633,6 +642,48 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("command")
 					assert.True(t, ok)
 					assert.EqualValues(t, "execute", attrVal.Str())
+				case "mysql.qcache.hits":
+					assert.False(t, validatedMetrics["mysql.qcache.hits"], "Found a duplicate in the metrics slice: mysql.qcache.hits")
+					validatedMetrics["mysql.qcache.hits"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of query cache hits.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.qcache.not.cached":
+					assert.False(t, validatedMetrics["mysql.qcache.not.cached"], "Found a duplicate in the metrics slice: mysql.qcache.not.cached")
+					validatedMetrics["mysql.qcache.not.cached"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of noncached queries (not cacheable, or not cached due to the query_cache_type setting).", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.qcache.queries":
+					assert.False(t, validatedMetrics["mysql.qcache.queries"], "Found a duplicate in the metrics slice: mysql.qcache.queries")
+					validatedMetrics["mysql.qcache.queries"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of queries registered in the query cache.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.query.client.count":
 					assert.False(t, validatedMetrics["mysql.query.client.count"], "Found a duplicate in the metrics slice: mysql.query.client.count")
 					validatedMetrics["mysql.query.client.count"] = true

@@ -47,6 +47,12 @@ all_set:
       enabled: true
     mysql.prepared_statements:
       enabled: true
+    mysql.qcache.hits:
+      enabled: true
+    mysql.qcache.not.cached:
+      enabled: true
+    mysql.qcache.queries:
+      enabled: true
     mysql.query.client.count:
       enabled: true
     mysql.query.count:
@@ -137,6 +143,12 @@ none_set:
     mysql.page_operations:
       enabled: false
     mysql.prepared_statements:
+      enabled: false
+    mysql.qcache.hits:
+      enabled: false
+    mysql.qcache.not.cached:
+      enabled: false
+    mysql.qcache.queries:
       enabled: false
     mysql.query.client.count:
       enabled: false

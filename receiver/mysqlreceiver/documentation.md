@@ -446,6 +446,30 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 | ---- | ----------- | ------ |
 | kind | The worker thread count kind. | Str: ``available``, ``active`` |
 
+### mysql.qcache.hits
+
+The number of query cache hits.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+### mysql.qcache.not.cached
+
+The number of noncached queries (not cacheable, or not cached due to the query_cache_type setting).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+### mysql.qcache.queries
+
+The number of queries registered in the query cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
 ### mysql.query.client.count
 
 The number of statements executed by the server. This includes only statements sent to the server by clients.

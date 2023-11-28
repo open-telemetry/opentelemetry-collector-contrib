@@ -420,6 +420,9 @@ Performance_schema_users_lost	404
 Prepared_stmt_count	405
 Queries	406
 Questions	407
+Qcache_hits	10
+Qcache_not_cached	728
+Qcache_queries_in_cache	4
 Select_full_join	408
 Select_full_range_join	409
 Select_range	410
