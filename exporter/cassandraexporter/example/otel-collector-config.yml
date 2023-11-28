@@ -6,6 +6,8 @@ receivers:
 exporters:
   cassandra:
     dsn: 127.0.0.1
+    port: 9042
+    timeout: 10s
     keyspace: "otel"
     trace_table: "otel_spans"
     logs_table: "otel_logs"
@@ -14,7 +16,6 @@ exporters:
       replication_factor: 1
     compression:
       algorithm: "ZstdCompressor"
-
 service:
   pipelines:
     traces:

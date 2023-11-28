@@ -6,6 +6,7 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -26,6 +27,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		DSN:        "127.0.0.1",
 		Port:       9042,
+		Timeout:    10 * time.Second,
 		Keyspace:   "otel",
 		TraceTable: "otel_spans",
 		LogsTable:  "otel_logs",
