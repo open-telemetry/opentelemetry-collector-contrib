@@ -166,7 +166,7 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 		agentType:              agentType,
 		agentVersion:           agentVersion,
 		instanceID:             uid,
-		reportsEffectiveConfig: cfg.ReportsEffectiveConfig,
+		reportsEffectiveConfig: cfg.Capabilities.ReportsEffectiveConfig,
 	}
 
 	return agent, nil

@@ -34,8 +34,10 @@ func TestUnmarshalConfig(t *testing.T) {
 					Endpoint: "wss://127.0.0.1:4320/v1/opamp",
 				},
 			},
-			InstanceUID:            "01BX5ZZKBKACTAV9WEVGEMMVRZ",
-			ReportsEffectiveConfig: true,
+			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			Capabilities: Capabilities{
+				ReportsEffectiveConfig: true,
+			},
 		}, cfg)
 }
 

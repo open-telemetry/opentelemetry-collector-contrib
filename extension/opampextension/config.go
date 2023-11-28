@@ -20,7 +20,12 @@ type Config struct {
 	// representation. Auto-generated on start if missing.
 	InstanceUID string `mapstructure:"instance_uid"`
 
-	// ReportsEffectiveConfig enables the OpAMP ReportsEffectiveConfig Capability.
+	// Capabilities contains options to enable a particular OpAMP capability
+	Capabilities Capabilities `mapstructure:"capabilities"`
+}
+
+type Capabilities struct {
+	// ReportsEffectiveConfig enables the OpAMP ReportsEffectiveConfig Capability. (default: true)
 	ReportsEffectiveConfig bool `mapstructure:"reports_effective_config"`
 }
 
