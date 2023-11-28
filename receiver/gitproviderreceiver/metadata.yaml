@@ -27,6 +27,9 @@ attributes:
   repository.name:
     description: The full name of the Git repository
     type: string
+  branch.name:
+    description: The name of the branch in a given repository
+    type: string
 
 metrics:
   git.repository.count:
@@ -50,3 +53,31 @@ metrics:
     gauge:
       value_type: int
     attributes: [repository.name]
+  git.repository.pull_request.merged.count:
+    enabled: true
+    description: The amount of merged pull requests
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name]
+  git.repository.pull_request.open.count:
+    enabled: true
+    description: The amount of open pull requests
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name]
+  git.repository.pull_request.open.time:
+    enabled: true
+    description: Time the PR has been open
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.pull_request.merge.time:
+    enabled: true
+    description: Time the PR has been merged
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
