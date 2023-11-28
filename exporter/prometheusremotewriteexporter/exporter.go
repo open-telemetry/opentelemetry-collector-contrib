@@ -296,7 +296,6 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	}
 
 	if err != nil {
-		// prwe.settings.Logger.Error("error sending metrics: ", zap.Error(err))
 		return consumererror.NewPermanent(err)
 	}
 
