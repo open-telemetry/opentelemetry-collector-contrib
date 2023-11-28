@@ -117,9 +117,14 @@ func (c *ZorkianConsumer) ConsumeSketch(
 	sketch *quantile.Sketch,
 ) {
 	c.sl = append(c.sl, sketches.SketchSeries{
-		Name:     dims.Name(),
-		Tags:     dims.Tags(),
-		Host:     dims.Host(),
+		Name: dims.Name(),
+		Tags: dims.Tags(),
+		Host: dims.Host(),
+		Origin: sketches.Origin{
+			OriginProduct:  uint32(dims.OriginProduct()),
+			OriginCategory: uint32(dims.OriginCategory()),
+			OriginService:  uint32(dims.OriginService()),
+		},
 		Interval: 1,
 		Points: []sketches.SketchPoint{{
 			Ts:     int64(timestamp / 1e9),

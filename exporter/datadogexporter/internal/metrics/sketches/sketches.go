@@ -17,12 +17,23 @@ const (
 	SketchSeriesEndpoint string = "/api/beta/sketches"
 )
 
+// Origin defnes the metric origin.
+type Origin struct {
+	// OriginProduct is the product code of the origin.
+	OriginProduct uint32
+	// OriginCategory is the category code of the origin.
+	OriginCategory uint32
+	// OriginService is the service code of the origin.
+	OriginService uint32
+}
+
 // A SketchSeries is a timeseries of quantile sketches.
 type SketchSeries struct {
-	Name     string        `json:"metric"`
-	Tags     []string      `json:"tags"`
-	Host     string        `json:"host"`
-	Interval int64         `json:"interval"`
+	Name     string   `json:"metric"`
+	Tags     []string `json:"tags"`
+	Host     string   `json:"host"`
+	Interval int64    `json:"interval"`
+	Origin   Origin
 	Points   []SketchPoint `json:"points"`
 }
 
@@ -64,6 +75,11 @@ func (sl SketchSeriesList) Marshal() ([]byte, error) {
 			Host:        ss.Host,
 			Tags:        ss.Tags,
 			Dogsketches: dsl,
+			Metadata: &gogen.Metadata{Origin: &gogen.Origin{
+				OriginProduct:  ss.Origin.OriginProduct,
+				OriginCategory: ss.Origin.OriginCategory,
+				OriginService:  ss.Origin.OriginService,
+			}},
 		})
 	}
 	return pb.Marshal()

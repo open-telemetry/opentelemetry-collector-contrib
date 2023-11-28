@@ -119,6 +119,17 @@ func (c *Consumer) ConsumeTimeSeries(
 			Type: datadog.PtrString("host"),
 		},
 	})
+
+	origin := datadogV2.NewMetricOriginWithDefaults()
+	// TODO: Move to actual properties instead of doing this hack.
+	origin.AdditionalProperties = map[string]any{
+		"origin_product": dims.OriginProduct(),
+		// TODO: wait until rename happens
+		//"origin_category": dims.OriginCategory(),
+		//"origin_service":  dims.OriginService(),
+	}
+	met.Metadata.SetOrigin(*origin)
+
 	c.ms = append(c.ms, met)
 }
 
@@ -130,9 +141,14 @@ func (c *Consumer) ConsumeSketch(
 	sketch *quantile.Sketch,
 ) {
 	c.sl = append(c.sl, sketches.SketchSeries{
-		Name:     dims.Name(),
-		Tags:     dims.Tags(),
-		Host:     dims.Host(),
+		Name: dims.Name(),
+		Tags: dims.Tags(),
+		Host: dims.Host(),
+		Origin: sketches.Origin{
+			OriginProduct:  uint32(dims.OriginProduct()),
+			OriginCategory: uint32(dims.OriginCategory()),
+			OriginService:  uint32(dims.OriginService()),
+		},
 		Interval: 1,
 		Points: []sketches.SketchPoint{{
 			Ts:     int64(timestamp / 1e9),
