@@ -3,12 +3,7 @@ query getRepoDataBySearch(
   # @genqlient(pointer: true)
   $repoCursor: String
 ) {
-  search(
-    query: $searchQuery
-    type: REPOSITORY
-    first: 100
-    after: $repoCursor
-  ) {
+  search(query: $searchQuery, type: REPOSITORY, first: 100, after: $repoCursor) {
     repositoryCount
     # @genqlient(typename: "SearchNode")
     nodes {
@@ -54,7 +49,7 @@ query getBranchData(
           aheadBy
           behindBy
         }
-        repository{
+        repository {
           name
           defaultBranchRef {
             name
@@ -85,8 +80,24 @@ query getPullRequestData(
           createdAt
           merged
           mergedAt
+          mergeCommit {
+            deployments(last: 1, orderBy: { field: CREATED_AT, direction: ASC }) {
+              nodes {
+                createdAt
+              }
+              totalCount
+            }
+          }
         }
         headRefName
+        reviews(states: APPROVED, last: 1) {
+          totalCount
+          nodes {
+            ... on PullRequestReview {
+              createdAt
+            }
+          }
+        }
       }
       pageInfo {
         hasNextPage

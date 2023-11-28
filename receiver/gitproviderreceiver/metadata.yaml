@@ -69,14 +69,28 @@ metrics:
     attributes: [repository.name]
   git.repository.pull_request.open.time:
     enabled: true
-    description: Time the PR has been open
+    description: The amount of time a PR has been open
     unit: 1
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
   git.repository.pull_request.merge.time:
     enabled: true
-    description: Time the PR has been merged
+    description: The amount of time a PR has been merged
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.pull_request.approval.time:
+    enabled: true
+    description: The amount of time for a PR to be approved
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.pull_request.deployment.time:
+    enabled: true
+    description: The amount of time for a merged PR to be deployed
     unit: 1
     gauge:
       value_type: int

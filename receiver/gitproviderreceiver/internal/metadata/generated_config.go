@@ -25,13 +25,15 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for gitprovider metrics.
 type MetricsConfig struct {
-	GitRepositoryBranchCount            MetricConfig `mapstructure:"git.repository.branch.count"`
-	GitRepositoryContributorCount       MetricConfig `mapstructure:"git.repository.contributor.count"`
-	GitRepositoryCount                  MetricConfig `mapstructure:"git.repository.count"`
-	GitRepositoryPullRequestMergeTime   MetricConfig `mapstructure:"git.repository.pull_request.merge.time"`
-	GitRepositoryPullRequestMergedCount MetricConfig `mapstructure:"git.repository.pull_request.merged.count"`
-	GitRepositoryPullRequestOpenCount   MetricConfig `mapstructure:"git.repository.pull_request.open.count"`
-	GitRepositoryPullRequestOpenTime    MetricConfig `mapstructure:"git.repository.pull_request.open.time"`
+	GitRepositoryBranchCount               MetricConfig `mapstructure:"git.repository.branch.count"`
+	GitRepositoryContributorCount          MetricConfig `mapstructure:"git.repository.contributor.count"`
+	GitRepositoryCount                     MetricConfig `mapstructure:"git.repository.count"`
+	GitRepositoryPullRequestApprovalTime   MetricConfig `mapstructure:"git.repository.pull_request.approval.time"`
+	GitRepositoryPullRequestDeploymentTime MetricConfig `mapstructure:"git.repository.pull_request.deployment.time"`
+	GitRepositoryPullRequestMergeTime      MetricConfig `mapstructure:"git.repository.pull_request.merge.time"`
+	GitRepositoryPullRequestMergedCount    MetricConfig `mapstructure:"git.repository.pull_request.merged.count"`
+	GitRepositoryPullRequestOpenCount      MetricConfig `mapstructure:"git.repository.pull_request.open.count"`
+	GitRepositoryPullRequestOpenTime       MetricConfig `mapstructure:"git.repository.pull_request.open.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -43,6 +45,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		GitRepositoryCount: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestApprovalTime: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestDeploymentTime: MetricConfig{
 			Enabled: true,
 		},
 		GitRepositoryPullRequestMergeTime: MetricConfig{
