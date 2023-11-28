@@ -5,14 +5,14 @@ go 1.20
 require (
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/docker/go-connections v0.4.1-0.20231110212414-fa09c952e3ea
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.89.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.89.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.90.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.90.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.90.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
-	go.opentelemetry.io/collector/component v0.89.0
-	go.opentelemetry.io/collector/confmap v0.89.0
-	go.opentelemetry.io/collector/extension v0.89.0
+	go.opentelemetry.io/collector/component v0.90.0
+	go.opentelemetry.io/collector/confmap v0.90.0
+	go.opentelemetry.io/collector/extension v0.90.0
 	go.uber.org/zap v1.26.0
 )
 
@@ -59,12 +59,12 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018 // indirect
-	go.opentelemetry.io/otel v1.20.0 // indirect
-	go.opentelemetry.io/otel/metric v1.20.0 // indirect
-	go.opentelemetry.io/otel/trace v1.20.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.90.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0 // indirect
+	go.opentelemetry.io/otel v1.21.0 // indirect
+	go.opentelemetry.io/otel/metric v1.21.0 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
