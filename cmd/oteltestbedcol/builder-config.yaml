@@ -3,20 +3,20 @@ dist:
   name: oteltestbedcol
   description: OpenTelemetry Collector binary for testbed only tests.
   version: 0.89.0-dev
-  otelcol_version: 0.89.0
+  otelcol_version: 0.89.1-0.20231127181443-575c5f5e2531
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.89.0
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.89.0
+  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.89.1-0.20231127181443-575c5f5e2531
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.89.1-0.20231127181443-575c5f5e2531
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.89.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.89.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.89.0
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.89.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.89.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.89.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.89.1-0.20231127181443-575c5f5e2531
+  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.89.1-0.20231127181443-575c5f5e2531
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.89.1-0.20231127181443-575c5f5e2531
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.89.1-0.20231127181443-575c5f5e2531
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.89.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.89.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.89.0
@@ -28,13 +28,13 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.89.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.89.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.89.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.89.1-0.20231127181443-575c5f5e2531
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.89.1-0.20231127181443-575c5f5e2531
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.89.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.89.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.89.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.89.1-0.20231127181443-575c5f5e2531
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.89.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.89.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.89.0
