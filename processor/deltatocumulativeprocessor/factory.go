@@ -28,5 +28,5 @@ func createMetricsProcessor(ctx context.Context, set processor.CreateSettings, c
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	return newProcessor(pcfg, set.Logger, next), nil
+	return newProcessor(pcfg, set.Logger), nil
 }
