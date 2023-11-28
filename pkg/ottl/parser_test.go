@@ -2240,45 +2240,113 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 		conditions     []boolExpressionEvaluator[any]
 		function       ExprFunc[any]
 		errorMode      ErrorMode
+		logicOp        LogicOperation
 		expectedResult bool
 	}{
 		{
-			name: "True",
+			name: "True with OR",
 			conditions: []boolExpressionEvaluator[any]{
 				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
+			logicOp:        Or,
 			expectedResult: true,
 		},
 		{
-			name: "At least one True",
+			name: "At least one True with OR",
 			conditions: []boolExpressionEvaluator[any]{
 				alwaysFalse[any],
 				alwaysFalse[any],
 				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
+			logicOp:        Or,
 			expectedResult: true,
 		},
 		{
-			name: "False",
+			name: "False with OR",
 			conditions: []boolExpressionEvaluator[any]{
 				alwaysFalse[any],
 				alwaysFalse[any],
 			},
 			errorMode:      IgnoreError,
+			logicOp:        Or,
 			expectedResult: false,
 		},
 		{
-			name: "Error is false when using Ignore",
+			name: "Single erroring condition is treated as false when using Ignore with OR",
 			conditions: []boolExpressionEvaluator[any]{
-				alwaysFalse[any],
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode:      IgnoreError,
+			logicOp:        Or,
+			expectedResult: false,
+		},
+		{
+			name: "erroring condition is ignored when using Ignore with OR",
+			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
 					return true, fmt.Errorf("test")
 				},
 				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
+			logicOp:        Or,
+			expectedResult: true,
+		},
+		{
+			name: "True with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysTrue[any],
+				alwaysTrue[any],
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
+			expectedResult: true,
+		},
+		{
+			name: "At least one False with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				alwaysTrue[any],
+				alwaysTrue[any],
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
+			expectedResult: false,
+		},
+		{
+			name: "False with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
+			expectedResult: false,
+		},
+		{
+			name: "Single erroring condition is treated as false when using Ignore with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
+			expectedResult: false,
+		},
+		{
+			name: "erroring condition is ignored when using Ignore with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+				alwaysTrue[any],
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
 			expectedResult: true,
 		},
 	}
@@ -2295,6 +2363,7 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 				conditions:        rawStatements,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,
+				logicOp:           tt.logicOp,
 			}
 
 			result, err := conditions.Eval(context.Background(), nil)

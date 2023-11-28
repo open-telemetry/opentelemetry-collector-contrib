@@ -32,6 +32,24 @@ func (e *ErrorMode) UnmarshalText(text []byte) error {
 	}
 }
 
+type LogicOperation string
+
+const (
+	And LogicOperation = "and"
+	Or  LogicOperation = "or"
+)
+
+func (l *LogicOperation) UnmarshalText(text []byte) error {
+	str := LogicOperation(strings.ToLower(string(text)))
+	switch str {
+	case And, Or:
+		*l = str
+		return nil
+	default:
+		return fmt.Errorf("unknown LogicOperation %v", str)
+	}
+}
+
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the boolean expression to match telemetry for invoking the function.
 type Statement[K any] struct {
@@ -309,13 +327,24 @@ func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 
 // ConditionSequence represents a list of Conditions that will be evaluated sequentially for a TransformContext
 // and will handle errors returned by conditions based on an ErrorMode.
+// By default, the conditions are ORed together, but they can be ANDed together using the WithLogicOperation option.
 type ConditionSequence[K any] struct {
 	conditions        []*Condition[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
+	logicOp           LogicOperation
 }
 
 type ConditionSequenceOption[K any] func(*ConditionSequence[K])
+
+// WithLogicOperation sets the LogicOperation of a ConditionSequence
+// When setting AND the conditions will be ANDed together.
+// When setting OR the conditions will be ORed together.
+func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K] {
+	return func(c *ConditionSequence[K]) {
+		c.logicOp = logicOp
+	}
+}
 
 // NewConditionSequence creates a new ConditionSequence with the provided Condition slice, ErrorMode, and component.TelemetrySettings.
 // You may also augment the ConditionSequence with a slice of ConditionSequenceOption.
@@ -324,6 +353,7 @@ func NewConditionSequence[K any](conditions []*Condition[K], errorMode ErrorMode
 		conditions:        conditions,
 		errorMode:         errorMode,
 		telemetrySettings: telemetrySettings,
+		logicOp:           Or,
 	}
 	for _, op := range options {
 		op(&s)
@@ -332,11 +362,13 @@ func NewConditionSequence[K any](conditions []*Condition[K], errorMode ErrorMode
 }
 
 // Eval evaluates the result of each Condition in the ConditionSequence.
-// If any Condition evaluates to true, then true is returned.
-// If all Conditions evaluate to false, then false is returned.
+// The boolean logic between conditions is based on the ConditionSequence's Logic Operator.
+// If using the default OR LogicOperation, if any Condition evaluates to true, then true is returned and if all Conditions evaluate to false, then false is returned.
+// If using the AND LogicOperation, if any Condition evaluates to false, then false is returned and if all Conditions evaluate to true, then true is returned.
 // When the ErrorMode of the ConditionSequence is `propagate`, errors cause the evaluation to be false and an error is returned.
 // When the ErrorMode of the ConditionSequence is `ignore`, errors cause the evaluation to continue to the next condition.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	var atLeastOneMatch bool
 	for _, condition := range c.conditions {
 		match, err := condition.Eval(ctx, tCtx)
 		if err != nil {
@@ -348,8 +380,14 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 			continue
 		}
 		if match {
-			return true, nil
+			if c.logicOp == Or {
+				return true, nil
+			}
+			atLeastOneMatch = true
+		}
+		if !match && c.logicOp == And {
+			return false, nil
 		}
 	}
-	return false, nil
+	return c.logicOp == And && atLeastOneMatch, nil
 }
