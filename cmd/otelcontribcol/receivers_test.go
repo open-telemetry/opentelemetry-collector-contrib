@@ -47,12 +47,12 @@ func TestDefaultReceivers(t *testing.T) {
 	rcvrFactories := allFactories.Receivers
 
 	tests := []struct {
-		getConfigFn  getReceiverConfigFn
-		receiver     component.Type
+		getConfigFn   getReceiverConfigFn
+		receiver      component.Type
 		skipLifecycle bool
 	}{
 		{
-			receiver:     "active_directory_ds",
+			receiver:      "active_directory_ds",
 			skipLifecycle: true, // Requires a running windows service
 		},
 		{
@@ -79,14 +79,14 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecycle: true,
 		},
 		{
-			receiver:     "awsecscontainermetrics",
+			receiver:      "awsecscontainermetrics",
 			skipLifecycle: true, // Requires container metaendpoint to be running
 		},
 		{
 			receiver: "awsfirehose",
 		},
 		{
-			receiver:     "awsxray",
+			receiver:      "awsxray",
 			skipLifecycle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
@@ -133,11 +133,11 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecycle: true, // Panics after test have completed, requires a wait group
 		},
 		{
-			receiver:     "cloudflare",
+			receiver:      "cloudflare",
 			skipLifecycle: true,
 		},
 		{
-			receiver:     "cloudfoundry",
+			receiver:      "cloudfoundry",
 			skipLifecycle: true, // Requires UAA (auth) endpoint to run
 		},
 		{
@@ -163,7 +163,7 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "docker_stats",
+			receiver:      "docker_stats",
 			skipLifecycle: true,
 		},
 		{
@@ -181,7 +181,7 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "file",
+			receiver:      "file",
 			skipLifecycle: true, // Requires an existing JSONL file
 		},
 		{
@@ -197,7 +197,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "googlecloudspanner",
 		},
 		{
-			receiver:     "googlecloudpubsub",
+			receiver:      "googlecloudpubsub",
 			skipLifecycle: true, // Requires a pubsub subscription
 		},
 		{
@@ -213,14 +213,14 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "influxdb",
 		},
 		{
-			receiver:     "iis",
+			receiver:      "iis",
 			skipLifecycle: true, // Requires a running windows process
 		},
 		{
 			receiver: "jaeger",
 		},
 		{
-			receiver:     "jmx",
+			receiver:      "jmx",
 			skipLifecycle: true, // Requires a running instance with JMX
 			getConfigFn: func() component.Config {
 				cfg := jmxreceiver.NewFactory().CreateDefaultConfig().(*jmxreceiver.Config)
@@ -230,30 +230,30 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "journald",
+			receiver:      "journald",
 			skipLifecycle: runtime.GOOS != "linux",
 		},
 		{
-			receiver:     "k8s_events",
+			receiver:      "k8s_events",
 			skipLifecycle: true, // need a valid Kubernetes host and port
 		},
 		{
-			receiver:     "k8sobjects",
+			receiver:      "k8sobjects",
 			skipLifecycle: true, // need a valid Kubernetes host and port
 		},
 		{
-			receiver:     "kafka",
+			receiver:      "kafka",
 			skipLifecycle: true, // TODO: It needs access to internals to successful start.
 		},
 		{
 			receiver: "kafkametrics",
 		},
 		{
-			receiver:     "k8s_cluster",
+			receiver:      "k8s_cluster",
 			skipLifecycle: true, // Requires access to the k8s host and port in order to run
 		},
 		{
-			receiver:     "kubeletstats",
+			receiver:      "kubeletstats",
 			skipLifecycle: true, // Requires access to certificates to auth against kubelet
 		},
 		{
@@ -263,7 +263,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "memcached",
 		},
 		{
-			receiver:     "mongodb",
+			receiver:      "mongodb",
 			skipLifecycle: true, // Causes tests to timeout
 		},
 		{
@@ -284,7 +284,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "nsxt",
 		},
 		{
-			receiver:     "opencensus",
+			receiver:      "opencensus",
 			skipLifecycle: true, // TODO: Usage of CMux doesn't allow proper shutdown.
 		},
 		{
@@ -302,7 +302,7 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "podman_stats",
+			receiver:      "podman_stats",
 			skipLifecycle: true, // Requires a running podman daemon
 		},
 		{
@@ -321,7 +321,7 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "pulsar",
+			receiver:      "pulsar",
 			skipLifecycle: true, // TODO It requires a running pulsar instance to start successfully.
 		},
 		{
@@ -385,7 +385,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "sqlquery",
 		},
 		{
-			receiver:     "sqlserver",
+			receiver:      "sqlserver",
 			skipLifecycle: true, // Requires a running windows process
 		},
 		{
@@ -397,7 +397,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "statsd",
 		},
 		{
-			receiver:     "wavefront",
+			receiver:      "wavefront",
 			skipLifecycle: true, // Depends on carbon receiver to be running correctly
 		},
 		{
@@ -409,7 +409,7 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "windowseventlog",
+			receiver:      "windowseventlog",
 			skipLifecycle: runtime.GOOS != "windows",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["windowseventlog"].CreateDefaultConfig().(*windowseventlogreceiver.WindowsLogConfig)
@@ -418,7 +418,7 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "windowsperfcounters",
+			receiver:      "windowsperfcounters",
 			skipLifecycle: runtime.GOOS != "windows",
 		},
 		{
@@ -457,7 +457,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "vcenter",
 		},
 		{
-			receiver:     "solace",
+			receiver:      "solace",
 			skipLifecycle: true, // Requires a solace broker to connect to
 		},
 	}
