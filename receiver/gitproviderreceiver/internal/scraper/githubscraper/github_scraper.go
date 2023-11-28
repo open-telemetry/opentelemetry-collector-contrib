@@ -122,13 +122,63 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				ghs.logger.Sugar().Errorf("error getting contributor count for repo %s", zap.Error(err), repo.Name)
 			}
 			ghs.mb.RecordGitRepositoryContributorCountDataPoint(now, int64(contribs), name)
+
+			// Get Pull Request data
+			prs, err := ghs.getPullRequests(ctx, genClient, name)
+			if err != nil {
+				ghs.logger.Sugar().Errorf("error getting pull requests for repo %s", zap.Error(err), repo.Name)
+			}
+
+			var merged int
+			var open int
+
+			for _, pr := range prs {
+				/*
+					TODO: Determine if this will be a problem on the first run:
+							I'm worried the first run will have a bunch of PRs that are
+							already merged and we won't get the open time data for them since
+							it only does this once per PR.
+				*/
+				if pr.Merged {
+					merged++
+
+					age := int64(pr.MergedAt.Sub(pr.CreatedAt).Hours())
+
+					ghs.mb.RecordGitRepositoryPullRequestMergeTimeDataPoint(now, age, name, pr.HeadRefName)
+
+					if pr.MergeCommit.Deployments.TotalCount > 0 {
+						deploymentAgeUpperBound := pr.MergeCommit.Deployments.Nodes[0].CreatedAt
+						deploymentAge := int64(deploymentAgeUpperBound.Sub(pr.CreatedAt).Hours())
+
+						ghs.mb.RecordGitRepositoryPullRequestDeploymentTimeDataPoint(now, deploymentAge, name, pr.HeadRefName)
+					}
+				} else {
+					open++
+
+					age := int64(now.AsTime().Sub(pr.CreatedAt).Hours())
+
+					ghs.mb.RecordGitRepositoryPullRequestOpenTimeDataPoint(now, age, name, pr.HeadRefName)
+
+					if pr.Reviews.TotalCount > 0 {
+						approvedAt := pr.Reviews.Nodes[0].CreatedAt
+						approvalAge := int64(approvedAt.Sub(pr.CreatedAt).Hours())
+
+						ghs.mb.RecordGitRepositoryPullRequestApprovalTimeDataPoint(now, approvalAge, name, pr.HeadRefName)
+					}
+				}
+			}
+
+			ghs.mb.RecordGitRepositoryPullRequestOpenCountDataPoint(now, int64(open), name)
+			ghs.mb.RecordGitRepositoryPullRequestMergedCountDataPoint(now, int64(merged), name)
 		}()
 	}
+
 	wg.Wait()
 
 	// Set the resource attributes and emit metrics with those resources
 	ghs.rb.SetGitVendorName("github")
 	ghs.rb.SetOrganizationName(ghs.cfg.GitHubOrg)
+
 	res := ghs.rb.Emit()
 	return ghs.mb.Emit(metadata.WithResource(res)), nil
 }
