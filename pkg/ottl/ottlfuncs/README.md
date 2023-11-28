@@ -8,6 +8,17 @@ This document contains documentation for both types of OTTL functions:
 - [Functions](#functions) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
+## Design principles
+
+For the standard OTTL functions described in this document, we specify design principles to ensure they are always
+secure and safe for use:
+
+- Built-in OTTL functions may not access the file system, network, or any other I/O devices.
+- Built-in OTTL functions may share information only through their parameters and results.
+
+OTTL functions are implemented in Go, and so are fundamentally limited to what can be implemented by a Go program.
+User-defined OTTL functions may therefore not adhere the above principles.
+
 ## Working with functions
 
 Functions generally expect specific types to be returned by `Paths`.
