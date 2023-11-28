@@ -52,6 +52,7 @@ The following settings can be optionally configured:
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true.
+- `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)

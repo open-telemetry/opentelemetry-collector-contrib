@@ -15,6 +15,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -105,9 +106,10 @@ type azureScraper struct {
 	mb                              *metadata.MetricsBuilder
 	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
 	azIDWorkloadFunc                func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
+	armClientOptions                *arm.ClientOptions
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
-	armMonitorDefinitionsClientFunc func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
-	armMonitorMetricsClientFunc     func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
+	armMonitorDefinitionsClientFunc func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
+	armMonitorMetricsClientFunc     func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
 	mutex                           *sync.Mutex
 }
 
@@ -115,8 +117,25 @@ type ArmClient interface {
 	NewListPager(options *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse]
 }
 
+func (s *azureScraper) getArmClientOptions() *arm.ClientOptions {
+	var cloudToUse cloud.Configuration
+	switch s.cfg.Cloud {
+	case azureGovernmentCloud:
+		cloudToUse = cloud.AzureGovernment
+	default:
+		cloudToUse = cloud.AzurePublic
+	}
+	options := arm.ClientOptions{
+		ClientOptions: azcore.ClientOptions{
+			Cloud: cloudToUse,
+		},
+	}
+
+	return &options
+}
+
 func (s *azureScraper) getArmClient() ArmClient {
-	client, _ := s.armClientFunc(s.cfg.SubscriptionID, s.cred, nil)
+	client, _ := s.armClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	return client
 }
 
@@ -125,7 +144,7 @@ type MetricsDefinitionsClientInterface interface {
 }
 
 func (s *azureScraper) getMetricsDefinitionsClient() MetricsDefinitionsClientInterface {
-	client, _ := s.armMonitorDefinitionsClientFunc(s.cred, nil)
+	client, _ := s.armMonitorDefinitionsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	return client
 }
 
@@ -136,7 +155,7 @@ type MetricsValuesClient interface {
 }
 
 func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
-	client, _ := s.armMonitorMetricsClientFunc(s.cred, nil)
+	client, _ := s.armMonitorMetricsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	return client
 }
 
@@ -145,6 +164,7 @@ func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 		return err
 	}
 
+	s.armClientOptions = s.getArmClientOptions()
 	s.clientResources = s.getArmClient()
 	s.clientMetricsDefinitions = s.getMetricsDefinitionsClient()
 	s.clientMetricsValues = s.GetMetricsValuesClient()

@@ -115,7 +115,7 @@ jobs:
 
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
-        run: issuegenerator $TEST_RESULTS
+        run: ./.tools/issuegenerator $TEST_RESULTS
 
   update-benchmarks:
     runs-on: ubuntu-latest

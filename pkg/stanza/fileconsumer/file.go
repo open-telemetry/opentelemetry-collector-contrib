@@ -80,6 +80,7 @@ func (m *Manager) closePreviousFiles() {
 	for _, r := range m.previousPollFiles {
 		m.knownFiles = append(m.knownFiles, r.Close())
 	}
+	m.previousPollFiles = nil
 }
 
 // Stop will stop the file monitoring process
@@ -159,11 +160,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files", zap.Strings("paths", paths))
 	readers := m.makeReaders(paths)
 
-	// take care of files which disappeared from the pattern since the last poll cycle
-	// this can mean either files which were removed, or rotated into a name not matching the pattern
-	// we do this before reading existing files to ensure we emit older log lines before newer ones
-	m.readLostFiles(ctx, readers)
-	m.closePreviousFiles()
+	m.preConsume(ctx, readers)
 
 	// read new readers to end
 	var wg sync.WaitGroup
@@ -176,7 +173,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
-	m.previousPollFiles = readers
+	m.postConsume(readers)
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
