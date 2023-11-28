@@ -111,9 +111,8 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 }
 
 func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
-	o.updateEffectiveConfig(conf)
-
 	if o.reportsEffectiveConfig {
+		o.updateEffectiveConfig(conf)
 		return o.opampClient.UpdateEffectiveConfig(ctx)
 	}
 	return nil
