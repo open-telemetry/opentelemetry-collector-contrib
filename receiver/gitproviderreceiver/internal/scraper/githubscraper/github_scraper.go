@@ -21,7 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal/metadata"
 )
 
-var errClientNotInitErr = errors.New("http client not initialized")
+var (
+	errClientNotInitErr = errors.New("http client not initialized")
+)
 
 type githubScraper struct {
 	client   *http.Client
