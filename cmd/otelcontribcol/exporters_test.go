@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -50,6 +51,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
@@ -136,6 +138,17 @@ func TestDefaultExporters(t *testing.T) {
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
 				cfg.RetrySettings.Enabled = false
+				return cfg
+			},
+			expectConsumeErr: true,
+		},
+		{
+			exporter: "opensearch",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["opensearch"].CreateDefaultConfig().(*opensearchexporter.Config)
+				cfg.HTTPClientSettings = confighttp.HTTPClientSettings{
+					Endpoint: "http://" + endpoint,
+				}
 				return cfg
 			},
 			expectConsumeErr: true,

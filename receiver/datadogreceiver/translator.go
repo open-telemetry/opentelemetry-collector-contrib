@@ -43,7 +43,11 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 		attrs.PutStr(semconv.AttributeTelemetrySDKVersion, "Datadog-"+ddTracerVersion)
 	}
 	if ddTracerLang := req.Header.Get("Datadog-Meta-Lang"); ddTracerLang != "" {
-		attrs.PutStr(semconv.AttributeTelemetrySDKLanguage, ddTracerLang)
+		otelLang := ddTracerLang
+		if ddTracerLang == ".NET" {
+			otelLang = "dotnet"
+		}
+		attrs.PutStr(semconv.AttributeTelemetrySDKLanguage, otelLang)
 	}
 }
 

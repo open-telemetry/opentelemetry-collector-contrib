@@ -1,4 +1,3 @@
 connector/servicegraphconnector
 extension/observer
 processor/servicegraphprocessor
-receiver/kafkareceiver
