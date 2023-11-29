@@ -1103,6 +1103,47 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
+func TestConsumerSpanWithResourceServiceName(t *testing.T) {
+	spanName := "ABC.payment"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeRPCService] = "ABC"
+
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+	assert.Equal(t, "signup_aggregator", *segment.Name)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "signup_aggregator"))
+}
+
+func TestConsumerSpanWithoutResourceServiceName(t *testing.T) {
+	spanName := "ABC.payment"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+
+	resource := pcommon.NewResource()
+	span := constructServerSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+	assert.Equal(t, "ABC.payment", *segment.Name)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "ABC.payment"))
+}
+
 func constructClientSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]any) ptrace.Span {
 	var (
 		traceID        = newTraceID()
