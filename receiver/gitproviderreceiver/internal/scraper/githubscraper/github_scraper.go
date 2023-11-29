@@ -21,9 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal/metadata"
 )
 
-var (
-	errClientNotInitErr = errors.New("http client not initialized")
-)
+var errClientNotInitErr = errors.New("http client not initialized")
 
 type githubScraper struct {
 	client   *http.Client
@@ -133,12 +131,6 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			var open int
 
 			for _, pr := range prs {
-				/*
-					TODO: Determine if this will be a problem on the first run:
-							I'm worried the first run will have a bunch of PRs that are
-							already merged and we won't get the open time data for them since
-							it only does this once per PR.
-				*/
 				if pr.Merged {
 					merged++
 
