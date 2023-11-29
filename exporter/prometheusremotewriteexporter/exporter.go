@@ -100,7 +100,6 @@ func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err er
 		prwe.settings.Logger.Error("Failed to create HTTP client", zap.Error(err))
 		return err
 	}
-
 	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
 }
 
