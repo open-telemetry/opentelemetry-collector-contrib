@@ -63,6 +63,13 @@ func TestAuthentication(t *testing.T) {
 	saramaKerberosKeyTabCfg.Net.SASL.GSSAPI.KeyTabPath = "/path"
 	saramaKerberosKeyTabCfg.Net.SASL.GSSAPI.AuthType = sarama.KRB5_KEYTAB_AUTH
 
+	saramaOauthCfg := &sarama.Config{}
+	saramaOauthCfg.Net.SASL.Enable = true
+	saramaOauthCfg.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+	testOauth := &OAuth2{Scopes: []string{"test"}, TokenURL: "https://test-token", ClientID: "foo", ClientSecret: "bar"}
+	provider := newTokenProvider(*testOauth)
+	saramaOauthCfg.Net.SASL.TokenProvider = provider
+
 	tests := []struct {
 		auth         Authentication
 		saramaConfig *sarama.Config
@@ -126,6 +133,10 @@ func TestAuthentication(t *testing.T) {
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512", Version: 2}},
 			saramaConfig: saramaSASLSCRAM512Config,
 			err:          "invalid SASL Protocol Version",
+		},
+		{
+			auth:         Authentication{OAuth2: testOauth},
+			saramaConfig: saramaOauthCfg,
 		},
 	}
 	for _, test := range tests {
