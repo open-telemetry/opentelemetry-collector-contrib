@@ -10,8 +10,8 @@ import (
 
 func TestCreateExtension(t *testing.T) {
 	conf := &Config{
-		Endpoint: "apm.collector.cloud.solarwinds.com:443",
-		Key:      "vlEW1JtimSH2LlBsNrPdeEjBxNl5z8Bp7gX55bNTk3_GIxHWedgj42GDFBWpRe2ne7TffHk:jerry_test",
+		Endpoint: "apm-testcollector.click:443",
+		Key:      "valid:unittest",
 		Interval: "1s",
 	}
 	ex := createAnExtension(conf, t)
@@ -20,8 +20,8 @@ func TestCreateExtension(t *testing.T) {
 
 func TestCreateExtensionWrongEndpoint(t *testing.T) {
 	conf := &Config{
-		Endpoint: "apm.collector.cloud.solarwindsswoswoswo.com:443",
-		Key:      "vlEW1JtimSH2LlBsNrPdeEjBxNl5z8Bp7gX55bNTk3_GIxHWedgj42GDFBWpRe2ne7TffHk:jerry_test",
+		Endpoint: "apm-testcollector.nothing:443",
+		Key:      "valid:unittest",
 		Interval: "1s",
 	}
 	ex := createAnExtension(conf, t)
@@ -30,8 +30,8 @@ func TestCreateExtensionWrongEndpoint(t *testing.T) {
 
 func TestCreateExtensionWrongKey(t *testing.T) {
 	conf := &Config{
-		Endpoint: "apm.collector.cloud.solarwinds.com:443",
-		Key:      "IsItAKey:jerry_test",
+		Endpoint: "apm-testcollector.click:443",
+		Key:      "invalid",
 		Interval: "1s",
 	}
 	ex := createAnExtension(conf, t)
