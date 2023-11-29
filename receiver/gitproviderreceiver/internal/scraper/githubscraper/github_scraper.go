@@ -134,28 +134,26 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				if pr.Merged {
 					merged++
 
-					age := int64(pr.MergedAt.Sub(pr.CreatedAt).Hours())
+					age := getAgeHrs(pr.CreatedAt, pr.MergedAt)
 
 					ghs.mb.RecordGitRepositoryPullRequestMergeTimeDataPoint(now, age, name, pr.HeadRefName)
 
 					if pr.MergeCommit.Deployments.TotalCount > 0 {
-						deploymentAgeUpperBound := pr.MergeCommit.Deployments.Nodes[0].CreatedAt
-						deploymentAge := int64(deploymentAgeUpperBound.Sub(pr.CreatedAt).Hours())
+						age = getAgeHrs(pr.CreatedAt, pr.MergeCommit.Deployments.Nodes[0].CreatedAt)
 
-						ghs.mb.RecordGitRepositoryPullRequestDeploymentTimeDataPoint(now, deploymentAge, name, pr.HeadRefName)
+						ghs.mb.RecordGitRepositoryPullRequestDeploymentTimeDataPoint(now, age, name, pr.HeadRefName)
 					}
 				} else {
 					open++
 
-					age := int64(now.AsTime().Sub(pr.CreatedAt).Hours())
+					age := getAgeHrs(pr.CreatedAt, now.AsTime())
 
 					ghs.mb.RecordGitRepositoryPullRequestOpenTimeDataPoint(now, age, name, pr.HeadRefName)
 
 					if pr.Reviews.TotalCount > 0 {
-						approvedAt := pr.Reviews.Nodes[0].CreatedAt
-						approvalAge := int64(approvedAt.Sub(pr.CreatedAt).Hours())
+						age := getAgeHrs(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)
 
-						ghs.mb.RecordGitRepositoryPullRequestApprovalTimeDataPoint(now, approvalAge, name, pr.HeadRefName)
+						ghs.mb.RecordGitRepositoryPullRequestApprovalTimeDataPoint(now, age, name, pr.HeadRefName)
 					}
 				}
 			}

@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/go-github/v53/github"
@@ -115,6 +116,51 @@ func TestGenDefaultSearchQueryUser(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestGetDurationHrs(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		hrsAdd   time.Duration
+		minsAdd  time.Duration
+		expected float64
+	}{
+		{
+			desc:     "TestSubHalfHour",
+			hrsAdd:   0 * time.Hour,
+			minsAdd:  time.Duration(25) * time.Minute,
+			expected: 0,
+		},
+		{
+			desc:     "TestOverHalfHour",
+			hrsAdd:   0 * time.Hour,
+			minsAdd:  time.Duration(45) * time.Minute,
+			expected: 1,
+		},
+		{
+			desc:     "TestSubHalfHourWithHrs",
+			hrsAdd:   time.Duration(1) * time.Hour,
+			minsAdd:  time.Duration(25) * time.Minute,
+			expected: 1,
+		},
+		{
+			desc:     "TestOverHalfHourWithHrs",
+			hrsAdd:   time.Duration(1) * time.Hour,
+			minsAdd:  time.Duration(45) * time.Minute,
+			expected: 2,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			min := time.Now()
+			max := min.Add(tc.hrsAdd).Add(tc.minsAdd)
+
+			actual := getAgeHrs(min, max)
+
+			assert.Equal(t, int64(tc.expected), actual)
+		})
+	}
+}
+
 func TestCheckOwnerExists(t *testing.T) {
 	testCases := []struct {
 		desc              string
@@ -166,7 +212,6 @@ func TestCheckOwnerExists(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopCreateSettings()
@@ -392,7 +437,6 @@ func TestGetContributors(t *testing.T) {
 			desc: "TestListContributorsResponse",
 			server: restMockServer(responses{
 				contribs: []*github.Contributor{
-
 					{
 						ID: github.Int64(1),
 					},

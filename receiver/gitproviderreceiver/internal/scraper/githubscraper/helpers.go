@@ -6,7 +6,9 @@ package githubscraper // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/url"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/go-github/v53/github"
@@ -203,4 +205,10 @@ func (ghs *githubScraper) getPullRequests(
 	}
 
 	return pullRequests, nil
+}
+
+// Get the age/duration between two times in hours. The hours will be rounded up
+// if the minutes are greater than 30.
+func getAgeHrs(start time.Time, end time.Time) int64 {
+	return int64(math.Round(end.Sub(start).Hours()))
 }
