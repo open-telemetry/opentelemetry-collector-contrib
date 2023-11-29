@@ -3,7 +3,12 @@ query getRepoDataBySearch(
   # @genqlient(pointer: true)
   $repoCursor: String
 ) {
-  search(query: $searchQuery, type: REPOSITORY, first: 100, after: $repoCursor) {
+  search(
+    query: $searchQuery,
+    type: REPOSITORY,
+    first: 100,
+    after: $repoCursor
+  ) {
     repositoryCount
     # @genqlient(typename: "SearchNode")
     nodes {
