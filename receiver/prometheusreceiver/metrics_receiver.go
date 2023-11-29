@@ -6,6 +6,7 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -237,7 +238,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 
 	go func() {
 		r.settings.Logger.Info("Starting discovery manager")
-		if err := r.discoveryManager.Run(); err != nil {
+		if err := r.discoveryManager.Run(); err != nil && !errors.Is(err, context.Canceled) {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
 			host.ReportFatalError(err)
 		}
