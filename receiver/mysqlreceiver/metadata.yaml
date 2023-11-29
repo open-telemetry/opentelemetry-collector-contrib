@@ -559,16 +559,16 @@ metrics:
     sum:
       value_type: int
       input_type: string
-      monotonic: true
+      monotonic: false
       aggregation_temporality: cumulative
-  mysql.qcache.not.cached :
+  mysql.qcache.uncacheable:
     enabled: false
     description: The number of noncached queries (not cacheable, or not cached due to the query_cache_type setting).
     unit: 1
     sum:
       value_type: int
       input_type: string
-      monotonic: true
+      monotonic: false
       aggregation_temporality: cumulative
   mysql.qcache.queries:
     enabled: false
@@ -577,7 +577,7 @@ metrics:
     sum:
       value_type: int
       input_type: string
-      monotonic: true
+      monotonic: false
       aggregation_temporality: cumulative
   mysql.query.client.count:
     enabled: false

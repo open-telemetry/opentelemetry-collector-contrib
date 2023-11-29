@@ -49,8 +49,8 @@ type MetricsConfig struct {
 	MysqlPageOperations          MetricConfig `mapstructure:"mysql.page_operations"`
 	MysqlPreparedStatements      MetricConfig `mapstructure:"mysql.prepared_statements"`
 	MysqlQcacheHits              MetricConfig `mapstructure:"mysql.qcache.hits"`
-	MysqlQcacheNotCached         MetricConfig `mapstructure:"mysql.qcache.not.cached"`
 	MysqlQcacheQueries           MetricConfig `mapstructure:"mysql.qcache.queries"`
+	MysqlQcacheUncacheable       MetricConfig `mapstructure:"mysql.qcache.uncacheable"`
 	MysqlQueryClientCount        MetricConfig `mapstructure:"mysql.query.client.count"`
 	MysqlQueryCount              MetricConfig `mapstructure:"mysql.query.count"`
 	MysqlQuerySlowCount          MetricConfig `mapstructure:"mysql.query.slow.count"`
@@ -147,10 +147,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlQcacheHits: MetricConfig{
 			Enabled: false,
 		},
-		MysqlQcacheNotCached: MetricConfig{
+		MysqlQcacheQueries: MetricConfig{
 			Enabled: false,
 		},
-		MysqlQcacheQueries: MetricConfig{
+		MysqlQcacheUncacheable: MetricConfig{
 			Enabled: false,
 		},
 		MysqlQueryClientCount: MetricConfig{

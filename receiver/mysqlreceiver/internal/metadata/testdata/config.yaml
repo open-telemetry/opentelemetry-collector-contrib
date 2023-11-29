@@ -49,9 +49,9 @@ all_set:
       enabled: true
     mysql.qcache.hits:
       enabled: true
-    mysql.qcache.not.cached:
-      enabled: true
     mysql.qcache.queries:
+      enabled: true
+    mysql.qcache.uncacheable:
       enabled: true
     mysql.query.client.count:
       enabled: true
@@ -146,9 +146,9 @@ none_set:
       enabled: false
     mysql.qcache.hits:
       enabled: false
-    mysql.qcache.not.cached:
-      enabled: false
     mysql.qcache.queries:
+      enabled: false
+    mysql.qcache.uncacheable:
       enabled: false
     mysql.query.client.count:
       enabled: false

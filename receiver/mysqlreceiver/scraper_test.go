@@ -54,7 +54,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlQcacheHits.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlQcacheNotCached.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlQcacheUncacheable.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlQcacheQueries.Enabled = true
 
 		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)

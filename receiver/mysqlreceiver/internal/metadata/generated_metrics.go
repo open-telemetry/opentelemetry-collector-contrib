@@ -2214,7 +2214,7 @@ func (m *metricMysqlQcacheHits) init() {
 	m.data.SetDescription("The number of query cache hits.")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
@@ -2253,57 +2253,6 @@ func newMetricMysqlQcacheHits(cfg MetricConfig) metricMysqlQcacheHits {
 	return m
 }
 
-type metricMysqlQcacheNotCached struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills mysql.qcache.not.cached metric with initial data.
-func (m *metricMysqlQcacheNotCached) init() {
-	m.data.SetName("mysql.qcache.not.cached")
-	m.data.SetDescription("The number of noncached queries (not cacheable, or not cached due to the query_cache_type setting).")
-	m.data.SetUnit("1")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricMysqlQcacheNotCached) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlQcacheNotCached) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlQcacheNotCached) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMysqlQcacheNotCached(cfg MetricConfig) metricMysqlQcacheNotCached {
-	m := metricMysqlQcacheNotCached{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricMysqlQcacheQueries struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2316,7 +2265,7 @@ func (m *metricMysqlQcacheQueries) init() {
 	m.data.SetDescription("The number of queries registered in the query cache.")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
@@ -2348,6 +2297,57 @@ func (m *metricMysqlQcacheQueries) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlQcacheQueries(cfg MetricConfig) metricMysqlQcacheQueries {
 	m := metricMysqlQcacheQueries{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlQcacheUncacheable struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.qcache.uncacheable metric with initial data.
+func (m *metricMysqlQcacheUncacheable) init() {
+	m.data.SetName("mysql.qcache.uncacheable")
+	m.data.SetDescription("The number of noncached queries (not cacheable, or not cached due to the query_cache_type setting).")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlQcacheUncacheable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQcacheUncacheable) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQcacheUncacheable) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQcacheUncacheable(cfg MetricConfig) metricMysqlQcacheUncacheable {
+	m := metricMysqlQcacheUncacheable{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3452,8 +3452,8 @@ type MetricsBuilder struct {
 	metricMysqlPageOperations          metricMysqlPageOperations
 	metricMysqlPreparedStatements      metricMysqlPreparedStatements
 	metricMysqlQcacheHits              metricMysqlQcacheHits
-	metricMysqlQcacheNotCached         metricMysqlQcacheNotCached
 	metricMysqlQcacheQueries           metricMysqlQcacheQueries
+	metricMysqlQcacheUncacheable       metricMysqlQcacheUncacheable
 	metricMysqlQueryClientCount        metricMysqlQueryClientCount
 	metricMysqlQueryCount              metricMysqlQueryCount
 	metricMysqlQuerySlowCount          metricMysqlQuerySlowCount
@@ -3516,8 +3516,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMysqlPageOperations:          newMetricMysqlPageOperations(mbc.Metrics.MysqlPageOperations),
 		metricMysqlPreparedStatements:      newMetricMysqlPreparedStatements(mbc.Metrics.MysqlPreparedStatements),
 		metricMysqlQcacheHits:              newMetricMysqlQcacheHits(mbc.Metrics.MysqlQcacheHits),
-		metricMysqlQcacheNotCached:         newMetricMysqlQcacheNotCached(mbc.Metrics.MysqlQcacheNotCached),
 		metricMysqlQcacheQueries:           newMetricMysqlQcacheQueries(mbc.Metrics.MysqlQcacheQueries),
+		metricMysqlQcacheUncacheable:       newMetricMysqlQcacheUncacheable(mbc.Metrics.MysqlQcacheUncacheable),
 		metricMysqlQueryClientCount:        newMetricMysqlQueryClientCount(mbc.Metrics.MysqlQueryClientCount),
 		metricMysqlQueryCount:              newMetricMysqlQueryCount(mbc.Metrics.MysqlQueryCount),
 		metricMysqlQuerySlowCount:          newMetricMysqlQuerySlowCount(mbc.Metrics.MysqlQuerySlowCount),
@@ -3623,8 +3623,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlPageOperations.emit(ils.Metrics())
 	mb.metricMysqlPreparedStatements.emit(ils.Metrics())
 	mb.metricMysqlQcacheHits.emit(ils.Metrics())
-	mb.metricMysqlQcacheNotCached.emit(ils.Metrics())
 	mb.metricMysqlQcacheQueries.emit(ils.Metrics())
+	mb.metricMysqlQcacheUncacheable.emit(ils.Metrics())
 	mb.metricMysqlQueryClientCount.emit(ils.Metrics())
 	mb.metricMysqlQueryCount.emit(ils.Metrics())
 	mb.metricMysqlQuerySlowCount.emit(ils.Metrics())
@@ -3885,16 +3885,6 @@ func (mb *MetricsBuilder) RecordMysqlQcacheHitsDataPoint(ts pcommon.Timestamp, i
 	return nil
 }
 
-// RecordMysqlQcacheNotCachedDataPoint adds a data point to mysql.qcache.not.cached metric.
-func (mb *MetricsBuilder) RecordMysqlQcacheNotCachedDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for MysqlQcacheNotCached, value was %s: %w", inputVal, err)
-	}
-	mb.metricMysqlQcacheNotCached.recordDataPoint(mb.startTime, ts, val)
-	return nil
-}
-
 // RecordMysqlQcacheQueriesDataPoint adds a data point to mysql.qcache.queries metric.
 func (mb *MetricsBuilder) RecordMysqlQcacheQueriesDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -3902,6 +3892,16 @@ func (mb *MetricsBuilder) RecordMysqlQcacheQueriesDataPoint(ts pcommon.Timestamp
 		return fmt.Errorf("failed to parse int64 for MysqlQcacheQueries, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlQcacheQueries.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlQcacheUncacheableDataPoint adds a data point to mysql.qcache.uncacheable metric.
+func (mb *MetricsBuilder) RecordMysqlQcacheUncacheableDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlQcacheUncacheable, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlQcacheUncacheable.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

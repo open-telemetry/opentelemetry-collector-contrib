@@ -360,7 +360,7 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Qcache_hits":
 			addPartialIfError(errs, m.mb.RecordMysqlQcacheHitsDataPoint(now, v))
 		case "Qcache_not_cached":
-			addPartialIfError(errs, m.mb.RecordMysqlQcacheNotCachedDataPoint(now, v))
+			addPartialIfError(errs, m.mb.RecordMysqlQcacheUncacheableDataPoint(now, v))
 
 		// qcache
 		case "Queries":

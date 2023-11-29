@@ -452,15 +452,7 @@ The number of query cache hits.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-### mysql.qcache.not.cached
-
-The number of noncached queries (not cacheable, or not cached due to the query_cache_type setting).
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| 1 | Sum | Int | Cumulative | false |
 
 ### mysql.qcache.queries
 
@@ -468,7 +460,15 @@ The number of queries registered in the query cache.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| 1 | Sum | Int | Cumulative | false |
+
+### mysql.qcache.uncacheable
+
+The number of noncached queries (not cacheable, or not cached due to the query_cache_type setting).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
 
 ### mysql.query.client.count
 

@@ -860,17 +860,7 @@ resourceMetrics:
                 - asInt: "10"
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-              isMonotonic: true
-            unit: "1"
-          - description: The number of noncached queries (not cacheable, or not cached due to the query_cache_type setting).
-            name: mysql.qcache.not.cached
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "728"
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-              isMonotonic: true
+              isMonotonic: false
             unit: "1"
           - description: The number of queries registered in the query cache.
             name: mysql.qcache.queries
@@ -880,7 +870,17 @@ resourceMetrics:
                 - asInt: "4"
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-              isMonotonic: true
+              isMonotonic: false
+            unit: "1"
+          - description: The number of noncached queries (not cacheable, or not cached due to the query_cache_type setting).
+            name: mysql.qcache.uncacheable
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "728"
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+              isMonotonic: false
             unit: "1"
           - description: The number of statements executed by the server. This includes only statements sent to the server by clients.
             name: mysql.query.client.count
