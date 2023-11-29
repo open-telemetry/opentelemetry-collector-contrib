@@ -57,6 +57,48 @@ func Test_replacePattern(t *testing.T) {
 			},
 		},
 		{
+			name:    "replace regex match (capture group without $1)",
+			target:  target,
+			pattern: `passwd\=([^\s]*)(\s?)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "test", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08otherarg=notsensitive key1 key2")
+			},
+		},
+		{
+			name:    "replace regex match (no capture group with $1 and hash function)",
+			target:  target,
+			pattern: `passwd\=[^\s]*(\s?)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$1", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application 36a9e7f1c95b82ffb99743e0c5c4ce95d83c9a430aac59f84ef3cbfab6145068otherarg=notsensitive key1 key2")
+			},
+		},
+		{
+			name:    "replace regex match (no capture group or hash function with $1)",
+			target:  target,
+			pattern: `passwd\=[^\s]*(\s?)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$1", nil
+				},
+			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application  otherarg=notsensitive key1 key2")
+			},
+		},
+		{
 			name:    "replace regex match",
 			target:  target,
 			pattern: `passwd\=[^\s]*(\s?)`,
