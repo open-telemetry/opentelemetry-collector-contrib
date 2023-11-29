@@ -36,7 +36,7 @@ The following settings are available:
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `ignore` and `propagate`. If `ignored` is used and a statement's condition has an error then the payload will be routed to the default pipelines.  If not supplied, `propagate` is used.
-- `match_once (optional)`: determines whether the connector matches multiple statements or not. If enabled, the payload will be routed to the pipeline whose routing condition is met, and is defined first in the `table`.
+- `match_once (optional, default: false)`: determines whether the connector matches multiple statements or not. If enabled, the payload will be routed to the first pipeline in the `table` whose routing condition is met.
 
 Example:
 
