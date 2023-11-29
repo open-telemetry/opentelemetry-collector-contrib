@@ -114,7 +114,7 @@ func NewTestCase(
 	tc.LoadGenerator, err = NewLoadGenerator(dataProvider, sender)
 	require.NoError(t, err, "Cannot create generator")
 
-	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver)
+	tc.MockBackend = NewMockBackend(tc.ComposeTestResultFileName("backend.log"), receiver)
 	tc.MockBackend.WithDecisionFunc(tc.decision)
 
 	go tc.logStats()
@@ -122,7 +122,7 @@ func NewTestCase(
 	return &tc
 }
 
-func (tc *TestCase) composeTestResultFileName(fileName string) string {
+func (tc *TestCase) ComposeTestResultFileName(fileName string) string {
 	fileName, err := filepath.Abs(path.Join(tc.resultDir, fileName))
 	require.NoError(tc.t, err, "Cannot resolve %s", fileName)
 	return fileName
@@ -131,7 +131,7 @@ func (tc *TestCase) composeTestResultFileName(fileName string) string {
 // StartAgent starts the agent and redirects its standard output and standard error
 // to "agent.log" file located in the test directory.
 func (tc *TestCase) StartAgent(args ...string) {
-	logFileName := tc.composeTestResultFileName("agent.log")
+	logFileName := tc.ComposeTestResultFileName("agent.log")
 
 	startParams := StartParams{
 		Name:         "Agent",

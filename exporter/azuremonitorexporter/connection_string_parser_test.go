@@ -27,7 +27,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionURL:       "https://ingestion.azuremonitor.com/v2/track",
+				IngestionURL:       "https://ingestion.azuremonitor.com/v2.1/track",
 			},
 			wantError: false,
 		},
@@ -38,7 +38,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionURL:       DefaultIngestionEndpoint + "v2/track",
+				IngestionURL:       DefaultIngestionEndpoint + "v2.1/track",
 			},
 			wantError: false,
 		},
@@ -49,7 +49,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionURL:       "https://ingestion.azuremonitor.com/v2/track",
+				IngestionURL:       "https://ingestion.azuremonitor.com/v2.1/track",
 			},
 			wantError: false,
 		},
@@ -93,7 +93,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionURL:       "https://ingestion.azuremonitor.com/v2/track",
+				IngestionURL:       "https://ingestion.azuremonitor.com/v2.1/track",
 			},
 			wantError: false,
 		},
@@ -104,7 +104,7 @@ func TestParseConnectionString(t *testing.T) {
 			},
 			want: &ConnectionVars{
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
-				IngestionURL:       "https://ingestion.azuremonitor.com/v2/track",
+				IngestionURL:       "https://ingestion.azuremonitor.com/v2.1/track",
 			},
 			wantError: false,
 		},

@@ -47,6 +47,7 @@ import (
 	googlecloudexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	googlecloudpubsubexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 	googlemanagedprometheusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
+	honeycombmarkerexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
 	influxdbexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	instanaexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	kafkaexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -56,6 +57,7 @@ import (
 	lokiexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	mezmoexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	opencensusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	opensearchexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 	prometheusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	prometheusremotewriteexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	pulsarexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
@@ -348,6 +350,7 @@ func components() (otelcol.Factories, error) {
 		googlecloudexporter.NewFactory(),
 		googlecloudpubsubexporter.NewFactory(),
 		googlemanagedprometheusexporter.NewFactory(),
+		honeycombmarkerexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
 		instanaexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
@@ -357,6 +360,7 @@ func components() (otelcol.Factories, error) {
 		lokiexporter.NewFactory(),
 		mezmoexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
+		opensearchexporter.NewFactory(),
 		prometheusexporter.NewFactory(),
 		prometheusremotewriteexporter.NewFactory(),
 		pulsarexporter.NewFactory(),
