@@ -9,6 +9,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/solarwindscloud/apm-proto/go/collectorpb"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -30,6 +31,14 @@ type solarwindsapmSettingsExtension struct {
 	cancel context.CancelFunc
 	conn   *grpc.ClientConn
 	client collectorpb.TraceCollectorClient
+}
+
+func newSolarwindsApmSettingsExtension(extensionCfg *Config, logger *zap.Logger) (extension.Extension, error) {
+	settingsExtension := &solarwindsapmSettingsExtension{
+		config: extensionCfg,
+		logger: logger,
+	}
+	return settingsExtension, nil
 }
 
 func Refresh(extension *solarwindsapmSettingsExtension) {
@@ -135,12 +144,8 @@ func Refresh(extension *solarwindsapmSettingsExtension) {
 								if value, ok := item.Arguments["ProfilingInterval"]; ok {
 									arguments["ProfilingInterval"] = int32(binary.LittleEndian.Uint32(value))
 								}
-								/**
-								 * We don't want to expose SignatureKey now
-								 */
-								//if value, ok := item.Arguments["SignatureKey"]; ok {
-								//	arguments["SignatureKey"] = string(value)
-								//}
+								// Remove SignatureKey from collector response
+								delete(arguments, "SignatureKey")
 							}
 							settings = append(settings, setting)
 						}

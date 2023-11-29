@@ -20,14 +20,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, settings extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
-	logger := settings.Logger
-	extensionCfg := cfg.(*Config)
-
-	settingsExtension := &solarwindsapmSettingsExtension{
-		logger: logger,
-		config: extensionCfg,
-	}
-	return settingsExtension, nil
+	return newSolarwindsApmSettingsExtension(cfg.(*Config), settings.Logger)
 }
 
 func NewFactory() extension.Factory {
