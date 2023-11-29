@@ -69,6 +69,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				memInfo.Total), metricsLen)
 		}
 		s.recordMemoryUtilizationMetric(now, memInfo)
+		s.recordSystemSpecificMetrics(now, memInfo)
 	}
 
 	return s.mb.Emit(), nil

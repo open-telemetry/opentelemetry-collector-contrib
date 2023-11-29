@@ -172,12 +172,13 @@ func walkFolder(folder string, componentType string) error {
 		return nil
 	}
 
+	if len(result.Functions) == 0 {
+		return nil
+	}
 	if len(result.Functions) > 1 {
 		return fmt.Errorf("%s has more than one function: %q", folder, strings.Join(fnNames, ","))
 	}
-	if len(result.Functions) == 0 {
-		return fmt.Errorf("%s has no functions defined", folder)
-	}
+
 	newFactoryFn := result.Functions[0]
 	if newFactoryFn.Name != "NewFactory" {
 		return fmt.Errorf("%s does not define a NewFactory function", folder)

@@ -298,6 +298,7 @@ Available Converters:
 - [Duration](#duration)
 - [Int](#int)
 - [IsBool](#isbool)
+- [IsDouble](#isdouble)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
@@ -506,6 +507,22 @@ Examples:
 
 
 - `IsBool(attributes["any key"])`
+
+### IsDouble
+
+`IsDouble(value)`
+
+The `IsDouble` Converter returns true if the given value is a double.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+If `value` is a `float64` or a `pcommon.ValueTypeDouble` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsDouble(body)`
+
+- `IsDouble(attributes["maybe a double"])`
 
 ### IsMap
 

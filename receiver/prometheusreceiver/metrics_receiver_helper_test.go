@@ -4,7 +4,9 @@
 package prometheusreceiver
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"log"
 	"math"
@@ -17,9 +19,11 @@ import (
 	"time"
 
 	gokitlog "github.com/go-kit/log"
+	"github.com/gogo/protobuf/proto"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
+	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,6 +41,9 @@ type mockPrometheusResponse struct {
 	code           int
 	data           string
 	useOpenMetrics bool
+
+	useProtoBuf bool // This overrides data and useOpenMetrics above
+	buf         []byte
 }
 
 type mockPrometheus struct {
@@ -82,11 +89,18 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(404)
 		return
 	}
-	if pages[index].useOpenMetrics {
+	switch {
+	case pages[index].useProtoBuf:
+		rw.Header().Set("Content-Type", "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited")
+	case pages[index].useOpenMetrics:
 		rw.Header().Set("Content-Type", "application/openmetrics-text")
 	}
 	rw.WriteHeader(pages[index].code)
-	_, _ = rw.Write([]byte(pages[index].data))
+	if pages[index].useProtoBuf {
+		_, _ = rw.Write(pages[index].buf)
+	} else {
+		_, _ = rw.Write([]byte(pages[index].data))
+	}
 }
 
 func (mp *mockPrometheus) Close() {
@@ -563,10 +577,11 @@ func assertNormalNan() numberPointComparator {
 	}
 }
 
-func compareHistogram(count uint64, sum float64, buckets []uint64) histogramPointComparator {
+func compareHistogram(count uint64, sum float64, upperBounds []float64, buckets []uint64) histogramPointComparator {
 	return func(t *testing.T, histogramDataPoint pmetric.HistogramDataPoint) {
 		assert.Equal(t, count, histogramDataPoint.Count(), "Histogram count value does not match")
 		assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match")
+		assert.Equal(t, upperBounds, histogramDataPoint.ExplicitBounds().AsRaw(), "Histogram upper bounds values do not match")
 		assert.Equal(t, buckets, histogramDataPoint.BucketCounts().AsRaw(), "Histogram bucket count values do not match")
 	}
 }
@@ -593,7 +608,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, trimMetricSuffixes bool, startTimeMetricRegex string, cfgMuts ...func(*promcfg.Config)) {
+func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config), cfgMuts ...func(*promcfg.Config)) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
@@ -602,13 +617,16 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, t
 	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
-	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), &Config{
+	config := &Config{
 		PrometheusConfig:     cfg,
-		UseStartTimeMetric:   useStartTimeMetric,
-		StartTimeMetricRegex: startTimeMetricRegex,
-		TrimMetricSuffixes:   trimMetricSuffixes,
-	}, cms)
+		StartTimeMetricRegex: "",
+	}
+	if alterConfig != nil {
+		alterConfig(config)
+	}
+
+	cms := new(consumertest.MetricsSink)
+	receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), config, cms)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called
@@ -694,4 +712,23 @@ func getTS(ms pmetric.MetricSlice) pcommon.Timestamp {
 	case pmetric.MetricTypeEmpty:
 	}
 	return 0
+}
+
+func prometheusMetricFamilyToProtoBuf(t *testing.T, buffer *bytes.Buffer, metricFamily *dto.MetricFamily) *bytes.Buffer {
+	if buffer == nil {
+		buffer = &bytes.Buffer{}
+	}
+
+	data, err := proto.Marshal(metricFamily)
+	require.NoError(t, err)
+
+	varintBuf := make([]byte, binary.MaxVarintLen32)
+	varintLength := binary.PutUvarint(varintBuf, uint64(len(data)))
+
+	_, err = buffer.Write(varintBuf[:varintLength])
+	require.NoError(t, err)
+	_, err = buffer.Write(data)
+	require.NoError(t, err)
+
+	return buffer
 }

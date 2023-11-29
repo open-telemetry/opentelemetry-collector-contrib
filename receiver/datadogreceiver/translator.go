@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"go.uber.org/multierr"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -42,7 +43,11 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 		attrs.PutStr(semconv.AttributeTelemetrySDKVersion, "Datadog-"+ddTracerVersion)
 	}
 	if ddTracerLang := req.Header.Get("Datadog-Meta-Lang"); ddTracerLang != "" {
-		attrs.PutStr(semconv.AttributeTelemetrySDKLanguage, ddTracerLang)
+		otelLang := ddTracerLang
+		if ddTracerLang == ".NET" {
+			otelLang = "dotnet"
+		}
+		attrs.PutStr(semconv.AttributeTelemetrySDKLanguage, otelLang)
 	}
 }
 
@@ -192,7 +197,9 @@ func putBuffer(buffer *bytes.Buffer) {
 	bufferPool.Put(buffer)
 }
 
-func handlePayload(req *http.Request) (tp *pb.TracerPayload, err error) {
+func handlePayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
+	var tracerPayloads []*pb.TracerPayload
+
 	defer func() {
 		_, errs := io.Copy(io.Discard, req.Body)
 		err = multierr.Combine(err, errs, req.Body.Close())
@@ -206,8 +213,11 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, err error) {
 			return nil, err
 		}
 		var tracerPayload pb.TracerPayload
-		_, err = tracerPayload.UnmarshalMsg(buf.Bytes())
-		return &tracerPayload, err
+		if _, err = tracerPayload.UnmarshalMsg(buf.Bytes()); err != nil {
+			return nil, err
+		}
+
+		tracerPayloads = append(tracerPayloads, &tracerPayload)
 	case strings.HasPrefix(req.URL.Path, "/v0.5"):
 		buf := getBuffer()
 		defer putBuffer(buf)
@@ -215,37 +225,60 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, err error) {
 			return nil, err
 		}
 		var traces pb.Traces
-		err = traces.UnmarshalMsgDictionary(buf.Bytes())
-		return &pb.TracerPayload{
+
+		if err = traces.UnmarshalMsgDictionary(buf.Bytes()); err != nil {
+			return nil, err
+		}
+
+		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
 			Chunks:          traceChunksFromTraces(traces),
-		}, err
+		}
+		tracerPayloads = append(tracerPayloads, tracerPayload)
+
 	case strings.HasPrefix(req.URL.Path, "/v0.1"):
 		var spans []pb.Span
 		if err = json.NewDecoder(req.Body).Decode(&spans); err != nil {
 			return nil, err
 		}
-		return &pb.TracerPayload{
+		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
 			Chunks:          traceChunksFromSpans(spans),
-		}, nil
+		}
+		tracerPayloads = append(tracerPayloads, tracerPayload)
+	case strings.HasPrefix(req.URL.Path, "/api/v0.2"):
+		buf := getBuffer()
+		defer putBuffer(buf)
+		if _, err = io.Copy(buf, req.Body); err != nil {
+			return nil, err
+		}
+
+		var agentPayload pb.AgentPayload
+		if err = proto.Unmarshal(buf.Bytes(), &agentPayload); err != nil {
+			return nil, err
+		}
+
+		return agentPayload.TracerPayloads, err
 
 	default:
 		var traces pb.Traces
 		if err = decodeRequest(req, &traces); err != nil {
 			return nil, err
 		}
-		return &pb.TracerPayload{
+		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
 			Chunks:          traceChunksFromTraces(traces),
-		}, err
+		}
+		tracerPayloads = append(tracerPayloads, tracerPayload)
 	}
+
+	return tracerPayloads, nil
 }
 
 func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
