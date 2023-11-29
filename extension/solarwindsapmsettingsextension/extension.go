@@ -44,7 +44,7 @@ func newSolarwindsApmSettingsExtension(extensionCfg *Config, logger *zap.Logger)
 func Refresh(extension *solarwindsapmSettingsExtension) {
 	extension.logger.Info("Time to refresh from " + extension.config.Endpoint)
 	if hostname, err := os.Hostname(); err != nil {
-		extension.logger.Fatal("Unable to call os.Hostname() " + err.Error())
+		extension.logger.Error("Unable to call os.Hostname() " + err.Error())
 	} else {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -57,7 +57,7 @@ func Refresh(extension *solarwindsapmSettingsExtension) {
 			ClientVersion: "2",
 		}
 		if response, err := extension.client.GetSettings(ctx, request); err != nil {
-			extension.logger.Fatal("Unable to getSettings from " + extension.config.Endpoint + " " + err.Error())
+			extension.logger.Error("Unable to getSettings from " + extension.config.Endpoint + " " + err.Error())
 		} else {
 			switch result := response.GetResult(); result {
 			case collectorpb.ResultCode_OK:
