@@ -113,7 +113,7 @@ func (prwe *prwExporter) shutdownWALIfEnabled() error {
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
 func (prwe *prwExporter) Shutdown(context.Context) error {
-	prwe.settings.Logger.Info("Shutting down Prometheus Remote Write Exporter...")
+	prwe.settings.Logger.Debug("Shutting down Prometheus Remote Write Exporter...")
 	select {
 	case <-prwe.closeChan:
 	default:
@@ -188,7 +188,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
-	prwe.settings.Logger.Debug(fmt.Sprintf("Preparing to make HTTP request to: %s", prwe.clientSettings.Endpoint))
+	prwe.settings.Logger.Debug("Preparing to make HTTP request to ", zap.String("endpoint: ", prwe.clientSettings.Endpoint))
 	input := make(chan *prompb.WriteRequest, len(requests))
 	for _, request := range requests {
 		input <- request
