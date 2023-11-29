@@ -4,9 +4,9 @@ query getRepoDataBySearch(
   $repoCursor: String
 ) {
   search(
-    query: $searchQuery,
-    type: REPOSITORY,
-    first: 100,
+    query: $searchQuery
+    type: REPOSITORY
+    first: 100
     after: $repoCursor
   ) {
     repositoryCount
