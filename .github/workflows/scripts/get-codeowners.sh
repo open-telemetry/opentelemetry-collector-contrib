@@ -24,7 +24,7 @@ RESULT=$(grep -c "${COMPONENT}" .github/CODEOWNERS || true)
 
 # there may be more than 1 component matching a label
 # if so, try to narrow things down by appending the component
-# or a forward slash.
+# or a forward slash to the label.
 if [[ ${RESULT} != 1 ]]; then
     COMPONENT_TYPE=$(echo "${COMPONENT}" | cut -f 1 -d '/')
     OWNERS="$(get_codeowners "${COMPONENT}${COMPONENT_TYPE}")"
