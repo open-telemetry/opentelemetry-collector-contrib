@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"go.uber.org/zap"
 )
 
 func init() {
