@@ -75,6 +75,6 @@ func getIngestionURL(ingestionEndpoint string) string {
 		ingestionURL, _ = url.Parse(DefaultIngestionEndpoint)
 	}
 
-	ingestionURL.Path = path.Join(ingestionURL.Path, "/v2/track")
+	ingestionURL.Path = path.Join(ingestionURL.Path, "/v2.1/track")
 	return ingestionURL.String()
 }

@@ -5,12 +5,12 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -30,13 +30,6 @@ func (e *ErrorMode) UnmarshalText(text []byte) error {
 	default:
 		return fmt.Errorf("unknown error mode %v", str)
 	}
-}
-
-type Parser[K any] struct {
-	functions         map[string]Factory[K]
-	pathParser        PathExpressionParser[K]
-	enumParser        EnumParser
-	telemetrySettings component.TelemetrySettings
 }
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
@@ -64,6 +57,26 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 		}
 	}
 	return result, condition, nil
+}
+
+// Condition holds a top level Condition. A Condition is a boolean expression to match telemetry.
+type Condition[K any] struct {
+	condition BoolExpr[K]
+	origText  string
+}
+
+// Eval returns true if the condition was met for the given TransformContext and false otherwise.
+func (c *Condition[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	return c.condition.Eval(ctx, tCtx)
+}
+
+// Parser provides the means to parse OTTL Statements and Conditions given a specific set of functions,
+// a PathExpressionParser, and an EnumParser.
+type Parser[K any] struct {
+	functions         map[string]Factory[K]
+	pathParser        PathExpressionParser[K]
+	enumParser        EnumParser
+	telemetrySettings component.TelemetrySettings
 }
 
 func NewParser[K any](
@@ -99,28 +112,30 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 
 // ParseStatements parses string statements into ottl.Statement objects ready for execution.
 // Returns a slice of statements and a nil error on successful parsing.
-// If parsing fails, returns an empty slice  with a multierr error containing
-// an error per failed statement.
+// If parsing fails, returns nil and a joined error containing each error per failed statement.
 func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
 	parsedStatements := make([]*Statement[K], 0, len(statements))
-	var parseErr error
+	var parseErrs []error
 
 	for _, statement := range statements {
 		ps, err := p.ParseStatement(statement)
 		if err != nil {
-			parseErr = multierr.Append(parseErr, fmt.Errorf("unable to parse OTTL statement %q: %w", statement, err))
+			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL statement %q: %w", statement, err))
 			continue
 		}
 		parsedStatements = append(parsedStatements, ps)
 	}
 
-	if parseErr != nil {
-		return nil, parseErr
+	if len(parseErrs) > 0 {
+		return nil, errors.Join(parseErrs...)
 	}
 
 	return parsedStatements, nil
 }
 
+// ParseStatement parses a single string statement into a Statement struct ready for execution.
+// Returns a Statement and a nil error on successful parsing.
+// If parsing fails, returns nil and an error.
 func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	parsed, err := parseStatement(statement)
 	if err != nil {
@@ -141,13 +156,69 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	}, nil
 }
 
+// ParseConditions parses string conditions into a Condition slice ready for execution.
+// Returns a slice of Condition and a nil error on successful parsing.
+// If parsing fails, returns nil and an error containing each error per failed condition.
+func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error) {
+	parsedConditions := make([]*Condition[K], 0, len(conditions))
+	var parseErrs []error
+
+	for _, condition := range conditions {
+		ps, err := p.ParseCondition(condition)
+		if err != nil {
+			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL condition %q: %w", condition, err))
+			continue
+		}
+		parsedConditions = append(parsedConditions, ps)
+	}
+
+	if len(parseErrs) > 0 {
+		return nil, errors.Join(parseErrs...)
+	}
+
+	return parsedConditions, nil
+}
+
+// ParseCondition parses a single string condition into a Condition objects ready for execution.
+// Returns an Condition and a nil error on successful parsing.
+// If parsing fails, returns nil and an error.
+func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
+	parsed, err := parseCondition(condition)
+	if err != nil {
+		return nil, err
+	}
+	expression, err := p.newBoolExpr(parsed)
+	if err != nil {
+		return nil, err
+	}
+	return &Condition[K]{
+		condition: expression,
+		origText:  condition,
+	}, nil
+}
+
 var parser = newParser[parsedStatement]()
+var conditionParser = newParser[booleanExpression]()
 
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
 
 	if err != nil {
 		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
+	}
+	err = parsed.checkForCustomError()
+	if err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func parseCondition(raw string) (*booleanExpression, error) {
+	parsed, err := conditionParser.ParseString("", raw)
+
+	if err != nil {
+		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
