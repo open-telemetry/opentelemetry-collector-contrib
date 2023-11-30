@@ -76,7 +76,7 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 // octets in uppercase hexadecimal form from most to least significant."
 // Golang returns MAC addresses as colon-separated octets in lowercase hexadecimal form from most
 // to least significant, so we need to:
-// - Replace colons by hyphens
+// - Replace colons with hyphens
 // - Convert to uppercase
 func toIEEERA(mac net.HardwareAddr) string {
 	return strings.ToUpper(strings.ReplaceAll(mac.String(), ":", "-"))
@@ -111,7 +111,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.cfg.ResourceAttributes.HostMac.Enabled {
 		hostMACs, errMACs := d.provider.HostMACs()
 		if errMACs != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("failed getting host MAC addresses: %w", errMACs)
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get host MAC addresses: %w", errMACs)
 		}
 		for _, mac := range hostMACs {
 			hostMACAttribute = append(hostMACAttribute, toIEEERA(mac))
