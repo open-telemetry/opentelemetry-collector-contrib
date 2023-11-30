@@ -83,6 +83,17 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting host architecture: %w", err)
 	}
 
+	var hostIPAttribute []any
+	if d.cfg.ResourceAttributes.HostIP.Enabled {
+		hostIPs, errIPs := d.provider.HostIPs()
+		if errIPs != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting host IP addresses: %w", errIPs)
+		}
+		for _, ip := range hostIPs {
+			hostIPAttribute = append(hostIPAttribute, ip.String())
+		}
+	}
+
 	osDescription, err := d.provider.OSDescription(ctx)
 	if err != nil {
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS description: %w", err)
@@ -107,6 +118,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 				}
 			}
 			d.rb.SetHostArch(hostArch)
+			d.rb.SetHostIP(hostIPAttribute)
 			d.rb.SetOsDescription(osDescription)
 			if len(cpuInfo) > 0 {
 				err = setHostCPUInfo(d, cpuInfo[0])
