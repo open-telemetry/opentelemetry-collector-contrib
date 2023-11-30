@@ -1,4 +1,4 @@
-FROM mongo:4.4
+FROM mongo:7.0
 
 COPY scripts/lpu.sh /lpu.sh
 RUN chmod +x /lpu.sh
