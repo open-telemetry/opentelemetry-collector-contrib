@@ -7,49 +7,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
-
-type ErrorMode string
-
-const (
-	IgnoreError    ErrorMode = "ignore"
-	PropagateError ErrorMode = "propagate"
-)
-
-func (e *ErrorMode) UnmarshalText(text []byte) error {
-	str := ErrorMode(strings.ToLower(string(text)))
-	switch str {
-	case IgnoreError, PropagateError:
-		*e = str
-		return nil
-	default:
-		return fmt.Errorf("unknown error mode %v", str)
-	}
-}
-
-// TODO: move this and ErrorMode to a config.go file
-type LogicOperation string
-
-const (
-	And LogicOperation = "and"
-	Or  LogicOperation = "or"
-)
-
-func (l *LogicOperation) UnmarshalText(text []byte) error {
-	str := LogicOperation(strings.ToLower(string(text)))
-	switch str {
-	case And, Or:
-		*l = str
-		return nil
-	default:
-		return fmt.Errorf("unknown LogicOperation %v", str)
-	}
-}
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the boolean expression to match telemetry for invoking the function.
