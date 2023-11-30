@@ -359,7 +359,7 @@ func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K
 func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption[K]) ConditionSequence[K] {
 	c := ConditionSequence[K]{
 		conditions:        conditions,
-		errorMode:         IgnoreError,
+		errorMode:         PropagateError,
 		telemetrySettings: telemetrySettings,
 		logicOp:           Or,
 	}
