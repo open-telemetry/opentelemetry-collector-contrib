@@ -67,7 +67,7 @@ type azureBatchScraper struct {
 	azIDWorkloadFunc                 func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
 	armClientOptions                 *arm.ClientOptions
 	armClientFunc                    func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
-	armMonitorDefinitionsClientFunc  func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
+	armMonitorDefinitionsClientFunc  func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	azQueryMetricsBatchClientOptions *azquery.MetricsBatchClientOptions
 	azQueryMetricsBatchClientFunc    func(string, azcore.TokenCredential, *azquery.MetricsBatchClientOptions) (*azquery.MetricsBatchClient, error)
 	mutex                            *sync.Mutex
@@ -114,7 +114,7 @@ func (s *azureBatchScraper) getArmClient() ArmClient {
 }
 
 func (s *azureBatchScraper) getMetricsDefinitionsClient() MetricsDefinitionsClientInterface {
-	client, _ := s.armMonitorDefinitionsClientFunc(s.cred, s.armClientOptions)
+	client, _ := s.armMonitorDefinitionsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	return client
 }
 
@@ -369,7 +369,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, resourceT
 					StartTime: to.Ptr(startTime.Format(time.RFC3339)),
 					EndTime:   to.Ptr(now.Format(time.RFC3339)),
 					Interval:  to.Ptr(compositeKey.timeGrain),
-					Top:       to.Ptr(int32(10)), // Defaults to 10 (may be limiting results)
+					Top:       to.Ptr(int32(s.cfg.MaximumNumberOfDimensionsInACall)), // Defaults to 10 (may be limiting results)
 				},
 			)
 
