@@ -32,6 +32,7 @@ func (e *ErrorMode) UnmarshalText(text []byte) error {
 	}
 }
 
+// TODO: move this and ErrorMode to a config.go file
 type LogicOperation string
 
 const (
@@ -337,6 +338,13 @@ type ConditionSequence[K any] struct {
 
 type ConditionSequenceOption[K any] func(*ConditionSequence[K])
 
+// WithConditionSequenceErrorMode sets the ErrorMode of a ConditionSequence
+func WithConditionSequenceErrorMode[K any](errorMode ErrorMode) ConditionSequenceOption[K] {
+	return func(c *ConditionSequence[K]) {
+		c.errorMode = errorMode
+	}
+}
+
 // WithLogicOperation sets the LogicOperation of a ConditionSequence
 // When setting AND the conditions will be ANDed together.
 // When setting OR the conditions will be ORed together.
@@ -348,17 +356,17 @@ func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K
 
 // NewConditionSequence creates a new ConditionSequence with the provided Condition slice, ErrorMode, and component.TelemetrySettings.
 // You may also augment the ConditionSequence with a slice of ConditionSequenceOption.
-func NewConditionSequence[K any](conditions []*Condition[K], errorMode ErrorMode, telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption[K]) ConditionSequence[K] {
-	s := ConditionSequence[K]{
+func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption[K]) ConditionSequence[K] {
+	c := ConditionSequence[K]{
 		conditions:        conditions,
-		errorMode:         errorMode,
+		errorMode:         IgnoreError,
 		telemetrySettings: telemetrySettings,
 		logicOp:           Or,
 	}
 	for _, op := range options {
-		op(&s)
+		op(&c)
 	}
-	return s
+	return c
 }
 
 // Eval evaluates the result of each Condition in the ConditionSequence.
@@ -367,6 +375,7 @@ func NewConditionSequence[K any](conditions []*Condition[K], errorMode ErrorMode
 // If using the AND LogicOperation, if any Condition evaluates to false, then false is returned and if all Conditions evaluate to true, then true is returned.
 // When the ErrorMode of the ConditionSequence is `propagate`, errors cause the evaluation to be false and an error is returned.
 // When the ErrorMode of the ConditionSequence is `ignore`, errors cause the evaluation to continue to the next condition.
+// When using the AND LogicOperation with the `ignore` ErrorMode the sequence will evaluate to false if all conditions error.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
 	for _, condition := range c.conditions {
@@ -389,5 +398,10 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 			return false, nil
 		}
 	}
+	// When ANDing it is possible to arrive here not because everything was true, but because everything errored and was ignored.
+	// In that situation, we don't want to return True when no conditions actually passed. In a situation when everything failed
+	// we are essentially left with an empty set, which is normally evaluated in mathematics as False. We will use that
+	// idea to return False when ANDing and everything errored. We use atLeastOneMatch here to return true if anything did match.
+	// It is not possible to get here if any condition during an AND explicitly failed.
 	return c.logicOp == And && atLeastOneMatch, nil
 }

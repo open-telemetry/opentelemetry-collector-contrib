@@ -28,7 +28,7 @@ func NewBoolExprForSpan(conditions []string, functions map[string]ottl.Factory[o
 	if err != nil {
 		return nil, err
 	}
-	c := ottlspan.NewConditionSequence(statements, errorMode, set)
+	c := ottlspan.NewConditionSequence(statements, set, ottlspan.WithConditionSequenceErrorMode(errorMode))
 	return &c, nil
 }
 
@@ -44,7 +44,7 @@ func NewBoolExprForSpanEvent(conditions []string, functions map[string]ottl.Fact
 	if err != nil {
 		return nil, err
 	}
-	c := ottlspanevent.NewConditionSequence(statements, errorMode, set)
+	c := ottlspanevent.NewConditionSequence(statements, set, ottlspanevent.WithConditionSequenceErrorMode(errorMode))
 	return &c, nil
 }
 
@@ -60,7 +60,7 @@ func NewBoolExprForMetric(conditions []string, functions map[string]ottl.Factory
 	if err != nil {
 		return nil, err
 	}
-	c := ottlmetric.NewConditionSequence(statements, errorMode, set)
+	c := ottlmetric.NewConditionSequence(statements, set, ottlmetric.WithConditionSequenceErrorMode(errorMode))
 	return &c, nil
 }
 
@@ -76,7 +76,7 @@ func NewBoolExprForDataPoint(conditions []string, functions map[string]ottl.Fact
 	if err != nil {
 		return nil, err
 	}
-	c := ottldatapoint.NewConditionSequence(statements, errorMode, set)
+	c := ottldatapoint.NewConditionSequence(statements, set, ottldatapoint.WithConditionSequenceErrorMode(errorMode))
 	return &c, nil
 }
 
@@ -92,7 +92,7 @@ func NewBoolExprForLog(conditions []string, functions map[string]ottl.Factory[ot
 	if err != nil {
 		return nil, err
 	}
-	c := ottllog.NewConditionSequence(statements, errorMode, set)
+	c := ottllog.NewConditionSequence(statements, set, ottllog.WithConditionSequenceErrorMode(errorMode))
 	return &c, nil
 }
 
@@ -108,6 +108,6 @@ func NewBoolExprForResource(conditions []string, functions map[string]ottl.Facto
 	if err != nil {
 		return nil, err
 	}
-	c := ottlresource.NewConditionSequence(statements, errorMode, set)
+	c := ottlresource.NewConditionSequence(statements, set, ottlresource.WithConditionSequenceErrorMode(errorMode))
 	return &c, nil
 }
