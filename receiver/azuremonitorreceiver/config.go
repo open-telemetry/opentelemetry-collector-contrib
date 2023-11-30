@@ -26,6 +26,7 @@ var (
 	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
 	errMissingFedTokenFile   = errors.New(`FederatedTokenFile is not specified in config`)
 	errInvalidCloud          = errors.New(`Cloud" is invalid`)
+	errInvalidRegion         = errors.New("`Region` is not specifiec in config`")
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -244,6 +245,9 @@ type Config struct {
 	CacheResourcesDefinitions               float64                       `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall           int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 	AppendTagsAsAttributes                  bool                          `mapstructure:"append_tags_as_attributes"`
+	UseBatchApi                             bool                          `mapstructure:"use_batch_api"`
+	Region                                  string                        `mapstructure:"region"`
+	MaximumNumberOfDimensionsInACall        int                           `mapstructure:"maximum_number_of_dimensions_in_a_call"`
 }
 
 const (
@@ -288,6 +292,10 @@ func (c Config) Validate() (err error) {
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud {
 		err = multierr.Append(err, errInvalidCloud)
+	}
+
+	if c.UseBatchApi && c.Region == "" {
+		err = multierr.Append(err, errInvalidRegion)
 	}
 
 	return
