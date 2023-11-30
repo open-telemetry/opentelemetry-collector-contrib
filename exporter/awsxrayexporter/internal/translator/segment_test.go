@@ -1114,7 +1114,7 @@ func TestConsumerSpanWithResourceServiceName(t *testing.T) {
 	attributes[conventions.AttributeRPCService] = "ABC"
 
 	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 	assert.Equal(t, "signup_aggregator", *segment.Name)
@@ -1132,7 +1132,7 @@ func TestConsumerSpanWithoutResourceServiceName(t *testing.T) {
 	attributes := make(map[string]any)
 
 	resource := pcommon.NewResource()
-	span := constructServerSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 	assert.Equal(t, "ABC.payment", *segment.Name)
