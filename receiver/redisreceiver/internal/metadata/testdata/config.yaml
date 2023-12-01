@@ -65,6 +65,8 @@ all_set:
       enabled: true
     redis.role:
       enabled: true
+    redis.slave.replication.offset:
+      enabled: true
     redis.slaves.connected:
       enabled: true
     redis.uptime:
@@ -141,6 +143,8 @@ none_set:
     redis.replication.offset:
       enabled: false
     redis.role:
+      enabled: false
+    redis.slave.replication.offset:
       enabled: false
     redis.slaves.connected:
       enabled: false

@@ -344,7 +344,13 @@ metrics:
     gauge:
       value_type: int
     attributes: [db]
-
+  # below are all disabled by default
+  redis.slave.replication.offset:
+    enabled: false
+    description: "Offset for redis replica"
+    unit: "By"
+    gauge:
+      value_type: int
 tests:
   config:
     endpoint: localhost:6379

@@ -30,6 +30,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"rdb_changes_since_last_save":     rs.mb.RecordRedisRdbChangesSinceLastSaveDataPoint,
 		"rejected_connections":            rs.mb.RecordRedisConnectionsRejectedDataPoint,
 		"repl_backlog_first_byte_offset":  rs.mb.RecordRedisReplicationBacklogFirstByteOffsetDataPoint,
+		"slave_repl_offset":               rs.mb.RecordRedisSlaveReplicationOffsetDataPoint,
 		"total_commands_processed":        rs.mb.RecordRedisCommandsProcessedDataPoint,
 		"total_connections_received":      rs.mb.RecordRedisConnectionsReceivedDataPoint,
 		"total_net_input_bytes":           rs.mb.RecordRedisNetInputDataPoint,

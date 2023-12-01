@@ -1,0 +1,90 @@
+# See create_redis_cluster.sh for names
+receivers:
+  redis/redis-node1:
+    endpoint: "redis-node1:6379"
+    collection_interval: 10s
+    tls:
+      insecure: true
+    metrics:
+      redis.role:
+        enabled: true
+      redis.slave.replication.offset:
+        enabled: true
+  redis/redis-node2:
+    endpoint: "redis-node2:6379"
+    collection_interval: 10s
+    tls:
+      insecure: true
+    metrics:
+      redis.role:
+        enabled: true
+      redis.slave.replication.offset:
+        enabled: true
+  redis/redis-node3:
+    endpoint: "redis-node3:6379"
+    collection_interval: 10s
+    tls:
+      insecure: true
+    metrics:
+      redis.role:
+        enabled: true
+      redis.slave.replication.offset:
+        enabled: true
+  redis/redis-node4:
+    endpoint: "redis-node4:6379"
+    collection_interval: 10s
+    tls:
+      insecure: true
+    metrics:
+      redis.role:
+        enabled: true
+      redis.slave.replication.offset:
+        enabled: true
+  redis/redis-node5:
+    endpoint: "redis-node5:6379"
+    collection_interval: 10s
+    tls:
+      insecure: true
+    metrics:
+      redis.role:
+        enabled: true
+      redis.slave.replication.offset:
+        enabled: true
+  redis/redis-node6:
+    endpoint: "redis-node6:6379"
+    collection_interval: 10s
+    tls:
+      insecure: true
+    metrics:
+      redis.role:
+        enabled: true
+      redis.slave.replication.offset:
+        enabled: true
+processors:
+  filter/ottl:
+    error_mode: propagate
+    metrics:
+      metric:
+          - 'name != "redis.slave.replication.offset"'
+      datapoint:
+          - 'metric.name != "redis.slave.replication.offset"'
+  batch:
+exporters:
+  logging:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+service:
+  pipelines:
+    metrics:
+      receivers:
+        - "redis/redis-node1"
+        - "redis/redis-node2"
+        - "redis/redis-node3"
+        - "redis/redis-node4"
+        - "redis/redis-node5"
+        - "redis/redis-node6"
+      processors:
+        - "filter/ottl"
+      exporters:
+        - "logging"

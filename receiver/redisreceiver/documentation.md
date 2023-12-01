@@ -343,6 +343,14 @@ Redis node's role
 | ---- | ----------- | ------ |
 | role | Redis node's role | Str: ``replica``, ``primary`` |
 
+### redis.slave.replication.offset
+
+Offset for redis replica
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
