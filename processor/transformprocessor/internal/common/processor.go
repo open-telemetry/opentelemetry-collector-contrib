@@ -24,7 +24,7 @@ var _ consumer.Logs = &resourceStatements{}
 var _ baseContext = &resourceStatements{}
 
 type resourceStatements struct {
-	ottl.Statements[ottlresource.TransformContext]
+	ottl.StatementSequence[ottlresource.TransformContext]
 }
 
 func (r resourceStatements) Capabilities() consumer.Capabilities {
@@ -75,7 +75,7 @@ var _ consumer.Logs = &scopeStatements{}
 var _ baseContext = &scopeStatements{}
 
 type scopeStatements struct {
-	ottl.Statements[ottlscope.TransformContext]
+	ottl.StatementSequence[ottlscope.TransformContext]
 }
 
 func (s scopeStatements) Capabilities() consumer.Capabilities {
@@ -149,14 +149,14 @@ func (pc parserCollection) parseCommonContextStatements(contextStatement Context
 		if err != nil {
 			return nil, err
 		}
-		rStatements := ottlresource.NewStatements(parsedStatements, pc.settings, ottlresource.WithErrorMode(pc.errorMode))
+		rStatements := ottlresource.NewStatementSequence(parsedStatements, pc.settings, ottlresource.WithStatementSequenceErrorMode(pc.errorMode))
 		return resourceStatements{rStatements}, nil
 	case Scope:
 		parsedStatements, err := pc.scopeParser.ParseStatements(contextStatement.Statements)
 		if err != nil {
 			return nil, err
 		}
-		sStatements := ottlscope.NewStatements(parsedStatements, pc.settings, ottlscope.WithErrorMode(pc.errorMode))
+		sStatements := ottlscope.NewStatementSequence(parsedStatements, pc.settings, ottlscope.WithStatementSequenceErrorMode(pc.errorMode))
 		return scopeStatements{sStatements}, nil
 	default:
 		return nil, fmt.Errorf("unknown context %v", contextStatement.Context)
