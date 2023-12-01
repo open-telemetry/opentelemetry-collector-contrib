@@ -102,6 +102,17 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		}
 		databases = dbList
 	}
+	exclude := make(map[string]struct{})
+	for _, db := range p.config.ExcludeDatabases {
+		exclude[db] = struct{}{}
+	}
+	var filteredDatabases []string
+	for _, db := range databases {
+		if _, ok := exclude[db]; !ok {
+			filteredDatabases = append(filteredDatabases, db)
+		}
+	}
+	databases = filteredDatabases
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 

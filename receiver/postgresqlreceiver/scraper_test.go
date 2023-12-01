@@ -207,6 +207,19 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
+func TestScraperExcludeDatabase(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel", "telemetry"})
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ExcludeDatabases = []string{"open"}
+
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
+
+	_, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+}
+
 type mockClientFactory struct{ mock.Mock }
 type mockClient struct{ mock.Mock }
 
