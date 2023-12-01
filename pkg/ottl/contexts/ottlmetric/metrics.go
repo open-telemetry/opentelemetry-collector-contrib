@@ -92,6 +92,22 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 	return s
 }
 
+type ConditionSequenceOption func(*ottl.ConditionSequence[TransformContext])
+
+func WithConditionSequenceErrorMode(errorMode ottl.ErrorMode) ConditionSequenceOption {
+	return func(c *ottl.ConditionSequence[TransformContext]) {
+		ottl.WithConditionSequenceErrorMode[TransformContext](errorMode)(c)
+	}
+}
+
+func NewConditionSequence(conditions []*ottl.Condition[TransformContext], telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption) ottl.ConditionSequence[TransformContext] {
+	c := ottl.NewConditionSequence(conditions, telemetrySettings)
+	for _, op := range options {
+		op(&c)
+	}
+	return c
+}
+
 var symbolTable = internal.MetricSymbolTable
 
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
@@ -134,10 +150,10 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 
 func accessCache() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.getCache(), nil
 		},
-		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
 			if m, ok := val.(pcommon.Map); ok {
 				m.CopyTo(tCtx.getCache())
 			}
@@ -148,10 +164,10 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 
 func accessCacheKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			return internal.GetMapValue(tCtx.getCache(), keys)
 		},
-		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
 			return internal.SetMapValue(tCtx.getCache(), keys, val)
 		},
 	}

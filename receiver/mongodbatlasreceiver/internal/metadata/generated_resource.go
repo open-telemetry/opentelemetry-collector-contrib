@@ -91,6 +91,20 @@ func (rb *ResourceBuilder) SetMongodbAtlasProjectName(val string) {
 	}
 }
 
+// SetMongodbAtlasProviderName sets provided value as "mongodb_atlas.provider.name" attribute.
+func (rb *ResourceBuilder) SetMongodbAtlasProviderName(val string) {
+	if rb.config.MongodbAtlasProviderName.Enabled {
+		rb.res.Attributes().PutStr("mongodb_atlas.provider.name", val)
+	}
+}
+
+// SetMongodbAtlasRegionName sets provided value as "mongodb_atlas.region.name" attribute.
+func (rb *ResourceBuilder) SetMongodbAtlasRegionName(val string) {
+	if rb.config.MongodbAtlasRegionName.Enabled {
+		rb.res.Attributes().PutStr("mongodb_atlas.region.name", val)
+	}
+}
+
 // SetMongodbAtlasUserAlias sets provided value as "mongodb_atlas.user.alias" attribute.
 func (rb *ResourceBuilder) SetMongodbAtlasUserAlias(val string) {
 	if rb.config.MongodbAtlasUserAlias.Enabled {

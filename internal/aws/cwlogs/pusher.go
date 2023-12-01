@@ -249,7 +249,7 @@ func (p *logPusher) ForceFlush() error {
 	return nil
 }
 
-func (p *logPusher) pushEventBatch(req interface{}) error {
+func (p *logPusher) pushEventBatch(req any) error {
 
 	// http://docs.aws.amazon.com/goto/SdkForGoV1/logs-2014-03-28/PutLogEvents
 	// The log events in the batch must be in chronological ordered by their

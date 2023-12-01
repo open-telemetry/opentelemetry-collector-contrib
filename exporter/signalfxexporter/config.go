@@ -236,7 +236,7 @@ func setDefaultExcludes(cfg *Config) error {
 
 func loadConfig(bytes []byte) (Config, error) {
 	var cfg Config
-	var data map[string]interface{}
+	var data map[string]any
 	if err := yaml.Unmarshal(bytes, &data); err != nil {
 		return cfg, err
 	}

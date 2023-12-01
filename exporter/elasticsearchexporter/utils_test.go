@@ -130,8 +130,8 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 		w.Header().Add("X-Elastic-Product", "Elasticsearch")
 
 		enc := json.NewEncoder(w)
-		return enc.Encode(map[string]interface{}{
-			"version": map[string]interface{}{
+		return enc.Encode(map[string]any{
+			"version": map[string]any{
 				"number": currentESVersion,
 			},
 		})

@@ -84,7 +84,7 @@ The following configuration options can also be configured:
 - `disable_default_translation_rules` (default = `false`): Disable default translation
   of the OTel metrics to a SignalFx compatible format. The default translation rules are
   defined in `translation/constants.go`.
-- `timeout` (default = 5s): Amount of time to wait for a send operation to
+- `timeout` (default = 10s): Amount of time to wait for a send operation to
   complete.
 - `headers` (no default): Headers to pass in the payload.
 - `max_idle_conns` (default = 100): The maximum idle HTTP connections the client can keep open.

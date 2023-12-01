@@ -51,20 +51,20 @@ func (m *mockCadvisorManager2) SubcontainersInfo(_ string, _ *info.ContainerInfo
 }
 
 func newMockCreateManager(t *testing.T) createCadvisorManager {
-	return func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+	return func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, housekeepingConfig manager.HousekeepingConfig,
 		includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 		perfEventsFile string) (cadvisorManager, error) {
 		return &mockCadvisorManager{t: t}, nil
 	}
 }
 
-var mockCreateManager2 = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+var mockCreateManager2 = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, housekeepingConfig manager.HousekeepingConfig,
 	includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 	perfEventsFile string) (cadvisorManager, error) {
 	return &mockCadvisorManager2{}, nil
 }
 
-var mockCreateManagerWithError = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+var mockCreateManagerWithError = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, housekeepingConfig manager.HousekeepingConfig,
 	includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 	perfEventsFile string) (cadvisorManager, error) {
 	return nil, errors.New("error")

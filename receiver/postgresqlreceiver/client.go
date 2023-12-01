@@ -15,7 +15,17 @@ import (
 	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
+)
+
+const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
+
+var preciseLagMetricsFg = featuregate.GlobalRegistry().MustRegister(
+	lagMetricsInSecondsFeatureGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`."),
+	featuregate.WithRegisterFromVersion("0.89.0"),
 )
 
 // databaseName is a name that refers to a database so that it can be uniquely referred to later
@@ -484,18 +494,21 @@ func (c *postgreSQLClient) getMaxConnections(ctx context.Context) (int64, error)
 type replicationStats struct {
 	clientAddr   string
 	pendingBytes int64
-	flushLag     int64
-	replayLag    int64
-	writeLag     int64
+	flushLagInt  int64 // Deprecated
+	replayLagInt int64 // Deprecated
+	writeLagInt  int64 // Deprecated
+	flushLag     float64
+	replayLag    float64
+	writeLag     float64
 }
 
-func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([]replicationStats, error) {
 	query := `SELECT
 	client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
-	extract('epoch' from coalesce(write_lag, '-1 seconds')),
-	extract('epoch' from coalesce(flush_lag, '-1 seconds')),
-	extract('epoch' from coalesce(replay_lag, '-1 seconds'))
+	extract('epoch' from coalesce(write_lag, '-1 seconds'))::integer,
+	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::integer,
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::integer
 	FROM pg_stat_replication;
 	`
 	rows, err := c.client.QueryContext(ctx, query)
@@ -507,7 +520,50 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	var errors error
 	for rows.Next() {
 		var client string
-		var replicationBytes, writeLag, flushLag, replayLag int64
+		var replicationBytes int64
+		var writeLagInt, flushLagInt, replayLagInt int64
+		err = rows.Scan(&client, &replicationBytes,
+			&writeLagInt, &flushLagInt, &replayLagInt)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		rs = append(rs, replicationStats{
+			clientAddr:   client,
+			pendingBytes: replicationBytes,
+			replayLagInt: replayLagInt,
+			writeLagInt:  writeLagInt,
+			flushLagInt:  flushLagInt,
+		})
+	}
+
+	return rs, errors
+}
+
+func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	if !preciseLagMetricsFg.IsEnabled() {
+		return c.getDeprecatedReplicationStats(ctx)
+	}
+
+	query := `SELECT
+	client_addr,
+	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
+	extract('epoch' from coalesce(write_lag, '-1 seconds'))::decimal AS write_lag_fractional,
+	extract('epoch' from coalesce(flush_lag, '-1 seconds'))::decimal AS flush_lag_fractional,
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))::decimal AS replay_lag_fractional
+	FROM pg_stat_replication;
+	`
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_stat_replication: %w", err)
+	}
+	defer rows.Close()
+	var rs []replicationStats
+	var errors error
+	for rows.Next() {
+		var client string
+		var replicationBytes int64
+		var writeLag, flushLag, replayLag float64
 		err = rows.Scan(&client, &replicationBytes, &writeLag, &flushLag, &replayLag)
 		if err != nil {
 			errors = multierr.Append(errors, err)

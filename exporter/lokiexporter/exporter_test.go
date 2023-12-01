@@ -27,19 +27,19 @@ import (
 func TestPushLogData(t *testing.T) {
 	testCases := []struct {
 		desc          string
-		hints         map[string]interface{}
-		attrs         map[string]interface{}
-		res           map[string]interface{}
+		hints         map[string]any
+		attrs         map[string]any
+		res           map[string]any
 		expectedLabel string
 		expectedLine  string
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name":   "guarana",
 				"http.status": 200,
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				"loki.attribute.labels": "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
@@ -47,11 +47,11 @@ func TestPushLogData(t *testing.T) {
 		},
 		{
 			desc: "with resource to label and regular resource",
-			res: map[string]interface{}{
+			res: map[string]any{
 				"host.name": "guarana",
 				"region.az": "eu-west-1a",
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				"loki.resource.labels": "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,

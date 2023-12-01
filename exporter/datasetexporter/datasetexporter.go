@@ -14,15 +14,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/scalyr/dataset-go/pkg/client"
+	"github.com/scalyr/dataset-go/pkg/meter_config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
-	"golang.org/x/time/rate"
 )
 
 type DatasetExporter struct {
 	client      *client.DataSetClient
-	limiter     *rate.Limiter
 	logger      *zap.Logger
 	session     string
 	exporterCfg *ExporterConfig
@@ -34,6 +33,8 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 	logger.Info("Creating new DataSetExporter",
 		zap.String("config", config.String()),
 		zap.String("entity", entity),
+		zap.String("id.string", set.ID.String()),
+		zap.String("id.name", set.ID.Name()),
 	)
 	exporterCfg, err := config.convert()
 	if err != nil {
@@ -48,11 +49,20 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 		set.BuildInfo.Version,
 		entity,
 	)
+
+	meter := set.MeterProvider.Meter("datasetexporter")
+	meterConfig := meter_config.NewMeterConfig(
+		&meter,
+		entity,
+		set.ID.Name(),
+	)
+
 	client, err := client.NewClient(
 		exporterCfg.datasetConfig,
 		&http.Client{Timeout: time.Second * 60},
 		logger,
 		&userAgent,
+		meterConfig,
 	)
 	if err != nil {
 		logger.Error("Cannot create DataSetClient: ", zap.Error(err))
@@ -61,7 +71,6 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 
 	return &DatasetExporter{
 		client:      client,
-		limiter:     rate.NewLimiter(100*rate.Every(1*time.Minute), 100), // 100 requests / minute
 		session:     uuid.New().String(),
 		logger:      logger,
 		exporterCfg: exporterCfg,
@@ -86,21 +95,21 @@ func buildKey(prefix string, separator string, key string, depth int) string {
 	return res
 }
 
-func updateWithPrefixedValuesMap(target map[string]interface{}, prefix string, separator string, suffix string, source map[string]interface{}, depth int) {
+func updateWithPrefixedValuesMap(target map[string]any, prefix string, separator string, suffix string, source map[string]any, depth int) {
 	for k, v := range source {
 		key := buildKey(prefix, separator, k, depth)
 		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValuesArray(target map[string]interface{}, prefix string, separator string, suffix string, source []interface{}, depth int) {
+func updateWithPrefixedValuesArray(target map[string]any, prefix string, separator string, suffix string, source []any, depth int) {
 	for i, v := range source {
 		key := buildKey(prefix, separator, strconv.FormatInt(int64(i), 10), depth)
 		updateWithPrefixedValues(target, key, separator, suffix, v, depth+1)
 	}
 }
 
-func updateWithPrefixedValues(target map[string]interface{}, prefix string, separator string, suffix string, source interface{}, depth int) {
+func updateWithPrefixedValues(target map[string]any, prefix string, separator string, suffix string, source any, depth int) {
 	setValue := func() {
 		for {
 			// now the last value wins
@@ -122,9 +131,9 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 	}
 	switch st.Kind() {
 	case reflect.Map:
-		updateWithPrefixedValuesMap(target, prefix, separator, suffix, source.(map[string]interface{}), depth)
+		updateWithPrefixedValuesMap(target, prefix, separator, suffix, source.(map[string]any), depth)
 	case reflect.Array, reflect.Slice:
-		updateWithPrefixedValuesArray(target, prefix, separator, suffix, source.([]interface{}), depth)
+		updateWithPrefixedValuesArray(target, prefix, separator, suffix, source.([]any), depth)
 	default:
 		setValue()
 	}
@@ -132,7 +141,7 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 
 func inferServerHost(
 	resource pcommon.Resource,
-	attrs map[string]interface{},
+	attrs map[string]any,
 	serverHost string,
 ) string {
 	// first use value from the attribute serverHost

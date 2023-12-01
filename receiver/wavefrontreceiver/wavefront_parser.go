@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 )
 
 // WavefrontParser converts metrics in the Wavefront format, see
@@ -120,7 +120,7 @@ func (wp *WavefrontParser) injectCollectDLabels(
 	var toAddDims map[string]string
 	index := strings.Index(metricName, "..")
 	for {
-		metricName, toAddDims = collectdreceiver.LabelsFromName(&metricName)
+		metricName, toAddDims = collectd.LabelsFromName(&metricName)
 		if len(toAddDims) == 0 {
 			if index == -1 {
 				metricName = strings.ReplaceAll(metricName, "..", ".")

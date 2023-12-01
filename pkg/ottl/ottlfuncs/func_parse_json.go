@@ -41,12 +41,12 @@ func createParseJSONFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 //	JSON arrays  -> pdata.SliceValue
 //	JSON objects -> map[string]any
 func parseJSON[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		var parsedValue map[string]interface{}
+		var parsedValue map[string]any
 		err = jsoniter.UnmarshalFromString(targetVal, &parsedValue)
 		if err != nil {
 			return nil, err

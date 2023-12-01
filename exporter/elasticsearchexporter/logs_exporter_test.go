@@ -181,11 +181,11 @@ func TestExporter_PushEvent(t *testing.T) {
 			data, err := docs[0].Action.MarshalJSON()
 			assert.Nil(t, err)
 
-			jsonVal := map[string]interface{}{}
+			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
 			assert.Nil(t, err)
 
-			create := jsonVal["create"].(map[string]interface{})
+			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
 			assert.Equal(t, expected, create["_index"].(string))
 

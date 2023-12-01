@@ -20,9 +20,9 @@ type hclog2ZapLogger struct {
 	name string
 }
 
-func (l *hclog2ZapLogger) Log(_ hclog.Level, _ string, _ ...interface{}) {}
+func (l *hclog2ZapLogger) Log(_ hclog.Level, _ string, _ ...any) {}
 
-func (l *hclog2ZapLogger) ImpliedArgs() []interface{} {
+func (l *hclog2ZapLogger) ImpliedArgs() []any {
 	return nil
 }
 
@@ -35,25 +35,25 @@ func (l *hclog2ZapLogger) StandardWriter(_ *hclog.StandardLoggerOptions) io.Writ
 }
 
 // Trace implementation.
-func (l *hclog2ZapLogger) Trace(_ string, _ ...interface{}) {}
+func (l *hclog2ZapLogger) Trace(_ string, _ ...any) {}
 
 // Debug implementation.
-func (l *hclog2ZapLogger) Debug(msg string, args ...interface{}) {
+func (l *hclog2ZapLogger) Debug(msg string, args ...any) {
 	l.Zap.Debug(msg, argsToFields(args...)...)
 }
 
 // Info implementation.
-func (l *hclog2ZapLogger) Info(msg string, args ...interface{}) {
+func (l *hclog2ZapLogger) Info(msg string, args ...any) {
 	l.Zap.Info(msg, argsToFields(args...)...)
 }
 
 // Warn implementation.
-func (l *hclog2ZapLogger) Warn(msg string, args ...interface{}) {
+func (l *hclog2ZapLogger) Warn(msg string, args ...any) {
 	l.Zap.Warn(msg, argsToFields(args...)...)
 }
 
 // Error implementation.
-func (l *hclog2ZapLogger) Error(msg string, args ...interface{}) {
+func (l *hclog2ZapLogger) Error(msg string, args ...any) {
 	l.Zap.Error(msg, argsToFields(args...)...)
 }
 
@@ -73,7 +73,7 @@ func (l *hclog2ZapLogger) IsWarn() bool { return false }
 func (l *hclog2ZapLogger) IsError() bool { return false }
 
 // With implementation.
-func (l *hclog2ZapLogger) With(args ...interface{}) hclog.Logger {
+func (l *hclog2ZapLogger) With(args ...any) hclog.Logger {
 	return &hclog2ZapLogger{Zap: l.Zap.With(argsToFields(args...)...)}
 }
 
@@ -105,7 +105,7 @@ func (l *hclog2ZapLogger) StandardLogger(_ *hclog.StandardLoggerOptions) *log.Lo
 	return log.New(io.Discard, "", 0)
 }
 
-func argsToFields(args ...interface{}) []zapcore.Field {
+func argsToFields(args ...any) []zapcore.Field {
 	var fields []zapcore.Field
 	for i := 0; i < len(args); i += 2 {
 		fields = append(fields, zap.String(args[i].(string), fmt.Sprintf("%v", args[i+1])))

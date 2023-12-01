@@ -99,7 +99,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			emfCalcs := setupEmfCalculators()
 			defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 
-			groupedMetrics := make(map[interface{}]*groupedMetric)
+			groupedMetrics := make(map[any]*groupedMetric)
 			rms := tc.metric.ResourceMetrics()
 			ilms := rms.At(0).ScopeMetrics()
 			metrics := ilms.At(0).Metrics()
@@ -132,7 +132,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		generateMetrics := []pmetric.Metrics{
 			generateTestGaugeMetric("int-gauge", intValueType),
 			generateTestGaugeMetric("double-gauge", doubleValueType),
@@ -196,7 +196,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		generateMetrics := []pmetric.Metrics{
 			generateTestGaugeMetric("int-gauge", intValueType),
 			generateTestGaugeMetric("double-gauge", doubleValueType),
@@ -263,7 +263,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	t.Run("Add same metric but different log group", func(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		otelMetrics := generateTestGaugeMetric("int-gauge", "int")
 		ilms := otelMetrics.ResourceMetrics().At(0).ScopeMetrics()
 		metric := ilms.At(0).Metrics().At(0)
@@ -319,7 +319,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	t.Run("Duplicate metric names", func(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		generateMetrics := []pmetric.Metrics{
 			generateTestGaugeMetric("foo", "int"),
 			generateTestGaugeMetric("foo", "double"),
@@ -369,7 +369,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	t.Run("Unhandled metric type", func(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		md := pmetric.NewMetrics()
 		rms := md.ResourceMetrics()
 		metric := rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -415,10 +415,10 @@ func TestAddKubernetesWrapper(t *testing.T) {
 			ContainerID: "Container mccontainter the third",
 		}
 		expectedCreatedObj := struct {
-			ContainerName string      `json:"container_name"`
-			Docker        interface{} `json:"docker"`
-			Host          string      `json:"host"`
-			PodID         string      `json:"pod_id"`
+			ContainerName string `json:"container_name"`
+			Docker        any    `json:"docker"`
+			Host          string `json:"host"`
+			PodID         string `json:"pod_id"`
 		}{
 			ContainerName: "container mccontainer",
 			Docker:        dockerObj,
@@ -459,7 +459,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		for i := 0; i < numMetrics; i++ {
 			metadata := generateTestMetricMetadata("namespace", int64(1596151098037), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
 			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, logger, nil, testCfg, emfCalcs)

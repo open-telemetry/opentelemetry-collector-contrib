@@ -505,7 +505,7 @@ func Test_getPromExemplars(t *testing.T) {
 }
 
 func TestAddResourceTargetInfo(t *testing.T) {
-	resourceAttrMap := map[string]interface{}{
+	resourceAttrMap := map[string]any{
 		conventions.AttributeServiceName:       "service-name",
 		conventions.AttributeServiceNamespace:  "service-namespace",
 		conventions.AttributeServiceInstanceID: "service-instance-id",

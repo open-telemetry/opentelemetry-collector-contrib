@@ -52,7 +52,7 @@ type cadvisorManager interface {
 }
 
 // define a function type for creating a cadvisor manager
-type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.HouskeepingConfig, cadvisormetrics.MetricSet, *http.Client,
+type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig, cadvisormetrics.MetricSet, *http.Client,
 	[]string, string) (cadvisorManager, error)
 
 // this is the default function that are used in production code to create a cadvisor manager
@@ -61,10 +61,10 @@ type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.Hous
 // createCadvisorManager() to create a mock. However this means that we will not be able
 // to unit test the code in `initManager(...)`. For now, I will leave code as it is. Hopefully we can find
 // a better way to mock the cadvisor related part in the future.
-var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
+var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, housekeepingConfig manager.HousekeepingConfig,
 	includedMetricsSet cadvisormetrics.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 	perfEventsFile string) (cadvisorManager, error) {
-	return manager.New(memoryCache, sysfs, houskeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, []string{}, perfEventsFile, 0)
+	return manager.New(memoryCache, sysfs, housekeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, []string{}, perfEventsFile, 0)
 }
 
 // Option is a function that can be used to configure Cadvisor struct
@@ -374,7 +374,7 @@ func (c *Cadvisor) initManager(createManager createCadvisorManager) error {
 		cgroupRoots = []string{"/kubepods"}
 	}
 
-	houseKeepingConfig := manager.HouskeepingConfig{
+	houseKeepingConfig := manager.HousekeepingConfig{
 		Interval:     &maxHousekeepingInterval,
 		AllowDynamic: &allowDynamicHousekeeping,
 	}

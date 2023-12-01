@@ -5,12 +5,12 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -32,11 +32,23 @@ func (e *ErrorMode) UnmarshalText(text []byte) error {
 	}
 }
 
-type Parser[K any] struct {
-	functions         map[string]Factory[K]
-	pathParser        PathExpressionParser[K]
-	enumParser        EnumParser
-	telemetrySettings component.TelemetrySettings
+// TODO: move this and ErrorMode to a config.go file
+type LogicOperation string
+
+const (
+	And LogicOperation = "and"
+	Or  LogicOperation = "or"
+)
+
+func (l *LogicOperation) UnmarshalText(text []byte) error {
+	str := LogicOperation(strings.ToLower(string(text)))
+	switch str {
+	case And, Or:
+		*l = str
+		return nil
+	default:
+		return fmt.Errorf("unknown LogicOperation %v", str)
+	}
 }
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
@@ -64,6 +76,26 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 		}
 	}
 	return result, condition, nil
+}
+
+// Condition holds a top level Condition. A Condition is a boolean expression to match telemetry.
+type Condition[K any] struct {
+	condition BoolExpr[K]
+	origText  string
+}
+
+// Eval returns true if the condition was met for the given TransformContext and false otherwise.
+func (c *Condition[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	return c.condition.Eval(ctx, tCtx)
+}
+
+// Parser provides the means to parse OTTL Statements and Conditions given a specific set of functions,
+// a PathExpressionParser, and an EnumParser.
+type Parser[K any] struct {
+	functions         map[string]Factory[K]
+	pathParser        PathExpressionParser[K]
+	enumParser        EnumParser
+	telemetrySettings component.TelemetrySettings
 }
 
 func NewParser[K any](
@@ -99,28 +131,30 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 
 // ParseStatements parses string statements into ottl.Statement objects ready for execution.
 // Returns a slice of statements and a nil error on successful parsing.
-// If parsing fails, returns an empty slice  with a multierr error containing
-// an error per failed statement.
+// If parsing fails, returns nil and a joined error containing each error per failed statement.
 func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
 	parsedStatements := make([]*Statement[K], 0, len(statements))
-	var parseErr error
+	var parseErrs []error
 
 	for _, statement := range statements {
 		ps, err := p.ParseStatement(statement)
 		if err != nil {
-			parseErr = multierr.Append(parseErr, fmt.Errorf("unable to parse OTTL statement %q: %w", statement, err))
+			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL statement %q: %w", statement, err))
 			continue
 		}
 		parsedStatements = append(parsedStatements, ps)
 	}
 
-	if parseErr != nil {
-		return nil, parseErr
+	if len(parseErrs) > 0 {
+		return nil, errors.Join(parseErrs...)
 	}
 
 	return parsedStatements, nil
 }
 
+// ParseStatement parses a single string statement into a Statement struct ready for execution.
+// Returns a Statement and a nil error on successful parsing.
+// If parsing fails, returns nil and an error.
 func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	parsed, err := parseStatement(statement)
 	if err != nil {
@@ -141,13 +175,69 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	}, nil
 }
 
+// ParseConditions parses string conditions into a Condition slice ready for execution.
+// Returns a slice of Condition and a nil error on successful parsing.
+// If parsing fails, returns nil and an error containing each error per failed condition.
+func (p *Parser[K]) ParseConditions(conditions []string) ([]*Condition[K], error) {
+	parsedConditions := make([]*Condition[K], 0, len(conditions))
+	var parseErrs []error
+
+	for _, condition := range conditions {
+		ps, err := p.ParseCondition(condition)
+		if err != nil {
+			parseErrs = append(parseErrs, fmt.Errorf("unable to parse OTTL condition %q: %w", condition, err))
+			continue
+		}
+		parsedConditions = append(parsedConditions, ps)
+	}
+
+	if len(parseErrs) > 0 {
+		return nil, errors.Join(parseErrs...)
+	}
+
+	return parsedConditions, nil
+}
+
+// ParseCondition parses a single string condition into a Condition objects ready for execution.
+// Returns an Condition and a nil error on successful parsing.
+// If parsing fails, returns nil and an error.
+func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
+	parsed, err := parseCondition(condition)
+	if err != nil {
+		return nil, err
+	}
+	expression, err := p.newBoolExpr(parsed)
+	if err != nil {
+		return nil, err
+	}
+	return &Condition[K]{
+		condition: expression,
+		origText:  condition,
+	}, nil
+}
+
 var parser = newParser[parsedStatement]()
+var conditionParser = newParser[booleanExpression]()
 
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
 
 	if err != nil {
 		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
+	}
+	err = parsed.checkForCustomError()
+	if err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func parseCondition(raw string) (*booleanExpression, error) {
+	parsed, err := conditionParser.ParseString("", raw)
+
+	if err != nil {
+		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
@@ -234,4 +324,84 @@ func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// ConditionSequence represents a list of Conditions that will be evaluated sequentially for a TransformContext
+// and will handle errors returned by conditions based on an ErrorMode.
+// By default, the conditions are ORed together, but they can be ANDed together using the WithLogicOperation option.
+type ConditionSequence[K any] struct {
+	conditions        []*Condition[K]
+	errorMode         ErrorMode
+	telemetrySettings component.TelemetrySettings
+	logicOp           LogicOperation
+}
+
+type ConditionSequenceOption[K any] func(*ConditionSequence[K])
+
+// WithConditionSequenceErrorMode sets the ErrorMode of a ConditionSequence
+func WithConditionSequenceErrorMode[K any](errorMode ErrorMode) ConditionSequenceOption[K] {
+	return func(c *ConditionSequence[K]) {
+		c.errorMode = errorMode
+	}
+}
+
+// WithLogicOperation sets the LogicOperation of a ConditionSequence
+// When setting AND the conditions will be ANDed together.
+// When setting OR the conditions will be ORed together.
+func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K] {
+	return func(c *ConditionSequence[K]) {
+		c.logicOp = logicOp
+	}
+}
+
+// NewConditionSequence creates a new ConditionSequence with the provided Condition slice, ErrorMode, and component.TelemetrySettings.
+// You may also augment the ConditionSequence with a slice of ConditionSequenceOption.
+func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption[K]) ConditionSequence[K] {
+	c := ConditionSequence[K]{
+		conditions:        conditions,
+		errorMode:         PropagateError,
+		telemetrySettings: telemetrySettings,
+		logicOp:           Or,
+	}
+	for _, op := range options {
+		op(&c)
+	}
+	return c
+}
+
+// Eval evaluates the result of each Condition in the ConditionSequence.
+// The boolean logic between conditions is based on the ConditionSequence's Logic Operator.
+// If using the default OR LogicOperation, if any Condition evaluates to true, then true is returned and if all Conditions evaluate to false, then false is returned.
+// If using the AND LogicOperation, if any Condition evaluates to false, then false is returned and if all Conditions evaluate to true, then true is returned.
+// When the ErrorMode of the ConditionSequence is `propagate`, errors cause the evaluation to be false and an error is returned.
+// When the ErrorMode of the ConditionSequence is `ignore`, errors cause the evaluation to continue to the next condition.
+// When using the AND LogicOperation with the `ignore` ErrorMode the sequence will evaluate to false if all conditions error.
+func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	var atLeastOneMatch bool
+	for _, condition := range c.conditions {
+		match, err := condition.Eval(ctx, tCtx)
+		if err != nil {
+			if c.errorMode == PropagateError {
+				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
+				return false, err
+			}
+			c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
+			continue
+		}
+		if match {
+			if c.logicOp == Or {
+				return true, nil
+			}
+			atLeastOneMatch = true
+		}
+		if !match && c.logicOp == And {
+			return false, nil
+		}
+	}
+	// When ANDing it is possible to arrive here not because everything was true, but because everything errored and was ignored.
+	// In that situation, we don't want to return True when no conditions actually passed. In a situation when everything failed
+	// we are essentially left with an empty set, which is normally evaluated in mathematics as False. We will use that
+	// idea to return False when ANDing and everything errored. We use atLeastOneMatch here to return true if anything did match.
+	// It is not possible to get here if any condition during an AND explicitly failed.
+	return c.logicOp == And && atLeastOneMatch, nil
 }

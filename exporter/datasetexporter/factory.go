@@ -32,6 +32,7 @@ func createDefaultConfig() component.Config {
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
+		Debug:              debugDefault,
 	}
 }
 
