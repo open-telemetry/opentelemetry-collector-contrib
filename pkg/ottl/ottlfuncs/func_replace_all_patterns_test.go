@@ -28,7 +28,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 		FCtx: ottl.FunctionContext{
 			Set: componenttest.NewNopTelemetrySettings(),
 		},
-		Fact: StandardConverters[pcommon.Map]()["SHA256"],
+		Fact: NewTestFactory[pcommon.Map](),
 	}
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Map]](ottlValue)
 
@@ -59,8 +59,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 			},
 			function: optionalArg,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad world")
-				expectedMap.PutStr("test2", "09648f12e7a3940f539bb65d32321c2f96aa94ef698d87816e94d822c6f9d7c4")
+				expectedMap.PutStr("test", "hash(hello {universe}) world")
+				expectedMap.PutStr("test2", "hash(hash(hello {universe}))") // hash applied twice because of replace_all_patterns
 				expectedMap.PutStr("test3", "goodbye world1 and world2")
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
@@ -79,8 +79,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 			},
 			function: optionalArg,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824 world")
-				expectedMap.PutStr("test2", "d7914fe546b684688bb95f4f888a92dfc680603a75f23eb823658031fff766d9")
+				expectedMap.PutStr("test", "hash(hello) world")
+				expectedMap.PutStr("test2", "hash(hash(hello))") // hash applied twice because of replace_all_patterns
 				expectedMap.PutStr("test3", "goodbye world1 and world2")
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
@@ -99,8 +99,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 			},
 			function: optionalArg,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 world")
-				expectedMap.PutStr("test2", "cd372fb85148700fa88095e3492d3f9f5beb43e555e5ff26d95f5a6adc36f8e6")
+				expectedMap.PutStr("test", "hash() world")
+				expectedMap.PutStr("test2", "hash(hash())")
 				expectedMap.PutStr("test3", "goodbye world1 and world2")
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
@@ -221,7 +221,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutStr("test2", "hello")
-				expectedMap.PutStr("test3", "goodbye da4c6d4adf93f13551bbad14a82b024befcf61e4b3b9cd9494668b018a3a148a")
+				expectedMap.PutStr("test3", "goodbye hash(world1)")
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
