@@ -88,6 +88,22 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 	return s
 }
 
+type ConditionSequenceOption func(*ottl.ConditionSequence[TransformContext])
+
+func WithConditionSequenceErrorMode(errorMode ottl.ErrorMode) ConditionSequenceOption {
+	return func(c *ottl.ConditionSequence[TransformContext]) {
+		ottl.WithConditionSequenceErrorMode[TransformContext](errorMode)(c)
+	}
+}
+
+func NewConditionSequence(conditions []*ottl.Condition[TransformContext], telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption) ottl.ConditionSequence[TransformContext] {
+	c := ottl.NewConditionSequence(conditions, telemetrySettings)
+	for _, op := range options {
+		op(&c)
+	}
+	return c
+}
+
 var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"SEVERITY_NUMBER_UNSPECIFIED": ottl.Enum(plog.SeverityNumberUnspecified),
 	"SEVERITY_NUMBER_TRACE":       ottl.Enum(plog.SeverityNumberTrace),
