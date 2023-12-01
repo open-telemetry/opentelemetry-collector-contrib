@@ -38,12 +38,7 @@ func getProcessName(_ context.Context, _ processHandle, exePath string) (string,
 }
 
 func getProcessCgroup(ctx context.Context, proc processHandle) (string, error) {
-	cgroup, err := proc.CgroupWithContext(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return cgroup, nil
+	return "", nil
 }
 
 func getProcessExecutable(ctx context.Context, proc processHandle) (string, error) {

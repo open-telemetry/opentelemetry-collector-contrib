@@ -75,7 +75,6 @@ type processHandles interface {
 
 type processHandle interface {
 	NameWithContext(context.Context) (string, error)
-	CgroupWithContext(context.Context) (string, error)
 	ExeWithContext(context.Context) (string, error)
 	UsernameWithContext(context.Context) (string, error)
 	CmdlineWithContext(context.Context) (string, error)
