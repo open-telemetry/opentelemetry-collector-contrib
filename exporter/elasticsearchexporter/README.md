@@ -76,6 +76,8 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
     will reject documents that have duplicate fields.
   - `dedot` (default=true): When enabled attributes with `.` will be split into
     proper json objects.
+  - `omit_attributes_prefix` (default=false): Omit the `Attributes.` string prefixed to field names for
+    log and span attributes.
 - `sending_queue`
   - `enabled` (default = false)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
