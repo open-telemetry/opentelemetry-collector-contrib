@@ -79,7 +79,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.90.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.90.1 // indirect
 	go.opentelemetry.io/collector/receiver v0.90.1 // indirect
-	go.opentelemetry.io/collector/service v0.90.0 // indirect
+	go.opentelemetry.io/collector/service v0.90.1 // indirect
 	go.opentelemetry.io/contrib/config v0.1.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.21.1 // indirect
