@@ -17,13 +17,16 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
+	"github.com/google/cadvisor/version"
 	"github.com/mitchellh/hashstructure/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/web"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -36,6 +39,11 @@ import (
 const (
 	defaultGCInterval = 2 * time.Minute
 	gcIntervalDelta   = 1 * time.Minute
+
+	// Use same settings as Prometheus web server
+	maxConnections     			= 512
+	readTimeoutMinutes 			= 10
+	prometheusUIServerPort 	= 9090
 )
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
@@ -50,6 +58,7 @@ type pReceiver struct {
 	settings         receiver.CreateSettings
 	scrapeManager    *scrape.Manager
 	discoveryManager *discovery.Manager
+	webHandler       *web.Handler
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -230,7 +239,17 @@ func (r *pReceiver) applyCfg(cfg *config.Config) error {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
 		r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
 	}
-	return r.discoveryManager.ApplyConfig(discoveryCfg)
+	if err := r.discoveryManager.ApplyConfig(discoveryCfg); err != nil {
+		return err
+	}
+
+	// If enabled, the Prometheus UI displays the Promtheus config.
+	// This will display the new config updated by the Target Allocator.
+	if r.webHandler != nil {
+		r.webHandler.ApplyConfig(cfg)
+	}
+
+	return nil
 }
 
 func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component.Host, logger log.Logger) error {
@@ -285,6 +304,57 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 			host.ReportFatalError(err)
 		}
 	}()
+
+	// Set up and start the web handler to suppor the server for the Prometheus UI.
+	// Run in agent mode.
+	if r.cfg.EnablePrometheusUIServer {
+		webOptions := web.Options{
+			ScrapeManager: r.scrapeManager,
+			Context:       ctx,
+			ListenAddress: fmt.Sprintf(":%d", prometheusUIServerPort),
+			ExternalURL: &url.URL{
+				Scheme: "http",
+				Host:   fmt.Sprintf("localhost:%d", prometheusUIServerPort),
+				Path:   "",
+			},
+			RoutePrefix: "/",
+			ReadTimeout: time.Minute * readTimeoutMinutes,
+			PageTitle:   "Prometheus Receiver",
+			Version: &web.PrometheusVersion{
+				Version:   version.Version,
+				Revision:  version.Revision,
+				Branch:    version.Branch,
+				BuildUser: version.BuildUser,
+				BuildDate: version.BuildDate,
+				GoVersion: version.GoVersion,
+			},
+			Flags:          make(map[string]string),
+			MaxConnections: maxConnections,
+			IsAgent:        true,
+			Gatherer:       prometheus.DefaultGatherer,
+		}
+		go_kit_logger := log.NewLogfmtLogger(log.NewSyncWriter(io.Discard))
+		r.webHandler = web.New(go_kit_logger, &webOptions)
+
+		listener, err := r.webHandler.Listener()
+		if err != nil {
+			return err
+		}
+		// Pass the config config to the web handler and signify its ready
+		// since Prometheus allows reloading the config without restarting.
+		r.webHandler.ApplyConfig(r.cfg.PrometheusConfig)
+		r.webHandler.SetReady(true)
+
+		// Use the same context as the discovery and scrape managers for shutting down.
+		// The webHandler handles shutting down the server gracefully.
+		go func() {
+			if err := r.webHandler.Run(ctx, listener, ""); err != nil {
+				r.settings.Logger.Error("Web handler failed", zap.Error(err))
+				host.ReportFatalError(err)
+			}
+		}()
+	}
+
 	return nil
 }
 
@@ -311,6 +381,13 @@ func (r *pReceiver) Shutdown(context.Context) error {
 	}
 	if r.scrapeManager != nil {
 		r.scrapeManager.Stop()
+	}
+	if r.webHandler != nil {
+		closed := r.webHandler.Quit()
+		select {
+		case <-closed:
+		case <-time.After(20*time.Second):
+		}
 	}
 	close(r.targetAllocatorStop)
 	return nil

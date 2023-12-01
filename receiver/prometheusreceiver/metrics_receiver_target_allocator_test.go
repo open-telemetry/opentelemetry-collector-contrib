@@ -497,6 +497,10 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 
+			t.Cleanup(func() {
+				require.NoError(t, receiver.Shutdown(context.Background()))
+			})
+
 			allocator.wg.Wait()
 
 			providers := receiver.discoveryManager.Providers()

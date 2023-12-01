@@ -57,6 +57,8 @@ type Config struct {
 	// EnableProtobufNegotiation allows the collector to set the scraper option for
 	// protobuf negotiation when conferring with a prometheus client.
 	EnableProtobufNegotiation bool `mapstructure:"enable_protobuf_negotiation"`
+
+	EnablePrometheusUIServer bool `mapstructure:"enable_prometheus_ui_server"`
 }
 
 type targetAllocator struct {

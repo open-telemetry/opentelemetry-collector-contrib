@@ -57,6 +57,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   See also `MemAvailable` in [/proc/meminfo](https://man7.org/linux/man-pages/man5/proc.5.html).
   
 - `azuremonitorexporter`: Updated Azure Monitor Exporter service version from v2.0 to v2.1. (#29234)
+- `prometheusreceiver`: Add optional config to enable the server for the Prometheus UI.
 
 ### 🧰 Bug fixes 🧰
 

@@ -33,6 +33,7 @@ func TestCreateReceiver(t *testing.T) {
 	mReceiver, _ := createMetricsReceiver(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, mReceiver)
 	assert.NotNil(t, mReceiver.(*pReceiver).cfg.PrometheusConfig.GlobalConfig)
+	require.NoError(t, mReceiver.Shutdown(context.Background()))
 }
 
 func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
