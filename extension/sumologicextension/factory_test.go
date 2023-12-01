@@ -20,7 +20,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	defaultCredsPath := ""
 	assert.Equal(t, &Config{
 		HeartBeatInterval:             DefaultHeartbeatInterval,
-		ApiBaseUrl:                    DefaultApiBaseUrl,
+		APIBaseURL:                    DefaultAPIBaseURL,
 		CollectorCredentialsDirectory: defaultCredsPath,
 		DiscoverCollectorTags:         true,
 		BackOff: backOffConfig{

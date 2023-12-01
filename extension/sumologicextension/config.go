@@ -36,12 +36,12 @@ type Config struct {
 	// CollectorFields defines the collector fields.
 	// For more information on this subject visit:
 	// https://help.sumologic.com/docs/manage/fields
-	CollectorFields map[string]interface{} `mapstructure:"collector_fields"`
+	CollectorFields map[string]any `mapstructure:"collector_fields"`
 
 	// DiscoverCollectorTags enables collector metadata tag auto-discovery.
 	DiscoverCollectorTags bool `mapstructure:"discover_collector_tags"`
 
-	ApiBaseUrl string `mapstructure:"api_base_url"`
+	APIBaseURL string `mapstructure:"api_base_url"`
 
 	HeartBeatInterval time.Duration `mapstructure:"heartbeat_interval"`
 

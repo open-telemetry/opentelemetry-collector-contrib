@@ -19,15 +19,15 @@ const DefaultHeartbeatInterval = 15 * time.Second
 func init() {
 }
 
-func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, buildVersion string) (*SumologicExtension, error) {
+func newSumologicExtension(_ *Config, _ *zap.Logger, _ component.ID, _ string) (*SumologicExtension, error) {
 	return &SumologicExtension{}, nil
 }
 
-func (se *SumologicExtension) Start(ctx context.Context, host component.Host) error {
+func (se *SumologicExtension) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
-func (se *SumologicExtension) Shutdown(ctx context.Context) error {
+func (se *SumologicExtension) Shutdown(_ context.Context) error {
 	return nil
 }

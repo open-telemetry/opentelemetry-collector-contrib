@@ -16,7 +16,7 @@ import (
 const (
 	// The value of extension "type" in configuration.
 	typeStr           = "sumologic"
-	DefaultApiBaseUrl = "https://open-collectors.sumologic.com"
+	DefaultAPIBaseURL = "https://open-collectors.sumologic.com"
 )
 
 // NewFactory creates a factory for Sumo Logic extension.
@@ -33,7 +33,7 @@ func createDefaultConfig() component.Config {
 	defaultCredsPath := ""
 
 	return &Config{
-		ApiBaseUrl:                    DefaultApiBaseUrl,
+		APIBaseURL:                    DefaultAPIBaseURL,
 		HeartBeatInterval:             DefaultHeartbeatInterval,
 		CollectorCredentialsDirectory: defaultCredsPath,
 		Clobber:                       false,
