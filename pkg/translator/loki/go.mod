@@ -5,14 +5,14 @@ go 1.20
 require (
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/grafana/loki/pkg/push v0.0.0-20231127162423-bd505f8e2d37
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.90.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.90.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.90.1
 	github.com/prometheus/common v0.45.0
 	github.com/prometheus/prometheus v0.48.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/pdata v1.0.0
-	go.opentelemetry.io/collector/semconv v0.90.0
+	go.opentelemetry.io/collector/semconv v0.90.1
 )
 
 require (
@@ -29,7 +29,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.90.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.90.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.17.0 // indirect
