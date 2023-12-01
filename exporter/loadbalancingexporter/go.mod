@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadba
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.90.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.90.1
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.90.1
@@ -99,7 +99,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
 	go.opentelemetry.io/collector/processor v0.90.1 // indirect
 	go.opentelemetry.io/collector/receiver v0.90.1 // indirect
-	go.opentelemetry.io/collector/service v0.90.0 // indirect
+	go.opentelemetry.io/collector/service v0.90.1 // indirect
 	go.opentelemetry.io/contrib/config v0.1.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.21.1 // indirect

@@ -6,9 +6,9 @@ require (
 	github.com/Azure/azure-amqp-common-go/v4 v4.2.0
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.1
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.90.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.90.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.90.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.90.1
 	github.com/relvacode/iso8601 v1.3.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.90.1
@@ -65,7 +65,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.17.0 // indirect
@@ -88,7 +88,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.90.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
 	go.opentelemetry.io/collector/processor v0.90.1 // indirect
-	go.opentelemetry.io/collector/service v0.90.0 // indirect
+	go.opentelemetry.io/collector/service v0.90.1 // indirect
 	go.opentelemetry.io/contrib/config v0.1.1 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.21.1 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect

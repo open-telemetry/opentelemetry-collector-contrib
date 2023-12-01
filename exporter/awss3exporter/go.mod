@@ -68,7 +68,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.90.1 // indirect
 	go.opentelemetry.io/collector/receiver v0.90.1 // indirect
 	go.opentelemetry.io/collector/semconv v0.90.1 // indirect
-	go.opentelemetry.io/collector/service v0.90.0 // indirect
+	go.opentelemetry.io/collector/service v0.90.1 // indirect
 	go.opentelemetry.io/contrib/config v0.1.1 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.21.1 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
