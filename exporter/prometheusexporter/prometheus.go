@@ -80,11 +80,9 @@ func (pe *prometheusExporter) Start(_ context.Context, host component.Host) erro
 
 func (pe *prometheusExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	n := 0
-	rmetrics := md.ResourceMetrics()
-	for i := 0; i < rmetrics.Len(); i++ {
-		n += pe.collector.processMetrics(rmetrics.At(i))
-	}
-
+	md.ResourceMetrics().Range(func(_ int, rms pmetric.ResourceMetrics) {
+		n += pe.collector.processMetrics(rms)
+	})
 	return nil
 }
 

@@ -68,6 +68,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.90.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.90.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.90.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.90.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.90.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.90.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.90.0
@@ -526,7 +527,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.90.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.90.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.90.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.90.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.90.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.90.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.90.0 // indirect
@@ -1159,3 +1159,5 @@ replace (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ./connector/servicegraphconnector
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ./connector/spanmetricsconnector
 )
+
+replace go.opentelemetry.io/collector/pdata => /Users/djaglowski/go/github.com/open-telemetry/opentelemetry-collector-contrib/../opentelemetry-collector/pdata

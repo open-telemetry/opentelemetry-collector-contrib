@@ -1155,3 +1155,5 @@ replace (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ../../connector/servicegraphconnector
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../../connector/spanmetricsconnector
 )
+
+replace go.opentelemetry.io/collector/pdata => /Users/djaglowski/go/github.com/open-telemetry/opentelemetry-collector-contrib/../opentelemetry-collector/pdata

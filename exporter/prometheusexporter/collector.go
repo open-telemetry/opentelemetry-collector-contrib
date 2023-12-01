@@ -48,11 +48,9 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 }
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
-	length := exemplars.Len()
-	result := make([]prometheus.Exemplar, length)
+	result := make([]prometheus.Exemplar, exemplars.Len())
 
-	for i := 0; i < length; i++ {
-		e := exemplars.At(i)
+	exemplars.Range(func(i int, e pmetric.Exemplar) {
 		exemplarLabels := make(prometheus.Labels, 0)
 
 		if traceID := e.TraceID(); !traceID.IsEmpty() {
@@ -76,8 +74,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 			Labels:    exemplarLabels,
 			Timestamp: e.Timestamp().AsTime(),
 		}
-
-	}
+	})
 	return result
 }
 
@@ -205,12 +202,10 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 	point := metric.Summary().DataPoints().At(0)
 
 	quantiles := make(map[float64]float64)
-	qv := point.QuantileValues()
-	for j := 0; j < qv.Len(); j++ {
-		qvj := qv.At(j)
+	point.QuantileValues().Range(func(_ int, qvj pmetric.SummaryDataPointValueAtQuantile) {
 		// There should be EXACTLY one quantile value lest it is an invalid exposition.
 		quantiles[qvj.Quantile()] = qvj.Value()
-	}
+	})
 
 	desc, attributes := c.getMetricMetadata(metric, point.Attributes(), resourceAttrs)
 	m, err := prometheus.NewConstSummary(desc, point.Count(), point.Sum(), quantiles, attributes...)

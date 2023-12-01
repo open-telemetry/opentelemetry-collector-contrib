@@ -40,3 +40,5 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace go.opentelemetry.io/collector/pdata => /Users/djaglowski/go/github.com/open-telemetry/opentelemetry-collector-contrib/../opentelemetry-collector/pdata

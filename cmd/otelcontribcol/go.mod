@@ -1162,3 +1162,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ../../internal/collectd
+
+replace go.opentelemetry.io/collector/pdata => /Users/djaglowski/go/github.com/open-telemetry/opentelemetry-collector-contrib/../opentelemetry-collector/pdata

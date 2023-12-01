@@ -28,3 +28,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../pdatautil
+
+replace go.opentelemetry.io/collector/pdata => /Users/djaglowski/go/github.com/open-telemetry/opentelemetry-collector-contrib/../opentelemetry-collector/pdata

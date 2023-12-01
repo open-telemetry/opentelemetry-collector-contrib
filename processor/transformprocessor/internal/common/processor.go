@@ -33,40 +33,37 @@ func (r resourceStatements) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
+func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) (err error) {
+	td.ResourceSpans().Range(func(_ int, rspans ptrace.ResourceSpans) {
+		if err != nil {
+			return // Would use RangeWhile instead if available
+		}
 		tCtx := ottlresource.NewTransformContext(rspans.Resource())
-		err := r.Execute(ctx, tCtx)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+		err = r.Execute(ctx, tCtx)
+	})
+	return
 }
 
-func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rmetrics := md.ResourceMetrics().At(i)
+func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) (err error) {
+	md.ResourceMetrics().Range(func(_ int, rmetrics pmetric.ResourceMetrics) {
+		if err != nil {
+			return // Would use RangeWhile instead if available
+		}
 		tCtx := ottlresource.NewTransformContext(rmetrics.Resource())
-		err := r.Execute(ctx, tCtx)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+		err = r.Execute(ctx, tCtx)
+	})
+	return
 }
 
-func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rlogs := ld.ResourceLogs().At(i)
-		tCtx := ottlresource.NewTransformContext(rlogs.Resource())
-		err := r.Execute(ctx, tCtx)
+func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) (err error) {
+	ld.ResourceLogs().Range(func(_ int, rlogs plog.ResourceLogs) {
 		if err != nil {
-			return err
+			return // Would use RangeWhile instead if available
 		}
-	}
-	return nil
+		tCtx := ottlresource.NewTransformContext(rlogs.Resource())
+		err = r.Execute(ctx, tCtx)
+	})
+	return
 }
 
 var _ consumer.Traces = &scopeStatements{}

@@ -52,3 +52,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../golden
+
+replace go.opentelemetry.io/collector/pdata => /Users/djaglowski/go/github.com/open-telemetry/opentelemetry-collector-contrib/../opentelemetry-collector/pdata

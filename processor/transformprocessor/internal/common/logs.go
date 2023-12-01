@@ -28,22 +28,19 @@ func (l logStatements) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rlogs := ld.ResourceLogs().At(i)
-		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
-			slogs := rlogs.ScopeLogs().At(j)
-			logs := slogs.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				err := l.Execute(ctx, tCtx)
+func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) (err error) {
+	ld.ResourceLogs().Range(func(_ int, rlogs plog.ResourceLogs) {
+		rlogs.ScopeLogs().Range(func(_ int, slogs plog.ScopeLogs) {
+			slogs.LogRecords().Range(func(_ int, lr plog.LogRecord) {
 				if err != nil {
-					return err
+					return // Would use RangeWhile instead if available
 				}
-			}
-		}
-	}
-	return nil
+				tCtx := ottllog.NewTransformContext(lr, slogs.Scope(), rlogs.Resource())
+				err = l.Execute(ctx, tCtx)
+			})
+		})
+	})
+	return
 }
 
 type LogParserCollection struct {

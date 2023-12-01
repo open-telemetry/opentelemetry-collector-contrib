@@ -29,22 +29,19 @@ func (t traceStatements) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-			sspans := rspans.ScopeSpans().At(j)
-			spans := sspans.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
-				err := t.Execute(ctx, tCtx)
+func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) (err error) {
+	td.ResourceSpans().Range(func(_ int, rspans ptrace.ResourceSpans) {
+		rspans.ScopeSpans().Range(func(_ int, sspans ptrace.ScopeSpans) {
+			sspans.Spans().Range(func(_ int, span ptrace.Span) {
 				if err != nil {
-					return err
+					return // Would use RangeWhile instead if available
 				}
-			}
-		}
-	}
-	return nil
+				tCtx := ottlspan.NewTransformContext(span, sspans.Scope(), rspans.Resource())
+				err = t.Execute(ctx, tCtx)
+			})
+		})
+	})
+	return
 }
 
 var _ consumer.Traces = &spanEventStatements{}

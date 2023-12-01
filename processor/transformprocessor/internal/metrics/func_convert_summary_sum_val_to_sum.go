@@ -56,15 +56,13 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprF
 		sumMetric.Sum().SetIsMonotonic(monotonic)
 
 		sumDps := sumMetric.Sum().DataPoints()
-		dps := metric.Summary().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
-			dp := dps.At(i)
+		metric.Summary().DataPoints().Range(func(_ int, dp pmetric.SummaryDataPoint) {
 			sumDp := sumDps.AppendEmpty()
 			dp.Attributes().CopyTo(sumDp.Attributes())
 			sumDp.SetDoubleValue(dp.Sum())
 			sumDp.SetStartTimestamp(dp.StartTimestamp())
 			sumDp.SetTimestamp(dp.Timestamp())
-		}
+		})
 		return nil, nil
 	}, nil
 }

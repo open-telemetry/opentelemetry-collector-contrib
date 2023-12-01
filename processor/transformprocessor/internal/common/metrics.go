@@ -30,22 +30,19 @@ func (m metricStatements) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rmetrics := md.ResourceMetrics().At(i)
-		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
-			smetrics := rmetrics.ScopeMetrics().At(j)
-			metrics := smetrics.Metrics()
-			for k := 0; k < metrics.Len(); k++ {
-				tCtx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource())
-				err := m.Execute(ctx, tCtx)
+func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) (err error) {
+	md.ResourceMetrics().Range(func(_ int, rmetrics pmetric.ResourceMetrics) {
+		rmetrics.ScopeMetrics().Range(func(_ int, smetrics pmetric.ScopeMetrics) {
+			smetrics.Metrics().Range(func(_ int, metric pmetric.Metric) {
 				if err != nil {
-					return err
+					return // Would use RangeWhile instead if available
 				}
-			}
-		}
-	}
-	return nil
+				tCtx := ottlmetric.NewTransformContext(metric, smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource())
+				err = m.Execute(ctx, tCtx)
+			})
+		})
+	})
+	return
 }
 
 var _ consumer.Metrics = &dataPointStatements{}

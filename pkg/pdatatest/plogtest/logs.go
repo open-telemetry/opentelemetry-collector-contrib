@@ -37,13 +37,14 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 
 	var errs error
 	var outOfOrderErrs error
-	for e := 0; e < numResources; e++ {
-		er := expectedLogs.At(e)
+	expectedLogs.Range(func(e int, er plog.ResourceLogs) {
 		var foundMatch bool
-		for a := 0; a < numResources; a++ {
-			ar := actualLogs.At(a)
+		actualLogs.Range(func(a int, ar plog.ResourceLogs) {
+			if foundMatch {
+				return // Would use RangeWhile instead if available
+			}
 			if _, ok := matchingResources[ar]; ok {
-				continue
+				return
 			}
 			if reflect.DeepEqual(er.Resource().Attributes().AsRaw(), ar.Resource().Attributes().AsRaw()) {
 				foundMatch = true
@@ -53,13 +54,12 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 						fmt.Errorf(`resources are out of order: resource "%v" expected at index %d, found at index %d`,
 							er.Resource().Attributes().AsRaw(), e, a))
 				}
-				break
 			}
-		}
+		})
 		if !foundMatch {
 			errs = multierr.Append(errs, fmt.Errorf("missing expected resource: %v", er.Resource().Attributes().AsRaw()))
 		}
-	}
+	})
 
 	for i := 0; i < numResources; i++ {
 		if _, ok := matchingResources[actualLogs.At(i)]; !ok {
@@ -105,13 +105,15 @@ func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
 	matchingScopeLogs := make(map[plog.ScopeLogs]plog.ScopeLogs, numScopeLogs)
 
 	var outOfOrderErrs error
-	for e := 0; e < numScopeLogs; e++ {
-		esl := expected.ScopeLogs().At(e)
+
+	expected.ScopeLogs().Range(func(e int, esl plog.ScopeLogs) {
 		var foundMatch bool
-		for a := 0; a < numScopeLogs; a++ {
-			asl := actual.ScopeLogs().At(a)
+		actual.ScopeLogs().Range(func(a int, asl plog.ScopeLogs) {
+			if foundMatch {
+				return // Would use RangeWhile instead if available
+			}
 			if _, ok := matchingScopeLogs[asl]; ok {
-				continue
+				return
 			}
 			if esl.Scope().Name() == asl.Scope().Name() {
 				foundMatch = true
@@ -121,13 +123,12 @@ func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
 						fmt.Errorf("scopes are out of order: scope %s expected at index %d, found at index %d",
 							esl.Scope().Name(), e, a))
 				}
-				break
 			}
-		}
+		})
 		if !foundMatch {
 			errs = multierr.Append(errs, fmt.Errorf("missing expected scope: %s", esl.Scope().Name()))
 		}
-	}
+	})
 
 	for i := 0; i < numScopeLogs; i++ {
 		if _, ok := matchingScopeLogs[actual.ScopeLogs().At(i)]; !ok {
@@ -170,13 +171,14 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 	matchingLogRecords := make(map[plog.LogRecord]plog.LogRecord, numLogRecords)
 
 	var outOfOrderErrs error
-	for e := 0; e < numLogRecords; e++ {
-		elr := expected.LogRecords().At(e)
+	expected.LogRecords().Range(func(e int, elr plog.LogRecord) {
 		var foundMatch bool
-		for a := 0; a < numLogRecords; a++ {
-			alr := actual.LogRecords().At(a)
+		actual.LogRecords().Range(func(a int, alr plog.LogRecord) {
+			if foundMatch {
+				return // Would use RangeWhile instead if available
+			}
 			if _, ok := matchingLogRecords[alr]; ok {
-				continue
+				return
 			}
 			if reflect.DeepEqual(elr.Attributes().AsRaw(), alr.Attributes().AsRaw()) {
 				foundMatch = true
@@ -186,13 +188,12 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 						fmt.Errorf(`log records are out of order: log record "%v" expected at index %d, found at index %d`,
 							elr.Attributes().AsRaw(), e, a))
 				}
-				break
 			}
-		}
+		})
 		if !foundMatch {
 			errs = multierr.Append(errs, fmt.Errorf("missing expected log record: %v", elr.Attributes().AsRaw()))
 		}
-	}
+	})
 
 	for i := 0; i < numLogRecords; i++ {
 		if _, ok := matchingLogRecords[actual.LogRecords().At(i)]; !ok {

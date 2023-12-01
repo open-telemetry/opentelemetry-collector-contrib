@@ -74,3 +74,5 @@ retract (
 	v0.76.2
 	v0.76.1
 )
+
+replace go.opentelemetry.io/collector/pdata => /Users/djaglowski/go/github.com/open-telemetry/opentelemetry-collector-contrib/../opentelemetry-collector/pdata

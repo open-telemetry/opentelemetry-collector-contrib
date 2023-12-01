@@ -127,3 +127,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8ste
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go v0.54.0 => cloud.google.com/go v0.110.10
+
+replace go.opentelemetry.io/collector/pdata => /Users/djaglowski/go/github.com/open-telemetry/opentelemetry-collector-contrib/../opentelemetry-collector/pdata
