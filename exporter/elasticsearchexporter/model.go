@@ -94,8 +94,10 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
 	if m.omitAttributesPrefix {
-		rawDoc := objmodel.DocumentFromAttributes(attributes)
-		document.MergeFrom(rawDoc)
+		attributes.Range(func(k string, v pcommon.Value) bool {
+			document.AddAttribute(k, v)
+			return true
+		})
 	} else {
 		document.AddAttributes("Attributes", attributes)
 	}

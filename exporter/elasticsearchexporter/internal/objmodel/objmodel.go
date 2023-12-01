@@ -244,14 +244,6 @@ func (doc *Document) Serialize(w io.Writer, dedot bool) error {
 	return doc.iterJSON(v, dedot)
 }
 
-// MergeFrom merges the fields of anotherDoc into doc, overwriting any existing fields.
-func (doc *Document) MergeFrom(anotherDoc Document) {
-	for _, field := range anotherDoc.fields {
-		doc.Add(field.key, field.value)
-	}
-	doc.Dedup()
-}
-
 func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
 	if dedot {
 		return doc.iterJSONDedot(v)
