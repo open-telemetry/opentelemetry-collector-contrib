@@ -2094,7 +2094,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statements := Statements[any]{
+			statements := StatementSequence[any]{
 				statements: []*Statement[any]{
 					{
 						condition: BoolExpr[any]{tt.condition},
@@ -2177,7 +2177,7 @@ func Test_Statements_Eval(t *testing.T) {
 				})
 			}
 
-			statements := Statements[any]{
+			statements := StatementSequence[any]{
 				statements:        rawStatements,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,
@@ -2221,7 +2221,7 @@ func Test_Statements_Eval_Error(t *testing.T) {
 				})
 			}
 
-			statements := Statements[any]{
+			statements := StatementSequence[any]{
 				statements:        rawStatements,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,
