@@ -53,7 +53,11 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
-	model := &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
+	model := &encodeModel{
+		dedup:                cfg.Mapping.Dedup,
+		dedot:                cfg.Mapping.Dedot,
+		omitAttributesPrefix: cfg.Mapping.OmitAttributesPrefix,
+	}
 
 	indexStr := cfg.LogsIndex
 	if cfg.Index != "" {

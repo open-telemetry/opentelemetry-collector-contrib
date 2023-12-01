@@ -28,8 +28,9 @@ type mappingModel interface {
 //
 // See: https://github.com/open-telemetry/oteps/blob/master/text/logs/0097-log-data-model.md
 type encodeModel struct {
-	dedup bool
-	dedot bool
+	dedup                bool
+	dedot                bool
+	omitAttributesPrefix bool
 }
 
 const (
@@ -47,7 +48,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	document.AddString("SeverityText", record.SeverityText())
 	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
 	document.AddAttribute("Body", record.Body())
-	document.AddAttributes("Attributes", record.Attributes())
+	m.encodeAttributes(&document, record.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 
@@ -74,7 +75,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	document.AddInt("TraceStatus", int64(span.Status().Code()))
 	document.AddString("TraceStatusDescription", span.Status().Message())
 	document.AddString("Link", spanLinksToString(span.Links()))
-	document.AddAttributes("Attributes", span.Attributes())
+	m.encodeAttributes(&document, span.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
 	document.AddEvents("Events", span.Events())
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
@@ -89,6 +90,15 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot)
 	return buf.Bytes(), err
+}
+
+func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
+	if m.omitAttributesPrefix {
+		rawDoc := objmodel.DocumentFromAttributes(attributes)
+		document.MergeFrom(rawDoc)
+	} else {
+		document.AddAttributes("Attributes", attributes)
+	}
 }
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
