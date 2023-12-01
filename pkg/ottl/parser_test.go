@@ -2094,7 +2094,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statements := Statements[any]{
+			statements := StatementSequence[any]{
 				statements: []*Statement[any]{
 					{
 						condition: BoolExpr[any]{tt.condition},
@@ -2111,125 +2111,6 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-		})
-	}
-}
-
-func Test_Statements_Eval(t *testing.T) {
-	tests := []struct {
-		name           string
-		conditions     []boolExpressionEvaluator[any]
-		function       ExprFunc[any]
-		errorMode      ErrorMode
-		expectedResult bool
-	}{
-		{
-			name: "True",
-			conditions: []boolExpressionEvaluator[any]{
-				alwaysTrue[any],
-			},
-			errorMode:      IgnoreError,
-			expectedResult: true,
-		},
-		{
-			name: "At least one True",
-			conditions: []boolExpressionEvaluator[any]{
-				alwaysFalse[any],
-				alwaysFalse[any],
-				alwaysTrue[any],
-			},
-			errorMode:      IgnoreError,
-			expectedResult: true,
-		},
-		{
-			name: "False",
-			conditions: []boolExpressionEvaluator[any]{
-				alwaysFalse[any],
-				alwaysFalse[any],
-			},
-			errorMode:      IgnoreError,
-			expectedResult: false,
-		},
-		{
-			name: "Error is false when using Ignore",
-			conditions: []boolExpressionEvaluator[any]{
-				alwaysFalse[any],
-				func(context.Context, any) (bool, error) {
-					return true, fmt.Errorf("test")
-				},
-				alwaysTrue[any],
-			},
-			errorMode:      IgnoreError,
-			expectedResult: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[any]
-			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[any]{
-					condition: BoolExpr[any]{condition},
-					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
-							return nil, fmt.Errorf("function should not be called")
-						},
-					},
-				})
-			}
-
-			statements := Statements[any]{
-				statements:        rawStatements,
-				telemetrySettings: componenttest.NewNopTelemetrySettings(),
-				errorMode:         tt.errorMode,
-			}
-
-			result, err := statements.Eval(context.Background(), nil)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedResult, result)
-		})
-	}
-}
-
-func Test_Statements_Eval_Error(t *testing.T) {
-	tests := []struct {
-		name       string
-		conditions []boolExpressionEvaluator[any]
-		function   ExprFunc[any]
-		errorMode  ErrorMode
-	}{
-		{
-			name: "Propagate Error from function",
-			conditions: []boolExpressionEvaluator[any]{
-				func(context.Context, any) (bool, error) {
-					return true, fmt.Errorf("test")
-				},
-			},
-			errorMode: PropagateError,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[any]
-			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[any]{
-					condition: BoolExpr[any]{condition},
-					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
-							return nil, fmt.Errorf("function should not be called")
-						},
-					},
-				})
-			}
-
-			statements := Statements[any]{
-				statements:        rawStatements,
-				telemetrySettings: componenttest.NewNopTelemetrySettings(),
-				errorMode:         tt.errorMode,
-			}
-
-			result, err := statements.Eval(context.Background(), nil)
-			assert.Error(t, err)
-			assert.False(t, result)
 		})
 	}
 }

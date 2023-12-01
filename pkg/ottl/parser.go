@@ -89,7 +89,7 @@ func (c *Condition[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return c.condition.Eval(ctx, tCtx)
 }
 
-// Parser provides the means to parse OTTL Statements and Conditions given a specific set of functions,
+// Parser provides the means to parse OTTL StatementSequence and Conditions given a specific set of functions,
 // a PathExpressionParser, and an EnumParser.
 type Parser[K any] struct {
 	functions         map[string]Factory[K]
@@ -263,24 +263,30 @@ func newParser[G any]() *participle.Parser[G] {
 	return parser
 }
 
-// Statements represents a list of statements that will be executed sequentially for a TransformContext.
-type Statements[K any] struct {
+// StatementSequence represents a list of statements that will be executed sequentially for a TransformContext
+// and will handle errors based on an ErrorMode.
+type StatementSequence[K any] struct {
 	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
 }
 
-type StatementsOption[K any] func(*Statements[K])
+type StatementSequenceOption[K any] func(*StatementSequence[K])
 
-func WithErrorMode[K any](errorMode ErrorMode) StatementsOption[K] {
-	return func(s *Statements[K]) {
+// WithStatementSequenceErrorMode sets the ErrorMode of a StatementSequence
+func WithStatementSequenceErrorMode[K any](errorMode ErrorMode) StatementSequenceOption[K] {
+	return func(s *StatementSequence[K]) {
 		s.errorMode = errorMode
 	}
 }
 
-func NewStatements[K any](statements []*Statement[K], telemetrySettings component.TelemetrySettings, options ...StatementsOption[K]) Statements[K] {
-	s := Statements[K]{
+// NewStatementSequence creates a new StatementSequence with the provided Statement slice and component.TelemetrySettings.
+// The default ErrorMode is `Propagate`.
+// You may also augment the StatementSequence with a slice of StatementSequenceOption.
+func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings component.TelemetrySettings, options ...StatementSequenceOption[K]) StatementSequence[K] {
+	s := StatementSequence[K]{
 		statements:        statements,
+		errorMode:         PropagateError,
 		telemetrySettings: telemetrySettings,
 	}
 	for _, op := range options {
@@ -289,8 +295,10 @@ func NewStatements[K any](statements []*Statement[K], telemetrySettings componen
 	return s
 }
 
-// Execute is a function that will execute all the statements in the Statements list.
-func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
+// Execute is a function that will execute all the statements in the StatementSequence list.
+// When the ErrorMode of the StatementSequence is `propagate`, errors cause the execution to halt and the error is returned.
+// When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
+func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
@@ -302,28 +310,6 @@ func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
 		}
 	}
 	return nil
-}
-
-// Eval returns true if any statement's condition is true and returns false otherwise.
-// Does not execute the statement's function.
-// When errorMode is `propagate`, errors cause the evaluation to be false and an error is returned.
-// When errorMode is `ignore`, errors cause evaluation to continue to the next statement.
-func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
-	for _, statement := range s.statements {
-		match, err := statement.condition.Eval(ctx, tCtx)
-		if err != nil {
-			if s.errorMode == PropagateError {
-				err = fmt.Errorf("failed to eval statement: %v, %w", statement.origText, err)
-				return false, err
-			}
-			s.telemetrySettings.Logger.Warn("failed to eval statement", zap.Error(err), zap.String("statement", statement.origText))
-			continue
-		}
-		if match {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 // ConditionSequence represents a list of Conditions that will be evaluated sequentially for a TransformContext
@@ -354,7 +340,8 @@ func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K
 	}
 }
 
-// NewConditionSequence creates a new ConditionSequence with the provided Condition slice, ErrorMode, and component.TelemetrySettings.
+// NewConditionSequence creates a new ConditionSequence with the provided Condition slice and component.TelemetrySettings.
+// The default ErrorMode is `Propagate` and the default LogicOperation is `OR`.
 // You may also augment the ConditionSequence with a slice of ConditionSequenceOption.
 func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings component.TelemetrySettings, options ...ConditionSequenceOption[K]) ConditionSequence[K] {
 	c := ConditionSequence[K]{
