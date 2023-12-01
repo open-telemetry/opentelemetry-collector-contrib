@@ -40,6 +40,8 @@ elasticsearch/log:
     max_requests: 5
   sending_queue:
     enabled: true
+  mapping:
+    omit_attributes_prefix: true
 elasticsearch/logstash_format:
   endpoints: [http://localhost:9200]
   logstash_format:

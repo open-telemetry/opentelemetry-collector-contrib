@@ -134,9 +134,10 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     1 * time.Minute,
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
-					Dedup: true,
-					Dedot: true,
+					Mode:                 "ecs",
+					Dedup:                true,
+					Dedot:                true,
+					OmitAttributesPrefix: false,
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -184,9 +185,10 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     1 * time.Minute,
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
-					Dedup: true,
-					Dedot: true,
+					Mode:                 "ecs",
+					Dedup:                true,
+					Dedot:                true,
+					OmitAttributesPrefix: true,
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
