@@ -11,8 +11,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
 )
 
 const (
@@ -32,10 +30,7 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	defaultCredsPath, err := credentials.GetDefaultCollectorCredentialsDirectory()
-	if err != nil {
-		return nil
-	}
+	defaultCredsPath := ""
 
 	return &Config{
 		ApiBaseUrl:                    DefaultApiBaseUrl,

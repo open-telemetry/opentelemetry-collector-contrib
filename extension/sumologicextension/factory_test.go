@@ -5,8 +5,6 @@ package sumologicextension
 
 import (
 	"context"
-	"os"
-	"path"
 	"testing"
 
 	"github.com/cenkalti/backoff/v4"
@@ -15,15 +13,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	homePath, err := os.UserHomeDir()
-	require.NoError(t, err)
-	defaultCredsPath := path.Join(homePath, credentials.DefaultCollectorCredentialsDirectory)
+	defaultCredsPath := ""
 	assert.Equal(t, &Config{
 		HeartBeatInterval:             DefaultHeartbeatInterval,
 		ApiBaseUrl:                    DefaultApiBaseUrl,

@@ -76,7 +76,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.91.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.90.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.91.0
@@ -509,7 +508,6 @@ require (
 	github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/hashstructure v1.1.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
@@ -1140,8 +1138,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor => ../../processor/sumologicprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter => ../../exporter/syslogexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension => ../../extension/sumologicextension
 
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
