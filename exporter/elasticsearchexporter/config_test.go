@@ -67,6 +67,15 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 			Dedup: true,
 			Dedot: true,
 		},
+		LogstashFormat: LogstashFormatSettings{
+			Enabled:         false,
+			Prefix:          "logstash",
+			PrefixSeparator: "-",
+			DateFormat:      "%Y.%m.%d",
+			TimeKey:         "@timestamp",
+			TimeKeyFormat:   "%dT%H:%M:%S",
+			TimeKeyNanos:    false,
+		},
 	})
 }
 
@@ -75,6 +84,10 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
+
+	defaultLogstashFormatCfg := createDefaultConfig()
+	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"https://localhost:9200"}
+	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
 
 	tests := []struct {
 		configFile string
@@ -129,6 +142,15 @@ func TestLoadConfig(t *testing.T) {
 					Dedup: true,
 					Dedot: true,
 				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					Prefix:          "logstash",
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
+					TimeKey:         "@timestamp",
+					TimeKeyFormat:   "%dT%H:%M:%S",
+					TimeKeyNanos:    false,
+				},
 			},
 		},
 		{
@@ -174,7 +196,21 @@ func TestLoadConfig(t *testing.T) {
 					Dedup: true,
 					Dedot: true,
 				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					Prefix:          "logstash",
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
+					TimeKey:         "@timestamp",
+					TimeKeyFormat:   "%dT%H:%M:%S",
+					TimeKeyNanos:    false,
+				},
 			},
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "logstash_format"),
+			configFile: "config.yaml",
+			expected:   defaultLogstashFormatCfg,
 		},
 	}
 

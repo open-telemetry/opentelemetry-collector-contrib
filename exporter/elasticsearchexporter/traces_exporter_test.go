@@ -200,6 +200,42 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish with logstash format index", func(t *testing.T) {
+		defaultCfg := createDefaultConfig().(*Config)
+		defaultCfg.LogstashFormat.Enabled = true
+		testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
+		expectedIndex, err := generateIndex(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedIndex, "logstash-2023.12.02")
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.Nil(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.Nil(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+
+			assert.Equal(t, expectedIndex, create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsIndex = "not-used-index"
+			cfg.LogstashFormat.Enabled = true
+		})
+
+		mustSendTracesWithAttributes(t, exporter, nil, nil)
+
+		rec.WaitItems(1)
+	})
+
 	t.Run("retry http request", func(t *testing.T) {
 		failures := 0
 		rec := newBulkRecorder()

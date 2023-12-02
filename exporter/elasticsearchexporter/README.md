@@ -44,6 +44,15 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   takes resource or span attribute named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
   resulting dynamically prefixed / suffixed indexing based on `traces_index`. (priority: resource attribute > span attribute)
   - `enabled`(default=false): Enable/Disable dynamic index for trace spans
+- `logstash_format` (optional): Logstash format compatibility. Traces or Logs data can be written into an index in logstash format.
+                                **Note**: In order to reduce complexity, `traces/logs_index`, `traces/logs_dynamic_index`, and `logstash_format` are not compatible and do not support mixing.
+                                          There will always be only one in effect.
+  - `enabled`(default=false):  Enable/Disable Logstash format compatibility.
+  - `prefix`(default=logstash): When `logstash_format.enabled` is enabled, the index name is composed using a prefix and the date, 
+                                e.g: If logstash_prefix is equals to 'mydata' your index will become 'mydata-YYYY.MM.DD'. 
+                                The last string appended belongs to the date when the data is being generated.
+  - `prefix_separator`(default=`-`): Set a separator between logstash_prefix and date.
+  - `date_format`(default=`%Y.%m.%d`): Time format (based on strftime) to generate the second part of the Index name.
 - `pipeline` (optional): Optional [Ingest Node](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html)
   pipeline ID used for processing documents published by the exporter.
 - `flush`: Event bulk buffer flush settings

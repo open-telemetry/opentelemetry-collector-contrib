@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -250,4 +251,29 @@ func fillResourceAttributeMap(attrs pcommon.Map, mp map[string]string) {
 	for k, v := range mp {
 		attrs.PutStr(k, v)
 	}
+}
+
+func TestGetSuffixTime(t *testing.T) {
+	defaultCfg := createDefaultConfig().(*Config)
+	defaultCfg.LogstashFormat.Enabled = true
+	testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
+	index, err := generateIndex(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.Nil(t, err)
+	assert.Equal(t, index, "logstash-2023.12.02")
+
+	defaultCfg.LogstashFormat.Prefix = "otel-logs"
+	defaultCfg.LogstashFormat.PrefixSeparator = "."
+	otelLogsIndex, err := generateIndex(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.Nil(t, err)
+	assert.Equal(t, otelLogsIndex, "otel-logs.2023.12.02")
+
+	defaultCfg.LogstashFormat.DateFormat = "%Y-%m-%d"
+	newOtelLogsIndex, err := generateIndex(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.Nil(t, err)
+	assert.Equal(t, newOtelLogsIndex, "otel-logs.2023-12-02")
+
+	defaultCfg.LogstashFormat.DateFormat = "%d/%m/%Y"
+	newOtelLogsIndexWithSpecDataFormat, err := generateIndex(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.Nil(t, err)
+	assert.Equal(t, newOtelLogsIndexWithSpecDataFormat, "otel-logs.02/12/2023")
 }
