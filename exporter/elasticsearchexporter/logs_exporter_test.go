@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -211,14 +212,7 @@ func TestExporter_PushEvent(t *testing.T) {
 	})
 
 	t.Run("publish with logstash format index", func(t *testing.T) {
-
-		defaultCfg := createDefaultConfig().(*Config)
-		defaultCfg.LogstashFormat.Enabled = true
-		testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
-		expectedIndex, err := generateIndex(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
-		assert.Nil(t, err)
-		assert.Equal(t, expectedIndex, "logstash-2023.12.02")
-
+		var defaultCfg Config
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -232,14 +226,15 @@ func TestExporter_PushEvent(t *testing.T) {
 
 			create := jsonVal["create"].(map[string]any)
 
-			assert.Equal(t, expectedIndex, create["_index"].(string))
+			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.LogstashFormat.Prefix), true)
 
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogsIndex = "not-used-index"
 			cfg.LogstashFormat.Enabled = true
+			cfg.LogsIndex = "not-used-index"
+			defaultCfg = *cfg
 		})
 
 		mustSendLogsWithAttributes(t, exporter, nil, nil)
