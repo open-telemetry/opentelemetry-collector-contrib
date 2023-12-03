@@ -6,6 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/elastic/go-structform v0.0.10
+	github.com/lestrrat-go/strftime v1.0.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.90.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.1
 	github.com/stretchr/testify v1.8.4
@@ -29,7 +30,6 @@ require (
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
-	github.com/lestrrat-go/strftime v1.0.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
