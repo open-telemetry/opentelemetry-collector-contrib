@@ -60,9 +60,6 @@ func createDefaultConfig() component.Config {
 			Prefix:          "logstash",
 			PrefixSeparator: "-",
 			DateFormat:      "%Y.%m.%d",
-			TimeKey:         "@timestamp",
-			TimeKeyFormat:   "%dT%H:%M:%S",
-			TimeKeyNanos:    false,
 		},
 	}
 }
