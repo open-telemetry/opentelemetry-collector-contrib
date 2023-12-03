@@ -83,7 +83,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
 
 	defaultLogstashFormatCfg := createDefaultConfig()
-	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"https://localhost:9200"}
+	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
 
 	tests := []struct {

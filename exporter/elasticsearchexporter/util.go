@@ -6,8 +6,9 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"fmt"
-	"github.com/lestrrat-go/strftime"
 	"time"
+
+	"github.com/lestrrat-go/strftime"
 )
 
 func generateIndex(index string, conf *LogstashFormatSettings, t time.Time) (string, error) {
@@ -15,6 +16,9 @@ func generateIndex(index string, conf *LogstashFormatSettings, t time.Time) (str
 		partIndex := fmt.Sprintf("%s%s", conf.Prefix, conf.PrefixSeparator)
 		var buf bytes.Buffer
 		p, err := strftime.New(fmt.Sprintf("%s%s", partIndex, conf.DateFormat))
+		if err != nil {
+			return partIndex, err
+		}
 		if err = p.Format(&buf, t); err != nil {
 			return partIndex, err
 		}
