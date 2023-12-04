@@ -3,7 +3,6 @@ include ./Makefile.Common
 RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
-OTEL_RC_VERSION=main
 OTEL_STABLE_VERSION=main
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
@@ -286,14 +285,13 @@ telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
-.PHONY: update-dep
-update-dep:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="updatedep"
-	$(MAKE) otelcontribcol
-
 .PHONY: update-otel
-update-otel:
-	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION) RC_VERSION=$(OTEL_RC_VERSION) STABLE_VERSION=$(OTEL_STABLE_VERSION)
+update-otel:$(MULTIMOD)
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
+	git add . && git commit -s -m "[chore] multimod update stable modules"
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
+	git add . && git commit -s -m "[chore] multimod update beta modules"
+	$(MAKE) gotidy
 
 .PHONY: otel-from-tree
 otel-from-tree:
