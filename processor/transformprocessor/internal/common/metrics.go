@@ -21,7 +21,7 @@ import (
 var _ consumer.Metrics = &metricStatements{}
 
 type metricStatements struct {
-	ottl.Statements[ottlmetric.TransformContext]
+	ottl.StatementSequence[ottlmetric.TransformContext]
 }
 
 func (m metricStatements) Capabilities() consumer.Capabilities {
@@ -51,7 +51,7 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 var _ consumer.Metrics = &dataPointStatements{}
 
 type dataPointStatements struct {
-	ottl.Statements[ottldatapoint.TransformContext]
+	ottl.StatementSequence[ottldatapoint.TransformContext]
 }
 
 func (d dataPointStatements) Capabilities() consumer.Capabilities {
@@ -206,14 +206,14 @@ func (pc MetricParserCollection) ParseContextStatements(contextStatements Contex
 		if err != nil {
 			return nil, err
 		}
-		mStatements := ottlmetric.NewStatements(parseStatements, pc.settings, ottlmetric.WithErrorMode(pc.errorMode))
+		mStatements := ottlmetric.NewStatementSequence(parseStatements, pc.settings, ottlmetric.WithStatementSequenceErrorMode(pc.errorMode))
 		return metricStatements{mStatements}, nil
 	case DataPoint:
 		parsedStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		dpStatements := ottldatapoint.NewStatements(parsedStatements, pc.settings, ottldatapoint.WithErrorMode(pc.errorMode))
+		dpStatements := ottldatapoint.NewStatementSequence(parsedStatements, pc.settings, ottldatapoint.WithStatementSequenceErrorMode(pc.errorMode))
 		return dataPointStatements{dpStatements}, nil
 	default:
 		statements, err := pc.parseCommonContextStatements(contextStatements)
