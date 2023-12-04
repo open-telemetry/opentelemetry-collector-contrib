@@ -87,6 +87,6 @@ config:
         processors: [batch, resourcedetection, k8sattributes]
         exporters: [datadog]
       logs:
-        receivers: [otlp, filelog]
+        receivers: [otlp]
         processors: [batch, resourcedetection, k8sattributes]
         exporters: [datadog]
