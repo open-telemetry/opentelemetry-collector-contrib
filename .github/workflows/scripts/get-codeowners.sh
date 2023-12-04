@@ -9,6 +9,10 @@
 
 set -euo pipefail
 
+get_codeowners() {
+  echo "$((grep -m 1 "${1}" .github/CODEOWNERS || true) | sed 's/   */ /g' | cut -f3- -d ' ')"
+}
+
 if [[ -z "${COMPONENT:-}" ]]; then
     echo "COMPONENT has not been set, please ensure it is set."
     exit 1
@@ -20,13 +24,16 @@ RESULT=$(grep -c "${COMPONENT}" .github/CODEOWNERS || true)
 
 # there may be more than 1 component matching a label
 # if so, try to narrow things down by appending the component
-# type to the label
+# or a forward slash to the label.
 if [[ ${RESULT} != 1 ]]; then
     COMPONENT_TYPE=$(echo "${COMPONENT}" | cut -f 1 -d '/')
-    COMPONENT="${COMPONENT}${COMPONENT_TYPE}"
+    OWNERS="$(get_codeowners "${COMPONENT}${COMPONENT_TYPE}")"
+
+    if [[ -z "${OWNERS:-}" ]]; then
+        OWNERS="$(get_codeowners "${COMPONENT}/")"
+    fi
+else
+    OWNERS="$(get_codeowners $COMPONENT)"
 fi
 
-OWNERS=$( (grep -m 1 "${COMPONENT}" .github/CODEOWNERS || true) | sed 's/   */ /g' | cut -f3- -d ' ' )
-
 echo "${OWNERS}"
-

@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v4"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -176,5 +178,24 @@ func agentPayloadFromTraces(traces *pb.Traces) (agentPayload pb.AgentPayload) {
 	return pb.AgentPayload{
 		TracerPayloads: tracerPayloads,
 	}
+}
 
+func TestUpsertHeadersAttributes(t *testing.T) {
+	// Test case 1: Datadog-Meta-Tracer-Version is present in headers
+	req1, _ := http.NewRequest("GET", "http://example.com", nil)
+	req1.Header.Set("Datadog-Meta-Tracer-Version", "1.2.3")
+	attrs1 := pcommon.NewMap()
+	upsertHeadersAttributes(req1, attrs1)
+	val, ok := attrs1.Get(semconv.AttributeTelemetrySDKVersion)
+	assert.True(t, ok)
+	assert.Equal(t, "Datadog-1.2.3", val.Str())
+
+	// Test case 2: Datadog-Meta-Lang is present in headers with ".NET"
+	req2, _ := http.NewRequest("GET", "http://example.com", nil)
+	req2.Header.Set("Datadog-Meta-Lang", ".NET")
+	attrs2 := pcommon.NewMap()
+	upsertHeadersAttributes(req2, attrs2)
+	val, ok = attrs2.Get(semconv.AttributeTelemetrySDKLanguage)
+	assert.True(t, ok)
+	assert.Equal(t, "dotnet", val.Str())
 }
