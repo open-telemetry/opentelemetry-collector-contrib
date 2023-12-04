@@ -22,7 +22,10 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -33,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
@@ -49,8 +53,20 @@ type sharedInformer interface {
 	WaitForCacheSync(<-chan struct{}) map[reflect.Type]bool
 }
 
+type dynamicSharedInformerFactory struct {
+	dynamicinformer.DynamicSharedInformerFactory
+}
+
+func (df *dynamicSharedInformerFactory) WaitForCacheSync(channel <-chan struct{}) map[reflect.Type]bool {
+	cache := df.DynamicSharedInformerFactory.WaitForCacheSync(channel)
+	return map[reflect.Type]bool{
+		reflect.TypeOf(&unstructured.Unstructured{}): cache[gvr.HierarchicalResourceQuota],
+	}
+}
+
 type resourceWatcher struct {
 	client              kubernetes.Interface
+	dynamicClient       dynamic.Interface
 	osQuotaClient       quotaclientset.Interface
 	informerFactories   []sharedInformer
 	metadataStore       *metadata.Store
@@ -64,6 +80,7 @@ type resourceWatcher struct {
 
 	// For mocking.
 	makeClient               func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
+	makeDynamicClient        func(apiConf k8sconfig.APIConfig) (dynamic.Interface, error)
 	makeOpenShiftQuotaClient func(apiConf k8sconfig.APIConfig) (quotaclientset.Interface, error)
 }
 
@@ -79,6 +96,7 @@ func newResourceWatcher(set receiver.CreateSettings, cfg *Config, metadataStore 
 		initialTimeout:           defaultInitialSyncTimeout,
 		config:                   cfg,
 		makeClient:               k8sconfig.MakeClient,
+		makeDynamicClient:        k8sconfig.MakeDynamicClient,
 		makeOpenShiftQuotaClient: k8sconfig.MakeOpenShiftQuotaClient,
 	}
 }
@@ -89,6 +107,12 @@ func (rw *resourceWatcher) initialize() error {
 		return fmt.Errorf("Failed to create Kubernetes client: %w", err)
 	}
 	rw.client = client
+
+	dynamicClient, err := rw.makeDynamicClient(rw.config.APIConfig)
+	if err != nil {
+		return fmt.Errorf("Failed to create Kubernetes client: %w", err)
+	}
+	rw.dynamicClient = dynamicClient
 
 	if rw.config.Distribution == distributionOpenShift {
 		rw.osQuotaClient, err = rw.makeOpenShiftQuotaClient(rw.config.APIConfig)
@@ -127,7 +151,6 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		"CronJob":                 {gvk.CronJob},
 		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler},
 	}
-
 	for kind, gvks := range supportedKinds {
 		anySupported := false
 		for _, gvk := range gvks {
@@ -152,6 +175,13 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		rw.informerFactories = append(rw.informerFactories, quotaFactory)
 	}
 	rw.informerFactories = append(rw.informerFactories, factory)
+
+	dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(rw.dynamicClient, rw.config.MetadataCollectionInterval)
+	dynamicInformer := dynamicFactory.ForResource(gvr.HierarchicalResourceQuota)
+	rw.setupInformer(gvk.HierarchicalResourceQuota, dynamicInformer.Informer())
+	rw.informerFactories = append(rw.informerFactories, &(dynamicSharedInformerFactory{
+		DynamicSharedInformerFactory: dynamicFactory,
+	}))
 
 	return nil
 }

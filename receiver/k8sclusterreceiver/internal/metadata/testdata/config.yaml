@@ -35,6 +35,10 @@ all_set:
       enabled: true
     k8s.deployment.desired:
       enabled: true
+    k8s.hierarchical_resource_quota.hard_limit:
+      enabled: true
+    k8s.hierarchical_resource_quota.used:
+      enabled: true
     k8s.hpa.current_replicas:
       enabled: true
     k8s.hpa.desired_replicas:
@@ -109,6 +113,10 @@ all_set:
     k8s.deployment.name:
       enabled: true
     k8s.deployment.uid:
+      enabled: true
+    k8s.hierarchicalresourcequota.name:
+      enabled: true
+    k8s.hierarchicalresourcequota.uid:
       enabled: true
     k8s.hpa.name:
       enabled: true
@@ -192,6 +200,10 @@ none_set:
       enabled: false
     k8s.deployment.desired:
       enabled: false
+    k8s.hierarchical_resource_quota.hard_limit:
+      enabled: false
+    k8s.hierarchical_resource_quota.used:
+      enabled: false
     k8s.hpa.current_replicas:
       enabled: false
     k8s.hpa.desired_replicas:
@@ -266,6 +278,10 @@ none_set:
     k8s.deployment.name:
       enabled: false
     k8s.deployment.uid:
+      enabled: false
+    k8s.hierarchicalresourcequota.name:
+      enabled: false
+    k8s.hierarchicalresourcequota.uid:
       enabled: false
     k8s.hpa.name:
       enabled: false

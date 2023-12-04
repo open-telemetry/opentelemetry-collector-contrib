@@ -179,6 +179,16 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.hierarchicalresourcequota.uid:
+    description: The k8s HierarchicalResourceQuota uid.
+    type: string
+    enabled: false
+
+  k8s.hierarchicalresourcequota.name:
+    description: The k8s HierarchicalresourceQuota name.
+    type: string
+    enabled: false
+
 attributes:
   k8s.namespace.name:
     description: The k8s namespace name.
@@ -497,3 +507,19 @@ metrics:
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
+  k8s.hierarchical_resource_quota.hard_limit:
+    enabled: false
+    description: The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
+    unit: "{resource}"
+    gauge:
+      value_type: int
+    attributes:
+      - resource
+  k8s.hierarchical_resource_quota.used:
+    enabled: false
+    description: The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
+    unit: "{resource}"
+    gauge:
+      value_type: int
+    attributes:
+      - resource

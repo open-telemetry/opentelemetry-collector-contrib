@@ -16,6 +16,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
+	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -92,6 +95,9 @@ func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
 	require.True(t, ok)
 	rcvr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return fake.NewSimpleClientset(), nil
+	}
+	rcvr.resourceWatcher.makeDynamicClient = func(_ k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return fakeDynamic.NewSimpleDynamicClient(runtime.NewScheme()), nil
 	}
 	rcvr.resourceWatcher.makeOpenShiftQuotaClient = func(_ k8sconfig.APIConfig) (quotaclientset.Interface, error) {
 		return fakeQuota.NewSimpleClientset(), nil

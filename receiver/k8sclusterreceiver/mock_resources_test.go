@@ -16,8 +16,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvr"
 )
 
 func createPods(t *testing.T, client *fake.Clientset, numPods int) []*corev1.Pod {
@@ -99,4 +104,28 @@ func createClusterQuota(t *testing.T, client *fakeQuota.Clientset, numQuotas int
 		require.NoError(t, err, "error creating node")
 		time.Sleep(2 * time.Millisecond)
 	}
+}
+
+func createHrq(t *testing.T, client *fakeDynamic.FakeDynamicClient) {
+	namespace := "test-namespace"
+	unstructuredObject := &unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": gvk.HierarchicalResourceQuota.Version,
+			"kind":       gvk.HierarchicalResourceQuota.Kind,
+			"metadata": map[string]any{
+				"namespace": namespace,
+				"name":      "test-hrq",
+				"uid":       "test-hrq-uid",
+			},
+			"status": map[string]any{
+				"hard": map[string]any{
+					"requests.cpu":    "1",
+					"requests.memory": "1Gi",
+				},
+			},
+		},
+	}
+	_, err := client.Resource(gvr.HierarchicalResourceQuota).Namespace(namespace).Create(context.Background(), unstructuredObject, v1.CreateOptions{})
+	require.NoError(t, err, "error creating HierarchicalResourceQuota")
+	time.Sleep(2 * time.Millisecond)
 }

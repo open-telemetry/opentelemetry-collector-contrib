@@ -845,6 +845,108 @@ func newMetricK8sDeploymentDesired(cfg MetricConfig) metricK8sDeploymentDesired 
 	return m
 }
 
+type metricK8sHierarchicalResourceQuotaHardLimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.hierarchical_resource_quota.hard_limit metric with initial data.
+func (m *metricK8sHierarchicalResourceQuotaHardLimit) init() {
+	m.data.SetName("k8s.hierarchical_resource_quota.hard_limit")
+	m.data.SetDescription("The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
+	m.data.SetUnit("{resource}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sHierarchicalResourceQuotaHardLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("resource", resourceAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sHierarchicalResourceQuotaHardLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sHierarchicalResourceQuotaHardLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sHierarchicalResourceQuotaHardLimit(cfg MetricConfig) metricK8sHierarchicalResourceQuotaHardLimit {
+	m := metricK8sHierarchicalResourceQuotaHardLimit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sHierarchicalResourceQuotaUsed struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.hierarchical_resource_quota.used metric with initial data.
+func (m *metricK8sHierarchicalResourceQuotaUsed) init() {
+	m.data.SetName("k8s.hierarchical_resource_quota.used")
+	m.data.SetDescription("The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
+	m.data.SetUnit("{resource}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sHierarchicalResourceQuotaUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("resource", resourceAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sHierarchicalResourceQuotaUsed) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sHierarchicalResourceQuotaUsed) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sHierarchicalResourceQuotaUsed(cfg MetricConfig) metricK8sHierarchicalResourceQuotaUsed {
+	m := metricK8sHierarchicalResourceQuotaUsed{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sHpaCurrentReplicas struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2187,55 +2289,57 @@ func newMetricOpenshiftClusterquotaUsed(cfg MetricConfig) metricOpenshiftCluster
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                    MetricsBuilderConfig // config of the metrics builder.
-	startTime                                 pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                           int                  // maximum observed number of metrics per resource.
-	metricsBuffer                             pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                 component.BuildInfo  // contains version information.
-	metricK8sContainerCPULimit                metricK8sContainerCPULimit
-	metricK8sContainerCPURequest              metricK8sContainerCPURequest
-	metricK8sContainerEphemeralstorageLimit   metricK8sContainerEphemeralstorageLimit
-	metricK8sContainerEphemeralstorageRequest metricK8sContainerEphemeralstorageRequest
-	metricK8sContainerMemoryLimit             metricK8sContainerMemoryLimit
-	metricK8sContainerMemoryRequest           metricK8sContainerMemoryRequest
-	metricK8sContainerReady                   metricK8sContainerReady
-	metricK8sContainerRestarts                metricK8sContainerRestarts
-	metricK8sContainerStorageLimit            metricK8sContainerStorageLimit
-	metricK8sContainerStorageRequest          metricK8sContainerStorageRequest
-	metricK8sCronjobActiveJobs                metricK8sCronjobActiveJobs
-	metricK8sDaemonsetCurrentScheduledNodes   metricK8sDaemonsetCurrentScheduledNodes
-	metricK8sDaemonsetDesiredScheduledNodes   metricK8sDaemonsetDesiredScheduledNodes
-	metricK8sDaemonsetMisscheduledNodes       metricK8sDaemonsetMisscheduledNodes
-	metricK8sDaemonsetReadyNodes              metricK8sDaemonsetReadyNodes
-	metricK8sDeploymentAvailable              metricK8sDeploymentAvailable
-	metricK8sDeploymentDesired                metricK8sDeploymentDesired
-	metricK8sHpaCurrentReplicas               metricK8sHpaCurrentReplicas
-	metricK8sHpaDesiredReplicas               metricK8sHpaDesiredReplicas
-	metricK8sHpaMaxReplicas                   metricK8sHpaMaxReplicas
-	metricK8sHpaMinReplicas                   metricK8sHpaMinReplicas
-	metricK8sJobActivePods                    metricK8sJobActivePods
-	metricK8sJobDesiredSuccessfulPods         metricK8sJobDesiredSuccessfulPods
-	metricK8sJobFailedPods                    metricK8sJobFailedPods
-	metricK8sJobMaxParallelPods               metricK8sJobMaxParallelPods
-	metricK8sJobSuccessfulPods                metricK8sJobSuccessfulPods
-	metricK8sNamespacePhase                   metricK8sNamespacePhase
-	metricK8sNodeCondition                    metricK8sNodeCondition
-	metricK8sPodPhase                         metricK8sPodPhase
-	metricK8sPodStatusReason                  metricK8sPodStatusReason
-	metricK8sReplicasetAvailable              metricK8sReplicasetAvailable
-	metricK8sReplicasetDesired                metricK8sReplicasetDesired
-	metricK8sReplicationControllerAvailable   metricK8sReplicationControllerAvailable
-	metricK8sReplicationControllerDesired     metricK8sReplicationControllerDesired
-	metricK8sResourceQuotaHardLimit           metricK8sResourceQuotaHardLimit
-	metricK8sResourceQuotaUsed                metricK8sResourceQuotaUsed
-	metricK8sStatefulsetCurrentPods           metricK8sStatefulsetCurrentPods
-	metricK8sStatefulsetDesiredPods           metricK8sStatefulsetDesiredPods
-	metricK8sStatefulsetReadyPods             metricK8sStatefulsetReadyPods
-	metricK8sStatefulsetUpdatedPods           metricK8sStatefulsetUpdatedPods
-	metricOpenshiftAppliedclusterquotaLimit   metricOpenshiftAppliedclusterquotaLimit
-	metricOpenshiftAppliedclusterquotaUsed    metricOpenshiftAppliedclusterquotaUsed
-	metricOpenshiftClusterquotaLimit          metricOpenshiftClusterquotaLimit
-	metricOpenshiftClusterquotaUsed           metricOpenshiftClusterquotaUsed
+	config                                      MetricsBuilderConfig // config of the metrics builder.
+	startTime                                   pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                             int                  // maximum observed number of metrics per resource.
+	metricsBuffer                               pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                   component.BuildInfo  // contains version information.
+	metricK8sContainerCPULimit                  metricK8sContainerCPULimit
+	metricK8sContainerCPURequest                metricK8sContainerCPURequest
+	metricK8sContainerEphemeralstorageLimit     metricK8sContainerEphemeralstorageLimit
+	metricK8sContainerEphemeralstorageRequest   metricK8sContainerEphemeralstorageRequest
+	metricK8sContainerMemoryLimit               metricK8sContainerMemoryLimit
+	metricK8sContainerMemoryRequest             metricK8sContainerMemoryRequest
+	metricK8sContainerReady                     metricK8sContainerReady
+	metricK8sContainerRestarts                  metricK8sContainerRestarts
+	metricK8sContainerStorageLimit              metricK8sContainerStorageLimit
+	metricK8sContainerStorageRequest            metricK8sContainerStorageRequest
+	metricK8sCronjobActiveJobs                  metricK8sCronjobActiveJobs
+	metricK8sDaemonsetCurrentScheduledNodes     metricK8sDaemonsetCurrentScheduledNodes
+	metricK8sDaemonsetDesiredScheduledNodes     metricK8sDaemonsetDesiredScheduledNodes
+	metricK8sDaemonsetMisscheduledNodes         metricK8sDaemonsetMisscheduledNodes
+	metricK8sDaemonsetReadyNodes                metricK8sDaemonsetReadyNodes
+	metricK8sDeploymentAvailable                metricK8sDeploymentAvailable
+	metricK8sDeploymentDesired                  metricK8sDeploymentDesired
+	metricK8sHierarchicalResourceQuotaHardLimit metricK8sHierarchicalResourceQuotaHardLimit
+	metricK8sHierarchicalResourceQuotaUsed      metricK8sHierarchicalResourceQuotaUsed
+	metricK8sHpaCurrentReplicas                 metricK8sHpaCurrentReplicas
+	metricK8sHpaDesiredReplicas                 metricK8sHpaDesiredReplicas
+	metricK8sHpaMaxReplicas                     metricK8sHpaMaxReplicas
+	metricK8sHpaMinReplicas                     metricK8sHpaMinReplicas
+	metricK8sJobActivePods                      metricK8sJobActivePods
+	metricK8sJobDesiredSuccessfulPods           metricK8sJobDesiredSuccessfulPods
+	metricK8sJobFailedPods                      metricK8sJobFailedPods
+	metricK8sJobMaxParallelPods                 metricK8sJobMaxParallelPods
+	metricK8sJobSuccessfulPods                  metricK8sJobSuccessfulPods
+	metricK8sNamespacePhase                     metricK8sNamespacePhase
+	metricK8sNodeCondition                      metricK8sNodeCondition
+	metricK8sPodPhase                           metricK8sPodPhase
+	metricK8sPodStatusReason                    metricK8sPodStatusReason
+	metricK8sReplicasetAvailable                metricK8sReplicasetAvailable
+	metricK8sReplicasetDesired                  metricK8sReplicasetDesired
+	metricK8sReplicationControllerAvailable     metricK8sReplicationControllerAvailable
+	metricK8sReplicationControllerDesired       metricK8sReplicationControllerDesired
+	metricK8sResourceQuotaHardLimit             metricK8sResourceQuotaHardLimit
+	metricK8sResourceQuotaUsed                  metricK8sResourceQuotaUsed
+	metricK8sStatefulsetCurrentPods             metricK8sStatefulsetCurrentPods
+	metricK8sStatefulsetDesiredPods             metricK8sStatefulsetDesiredPods
+	metricK8sStatefulsetReadyPods               metricK8sStatefulsetReadyPods
+	metricK8sStatefulsetUpdatedPods             metricK8sStatefulsetUpdatedPods
+	metricOpenshiftAppliedclusterquotaLimit     metricOpenshiftAppliedclusterquotaLimit
+	metricOpenshiftAppliedclusterquotaUsed      metricOpenshiftAppliedclusterquotaUsed
+	metricOpenshiftClusterquotaLimit            metricOpenshiftClusterquotaLimit
+	metricOpenshiftClusterquotaUsed             metricOpenshiftClusterquotaUsed
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -2260,47 +2364,49 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sContainerCPULimit:              newMetricK8sContainerCPULimit(mbc.Metrics.K8sContainerCPULimit),
 		metricK8sContainerCPURequest:            newMetricK8sContainerCPURequest(mbc.Metrics.K8sContainerCPURequest),
 		metricK8sContainerEphemeralstorageLimit: newMetricK8sContainerEphemeralstorageLimit(mbc.Metrics.K8sContainerEphemeralstorageLimit),
-		metricK8sContainerEphemeralstorageRequest: newMetricK8sContainerEphemeralstorageRequest(mbc.Metrics.K8sContainerEphemeralstorageRequest),
-		metricK8sContainerMemoryLimit:             newMetricK8sContainerMemoryLimit(mbc.Metrics.K8sContainerMemoryLimit),
-		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
-		metricK8sContainerReady:                   newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
-		metricK8sContainerRestarts:                newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
-		metricK8sContainerStorageLimit:            newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
-		metricK8sContainerStorageRequest:          newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
-		metricK8sCronjobActiveJobs:                newMetricK8sCronjobActiveJobs(mbc.Metrics.K8sCronjobActiveJobs),
-		metricK8sDaemonsetCurrentScheduledNodes:   newMetricK8sDaemonsetCurrentScheduledNodes(mbc.Metrics.K8sDaemonsetCurrentScheduledNodes),
-		metricK8sDaemonsetDesiredScheduledNodes:   newMetricK8sDaemonsetDesiredScheduledNodes(mbc.Metrics.K8sDaemonsetDesiredScheduledNodes),
-		metricK8sDaemonsetMisscheduledNodes:       newMetricK8sDaemonsetMisscheduledNodes(mbc.Metrics.K8sDaemonsetMisscheduledNodes),
-		metricK8sDaemonsetReadyNodes:              newMetricK8sDaemonsetReadyNodes(mbc.Metrics.K8sDaemonsetReadyNodes),
-		metricK8sDeploymentAvailable:              newMetricK8sDeploymentAvailable(mbc.Metrics.K8sDeploymentAvailable),
-		metricK8sDeploymentDesired:                newMetricK8sDeploymentDesired(mbc.Metrics.K8sDeploymentDesired),
-		metricK8sHpaCurrentReplicas:               newMetricK8sHpaCurrentReplicas(mbc.Metrics.K8sHpaCurrentReplicas),
-		metricK8sHpaDesiredReplicas:               newMetricK8sHpaDesiredReplicas(mbc.Metrics.K8sHpaDesiredReplicas),
-		metricK8sHpaMaxReplicas:                   newMetricK8sHpaMaxReplicas(mbc.Metrics.K8sHpaMaxReplicas),
-		metricK8sHpaMinReplicas:                   newMetricK8sHpaMinReplicas(mbc.Metrics.K8sHpaMinReplicas),
-		metricK8sJobActivePods:                    newMetricK8sJobActivePods(mbc.Metrics.K8sJobActivePods),
-		metricK8sJobDesiredSuccessfulPods:         newMetricK8sJobDesiredSuccessfulPods(mbc.Metrics.K8sJobDesiredSuccessfulPods),
-		metricK8sJobFailedPods:                    newMetricK8sJobFailedPods(mbc.Metrics.K8sJobFailedPods),
-		metricK8sJobMaxParallelPods:               newMetricK8sJobMaxParallelPods(mbc.Metrics.K8sJobMaxParallelPods),
-		metricK8sJobSuccessfulPods:                newMetricK8sJobSuccessfulPods(mbc.Metrics.K8sJobSuccessfulPods),
-		metricK8sNamespacePhase:                   newMetricK8sNamespacePhase(mbc.Metrics.K8sNamespacePhase),
-		metricK8sNodeCondition:                    newMetricK8sNodeCondition(mbc.Metrics.K8sNodeCondition),
-		metricK8sPodPhase:                         newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
-		metricK8sPodStatusReason:                  newMetricK8sPodStatusReason(mbc.Metrics.K8sPodStatusReason),
-		metricK8sReplicasetAvailable:              newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
-		metricK8sReplicasetDesired:                newMetricK8sReplicasetDesired(mbc.Metrics.K8sReplicasetDesired),
-		metricK8sReplicationControllerAvailable:   newMetricK8sReplicationControllerAvailable(mbc.Metrics.K8sReplicationControllerAvailable),
-		metricK8sReplicationControllerDesired:     newMetricK8sReplicationControllerDesired(mbc.Metrics.K8sReplicationControllerDesired),
-		metricK8sResourceQuotaHardLimit:           newMetricK8sResourceQuotaHardLimit(mbc.Metrics.K8sResourceQuotaHardLimit),
-		metricK8sResourceQuotaUsed:                newMetricK8sResourceQuotaUsed(mbc.Metrics.K8sResourceQuotaUsed),
-		metricK8sStatefulsetCurrentPods:           newMetricK8sStatefulsetCurrentPods(mbc.Metrics.K8sStatefulsetCurrentPods),
-		metricK8sStatefulsetDesiredPods:           newMetricK8sStatefulsetDesiredPods(mbc.Metrics.K8sStatefulsetDesiredPods),
-		metricK8sStatefulsetReadyPods:             newMetricK8sStatefulsetReadyPods(mbc.Metrics.K8sStatefulsetReadyPods),
-		metricK8sStatefulsetUpdatedPods:           newMetricK8sStatefulsetUpdatedPods(mbc.Metrics.K8sStatefulsetUpdatedPods),
-		metricOpenshiftAppliedclusterquotaLimit:   newMetricOpenshiftAppliedclusterquotaLimit(mbc.Metrics.OpenshiftAppliedclusterquotaLimit),
-		metricOpenshiftAppliedclusterquotaUsed:    newMetricOpenshiftAppliedclusterquotaUsed(mbc.Metrics.OpenshiftAppliedclusterquotaUsed),
-		metricOpenshiftClusterquotaLimit:          newMetricOpenshiftClusterquotaLimit(mbc.Metrics.OpenshiftClusterquotaLimit),
-		metricOpenshiftClusterquotaUsed:           newMetricOpenshiftClusterquotaUsed(mbc.Metrics.OpenshiftClusterquotaUsed),
+		metricK8sContainerEphemeralstorageRequest:   newMetricK8sContainerEphemeralstorageRequest(mbc.Metrics.K8sContainerEphemeralstorageRequest),
+		metricK8sContainerMemoryLimit:               newMetricK8sContainerMemoryLimit(mbc.Metrics.K8sContainerMemoryLimit),
+		metricK8sContainerMemoryRequest:             newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
+		metricK8sContainerReady:                     newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
+		metricK8sContainerRestarts:                  newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
+		metricK8sContainerStorageLimit:              newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
+		metricK8sContainerStorageRequest:            newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
+		metricK8sCronjobActiveJobs:                  newMetricK8sCronjobActiveJobs(mbc.Metrics.K8sCronjobActiveJobs),
+		metricK8sDaemonsetCurrentScheduledNodes:     newMetricK8sDaemonsetCurrentScheduledNodes(mbc.Metrics.K8sDaemonsetCurrentScheduledNodes),
+		metricK8sDaemonsetDesiredScheduledNodes:     newMetricK8sDaemonsetDesiredScheduledNodes(mbc.Metrics.K8sDaemonsetDesiredScheduledNodes),
+		metricK8sDaemonsetMisscheduledNodes:         newMetricK8sDaemonsetMisscheduledNodes(mbc.Metrics.K8sDaemonsetMisscheduledNodes),
+		metricK8sDaemonsetReadyNodes:                newMetricK8sDaemonsetReadyNodes(mbc.Metrics.K8sDaemonsetReadyNodes),
+		metricK8sDeploymentAvailable:                newMetricK8sDeploymentAvailable(mbc.Metrics.K8sDeploymentAvailable),
+		metricK8sDeploymentDesired:                  newMetricK8sDeploymentDesired(mbc.Metrics.K8sDeploymentDesired),
+		metricK8sHierarchicalResourceQuotaHardLimit: newMetricK8sHierarchicalResourceQuotaHardLimit(mbc.Metrics.K8sHierarchicalResourceQuotaHardLimit),
+		metricK8sHierarchicalResourceQuotaUsed:      newMetricK8sHierarchicalResourceQuotaUsed(mbc.Metrics.K8sHierarchicalResourceQuotaUsed),
+		metricK8sHpaCurrentReplicas:                 newMetricK8sHpaCurrentReplicas(mbc.Metrics.K8sHpaCurrentReplicas),
+		metricK8sHpaDesiredReplicas:                 newMetricK8sHpaDesiredReplicas(mbc.Metrics.K8sHpaDesiredReplicas),
+		metricK8sHpaMaxReplicas:                     newMetricK8sHpaMaxReplicas(mbc.Metrics.K8sHpaMaxReplicas),
+		metricK8sHpaMinReplicas:                     newMetricK8sHpaMinReplicas(mbc.Metrics.K8sHpaMinReplicas),
+		metricK8sJobActivePods:                      newMetricK8sJobActivePods(mbc.Metrics.K8sJobActivePods),
+		metricK8sJobDesiredSuccessfulPods:           newMetricK8sJobDesiredSuccessfulPods(mbc.Metrics.K8sJobDesiredSuccessfulPods),
+		metricK8sJobFailedPods:                      newMetricK8sJobFailedPods(mbc.Metrics.K8sJobFailedPods),
+		metricK8sJobMaxParallelPods:                 newMetricK8sJobMaxParallelPods(mbc.Metrics.K8sJobMaxParallelPods),
+		metricK8sJobSuccessfulPods:                  newMetricK8sJobSuccessfulPods(mbc.Metrics.K8sJobSuccessfulPods),
+		metricK8sNamespacePhase:                     newMetricK8sNamespacePhase(mbc.Metrics.K8sNamespacePhase),
+		metricK8sNodeCondition:                      newMetricK8sNodeCondition(mbc.Metrics.K8sNodeCondition),
+		metricK8sPodPhase:                           newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
+		metricK8sPodStatusReason:                    newMetricK8sPodStatusReason(mbc.Metrics.K8sPodStatusReason),
+		metricK8sReplicasetAvailable:                newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
+		metricK8sReplicasetDesired:                  newMetricK8sReplicasetDesired(mbc.Metrics.K8sReplicasetDesired),
+		metricK8sReplicationControllerAvailable:     newMetricK8sReplicationControllerAvailable(mbc.Metrics.K8sReplicationControllerAvailable),
+		metricK8sReplicationControllerDesired:       newMetricK8sReplicationControllerDesired(mbc.Metrics.K8sReplicationControllerDesired),
+		metricK8sResourceQuotaHardLimit:             newMetricK8sResourceQuotaHardLimit(mbc.Metrics.K8sResourceQuotaHardLimit),
+		metricK8sResourceQuotaUsed:                  newMetricK8sResourceQuotaUsed(mbc.Metrics.K8sResourceQuotaUsed),
+		metricK8sStatefulsetCurrentPods:             newMetricK8sStatefulsetCurrentPods(mbc.Metrics.K8sStatefulsetCurrentPods),
+		metricK8sStatefulsetDesiredPods:             newMetricK8sStatefulsetDesiredPods(mbc.Metrics.K8sStatefulsetDesiredPods),
+		metricK8sStatefulsetReadyPods:               newMetricK8sStatefulsetReadyPods(mbc.Metrics.K8sStatefulsetReadyPods),
+		metricK8sStatefulsetUpdatedPods:             newMetricK8sStatefulsetUpdatedPods(mbc.Metrics.K8sStatefulsetUpdatedPods),
+		metricOpenshiftAppliedclusterquotaLimit:     newMetricOpenshiftAppliedclusterquotaLimit(mbc.Metrics.OpenshiftAppliedclusterquotaLimit),
+		metricOpenshiftAppliedclusterquotaUsed:      newMetricOpenshiftAppliedclusterquotaUsed(mbc.Metrics.OpenshiftAppliedclusterquotaUsed),
+		metricOpenshiftClusterquotaLimit:            newMetricOpenshiftClusterquotaLimit(mbc.Metrics.OpenshiftClusterquotaLimit),
+		metricOpenshiftClusterquotaUsed:             newMetricOpenshiftClusterquotaUsed(mbc.Metrics.OpenshiftClusterquotaUsed),
 	}
 	for _, op := range options {
 		op(mb)
@@ -2380,6 +2486,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sDaemonsetReadyNodes.emit(ils.Metrics())
 	mb.metricK8sDeploymentAvailable.emit(ils.Metrics())
 	mb.metricK8sDeploymentDesired.emit(ils.Metrics())
+	mb.metricK8sHierarchicalResourceQuotaHardLimit.emit(ils.Metrics())
+	mb.metricK8sHierarchicalResourceQuotaUsed.emit(ils.Metrics())
 	mb.metricK8sHpaCurrentReplicas.emit(ils.Metrics())
 	mb.metricK8sHpaDesiredReplicas.emit(ils.Metrics())
 	mb.metricK8sHpaMaxReplicas.emit(ils.Metrics())
@@ -2510,6 +2618,16 @@ func (mb *MetricsBuilder) RecordK8sDeploymentAvailableDataPoint(ts pcommon.Times
 // RecordK8sDeploymentDesiredDataPoint adds a data point to k8s.deployment.desired metric.
 func (mb *MetricsBuilder) RecordK8sDeploymentDesiredDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sDeploymentDesired.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sHierarchicalResourceQuotaHardLimitDataPoint adds a data point to k8s.hierarchical_resource_quota.hard_limit metric.
+func (mb *MetricsBuilder) RecordK8sHierarchicalResourceQuotaHardLimitDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	mb.metricK8sHierarchicalResourceQuotaHardLimit.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
+}
+
+// RecordK8sHierarchicalResourceQuotaUsedDataPoint adds a data point to k8s.hierarchical_resource_quota.used metric.
+func (mb *MetricsBuilder) RecordK8sHierarchicalResourceQuotaUsedDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	mb.metricK8sHierarchicalResourceQuotaUsed.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
 }
 
 // RecordK8sHpaCurrentReplicasDataPoint adds a data point to k8s.hpa.current_replicas metric.

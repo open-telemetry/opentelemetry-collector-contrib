@@ -20,12 +20,16 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
@@ -37,26 +41,29 @@ func TestReceiver(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
+	dynamicClient := newFakeDynamicClient()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
+	r := setupReceiver(client, dynamicClient, osQuotaClient, sink, nil, 10*time.Second, tt)
 
 	// Setup k8s resources.
 	numPods := 2
 	numNodes := 1
 	numQuotas := 2
 	numClusterQuotaMetrics := numQuotas * 4
+	numHrqMetrics := 2
 	createPods(t, client, numPods)
 	createNodes(t, client, numNodes)
 	createClusterQuota(t, osQuotaClient, 2)
+	createHrq(t, dynamicClient)
 
 	ctx := context.Background()
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	// Expects metric data from nodes and pods where each metric data
 	// struct corresponds to one resource.
-	expectedNumMetrics := numPods + numNodes + numClusterQuotaMetrics
+	expectedNumMetrics := numPods + numNodes + numClusterQuotaMetrics + numHrqMetrics
 	var initialDataPointCount int
 	require.Eventually(t, func() bool {
 		initialDataPointCount = sink.DataPointCount()
@@ -68,7 +75,7 @@ func TestReceiver(t *testing.T) {
 	deletePods(t, client, numPodsToDelete)
 
 	// Expects metric data from a node, since other resources were deleted.
-	expectedNumMetrics = (numPods - numPodsToDelete) + numNodes + numClusterQuotaMetrics
+	expectedNumMetrics = (numPods - numPodsToDelete) + numNodes + numClusterQuotaMetrics + numHrqMetrics
 	var metricsCountDelta int
 	require.Eventually(t, func() bool {
 		metricsCountDelta = sink.DataPointCount() - initialDataPointCount
@@ -88,7 +95,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt)
+	r := setupReceiver(client, nil, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt)
 
 	createPods(t, client, 1)
 
@@ -108,10 +115,11 @@ func TestReceiverWithManyResources(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
+	dynamicClient := newFakeDynamicClient()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
+	r := setupReceiver(client, dynamicClient, osQuotaClient, sink, nil, 10*time.Second, tt)
 
 	numPods := 1000
 	numQuotas := 2
@@ -151,7 +159,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 
 	logsConsumer := new(consumertest.LogsSink)
 
-	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt)
+	r := setupReceiver(client, nil, nil, metricsConsumer, logsConsumer, 10*time.Second, tt)
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -207,6 +215,7 @@ func getUpdatedPod(pod *corev1.Pod) any {
 
 func setupReceiver(
 	client *fake.Clientset,
+	dymamicClient *fakeDynamic.FakeDynamicClient,
 	osQuotaClient quotaclientset.Interface,
 	metricsConsumer consumer.Metrics,
 	logsConsumer consumer.Logs,
@@ -218,12 +227,17 @@ func setupReceiver(
 		distribution = distributionOpenShift
 	}
 
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics.K8sHierarchicalResourceQuotaHardLimit.Enabled = true
+	mbc.Metrics.K8sHierarchicalResourceQuotaUsed.Enabled = true
+	mbc.ResourceAttributes.K8sHierarchicalresourcequotaName.Enabled = true
+	mbc.ResourceAttributes.K8sHierarchicalresourcequotaUID.Enabled = true
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
 		NodeConditionTypesToReport: []string{"Ready"},
 		AllocatableTypesToReport:   []string{"cpu", "memory"},
 		Distribution:               distribution,
-		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig:       mbc,
 	}
 
 	r, _ := newReceiver(context.Background(), receiver.CreateSettings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, config)
@@ -231,6 +245,9 @@ func setupReceiver(
 	kr.metricsConsumer = metricsConsumer
 	kr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return client, nil
+	}
+	kr.resourceWatcher.makeDynamicClient = func(_ k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dymamicClient, nil
 	}
 	kr.resourceWatcher.makeOpenShiftQuotaClient = func(_ k8sconfig.APIConfig) (quotaclientset.Interface, error) {
 		return osQuotaClient, nil
@@ -278,6 +295,11 @@ func newFakeClientWithAllResources() *fake.Clientset {
 		},
 	}
 	return client
+}
+
+func newFakeDynamicClient() *fakeDynamic.FakeDynamicClient {
+	gvrToListKind := map[schema.GroupVersionResource]string{gvr.HierarchicalResourceQuota: "HierarchicalResourceQuotaList"}
+	return fakeDynamic.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), gvrToListKind)
 }
 
 func gvkToAPIResource(gvk schema.GroupVersionKind) v1.APIResource {

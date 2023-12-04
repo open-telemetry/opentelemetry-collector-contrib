@@ -91,6 +91,20 @@ func (rb *ResourceBuilder) SetK8sDeploymentUID(val string) {
 	}
 }
 
+// SetK8sHierarchicalresourcequotaName sets provided value as "k8s.hierarchicalresourcequota.name" attribute.
+func (rb *ResourceBuilder) SetK8sHierarchicalresourcequotaName(val string) {
+	if rb.config.K8sHierarchicalresourcequotaName.Enabled {
+		rb.res.Attributes().PutStr("k8s.hierarchicalresourcequota.name", val)
+	}
+}
+
+// SetK8sHierarchicalresourcequotaUID sets provided value as "k8s.hierarchicalresourcequota.uid" attribute.
+func (rb *ResourceBuilder) SetK8sHierarchicalresourcequotaUID(val string) {
+	if rb.config.K8sHierarchicalresourcequotaUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.hierarchicalresourcequota.uid", val)
+	}
+}
+
 // SetK8sHpaName sets provided value as "k8s.hpa.name" attribute.
 func (rb *ResourceBuilder) SetK8sHpaName(val string) {
 	if rb.config.K8sHpaName.Enabled {

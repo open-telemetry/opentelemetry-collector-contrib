@@ -396,6 +396,34 @@ metrics:
     enabled: true
 ```
 
+### k8s.hierarchical_resource_quota.hard_limit
+
+The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {resource} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| resource | the name of the resource on which the quota is applied | Any Str |
+
+### k8s.hierarchical_resource_quota.used
+
+The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {resource} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| resource | the name of the resource on which the quota is applied | Any Str |
+
 ### k8s.node.condition
 
 The condition of a particular Node.
@@ -432,6 +460,8 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.daemonset.uid | The k8s daemonset uid. | Any Str | true |
 | k8s.deployment.name | The name of the Deployment. | Any Str | true |
 | k8s.deployment.uid | The UID of the Deployment. | Any Str | true |
+| k8s.hierarchicalresourcequota.name | The k8s HierarchicalresourceQuota name. | Any Str | false |
+| k8s.hierarchicalresourcequota.uid | The k8s HierarchicalResourceQuota uid. | Any Str | false |
 | k8s.hpa.name | The k8s hpa name. | Any Str | true |
 | k8s.hpa.uid | The k8s hpa uid. | Any Str | true |
 | k8s.job.name | The k8s pod name. | Any Str | true |

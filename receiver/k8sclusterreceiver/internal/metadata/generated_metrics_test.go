@@ -127,6 +127,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sDeploymentDesiredDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordK8sHierarchicalResourceQuotaHardLimitDataPoint(ts, 1, "resource-val")
+
+			allMetricsCount++
+			mb.RecordK8sHierarchicalResourceQuotaUsedDataPoint(ts, 1, "resource-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sHpaCurrentReplicasDataPoint(ts, 1)
@@ -244,6 +250,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sDaemonsetUID("k8s.daemonset.uid-val")
 			rb.SetK8sDeploymentName("k8s.deployment.name-val")
 			rb.SetK8sDeploymentUID("k8s.deployment.uid-val")
+			rb.SetK8sHierarchicalresourcequotaName("k8s.hierarchicalresourcequota.name-val")
+			rb.SetK8sHierarchicalresourcequotaUID("k8s.hierarchicalresourcequota.uid-val")
 			rb.SetK8sHpaName("k8s.hpa.name-val")
 			rb.SetK8sHpaUID("k8s.hpa.uid-val")
 			rb.SetK8sJobName("k8s.job.name-val")
@@ -493,6 +501,36 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.hierarchical_resource_quota.hard_limit":
+					assert.False(t, validatedMetrics["k8s.hierarchical_resource_quota.hard_limit"], "Found a duplicate in the metrics slice: k8s.hierarchical_resource_quota.hard_limit")
+					validatedMetrics["k8s.hierarchical_resource_quota.hard_limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores", ms.At(i).Description())
+					assert.Equal(t, "{resource}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("resource")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resource-val", attrVal.Str())
+				case "k8s.hierarchical_resource_quota.used":
+					assert.False(t, validatedMetrics["k8s.hierarchical_resource_quota.used"], "Found a duplicate in the metrics slice: k8s.hierarchical_resource_quota.used")
+					validatedMetrics["k8s.hierarchical_resource_quota.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores", ms.At(i).Description())
+					assert.Equal(t, "{resource}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("resource")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resource-val", attrVal.Str())
 				case "k8s.hpa.current_replicas":
 					assert.False(t, validatedMetrics["k8s.hpa.current_replicas"], "Found a duplicate in the metrics slice: k8s.hpa.current_replicas")
 					validatedMetrics["k8s.hpa.current_replicas"] = true
