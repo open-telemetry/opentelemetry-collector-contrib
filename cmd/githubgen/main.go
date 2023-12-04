@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
-	"os"
 	"path/filepath"
 	"sort"
 
@@ -22,10 +21,9 @@ type generator interface {
 	generate(data *githubData) error
 }
 
-// Generates files specific to Github or Dependabot according to status metadata:
+// Generates files specific to Github according to status metadata:
 // .github/CODEOWNERS
 // .github/ALLOWLIST
-// .github/dependabot.yml
 // .github/ISSUE_TEMPLATES/*.yaml (list of components)
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
@@ -36,8 +34,6 @@ func main() {
 		switch arg {
 		case "issue-templates":
 			generators = append(generators, issueTemplatesGenerator{})
-		case "dependabot":
-			generators = append(generators, dependabotGenerator{})
 		case "codeowners":
 			generators = append(generators, codeownersGenerator{})
 		default:
@@ -45,7 +41,7 @@ func main() {
 		}
 	}
 	if len(generators) == 0 {
-		generators = []generator{issueTemplatesGenerator{}, dependabotGenerator{}, codeownersGenerator{}}
+		generators = []generator{issueTemplatesGenerator{}, codeownersGenerator{}}
 	}
 	if err := run(*folder, *allowlistFilePath, generators); err != nil {
 		log.Fatal(err)
@@ -81,7 +77,6 @@ type githubData struct {
 	allowlistFilePath string
 	maxLength         int
 	components        map[string]metadata
-	dependabotData    *dependabotData
 }
 
 func loadMetadata(filePath string) (metadata, error) {
@@ -107,12 +102,6 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 
 	components := map[string]metadata{}
 	var foldersList []string
-	dependabotData := &dependabotData{
-		Version: 2,
-		Updates: []dependabotUpdate{
-			newDependabotUpdate("", 5),
-		},
-	}
 	maxLength := 0
 	allCodeowners := map[string]struct{}{}
 	err := filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
@@ -128,10 +117,7 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 			key := currentFolder
 			components[key] = m
 			foldersList = append(foldersList, key)
-			_, err = os.Stat(filepath.Join(currentFolder, "go.mod"))
-			if err == nil { // go.mod file exists.
-				dependabotData.Updates = append(dependabotData.Updates, newDependabotUpdate(currentFolder, makePriority(m.Status)))
-			}
+
 			for stability := range m.Status.Stability {
 				if stability == unmaintainedStatus {
 					// do not account for unmaintained status to change the max length of the component line.
@@ -167,7 +153,6 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 		allowlistFilePath: allowlistFilePath,
 		maxLength:         maxLength,
 		components:        components,
-		dependabotData:    dependabotData,
 	}
 
 	for _, g := range generators {

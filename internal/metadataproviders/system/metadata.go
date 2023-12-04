@@ -63,6 +63,9 @@ type Provider interface {
 
 	// HostArch returns the host architecture
 	HostArch() (string, error)
+
+	// HostIPs returns the host's IP interfaces
+	HostIPs() ([]net.IP, error)
 }
 
 type systemMetadataProvider struct {
@@ -158,4 +161,38 @@ func (p systemMetadataProvider) OSDescription(ctx context.Context) (string, erro
 
 func (systemMetadataProvider) HostArch() (string, error) {
 	return internal.GOARCHtoHostArch(runtime.GOARCH), nil
+}
+
+func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, iface := range ifaces {
+		// skip if the interface is down or is a loopback interface
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, errAddr := iface.Addrs()
+		if errAddr != nil {
+			return nil, fmt.Errorf("failed to get addresses for interface %v: %w", iface, errAddr)
+		}
+		for _, addr := range addrs {
+			ip, _, parseErr := net.ParseCIDR(addr.String())
+			if parseErr != nil {
+				return nil, fmt.Errorf("failed to parse address %q from interface %v: %w", addr, iface, parseErr)
+			}
+
+			if ip.IsLoopback() {
+				// skip loopback IPs
+				continue
+			}
+
+			ips = append(ips, ip)
+		}
+
+	}
+	return ips, err
 }
