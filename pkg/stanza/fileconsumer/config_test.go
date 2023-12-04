@@ -626,7 +626,7 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), emittest.NopFunc)
+			input, err := cfg.Build(testutil.Logger(t), emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -705,7 +705,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 				return len(data), data, nil
 			}
 
-			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), emittest.NopFunc, splitNone)
+			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), emittest.Nop, splitNone)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -792,7 +792,7 @@ func TestBuildWithHeader(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), emittest.NopFunc)
+			input, err := cfg.Build(testutil.Logger(t), emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return

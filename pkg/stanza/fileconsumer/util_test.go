@@ -15,16 +15,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func testManager(t *testing.T, cfg *Config) (*Manager, chan *emittest.Call) {
-	return testManagerWithChanLen(t, cfg, 100)
+func testManager(t *testing.T, cfg *Config) (*Manager, *emittest.Sink) {
+	sink := emittest.NewSink()
+	return testManagerWithSink(t, cfg, sink), sink
 }
 
-func testManagerWithChanLen(t *testing.T, cfg *Config, len int) (*Manager, chan *emittest.Call) {
-	emitChan := make(chan *emittest.Call, len)
-	input, err := cfg.Build(testutil.Logger(t), emittest.CallChanFunc(emitChan))
+func testManagerWithSink(t *testing.T, cfg *Config, sink *emittest.Sink) *Manager {
+	input, err := cfg.Build(testutil.Logger(t), sink.Callback)
 	require.NoError(t, err)
 	t.Cleanup(func() { input.closePreviousFiles() })
-	return input, emitChan
+	return input
 }
 
 func openFile(tb testing.TB, path string) *os.File {
