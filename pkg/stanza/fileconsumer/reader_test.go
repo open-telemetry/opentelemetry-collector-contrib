@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
@@ -38,11 +39,11 @@ func TestPersistFlusher(t *testing.T) {
 
 	// ReadToEnd will return when we hit eof, but we shouldn't emit the unfinished log yet
 	r.ReadToEnd(context.Background())
-	waitForToken(t, emitChan, []byte("log with newline"))
+	emittest.WaitForToken(t, emitChan, []byte("log with newline"))
 
 	// Even trying again shouldn't produce the log yet because the flush period still hasn't expired.
 	r.ReadToEnd(context.Background())
-	expectNoTokensUntil(t, emitChan, 2*flushPeriod)
+	emittest.ExpectNoTokensUntil(t, emitChan, 2*flushPeriod)
 
 	// A copy of the reader should remember that we last emitted about 200ms ago.
 	copyReader, err := f.NewReaderFromMetadata(temp, r.Metadata)
@@ -52,7 +53,7 @@ func TestPersistFlusher(t *testing.T) {
 	// If the copy did not remember when we last emitted a log, then the flushPeriod
 	// will not be expired at this point so we won't see the unfinished log.
 	copyReader.ReadToEnd(context.Background())
-	waitForToken(t, emitChan, []byte("log without newline"))
+	emittest.WaitForToken(t, emitChan, []byte("log without newline"))
 }
 
 func TestTokenization(t *testing.T) {
@@ -222,8 +223,8 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
 }
 
-func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPeriod time.Duration) (*reader.Factory, chan *emitParams) {
-	emitChan := make(chan *emitParams, 100)
+func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPeriod time.Duration) (*reader.Factory, chan *emittest.Call) {
+	emitChan := make(chan *emittest.Call, 100)
 	enc, err := decode.LookupEncoding(defaultEncoding)
 	require.NoError(t, err)
 
@@ -235,7 +236,7 @@ func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPer
 		Config: &reader.Config{
 			FingerprintSize: fingerprint.DefaultSize,
 			MaxLogSize:      maxLogSize,
-			Emit:            testEmitFunc(emitChan),
+			Emit:            emittest.CallChanFunc(emitChan),
 			FlushTimeout:    flushPeriod,
 		},
 		FromBeginning: true,
@@ -245,10 +246,10 @@ func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPer
 	}, emitChan
 }
 
-func readToken(t *testing.T, c chan *emitParams) []byte {
+func readToken(t *testing.T, c chan *emittest.Call) []byte {
 	select {
 	case call := <-c:
-		return call.token
+		return call.Token
 	case <-time.After(3 * time.Second):
 		require.FailNow(t, "Timed out waiting for token")
 	}
