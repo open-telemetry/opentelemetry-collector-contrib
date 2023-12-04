@@ -18,6 +18,12 @@ receivers:
         metrics:
           system.cpu.utilization:
             enabled: true
+          system.cpu.physical.count:
+            enabled: true
+          system.cpu.logical.count:
+            enabled: true
+          system.cpu.frequency:
+            enabled: true
       disk:
       filesystem:
         metrics:
@@ -59,7 +65,7 @@ processors:
     limit_mib: 4000
     spike_limit_mib: 800
   resourcedetection:
-    detectors: [env, system, ec2]
+    detectors: [env, ec2, system]
     system:
       resource_attributes:
         os.description:
@@ -82,7 +88,7 @@ processors:
 exporters:
   datadog:
     api:
-      site: <DD_SITE>
+      site: ${env:DD_SITE}
       key: ${env:DD_API_KEY}
     traces:
       trace_buffer: 500

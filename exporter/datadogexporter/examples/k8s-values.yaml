@@ -62,7 +62,7 @@ config:
             key: app.kubernetes.io/managed-by
             from: pod
     resourcedetection:
-      detectors: [env, system, eks, ec2]
+      detectors: [env, eks, ec2, system]
       timeout: 2s
       override: false
     batch:
@@ -72,7 +72,7 @@ config:
   exporters:
     datadog:
       api:
-        site: <DD_SITE>
+        site: ${env:DD_SITE}
         key: ${env:DD_API_KEY}
       traces:
         trace_buffer: 500

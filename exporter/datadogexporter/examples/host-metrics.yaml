@@ -10,6 +10,12 @@ receivers:
         metrics:
           system.cpu.utilization:
             enabled: true
+          system.cpu.physical.count:
+            enabled: true
+          system.cpu.logical.count:
+            enabled: true
+          system.cpu.frequency:
+            enabled: true
       disk:
       filesystem:
         metrics:
@@ -29,7 +35,7 @@ processors:
 exporters:
   datadog:
     api:
-      site: <DD_SITE>
+      site: ${env:DD_SITE}
       key: ${env:DD_API_KEY}
 
 service:
