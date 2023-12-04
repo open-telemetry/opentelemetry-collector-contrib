@@ -27,6 +27,8 @@ The following settings are optional:
 - `instance_uid`: A ULID formatted as a 26 character string in canonical
   representation. Auto-generated on start if missing. Setting this ensures the
   instance UID remains constant across process restarts.
+- `capabilities`: Keys with boolean true/false values that enable a particular OpAMP capability.
+  - `reports_effective_config`: Whether to enable the OpAMP ReportsEffectiveConfig capability. Default is `true`.
 
 ### Example
 

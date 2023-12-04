@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -255,7 +257,20 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		emitCalls := make(chan *emitParams, tc.totalLines)
 		operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 
-		logger := getRotatingLogger(t, tempDir, tc.maxLinesPerFile, tc.maxBackupFiles, copyTruncate, sequential)
+		file, err := os.CreateTemp(tempDir, "")
+		require.NoError(t, err)
+		require.NoError(t, file.Close()) // will be managed by rotator
+
+		rotator := nanojack.Logger{
+			Filename:     file.Name(),
+			MaxLines:     tc.maxLinesPerFile,
+			MaxBackups:   tc.maxBackupFiles,
+			CopyTruncate: copyTruncate,
+			Sequential:   sequential,
+		}
+		t.Cleanup(func() { _ = rotator.Close() })
+
+		logger := log.New(&rotator, "", 0)
 
 		expected := make([][]byte, 0, tc.totalLines)
 		baseStr := string(tokenWithLength(46)) // + ' 123'
