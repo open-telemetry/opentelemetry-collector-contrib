@@ -11,8 +11,8 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.90.1
 	go.opentelemetry.io/collector/confmap v0.90.1
-	go.opentelemetry.io/collector/featuregate v1.0.0
-	go.opentelemetry.io/collector/pdata v1.0.0
+	go.opentelemetry.io/collector/featuregate v1.0.1-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector/pdata v1.0.1-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/semconv v0.90.1
 	go.uber.org/zap v1.26.0
 )
