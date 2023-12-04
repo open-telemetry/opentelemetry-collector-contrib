@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -161,7 +162,11 @@ func BenchmarkFileInput(b *testing.B) {
 
 			received := make(chan []byte)
 
-			op, err := cfg.Build(testutil.Logger(b), emitOnChan(received))
+			callback := func(_ context.Context, token []byte, _ map[string]any) error {
+				received <- token
+				return nil
+			}
+			op, err := cfg.Build(testutil.Logger(b), callback)
 			require.NoError(b, err)
 
 			// write half the lines before starting
