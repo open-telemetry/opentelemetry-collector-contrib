@@ -87,6 +87,7 @@ type AndSubPolicyCfg struct {
 	sharedPolicyCfg `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
+// TraceStateCfg holds the common configuration for trace states.
 type TraceStateCfg struct {
 	// Tag that the filter is going to be matching against.
 	Key string `mapstructure:"key"`
@@ -94,6 +95,7 @@ type TraceStateCfg struct {
 	Values []string `mapstructure:"values"`
 }
 
+// AndCfg holds the common configuration to all and policies.
 type AndCfg struct {
 	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"and_sub_policy"`
 }
@@ -126,8 +128,10 @@ type PolicyCfg struct {
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy
 // evaluator
 type LatencyCfg struct {
-	// ThresholdMs in milliseconds.
+	// Lower bound in milliseconds. Retaining original name for compatibility
 	ThresholdMs int64 `mapstructure:"threshold_ms"`
+	// Upper bound in milliseconds.
+	UpperThresholdmsMs int64 `mapstructure:"upper_threshold_ms"`
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter

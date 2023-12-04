@@ -6,6 +6,7 @@ package system
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,6 +67,16 @@ func (m *mockMetadata) ReverseLookupHost() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *mockMetadata) HostIPs() ([]net.IP, error) {
+	args := m.MethodCalled("HostIPs")
+	return args.Get(0).([]net.IP), args.Error(1)
+}
+
+var (
+	testIPsAttribute = []any{"192.168.1.140", "fe80::abc2:4a28:737a:609e"}
+	testIPsAddresses = []net.IP{net.ParseIP(testIPsAttribute[0].(string)), net.ParseIP(testIPsAttribute[1].(string))}
+)
+
 func TestNewDetector(t *testing.T) {
 	tests := []struct {
 		name string
@@ -97,6 +108,7 @@ func allEnabledConfig() metadata.ResourceAttributesConfig {
 	cfg := metadata.DefaultResourceAttributesConfig()
 	cfg.HostArch.Enabled = true
 	cfg.HostID.Enabled = true
+	cfg.HostIP.Enabled = true
 	cfg.OsDescription.Enabled = true
 	return cfg
 }
@@ -108,6 +120,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("OSType").Return("darwin", nil)
 	md.On("HostID").Return("2", nil)
 	md.On("HostArch").Return("amd64", nil)
+	md.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := newTestDetector(md, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -121,6 +134,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 		conventions.AttributeOSType:        "darwin",
 		conventions.AttributeHostID:        "2",
 		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -141,6 +155,7 @@ func TestFallbackHostname(t *testing.T) {
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
 	mdHostname.AssertNotCalled(t, "HostID")
+	mdHostname.AssertNotCalled(t, "HostIPs")
 
 	expected := map[string]any{
 		conventions.AttributeHostName: "hostname",
@@ -158,6 +173,7 @@ func TestEnableHostID(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("3", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -171,6 +187,7 @@ func TestEnableHostID(t *testing.T) {
 		conventions.AttributeOSType:        "darwin",
 		conventions.AttributeHostID:        "3",
 		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -183,6 +200,7 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("1", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -196,6 +214,7 @@ func TestUseHostname(t *testing.T) {
 		conventions.AttributeOSType:        "darwin",
 		conventions.AttributeHostID:        "1",
 		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -210,6 +229,7 @@ func TestDetectError(t *testing.T) {
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 	mdFQDN.On("HostID").Return("", errors.New("err"))
 	mdFQDN.On("HostArch").Return("amd64", nil)
+	mdFQDN.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := newTestDetector(mdFQDN, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -224,6 +244,7 @@ func TestDetectError(t *testing.T) {
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 	mdHostname.On("HostID").Return("", errors.New("err"))
 	mdHostname.On("HostArch").Return("amd64", nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector = newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -238,6 +259,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("OSType").Return("", errors.New("err"))
 	mdOSType.On("HostID").Return("1", nil)
 	mdOSType.On("HostArch").Return("amd64", nil)
+	mdOSType.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector = newTestDetector(mdOSType, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -252,6 +274,7 @@ func TestDetectError(t *testing.T) {
 	mdHostID.On("OSType").Return("linux", nil)
 	mdHostID.On("HostID").Return("", errors.New("err"))
 	mdHostID.On("HostArch").Return("arm64", nil)
+	mdHostID.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector = newTestDetector(mdHostID, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -262,6 +285,7 @@ func TestDetectError(t *testing.T) {
 		conventions.AttributeOSDescription: "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
 		conventions.AttributeOSType:        "linux",
 		conventions.AttributeHostArch:      conventions.AttributeHostArchARM64,
+		"host.ip":                          testIPsAttribute,
 	}, res.Attributes().AsRaw())
 }
 

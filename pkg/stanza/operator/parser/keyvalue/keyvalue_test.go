@@ -168,7 +168,7 @@ func TestParser(t *testing.T) {
 				Body: "name=stanza age=2",
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"name": "stanza",
 					"age":  "2",
 				},
@@ -183,16 +183,16 @@ func TestParser(t *testing.T) {
 				kv.ParseFrom = entry.NewBodyField("test")
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"test": "name=otel age=2",
 				},
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"name": "otel",
 					"age":  "2",
 				},
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"test": "name=otel age=2",
 				},
 			},
@@ -208,8 +208,8 @@ func TestParser(t *testing.T) {
 				Body: "name=stanza age=10",
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{
-					"test": map[string]interface{}{
+				Body: map[string]any{
+					"test": map[string]any{
 						"name": "stanza",
 						"age":  "10",
 					},
@@ -225,16 +225,16 @@ func TestParser(t *testing.T) {
 				kv.ParseTo = entry.RootableField{Field: entry.NewBodyField("to")}
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"from": "name=stanza age=10",
 				},
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"from": "name=stanza age=10",
 				},
-				Body: map[string]interface{}{
-					"to": map[string]interface{}{
+				Body: map[string]any{
+					"to": map[string]any{
 						"name": "stanza",
 						"age":  "10",
 					},
@@ -250,7 +250,7 @@ func TestParser(t *testing.T) {
 				Body: `requestClientApplication="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"requestClientApplication": `Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0`,
 				},
 				Body: `requestClientApplication="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"`,
@@ -265,7 +265,7 @@ func TestParser(t *testing.T) {
 				Body: "name=\"stanza\" age=2",
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"name": "stanza",
 					"age":  "2",
 				},
@@ -281,7 +281,7 @@ func TestParser(t *testing.T) {
 				Body: "description='stanza deployment number 5' x=y",
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"description": "stanza deployment number 5",
 					"x":           "y",
 				},
@@ -297,7 +297,7 @@ func TestParser(t *testing.T) {
 				Body: `name=" stanza " age=2`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"name": "stanza",
 					"age":  "2",
 				},
@@ -313,7 +313,7 @@ func TestParser(t *testing.T) {
 				Body: `" name "=" stanza " age=2`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"name": "stanza",
 					"age":  "2",
 				},
@@ -330,14 +330,14 @@ func TestParser(t *testing.T) {
 				kv.ParseTo = entry.RootableField{Field: entry.NewBodyField("testparsed")}
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"testfield": `name|" stanza " age|2     key|value`,
 				},
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"testfield": `name|" stanza " age|2     key|value`,
-					"testparsed": map[string]interface{}{
+					"testparsed": map[string]any{
 						"name": "stanza",
 						"age":  "2",
 						"key":  "value",
@@ -356,7 +356,7 @@ func TestParser(t *testing.T) {
 				Body: `name==" stanza " age==2     key==value`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"name": "stanza",
 					"age":  "2",
 					"key":  "value",
@@ -375,7 +375,7 @@ func TestParser(t *testing.T) {
 				Body: `name=stanza|age=2     | key=value`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"name": "stanza",
 					"age":  "2",
 					"key":  "value",
@@ -396,7 +396,7 @@ age=2^
 key=value`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"name": "stanza",
 					"age":  "2",
 					"key":  "value",
@@ -415,7 +415,7 @@ key=value`,
 				Body: "name=stanza age=1 job=\"software engineering\" location=\"grand rapids michigan\" src=\"10.3.3.76\" dst=172.217.0.10 protocol=udp sport=57112 dport=443 translated_src_ip=96.63.176.3 translated_port=57112",
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"age":               "1",
 					"dport":             "443",
 					"dst":               "172.217.0.10",
@@ -440,7 +440,7 @@ key=value`,
 				Body: `id=LVM_Sonicwall sn=22255555 time="2021-09-22 16:30:31" fw=14.165.177.10 pri=6 c=1024 gcat=2 m=97 msg="Web site hit" srcMac=6c:0b:84:3f:fa:63 src=192.168.50.2:52006:X0 srcZone=LAN natSrc=14.165.177.10:58457 dstMac=08:b2:58:46:30:54 dst=15.159.150.83:443:X1 dstZone=WAN natDst=15.159.150.83:443 proto=tcp/https sent=1422 rcvd=5993 rule="6 (LAN->WAN)" app=48 dstname=example.space.dev.com arg=/ code=27 Category="Information Technology/Computers" note="Policy: a0, Info: 888 " n=3412158`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"id":       "LVM_Sonicwall",
 					"sn":       "22255555",
 					"time":     "2021-09-22 16:30:31",

@@ -14,7 +14,7 @@ metrics:
 
 ### git.repository.branch.count
 
-Number of branches that exist in the repository
+Number of branches in the repository
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -26,20 +26,23 @@ Number of branches that exist in the repository
 | ---- | ----------- | ------ |
 | repository.name | The full name of the Git repository | Any Str |
 
-### git.repository.branch.time
+### git.repository.count
 
-Time the branch has existed
+Number of repositories in an organization
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-#### Attributes
+## Optional Metrics
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The full name of the Git repository | Any Str |
-| branch.name | The name of the branch in a given repository | Any Str |
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
 
 ### git.repository.contributor.count
 
@@ -55,32 +58,9 @@ Total number of unique contributors to this repository
 | ---- | ----------- | ------ |
 | repository.name | The full name of the Git repository | Any Str |
 
-### git.repository.count
-
-Number of repositories that exist in an organization
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
-
-### git.repository.pull_request.time
-
-Time the PR has been open
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The full name of the Git repository | Any Str |
-| branch.name | The name of the branch in a given repository | Any Str |
-
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| git.vendor.name |  | Any Str | true |
+| git.vendor.name | The name of the Git vendor/provider (ie. GitHub / GitLab) | Any Str | true |
 | organization.name | Git Organization or Project Name | Any Str | true |

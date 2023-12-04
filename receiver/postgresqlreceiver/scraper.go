@@ -313,14 +313,26 @@ func (p *postgreSQLScraper) collectReplicationStats(
 		if rs.pendingBytes >= 0 {
 			p.mb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
 		}
-		if rs.writeLag >= 0 {
-			p.mb.RecordPostgresqlWalLagDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
-		}
-		if rs.replayLag >= 0 {
-			p.mb.RecordPostgresqlWalLagDataPoint(now, rs.replayLag, metadata.AttributeWalOperationLagReplay, rs.clientAddr)
-		}
-		if rs.flushLag >= 0 {
-			p.mb.RecordPostgresqlWalLagDataPoint(now, rs.flushLag, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
+		if preciseLagMetricsFg.IsEnabled() {
+			if rs.writeLag >= 0 {
+				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
+			}
+			if rs.replayLag >= 0 {
+				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.replayLag, metadata.AttributeWalOperationLagReplay, rs.clientAddr)
+			}
+			if rs.flushLag >= 0 {
+				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.flushLag, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
+			}
+		} else {
+			if rs.writeLagInt >= 0 {
+				p.mb.RecordPostgresqlWalLagDataPoint(now, rs.writeLagInt, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
+			}
+			if rs.replayLagInt >= 0 {
+				p.mb.RecordPostgresqlWalLagDataPoint(now, rs.replayLagInt, metadata.AttributeWalOperationLagReplay, rs.clientAddr)
+			}
+			if rs.flushLagInt >= 0 {
+				p.mb.RecordPostgresqlWalLagDataPoint(now, rs.flushLagInt, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
+			}
 		}
 	}
 }

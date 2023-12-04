@@ -61,5 +61,5 @@ type Reporter interface {
 	// OnDebugf allows less structured reporting for debugging scenarios.
 	OnDebugf(
 		template string,
-		args ...interface{})
+		args ...any)
 }

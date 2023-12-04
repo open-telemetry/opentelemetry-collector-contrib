@@ -16,10 +16,10 @@ import (
 
 func TestBooleanTagFilter(t *testing.T) {
 
-	var empty = map[string]interface{}{}
+	var empty = map[string]any{}
 	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true)
 
-	resAttr := map[string]interface{}{}
+	resAttr := map[string]any{}
 	resAttr["example"] = 8
 
 	cases := []struct {
@@ -54,7 +54,7 @@ func TestBooleanTagFilter(t *testing.T) {
 	}
 }
 
-func newTraceBoolAttrs(nodeAttrs map[string]interface{}, spanAttrKey string, spanAttrValue bool) *TraceData {
+func newTraceBoolAttrs(nodeAttrs map[string]any, spanAttrKey string, spanAttrValue bool) *TraceData {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	//nolint:errcheck

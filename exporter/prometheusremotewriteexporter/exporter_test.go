@@ -368,7 +368,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		return err
 	}
 
-	return prwe.handleExport(context.Background(), testmap)
+	return prwe.handleExport(context.Background(), testmap, nil)
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -919,7 +919,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		"timeseries1": ts1,
 		"timeseries2": ts2,
 	}
-	errs := prwe.handleExport(ctx, tsMap)
+	errs := prwe.handleExport(ctx, tsMap, nil)
 	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
 	// exported data in-flight will flushed flushed to the WAL before exiting.

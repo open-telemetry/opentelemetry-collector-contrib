@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"go.opentelemetry.io/collector/featuregate"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/filter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
 )
@@ -16,10 +18,18 @@ const (
 	sortTypeNumeric      = "numeric"
 	sortTypeTimestamp    = "timestamp"
 	sortTypeAlphabetical = "alphabetical"
+	sortTypeMtime        = "mtime"
 )
 
 const (
 	defaultOrderingCriteriaTopN = 1
+)
+
+var mtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.mtimeSortType",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of `ordering_criteria.mode` = `mtime`."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812"),
 )
 
 type Criteria struct {
@@ -63,10 +73,6 @@ func New(c Criteria) (*Matcher, error) {
 		}, nil
 	}
 
-	if c.OrderingCriteria.Regex == "" {
-		return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
-	}
-
 	if c.OrderingCriteria.TopN < 0 {
 		return nil, fmt.Errorf("'top_n' must be a positive integer")
 	}
@@ -75,9 +81,17 @@ func New(c Criteria) (*Matcher, error) {
 		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
 	}
 
-	regex, err := regexp.Compile(c.OrderingCriteria.Regex)
-	if err != nil {
-		return nil, fmt.Errorf("compile regex: %w", err)
+	var regex *regexp.Regexp
+	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
+		if c.OrderingCriteria.Regex == "" {
+			return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
+		}
+
+		var err error
+		regex, err = regexp.Compile(c.OrderingCriteria.Regex)
+		if err != nil {
+			return nil, fmt.Errorf("compile regex: %w", err)
+		}
 	}
 
 	var filterOpts []filter.Option
@@ -101,6 +115,11 @@ func New(c Criteria) (*Matcher, error) {
 				return nil, fmt.Errorf("timestamp sort: %w", err)
 			}
 			filterOpts = append(filterOpts, f)
+		case sortTypeMtime:
+			if !mtimeSortTypeFeatureGate.IsEnabled() {
+				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
+			}
+			filterOpts = append(filterOpts, filter.SortMtime())
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
@@ -113,6 +132,17 @@ func New(c Criteria) (*Matcher, error) {
 		topN:       c.OrderingCriteria.TopN,
 		filterOpts: filterOpts,
 	}, nil
+}
+
+// orderingCriteriaNeedsRegex returns true if any of the sort options require a regex to be set.
+func orderingCriteriaNeedsRegex(sorts []Sort) bool {
+	for _, s := range sorts {
+		switch s.SortType {
+		case sortTypeNumeric, sortTypeAlphabetical, sortTypeTimestamp:
+			return true
+		}
+	}
+	return false
 }
 
 type Matcher struct {

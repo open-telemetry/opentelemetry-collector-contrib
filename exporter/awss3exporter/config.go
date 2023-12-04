@@ -12,13 +12,15 @@ import (
 // S3UploaderConfig contains aws s3 uploader related config to controls things
 // like bucket, prefix, batching, connections, retries, etc.
 type S3UploaderConfig struct {
-	Region      string `mapstructure:"region"`
-	S3Bucket    string `mapstructure:"s3_bucket"`
-	S3Prefix    string `mapstructure:"s3_prefix"`
-	S3Partition string `mapstructure:"s3_partition"`
-	FilePrefix  string `mapstructure:"file_prefix"`
-	Endpoint    string `mapstructure:"endpoint"`
-	RoleArn     string `mapstructure:"role_arn"`
+	Region           string `mapstructure:"region"`
+	S3Bucket         string `mapstructure:"s3_bucket"`
+	S3Prefix         string `mapstructure:"s3_prefix"`
+	S3Partition      string `mapstructure:"s3_partition"`
+	FilePrefix       string `mapstructure:"file_prefix"`
+	Endpoint         string `mapstructure:"endpoint"`
+	RoleArn          string `mapstructure:"role_arn"`
+	S3ForcePathStyle bool   `mapstructure:"s3_force_path_style"`
+	DisableSSL       bool   `mapstructure:"disable_ssl"`
 }
 
 type MarshalerType string

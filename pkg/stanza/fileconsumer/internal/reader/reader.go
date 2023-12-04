@@ -82,7 +82,6 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	s := scanner.New(r, r.MaxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
-	var eof bool
 	for {
 		select {
 		case <-ctx.Done():
@@ -92,10 +91,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		ok := s.Scan()
 		if !ok {
-			if err := s.Error(); err == nil {
-				eof = true
-			} else {
+			if err := s.Error(); err != nil {
 				r.logger.Errorw("Failed during scan", zap.Error(err))
+			} else if r.DeleteAtEOF {
+				r.delete()
 			}
 			break
 		}
@@ -122,11 +121,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				r.logger.Errorw("process: %w", zap.Error(err))
 			}
 		}
-
 		r.Offset = s.Pos()
-	}
-	if eof && r.DeleteAtEOF {
-		r.delete()
 	}
 }
 

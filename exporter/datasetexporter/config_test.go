@@ -16,7 +16,7 @@ import (
 func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url":       "https://example.com",
 		"api_key":           "secret",
 		"unknown_attribute": "some value",
@@ -32,7 +32,7 @@ func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 func TestConfigUseDefaults(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 	})
@@ -108,6 +108,7 @@ func TestConfigString(t *testing.T) {
 	config := Config{
 		DatasetURL: "https://example.com",
 		APIKey:     "secret",
+		Debug:      true,
 		BufferSettings: BufferSettings{
 			MaxLifetime: 123,
 			GroupBy:     []string{"field1", "field2"},
@@ -140,7 +141,7 @@ func TestConfigString(t *testing.T) {
 	}
 
 	assert.Equal(t,
-		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:true ExportResourcePrefix:AAA ExportScopeInfo:true ExportScopePrefix:BBB DecomposeComplexMessageField:true DecomposedComplexMessagePrefix:EEE exportSettings:{ExportSeparator:CCC ExportDistinguishingSuffix:DDD}}; TracesSettings: {exportSettings:{ExportSeparator:TTT ExportDistinguishingSuffix:UUU}}; ServerHostSettings: {UseHostName:false ServerHost:foo-bar}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
+		"DatasetURL: https://example.com; APIKey: [REDACTED] (6); Debug: true; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:true ExportResourcePrefix:AAA ExportScopeInfo:true ExportScopePrefix:BBB DecomposeComplexMessageField:true DecomposedComplexMessagePrefix:EEE exportSettings:{ExportSeparator:CCC ExportDistinguishingSuffix:DDD}}; TracesSettings: {exportSettings:{ExportSeparator:TTT ExportDistinguishingSuffix:UUU}}; ServerHostSettings: {UseHostName:false ServerHost:foo-bar}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
 		config.String(),
 	)
 }
@@ -148,7 +149,7 @@ func TestConfigString(t *testing.T) {
 func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 		"logs": map[string]any{
@@ -163,7 +164,7 @@ func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 		"logs": map[string]any{

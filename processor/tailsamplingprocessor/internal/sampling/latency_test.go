@@ -15,7 +15,7 @@ import (
 )
 
 func TestEvaluate_Latency(t *testing.T) {
-	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000)
+	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 0)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	now := time.Now()
@@ -41,6 +41,93 @@ func TestEvaluate_Latency(t *testing.T) {
 				{
 					StartTime: now,
 					Duration:  5000 * time.Millisecond,
+				},
+			},
+			Sampled,
+		},
+		{
+			"total trace duration is longer than threshold but every single span is shorter",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  3000 * time.Millisecond,
+				},
+				{
+					StartTime: now.Add(2500 * time.Millisecond),
+					Duration:  3000 * time.Millisecond,
+				},
+			},
+			Sampled,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpans(c.Spans))
+
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
+func TestEvaluate_Bounded_Latency(t *testing.T) {
+	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 10000)
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	now := time.Now()
+
+	cases := []struct {
+		Desc     string
+		Spans    []spanWithTimeAndDuration
+		Decision Decision
+	}{
+		{
+			"trace duration shorter than lower bound",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  4500 * time.Millisecond,
+				},
+			},
+			NotSampled,
+		},
+		{
+			"trace duration is equal to lower bound",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  5000 * time.Millisecond,
+				},
+			},
+			NotSampled,
+		},
+		{
+			"trace duration is within lower and upper bounds",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  5001 * time.Millisecond,
+				},
+			},
+			Sampled,
+		},
+		{
+			"trace duration is above upper bound",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  10001 * time.Millisecond,
+				},
+			},
+			NotSampled,
+		},
+		{
+			"trace duration equals upper bound",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  10000 * time.Millisecond,
 				},
 			},
 			Sampled,

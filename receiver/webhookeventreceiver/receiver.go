@@ -75,7 +75,7 @@ func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consum
 		cfg:         &cfg,
 		logConsumer: consumer,
 		obsrecv:     obsrecv,
-		gzipPool:    &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
+		gzipPool:    &sync.Pool{New: func() any { return new(gzip.Reader) }},
 	}
 
 	return er, nil

@@ -36,7 +36,7 @@ func TestDeploymentMetrics(t *testing.T) {
 
 	rm := m.ResourceMetrics().At(0)
 	assert.Equal(t,
-		map[string]interface{}{
+		map[string]any{
 			"k8s.deployment.uid":  "test-deployment-1-uid",
 			"k8s.deployment.name": "test-deployment-1",
 			"k8s.namespace.name":  "test-namespace",

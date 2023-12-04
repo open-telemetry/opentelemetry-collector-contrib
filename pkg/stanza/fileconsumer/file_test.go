@@ -1071,6 +1071,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 
 	operator, emitChan := buildTestManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.movingAverageMatches = 10
 
 	temps := make([]*os.File, 0, initFiles+moreFiles)
 	for i := 0; i < initFiles; i++ {
@@ -1493,10 +1494,8 @@ func TestReadExistingLogsWithHeader(t *testing.T) {
 }
 
 func TestDeleteAfterRead_SkipPartials(t *testing.T) {
-	bytesPerLine := 100
-	shortFileLine := tokenWithLength(bytesPerLine - 1)
+	shortFileLine := "short file line"
 	longFileLines := 100000
-	longFileFirstLine := "first line of long file\n"
 
 	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
 	defer func() {
@@ -1512,15 +1511,13 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	shortFile := openTemp(t, tempDir)
-	_, err := shortFile.WriteString(string(shortFileLine) + "\n")
+	_, err := shortFile.WriteString(shortFileLine + "\n")
 	require.NoError(t, err)
 	require.NoError(t, shortFile.Close())
 
 	longFile := openTemp(t, tempDir)
-	_, err = longFile.WriteString(longFileFirstLine)
-	require.NoError(t, err)
 	for line := 0; line < longFileLines; line++ {
-		_, err := longFile.WriteString(string(tokenWithLength(bytesPerLine-1)) + "\n")
+		_, err := longFile.WriteString(string(tokenWithLength(100)) + "\n")
 		require.NoError(t, err)
 	}
 	require.NoError(t, longFile.Close())
@@ -1540,22 +1537,26 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 		operator.poll(ctx)
 	}()
 
-	for !(shortOne && longOne) {
-		if line := waitForEmit(t, emitCalls); string(line.token) == string(shortFileLine) {
+	for !shortOne || !longOne {
+		if line := waitForEmit(t, emitCalls); string(line.token) == shortFileLine {
 			shortOne = true
 		} else {
 			longOne = true
 		}
 	}
 
+	// Short file was fully consumed and should eventually be deleted.
+	// Enforce assertion before canceling because EOF is not necessarily detected
+	// immediately when the token is emitted. An additional scan may be necessary.
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.NoFileExists(c, shortFile.Name())
+	}, 100*time.Millisecond, time.Millisecond)
+
 	// Stop consuming before long file has been fully consumed
 	cancel()
 	wg.Wait()
 
-	// short file was fully consumed and should have been deleted
-	require.NoFileExists(t, shortFile.Name())
-
-	// long file was partially consumed and should NOT have been deleted
+	// Long file was partially consumed and should NOT have been deleted.
 	require.FileExists(t, longFile.Name())
 }
 
@@ -1662,6 +1663,10 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	waitForToken(t, emitCalls, []byte(content))
 	expectNoTokens(t, emitCalls)
 	operator.wg.Wait()
+	if runtime.GOOS != "windows" {
+		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
+		require.Len(t, operator.previousPollFiles, 1)
+	}
 
 	// keep append data to file1 and file2
 	newContent := "bbbbbbbbbbbb"
@@ -1673,4 +1678,23 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	// be ingested from the beginning
 	waitForTokens(t, emitCalls, []byte(content), []byte(newContent1), []byte(newContent))
 	operator.wg.Wait()
+}
+
+func TestWindowsFilesClosedImmediately(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "testlog\n")
+	require.NoError(t, temp.Close())
+
+	operator.poll(context.Background())
+	waitForToken(t, emitCalls, []byte("testlog"))
+
+	// On Windows, poll should close the file after reading it. We can test this by trying to move it.
+	require.NoError(t, os.Rename(temp.Name(), temp.Name()+"_renamed"))
 }

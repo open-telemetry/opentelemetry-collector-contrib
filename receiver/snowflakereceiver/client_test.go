@@ -65,7 +65,7 @@ func TestMetricQueries(t *testing.T) {
 		query   string
 		columns []string
 		params  []driver.Value
-		expect  interface{}
+		expect  any
 	}{
 		{
 			desc:    "FetchBillingMetrics",

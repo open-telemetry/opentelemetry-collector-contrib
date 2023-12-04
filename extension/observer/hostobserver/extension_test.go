@@ -123,7 +123,7 @@ type hostPort struct {
 	err  error
 }
 
-func getHostAndPort(i interface{}) hostPort {
+func getHostAndPort(i any) hostPort {
 	var host, port string
 	var err error
 	switch conn := i.(type) {

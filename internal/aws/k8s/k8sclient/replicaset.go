@@ -139,7 +139,7 @@ func (c *replicaSetClient) shutdown() {
 	c.stopped = true
 }
 
-func transformFuncReplicaSet(obj interface{}) (interface{}, error) {
+func transformFuncReplicaSet(obj any) (any, error) {
 	replicaSet, ok := obj.(*appsv1.ReplicaSet)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not ReplicaSet type", obj)

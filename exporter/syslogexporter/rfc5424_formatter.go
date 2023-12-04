@@ -73,7 +73,7 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 	sdElements := []string{}
 	for key, val := range structuredDataAttributeValue.Map().AsRaw() {
 		sdElements = append(sdElements, key)
-		vval, ok := val.(map[string]interface{})
+		vval, ok := val.(map[string]any)
 		if !ok {
 			continue
 		}
