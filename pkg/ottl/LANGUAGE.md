@@ -4,12 +4,12 @@ The OTTL grammar includes function invocations, Values and Boolean Expressions. 
 
 ### Design principles
 
-The OTTL is intended as a domain-specific language (DSL) for telemetry mutation and generation,
+OTTL is intended as a domain-specific language (DSL) for telemetry mutation and generation,
 and is not intended to be used as a general-purpose programming language.
 
-The OTTL has been designed to work directly with [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata).
-While the OTTL can work with external data formats due to being implemented directly in Go instead of on top of a custom VM,
-it is not expressly intended to perform operations that don't touch `pdata` in some way.
+OTTL has been designed to work directly with [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata).
+While OTTL can work with external data formats due to being implemented directly in Go instead of on top of a custom VM,
+it is not expressly intended to perform operations that don't touch pdata in some way.
 
 ### Editors
 
