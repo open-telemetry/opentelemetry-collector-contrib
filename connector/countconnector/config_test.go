@@ -413,7 +413,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("spans condition: metric %q: unable to parse OTTL statement", defaultMetricNameSpans),
+			expect: fmt.Sprintf("spans condition: metric %q: unable to parse OTTL condition", defaultMetricNameSpans),
 		},
 		{
 			name: "invalid_condition_spanevent",
@@ -425,7 +425,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("spanevents condition: metric %q: unable to parse OTTL statement", defaultMetricNameSpanEvents),
+			expect: fmt.Sprintf("spanevents condition: metric %q: unable to parse OTTL condition", defaultMetricNameSpanEvents),
 		},
 		{
 			name: "invalid_condition_metric",
@@ -437,7 +437,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("metrics condition: metric %q: unable to parse OTTL statement", defaultMetricNameMetrics),
+			expect: fmt.Sprintf("metrics condition: metric %q: unable to parse OTTL condition", defaultMetricNameMetrics),
 		},
 		{
 			name: "invalid_condition_datapoint",
@@ -449,7 +449,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("datapoints condition: metric %q: unable to parse OTTL statement", defaultMetricNameDataPoints),
+			expect: fmt.Sprintf("datapoints condition: metric %q: unable to parse OTTL condition", defaultMetricNameDataPoints),
 		},
 		{
 			name: "invalid_condition_log",
@@ -461,7 +461,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL statement", defaultMetricNameLogs),
+			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL condition", defaultMetricNameLogs),
 		},
 	}
 

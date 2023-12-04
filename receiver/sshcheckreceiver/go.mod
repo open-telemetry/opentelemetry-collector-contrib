@@ -4,17 +4,17 @@ go 1.20
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.90.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.90.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.90.1
 	github.com/pkg/sftp v1.13.6
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.90.0
-	go.opentelemetry.io/collector/confmap v0.90.0
-	go.opentelemetry.io/collector/consumer v0.90.0
-	go.opentelemetry.io/collector/extension v0.90.0
-	go.opentelemetry.io/collector/extension/auth v0.90.0
+	go.opentelemetry.io/collector/component v0.90.1
+	go.opentelemetry.io/collector/confmap v0.90.1
+	go.opentelemetry.io/collector/consumer v0.90.1
+	go.opentelemetry.io/collector/extension v0.90.1
+	go.opentelemetry.io/collector/extension/auth v0.90.1
 	go.opentelemetry.io/collector/pdata v1.0.0
-	go.opentelemetry.io/collector/receiver v0.90.0
+	go.opentelemetry.io/collector/receiver v0.90.1
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.15.0
 )
@@ -23,9 +23,9 @@ require (
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.90.0 // indirect
-	go.opentelemetry.io/collector v0.90.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.90.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.90.1 // indirect
+	go.opentelemetry.io/collector v0.90.1 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.90.1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 )
 
