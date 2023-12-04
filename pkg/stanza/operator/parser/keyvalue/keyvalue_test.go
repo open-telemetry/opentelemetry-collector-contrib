@@ -518,6 +518,23 @@ key=value`,
 			false,
 		},
 		{
+			"multiple-values-contain-delimiter",
+			func(kv *Config) {},
+			&entry.Entry{
+				Body: `one=1=i two="2=ii" three=3=iii`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"one":   "1=i",
+					"two":   "2=ii",
+					"three": "3=iii",
+				},
+				Body: `one=1=i two="2=ii" three=3=iii`,
+			},
+			false,
+			false,
+		},
+		{
 			"empty-input",
 			func(kv *Config) {},
 			&entry.Entry{},
