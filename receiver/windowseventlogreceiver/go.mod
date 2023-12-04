@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/consumer v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/receiver v0.90.2-0.20231201205146-6e2fdc755b34
-	golang.org/x/sys v0.14.0
+	golang.org/x/sys v0.15.0
 )
 
 require (
