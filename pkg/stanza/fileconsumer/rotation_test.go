@@ -275,7 +275,7 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		logger := log.New(&rotator, "", 0)
 
 		expected := make([][]byte, 0, tc.totalLines)
-		baseStr := string(tokenWithLength(46)) // + ' 123'
+		baseStr := string(filetest.TokenWithLength(46)) // + ' 123'
 		for i := 0; i < tc.totalLines; i++ {
 			expected = append(expected, []byte(fmt.Sprintf("%s %3d", baseStr, i)))
 		}
@@ -626,9 +626,9 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	operator, sink := testManager(t, cfg)
 	persister := testutil.NewUnscopedMockPersister()
 
-	log1 := tokenWithLength(1001)
-	log2 := tokenWithLength(1002)
-	log3 := tokenWithLength(1003)
+	log1 := filetest.TokenWithLength(1001)
+	log2 := filetest.TokenWithLength(1002)
+	log3 := filetest.TokenWithLength(1003)
 
 	temp := filetest.OpenTemp(t, tempDir)
 	tempName := temp.Name()

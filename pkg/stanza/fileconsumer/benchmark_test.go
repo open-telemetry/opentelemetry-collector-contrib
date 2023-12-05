@@ -28,7 +28,7 @@ type benchFile struct {
 }
 
 func simpleTextFile(b *testing.B, file *os.File) *benchFile {
-	line := string(tokenWithLength(49)) + "\n"
+	line := string(filetest.TokenWithLength(49)) + "\n"
 	return &benchFile{
 		File: file,
 		log: func(_ int) {

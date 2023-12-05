@@ -4,7 +4,6 @@
 package fileconsumer
 
 import (
-	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,13 +22,4 @@ func testManagerWithSink(t *testing.T, cfg *Config, sink *emittest.Sink) *Manage
 	require.NoError(t, err)
 	t.Cleanup(func() { input.closePreviousFiles() })
 	return input
-}
-
-func tokenWithLength(length int) []byte {
-	charset := "abcdefghijklmnopqrstuvwxyz"
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
-	}
-	return b
 }

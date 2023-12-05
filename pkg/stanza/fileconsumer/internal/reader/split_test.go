@@ -21,7 +21,7 @@ import (
 
 func TestPersistFlusher(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
-	f, sink := testFactory(t, split.Config{}, defaultMaxLogSize, flushPeriod)
+	f, sink := testFactory(t, withFlushPeriod(flushPeriod))
 
 	temp := filetest.OpenTemp(t, t.TempDir())
 	fp, err := f.NewFingerprint(temp)
@@ -107,7 +107,7 @@ func TestTokenization(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			f, sink := testFactory(t, split.Config{}, defaultMaxLogSize, defaultFlushPeriod)
+			f, sink := testFactory(t)
 
 			temp := filetest.OpenTemp(t, t.TempDir())
 			_, err := temp.Write(tc.fileContent)
@@ -137,7 +137,7 @@ func TestTokenizationTooLong(t *testing.T) {
 		[]byte("aaa"),
 	}
 
-	f, sink := testFactory(t, split.Config{}, 10, defaultFlushPeriod)
+	f, sink := testFactory(t, withMaxLogSize(10))
 
 	temp := filetest.OpenTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -167,9 +167,8 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 		[]byte("2023-01-01 2"),
 	}
 
-	sCfg := split.Config{}
-	sCfg.LineStartPattern = `\d+-\d+-\d+`
-	f, sink := testFactory(t, sCfg, 15, defaultFlushPeriod)
+	sCfg := split.Config{LineStartPattern: `\d+-\d+-\d+`}
+	f, sink := testFactory(t, withSplitConfig(sCfg), withMaxLogSize(15))
 
 	temp := filetest.OpenTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -191,7 +190,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 func TestHeaderFingerprintIncluded(t *testing.T) {
 	fileContent := []byte("#header-line\naaa\n")
 
-	f, _ := testFactory(t, split.Config{}, 10, defaultFlushPeriod)
+	f, _ := testFactory(t, withMaxLogSize(10))
 
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
