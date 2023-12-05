@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package fileconsumer
+package reader
 
 import (
 	"context"
@@ -12,21 +12,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestPersistFlusher(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
-	f, sink := testReaderFactory(t, split.Config{}, defaultMaxLogSize, flushPeriod)
+	f, sink := testFactory(t, split.Config{}, defaultMaxLogSize, flushPeriod)
 
 	temp := filetest.OpenTemp(t, t.TempDir())
 	fp, err := f.NewFingerprint(temp)
@@ -112,7 +107,7 @@ func TestTokenization(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			f, sink := testReaderFactory(t, split.Config{}, defaultMaxLogSize, defaultFlushPeriod)
+			f, sink := testFactory(t, split.Config{}, defaultMaxLogSize, defaultFlushPeriod)
 
 			temp := filetest.OpenTemp(t, t.TempDir())
 			_, err := temp.Write(tc.fileContent)
@@ -142,7 +137,7 @@ func TestTokenizationTooLong(t *testing.T) {
 		[]byte("aaa"),
 	}
 
-	f, sink := testReaderFactory(t, split.Config{}, 10, defaultFlushPeriod)
+	f, sink := testFactory(t, split.Config{}, 10, defaultFlushPeriod)
 
 	temp := filetest.OpenTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -174,7 +169,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 	sCfg := split.Config{}
 	sCfg.LineStartPattern = `\d+-\d+-\d+`
-	f, sink := testReaderFactory(t, sCfg, 15, defaultFlushPeriod)
+	f, sink := testFactory(t, sCfg, 15, defaultFlushPeriod)
 
 	temp := filetest.OpenTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -196,7 +191,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 func TestHeaderFingerprintIncluded(t *testing.T) {
 	fileContent := []byte("#header-line\naaa\n")
 
-	f, _ := testReaderFactory(t, split.Config{}, 10, defaultFlushPeriod)
+	f, _ := testFactory(t, split.Config{}, 10, defaultFlushPeriod)
 
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
@@ -222,27 +217,4 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	r.ReadToEnd(context.Background())
 
 	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
-}
-
-func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPeriod time.Duration) (*reader.Factory, *emittest.Sink) {
-	enc, err := decode.LookupEncoding(defaultEncoding)
-	require.NoError(t, err)
-
-	splitFunc, err := sCfg.Func(enc, false, maxLogSize)
-	require.NoError(t, err)
-
-	sink := emittest.NewSink()
-	return &reader.Factory{
-		SugaredLogger: testutil.Logger(t),
-		Config: &reader.Config{
-			FingerprintSize: fingerprint.DefaultSize,
-			MaxLogSize:      maxLogSize,
-			Emit:            sink.Callback,
-			FlushTimeout:    flushPeriod,
-		},
-		FromBeginning: true,
-		Encoding:      enc,
-		SplitFunc:     splitFunc,
-		TrimFunc:      trim.Whitespace,
-	}, sink
 }
