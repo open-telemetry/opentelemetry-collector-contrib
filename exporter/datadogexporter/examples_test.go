@@ -110,6 +110,7 @@ func newTestComponents(t *testing.T) otelcol.Factories {
 			probabilisticsamplerprocessor.NewFactory(),
 		}...,
 	)
+	require.NoError(t, err)
 	factories.Connectors, err = connector.MakeFactoryMap(
 		[]connector.Factory{
 			datadogconnector.NewFactory(),
