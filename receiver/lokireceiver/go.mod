@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.90.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.90.1 // indirect
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector v0.90.2-0.20231205132409-67b1ae9cb384 // indirect
 	go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/confmap v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/consumer v0.90.2-0.20231201205146-6e2fdc755b34

@@ -35,15 +35,12 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
-github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/tg123/go-htpasswd v1.2.1 h1:i4wfsX1KvvkyoMiHZzjS0VzbAPWfxzI8INcZAKtutoU=
 github.com/tg123/go-htpasswd v1.2.1/go.mod h1:erHp1B86KXdwQf1X5ZrLb7erXZnWueEQezb2dql4q58=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector v0.90.2-0.20231201205146-6e2fdc755b34 h1:fX9f1AR7M4XA7hSB2/xlnfuMpCJjE5UdwXCpo7Z6PIM=
-go.opentelemetry.io/collector v0.90.2-0.20231201205146-6e2fdc755b34/go.mod h1:Yr6+clgwJ1tkYYFUWrmXtARlpbJcavCWUNgVUF/2oic=
 go.opentelemetry.io/collector v0.90.2-0.20231205132409-67b1ae9cb384 h1:LE1O4zLZCKT9CH4fXQFwBosiYBPNf+mcQ6/MzwawJU8=
 go.opentelemetry.io/collector v0.90.2-0.20231205132409-67b1ae9cb384/go.mod h1:Yr6+clgwJ1tkYYFUWrmXtARlpbJcavCWUNgVUF/2oic=
 go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34 h1:WkXc5BFLxzyanLYojjhjq/XWrlB+ZnAGtVX/pe0GPaE=

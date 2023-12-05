@@ -91,7 +91,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector v0.90.2-0.20231205132409-67b1ae9cb384 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
 	go.opentelemetry.io/collector/connector v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
 	go.opentelemetry.io/collector/exporter v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
