@@ -12,6 +12,7 @@ package tools // import "github.com/open-telemetry/opentelemetry-collector-contr
 // This ensures that all systems use the same version of tools in addition to regular dependencies.
 
 import (
+	_ "github.com/Khan/genqlient"
 	_ "github.com/client9/misspell/cmd/misspell"
 	_ "github.com/daixiang0/gci"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"

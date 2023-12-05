@@ -23,6 +23,7 @@ body:
       - connector/count
       - connector/datadog
       - connector/exceptions
+      - connector/failover
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics

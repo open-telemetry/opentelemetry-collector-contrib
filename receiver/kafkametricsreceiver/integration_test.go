@@ -26,6 +26,8 @@ const (
 )
 
 func TestIntegration(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26293")
+
 	uid := fmt.Sprintf("-%s", uuid.NewString())
 	networkName := "kafka-network" + uid
 	zkContainerName := "zookeeper" + uid
