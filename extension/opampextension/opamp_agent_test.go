@@ -5,12 +5,15 @@ package opampextension
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
@@ -24,7 +27,8 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.Equal(t, "otelcoltest", o.agentType)
 	assert.Equal(t, "test version", o.agentVersion)
 	assert.NotEmpty(t, o.instanceID.String())
-	assert.NotEmpty(t, o.effectiveConfig)
+	assert.True(t, o.capabilities.ReportsEffectiveConfig)
+	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 }
 
@@ -75,10 +79,21 @@ func TestComposeEffectiveConfig(t *testing.T) {
 	set := extensiontest.NewNopCreateSettings()
 	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, o.effectiveConfig)
+	assert.Empty(t, o.effectiveConfig)
 
 	ec := o.composeEffectiveConfig()
+	assert.Nil(t, ec)
+
+	ecFileName := filepath.Join("testdata", "effective.yaml")
+	cm, err := confmaptest.LoadConf(ecFileName)
+	assert.NoError(t, err)
+	expected, err := os.ReadFile(ecFileName)
+	assert.NoError(t, err)
+
+	o.updateEffectiveConfig(cm)
+	ec = o.composeEffectiveConfig()
 	assert.NotNil(t, ec)
+	assert.YAMLEq(t, string(expected), string(ec.ConfigMap.ConfigMap[""].Body))
 }
 
 func TestShutdown(t *testing.T) {

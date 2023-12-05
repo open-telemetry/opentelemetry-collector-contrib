@@ -150,7 +150,12 @@ func (m *Manager) poll(ctx context.Context) {
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.FromBeginning = true
 	if m.persister != nil {
-		if err := checkpoint.Save(context.Background(), m.persister, m.knownFiles); err != nil {
+		allCheckpoints := make([]*reader.Metadata, 0, len(m.knownFiles)+len(m.previousPollFiles))
+		allCheckpoints = append(allCheckpoints, m.knownFiles...)
+		for _, r := range m.previousPollFiles {
+			allCheckpoints = append(allCheckpoints, r.Metadata)
+		}
+		if err := checkpoint.Save(context.Background(), m.persister, allCheckpoints); err != nil {
 			m.Errorw("save offsets", zap.Error(err))
 		}
 	}
