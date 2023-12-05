@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
@@ -797,4 +799,51 @@ func TestBuildWithHeader(t *testing.T) {
 			tc.validate(t, input)
 		})
 	}
+}
+
+// includeDir is a builder-like helper for quickly setting up a test config
+func (c *Config) includeDir(dir string) *Config {
+	c.Include = append(c.Include, fmt.Sprintf("%s/*", dir))
+	return c
+}
+
+// withHeader is a builder-like helper for quickly setting up a test config header
+func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
+	regexOpConfig := regex.NewConfig()
+	regexOpConfig.Regex = extractRegex
+
+	c.Header = &HeaderConfig{
+		Pattern: headerMatchPattern,
+		MetadataOperators: []operator.Config{
+			{
+				Builder: regexOpConfig,
+			},
+		},
+	}
+
+	return c
+}
+
+const mockOperatorType = "mock"
+
+func init() {
+	operator.Register(mockOperatorType, func() operator.Builder { return newMockOperatorConfig(NewConfig()) })
+}
+
+type mockOperatorConfig struct {
+	helper.BasicConfig `mapstructure:",squash"`
+	*Config            `mapstructure:",squash"`
+}
+
+func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
+	return &mockOperatorConfig{
+		BasicConfig: helper.NewBasicConfig(mockOperatorType, mockOperatorType),
+		Config:      cfg,
+	}
+}
+
+// This function is impelmented for compatibility with operatortest
+// but is not meant to be used directly
+func (h *mockOperatorConfig) Build(*zap.SugaredLogger) (operator.Operator, error) {
+	panic("not impelemented")
 }
