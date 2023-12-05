@@ -30,7 +30,7 @@ var (
 	statCountTracesSampled       = stats.Int64("count_traces_sampled", "Count of traces that were sampled or not per sampling policy", stats.UnitDimensionless)
 	statCountGlobalTracesSampled = stats.Int64("global_count_traces_sampled", "Global count of traces that were sampled or not by at least one policy", stats.UnitDimensionless)
 
-	statDroppedTooEarlyCount    = stats.Int64("sampling_trace_dropped_too_early", "Count of traces that needed to be dropped the configured wait time", stats.UnitDimensionless)
+	statDroppedTooEarlyCount    = stats.Int64("sampling_trace_dropped_too_early", "Count of traces that needed to be dropped before the configured wait time", stats.UnitDimensionless)
 	statNewTraceIDReceivedCount = stats.Int64("new_trace_id_received", "Counts the arrival of new traces", stats.UnitDimensionless)
 	statTracesOnMemoryGauge     = stats.Int64("sampling_traces_on_memory", "Tracks the number of traces current on memory", stats.UnitDimensionless)
 )
