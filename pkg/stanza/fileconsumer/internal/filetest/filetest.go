@@ -4,6 +4,7 @@
 package filetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 
 import (
+	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,4 +37,13 @@ func OpenTempWithPattern(t testing.TB, tempDir, pattern string) *os.File {
 func WriteString(t testing.TB, file *os.File, s string) {
 	_, err := file.WriteString(s)
 	require.NoError(t, err)
+}
+
+func TokenWithLength(length int) []byte {
+	charset := "abcdefghijklmnopqrstuvwxyz"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return b
 }

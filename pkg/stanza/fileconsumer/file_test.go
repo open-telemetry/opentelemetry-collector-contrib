@@ -733,7 +733,7 @@ func TestDecodeBufferIsResized(t *testing.T) {
 	}()
 
 	temp := filetest.OpenTemp(t, tempDir)
-	expected := tokenWithLength(1<<12 + 1)
+	expected := filetest.TokenWithLength(1<<12 + 1)
 	filetest.WriteString(t, temp, string(expected)+"\n")
 
 	sink.ExpectToken(t, expected)
@@ -938,10 +938,10 @@ func TestRestartOffsets(t *testing.T) {
 
 			logFile := filetest.OpenTemp(t, tempDir)
 
-			before1stRun := tokenWithLength(tc.lineLength)
-			during1stRun := tokenWithLength(tc.lineLength)
-			duringRestart := tokenWithLength(tc.lineLength)
-			during2ndRun := tokenWithLength(tc.lineLength)
+			before1stRun := filetest.TokenWithLength(tc.lineLength)
+			during1stRun := filetest.TokenWithLength(tc.lineLength)
+			duringRestart := filetest.TokenWithLength(tc.lineLength)
+			during2ndRun := filetest.TokenWithLength(tc.lineLength)
 
 			operatorOne, sink1 := testManager(t, cfg)
 			filetest.WriteString(t, logFile, string(before1stRun)+"\n")
@@ -1028,7 +1028,7 @@ func TestFileBatching(t *testing.T) {
 	expectedTokens := make([][]byte, 0, files*linesPerFile)
 	for i, temp := range temps {
 		for j := 0; j < linesPerFile; j++ {
-			message := fmt.Sprintf("%s %d %d", tokenWithLength(100), i, j)
+			message := fmt.Sprintf("%s %d %d", filetest.TokenWithLength(100), i, j)
 			_, err := temp.WriteString(message + "\n")
 			require.NoError(t, err)
 			expectedTokens = append(expectedTokens, []byte(message))
@@ -1045,7 +1045,7 @@ func TestFileBatching(t *testing.T) {
 	expectedTokens = make([][]byte, 0, files*linesPerFile)
 	for i, temp := range temps {
 		for j := 0; j < linesPerFile; j++ {
-			message := fmt.Sprintf("%s %d %d", tokenWithLength(20), i, j)
+			message := fmt.Sprintf("%s %d %d", filetest.TokenWithLength(20), i, j)
 			_, err := temp.WriteString(message + "\n")
 			require.NoError(t, err)
 			expectedTokens = append(expectedTokens, []byte(message))
@@ -1108,173 +1108,6 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 	// Poll again and expect one line from each file.
 	operator.poll(context.Background())
 	sink.ExpectTokens(t, expectedTokens...)
-}
-
-func TestFileReader_FingerprintUpdated(t *testing.T) {
-	t.Parallel()
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	operator, sink := testManager(t, cfg)
-
-	temp := filetest.OpenTemp(t, tempDir)
-	tempCopy := filetest.OpenFile(t, temp.Name())
-	fp, err := operator.readerFactory.NewFingerprint(temp)
-	require.NoError(t, err)
-
-	reader, err := operator.readerFactory.NewReader(tempCopy, fp)
-	require.NoError(t, err)
-	defer reader.Close()
-
-	filetest.WriteString(t, temp, "testlog1\n")
-	reader.ReadToEnd(context.Background())
-	sink.ExpectToken(t, []byte("testlog1"))
-	require.Equal(t, []byte("testlog1\n"), reader.Fingerprint.FirstBytes)
-}
-
-// Test that a fingerprint:
-// - Starts empty
-// - Updates as a file is read
-// - Stops updating when the max fingerprint size is reached
-// - Stops exactly at max fingerprint size, regardless of content
-func TestFingerprintGrowsAndStops(t *testing.T) {
-	t.Parallel()
-
-	// Use a number with many factors.
-	// Sometimes fingerprint length will align with
-	// the end of a line, sometimes not. Test both.
-	maxFP := 360
-
-	// Use prime numbers to ensure variation in
-	// whether or not they are factors of maxFP
-	lineLens := []int{3, 5, 7, 11, 13, 17, 19, 23, 27}
-
-	for _, lineLen := range lineLens {
-		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
-			t.Parallel()
-
-			tempDir := t.TempDir()
-			cfg := NewConfig().includeDir(tempDir)
-			cfg.StartAt = "beginning"
-			cfg.FingerprintSize = helper.ByteSize(maxFP)
-			operator, _ := testManager(t, cfg)
-
-			temp := filetest.OpenTemp(t, tempDir)
-			tempCopy := filetest.OpenFile(t, temp.Name())
-			fp, err := operator.readerFactory.NewFingerprint(temp)
-			require.NoError(t, err)
-			require.Equal(t, []byte(""), fp.FirstBytes)
-
-			reader, err := operator.readerFactory.NewReader(tempCopy, fp)
-			require.NoError(t, err)
-			defer reader.Close()
-
-			// keep track of what has been written to the file
-			var fileContent []byte
-
-			// keep track of expected fingerprint size
-			expectedFP := 0
-
-			// Write lines until file is much larger than the length of the fingerprint
-			for len(fileContent) < 2*maxFP {
-				expectedFP += lineLen
-				if expectedFP > maxFP {
-					expectedFP = maxFP
-				}
-
-				line := string(tokenWithLength(lineLen-1)) + "\n"
-				fileContent = append(fileContent, []byte(line)...)
-
-				filetest.WriteString(t, temp, line)
-				reader.ReadToEnd(context.Background())
-				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
-			}
-		})
-	}
-}
-
-// This is same test like TestFingerprintGrowsAndStops, but with additional check for fingerprint size check
-// Test that a fingerprint:
-// - Starts empty
-// - Updates as a file is read
-// - Stops updating when the max fingerprint size is reached
-// - Stops exactly at max fingerprint size, regardless of content
-// - Do not change size after fingerprint configuration change
-func TestFingerprintChangeSize(t *testing.T) {
-	t.Parallel()
-
-	// Use a number with many factors.
-	// Sometimes fingerprint length will align with
-	// the end of a line, sometimes not. Test both.
-	maxFP := 360
-
-	// Use prime numbers to ensure variation in
-	// whether or not they are factors of maxFP
-	lineLens := []int{3, 5, 7, 11, 13, 17, 19, 23, 27}
-
-	for _, lineLen := range lineLens {
-		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
-			t.Parallel()
-
-			tempDir := t.TempDir()
-			cfg := NewConfig().includeDir(tempDir)
-			cfg.StartAt = "beginning"
-			cfg.FingerprintSize = helper.ByteSize(maxFP)
-			operator, _ := testManager(t, cfg)
-
-			temp := filetest.OpenTemp(t, tempDir)
-			tempCopy := filetest.OpenFile(t, temp.Name())
-			fp, err := operator.readerFactory.NewFingerprint(temp)
-			require.NoError(t, err)
-			require.Equal(t, []byte(""), fp.FirstBytes)
-
-			reader, err := operator.readerFactory.NewReader(tempCopy, fp)
-			require.NoError(t, err)
-			defer reader.Close()
-
-			// keep track of what has been written to the file
-			var fileContent []byte
-
-			// keep track of expected fingerprint size
-			expectedFP := 0
-
-			// Write lines until file is much larger than the length of the fingerprint
-			for len(fileContent) < 2*maxFP {
-				expectedFP += lineLen
-				if expectedFP > maxFP {
-					expectedFP = maxFP
-				}
-
-				line := string(tokenWithLength(lineLen-1)) + "\n"
-				fileContent = append(fileContent, []byte(line)...)
-
-				filetest.WriteString(t, temp, line)
-				reader.ReadToEnd(context.Background())
-				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
-			}
-
-			// Test fingerprint change
-			// Change fingerprint and try to read file again
-			// We do not expect fingerprint change
-			// We test both increasing and decreasing fingerprint size
-			reader.Config.FingerprintSize = maxFP * (lineLen / 3)
-			line := string(tokenWithLength(lineLen-1)) + "\n"
-			fileContent = append(fileContent, []byte(line)...)
-
-			filetest.WriteString(t, temp, line)
-			reader.ReadToEnd(context.Background())
-			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
-
-			reader.Config.FingerprintSize = maxFP / 2
-			line = string(tokenWithLength(lineLen-1)) + "\n"
-			fileContent = append(fileContent, []byte(line)...)
-
-			filetest.WriteString(t, temp, line)
-			reader.ReadToEnd(context.Background())
-			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
-		})
-	}
 }
 
 func TestEncodings(t *testing.T) {
@@ -1379,7 +1212,7 @@ func TestDeleteAfterRead(t *testing.T) {
 	// Write logs to each file
 	for i, temp := range temps {
 		for j := 0; j < linesPerFile; j++ {
-			line := tokenWithLength(100)
+			line := filetest.TokenWithLength(100)
 			message := fmt.Sprintf("%s %d %d", line, i, j)
 			_, err := temp.WriteString(message + "\n")
 			require.NoError(t, err)
@@ -1436,7 +1269,7 @@ func TestMaxBatching(t *testing.T) {
 	numExpectedTokens := expectedMaxFilesPerPoll * linesPerFile
 	for i, temp := range temps {
 		for j := 0; j < linesPerFile; j++ {
-			message := fmt.Sprintf("%s %d %d", tokenWithLength(100), i, j)
+			message := fmt.Sprintf("%s %d %d", filetest.TokenWithLength(100), i, j)
 			_, err := temp.WriteString(message + "\n")
 			require.NoError(t, err)
 		}
@@ -1451,7 +1284,7 @@ func TestMaxBatching(t *testing.T) {
 	// Write more logs to each file so we can validate that all files are still known
 	for i, temp := range temps {
 		for j := 0; j < linesPerFile; j++ {
-			message := fmt.Sprintf("%s %d %d", tokenWithLength(20), i, j)
+			message := fmt.Sprintf("%s %d %d", filetest.TokenWithLength(20), i, j)
 			_, err := temp.WriteString(message + "\n")
 			require.NoError(t, err)
 		}
@@ -1519,7 +1352,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 
 	longFile := filetest.OpenTemp(t, tempDir)
 	for line := 0; line < longFileLines; line++ {
-		_, err := longFile.WriteString(string(tokenWithLength(100)) + "\n")
+		_, err := longFile.WriteString(string(filetest.TokenWithLength(100)) + "\n")
 		require.NoError(t, err)
 	}
 	require.NoError(t, longFile.Close())
