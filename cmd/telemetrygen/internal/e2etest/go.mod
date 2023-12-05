@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.90.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.90.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/consumer v0.90.2-0.20231201205146-6e2fdc755b34
