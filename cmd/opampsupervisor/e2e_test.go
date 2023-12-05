@@ -265,7 +265,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
 
 	require.Eventually(t, func() bool {
-		health := healthReport.Load().(*protobufs.AgentHealth)
+		health := healthReport.Load().(*protobufs.ComponentHealth)
 
 		if health != nil {
 			return !health.Healthy && health.LastError != ""
@@ -288,7 +288,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	})
 
 	require.Eventually(t, func() bool {
-		health := healthReport.Load().(*protobufs.AgentHealth)
+		health := healthReport.Load().(*protobufs.ComponentHealth)
 
 		if health != nil {
 			return health.Healthy && health.LastError == ""
