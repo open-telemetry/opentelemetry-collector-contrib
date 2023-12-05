@@ -4,11 +4,11 @@
 package metrics
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"testing"
 
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
