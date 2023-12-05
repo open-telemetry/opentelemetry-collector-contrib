@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
@@ -24,7 +25,7 @@ import (
 
 func TestPersistFlusher(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
-	f, emitChan := testReaderFactory(t, split.Config{}, defaultMaxLogSize, flushPeriod)
+	f, sink := testReaderFactory(t, split.Config{}, defaultMaxLogSize, flushPeriod)
 
 	temp := openTemp(t, t.TempDir())
 	fp, err := f.NewFingerprint(temp)
@@ -38,11 +39,11 @@ func TestPersistFlusher(t *testing.T) {
 
 	// ReadToEnd will return when we hit eof, but we shouldn't emit the unfinished log yet
 	r.ReadToEnd(context.Background())
-	waitForToken(t, emitChan, []byte("log with newline"))
+	sink.ExpectToken(t, []byte("log with newline"))
 
 	// Even trying again shouldn't produce the log yet because the flush period still hasn't expired.
 	r.ReadToEnd(context.Background())
-	expectNoTokensUntil(t, emitChan, 2*flushPeriod)
+	sink.ExpectNoCallsUntil(t, 2*flushPeriod)
 
 	// A copy of the reader should remember that we last emitted about 200ms ago.
 	copyReader, err := f.NewReaderFromMetadata(temp, r.Metadata)
@@ -52,7 +53,7 @@ func TestPersistFlusher(t *testing.T) {
 	// If the copy did not remember when we last emitted a log, then the flushPeriod
 	// will not be expired at this point so we won't see the unfinished log.
 	copyReader.ReadToEnd(context.Background())
-	waitForToken(t, emitChan, []byte("log without newline"))
+	sink.ExpectToken(t, []byte("log without newline"))
 }
 
 func TestTokenization(t *testing.T) {
@@ -110,7 +111,7 @@ func TestTokenization(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			f, emitChan := testReaderFactory(t, split.Config{}, defaultMaxLogSize, defaultFlushPeriod)
+			f, sink := testReaderFactory(t, split.Config{}, defaultMaxLogSize, defaultFlushPeriod)
 
 			temp := openTemp(t, t.TempDir())
 			_, err := temp.Write(tc.fileContent)
@@ -125,7 +126,7 @@ func TestTokenization(t *testing.T) {
 			r.ReadToEnd(context.Background())
 
 			for _, expected := range tc.expected {
-				require.Equal(t, expected, readToken(t, emitChan))
+				require.Equal(t, expected, sink.NextToken(t))
 			}
 		})
 	}
@@ -140,7 +141,7 @@ func TestTokenizationTooLong(t *testing.T) {
 		[]byte("aaa"),
 	}
 
-	f, emitChan := testReaderFactory(t, split.Config{}, 10, defaultFlushPeriod)
+	f, sink := testReaderFactory(t, split.Config{}, 10, defaultFlushPeriod)
 
 	temp := openTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -155,7 +156,7 @@ func TestTokenizationTooLong(t *testing.T) {
 	r.ReadToEnd(context.Background())
 
 	for _, expected := range expected {
-		require.Equal(t, expected, readToken(t, emitChan))
+		require.Equal(t, expected, sink.NextToken(t))
 	}
 }
 
@@ -172,7 +173,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 	sCfg := split.Config{}
 	sCfg.LineStartPattern = `\d+-\d+-\d+`
-	f, emitChan := testReaderFactory(t, sCfg, 15, defaultFlushPeriod)
+	f, sink := testReaderFactory(t, sCfg, 15, defaultFlushPeriod)
 
 	temp := openTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -187,7 +188,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	r.ReadToEnd(context.Background())
 
 	for _, expected := range expected {
-		require.Equal(t, expected, readToken(t, emitChan))
+		require.Equal(t, expected, sink.NextToken(t))
 	}
 }
 
@@ -222,35 +223,25 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
 }
 
-func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPeriod time.Duration) (*reader.Factory, chan *emitParams) {
-	emitChan := make(chan *emitParams, 100)
+func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPeriod time.Duration) (*reader.Factory, *emittest.Sink) {
 	enc, err := decode.LookupEncoding(defaultEncoding)
 	require.NoError(t, err)
 
 	splitFunc, err := sCfg.Func(enc, false, maxLogSize)
 	require.NoError(t, err)
 
+	sink := emittest.NewSink()
 	return &reader.Factory{
 		SugaredLogger: testutil.Logger(t),
 		Config: &reader.Config{
 			FingerprintSize: fingerprint.DefaultSize,
 			MaxLogSize:      maxLogSize,
-			Emit:            testEmitFunc(emitChan),
+			Emit:            sink.Callback,
 			FlushTimeout:    flushPeriod,
 		},
 		FromBeginning: true,
 		Encoding:      enc,
 		SplitFunc:     splitFunc,
 		TrimFunc:      trim.Whitespace,
-	}, emitChan
-}
-
-func readToken(t *testing.T, c chan *emitParams) []byte {
-	select {
-	case call := <-c:
-		return call.token
-	case <-time.After(3 * time.Second):
-		require.FailNow(t, "Timed out waiting for token")
-	}
-	return nil
+	}, sink
 }
