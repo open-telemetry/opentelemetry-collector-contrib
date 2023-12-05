@@ -188,6 +188,11 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
+	if config.PartitionTracesByID {
+		if keyableMarshaler, ok := marshaler.(KeyableTracesMarshaler); ok {
+			keyableMarshaler.Key()
+		}
+	}
 	producer, err := newSaramaProducer(config)
 	if err != nil {
 		return nil, err
