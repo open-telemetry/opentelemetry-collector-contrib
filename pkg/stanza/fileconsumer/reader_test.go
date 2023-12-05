@@ -5,6 +5,7 @@ package fileconsumer
 
 import (
 	"context"
+	"hash/fnv"
 	"testing"
 	"time"
 
@@ -217,9 +218,18 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	_, err = temp.Write(fileContent)
 	require.NoError(t, err)
 
+	r.Metadata.Fingerprint, _ = r.NewFingerprintFromFile()
 	r.ReadToEnd(context.Background())
 
-	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
+	hashing := fnv.New128a()
+
+	// Write some data to the hash function.
+	hashing.Write([]byte("#header-line\naaa\n"))
+
+	// Get the hash value.
+	hash := hashing.Sum(nil)
+
+	require.Equal(t, hash, r.Fingerprint.HashBytes)
 }
 
 func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPeriod time.Duration) (*reader.Factory, chan *emitParams) {

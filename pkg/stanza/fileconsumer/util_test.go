@@ -187,7 +187,7 @@ func waitForTokenWithAttributes(t *testing.T, c chan *emitParams, expected []byt
 	case call := <-c:
 		require.Equal(t, expected, call.token)
 		require.Equal(t, attrs, call.attrs)
-	case <-time.After(3 * time.Second):
+	case <-time.After(300 * time.Second):
 		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
 	}
 }

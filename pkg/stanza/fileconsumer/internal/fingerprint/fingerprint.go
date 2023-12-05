@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 )
@@ -18,31 +19,59 @@ const MinSize = 16 // bytes
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file
 type Fingerprint struct {
-	FirstBytes []byte
+	firstBytes  []byte
+	HashBytes   []byte
+	BytesLength int
 }
 
 // New creates a new fingerprint from an open file
 func New(file *os.File, size int) (*Fingerprint, error) {
 	buf := make([]byte, size)
-
+	//file.Seek(0, 0)
 	n, err := file.ReadAt(buf, 0)
 	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("reading fingerprint bytes: %w", err)
 	}
+	//if err != nil {
+	//	fmt.Printf("%s", "End of file error")
+	//}
+	hold := buf[:n]
+
+	h := fnv.New128a()
+
+	// Write some data to the hash function.
+	h.Write(hold)
+
+	// Get the hash value.
+	hash := h.Sum(nil)
 
 	fp := &Fingerprint{
-		FirstBytes: buf[:n],
+		firstBytes:  hold,
+		HashBytes:   hash,
+		BytesLength: len(hold),
 	}
+	//fmt.Println(hold)
+	//fmt.Println(fp.BytesLength)
+	//fmt.Println(fp.HashBytes)
+	//fmt.Println("n is: " + string(n))
 
 	return fp, nil
 }
 
 // Copy creates a new copy of the fingerprint
 func (f Fingerprint) Copy() *Fingerprint {
-	buf := make([]byte, len(f.FirstBytes), cap(f.FirstBytes))
-	n := copy(buf, f.FirstBytes)
+	buf := make([]byte, len(f.firstBytes), cap(f.firstBytes))
+	n := copy(buf, f.firstBytes)
 	return &Fingerprint{
-		FirstBytes: buf[:n],
+		firstBytes: buf[:n],
+	}
+}
+
+func (f Fingerprint) UpdateFingerPrint(offset int64, appendBytes []byte) {
+	if f.firstBytes == nil {
+		f.firstBytes = appendBytes
+	} else {
+		f.firstBytes = append(f.firstBytes[:offset], appendBytes...)
 	}
 }
 
@@ -51,17 +80,7 @@ func (f Fingerprint) Copy() *Fingerprint {
 // because the primary purpose of a fingerprint is to convey a unique
 // identity, and only the FirstBytes field contributes to this goal.
 func (f Fingerprint) Equal(other *Fingerprint) bool {
-	l0 := len(other.FirstBytes)
-	l1 := len(f.FirstBytes)
-	if l0 != l1 {
-		return false
-	}
-	for i := 0; i < l0; i++ {
-		if other.FirstBytes[i] != f.FirstBytes[i] {
-			return false
-		}
-	}
-	return true
+	return bytes.Equal(f.HashBytes, other.HashBytes)
 }
 
 // StartsWith returns true if the fingerprints are the same
@@ -71,13 +90,20 @@ func (f Fingerprint) Equal(other *Fingerprint) bool {
 // a fingerprint. As the file grows, its fingerprint is updated
 // until it reaches a maximum size, as configured on the operator
 func (f Fingerprint) StartsWith(old *Fingerprint) bool {
-	l0 := len(old.FirstBytes)
+	l0 := old.BytesLength
 	if l0 == 0 {
 		return false
 	}
-	l1 := len(f.FirstBytes)
+	l1 := len(f.firstBytes)
 	if l0 > l1 {
 		return false
 	}
-	return bytes.Equal(old.FirstBytes[:l0], f.FirstBytes[:l0])
+	h := fnv.New128a()
+
+	// Write some data to the hash function.
+	h.Write(f.firstBytes[:l0])
+
+	// Get the hash value.
+	hash := h.Sum(nil)
+	return bytes.Equal(old.HashBytes, hash)
 }

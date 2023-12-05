@@ -169,7 +169,7 @@ func (r *Reader) Close() *Metadata {
 func (r *Reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
 	// or if fingerprint is behind Offset
-	if len(r.Fingerprint.FirstBytes) == r.FingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
+	if r.Fingerprint.BytesLength == r.FingerprintSize || int(r.Offset) > r.Fingerprint.BytesLength {
 		return r.file.Read(dst)
 	}
 	n, err := r.file.Read(dst)
@@ -180,7 +180,10 @@ func (r *Reader) Read(dst []byte) (int, error) {
 	}
 
 	// for appendCount==0, the following code would add `0` to fingerprint
-	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
+	//fp, err := fingerprint.New(r.file, r.FingerprintSize)
+	//r.Fingerprint = fp
+	r.Fingerprint.UpdateFingerPrint(r.Offset, dst[:appendCount])
+	//r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
 	return n, err
 }
 

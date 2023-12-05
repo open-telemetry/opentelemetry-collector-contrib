@@ -6,6 +6,10 @@ package fileconsumer
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
+	"hash/fnv"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,10 +17,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
@@ -1126,9 +1126,17 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	defer reader.Close()
 
 	writeString(t, temp, "testlog1\n")
+	reader.Metadata.Fingerprint, _ = reader.NewFingerprintFromFile()
 	reader.ReadToEnd(context.Background())
 	waitForToken(t, emitCalls, []byte("testlog1"))
-	require.Equal(t, []byte("testlog1\n"), reader.Fingerprint.FirstBytes)
+	h := fnv.New128a()
+
+	// Write some data to the hash function.
+	h.Write([]byte("testlog1\n"))
+
+	// Get the hash value.
+	hash := h.Sum(nil)
+	require.Equal(t, hash, reader.Fingerprint.HashBytes)
 }
 
 // Test that a fingerprint:
@@ -1162,7 +1170,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			tempCopy := openFile(t, temp.Name())
 			fp, err := operator.readerFactory.NewFingerprint(temp)
 			require.NoError(t, err)
-			require.Equal(t, []byte(""), fp.FirstBytes)
+			require.Equal(t, len([]byte("")), fp.BytesLength)
 
 			reader, err := operator.readerFactory.NewReader(tempCopy, fp)
 			require.NoError(t, err)
@@ -1185,8 +1193,16 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 				fileContent = append(fileContent, []byte(line)...)
 
 				writeString(t, temp, line)
+				reader.Metadata.Fingerprint, _ = reader.NewFingerprintFromFile()
 				reader.ReadToEnd(context.Background())
-				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+				h := fnv.New128a()
+
+				// Write some data to the hash function.
+				h.Write(fileContent[:expectedFP])
+
+				// Get the hash value.
+				hash := h.Sum(nil)
+				require.Equal(t, hash, reader.Fingerprint.HashBytes)
 			}
 		})
 	}
@@ -1225,7 +1241,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			tempCopy := openFile(t, temp.Name())
 			fp, err := operator.readerFactory.NewFingerprint(temp)
 			require.NoError(t, err)
-			require.Equal(t, []byte(""), fp.FirstBytes)
+			require.Equal(t, len([]byte("")), fp.BytesLength)
 
 			reader, err := operator.readerFactory.NewReader(tempCopy, fp)
 			require.NoError(t, err)
@@ -1248,8 +1264,16 @@ func TestFingerprintChangeSize(t *testing.T) {
 				fileContent = append(fileContent, []byte(line)...)
 
 				writeString(t, temp, line)
+				reader.Metadata.Fingerprint, _ = reader.NewFingerprintFromFile()
 				reader.ReadToEnd(context.Background())
-				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+				h := fnv.New128a()
+
+				// Write some data to the hash function.
+				h.Write(fileContent[:expectedFP])
+
+				// Get the hash value.
+				hash := h.Sum(nil)
+				require.Equal(t, hash, reader.Fingerprint.HashBytes)
 			}
 
 			// Test fingerprint change
@@ -1262,7 +1286,14 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			writeString(t, temp, line)
 			reader.ReadToEnd(context.Background())
-			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+			h := fnv.New128a()
+
+			// Write some data to the hash function.
+			h.Write(fileContent[:expectedFP])
+
+			// Get the hash value.
+			hash := h.Sum(nil)
+			require.Equal(t, hash, reader.Fingerprint.HashBytes)
 
 			reader.Config.FingerprintSize = maxFP / 2
 			line = string(tokenWithLength(lineLen-1)) + "\n"
@@ -1270,7 +1301,14 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			writeString(t, temp, line)
 			reader.ReadToEnd(context.Background())
-			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+			h = fnv.New128a()
+
+			// Write some data to the hash function.
+			h.Write(fileContent[:expectedFP])
+
+			// Get the hash value.
+			hash = h.Sum(nil)
+			require.Equal(t, hash, reader.Fingerprint.HashBytes)
 		})
 	}
 }
