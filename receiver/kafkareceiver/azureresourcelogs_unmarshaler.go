@@ -10,12 +10,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
 )
 
-type AzureResourceLogsUnmarshaler struct {
+type azureResourceLogsUnmarshaler struct {
 	unmarshaler *azure.ResourceLogsUnmarshaler
 }
 
 func newAzureResourceLogsUnmarshaler(version string, logger *zap.Logger) LogsUnmarshaler {
-	return AzureResourceLogsUnmarshaler{
+	return azureResourceLogsUnmarshaler{
 		unmarshaler: &azure.ResourceLogsUnmarshaler{
 			Version: version,
 			Logger:  logger,
@@ -23,10 +23,10 @@ func newAzureResourceLogsUnmarshaler(version string, logger *zap.Logger) LogsUnm
 	}
 }
 
-func (r AzureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
+func (r azureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	return r.unmarshaler.UnmarshalLogs(buf)
 }
 
-func (r AzureResourceLogsUnmarshaler) Encoding() string {
-	return "azureresourcelogs"
+func (r azureResourceLogsUnmarshaler) Encoding() string {
+	return "azure_resource_logs"
 }
