@@ -675,6 +675,8 @@ go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231204163844-65cb44949ef5 h
 go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231204163844-65cb44949ef5/go.mod h1:pA4sGUBJ+EQEIXnEjgLi1XA5VRxl5JjMX4GrrsoxY8E=
 go.opentelemetry.io/collector/cmd/builder v0.90.2-0.20231201205146-6e2fdc755b34 h1:l7Bvgax2xGUbFmrspfgYnSpvnVJfzJ7lny1msbOmY1o=
 go.opentelemetry.io/collector/cmd/builder v0.90.2-0.20231201205146-6e2fdc755b34/go.mod h1:wcxXrQyLrzvYKXCG3CqDkFpbL35cBCHke6wk2RFvmZk=
+go.opentelemetry.io/collector/cmd/builder v0.90.2-0.20231205132409-67b1ae9cb384 h1:yuKVY1vagefGMmhGdHqJE3L3ZyRGExBcnEercw6P7nU=
+go.opentelemetry.io/collector/cmd/builder v0.90.2-0.20231205132409-67b1ae9cb384/go.mod h1:wcxXrQyLrzvYKXCG3CqDkFpbL35cBCHke6wk2RFvmZk=
 go.tmz.dev/musttag v0.7.2 h1:1J6S9ipDbalBSODNT5jCep8dhZyMr4ttnjQagmGYR5s=
 go.tmz.dev/musttag v0.7.2/go.mod h1:m6q5NiiSKMnQYokefa2xGoyoXnrswCbJ0AWYzf4Zs28=
 go.uber.org/goleak v1.2.0 h1:xqgm/S+aQvhWFTtR0XK3Jvg7z8kGV8P4X14IzwN3Eqk=
