@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -35,7 +36,7 @@ func TestDefaultBehaviors(t *testing.T) {
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	tempName := filepath.Base(temp.Name())
@@ -47,24 +48,24 @@ func TestDefaultBehaviors(t *testing.T) {
 	}()
 
 	// Should not emit the pre-existing token, even after flush period
-	expectNoTokensUntil(t, emitCalls, defaultFlushPeriod)
+	sink.ExpectNoCallsUntil(t, defaultFlushPeriod)
 
 	// Complete token should be emitted quickly
 	writeString(t, temp, " testlog2 \n")
-	call := waitForEmit(t, emitCalls)
-	assert.Equal(t, []byte("testlog2"), call.token)
-	assert.Len(t, call.attrs, 1)
-	assert.Equal(t, tempName, call.attrs[attrs.LogFileName])
+	token, attributes := sink.NextCall(t)
+	assert.Equal(t, []byte("testlog2"), token)
+	assert.Len(t, attributes, 1)
+	assert.Equal(t, tempName, attributes[attrs.LogFileName])
 
 	// Incomplete token should not be emitted until after flush period
 	writeString(t, temp, " testlog3 ")
-	expectNoTokensUntil(t, emitCalls, defaultFlushPeriod/2)
+	sink.ExpectNoCallsUntil(t, defaultFlushPeriod/2)
 	time.Sleep(defaultFlushPeriod)
 
-	call = waitForEmit(t, emitCalls)
-	assert.Equal(t, []byte("testlog3"), call.token)
-	assert.Len(t, call.attrs, 1)
-	assert.Equal(t, tempName, call.attrs[attrs.LogFileName])
+	token, attributes = sink.NextCall(t)
+	assert.Equal(t, []byte("testlog3"), token)
+	assert.Len(t, attributes, 1)
+	assert.Equal(t, tempName, attributes[attrs.LogFileName])
 }
 
 func TestCleanStop(t *testing.T) {
@@ -76,7 +77,7 @@ See this issue for details: https://github.com/census-instrumentation/opencensus
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestManager(t, cfg)
+	operator, _ := testManager(t, cfg)
 
 	_ = openTemp(t, tempDir)
 	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
@@ -95,7 +96,7 @@ func TestAddFileFields(t *testing.T) {
 	cfg.IncludeFilePath = true
 	cfg.IncludeFileNameResolved = false
 	cfg.IncludeFilePathResolved = false
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
@@ -106,11 +107,11 @@ func TestAddFileFields(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	emitCall := waitForEmit(t, emitCalls)
-	require.Equal(t, filepath.Base(temp.Name()), emitCall.attrs[attrs.LogFileName])
-	require.Equal(t, temp.Name(), emitCall.attrs[attrs.LogFilePath])
-	require.Nil(t, emitCall.attrs[attrs.LogFileNameResolved])
-	require.Nil(t, emitCall.attrs[attrs.LogFilePathResolved])
+	_, attributes := sink.NextCall(t)
+	require.Equal(t, filepath.Base(temp.Name()), attributes[attrs.LogFileName])
+	require.Equal(t, temp.Name(), attributes[attrs.LogFilePath])
+	require.Nil(t, attributes[attrs.LogFileNameResolved])
+	require.Nil(t, attributes[attrs.LogFilePathResolved])
 }
 
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
@@ -128,7 +129,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 	cfg.IncludeFilePath = true
 	cfg.IncludeFileNameResolved = true
 	cfg.IncludeFilePathResolved = true
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	// Create temp dir with log file
 	dir := t.TempDir()
@@ -158,11 +159,11 @@ func TestAddFileResolvedFields(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	emitCall := waitForEmit(t, emitCalls)
-	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs[attrs.LogFileName])
-	require.Equal(t, symLinkPath, emitCall.attrs[attrs.LogFilePath])
-	require.Equal(t, filepath.Base(resolved), emitCall.attrs[attrs.LogFileNameResolved])
-	require.Equal(t, resolved, emitCall.attrs[attrs.LogFilePathResolved])
+	_, attributes := sink.NextCall(t)
+	require.Equal(t, filepath.Base(symLinkPath), attributes[attrs.LogFileName])
+	require.Equal(t, symLinkPath, attributes[attrs.LogFilePath])
+	require.Equal(t, filepath.Base(resolved), attributes[attrs.LogFileNameResolved])
+	require.Equal(t, resolved, attributes[attrs.LogFilePathResolved])
 }
 
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
@@ -183,7 +184,7 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	cfg.IncludeFilePath = true
 	cfg.IncludeFileNameResolved = true
 	cfg.IncludeFilePathResolved = true
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	// Create temp dir with log file
 	dir := t.TempDir()
@@ -228,11 +229,11 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	emitCall := waitForEmit(t, emitCalls)
-	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs[attrs.LogFileName])
-	require.Equal(t, symLinkPath, emitCall.attrs[attrs.LogFilePath])
-	require.Equal(t, filepath.Base(resolved1), emitCall.attrs[attrs.LogFileNameResolved])
-	require.Equal(t, resolved1, emitCall.attrs[attrs.LogFilePathResolved])
+	_, attributes := sink.NextCall(t)
+	require.Equal(t, filepath.Base(symLinkPath), attributes[attrs.LogFileName])
+	require.Equal(t, symLinkPath, attributes[attrs.LogFilePath])
+	require.Equal(t, filepath.Base(resolved1), attributes[attrs.LogFileNameResolved])
+	require.Equal(t, resolved1, attributes[attrs.LogFilePathResolved])
 
 	// Change middleSymLink to point to file2
 	err = os.Remove(middleSymLinkPath)
@@ -243,11 +244,11 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	// Populate data (different content due to fingerprint)
 	writeString(t, file2, "testlog2\n")
 
-	emitCall = waitForEmit(t, emitCalls)
-	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs[attrs.LogFileName])
-	require.Equal(t, symLinkPath, emitCall.attrs[attrs.LogFilePath])
-	require.Equal(t, filepath.Base(resolved2), emitCall.attrs[attrs.LogFileNameResolved])
-	require.Equal(t, resolved2, emitCall.attrs[attrs.LogFilePathResolved])
+	_, attributes = sink.NextCall(t)
+	require.Equal(t, filepath.Base(symLinkPath), attributes[attrs.LogFileName])
+	require.Equal(t, symLinkPath, attributes[attrs.LogFilePath])
+	require.Equal(t, filepath.Base(resolved2), attributes[attrs.LogFileNameResolved])
+	require.Equal(t, resolved2, attributes[attrs.LogFilePathResolved])
 }
 
 func TestFileFieldsUpdatedAfterRestart(t *testing.T) {
@@ -258,7 +259,7 @@ func TestFileFieldsUpdatedAfterRestart(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.IncludeFileName = true
 	cfg.IncludeFilePath = true
-	op1, emitCalls1 := buildTestManager(t, cfg)
+	op1, sink1 := testManager(t, cfg)
 
 	// Create a file, then start
 	temp, err := os.CreateTemp(tempDir, "")
@@ -268,12 +269,12 @@ func TestFileFieldsUpdatedAfterRestart(t *testing.T) {
 	persister := testutil.NewUnscopedMockPersister()
 	require.NoError(t, op1.Start(persister))
 
-	emitCall1 := waitForEmit(t, emitCalls1)
-	assert.Equal(t, []byte("testlog1"), emitCall1.token)
-	assert.Equal(t, filepath.Base(temp.Name()), emitCall1.attrs[attrs.LogFileName])
-	assert.Equal(t, temp.Name(), emitCall1.attrs[attrs.LogFilePath])
-	assert.Nil(t, emitCall1.attrs[attrs.LogFileNameResolved])
-	assert.Nil(t, emitCall1.attrs[attrs.LogFilePathResolved])
+	token, attributes := sink1.NextCall(t)
+	assert.Equal(t, []byte("testlog1"), token)
+	assert.Equal(t, filepath.Base(temp.Name()), attributes[attrs.LogFileName])
+	assert.Equal(t, temp.Name(), attributes[attrs.LogFilePath])
+	assert.Nil(t, attributes[attrs.LogFileNameResolved])
+	assert.Nil(t, attributes[attrs.LogFilePathResolved])
 
 	require.NoError(t, op1.Stop())
 	temp.Close() // On windows, we must close the file before renaming it
@@ -284,16 +285,16 @@ func TestFileFieldsUpdatedAfterRestart(t *testing.T) {
 	temp = openFile(t, newPath)
 	writeString(t, temp, "testlog2\n")
 
-	op2, emitCalls2 := buildTestManager(t, cfg)
+	op2, sink2 := testManager(t, cfg)
 
 	require.NoError(t, op2.Start(persister))
 
-	emitCall2 := waitForEmit(t, emitCalls2)
-	assert.Equal(t, []byte("testlog2"), emitCall2.token)
-	assert.Equal(t, filepath.Base(newPath), emitCall2.attrs[attrs.LogFileName])
-	assert.Equal(t, newPath, emitCall2.attrs[attrs.LogFilePath])
-	assert.Nil(t, emitCall2.attrs[attrs.LogFileNameResolved])
-	assert.Nil(t, emitCall2.attrs[attrs.LogFilePathResolved])
+	token, attributes = sink2.NextCall(t)
+	assert.Equal(t, []byte("testlog2"), token)
+	assert.Equal(t, filepath.Base(newPath), attributes[attrs.LogFileName])
+	assert.Equal(t, newPath, attributes[attrs.LogFilePath])
+	assert.Nil(t, attributes[attrs.LogFileNameResolved])
+	assert.Nil(t, attributes[attrs.LogFilePathResolved])
 
 	require.NoError(t, op2.Stop())
 }
@@ -306,7 +307,7 @@ func TestReadExistingLogs(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
@@ -317,8 +318,8 @@ func TestReadExistingLogs(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForToken(t, emitCalls, []byte("testlog1"))
-	waitForToken(t, emitCalls, []byte("testlog2"))
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog2"))
 }
 
 // TestReadUsingNopEncoding tests when nop encoding is set, that the splitfunction returns all bytes unchanged.
@@ -326,40 +327,40 @@ func TestReadUsingNopEncoding(t *testing.T) {
 	tcs := []struct {
 		testName string
 		input    []byte
-		test     func(*testing.T, chan *emitParams)
+		test     func(*testing.T, *emittest.Sink)
 	}{
 		{
 			"simple",
 			[]byte("testlog1"),
-			func(t *testing.T, c chan *emitParams) {
-				waitForToken(t, c, []byte("testlog1"))
+			func(t *testing.T, sink *emittest.Sink) {
+				sink.ExpectToken(t, []byte("testlog1"))
 			},
 		},
 		{
 			"longer than maxlogsize",
 			[]byte("testlog1testlog2testlog3"),
-			func(t *testing.T, c chan *emitParams) {
-				waitForToken(t, c, []byte("testlog1"))
-				waitForToken(t, c, []byte("testlog2"))
-				waitForToken(t, c, []byte("testlog3"))
+			func(t *testing.T, sink *emittest.Sink) {
+				sink.ExpectToken(t, []byte("testlog1"))
+				sink.ExpectToken(t, []byte("testlog2"))
+				sink.ExpectToken(t, []byte("testlog3"))
 			},
 		},
 		{
 			"doesn't hit max log size before eof",
 			[]byte("testlog1testlog2test"),
-			func(t *testing.T, c chan *emitParams) {
-				waitForToken(t, c, []byte("testlog1"))
-				waitForToken(t, c, []byte("testlog2"))
-				waitForToken(t, c, []byte("test"))
+			func(t *testing.T, sink *emittest.Sink) {
+				sink.ExpectToken(t, []byte("testlog1"))
+				sink.ExpectToken(t, []byte("testlog2"))
+				sink.ExpectToken(t, []byte("test"))
 			},
 		},
 		{
 			"special characters",
 			[]byte("testlog1\n\ttestlog2\n\t"),
-			func(t *testing.T, c chan *emitParams) {
-				waitForToken(t, c, []byte("testlog1"))
-				waitForToken(t, c, []byte("\n\ttestlo"))
-				waitForToken(t, c, []byte("g2\n\t"))
+			func(t *testing.T, sink *emittest.Sink) {
+				sink.ExpectToken(t, []byte("testlog1"))
+				sink.ExpectToken(t, []byte("\n\ttestlo"))
+				sink.ExpectToken(t, []byte("g2\n\t"))
 			},
 		},
 	}
@@ -374,7 +375,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = 8
 			cfg.Encoding = "nop"
-			operator, emitCalls := buildTestManager(t, cfg)
+			operator, sink := testManager(t, cfg)
 
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -386,7 +387,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 				require.NoError(t, operator.Stop())
 			}()
 
-			tc.test(t, emitCalls)
+			tc.test(t, sink)
 		})
 	}
 }
@@ -395,54 +396,54 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 	tcs := []struct {
 		testName   string
 		input      []byte
-		test       func(*testing.T, chan *emitParams)
+		test       func(*testing.T, *emittest.Sink)
 		maxLogSize helper.ByteSize
 	}{
 		{
 			"same size",
 			[]byte("testlog1"),
-			func(t *testing.T, c chan *emitParams) {
-				waitForToken(t, c, []byte("testlog1"))
+			func(t *testing.T, sink *emittest.Sink) {
+				sink.ExpectToken(t, []byte("testlog1"))
 			},
 			8,
 		},
 		{
 			"massive log size",
 			[]byte("testlog1"),
-			func(t *testing.T, c chan *emitParams) {
-				waitForToken(t, c, []byte("testlog1"))
+			func(t *testing.T, sink *emittest.Sink) {
+				sink.ExpectToken(t, []byte("testlog1"))
 			},
 			8000000,
 		},
 		{
 			"slightly larger log size",
 			[]byte("testlog1"),
-			func(t *testing.T, c chan *emitParams) {
-				waitForToken(t, c, []byte("testlog1"))
+			func(t *testing.T, sink *emittest.Sink) {
+				sink.ExpectToken(t, []byte("testlog1"))
 			},
 			9,
 		},
 		{
 			"slightly smaller log size",
 			[]byte("testlog1"),
-			func(t *testing.T, c chan *emitParams) {
-				waitForToken(t, c, []byte("testlog"))
-				waitForToken(t, c, []byte("1"))
+			func(t *testing.T, sink *emittest.Sink) {
+				sink.ExpectToken(t, []byte("testlog"))
+				sink.ExpectToken(t, []byte("1"))
 			},
 			7,
 		},
 		{
 			"tiny log size",
 			[]byte("testlog1"),
-			func(t *testing.T, c chan *emitParams) {
-				waitForToken(t, c, []byte("t"))
-				waitForToken(t, c, []byte("e"))
-				waitForToken(t, c, []byte("s"))
-				waitForToken(t, c, []byte("t"))
-				waitForToken(t, c, []byte("l"))
-				waitForToken(t, c, []byte("o"))
-				waitForToken(t, c, []byte("g"))
-				waitForToken(t, c, []byte("1"))
+			func(t *testing.T, sink *emittest.Sink) {
+				sink.ExpectToken(t, []byte("t"))
+				sink.ExpectToken(t, []byte("e"))
+				sink.ExpectToken(t, []byte("s"))
+				sink.ExpectToken(t, []byte("t"))
+				sink.ExpectToken(t, []byte("l"))
+				sink.ExpectToken(t, []byte("o"))
+				sink.ExpectToken(t, []byte("g"))
+				sink.ExpectToken(t, []byte("1"))
 			},
 			1,
 		},
@@ -458,7 +459,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = tc.maxLogSize
 			cfg.Encoding = "nop"
-			operator, emitCalls := buildTestManager(t, cfg)
+			operator, sink := testManager(t, cfg)
 
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -470,7 +471,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 				require.NoError(t, operator.Stop())
 			}()
 
-			tc.test(t, emitCalls)
+			tc.test(t, sink)
 		})
 	}
 }
@@ -483,7 +484,7 @@ func TestReadNewLogs(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	// Poll once so we know this isn't a new file
@@ -497,7 +498,7 @@ func TestReadNewLogs(t *testing.T) {
 	operator.poll(context.Background())
 
 	// Expect the message to come through
-	waitForToken(t, emitCalls, []byte("testlog"))
+	sink.ExpectToken(t, []byte("testlog"))
 }
 
 // ReadExistingAndNewLogs tests that, on startup, if start_at
@@ -508,7 +509,7 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	// Start with a file with an entry in it, and expect that entry
@@ -516,13 +517,13 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n")
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog1"))
 
 	// Write a second entry, and expect that entry to come through
 	// as well
 	writeString(t, temp, "testlog2\n")
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog2"))
+	sink.ExpectToken(t, []byte("testlog2"))
 }
 
 // StartAtEnd tests that when `start_at` is configured to `end`,
@@ -532,7 +533,7 @@ func TestStartAtEnd(t *testing.T) {
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp := openTemp(t, tempDir)
@@ -540,12 +541,12 @@ func TestStartAtEnd(t *testing.T) {
 
 	// Expect no entries on the first poll
 	operator.poll(context.Background())
-	expectNoTokens(t, emitCalls)
+	sink.ExpectNoCalls(t)
 
 	// Expect any new entries after the first poll
 	writeString(t, temp, "testlog2\n")
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog2"))
+	sink.ExpectToken(t, []byte("testlog2"))
 }
 
 // StartAtEndNewFile tests that when `start_at` is configured to `end`,
@@ -560,7 +561,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	operator.poll(context.Background())
@@ -568,8 +569,8 @@ func TestStartAtEndNewFile(t *testing.T) {
 	writeString(t, temp, "testlog1\ntestlog2\n")
 
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog1"))
-	waitForToken(t, emitCalls, []byte("testlog2"))
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog2"))
 }
 
 // NoNewline tests that an entry will still be sent eventually
@@ -581,7 +582,7 @@ func TestNoNewline(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.FlushPeriod = time.Nanosecond
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2")
@@ -591,8 +592,8 @@ func TestNoNewline(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForToken(t, emitCalls, []byte("testlog1"))
-	waitForToken(t, emitCalls, []byte("testlog2"))
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog2"))
 }
 
 // TestEmptyLine tests that the any empty lines are consumed
@@ -602,7 +603,7 @@ func TestEmptyLine(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n\ntestlog2\n")
@@ -612,9 +613,9 @@ func TestEmptyLine(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForToken(t, emitCalls, []byte("testlog1"))
-	waitForToken(t, emitCalls, []byte(""))
-	waitForToken(t, emitCalls, []byte("testlog2"))
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte(""))
+	sink.ExpectToken(t, []byte("testlog2"))
 }
 
 // TestMultipleEmpty tests that multiple empty lines
@@ -625,7 +626,7 @@ func TestMultipleEmpty(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "\n\ntestlog1\n\n\ntestlog2\n")
@@ -635,13 +636,13 @@ func TestMultipleEmpty(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForToken(t, emitCalls, []byte(""))
-	waitForToken(t, emitCalls, []byte(""))
-	waitForToken(t, emitCalls, []byte("testlog1"))
-	waitForToken(t, emitCalls, []byte(""))
-	waitForToken(t, emitCalls, []byte(""))
-	waitForToken(t, emitCalls, []byte("testlog2"))
-	expectNoTokensUntil(t, emitCalls, time.Second)
+	sink.ExpectToken(t, []byte(""))
+	sink.ExpectToken(t, []byte(""))
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte(""))
+	sink.ExpectToken(t, []byte(""))
+	sink.ExpectToken(t, []byte("testlog2"))
+	sink.ExpectNoCallsUntil(t, time.Second)
 }
 
 // TestLeadingEmpty tests that the the operator handles a leading
@@ -652,7 +653,7 @@ func TestLeadingEmpty(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "\ntestlog1\ntestlog2\n")
@@ -662,10 +663,10 @@ func TestLeadingEmpty(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForToken(t, emitCalls, []byte(""))
-	waitForToken(t, emitCalls, []byte("testlog1"))
-	waitForToken(t, emitCalls, []byte("testlog2"))
-	expectNoTokensUntil(t, emitCalls, time.Second)
+	sink.ExpectToken(t, []byte(""))
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog2"))
+	sink.ExpectNoCallsUntil(t, time.Second)
 }
 
 // SplitWrite tests a line written in two writes
@@ -676,7 +677,7 @@ func TestSplitWrite(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp := openTemp(t, tempDir)
@@ -687,7 +688,7 @@ func TestSplitWrite(t *testing.T) {
 	writeString(t, temp, "testlog2\n")
 
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog1testlog2"))
+	sink.ExpectToken(t, []byte("testlog1testlog2"))
 }
 
 func TestIgnoreEmptyFiles(t *testing.T) {
@@ -696,7 +697,7 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp := openTemp(t, tempDir)
@@ -708,13 +709,13 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	writeString(t, temp3, "testlog2\n")
 	operator.poll(context.Background())
 
-	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
+	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
 
 	writeString(t, temp2, "testlog3\n")
 	writeString(t, temp4, "testlog4\n")
 	operator.poll(context.Background())
 
-	waitForTokens(t, emitCalls, []byte("testlog3"), []byte("testlog4"))
+	sink.ExpectTokens(t, []byte("testlog3"), []byte("testlog4"))
 }
 
 func TestDecodeBufferIsResized(t *testing.T) {
@@ -723,7 +724,7 @@ func TestDecodeBufferIsResized(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
@@ -734,7 +735,7 @@ func TestDecodeBufferIsResized(t *testing.T) {
 	expected := tokenWithLength(1<<12 + 1)
 	writeString(t, temp, string(expected)+"\n")
 
-	waitForToken(t, emitCalls, expected)
+	sink.ExpectToken(t, expected)
 }
 
 func TestMultiFileSimple(t *testing.T) {
@@ -743,7 +744,7 @@ func TestMultiFileSimple(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp1 := openTemp(t, tempDir)
 	temp2 := openTemp(t, tempDir)
@@ -756,7 +757,7 @@ func TestMultiFileSimple(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
+	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
 }
 
 func TestMultiFileSort(t *testing.T) {
@@ -775,7 +776,7 @@ func TestMultiFileSort(t *testing.T) {
 		},
 	}
 
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp1 := openTempWithPattern(t, tempDir, ".*log1")
 	temp2 := openTempWithPattern(t, tempDir, ".*log2")
@@ -788,8 +789,8 @@ func TestMultiFileSort(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, []byte("testlog2"))
-	expectNoTokens(t, emitCalls)
+	sink.ExpectTokens(t, []byte("testlog2"))
+	sink.ExpectNoCalls(t)
 }
 
 func TestMultiFileSortTimestamp(t *testing.T) {
@@ -809,7 +810,7 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 		},
 	}
 
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp1 := openTempWithPattern(t, tempDir, ".*2023020602.log")
 	temp2 := openTempWithPattern(t, tempDir, ".*2023020603.log")
@@ -822,8 +823,8 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, []byte("testlog2"))
-	expectNoTokens(t, emitCalls)
+	sink.ExpectTokens(t, []byte("testlog2"))
+	sink.ExpectNoCalls(t)
 }
 
 func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
@@ -834,7 +835,7 @@ func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	numFiles := 10
 	numMessages := 100
@@ -863,7 +864,7 @@ func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokens(t, emitCalls, expected...)
+	sink.ExpectTokens(t, expected...)
 	wg.Wait()
 }
 
@@ -875,7 +876,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	numFiles := 10
 	numMessages := 100
@@ -908,7 +909,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 		}(temp, i)
 	}
 
-	waitForTokens(t, emitCalls, expected...)
+	sink.ExpectTokens(t, expected...)
 	wg.Wait()
 }
 
@@ -941,25 +942,25 @@ func TestRestartOffsets(t *testing.T) {
 			duringRestart := tokenWithLength(tc.lineLength)
 			during2ndRun := tokenWithLength(tc.lineLength)
 
-			operatorOne, emitCallsOne := buildTestManager(t, cfg)
+			operatorOne, sink1 := testManager(t, cfg)
 			writeString(t, logFile, string(before1stRun)+"\n")
 			require.NoError(t, operatorOne.Start(persister))
 			if tc.startAt == "beginning" {
-				waitForToken(t, emitCallsOne, before1stRun)
+				sink1.ExpectToken(t, before1stRun)
 			} else {
-				expectNoTokensUntil(t, emitCallsOne, 500*time.Millisecond)
+				sink1.ExpectNoCallsUntil(t, 500*time.Millisecond)
 			}
 			writeString(t, logFile, string(during1stRun)+"\n")
-			waitForToken(t, emitCallsOne, during1stRun)
+			sink1.ExpectToken(t, during1stRun)
 			require.NoError(t, operatorOne.Stop())
 
 			writeString(t, logFile, string(duringRestart)+"\n")
 
-			operatorTwo, emitCallsTwo := buildTestManager(t, cfg)
+			operatorTwo, sink2 := testManager(t, cfg)
 			require.NoError(t, operatorTwo.Start(persister))
-			waitForToken(t, emitCallsTwo, duringRestart)
+			sink2.ExpectToken(t, duringRestart)
 			writeString(t, logFile, string(during2ndRun)+"\n")
-			waitForToken(t, emitCallsTwo, during2ndRun)
+			sink2.ExpectToken(t, during2ndRun)
 			require.NoError(t, operatorTwo.Stop())
 		})
 	}
@@ -971,7 +972,7 @@ func TestManyLogsDelivered(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	count := 1000
 	expectedTokens := make([]string, 0, count)
@@ -994,9 +995,9 @@ func TestManyLogsDelivered(t *testing.T) {
 
 	// Expect each of them to come through once
 	for _, message := range expectedTokens {
-		waitForToken(t, emitCalls, []byte(message))
+		sink.ExpectToken(t, []byte(message))
 	}
-	expectNoTokens(t, emitCalls)
+	sink.ExpectNoCalls(t)
 }
 
 func TestFileBatching(t *testing.T) {
@@ -1013,8 +1014,8 @@ func TestFileBatching(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 	cfg.MaxBatches = maxBatches
-	emitCalls := make(chan *emitParams, files*linesPerFile)
-	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
+	sink := emittest.NewSink(emittest.WithCallBuffer(files * linesPerFile))
+	operator := testManagerWithSink(t, cfg, sink)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temps := make([]*os.File, 0, files)
@@ -1036,7 +1037,7 @@ func TestFileBatching(t *testing.T) {
 	// Poll and wait for all lines
 	operator.poll(context.Background())
 	actualTokens := make([][]byte, 0, files*linesPerFile)
-	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, len(expectedTokens))...)
+	actualTokens = append(actualTokens, sink.NextTokens(t, len(expectedTokens))...)
 	require.ElementsMatch(t, expectedTokens, actualTokens)
 
 	// Write more logs to each file so we can validate that all files are still known
@@ -1053,7 +1054,7 @@ func TestFileBatching(t *testing.T) {
 	// Poll again and wait for all new lines
 	operator.poll(context.Background())
 	actualTokens = make([][]byte, 0, files*linesPerFile)
-	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, len(expectedTokens))...)
+	actualTokens = append(actualTokens, sink.NextTokens(t, len(expectedTokens))...)
 	require.ElementsMatch(t, expectedTokens, actualTokens)
 }
 
@@ -1069,7 +1070,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 	cfg.StartAt = "end"
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 
-	operator, emitChan := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 	operator.movingAverageMatches = 10
 
@@ -1087,7 +1088,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 
 	// Poll and expect no logs
 	operator.poll(context.Background())
-	expectNoTokens(t, emitChan)
+	sink.ExpectNoCalls(t)
 
 	// Create some more files
 	for i := 0; i < moreFiles; i++ {
@@ -1105,7 +1106,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 
 	// Poll again and expect one line from each file.
 	operator.poll(context.Background())
-	waitForTokens(t, emitChan, expectedTokens...)
+	sink.ExpectTokens(t, expectedTokens...)
 }
 
 func TestFileReader_FingerprintUpdated(t *testing.T) {
@@ -1114,7 +1115,7 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	tempCopy := openFile(t, temp.Name())
@@ -1127,7 +1128,7 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 
 	writeString(t, temp, "testlog1\n")
 	reader.ReadToEnd(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog1"))
 	require.Equal(t, []byte("testlog1\n"), reader.Fingerprint.FirstBytes)
 }
 
@@ -1156,7 +1157,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.FingerprintSize = helper.ByteSize(maxFP)
-			operator, _ := buildTestManager(t, cfg)
+			operator, _ := testManager(t, cfg)
 
 			temp := openTemp(t, tempDir)
 			tempCopy := openFile(t, temp.Name())
@@ -1219,7 +1220,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.FingerprintSize = helper.ByteSize(maxFP)
-			operator, _ := buildTestManager(t, cfg)
+			operator, _ := testManager(t, cfg)
 
 			temp := openTemp(t, tempDir)
 			tempCopy := openFile(t, temp.Name())
@@ -1341,7 +1342,7 @@ func TestEncodings(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.Encoding = tc.encoding
-			operator, emitCalls := buildTestManager(t, cfg)
+			operator, sink := testManager(t, cfg)
 
 			// Populate the file
 			temp := openTemp(t, tempDir)
@@ -1353,7 +1354,7 @@ func TestEncodings(t *testing.T) {
 				require.NoError(t, operator.Stop())
 			}()
 
-			waitForTokens(t, emitCalls, tc.expected...)
+			sink.ExpectTokens(t, tc.expected...)
 		})
 	}
 }
@@ -1391,11 +1392,11 @@ func TestDeleteAfterRead(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
-	emitCalls := make(chan *emitParams, totalLines)
-	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
+	sink := emittest.NewSink(emittest.WithCallBuffer(totalLines))
+	operator := testManagerWithSink(t, cfg, sink)
 	operator.persister = testutil.NewUnscopedMockPersister()
 	operator.poll(context.Background())
-	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, totalLines)...)
+	actualTokens = append(actualTokens, sink.NextTokens(t, totalLines)...)
 
 	require.ElementsMatch(t, expectedTokens, actualTokens)
 
@@ -1421,8 +1422,8 @@ func TestMaxBatching(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 	cfg.MaxBatches = maxBatches
-	emitCalls := make(chan *emitParams, files*linesPerFile)
-	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
+	sink := emittest.NewSink(emittest.WithCallBuffer(files * linesPerFile))
+	operator := testManagerWithSink(t, cfg, sink)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temps := make([]*os.File, 0, files)
@@ -1443,7 +1444,7 @@ func TestMaxBatching(t *testing.T) {
 	// Poll and wait for all lines
 	operator.poll(context.Background())
 	actualTokens := make([][]byte, 0, numExpectedTokens)
-	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, numExpectedTokens)...)
+	actualTokens = append(actualTokens, sink.NextTokens(t, numExpectedTokens)...)
 	require.Len(t, actualTokens, numExpectedTokens)
 
 	// Write more logs to each file so we can validate that all files are still known
@@ -1458,7 +1459,7 @@ func TestMaxBatching(t *testing.T) {
 	// Poll again and wait for all new lines
 	operator.poll(context.Background())
 	actualTokens = make([][]byte, 0, numExpectedTokens)
-	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, numExpectedTokens)...)
+	actualTokens = append(actualTokens, sink.NextTokens(t, numExpectedTokens)...)
 	require.Len(t, actualTokens, numExpectedTokens)
 }
 
@@ -1475,7 +1476,7 @@ func TestReadExistingLogsWithHeader(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
 
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
@@ -1486,7 +1487,7 @@ func TestReadExistingLogsWithHeader(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokenWithAttributes(t, emitCalls, []byte("testlog"), map[string]any{
+	sink.ExpectCall(t, []byte("testlog"), map[string]any{
 		"header_key":      "headerField",
 		"header_value":    "headerValue",
 		attrs.LogFileName: filepath.Base(temp.Name()),
@@ -1506,8 +1507,8 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
-	emitCalls := make(chan *emitParams, longFileLines+1)
-	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
+	sink := emittest.NewSink(emittest.WithCallBuffer(longFileLines + 1))
+	operator := testManagerWithSink(t, cfg, sink)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	shortFile := openTemp(t, tempDir)
@@ -1538,7 +1539,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	}()
 
 	for !shortOne || !longOne {
-		if line := waitForEmit(t, emitCalls); string(line.token) == shortFileLine {
+		if token := sink.NextToken(t); string(token) == shortFileLine {
 			shortOne = true
 		} else {
 			longOne = true
@@ -1571,7 +1572,7 @@ func TestHeaderPersistance(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
 
-	op1, emitCalls1 := buildTestManager(t, cfg)
+	op1, sink1 := testManager(t, cfg)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
@@ -1580,7 +1581,7 @@ func TestHeaderPersistance(t *testing.T) {
 	persister := testutil.NewUnscopedMockPersister()
 
 	require.NoError(t, op1.Start(persister))
-	waitForTokenWithAttributes(t, emitCalls1, []byte("log line"), map[string]any{
+	sink1.ExpectCall(t, []byte("log line"), map[string]any{
 		"header_key":      "headerField",
 		"header_value":    "headerValue",
 		attrs.LogFileName: filepath.Base(temp.Name()),
@@ -1589,10 +1590,10 @@ func TestHeaderPersistance(t *testing.T) {
 
 	writeString(t, temp, "log line 2\n")
 
-	op2, emitCalls2 := buildTestManager(t, cfg)
+	op2, sink2 := testManager(t, cfg)
 
 	require.NoError(t, op2.Start(persister))
-	waitForTokenWithAttributes(t, emitCalls2, []byte("log line 2"), map[string]any{
+	sink2.ExpectCall(t, []byte("log line 2"), map[string]any{
 		"header_key":      "headerField",
 		"header_value":    "headerValue",
 		attrs.LogFileName: filepath.Base(temp.Name()),
@@ -1611,7 +1612,7 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	cfg1.StartAt = "beginning"
 	cfg1 = cfg1.withHeader(`^\|`, "headerField1: (?P<header_value_1>[A-z0-9]+)")
 
-	op1, _ := buildTestManager(t, cfg1)
+	op1, _ := testManager(t, cfg1)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
@@ -1630,10 +1631,10 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	cfg2.StartAt = "beginning"
 	cfg2 = cfg2.withHeader(`^\|`, "headerField2: (?P<header_value_2>[A-z0-9]+)")
 
-	op2, emitCalls := buildTestManager(t, cfg2)
+	op2, sink := testManager(t, cfg2)
 
 	require.NoError(t, op2.Start(persister))
-	waitForTokenWithAttributes(t, emitCalls, []byte("log line"), map[string]any{
+	sink.ExpectCall(t, []byte("log line"), map[string]any{
 		"header_value_1":  "headerValue1",
 		"header_value_2":  "headerValue2",
 		attrs.LogFileName: filepath.Base(temp.Name()),
@@ -1647,7 +1648,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.FingerprintSize = 18
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	// Both of they will be include
@@ -1660,8 +1661,8 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	writeString(t, file2, content+"\n")
 	operator.poll(context.Background())
 	// one file will be exclude, ingest only one content
-	waitForToken(t, emitCalls, []byte(content))
-	expectNoTokens(t, emitCalls)
+	sink.ExpectToken(t, []byte(content))
+	sink.ExpectNoCalls(t)
 	operator.wg.Wait()
 	if runtime.GOOS != "windows" {
 		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
@@ -1676,7 +1677,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.poll(context.Background())
 	// We should have updated the offset for one of the files, so the second file should now
 	// be ingested from the beginning
-	waitForTokens(t, emitCalls, []byte(content), []byte(newContent1), []byte(newContent))
+	sink.ExpectTokens(t, []byte(content), []byte(newContent1), []byte(newContent))
 	operator.wg.Wait()
 }
 
@@ -1686,14 +1687,14 @@ func TestWindowsFilesClosedImmediately(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog\n")
 	require.NoError(t, temp.Close())
 
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog"))
+	sink.ExpectToken(t, []byte("testlog"))
 
 	// On Windows, poll should close the file after reading it. We can test this by trying to move it.
 	require.NoError(t, os.Rename(temp.Name(), temp.Name()+"_renamed"))

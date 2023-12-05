@@ -161,7 +161,6 @@ func BenchmarkFileInput(b *testing.B) {
 			cfg.StartAt = "beginning"
 
 			received := make(chan []byte)
-
 			callback := func(_ context.Context, token []byte, _ map[string]any) error {
 				received <- token
 				return nil

@@ -7,6 +7,7 @@ import (
 	"context"
 	"strings"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
@@ -33,18 +34,21 @@ func (projectReader *ProjectReader) Shutdown() {
 }
 
 func (projectReader *ProjectReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
-	var result []*metadata.MetricsDataPoint
+	var (
+		result []*metadata.MetricsDataPoint
+		err    error
+	)
 
 	for _, databaseReader := range projectReader.databaseReaders {
-		dataPoints, err := databaseReader.Read(ctx)
-		if err != nil {
-			return nil, err
+		dataPoints, readErr := databaseReader.Read(ctx)
+		if readErr == nil {
+			result = append(result, dataPoints...)
+		} else {
+			err = multierr.Append(err, readErr)
 		}
-
-		result = append(result, dataPoints...)
 	}
 
-	return result, nil
+	return result, err
 }
 
 func (projectReader *ProjectReader) Name() string {

@@ -5,10 +5,10 @@ go 1.20
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.45.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.90.1
-	go.opentelemetry.io/collector/confmap v0.90.1
-	go.opentelemetry.io/collector/exporter v0.90.1
-	go.opentelemetry.io/collector/featuregate v1.0.0
+	go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector/confmap v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector/exporter v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector/featuregate v1.0.1-0.20231201205146-6e2fdc755b34
 )
 
 require (
@@ -49,13 +49,13 @@ require (
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	github.com/tidwall/wal v1.1.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.90.1 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.90.1 // indirect
-	go.opentelemetry.io/collector/consumer v0.90.1 // indirect
-	go.opentelemetry.io/collector/extension v0.90.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.90.1 // indirect
-	go.opentelemetry.io/collector/semconv v0.90.1 // indirect
+	go.opentelemetry.io/collector v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector/consumer v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector/extension v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.1-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector/receiver v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector/semconv v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.21.0 // indirect
@@ -67,7 +67,7 @@ require (
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/api v0.150.0 // indirect
