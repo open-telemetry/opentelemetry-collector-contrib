@@ -6,21 +6,15 @@ package fileconsumer
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -33,36 +27,6 @@ func testEmitFunc(emitChan chan *emitParams) emit.Callback {
 		copied := make([]byte, len(token))
 		copy(copied, token)
 		emitChan <- &emitParams{attrs, copied}
-		return nil
-	}
-}
-
-// includeDir is a builder-like helper for quickly setting up a test config
-func (c *Config) includeDir(dir string) *Config {
-	c.Include = append(c.Include, fmt.Sprintf("%s/*", dir))
-	return c
-}
-
-// withHeader is a builder-like helper for quickly setting up a test config header
-func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
-	regexOpConfig := regex.NewConfig()
-	regexOpConfig.Regex = extractRegex
-
-	c.Header = &HeaderConfig{
-		Pattern: headerMatchPattern,
-		MetadataOperators: []operator.Config{
-			{
-				Builder: regexOpConfig,
-			},
-		},
-	}
-
-	return c
-}
-
-func emitOnChan(received chan []byte) emit.Callback {
-	return func(_ context.Context, token []byte, _ map[string]any) error {
-		received <- token
 		return nil
 	}
 }
@@ -115,24 +79,6 @@ func openTempWithPattern(t testing.TB, tempDir, pattern string) *os.File {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = file.Close() })
 	return file
-}
-
-func getRotatingLogger(t testing.TB, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
-	file, err := os.CreateTemp(tempDir, "")
-	require.NoError(t, err)
-	require.NoError(t, file.Close()) // will be managed by rotator
-
-	rotator := nanojack.Logger{
-		Filename:     file.Name(),
-		MaxLines:     maxLines,
-		MaxBackups:   maxBackups,
-		CopyTruncate: copyTruncate,
-		Sequential:   sequential,
-	}
-
-	t.Cleanup(func() { _ = rotator.Close() })
-
-	return log.New(&rotator, "", 0)
 }
 
 func writeString(t testing.TB, file *os.File, s string) {
@@ -217,28 +163,4 @@ func expectNoTokensUntil(t *testing.T, c chan *emitParams, d time.Duration) {
 		require.FailNow(t, "Received unexpected message", "Message: %s", token)
 	case <-time.After(d):
 	}
-}
-
-const mockOperatorType = "mock"
-
-func init() {
-	operator.Register(mockOperatorType, func() operator.Builder { return newMockOperatorConfig(NewConfig()) })
-}
-
-type mockOperatorConfig struct {
-	helper.BasicConfig `mapstructure:",squash"`
-	*Config            `mapstructure:",squash"`
-}
-
-func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
-	return &mockOperatorConfig{
-		BasicConfig: helper.NewBasicConfig(mockOperatorType, mockOperatorType),
-		Config:      cfg,
-	}
-}
-
-// This function is impelmented for compatibility with operatortest
-// but is not meant to be used directly
-func (h *mockOperatorConfig) Build(*zap.SugaredLogger) (operator.Operator, error) {
-	panic("not impelemented")
 }
