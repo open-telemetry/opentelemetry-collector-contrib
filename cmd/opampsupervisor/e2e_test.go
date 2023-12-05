@@ -44,8 +44,7 @@ func (tl testLogger) Errorf(format string, args ...any) {
 	tl.t.Logf(format, args...)
 }
 
-func defaultConnectingHandler(connecti
-	onCallbacks server.ConnectionCallbacksStruct) func(request *http.Request) types.ConnectionResponse {
+func defaultConnectingHandler(connectionCallbacks server.ConnectionCallbacksStruct) func(request *http.Request) types.ConnectionResponse {
 	return func(request *http.Request) types.ConnectionResponse {
 		return types.ConnectionResponse{
 			Accept:              true,
