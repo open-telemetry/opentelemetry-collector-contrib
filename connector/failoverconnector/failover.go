@@ -6,10 +6,11 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
 )
 
 type consumerProvider[C any] func(...component.ID) (C, error)
@@ -17,29 +18,9 @@ type consumerProvider[C any] func(...component.ID) (C, error)
 type failoverRouter[C any] struct {
 	consumerProvider consumerProvider[C]
 	cfg              *Config
-	pS               *pipelineSelector
+	pS               *state.PipelineSelector
 	consumers        []C
-	cancelRetry      *cancelManager
-}
-
-// Manages cancel function for retry goroutine, ends up cleaner than using channels
-type cancelManager struct {
-	lock        sync.Mutex
-	cancelRetry context.CancelFunc
-}
-
-func (m *cancelManager) updateCancelFunc(newCancelFunc context.CancelFunc) {
-	m.lock.Lock()
-	m.cancelRetry = newCancelFunc
-	m.lock.Unlock()
-}
-
-func (m *cancelManager) invokeCancel() {
-	m.lock.Lock()
-	if m.cancelRetry != nil {
-		m.cancelRetry()
-	}
-	m.lock.Unlock()
+	rS               *state.RetryState
 }
 
 var (
@@ -51,84 +32,112 @@ func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config) *failov
 	return &failoverRouter[C]{
 		consumerProvider: provider,
 		cfg:              cfg,
-		pS:               newPipelineSelector(cfg),
-		cancelRetry:      &cancelManager{},
+		pS:               state.NewPipelineSelector(len(cfg.PipelinePriority), cfg.MaxRetries),
+		rS:               &state.RetryState{},
 	}
 }
 
-func (f *failoverRouter[C]) getCurrentConsumer() C {
-	return f.consumers[f.pS.currentIndex]
+func (f *failoverRouter[C]) getCurrentConsumer() (C, int, bool) {
+	// if currentIndex incremented passed bounds of pipeline list
+	var nilConsumer C
+	if f.pS.CurrentIndex >= len(f.cfg.PipelinePriority) {
+		return nilConsumer, -1, false
+	}
+	idx := f.pS.GetCurrentIndex()
+	return f.consumers[idx], idx, true
 }
 
 func (f *failoverRouter[C]) registerConsumers() error {
 	consumers := make([]C, 0)
-	for _, pipeline := range f.cfg.PipelinePriority {
-		newConsumer, err := f.consumerProvider(pipeline...)
-		if err == nil {
-			consumers = append(consumers, newConsumer)
-		} else {
+	for _, pipelines := range f.cfg.PipelinePriority {
+		newConsumer, err := f.consumerProvider(pipelines...)
+		if err != nil {
 			return errConsumer
 		}
+		consumers = append(consumers, newConsumer)
 	}
 	f.consumers = consumers
 	return nil
 }
 
-// handlePipelineError evaluates if the error was due to a failed retry or a new failure and will resolve the error
-// by adjusting the priority level accordingly
-func (f *failoverRouter[C]) handlePipelineError() {
-	if f.pS.handleErrorRetryCheck() {
-		ctx, cancel := context.WithCancel(context.Background())
-		f.cancelRetry.invokeCancel()
-		f.cancelRetry.updateCancelFunc(cancel)
-		f.enableRetry(ctx)
+func (f *failoverRouter[C]) handlePipelineError(idx int) {
+	// avoids race condition in case of consumeSIGNAL invocations
+	// where index was updated during execution
+	if idx != f.pS.GetCurrentIndex() {
+		return
 	}
+	doRetry := f.pS.IndexIsStable(idx)
+	// UpdatePipelineIndex either increments the pipeline to the next priority
+	// or returns it to the stable
+	f.pS.UpdatePipelineIndex(idx)
+	// if the currentIndex is not the stableIndex, that means the currentIndex is a higher
+	// priority index that was set during a retry, in which case we don't want to start a
+	// new retry goroutine
+	if !doRetry {
+		return
+	}
+	// kill existing retry goroutine if error is from a stable pipeline that failed for the first time
+	ctx, cancel := context.WithCancel(context.Background())
+	f.rS.InvokeCancel()
+	f.rS.UpdateCancelFunc(cancel)
+	f.enableRetry(ctx)
 }
 
 func (f *failoverRouter[C]) enableRetry(ctx context.Context) {
-
-	var cancelFunc context.CancelFunc
-	var tickerCtx context.Context
-	ticker := time.NewTicker(f.cfg.RetryInterval)
-
 	go func() {
-		for f.checkContinueRetry(f.pS.stableIndex) {
+		ticker := time.NewTicker(f.cfg.RetryInterval)
+		defer ticker.Stop()
+
+		var cancelFunc context.CancelFunc
+		// checkContinueRetry checks that any higher priority levels have retries remaining
+		// (have not exceeded their maxRetries)
+		for f.checkContinueRetry(f.pS.StableIndex) {
 			select {
 			case <-ticker.C:
+				// When the nextRetry interval starts we kill the existing iteration through
+				// the higher priority pipelines if still in progress
 				if cancelFunc != nil {
 					cancelFunc()
 				}
-				tickerCtx, cancelFunc = context.WithCancel(ctx)
-				go f.retryHighPriorityPipelines(tickerCtx, f.pS.stableIndex)
+				cancelFunc = f.handleRetry(ctx, f.pS.StableIndex)
 			case <-ctx.Done():
-				cancelFunc()
 				return
 			}
 		}
 	}()
 }
 
-func (f *failoverRouter[C]) pipelineIsValid() bool {
-	return f.pS.currentIndex < len(f.cfg.PipelinePriority)
+// handleRetry is responsible for launching goroutine and returning cancelFunc for context to be called if new
+// interval starts in the middle of the execution
+func (f *failoverRouter[C]) handleRetry(parentCtx context.Context, stableIndex int) context.CancelFunc {
+	retryCtx, cancelFunc := context.WithCancel(parentCtx)
+	go f.retryHighPriorityPipelines(retryCtx, stableIndex)
+	return cancelFunc
 }
 
+// retryHighPriorityPipelines responsible for single iteration through all higher priority pipelines
 func (f *failoverRouter[C]) retryHighPriorityPipelines(ctx context.Context, stableIndex int) {
 	ticker := time.NewTicker(f.cfg.RetryGap)
 
 	defer ticker.Stop()
 
 	for i := 0; i < stableIndex; i++ {
-		if stableIndex > f.pS.getStableIndex() {
+		// if stableIndex was updated to a higher priority level during the execution of the goroutine
+		// will return to avoid overwriting higher priority level with lower one
+		if stableIndex > f.pS.GetStableIndex() {
 			return
 		}
-		if f.pS.maxRetriesUsed(i) {
+		// checks that max retries were not used for this index
+		if f.pS.MaxRetriesUsed(i) {
 			continue
 		}
 		select {
+		// return when context is cancelled by parent goroutine
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			f.pS.setToRetryIndex(i)
+			// when ticker triggers currentIndex is updated
+			f.pS.SetToRetryIndex(i)
 		}
 	}
 }
@@ -136,7 +145,7 @@ func (f *failoverRouter[C]) retryHighPriorityPipelines(ctx context.Context, stab
 // checkStopRetry checks if retry should be suspended if all higher priority levels have exceeded their max retries
 func (f *failoverRouter[C]) checkContinueRetry(index int) bool {
 	for i := 0; i < index; i++ {
-		if f.pS.pipelineRetries[i] < f.cfg.MaxRetries {
+		if f.pS.PipelineRetries[i] < f.cfg.MaxRetries {
 			return true
 		}
 	}
@@ -145,88 +154,12 @@ func (f *failoverRouter[C]) checkContinueRetry(index int) bool {
 
 // reportStable reports back to the failoverRouter that the current priority level that was called by Consume.SIGNAL was
 // stable
-func (f *failoverRouter[C]) reportStable() {
-	if f.pS.currentIndexIsStable() {
+func (f *failoverRouter[C]) reportStable(idx int) {
+	// is stableIndex is already the known stableIndex return
+	if f.pS.IndexIsStable(idx) {
 		return
 	}
-	f.pS.setStable()
-}
-
-func (f *failoverRouter[C]) handleShutdown() {
-	f.cancelRetry.invokeCancel() // maybe change back to channel close
-}
-
-// pipelineSelector is meant to serve as the source of truth for the target priority level
-type pipelineSelector struct {
-	currentIndex    int
-	stableIndex     int
-	lock            sync.RWMutex
-	pipelineRetries []int
-	maxRetry        int
-}
-
-func (p *pipelineSelector) handleErrorRetryCheck() bool {
-	if p.currentIndexIsStable() {
-		p.nextPipeline()
-		return true
-	}
-	p.setToStableIndex()
-	return false
-}
-
-func (p *pipelineSelector) nextPipeline() {
-	p.lock.Lock()
-	for ok := true; ok; ok = p.pipelineRetries[p.currentIndex] >= p.maxRetry {
-		p.currentIndex++
-	}
-	p.stableIndex = p.currentIndex
-	p.lock.Unlock()
-}
-
-func (p *pipelineSelector) setToStableIndex() {
-	p.lock.Lock()
-	p.pipelineRetries[p.currentIndex]++
-	p.currentIndex = p.stableIndex
-	p.lock.Unlock()
-}
-
-func (p *pipelineSelector) setToRetryIndex(index int) {
-	p.lock.Lock()
-	p.currentIndex = index
-	p.lock.Unlock()
-}
-
-func (p *pipelineSelector) maxRetriesUsed(index int) bool {
-	p.lock.RLock()
-	defer p.lock.RUnlock()
-	return p.pipelineRetries[index] >= p.maxRetry
-}
-
-func (p *pipelineSelector) setStable() {
-	p.lock.Lock()
-	p.pipelineRetries[p.currentIndex] = 0
-	p.stableIndex = p.currentIndex
-	p.lock.Unlock()
-}
-
-func (p *pipelineSelector) currentIndexIsStable() bool {
-	p.lock.RLock()
-	defer p.lock.RUnlock()
-	return p.currentIndex == p.stableIndex
-}
-
-func (p *pipelineSelector) getStableIndex() int {
-	p.lock.RLock()
-	defer p.lock.RUnlock()
-	return p.stableIndex
-}
-
-func newPipelineSelector(cfg *Config) *pipelineSelector {
-	return &pipelineSelector{
-		currentIndex:    0,
-		stableIndex:     0,
-		lock:            sync.RWMutex{},
-		pipelineRetries: make([]int, len(cfg.PipelinePriority)),
-		maxRetry:        cfg.MaxRetries,
-	}
+	// if the stableIndex is a retried index, the update the stable index to the retried index
+	// NOTE retry will not stop due to potential higher priority index still available
+	f.pS.SetNewStableIndex(idx)
 }
