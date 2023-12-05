@@ -24,7 +24,7 @@ type Settings struct {
 	SendMetadata        bool
 }
 
-// FromMetrics converts pmetric.Metrics to prometheus remote write format.
+// FromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*prompb.TimeSeries, errs error) {
 	tsMap = make(map[string]*prompb.TimeSeries)
 

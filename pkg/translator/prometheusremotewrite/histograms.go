@@ -27,12 +27,13 @@ func addSingleExponentialHistogramDataPoint(
 		resource,
 		pt.Attributes(),
 		settings.ExternalLabels,
-		model.MetricNameLabel, metric,
+		model.MetricNameLabel,
+		metric,
 	)
 
 	sig := timeSeriesSignature(
 		pmetric.MetricTypeExponentialHistogram.String(),
-		&labels,
+		labels,
 	)
 	ts, ok := series[sig]
 	if !ok {

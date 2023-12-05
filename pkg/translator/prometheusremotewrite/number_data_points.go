@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// addSingleSumNumberDataPoint converts the Gauge metric data point to a
+// addSingleGaugeNumberDataPoint converts the Gauge metric data point to a
 // Prometheus time series with samples and labels. The result is stored in the
 // series map.
 func addSingleGaugeNumberDataPoint(
@@ -28,7 +28,8 @@ func addSingleGaugeNumberDataPoint(
 		resource,
 		pt.Attributes(),
 		settings.ExternalLabels,
-		model.MetricNameLabel, name,
+		model.MetricNameLabel,
+		name,
 	)
 	sample := &prompb.Sample{
 		// convert ns to ms
@@ -78,7 +79,7 @@ func addSingleSumNumberDataPoint(
 	}
 	sig := addSample(series, sample, labels, metric.Type().String())
 
-	if ts, ok := series[sig]; sig != "" && ok {
+	if ts := series[sig]; sig != "" && ts != nil {
 		exemplars := getPromExemplars[pmetric.NumberDataPoint](pt)
 		ts.Exemplars = append(ts.Exemplars, exemplars...)
 	}
@@ -86,16 +87,18 @@ func addSingleSumNumberDataPoint(
 	// add _created time series if needed
 	if settings.ExportCreatedMetric && metric.Sum().IsMonotonic() {
 		startTimestamp := pt.StartTimestamp()
-		if startTimestamp != 0 {
-			createdLabels := make([]prompb.Label, len(labels))
-			copy(createdLabels, labels)
-			for i, l := range createdLabels {
-				if l.Name == model.MetricNameLabel {
-					createdLabels[i].Value = name + createdSuffix
-					break
-				}
-			}
-			addCreatedTimeSeriesIfNeeded(series, createdLabels, startTimestamp, pt.Timestamp(), metric.Type().String())
+		if startTimestamp == 0 {
+			return
 		}
+
+		createdLabels := make([]prompb.Label, len(labels))
+		copy(createdLabels, labels)
+		for i, l := range createdLabels {
+			if l.Name == model.MetricNameLabel {
+				createdLabels[i].Value = name + createdSuffix
+				break
+			}
+		}
+		addCreatedTimeSeriesIfNeeded(series, createdLabels, startTimestamp, pt.Timestamp(), metric.Type().String())
 	}
 }
