@@ -4,59 +4,27 @@
 package fileconsumer
 
 import (
-	"context"
-	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func nopEmitFunc(_ context.Context, _ []byte, _ map[string]any) error {
-	return nil
+func testManager(t *testing.T, cfg *Config) (*Manager, *emittest.Sink) {
+	sink := emittest.NewSink()
+	return testManagerWithSink(t, cfg, sink), sink
 }
 
-func testEmitFunc(emitChan chan *emitParams) emit.Callback {
-	return func(_ context.Context, token []byte, attrs map[string]any) error {
-		copied := make([]byte, len(token))
-		copy(copied, token)
-		emitChan <- &emitParams{attrs, copied}
-		return nil
-	}
-}
-
-type emitParams struct {
-	attrs map[string]any
-	token []byte
-}
-
-type testManagerConfig struct {
-	emitChan chan *emitParams
-}
-
-type testManagerOption func(*testManagerConfig)
-
-func withEmitChan(emitChan chan *emitParams) testManagerOption {
-	return func(c *testManagerConfig) {
-		c.emitChan = emitChan
-	}
-}
-
-func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
-	tmc := &testManagerConfig{emitChan: make(chan *emitParams, 100)}
-	for _, opt := range opts {
-		opt(tmc)
-	}
-	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(tmc.emitChan))
+func testManagerWithSink(t *testing.T, cfg *Config, sink *emittest.Sink) *Manager {
+	input, err := cfg.Build(testutil.Logger(t), sink.Callback)
 	require.NoError(t, err)
 	t.Cleanup(func() { input.closePreviousFiles() })
-	return input, tmc.emitChan
+	return input
 }
 
 func openFile(tb testing.TB, path string) *os.File {
@@ -93,74 +61,4 @@ func tokenWithLength(length int) []byte {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
 	return b
-}
-
-func waitForEmit(t *testing.T, c chan *emitParams) *emitParams {
-	select {
-	case call := <-c:
-		return call
-	case <-time.After(3 * time.Second):
-		require.FailNow(t, "Timed out waiting for message")
-		return nil
-	}
-}
-
-func waitForNTokens(t *testing.T, c chan *emitParams, n int) [][]byte {
-	emitChan := make([][]byte, 0, n)
-	for i := 0; i < n; i++ {
-		select {
-		case call := <-c:
-			emitChan = append(emitChan, call.token)
-		case <-time.After(3 * time.Second):
-			require.FailNow(t, "Timed out waiting for message")
-			return nil
-		}
-	}
-	return emitChan
-}
-
-func waitForToken(t *testing.T, c chan *emitParams, expected []byte) {
-	select {
-	case call := <-c:
-		require.Equal(t, expected, call.token)
-	case <-time.After(3 * time.Second):
-		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
-	}
-}
-
-func waitForTokenWithAttributes(t *testing.T, c chan *emitParams, expected []byte, attrs map[string]any) {
-	select {
-	case call := <-c:
-		require.Equal(t, expected, call.token)
-		require.Equal(t, attrs, call.attrs)
-	case <-time.After(3 * time.Second):
-		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
-	}
-}
-
-func waitForTokens(t *testing.T, c chan *emitParams, expected ...[]byte) {
-	actual := make([][]byte, 0, len(expected))
-LOOP:
-	for {
-		select {
-		case call := <-c:
-			actual = append(actual, call.token)
-		case <-time.After(3 * time.Second):
-			break LOOP
-		}
-	}
-
-	require.ElementsMatch(t, expected, actual)
-}
-
-func expectNoTokens(t *testing.T, c chan *emitParams) {
-	expectNoTokensUntil(t, c, 200*time.Millisecond)
-}
-
-func expectNoTokensUntil(t *testing.T, c chan *emitParams, d time.Duration) {
-	select {
-	case token := <-c:
-		require.FailNow(t, "Received unexpected message", "Message: %s", token)
-	case <-time.After(d):
-	}
 }

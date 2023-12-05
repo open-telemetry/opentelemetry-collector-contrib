@@ -18,6 +18,7 @@ import (
 	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -35,7 +36,7 @@ func TestMultiFileRotate(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	numFiles := 3
 	numMessages := 3
@@ -77,7 +78,7 @@ func TestMultiFileRotate(t *testing.T) {
 		}(temp, i)
 	}
 
-	waitForTokens(t, emitCalls, expected...)
+	sink.ExpectTokens(t, expected...)
 	wg.Wait()
 }
 
@@ -92,7 +93,7 @@ func TestMultiFileRotateSlow(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -135,7 +136,7 @@ func TestMultiFileRotateSlow(t *testing.T) {
 		}(fileNum)
 	}
 
-	waitForTokens(t, emitCalls, expected...)
+	sink.ExpectTokens(t, expected...)
 	wg.Wait()
 }
 
@@ -146,7 +147,7 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -197,7 +198,7 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 		}(fileNum)
 	}
 
-	waitForTokens(t, emitCalls, expected...)
+	sink.ExpectTokens(t, expected...)
 	wg.Wait()
 }
 
@@ -254,8 +255,8 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		cfg := NewConfig().includeDir(tempDir)
 		cfg.StartAt = "beginning"
 		cfg.PollInterval = tc.pollInterval
-		emitCalls := make(chan *emitParams, tc.totalLines)
-		operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
+		sink := emittest.NewSink(emittest.WithCallBuffer(tc.totalLines))
+		operator := testManagerWithSink(t, cfg, sink)
 
 		file, err := os.CreateTemp(tempDir, "")
 		require.NoError(t, err)
@@ -289,14 +290,8 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		}
 
 		received := make([][]byte, 0, tc.totalLines)
-	LOOP:
-		for {
-			select {
-			case call := <-emitCalls:
-				received = append(received, call.token)
-			case <-time.After(200 * time.Millisecond):
-				break LOOP
-			}
+		for i := 0; i < tc.totalLines; i++ {
+			received = append(received, sink.NextToken(t))
 		}
 
 		if tc.ephemeralLines {
@@ -372,7 +367,7 @@ func TestMoveFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp1 := openTemp(t, tempDir)
@@ -380,7 +375,7 @@ func TestMoveFile(t *testing.T) {
 	temp1.Close()
 
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
 	operator.wg.Wait()
@@ -388,7 +383,7 @@ func TestMoveFile(t *testing.T) {
 	require.NoError(t, err)
 
 	operator.poll(context.Background())
-	expectNoTokens(t, emitCalls)
+	sink.ExpectNoCalls(t)
 }
 
 func TestTrackMovedAwayFiles(t *testing.T) {
@@ -400,7 +395,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp1 := openTemp(t, tempDir)
@@ -408,7 +403,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	temp1.Close()
 
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog1"))
 
 	// Wait until all goroutines are finished before renaming
 	operator.wg.Wait()
@@ -426,7 +421,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	writeString(t, movedFile, "testlog2\n")
 	operator.poll(context.Background())
 
-	waitForToken(t, emitCalls, []byte("testlog2"))
+	sink.ExpectToken(t, []byte("testlog2"))
 }
 
 // Check if we read log lines from a rotated file before lines from the newly created file
@@ -440,7 +435,7 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 
 	originalFile := openTemp(t, tempDir)
 	orginalName := originalFile.Name()
@@ -451,7 +446,7 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForToken(t, emitCalls, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog1"))
 	writeString(t, originalFile, "testlog2\n")
 	originalFile.Close()
 
@@ -465,7 +460,7 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	require.NoError(t, err)
 	writeString(t, newFile, "testlog3\n")
 
-	waitForTokens(t, emitCalls, []byte("testlog2"), []byte("testlog3"))
+	sink.ExpectTokens(t, []byte("testlog2"), []byte("testlog3"))
 }
 
 // When a file it rotated out of pattern via move/create, we should
@@ -480,7 +475,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	cfg := NewConfig()
 	cfg.Include = append(cfg.Include, fmt.Sprintf("%s/*.log1", tempDir))
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	originalFile := openTempWithPattern(t, tempDir, "*.log1")
@@ -488,7 +483,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 
 	writeString(t, originalFile, "testlog1\n")
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog1"))
 
 	// write more log, before next poll() begins
 	writeString(t, originalFile, "testlog2\n")
@@ -505,7 +500,7 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	operator.poll(context.Background())
 
 	// expect remaining log from old file as well as all from new file
-	waitForTokens(t, emitCalls, []byte("testlog2"), []byte("testlog4"), []byte("testlog5"))
+	sink.ExpectTokens(t, []byte("testlog2"), []byte("testlog4"), []byte("testlog5"))
 }
 
 // When a file it rotated out of pattern via copy/truncate, we should
@@ -517,13 +512,13 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	cfg := NewConfig()
 	cfg.Include = append(cfg.Include, fmt.Sprintf("%s/*.log1", tempDir))
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	originalFile := openTempWithPattern(t, tempDir, "*.log1")
 	writeString(t, originalFile, "testlog1\n")
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog1"))
 
 	// write more log, before next poll() begins
 	writeString(t, originalFile, "testlog2\n")
@@ -543,7 +538,7 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	// poll again
 	operator.poll(context.Background())
 
-	waitForTokens(t, emitCalls, []byte("testlog4"), []byte("testlog5"))
+	sink.ExpectTokens(t, []byte("testlog4"), []byte("testlog5"))
 }
 
 // TruncateThenWrite tests that, after a file has been truncated,
@@ -557,14 +552,14 @@ func TestTruncateThenWrite(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
 	operator.poll(context.Background())
-	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
+	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
 
 	require.NoError(t, temp1.Truncate(0))
 	_, err := temp1.Seek(0, 0)
@@ -572,8 +567,8 @@ func TestTruncateThenWrite(t *testing.T) {
 
 	writeString(t, temp1, "testlog3\n")
 	operator.poll(context.Background())
-	waitForToken(t, emitCalls, []byte("testlog3"))
-	expectNoTokens(t, emitCalls)
+	sink.ExpectToken(t, []byte("testlog3"))
+	sink.ExpectNoCalls(t)
 }
 
 // CopyTruncateWriteBoth tests that when a file is copied
@@ -589,14 +584,14 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	temp1 := openTemp(t, tempDir)
 	writeString(t, temp1, "testlog1\ntestlog2\n")
 
 	operator.poll(context.Background())
-	waitForTokens(t, emitCalls, []byte("testlog1"), []byte("testlog2"))
+	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
 	operator.wg.Wait() // wait for all goroutines to finish
 
 	// Copy the first file to a new file, and add another log
@@ -615,7 +610,7 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 
 	// Expect both messages to come through
 	operator.poll(context.Background())
-	waitForTokens(t, emitCalls, []byte("testlog3"), []byte("testlog4"))
+	sink.ExpectTokens(t, []byte("testlog3"), []byte("testlog4"))
 }
 
 func TestFileMovedWhileOff_BigFiles(t *testing.T) {
@@ -627,7 +622,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, sink := testManager(t, cfg)
 	persister := testutil.NewUnscopedMockPersister()
 
 	log1 := tokenWithLength(1001)
@@ -640,7 +635,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 
 	// Run the operator to read the first log
 	require.NoError(t, operator.Start(persister))
-	waitForToken(t, emitCalls, log1)
+	sink.ExpectToken(t, log1)
 	require.NoError(t, operator.Stop())
 
 	// Write one more log to the original file
@@ -655,8 +650,8 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	writeString(t, temp2, string(log3)+"\n")
 
 	// Expect the message written to the new log to come through
-	operator2, emitCalls2 := buildTestManager(t, cfg)
+	operator2, sink2 := testManager(t, cfg)
 	require.NoError(t, operator2.Start(persister))
-	waitForTokens(t, emitCalls2, log2, log3)
+	sink2.ExpectTokens(t, log2, log3)
 	require.NoError(t, operator2.Stop())
 }
