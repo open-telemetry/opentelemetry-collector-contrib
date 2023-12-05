@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
@@ -27,7 +28,7 @@ func TestPersistFlusher(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
 	f, sink := testReaderFactory(t, split.Config{}, defaultMaxLogSize, flushPeriod)
 
-	temp := openTemp(t, t.TempDir())
+	temp := filetest.OpenTemp(t, t.TempDir())
 	fp, err := f.NewFingerprint(temp)
 	require.NoError(t, err)
 
@@ -113,7 +114,7 @@ func TestTokenization(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			f, sink := testReaderFactory(t, split.Config{}, defaultMaxLogSize, defaultFlushPeriod)
 
-			temp := openTemp(t, t.TempDir())
+			temp := filetest.OpenTemp(t, t.TempDir())
 			_, err := temp.Write(tc.fileContent)
 			require.NoError(t, err)
 
@@ -143,7 +144,7 @@ func TestTokenizationTooLong(t *testing.T) {
 
 	f, sink := testReaderFactory(t, split.Config{}, 10, defaultFlushPeriod)
 
-	temp := openTemp(t, t.TempDir())
+	temp := filetest.OpenTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
 	require.NoError(t, err)
 
@@ -175,7 +176,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	sCfg.LineStartPattern = `\d+-\d+-\d+`
 	f, sink := testReaderFactory(t, sCfg, 15, defaultFlushPeriod)
 
-	temp := openTemp(t, t.TempDir())
+	temp := filetest.OpenTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
 	require.NoError(t, err)
 
@@ -207,7 +208,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	require.NoError(t, err)
 	f.HeaderConfig = h
 
-	temp := openTemp(t, t.TempDir())
+	temp := filetest.OpenTemp(t, t.TempDir())
 
 	fp, err := f.NewFingerprint(temp)
 	require.NoError(t, err)
