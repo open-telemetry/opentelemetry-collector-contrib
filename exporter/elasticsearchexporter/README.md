@@ -68,6 +68,9 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
     - `ecs`: Try to map fields defined in the
              [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions)
              to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html).
+    - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
+             span attributes as well as omit the `Events.` string prefixed to
+             field names for span events. 
   - `fields` (optional): Configure additional fields mappings.
   - `file` (optional): Read additional field mappings from the provided YAML file.
   - `dedup` (default=true): Try to find and remove duplicate fields/attributes
@@ -76,8 +79,6 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
     will reject documents that have duplicate fields.
   - `dedot` (default=true): When enabled attributes with `.` will be split into
     proper json objects.
-  - `omit_attributes_prefix` (default=false): Omit the `Attributes.` string prefixed to field names for
-    log and span attributes.
 - `sending_queue`
   - `enabled` (default = false)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
