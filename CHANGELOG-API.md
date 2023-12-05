@@ -11,6 +11,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 ### 🛑 Breaking changes 🛑
 
+- `clickhouseexporter`: Replace `Config.QueueSettings` field with `exporterhelper.QueueSettings` and remove `QueueSettings` struct (#27653)
 - `kafkareceiver`: Do not export the function `WithTracesUnmarshalers`, `WithMetricsUnmarshalers`, `WithLogsUnmarshalers` (#26304)
 
 ### 💡 Enhancements 💡

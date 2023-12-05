@@ -1494,10 +1494,8 @@ func TestReadExistingLogsWithHeader(t *testing.T) {
 }
 
 func TestDeleteAfterRead_SkipPartials(t *testing.T) {
-	bytesPerLine := 100
-	shortFileLine := tokenWithLength(bytesPerLine - 1)
+	shortFileLine := "short file line"
 	longFileLines := 100000
-	longFileFirstLine := "first line of long file\n"
 
 	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
 	defer func() {
@@ -1513,15 +1511,13 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	operator.persister = testutil.NewUnscopedMockPersister()
 
 	shortFile := openTemp(t, tempDir)
-	_, err := shortFile.WriteString(string(shortFileLine) + "\n")
+	_, err := shortFile.WriteString(shortFileLine + "\n")
 	require.NoError(t, err)
 	require.NoError(t, shortFile.Close())
 
 	longFile := openTemp(t, tempDir)
-	_, err = longFile.WriteString(longFileFirstLine)
-	require.NoError(t, err)
 	for line := 0; line < longFileLines; line++ {
-		_, err := longFile.WriteString(string(tokenWithLength(bytesPerLine-1)) + "\n")
+		_, err := longFile.WriteString(string(tokenWithLength(100)) + "\n")
 		require.NoError(t, err)
 	}
 	require.NoError(t, longFile.Close())
@@ -1541,22 +1537,26 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 		operator.poll(ctx)
 	}()
 
-	for !(shortOne && longOne) {
-		if line := waitForEmit(t, emitCalls); string(line.token) == string(shortFileLine) {
+	for !shortOne || !longOne {
+		if line := waitForEmit(t, emitCalls); string(line.token) == shortFileLine {
 			shortOne = true
 		} else {
 			longOne = true
 		}
 	}
 
+	// Short file was fully consumed and should eventually be deleted.
+	// Enforce assertion before canceling because EOF is not necessarily detected
+	// immediately when the token is emitted. An additional scan may be necessary.
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.NoFileExists(c, shortFile.Name())
+	}, 100*time.Millisecond, time.Millisecond)
+
 	// Stop consuming before long file has been fully consumed
 	cancel()
 	wg.Wait()
 
-	// short file was fully consumed and should have been deleted
-	require.NoFileExists(t, shortFile.Name())
-
-	// long file was partially consumed and should NOT have been deleted
+	// Long file was partially consumed and should NOT have been deleted.
 	require.FileExists(t, longFile.Name())
 }
 
