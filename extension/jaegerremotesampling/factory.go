@@ -58,6 +58,7 @@ var protoGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription(
 		"When enabled, the jaegerremotesampling will use Proto-gen over Thrift-gen.",
 	),
+	featuregate.WithRegisterToVersion("0.92.0"),
 )
 
 func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {

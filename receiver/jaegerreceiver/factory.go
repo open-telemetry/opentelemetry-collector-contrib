@@ -57,6 +57,7 @@ var protoGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription(
 		"When enabled, the jaegerreceiver will use Proto-gen over Thrift-gen.",
 	),
+	featuregate.WithRegisterToVersion("0.92.0"),
 )
 
 // NewFactory creates a new Jaeger receiver factory.
