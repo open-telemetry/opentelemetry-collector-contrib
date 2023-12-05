@@ -50,7 +50,7 @@ func logDeprecation(logger *zap.Logger) {
 	})
 }
 
-// nolint:staticcheck
+// nolint
 var protoGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.jaegerreceiver.replaceThriftWithProto",
 	featuregate.StageStable,

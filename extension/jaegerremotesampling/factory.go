@@ -51,7 +51,7 @@ func logDeprecation(logger *zap.Logger) {
 	})
 }
 
-// nolint:staticcheck
+// nolint
 var protoGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.jaegerremotesampling.replaceThriftWithProto",
 	featuregate.StageStable,
