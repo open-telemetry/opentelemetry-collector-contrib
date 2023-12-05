@@ -797,8 +797,8 @@ go.opentelemetry.io/collector/processor v0.90.2-0.20231201205146-6e2fdc755b34 h1
 go.opentelemetry.io/collector/processor v0.90.2-0.20231201205146-6e2fdc755b34/go.mod h1:mlzwxBIeZWPrVTYHFZwCylW91NVQzHA9e/IixdJqN7A=
 go.opentelemetry.io/collector/processor/batchprocessor v0.90.2-0.20231201205146-6e2fdc755b34 h1:GQdDxXVm8wxXBj8NGx9scU9VGn0BY0KViJW3FcA90Gc=
 go.opentelemetry.io/collector/processor/batchprocessor v0.90.2-0.20231201205146-6e2fdc755b34/go.mod h1:P4ZT8Ml1cZKX1/cmvrSJMJP1j7MeUAY8ubCuPp3hDN8=
-go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.90.1 h1:hY8P1Q+4cAtj9J5Tg/bNmiSGveo+xWqSHNXF4CrsS8M=
-go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.90.1/go.mod h1:z2Xqj2j0m/mrbOOdx8KownKWhcS4Qdf7zCKlE41qYQg=
+go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.90.2-0.20231201205146-6e2fdc755b34 h1:JMEyeRCsjdGS/JbVrnvOpHCXU1wPAOpEDBMobBy3O6M=
+go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.90.2-0.20231201205146-6e2fdc755b34/go.mod h1:KkD+p6j8onA58OuT1LmElyJ2ADreUWimOdRM+GNKW2M=
 go.opentelemetry.io/collector/receiver v0.90.2-0.20231201205146-6e2fdc755b34 h1:WR6mGsYoNDoqG4ecam1Wyna8GxOB/ATE2r3TbLTdZsE=
 go.opentelemetry.io/collector/receiver v0.90.2-0.20231201205146-6e2fdc755b34/go.mod h1:KAAfJus9Kn92XTqOQO5/ZftTYKBhpi2S8NW6n7Baefo=
 go.opentelemetry.io/collector/receiver/otlpreceiver v0.90.2-0.20231201205146-6e2fdc755b34 h1:dHRI6sum44DmBWdeNRmvN45ot/tZQSMEm3VooVyJN4Y=
