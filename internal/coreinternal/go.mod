@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.90.1
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
-	go.opentelemetry.io/collector v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector v0.90.2-0.20231205132409-67b1ae9cb384
 	go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/consumer v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/featuregate v1.0.1-0.20231201205146-6e2fdc755b34

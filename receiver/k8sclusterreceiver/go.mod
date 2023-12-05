@@ -16,7 +16,7 @@ require (
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector v0.90.2-0.20231205132409-67b1ae9cb384
 	go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/confmap v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/consumer v0.90.2-0.20231201205146-6e2fdc755b34
