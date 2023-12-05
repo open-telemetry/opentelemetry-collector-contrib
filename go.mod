@@ -272,7 +272,7 @@ require (
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/aerospike/aerospike-client-go/v6 v6.13.0 // indirect
-	github.com/alecthomas/participle/v2 v2.1.0 // indirect
+	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.66 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
