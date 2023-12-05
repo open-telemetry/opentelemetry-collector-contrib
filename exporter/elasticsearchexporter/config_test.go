@@ -69,7 +69,6 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
-			Prefix:          "logstash",
 			PrefixSeparator: "-",
 			DateFormat:      "%Y.%m.%d",
 		},
@@ -141,7 +140,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
-					Prefix:          "logstash",
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
@@ -192,7 +190,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
-					Prefix:          "logstash",
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},

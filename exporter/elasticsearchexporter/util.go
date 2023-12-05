@@ -11,9 +11,9 @@ import (
 	"github.com/lestrrat-go/strftime"
 )
 
-func generateIndex(index string, conf *LogstashFormatSettings, t time.Time) (string, error) {
+func generateIndexWithLogstashFormat(index string, conf *LogstashFormatSettings, t time.Time) (string, error) {
 	if conf.Enabled {
-		partIndex := fmt.Sprintf("%s%s", conf.Prefix, conf.PrefixSeparator)
+		partIndex := fmt.Sprintf("%s%s", index, conf.PrefixSeparator)
 		var buf bytes.Buffer
 		p, err := strftime.New(fmt.Sprintf("%s%s", partIndex, conf.DateFormat))
 		if err != nil {

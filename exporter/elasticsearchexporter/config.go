@@ -66,7 +66,6 @@ type Config struct {
 
 type LogstashFormatSettings struct {
 	Enabled         bool   `mapstructure:"enabled"`
-	Prefix          string `mapstructure:"prefix"`
 	PrefixSeparator string `mapstructure:"prefix_separator"`
 	DateFormat      string `mapstructure:"date_format"`
 }

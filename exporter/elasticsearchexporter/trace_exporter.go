@@ -102,12 +102,14 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, span)
 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
-	} else {
-		generatedIndex, err := generateIndex(fIndex, &e.logstashFormat, time.Now())
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
 			return err
 		}
-		fIndex = generatedIndex
+		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeSpan(resource, span, scope)

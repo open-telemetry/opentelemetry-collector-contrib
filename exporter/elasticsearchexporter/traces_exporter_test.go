@@ -217,7 +217,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 
 			create := jsonVal["create"].(map[string]any)
 
-			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.LogstashFormat.Prefix), true)
+			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.TracesIndex), true)
 
 			return itemsAllOK(docs)
 		})
@@ -230,6 +230,50 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 
 		mustSendTracesWithAttributes(t, exporter, nil, nil)
 
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with logstash format index and dynamic index enabled ", func(t *testing.T) {
+		var (
+			prefix = "resprefix-"
+			suffix = "-attrsuffix"
+			index  = "someindex"
+		)
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.Nil(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.Nil(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
+
+			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesIndex = index
+			cfg.TracesDynamicIndex.Enabled = true
+			cfg.LogstashFormat.Enabled = true
+		})
+
+		mustSendTracesWithAttributes(t, exporter,
+			map[string]string{
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
+			},
+			map[string]string{
+				indexPrefix: prefix,
+			},
+		)
 		rec.WaitItems(1)
 	})
 

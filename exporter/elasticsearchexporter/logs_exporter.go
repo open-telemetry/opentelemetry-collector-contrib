@@ -112,12 +112,14 @@ func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource 
 		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, record)
 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
-	} else {
-		generatedIndex, err := generateIndex(fIndex, &e.logstashFormat, time.Now())
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
 			return err
 		}
-		fIndex = generatedIndex
+		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeLog(resource, record, scope)

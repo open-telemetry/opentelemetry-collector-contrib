@@ -57,7 +57,6 @@ func createDefaultConfig() component.Config {
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
-			Prefix:          "logstash",
 			PrefixSeparator: "-",
 			DateFormat:      "%Y.%m.%d",
 		},
