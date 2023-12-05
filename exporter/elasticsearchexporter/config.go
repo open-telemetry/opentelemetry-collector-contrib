@@ -178,6 +178,7 @@ type MappingMode int
 const (
 	MappingNone MappingMode = iota
 	MappingECS
+	MappingRaw
 )
 
 var (
@@ -191,6 +192,8 @@ func (m MappingMode) String() string {
 		return ""
 	case MappingECS:
 		return "ecs"
+	case MappingRaw:
+		return "raw"
 	default:
 		return ""
 	}
@@ -201,6 +204,7 @@ var mappingModes = func() map[string]MappingMode {
 	for _, m := range []MappingMode{
 		MappingNone,
 		MappingECS,
+		MappingRaw,
 	} {
 		table[strings.ToLower(m.String())] = m
 	}
@@ -233,4 +237,11 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// MappingMode returns the mapping.mode defined in the given cfg
+// object. This method must be called after cfg.Validate() has been
+// called without returning an error.
+func (cfg *Config) MappingMode() MappingMode {
+	return mappingModes[cfg.Mapping.Mode]
 }

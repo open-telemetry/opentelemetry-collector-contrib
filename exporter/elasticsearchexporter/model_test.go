@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -81,17 +82,25 @@ func TestEncodeAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := map[string]struct {
-		omitAttributesPrefix bool
-		want                 func() objmodel.Document
+		mappingMode MappingMode
+		want        func() objmodel.Document
 	}{
-		"omit": {
-			omitAttributesPrefix: true,
+		"raw": {
+			mappingMode: MappingRaw,
 			want: func() objmodel.Document {
 				return objmodel.DocumentFromAttributes(attributes)
 			},
 		},
-		"keep": {
-			omitAttributesPrefix: false,
+		"none": {
+			mappingMode: MappingNone,
+			want: func() objmodel.Document {
+				doc := objmodel.Document{}
+				doc.AddAttributes("Attributes", attributes)
+				return doc
+			},
+		},
+		"ecs": {
+			mappingMode: MappingECS,
 			want: func() objmodel.Document {
 				doc := objmodel.Document{}
 				doc.AddAttributes("Attributes", attributes)
@@ -103,11 +112,65 @@ func TestEncodeAttributes(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			m := encodeModel{
-				omitAttributesPrefix: test.omitAttributesPrefix,
+				mode: test.mappingMode,
 			}
 
 			doc := objmodel.Document{}
 			m.encodeAttributes(&doc, attributes)
+			require.Equal(t, test.want(), doc)
+		})
+	}
+}
+
+func TestEncodeEvents(t *testing.T) {
+	t.Parallel()
+
+	events := ptrace.NewSpanEventSlice()
+	events.EnsureCapacity(4)
+	for i := 0; i < 4; i++ {
+		event := events.AppendEmpty()
+		event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Duration(i) * time.Minute)))
+		event.SetName(fmt.Sprintf("event_%d", i))
+	}
+
+	tests := map[string]struct {
+		mappingMode MappingMode
+		want        func() objmodel.Document
+	}{
+		"raw": {
+			mappingMode: MappingRaw,
+			want: func() objmodel.Document {
+				doc := objmodel.Document{}
+				doc.AddEvents("", events)
+				return doc
+			},
+		},
+		"none": {
+			mappingMode: MappingNone,
+			want: func() objmodel.Document {
+				doc := objmodel.Document{}
+				doc.AddEvents("Events", events)
+				return doc
+			},
+		},
+		"ecs": {
+			mappingMode: MappingECS,
+			want: func() objmodel.Document {
+				doc := objmodel.Document{}
+				doc.AddEvents("Events", events)
+				return doc
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			m := encodeModel{
+				mode: test.mappingMode,
+			}
+
+			doc := objmodel.Document{}
+			m.encodeEvents(&doc, events)
 			require.Equal(t, test.want(), doc)
 		})
 	}
