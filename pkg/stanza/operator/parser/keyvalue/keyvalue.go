@@ -106,7 +106,7 @@ func (kv *Parser) parser(input string, delimiter string) (map[string]any, error)
 
 	var err error
 	for _, raw := range kv.pairSplitFunc(input) {
-		m := strings.Split(raw, delimiter)
+		m := strings.SplitN(raw, delimiter, 2)
 		if len(m) != 2 {
 			e := fmt.Errorf("expected '%s' to split by '%s' into two items, got %d", raw, delimiter, len(m))
 			err = multierr.Append(err, e)
