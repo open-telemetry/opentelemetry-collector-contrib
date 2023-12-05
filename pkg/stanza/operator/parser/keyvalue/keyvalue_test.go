@@ -488,15 +488,50 @@ key=value`,
 			false,
 		},
 		{
-			"invalid-pair",
+			"value-contains-delimiter",
 			func(kv *Config) {},
 			&entry.Entry{
 				Body: `test=text=abc`,
 			},
 			&entry.Entry{
+				Attributes: map[string]any{
+					"test": "text=abc",
+				},
 				Body: `test=text=abc`,
 			},
-			true,
+			false,
+			false,
+		},
+		{
+			"quoted-value-contains-delimiter",
+			func(kv *Config) {},
+			&entry.Entry{
+				Body: `msg="Message successfully sent at 2023-12-04 06:47:31.204222276 +0000 UTC m=+5115.932279346"`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"msg": `Message successfully sent at 2023-12-04 06:47:31.204222276 +0000 UTC m=+5115.932279346`,
+				},
+				Body: `msg="Message successfully sent at 2023-12-04 06:47:31.204222276 +0000 UTC m=+5115.932279346"`,
+			},
+			false,
+			false,
+		},
+		{
+			"multiple-values-contain-delimiter",
+			func(kv *Config) {},
+			&entry.Entry{
+				Body: `one=1=i two="2=ii" three=3=iii`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"one":   "1=i",
+					"two":   "2=ii",
+					"three": "3=iii",
+				},
+				Body: `one=1=i two="2=ii" three=3=iii`,
+			},
+			false,
 			false,
 		},
 		{
