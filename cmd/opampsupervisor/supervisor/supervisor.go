@@ -257,7 +257,7 @@ func (s *Supervisor) startOpAMP() error {
 		return err
 	}
 
-	err = s.opampClient.SetHealth(&protobufs.AgentHealth{Healthy: false})
+	err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false})
 	if err != nil {
 		return err
 	}
@@ -519,7 +519,7 @@ func (s *Supervisor) startAgent() {
 	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
-		err = s.opampClient.SetHealth(&protobufs.AgentHealth{Healthy: false, LastError: fmt.Sprintf("Cannot start the agent: %v", err)})
+		err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: fmt.Sprintf("Cannot start the agent: %v", err)})
 
 		if err != nil {
 			s.logger.Error("Failed to report OpAMP client health", zap.Error(err))
@@ -563,7 +563,7 @@ func (s *Supervisor) healthCheck() {
 	}
 
 	// Prepare OpAMP health report.
-	health := &protobufs.AgentHealth{
+	health := &protobufs.ComponentHealth{
 		StartTimeUnixNano: uint64(s.startedAt.UnixNano()),
 	}
 
@@ -617,7 +617,7 @@ func (s *Supervisor) runAgentProcess() {
 				"Agent process PID=%d exited unexpectedly, exit code=%d. Will restart in a bit...",
 				s.commander.Pid(), s.commander.ExitCode(),
 			)
-			err := s.opampClient.SetHealth(&protobufs.AgentHealth{Healthy: false, LastError: errMsg})
+			err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: errMsg})
 
 			if err != nil {
 				s.logger.Error("Could not report health to OpAMP server", zap.Error(err))
@@ -678,7 +678,7 @@ func (s *Supervisor) Shutdown() {
 
 	if s.opampClient != nil {
 		err := s.opampClient.SetHealth(
-			&protobufs.AgentHealth{
+			&protobufs.ComponentHealth{
 				Healthy: false, LastError: "Supervisor is shutdown",
 			},
 		)
