@@ -9,7 +9,7 @@ require (
 	github.com/prometheus/prometheus v0.48.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34
-	go.opentelemetry.io/collector/config/configauth v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector/config/configauth v0.90.2-0.20231205153822-f3a241a14c7d
 	go.opentelemetry.io/collector/config/confighttp v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/confmap v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/consumer v0.90.2-0.20231201205146-6e2fdc755b34
