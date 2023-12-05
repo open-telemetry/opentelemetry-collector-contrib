@@ -51,7 +51,7 @@ require (
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/alecthomas/participle/v2 v2.1.0 // indirect
+	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/aws/aws-sdk-go v1.48.11 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
