@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/jaegertracing/jaeger v1.41.0
-	github.com/klauspost/compress v1.17.3
+	github.com/klauspost/compress v1.17.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.90.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.90.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.90.1
