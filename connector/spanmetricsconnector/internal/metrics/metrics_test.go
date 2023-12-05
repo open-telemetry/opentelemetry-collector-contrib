@@ -166,7 +166,7 @@ func TestSum_AddExemplar(t *testing.T) {
 	}
 }
 
-func TestHistogram_AddExemplar(t *testing.T) {
+func TestExplicitHistogram_AddExemplar(t *testing.T) {
 	maxCount := 3
 	tests := []struct {
 		name  string
@@ -179,7 +179,7 @@ func TestHistogram_AddExemplar(t *testing.T) {
 			want:  1,
 		},
 		{
-			name: "explicit Histogram - With exemplars length less than configured max count",
+			name: "Explicit Histogram - With exemplars length less than configured max count",
 			input: func() explicitHistogram {
 				exs := pmetric.NewExemplarSlice()
 
@@ -195,7 +195,7 @@ func TestHistogram_AddExemplar(t *testing.T) {
 			want: 2,
 		},
 		{
-			name: "explicit Histogram - With exemplars length equal to configured max count",
+			name: "Explicit Histogram - With exemplars length equal to configured max count",
 			input: func() explicitHistogram {
 				exs := pmetric.NewExemplarSlice()
 
@@ -235,12 +235,12 @@ func TestExponentialHistogram_AddExemplar(t *testing.T) {
 		want  int
 	}{
 		{
-			name:  "Explicit Histogram - No exemplars configured",
+			name:  "Exponential Histogram - No exemplars configured",
 			input: exponentialHistogram{exemplars: pmetric.NewExemplarSlice(), maxExemplarCount: &maxCount},
 			want:  1,
 		},
 		{
-			name: "exponentialHistogram - With exemplars length less than configured max count",
+			name: "Exponential Histogram - With exemplars length less than configured max count",
 			input: func() exponentialHistogram {
 				exs := pmetric.NewExemplarSlice()
 
@@ -256,7 +256,7 @@ func TestExponentialHistogram_AddExemplar(t *testing.T) {
 			want: 2,
 		},
 		{
-			name: "exponentialHistogram - With exemplars length equal to configured max count",
+			name: "Exponential Histogram - With exemplars length equal to configured max count",
 			input: func() exponentialHistogram {
 				exs := pmetric.NewExemplarSlice()
 
