@@ -35,6 +35,12 @@
       {
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
+        "groupName": "All OpenTelemetry Collector dev packages",
+        "matchUpdateTypes": ["digest"]
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
         "groupName": "All OpenTelemetry Collector packages"
       },
       {
@@ -63,6 +69,7 @@
       }
     ],
     "ignoreDeps": [
-      "github.com/mattn/go-ieproxy"
+      "github.com/mattn/go-ieproxy",
+      "github.com/DataDog/datadog-agent/pkg/trace/exportable"
     ]
   }
