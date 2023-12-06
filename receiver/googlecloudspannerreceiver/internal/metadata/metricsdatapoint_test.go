@@ -260,7 +260,7 @@ func assertLabelValue(t *testing.T, attributesMap pcommon.Map, labelValue LabelV
 	}
 }
 
-func assertStringLabelValue(t *testing.T, attributesMap pcommon.Map, labelName string, expectedValue interface{}) {
+func assertStringLabelValue(t *testing.T, attributesMap pcommon.Map, labelName string, expectedValue any) {
 	value, exists := attributesMap.Get(labelName)
 
 	assert.True(t, exists)
@@ -276,7 +276,7 @@ func assertMetricValue(t *testing.T, metricValue MetricValue, dataPoint pmetric.
 	}
 }
 
-func assertLabel(t *testing.T, lbl label, expectedName string, expectedValue interface{}) {
+func assertLabel(t *testing.T, lbl label, expectedName string, expectedValue any) {
 	assert.Equal(t, expectedName, lbl.Name)
 	assert.Equal(t, expectedValue, lbl.Value)
 }

@@ -91,12 +91,12 @@ func TestParseBody(t *testing.T) {
 		RenderedKeywords: []string{"RenderedKeywords"},
 	}
 
-	expected := map[string]interface{}{
-		"event_id": map[string]interface{}{
+	expected := map[string]any{
+		"event_id": map[string]any{
 			"id":         uint32(1),
 			"qualifiers": uint16(2),
 		},
-		"provider": map[string]interface{}{
+		"provider": map[string]any{
 			"name":         "provider",
 			"guid":         "guid",
 			"event_source": "event source",
@@ -110,10 +110,10 @@ func TestParseBody(t *testing.T) {
 		"task":        "rendered_task",
 		"opcode":      "rendered_opcode",
 		"keywords":    []string{"RenderedKeywords"},
-		"event_data": map[string]interface{}{
-			"data": []interface{}{
-				map[string]interface{}{"1st_name": "value"},
-				map[string]interface{}{"2nd_name": "another_value"},
+		"event_data": map[string]any{
+			"data": []any{
+				map[string]any{"1st_name": "value"},
+				map[string]any{"2nd_name": "another_value"},
 			},
 		},
 	}
@@ -159,12 +159,12 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		RenderedKeywords: []string{"RenderedKeywords"},
 	}
 
-	expected := map[string]interface{}{
-		"event_id": map[string]interface{}{
+	expected := map[string]any{
+		"event_id": map[string]any{
 			"id":         uint32(1),
 			"qualifiers": uint16(2),
 		},
-		"provider": map[string]interface{}{
+		"provider": map[string]any{
 			"name":         "provider",
 			"guid":         "guid",
 			"event_source": "event source",
@@ -185,10 +185,10 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		"security": map[string]any{
 			"user_id": "my-user-id",
 		},
-		"event_data": map[string]interface{}{
-			"data": []interface{}{
-				map[string]interface{}{"name": "value"},
-				map[string]interface{}{"another_name": "another_value"},
+		"event_data": map[string]any{
+			"data": []any{
+				map[string]any{"name": "value"},
+				map[string]any{"another_name": "another_value"},
 			},
 		},
 	}
@@ -245,12 +245,12 @@ func TestParseBodyFullExecution(t *testing.T) {
 		RenderedKeywords: []string{"RenderedKeywords"},
 	}
 
-	expected := map[string]interface{}{
-		"event_id": map[string]interface{}{
+	expected := map[string]any{
+		"event_id": map[string]any{
 			"id":         uint32(1),
 			"qualifiers": uint16(2),
 		},
-		"provider": map[string]interface{}{
+		"provider": map[string]any{
 			"name":         "provider",
 			"guid":         "guid",
 			"event_source": "event source",
@@ -276,10 +276,10 @@ func TestParseBodyFullExecution(t *testing.T) {
 		"security": map[string]any{
 			"user_id": "my-user-id",
 		},
-		"event_data": map[string]interface{}{
-			"data": []interface{}{
-				map[string]interface{}{"name": "value"},
-				map[string]interface{}{"another_name": "another_value"},
+		"event_data": map[string]any{
+			"data": []any{
+				map[string]any{"name": "value"},
+				map[string]any{"another_name": "another_value"},
 			},
 		},
 	}
@@ -314,12 +314,12 @@ func TestParseNoRendered(t *testing.T) {
 		},
 	}
 
-	expected := map[string]interface{}{
-		"event_id": map[string]interface{}{
+	expected := map[string]any{
+		"event_id": map[string]any{
 			"id":         uint32(1),
 			"qualifiers": uint16(2),
 		},
-		"provider": map[string]interface{}{
+		"provider": map[string]any{
 			"name":         "provider",
 			"guid":         "guid",
 			"event_source": "event source",
@@ -333,10 +333,10 @@ func TestParseNoRendered(t *testing.T) {
 		"task":        "task",
 		"opcode":      "opcode",
 		"keywords":    []string{"keyword"},
-		"event_data": map[string]interface{}{
-			"data": []interface{}{
-				map[string]interface{}{"name": "value"},
-				map[string]interface{}{"another_name": "another_value"},
+		"event_data": map[string]any{
+			"data": []any{
+				map[string]any{"name": "value"},
+				map[string]any{"another_name": "another_value"},
 			},
 		},
 	}
@@ -375,12 +375,12 @@ func TestParseBodySecurity(t *testing.T) {
 		RenderedKeywords: []string{"RenderedKeywords"},
 	}
 
-	expected := map[string]interface{}{
-		"event_id": map[string]interface{}{
+	expected := map[string]any{
+		"event_id": map[string]any{
 			"id":         uint32(1),
 			"qualifiers": uint16(2),
 		},
-		"provider": map[string]interface{}{
+		"provider": map[string]any{
 			"name":         "provider",
 			"guid":         "guid",
 			"event_source": "event source",
@@ -394,10 +394,10 @@ func TestParseBodySecurity(t *testing.T) {
 		"task":        "rendered_task",
 		"opcode":      "rendered_opcode",
 		"keywords":    []string{"RenderedKeywords"},
-		"event_data": map[string]interface{}{
-			"data": []interface{}{
-				map[string]interface{}{"name": "value"},
-				map[string]interface{}{"another_name": "another_value"},
+		"event_data": map[string]any{
+			"data": []any{
+				map[string]any{"name": "value"},
+				map[string]any{"another_name": "another_value"},
 			},
 		},
 	}
@@ -415,10 +415,10 @@ func TestParseEventData(t *testing.T) {
 	}
 
 	parsed := xmlMap.parseBody()
-	expectedMap := map[string]interface{}{
+	expectedMap := map[string]any{
 		"name": "EVENT_DATA",
-		"data": []interface{}{
-			map[string]interface{}{"name": "value"},
+		"data": []any{
+			map[string]any{"name": "value"},
 		},
 		"binary": "2D20",
 	}
@@ -431,10 +431,10 @@ func TestParseEventData(t *testing.T) {
 	}
 
 	parsed = xmlMixed.parseBody()
-	expectedSlice := map[string]interface{}{
-		"data": []interface{}{
-			map[string]interface{}{"name": "value"},
-			map[string]interface{}{"": "no_name"}},
+	expectedSlice := map[string]any{
+		"data": []any{
+			map[string]any{"name": "value"},
+			map[string]any{"": "no_name"}},
 	}
 	require.Equal(t, expectedSlice, parsed["event_data"])
 }

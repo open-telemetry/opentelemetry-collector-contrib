@@ -255,7 +255,7 @@ func TestSplunkHecExporterEventsToSplunk(t *testing.T) {
 	logger.Info("Splunk received %d events in the last minute", zap.Int("no. of events", len(events)))
 	assert.True(t, len(events) == 1)
 	// check events fields
-	data, ok := events[0].(map[string]interface{})
+	data, ok := events[0].(map[string]any)
 	if !ok {
 		logger.Info("Invalid event format")
 	}
@@ -304,7 +304,7 @@ func TestSplunkHecExporterEventsToSplunkNonDefaultIndex(t *testing.T) {
 	logger.Info("Splunk received %d events in the last minute", zap.Int("no. of events", len(events)))
 	assert.True(t, len(events) == 1)
 	// check events fields
-	data, ok := events[0].(map[string]interface{})
+	data, ok := events[0].(map[string]any)
 	if !ok {
 		logger.Info("Invalid event format")
 	}
@@ -386,7 +386,7 @@ func TestSplunkHecExporterTracesToSplunk(t *testing.T) {
 	logger.Info("Splunk received %d events in the last minute", zap.Int("no. of events", len(events)))
 	assert.True(t, len(events) == 1)
 	// check fields
-	data, ok := events[0].(map[string]interface{})
+	data, ok := events[0].(map[string]any)
 	if !ok {
 		logger.Info("Invalid event format")
 	}

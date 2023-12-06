@@ -70,5 +70,10 @@ func newTracesExporter(config *Config, transportChannel transportChannel, set ex
 		logger:           set.Logger,
 	}
 
-	return exporterhelper.NewTracesExporter(context.TODO(), set, config, exporter.onTraceData)
+	return exporterhelper.NewTracesExporter(
+		context.TODO(),
+		set,
+		config,
+		exporter.onTraceData,
+		exporterhelper.WithQueue(config.QueueSettings))
 }

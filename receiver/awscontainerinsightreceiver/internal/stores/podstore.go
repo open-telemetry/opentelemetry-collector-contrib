@@ -58,7 +58,7 @@ type mapWithExpiry struct {
 	*awsmetrics.MapWithExpiry
 }
 
-func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
+func (m *mapWithExpiry) Get(key string) (any, bool) {
 	m.MapWithExpiry.Lock()
 	defer m.MapWithExpiry.Unlock()
 	if val, ok := m.MapWithExpiry.Get(awsmetrics.NewKey(key, nil)); ok {
@@ -68,7 +68,7 @@ func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
 	return nil, false
 }
 
-func (m *mapWithExpiry) Set(key string, content interface{}) {
+func (m *mapWithExpiry) Set(key string, content any) {
 	m.MapWithExpiry.Lock()
 	defer m.MapWithExpiry.Unlock()
 	val := awsmetrics.MetricValue{
@@ -146,7 +146,7 @@ func (p *PodStore) Shutdown() error {
 	return errs
 }
 
-func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}, bool) {
+func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (any, bool) {
 	prevMeasurement, ok := p.prevMeasurements[metricType]
 	if !ok {
 		return nil, false
@@ -161,7 +161,7 @@ func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}
 	return content, true
 }
 
-func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content interface{}) {
+func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content any) {
 	prevMeasurement, ok := p.prevMeasurements[metricType]
 	if !ok {
 		prevMeasurement = newMapWithExpiry(measurementsExpiry)
@@ -183,7 +183,7 @@ func (p *PodStore) RefreshTick(ctx context.Context) {
 	}
 }
 
-func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]interface{}) bool {
+func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]any) bool {
 	if metric.GetTag(ci.MetricType) == ci.TypeNode {
 		p.decorateNode(metric)
 	} else if metric.GetTag(ci.K8sPodNameKey) != "" {
@@ -519,7 +519,7 @@ func getRequestForContainer(resource corev1.ResourceName, spec corev1.Container)
 	return 0, false
 }
 
-func addContainerID(pod *corev1.Pod, metric CIMetric, kubernetesBlob map[string]interface{}, logger *zap.Logger) {
+func addContainerID(pod *corev1.Pod, metric CIMetric, kubernetesBlob map[string]any, logger *zap.Logger) {
 	if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 		rawID := ""
 		for _, container := range pod.Status.ContainerStatuses {
@@ -544,7 +544,7 @@ func addContainerID(pod *corev1.Pod, metric CIMetric, kubernetesBlob map[string]
 	}
 }
 
-func addLabels(pod *corev1.Pod, kubernetesBlob map[string]interface{}) {
+func addLabels(pod *corev1.Pod, kubernetesBlob map[string]any) {
 	labels := make(map[string]string)
 	for k, v := range pod.Labels {
 		labels[k] = v
@@ -558,8 +558,8 @@ func getJobNamePrefix(podName string) string {
 	return re.Split(podName, 2)[0]
 }
 
-func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kubernetesBlob map[string]interface{}) {
-	var owners []interface{}
+func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kubernetesBlob map[string]any) {
+	var owners []any
 	podName := ""
 	for _, owner := range pod.OwnerReferences {
 		if owner.Kind != "" && owner.Name != "" {

@@ -19,6 +19,9 @@ type Config struct {
 // Flags registers config flags.
 func (c *Config) Flags(fs *pflag.FlagSet) {
 	c.CommonFlags(fs)
+
+	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", "/v1/logs", "Which URL path to write to")
+
 	fs.IntVar(&c.NumLogs, "logs", 1, "Number of logs to generate in each worker (ignored if duration is provided)")
 	fs.StringVar(&c.Body, "body", "the message", "Body of the log")
 }

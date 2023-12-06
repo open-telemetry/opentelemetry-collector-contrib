@@ -113,8 +113,10 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		return
 	}
 
+	var pod *kube.Pod
 	if podIdentifierValue.IsNotEmpty() {
-		if pod, ok := kp.kc.GetPod(podIdentifierValue); ok {
+		var podFound bool
+		if pod, podFound = kp.kc.GetPod(podIdentifierValue); podFound {
 			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
 
 			for key, val := range pod.Attributes {
@@ -126,7 +128,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 
-	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)
+	namespace := getNamespace(pod, resource.Attributes())
 	if namespace != "" {
 		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
 		for key, val := range attrsToAdd {
@@ -136,7 +138,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 
-	nodeName := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNodeName)
+	nodeName := getNodeName(pod, resource.Attributes())
 	if nodeName != "" {
 		attrsToAdd := kp.getAttributesForPodsNode(nodeName)
 		for key, val := range attrsToAdd {
@@ -145,6 +147,20 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			}
 		}
 	}
+}
+
+func getNamespace(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.Namespace != "" {
+		return pod.Namespace
+	}
+	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNamespaceName)
+}
+
+func getNodeName(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.NodeName != "" {
+		return pod.NodeName
+	}
+	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNodeName)
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes

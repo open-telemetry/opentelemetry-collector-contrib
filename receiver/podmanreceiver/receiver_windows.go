@@ -16,7 +16,7 @@ func newMetricsReceiver(
 	settings receiver.CreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
-	clientFactory interface{},
+	clientFactory any,
 ) (receiver.Metrics, error) {
 	return nil, fmt.Errorf("podman receiver is not supported on windows")
 }

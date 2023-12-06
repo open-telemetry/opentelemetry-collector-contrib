@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -123,6 +124,37 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
+func TestScraperNoDatabaseMultipleWithPreciseLagFeatureGate(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel", "open", "telemetry"})
+
+	cfg := createDefaultConfig().(*Config)
+
+	testutil.SetFeatureGateForTest(t, preciseLagMetricsFg, true)
+	cfg.Metrics.PostgresqlWalDelay.Enabled = true
+	defer testutil.SetFeatureGateForTest(t, preciseLagMetricsFg, false)
+
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
+	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled == false)
+	cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected_precise_lag.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	fmt.Println(actualMetrics.ResourceMetrics())
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
 func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	factory := mockClientFactory{}
 	factory.initMocks([]string{"otel", "open", "telemetry"})
@@ -168,6 +200,27 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+func TestScraperExcludeDatabase(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel", "telemetry"})
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ExcludeDatabases = []string{"open"}
+
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "multiple", "exclude.yaml")
+
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -333,13 +386,19 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 			{
 				clientAddr:   "unix",
 				pendingBytes: 1024,
-				flushLag:     600,
-				replayLag:    700,
-				writeLag:     800,
+				flushLagInt:  600,
+				replayLagInt: 700,
+				writeLagInt:  800,
+				flushLag:     600.400,
+				replayLag:    700.550,
+				writeLag:     800.660,
 			},
 			{
 				clientAddr:   "nulls",
 				pendingBytes: -1,
+				flushLagInt:  -1,
+				replayLagInt: -1,
+				writeLagInt:  -1,
 				flushLag:     -1,
 				replayLag:    -1,
 				writeLag:     -1,

@@ -7,6 +7,12 @@ resourceLogs:
         - key: mongodbatlas.project.id
           value:
             stringValue: test-project-id
+        - key: mongodbatlas.region.name
+          value:
+            stringValue: region-name
+        - key: mongodbatlas.provider.name
+          value:
+            stringValue: provider-name
         - key: mongodbatlas.org.id
           value:
             stringValue: test-org-id
@@ -40,12 +46,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: s
-                    value:
-                      stringValue: I
-                  - key: c
-                    value:
-                      stringValue: ACCESS
                   - key: id
                     value:
                       doubleValue: 20249
@@ -59,6 +59,9 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: error
+                            value:
+                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
                           - key: mechanism
                             value:
                               stringValue: SCRAM-SHA-1
@@ -77,9 +80,6 @@ resourceLogs:
                           - key: extraInfo
                             value:
                               kvlistValue: {}
-                          - key: error
-                            value:
-                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
                   - key: t
                     value:
                       kvlistValue:
@@ -87,7 +87,13 @@ resourceLogs:
                           - key: $date
                             value:
                               stringValue: "2023-04-26T02:38:56.454+00:00"
-            observedTimeUnixNano: "1682740133575250000"
+                  - key: s
+                    value:
+                      stringValue: I
+                  - key: c
+                    value:
+                      stringValue: ACCESS
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -118,6 +124,9 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
+                  - key: s
+                    value:
+                      stringValue: I
                   - key: c
                     value:
                       stringValue: ACCESS
@@ -134,6 +143,15 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: remote
+                            value:
+                              stringValue: 555.555.555.555:41052
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
+                          - key: error
+                            value:
+                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
                           - key: mechanism
                             value:
                               stringValue: SCRAM-SHA-1
@@ -146,15 +164,6 @@ resourceLogs:
                           - key: authenticationDatabase
                             value:
                               stringValue: admin
-                          - key: remote
-                            value:
-                              stringValue: 555.555.555.555:41052
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
-                          - key: error
-                            value:
-                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
                   - key: t
                     value:
                       kvlistValue:
@@ -162,10 +171,7 @@ resourceLogs:
                           - key: $date
                             value:
                               stringValue: "2023-04-26T02:38:56.446+00:00"
-                  - key: s
-                    value:
-                      stringValue: I
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -212,6 +218,9 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: principalName
+                            value:
+                              stringValue: mms-automation
                           - key: authenticationDatabase
                             value:
                               stringValue: admin
@@ -230,9 +239,6 @@ resourceLogs:
                           - key: speculative
                             value:
                               boolValue: true
-                          - key: principalName
-                            value:
-                              stringValue: mms-automation
                   - key: t
                     value:
                       kvlistValue:
@@ -243,7 +249,7 @@ resourceLogs:
                   - key: s
                     value:
                       stringValue: I
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -278,6 +284,15 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: remote
+                            value:
+                              stringValue: 555.555.555.555:48502
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
+                          - key: error
+                            value:
+                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
                           - key: mechanism
                             value:
                               stringValue: SCRAM-SHA-1
@@ -290,15 +305,6 @@ resourceLogs:
                           - key: authenticationDatabase
                             value:
                               stringValue: admin
-                          - key: remote
-                            value:
-                              stringValue: 555.555.555.555:48502
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
-                          - key: error
-                            value:
-                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
                   - key: t
                     value:
                       kvlistValue:
@@ -321,7 +327,7 @@ resourceLogs:
                   - key: msg
                     value:
                       stringValue: Authentication failed
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -352,6 +358,34 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
+                  - key: msg
+                    value:
+                      stringValue: Authentication failed
+                  - key: attr
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
+                          - key: error
+                            value:
+                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
+                          - key: mechanism
+                            value:
+                              stringValue: SCRAM-SHA-1
+                          - key: speculative
+                            value:
+                              boolValue: true
+                          - key: principalName
+                            value:
+                              stringValue: mms-automation
+                          - key: authenticationDatabase
+                            value:
+                              stringValue: admin
+                          - key: remote
+                            value:
+                              stringValue: 555.555.555.555:48502
                   - key: t
                     value:
                       kvlistValue:
@@ -371,35 +405,7 @@ resourceLogs:
                   - key: ctx
                     value:
                       stringValue: conn352
-                  - key: msg
-                    value:
-                      stringValue: Authentication failed
-                  - key: attr
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: error
-                            value:
-                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
-                          - key: mechanism
-                            value:
-                              stringValue: SCRAM-SHA-1
-                          - key: speculative
-                            value:
-                              boolValue: true
-                          - key: principalName
-                            value:
-                              stringValue: mms-automation
-                          - key: authenticationDatabase
-                            value:
-                              stringValue: admin
-                          - key: remote
-                            value:
-                              stringValue: 555.555.555.555:48502
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -430,13 +436,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: t
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: $date
-                            value:
-                              stringValue: "2023-04-26T02:38:56.352+00:00"
                   - key: s
                     value:
                       stringValue: I
@@ -456,9 +455,6 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: error
-                            value:
-                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
                           - key: mechanism
                             value:
                               stringValue: SCRAM-SHA-1
@@ -477,7 +473,17 @@ resourceLogs:
                           - key: extraInfo
                             value:
                               kvlistValue: {}
-            observedTimeUnixNano: "1682740133575250000"
+                          - key: error
+                            value:
+                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
+                  - key: t
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: $date
+                            value:
+                              stringValue: "2023-04-26T02:38:56.352+00:00"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -508,41 +514,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: msg
-                    value:
-                      stringValue: Authentication failed
-                  - key: attr
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: error
-                            value:
-                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
-                          - key: mechanism
-                            value:
-                              stringValue: SCRAM-SHA-1
-                          - key: speculative
-                            value:
-                              boolValue: true
-                          - key: principalName
-                            value:
-                              stringValue: mms-automation
-                          - key: authenticationDatabase
-                            value:
-                              stringValue: admin
-                          - key: remote
-                            value:
-                              stringValue: 555.555.555.555:36896
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
-                  - key: t
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: $date
-                            value:
-                              stringValue: "2023-04-26T02:38:56.344+00:00"
                   - key: s
                     value:
                       stringValue: I
@@ -555,7 +526,42 @@ resourceLogs:
                   - key: ctx
                     value:
                       stringValue: conn349
-            observedTimeUnixNano: "1682740133575250000"
+                  - key: msg
+                    value:
+                      stringValue: Authentication failed
+                  - key: attr
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: authenticationDatabase
+                            value:
+                              stringValue: admin
+                          - key: remote
+                            value:
+                              stringValue: 555.555.555.555:36896
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
+                          - key: error
+                            value:
+                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
+                          - key: mechanism
+                            value:
+                              stringValue: SCRAM-SHA-1
+                          - key: speculative
+                            value:
+                              boolValue: true
+                          - key: principalName
+                            value:
+                              stringValue: mms-automation
+                  - key: t
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: $date
+                            value:
+                              stringValue: "2023-04-26T02:38:56.344+00:00"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -599,12 +605,6 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: speculative
-                            value:
-                              boolValue: false
-                          - key: principalName
-                            value:
-                              stringValue: mms-automation
                           - key: authenticationDatabase
                             value:
                               stringValue: admin
@@ -620,6 +620,12 @@ resourceLogs:
                           - key: mechanism
                             value:
                               stringValue: SCRAM-SHA-1
+                          - key: speculative
+                            value:
+                              boolValue: false
+                          - key: principalName
+                            value:
+                              stringValue: mms-automation
                   - key: t
                     value:
                       kvlistValue:
@@ -633,7 +639,7 @@ resourceLogs:
                   - key: c
                     value:
                       stringValue: ACCESS
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -664,12 +670,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: c
-                    value:
-                      stringValue: ACCESS
-                  - key: id
-                    value:
-                      doubleValue: 20249
                   - key: ctx
                     value:
                       stringValue: conn130
@@ -711,7 +711,13 @@ resourceLogs:
                   - key: s
                     value:
                       stringValue: I
-            observedTimeUnixNano: "1682740133575250000"
+                  - key: c
+                    value:
+                      stringValue: ACCESS
+                  - key: id
+                    value:
+                      doubleValue: 20249
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -761,6 +767,15 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
+                          - key: error
+                            value:
+                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
+                          - key: mechanism
+                            value:
+                              stringValue: SCRAM-SHA-1
                           - key: speculative
                             value:
                               boolValue: false
@@ -773,15 +788,6 @@ resourceLogs:
                           - key: remote
                             value:
                               stringValue: 555.555.555.555:34198
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
-                          - key: error
-                            value:
-                              stringValue: 'UserNotFound: User "mms-automation@admin" not found'
-                          - key: mechanism
-                            value:
-                              stringValue: SCRAM-SHA-1
                   - key: t
                     value:
                       kvlistValue:
@@ -789,7 +795,7 @@ resourceLogs:
                           - key: $date
                             value:
                               stringValue: "2023-04-26T02:38:56.267+00:00"
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -820,9 +826,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: c
-                    value:
-                      stringValue: ACCESS
                   - key: id
                     value:
                       doubleValue: 20249
@@ -836,6 +839,12 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: mechanism
+                            value:
+                              stringValue: SCRAM-SHA-1
+                          - key: speculative
+                            value:
+                              boolValue: true
                           - key: principalName
                             value:
                               stringValue: mms-automation
@@ -851,12 +860,6 @@ resourceLogs:
                           - key: error
                             value:
                               stringValue: 'UserNotFound: User "mms-automation@admin" not found'
-                          - key: mechanism
-                            value:
-                              stringValue: SCRAM-SHA-1
-                          - key: speculative
-                            value:
-                              boolValue: true
                   - key: t
                     value:
                       kvlistValue:
@@ -867,7 +870,10 @@ resourceLogs:
                   - key: s
                     value:
                       stringValue: I
-            observedTimeUnixNano: "1682740133575250000"
+                  - key: c
+                    value:
+                      stringValue: ACCESS
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -914,6 +920,12 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: mechanism
+                            value:
+                              stringValue: SCRAM-SHA-1
+                          - key: speculative
+                            value:
+                              boolValue: false
                           - key: principalName
                             value:
                               stringValue: mms-automation
@@ -929,12 +941,6 @@ resourceLogs:
                           - key: error
                             value:
                               stringValue: 'UserNotFound: User "mms-automation@admin" not found'
-                          - key: mechanism
-                            value:
-                              stringValue: SCRAM-SHA-1
-                          - key: speculative
-                            value:
-                              boolValue: false
                   - key: t
                     value:
                       kvlistValue:
@@ -945,7 +951,7 @@ resourceLogs:
                   - key: s
                     value:
                       stringValue: I
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 13
             severityText: Warn
             spanId: ""
@@ -1011,7 +1017,7 @@ resourceLogs:
                   - key: s
                     value:
                       stringValue: I
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1039,22 +1045,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: attr
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: client
-                            value:
-                              stringValue: 555.555.555.555:19814
-                          - key: mechanism
-                            value:
-                              stringValue: MONGODB-X509
-                          - key: user
-                            value:
-                              stringValue: CN=devops@myapp.com/xgen-readAnyDatabaseAtadmin
-                          - key: db
-                            value:
-                              stringValue: $external
                   - key: t
                     value:
                       kvlistValue:
@@ -1077,7 +1067,23 @@ resourceLogs:
                   - key: msg
                     value:
                       stringValue: Successfully authenticated
-            observedTimeUnixNano: "1682740133575250000"
+                  - key: attr
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: db
+                            value:
+                              stringValue: $external
+                          - key: client
+                            value:
+                              stringValue: 555.555.555.555:19814
+                          - key: mechanism
+                            value:
+                              stringValue: MONGODB-X509
+                          - key: user
+                            value:
+                              stringValue: CN=devops@myapp.com/xgen-readAnyDatabaseAtadmin
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1105,6 +1111,12 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
+                  - key: id
+                    value:
+                      doubleValue: 20429
+                  - key: ctx
+                    value:
+                      stringValue: conn1748
                   - key: msg
                     value:
                       stringValue: Successfully authenticated
@@ -1137,13 +1149,7 @@ resourceLogs:
                   - key: c
                     value:
                       stringValue: ACCESS
-                  - key: id
-                    value:
-                      doubleValue: 20429
-                  - key: ctx
-                    value:
-                      stringValue: conn1748
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1171,9 +1177,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: c
-                    value:
-                      stringValue: ACCESS
                   - key: id
                     value:
                       doubleValue: 20429
@@ -1187,9 +1190,6 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: client
-                            value:
-                              stringValue: 555.555.555.555:22849
                           - key: mechanism
                             value:
                               stringValue: MONGODB-X509
@@ -1199,6 +1199,9 @@ resourceLogs:
                           - key: db
                             value:
                               stringValue: $external
+                          - key: client
+                            value:
+                              stringValue: 555.555.555.555:22849
                   - key: t
                     value:
                       kvlistValue:
@@ -1209,7 +1212,10 @@ resourceLogs:
                   - key: s
                     value:
                       stringValue: I
-            observedTimeUnixNano: "1682740133575250000"
+                  - key: c
+                    value:
+                      stringValue: ACCESS
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1256,6 +1262,9 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: client
+                            value:
+                              stringValue: 555.555.555.555:61698
                           - key: mechanism
                             value:
                               stringValue: MONGODB-X509
@@ -1265,9 +1274,6 @@ resourceLogs:
                           - key: db
                             value:
                               stringValue: $external
-                          - key: client
-                            value:
-                              stringValue: 555.555.555.555:61698
                   - key: t
                     value:
                       kvlistValue:
@@ -1275,7 +1281,7 @@ resourceLogs:
                           - key: $date
                             value:
                               stringValue: "2023-04-26T02:03:53.975+00:00"
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1319,18 +1325,18 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: user
-                            value:
-                              stringValue: CN=devops@myapp.com/xgen-readAnyDatabaseAtadmin
-                          - key: db
-                            value:
-                              stringValue: $external
                           - key: client
                             value:
                               stringValue: 555.555.555.555:54375
                           - key: mechanism
                             value:
                               stringValue: MONGODB-X509
+                          - key: user
+                            value:
+                              stringValue: CN=devops@myapp.com/xgen-readAnyDatabaseAtadmin
+                          - key: db
+                            value:
+                              stringValue: $external
                   - key: t
                     value:
                       kvlistValue:
@@ -1341,7 +1347,7 @@ resourceLogs:
                   - key: s
                     value:
                       stringValue: I
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1369,13 +1375,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: t
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: $date
-                            value:
-                              stringValue: "2023-04-26T01:41:40.865+00:00"
                   - key: s
                     value:
                       stringValue: I
@@ -1395,15 +1394,6 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: remote
-                            value:
-                              stringValue: 555.555.555.555:61869
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
-                          - key: mechanism
-                            value:
-                              stringValue: SCRAM-SHA-256
                           - key: speculative
                             value:
                               boolValue: true
@@ -1413,7 +1403,23 @@ resourceLogs:
                           - key: authenticationDatabase
                             value:
                               stringValue: admin
-            observedTimeUnixNano: "1682740133575250000"
+                          - key: remote
+                            value:
+                              stringValue: 555.555.555.555:61869
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
+                          - key: mechanism
+                            value:
+                              stringValue: SCRAM-SHA-256
+                  - key: t
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: $date
+                            value:
+                              stringValue: "2023-04-26T01:41:40.865+00:00"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1441,28 +1447,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: attr
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: principalName
-                            value:
-                              stringValue: test_user
-                          - key: authenticationDatabase
-                            value:
-                              stringValue: admin
-                          - key: remote
-                            value:
-                              stringValue: 555.555.555.555:61867
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
-                          - key: mechanism
-                            value:
-                              stringValue: SCRAM-SHA-256
-                          - key: speculative
-                            value:
-                              boolValue: true
                   - key: t
                     value:
                       kvlistValue:
@@ -1485,7 +1469,29 @@ resourceLogs:
                   - key: msg
                     value:
                       stringValue: Authentication succeeded
-            observedTimeUnixNano: "1682740133575250000"
+                  - key: attr
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: mechanism
+                            value:
+                              stringValue: SCRAM-SHA-256
+                          - key: speculative
+                            value:
+                              boolValue: true
+                          - key: principalName
+                            value:
+                              stringValue: test_user
+                          - key: authenticationDatabase
+                            value:
+                              stringValue: admin
+                          - key: remote
+                            value:
+                              stringValue: 555.555.555.555:61867
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1513,6 +1519,12 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
+                  - key: c
+                    value:
+                      stringValue: ACCESS
+                  - key: id
+                    value:
+                      doubleValue: 20250
                   - key: ctx
                     value:
                       stringValue: conn1635
@@ -1523,15 +1535,6 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: authenticationDatabase
-                            value:
-                              stringValue: admin
-                          - key: remote
-                            value:
-                              stringValue: 555.555.555.555:61868
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
                           - key: mechanism
                             value:
                               stringValue: SCRAM-SHA-256
@@ -1541,6 +1544,15 @@ resourceLogs:
                           - key: principalName
                             value:
                               stringValue: test_user
+                          - key: authenticationDatabase
+                            value:
+                              stringValue: admin
+                          - key: remote
+                            value:
+                              stringValue: 555.555.555.555:61868
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
                   - key: t
                     value:
                       kvlistValue:
@@ -1551,13 +1563,7 @@ resourceLogs:
                   - key: s
                     value:
                       stringValue: I
-                  - key: c
-                    value:
-                      stringValue: ACCESS
-                  - key: id
-                    value:
-                      doubleValue: 20250
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1585,6 +1591,25 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
+                  - key: msg
+                    value:
+                      stringValue: Successfully authenticated
+                  - key: attr
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: client
+                            value:
+                              stringValue: 555.555.555.555:64040
+                          - key: mechanism
+                            value:
+                              stringValue: MONGODB-X509
+                          - key: user
+                            value:
+                              stringValue: CN=devops@myapp.com/xgen-readAnyDatabaseAtadmin
+                          - key: db
+                            value:
+                              stringValue: $external
                   - key: t
                     value:
                       kvlistValue:
@@ -1604,26 +1629,7 @@ resourceLogs:
                   - key: ctx
                     value:
                       stringValue: conn549
-                  - key: msg
-                    value:
-                      stringValue: Successfully authenticated
-                  - key: attr
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: mechanism
-                            value:
-                              stringValue: MONGODB-X509
-                          - key: user
-                            value:
-                              stringValue: CN=devops@myapp.com/xgen-readAnyDatabaseAtadmin
-                          - key: db
-                            value:
-                              stringValue: $external
-                          - key: client
-                            value:
-                              stringValue: 555.555.555.555:64040
-            observedTimeUnixNano: "1682740133575250000"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1651,37 +1657,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: id
-                    value:
-                      doubleValue: 20250
-                  - key: ctx
-                    value:
-                      stringValue: conn352
-                  - key: msg
-                    value:
-                      stringValue: Authentication succeeded
-                  - key: attr
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: mechanism
-                            value:
-                              stringValue: SCRAM-SHA-256
-                          - key: speculative
-                            value:
-                              boolValue: true
-                          - key: principalName
-                            value:
-                              stringValue: test_user
-                          - key: authenticationDatabase
-                            value:
-                              stringValue: admin
-                          - key: remote
-                            value:
-                              stringValue: 555.555.555.555:58284
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
                   - key: t
                     value:
                       kvlistValue:
@@ -1695,7 +1670,38 @@ resourceLogs:
                   - key: c
                     value:
                       stringValue: ACCESS
-            observedTimeUnixNano: "1682740133575250000"
+                  - key: id
+                    value:
+                      doubleValue: 20250
+                  - key: ctx
+                    value:
+                      stringValue: conn352
+                  - key: msg
+                    value:
+                      stringValue: Authentication succeeded
+                  - key: attr
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: remote
+                            value:
+                              stringValue: 555.555.555.555:58284
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
+                          - key: mechanism
+                            value:
+                              stringValue: SCRAM-SHA-256
+                          - key: speculative
+                            value:
+                              boolValue: true
+                          - key: principalName
+                            value:
+                              stringValue: test_user
+                          - key: authenticationDatabase
+                            value:
+                              stringValue: admin
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""
@@ -1723,13 +1729,6 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: t
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: $date
-                            value:
-                              stringValue: "2023-04-25T21:08:07.838+00:00"
                   - key: s
                     value:
                       stringValue: I
@@ -1749,15 +1748,6 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: authenticationDatabase
-                            value:
-                              stringValue: admin
-                          - key: remote
-                            value:
-                              stringValue: 555.555.555.555:58285
-                          - key: extraInfo
-                            value:
-                              kvlistValue: {}
                           - key: mechanism
                             value:
                               stringValue: SCRAM-SHA-256
@@ -1767,7 +1757,23 @@ resourceLogs:
                           - key: principalName
                             value:
                               stringValue: test_user
-            observedTimeUnixNano: "1682740133575250000"
+                          - key: authenticationDatabase
+                            value:
+                              stringValue: admin
+                          - key: remote
+                            value:
+                              stringValue: 555.555.555.555:58285
+                          - key: extraInfo
+                            value:
+                              kvlistValue: {}
+                  - key: t
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: $date
+                            value:
+                              stringValue: "2023-04-25T21:08:07.838+00:00"
+            observedTimeUnixNano: "1698948019769963000"
             severityNumber: 9
             severityText: Info
             spanId: ""

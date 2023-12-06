@@ -12,9 +12,9 @@ import (
 
 // cache allows operators to cache a value and look it up later
 type cache interface {
-	get(key string) interface{}
-	add(key string, data interface{}) bool
-	copy() map[string]interface{}
+	get(key string) any
+	add(key string, data any) bool
+	copy() map[string]any
 	maxSize() uint16
 }
 
@@ -25,7 +25,7 @@ func newMemoryCache(maxSize uint16, interval uint64) *memoryCache {
 	limit := uint64(maxSize) + 1
 
 	return &memoryCache{
-		cache:   make(map[string]interface{}),
+		cache:   make(map[string]any),
 		keys:    make(chan string, maxSize),
 		limiter: newStartedAtomicLimiter(limit, interval),
 	}
@@ -39,7 +39,7 @@ func newMemoryCache(maxSize uint16, interval uint64) *memoryCache {
 // item using a FIFO style queue.
 type memoryCache struct {
 	// Key / Value pairs of cached items
-	cache map[string]interface{}
+	cache map[string]any
 
 	// When the cache is full, the oldest entry's key is
 	// read from the channel and used to index into the
@@ -57,7 +57,7 @@ type memoryCache struct {
 var _ cache = (&memoryCache{})
 
 // get returns a cached entry, nil if it does not exist
-func (m *memoryCache) get(key string) interface{} {
+func (m *memoryCache) get(key string) any {
 	// Read and unlock as fast as possible
 	m.mutex.RLock()
 	data := m.cache[key]
@@ -68,7 +68,7 @@ func (m *memoryCache) get(key string) interface{} {
 
 // add inserts an item into the cache, if the cache is full, the
 // oldest item is removed
-func (m *memoryCache) add(key string, data interface{}) bool {
+func (m *memoryCache) add(key string, data any) bool {
 	if m.limiter.throttled() {
 		return false
 	}
@@ -94,8 +94,8 @@ func (m *memoryCache) add(key string, data interface{}) bool {
 }
 
 // copy returns a deep copy of the cache
-func (m *memoryCache) copy() map[string]interface{} {
-	cp := make(map[string]interface{}, cap(m.keys))
+func (m *memoryCache) copy() map[string]any {
+	cp := make(map[string]any, cap(m.keys))
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()

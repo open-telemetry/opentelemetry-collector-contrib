@@ -25,7 +25,7 @@ func Test_traceID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := traceID[interface{}](tt.bytes)
+			exprFunc, err := traceID[any](tt.bytes)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -50,7 +50,7 @@ func Test_traceID_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := traceID[interface{}](tt.bytes)
+			_, err := traceID[any](tt.bytes)
 			require.Error(t, err)
 			assert.ErrorContains(t, err, "traces ids must be 16 bytes")
 		})

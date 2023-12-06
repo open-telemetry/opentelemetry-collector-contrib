@@ -115,7 +115,7 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		overwriteWithOldest: overwriteWithOldest,
 		batchMap:            make(map[string]*sourceBatch),
 		batchPool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return &sourceBatch{
 					entries:    []*entry.Entry{},
 					recombined: &bytes.Buffer{},

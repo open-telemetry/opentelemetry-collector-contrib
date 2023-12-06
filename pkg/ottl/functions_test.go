@@ -1519,8 +1519,8 @@ type floatSliceArguments struct {
 	Floats []float64
 }
 
-func functionWithFloatSlice(floats []float64) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithFloatSlice(floats []float64) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(floats), nil
 	}, nil
 }
@@ -1529,8 +1529,8 @@ type intSliceArguments struct {
 	Ints []int64
 }
 
-func functionWithIntSlice(ints []int64) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithIntSlice(ints []int64) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(ints), nil
 	}, nil
 }
@@ -1539,8 +1539,8 @@ type byteSliceArguments struct {
 	Bytes []byte
 }
 
-func functionWithByteSlice(bytes []byte) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithByteSlice(bytes []byte) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(bytes), nil
 	}, nil
 }
@@ -1549,8 +1549,8 @@ type getterSliceArguments struct {
 	Getters []Getter[any]
 }
 
-func functionWithGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithGetterSlice(getters []Getter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(getters), nil
 	}, nil
 }
@@ -1559,8 +1559,8 @@ type stringGetterSliceArguments struct {
 	StringGetters []StringGetter[any]
 }
 
-func functionWithStringGetterSlice(getters []StringGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithStringGetterSlice(getters []StringGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(getters), nil
 	}, nil
 }
@@ -1569,8 +1569,8 @@ type durationGetterSliceArguments struct {
 	DurationGetters []DurationGetter[any]
 }
 
-func functionWithDurationGetterSlice(_ []DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithDurationGetterSlice(_ []DurationGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return nil, nil
 	}, nil
 }
@@ -1579,8 +1579,8 @@ type timeGetterSliceArguments struct {
 	TimeGetters []TimeGetter[any]
 }
 
-func functionWithTimeGetterSlice(_ []TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithTimeGetterSlice(_ []TimeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return nil, nil
 	}, nil
 }
@@ -1589,8 +1589,8 @@ type floatGetterSliceArguments struct {
 	FloatGetters []FloatGetter[any]
 }
 
-func functionWithFloatGetterSlice(getters []FloatGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithFloatGetterSlice(getters []FloatGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(getters), nil
 	}, nil
 }
@@ -1599,8 +1599,8 @@ type intGetterSliceArguments struct {
 	IntGetters []IntGetter[any]
 }
 
-func functionWithIntGetterSlice(getters []IntGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithIntGetterSlice(getters []IntGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(getters), nil
 	}, nil
 }
@@ -1609,8 +1609,8 @@ type pMapGetterSliceArguments struct {
 	PMapGetters []PMapGetter[any]
 }
 
-func functionWithPMapGetterSlice(getters []PMapGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithPMapGetterSlice(getters []PMapGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(getters), nil
 	}, nil
 }
@@ -1619,8 +1619,8 @@ type stringLikeGetterSliceArguments struct {
 	StringLikeGetters []StringLikeGetter[any]
 }
 
-func functionWithStringLikeGetterSlice(getters []StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithStringLikeGetterSlice(getters []StringLikeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(getters), nil
 	}, nil
 }
@@ -1629,8 +1629,8 @@ type floatLikeGetterSliceArguments struct {
 	FloatLikeGetters []FloatLikeGetter[any]
 }
 
-func functionWithFloatLikeGetterSlice(getters []FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithFloatLikeGetterSlice(getters []FloatLikeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(getters), nil
 	}, nil
 }
@@ -1639,8 +1639,8 @@ type intLikeGetterSliceArguments struct {
 	IntLikeGetters []IntLikeGetter[any]
 }
 
-func functionWithIntLikeGetterSlice(getters []IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithIntLikeGetterSlice(getters []IntLikeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return len(getters), nil
 	}, nil
 }
@@ -1649,8 +1649,8 @@ type setterArguments struct {
 	SetterArg Setter[any]
 }
 
-func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithSetter(Setter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1659,8 +1659,8 @@ type getSetterArguments struct {
 	GetSetterArg GetSetter[any]
 }
 
-func functionWithGetSetter(GetSetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithGetSetter(GetSetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1669,8 +1669,8 @@ type getterArguments struct {
 	GetterArg Getter[any]
 }
 
-func functionWithGetter(Getter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithGetter(Getter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1679,8 +1679,8 @@ type stringGetterArguments struct {
 	StringGetterArg StringGetter[any]
 }
 
-func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithStringGetter(StringGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1689,8 +1689,8 @@ type durationGetterArguments struct {
 	DurationGetterArg DurationGetter[any]
 }
 
-func functionWithDurationGetter(DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithDurationGetter(DurationGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1699,8 +1699,8 @@ type timeGetterArguments struct {
 	TimeGetterArg TimeGetter[any]
 }
 
-func functionWithTimeGetter(TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithTimeGetter(TimeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1709,8 +1709,8 @@ type functionGetterArguments struct {
 	FunctionGetterArg FunctionGetter[any]
 }
 
-func functionWithFunctionGetter(FunctionGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithFunctionGetter(FunctionGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "hashstring", nil
 	}, nil
 }
@@ -1719,8 +1719,8 @@ type stringLikeGetterArguments struct {
 	StringLikeGetterArg StringLikeGetter[any]
 }
 
-func functionWithStringLikeGetter(StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithStringLikeGetter(StringLikeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1729,8 +1729,8 @@ type floatGetterArguments struct {
 	FloatGetterArg FloatGetter[any]
 }
 
-func functionWithFloatGetter(FloatGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithFloatGetter(FloatGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1739,8 +1739,8 @@ type floatLikeGetterArguments struct {
 	FloatLikeGetterArg FloatLikeGetter[any]
 }
 
-func functionWithFloatLikeGetter(FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithFloatLikeGetter(FloatLikeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1749,8 +1749,8 @@ type intGetterArguments struct {
 	IntGetterArg IntGetter[any]
 }
 
-func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithIntGetter(IntGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1759,8 +1759,8 @@ type intLikeGetterArguments struct {
 	IntLikeGetterArg IntLikeGetter[any]
 }
 
-func functionWithIntLikeGetter(IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithIntLikeGetter(IntLikeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1769,8 +1769,8 @@ type pMapGetterArguments struct {
 	PMapArg PMapGetter[any]
 }
 
-func functionWithPMapGetter(PMapGetter[interface{}]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithPMapGetter(PMapGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1779,8 +1779,8 @@ type stringArguments struct {
 	StringArg string
 }
 
-func functionWithString(string) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithString(string) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1789,8 +1789,8 @@ type floatArguments struct {
 	FloatArg float64
 }
 
-func functionWithFloat(float64) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithFloat(float64) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1799,8 +1799,8 @@ type intArguments struct {
 	IntArg int64
 }
 
-func functionWithInt(int64) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithInt(int64) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1809,8 +1809,8 @@ type boolArguments struct {
 	BoolArg bool
 }
 
-func functionWithBool(bool) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithBool(bool) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1822,8 +1822,8 @@ type multipleArgsArguments struct {
 	IntArg       int64
 }
 
-func functionWithMultipleArgs(GetSetter[interface{}], string, float64, int64) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithMultipleArgs(GetSetter[any], string, float64, int64) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }
@@ -1835,8 +1835,8 @@ type optionalArgsArguments struct {
 	OptionalFloatArg Optional[float64]           `ottlarg:"3"`
 }
 
-func functionWithOptionalArgs(_ GetSetter[interface{}], _ string, stringOpt Optional[StringGetter[any]], floatOpt Optional[float64]) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithOptionalArgs(_ GetSetter[any], _ string, stringOpt Optional[StringGetter[any]], floatOpt Optional[float64]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		argCount := 2
 
 		if !stringOpt.IsEmpty() {
@@ -1852,9 +1852,9 @@ func functionWithOptionalArgs(_ GetSetter[interface{}], _ string, stringOpt Opti
 
 type errorFunctionArguments struct{}
 
-func functionThatHasAnError() (ExprFunc[interface{}], error) {
+func functionThatHasAnError() (ExprFunc[any], error) {
 	err := errors.New("testing")
-	return func(context.Context, interface{}) (interface{}, error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, err
 }
@@ -1863,8 +1863,8 @@ type enumArguments struct {
 	EnumArg Enum
 }
 
-func functionWithEnum(Enum) (ExprFunc[interface{}], error) {
-	return func(context.Context, interface{}) (interface{}, error) {
+func functionWithEnum(Enum) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
 }

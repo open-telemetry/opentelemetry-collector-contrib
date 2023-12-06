@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
@@ -60,7 +61,7 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, expConfig.Tags, session)
+	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, expConfig.Tags, session, metadata.Type)
 	collectorIdentifier, err := uuid.NewRandom()
 
 	if err != nil {
@@ -159,18 +160,18 @@ func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher c
 }
 
 type cwLogBody struct {
-	Body                   interface{}            `json:"body,omitempty"`
-	SeverityNumber         int32                  `json:"severity_number,omitempty"`
-	SeverityText           string                 `json:"severity_text,omitempty"`
-	DroppedAttributesCount uint32                 `json:"dropped_attributes_count,omitempty"`
-	Flags                  uint32                 `json:"flags,omitempty"`
-	TraceID                string                 `json:"trace_id,omitempty"`
-	SpanID                 string                 `json:"span_id,omitempty"`
-	Attributes             map[string]interface{} `json:"attributes,omitempty"`
-	Resource               map[string]interface{} `json:"resource,omitempty"`
+	Body                   any            `json:"body,omitempty"`
+	SeverityNumber         int32          `json:"severity_number,omitempty"`
+	SeverityText           string         `json:"severity_text,omitempty"`
+	DroppedAttributesCount uint32         `json:"dropped_attributes_count,omitempty"`
+	Flags                  uint32         `json:"flags,omitempty"`
+	TraceID                string         `json:"trace_id,omitempty"`
+	SpanID                 string         `json:"span_id,omitempty"`
+	Attributes             map[string]any `json:"attributes,omitempty"`
+	Resource               map[string]any `json:"resource,omitempty"`
 }
 
-func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
+func logToCWLog(resourceAttrs map[string]any, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	logGroupName := config.LogGroupName
@@ -232,11 +233,11 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord, config
 	}, nil
 }
 
-func attrsValue(attrs pcommon.Map) map[string]interface{} {
+func attrsValue(attrs pcommon.Map) map[string]any {
 	if attrs.Len() == 0 {
 		return nil
 	}
-	out := make(map[string]interface{}, attrs.Len())
+	out := make(map[string]any, attrs.Len())
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		out[k] = v.AsRaw()
 		return true

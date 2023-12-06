@@ -122,7 +122,7 @@ func (m *mockFileInfo) IsDir() bool {
 	return false
 }
 
-func (m *mockFileInfo) Sys() interface{} {
+func (m *mockFileInfo) Sys() any {
 	return nil
 }
 

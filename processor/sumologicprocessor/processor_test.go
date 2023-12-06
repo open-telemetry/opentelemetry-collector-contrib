@@ -653,7 +653,7 @@ func TestTranslateDockerMetrics(t *testing.T) {
 		originalNames                []string
 		translatedNames              []string
 		originalResourceAttributes   map[string]string
-		translatedResourceAttributes map[string]interface{}
+		translatedResourceAttributes map[string]any
 		shouldTranslate              bool
 	}{
 		{
@@ -665,7 +665,7 @@ func TestTranslateDockerMetrics(t *testing.T) {
 				"container.image.name": "a",
 				"container.name":       "a",
 			},
-			translatedResourceAttributes: map[string]interface{}{
+			translatedResourceAttributes: map[string]any{
 				"container.FullID":    "a",
 				"container.ImageName": "a",
 				"container.Name":      "a",
@@ -681,7 +681,7 @@ func TestTranslateDockerMetrics(t *testing.T) {
 				"container.image.name": "a",
 				"container.name":       "a",
 			},
-			translatedResourceAttributes: map[string]interface{}{
+			translatedResourceAttributes: map[string]any{
 				"container.id":         "a",
 				"container.image.name": "a",
 				"container.name":       "a",

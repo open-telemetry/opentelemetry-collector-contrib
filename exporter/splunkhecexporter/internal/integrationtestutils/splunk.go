@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-func CheckEventsFromSplunk(searchQuery string, startTime string, endTimeOptional ...string) []interface{} {
+func CheckEventsFromSplunk(searchQuery string, startTime string, endTimeOptional ...string) []any {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	logger.Println("-->> Splunk Search: checking events in Splunk --")
 	user := GetConfigVariable("USER")
@@ -43,7 +43,7 @@ func CheckEventsFromSplunk(searchQuery string, startTime string, endTimeOptional
 	return results
 }
 
-func getSplunkSearchResults(user string, password string, baseURL string, jobID string) []interface{} {
+func getSplunkSearchResults(user string, password string, baseURL string, jobID string) []any {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	eventURL := fmt.Sprintf("%s/services/search/jobs/%s/events?output_mode=json", baseURL, jobID)
 	logger.Println("URL: " + eventURL)
@@ -68,7 +68,7 @@ func getSplunkSearchResults(user string, password string, baseURL string, jobID 
 		panic(err)
 	}
 
-	var jsonResponseEvents map[string]interface{}
+	var jsonResponseEvents map[string]any
 	err = json.Unmarshal(bodyEvents, &jsonResponseEvents)
 	if err != nil {
 		panic(err)
@@ -76,12 +76,12 @@ func getSplunkSearchResults(user string, password string, baseURL string, jobID 
 
 	// logger.Println("json Response Events --->")   # debug
 	// logger.Println(jsonResponseEvents)			# debug
-	results := jsonResponseEvents["results"].([]interface{})
+	results := jsonResponseEvents["results"].([]any)
 	// logger.Println(results)
 	return results
 }
 
-func checkSearchJobStatusCode(user string, password string, baseURL string, jobID string) interface{} {
+func checkSearchJobStatusCode(user string, password string, baseURL string, jobID string) any {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	checkEventURL := baseURL + "/services/search/jobs/" + jobID + "?output_mode=json"
 	logger.Println("URL: " + checkEventURL)
@@ -104,14 +104,14 @@ func checkSearchJobStatusCode(user string, password string, baseURL string, jobI
 	if err != nil {
 		panic(err)
 	}
-	var checkJSONResponse map[string]interface{}
+	var checkJSONResponse map[string]any
 	err = json.Unmarshal(checkBody, &checkJSONResponse)
 	if err != nil {
 		panic(err)
 	}
 	// logger.Println(checkJSONResponse) // debug
 	// Print isDone field from response
-	isDone := checkJSONResponse["entry"].([]interface{})[0].(map[string]interface{})["content"].(map[string]interface{})["isDone"]
+	isDone := checkJSONResponse["entry"].([]any)[0].(map[string]any)["content"].(map[string]any)["isDone"]
 	logger.Printf("Is Splunk Search compleated [isDone flag]: %v\n", isDone)
 	return isDone
 }
@@ -149,7 +149,7 @@ func postSearchRequest(user string, password string, baseURL string, searchQuery
 	if err != nil {
 		panic(err)
 	}
-	var jsonResponse map[string]interface{}
+	var jsonResponse map[string]any
 	err = json.Unmarshal(body, &jsonResponse)
 	if err != nil {
 		panic(err)
@@ -158,7 +158,7 @@ func postSearchRequest(user string, password string, baseURL string, searchQuery
 	return jsonResponse["sid"].(string)
 }
 
-func CheckMetricsFromSplunk(index string, metricName string) []interface{} {
+func CheckMetricsFromSplunk(index string, metricName string) []any {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	logger.Println("-->> Splunk Search: checking metrics in Splunk --")
 	baseURL := "https://" + GetConfigVariable("HOST") + ":" + GetConfigVariable("MANAGEMENT_PORT")
@@ -184,12 +184,12 @@ func CheckMetricsFromSplunk(index string, metricName string) []interface{} {
 	}
 	defer resp.Body.Close()
 
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		panic(err)
 	}
 
-	events := data["entry"].([]interface{})
+	events := data["entry"].([]any)
 	// logger.Println(events) // debug
 
 	return events

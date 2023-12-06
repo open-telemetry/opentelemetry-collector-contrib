@@ -22,7 +22,7 @@ type rule struct {
 
 // ruleRe is used to verify the rule starts type check.
 var ruleRe = regexp.MustCompile(
-	fmt.Sprintf(`^type\s*==\s*(%q|%q|%q|%q|%q)`, observer.PodType, observer.PortType, observer.HostPortType, observer.ContainerType, observer.K8sNodeType),
+	fmt.Sprintf(`^type\s*==\s*(%q|%q|%q|%q|%q|%q)`, observer.PodType, observer.K8sServiceType, observer.PortType, observer.HostPortType, observer.ContainerType, observer.K8sNodeType),
 )
 
 // newRule creates a new rule instance.
@@ -42,9 +42,9 @@ func newRule(ruleStr string) (rule, error) {
 		// expr v1.14.1 introduced a `type` builtin whose implementation we relocate to `typeOf`
 		// to avoid collision
 		expr.DisableBuiltin("type"),
-		expr.Function("typeOf", func(params ...interface{}) (interface{}, error) {
+		expr.Function("typeOf", func(params ...any) (any, error) {
 			return builtin.Type(params[0]), nil
-		}, new(func(interface{}) string)),
+		}, new(func(any) string)),
 	)
 	if err != nil {
 		return rule{}, err

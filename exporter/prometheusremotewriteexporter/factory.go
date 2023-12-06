@@ -81,6 +81,7 @@ func createDefaultConfig() component.Config {
 			Multiplier:          backoff.DefaultMultiplier,
 		},
 		AddMetricSuffixes: true,
+		SendMetadata:      false,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
