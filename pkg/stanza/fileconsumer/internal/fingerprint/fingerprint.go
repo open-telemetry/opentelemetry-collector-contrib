@@ -32,16 +32,11 @@ func New(file *os.File, size int) (*Fingerprint, error) {
 	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("reading fingerprint bytes: %w", err)
 	}
-	//if err != nil {
-	//	fmt.Printf("%s", "End of file error")
-	//}
 	fBytes := buf[:n]
 
 	h := fnv.New128a()
-
 	// Write some data to the hash function.
 	h.Write(fBytes)
-
 	// Get the hash value.
 	hash := h.Sum(nil)
 
@@ -50,10 +45,6 @@ func New(file *os.File, size int) (*Fingerprint, error) {
 		HashBytes:   hash,
 		BytesLength: len(fBytes),
 	}
-	//fmt.Println(hold)
-	//fmt.Println(fp.BytesLength)
-	//fmt.Println(fp.HashBytes)
-	//fmt.Println("n is: " + string(n))
 
 	return fp, nil
 }
@@ -106,11 +97,7 @@ func (f Fingerprint) StartsWith(old *Fingerprint) bool {
 		return false
 	}
 	h := fnv.New128a()
-
-	// Write some data to the hash function.
 	h.Write(f.firstBytes[:l0])
-
-	// Get the hash value.
 	hash := h.Sum(nil)
 	return bytes.Equal(old.HashBytes, hash)
 }

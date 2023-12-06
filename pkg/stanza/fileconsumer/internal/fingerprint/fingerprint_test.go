@@ -148,11 +148,7 @@ func TestFingerprintCopy(t *testing.T) {
 	for _, tc := range cases {
 
 		h := fnv.New128a()
-
-		// Write some data to the hash function.
 		h.Write([]byte(tc))
-
-		// Get the hash value.
 		hash := h.Sum(nil)
 
 		fp := &Fingerprint{firstBytes: []byte(tc), HashBytes: hash, BytesLength: len([]byte(tc))}
@@ -167,7 +163,6 @@ func TestFingerprintCopy(t *testing.T) {
 
 		// Modify copy
 		cp.UpdateFingerPrint(int64(len([]byte(tc))), []byte("also"))
-		//cp.FirstBytes = append(cp.FirstBytes, []byte("also")...)
 
 		// Still did not change original
 		require.Equal(t, hash, fp.HashBytes)

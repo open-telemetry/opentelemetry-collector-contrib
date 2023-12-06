@@ -1287,11 +1287,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			writeString(t, temp, line)
 			reader.ReadToEnd(context.Background())
 			h := fnv.New128a()
-
-			// Write some data to the hash function.
 			h.Write(fileContent[:expectedFP])
-
-			// Get the hash value.
 			hash := h.Sum(nil)
 			require.Equal(t, hash, reader.Fingerprint.HashBytes)
 
@@ -1302,11 +1298,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			writeString(t, temp, line)
 			reader.ReadToEnd(context.Background())
 			h = fnv.New128a()
-
-			// Write some data to the hash function.
 			h.Write(fileContent[:expectedFP])
-
-			// Get the hash value.
 			hash = h.Sum(nil)
 			require.Equal(t, hash, reader.Fingerprint.HashBytes)
 		})

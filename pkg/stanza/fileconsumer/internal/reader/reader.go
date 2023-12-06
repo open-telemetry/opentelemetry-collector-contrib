@@ -175,10 +175,7 @@ func (r *Reader) Read(dst []byte) (int, error) {
 	}
 
 	// for appendCount==0, the following code would add `0` to fingerprint
-	//fp, err := fingerprint.New(r.file, r.FingerprintSize)
-	//r.Fingerprint = fp
 	r.Fingerprint.UpdateFingerPrint(r.Offset, dst[:appendCount])
-	//r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
 	return n, err
 }
 

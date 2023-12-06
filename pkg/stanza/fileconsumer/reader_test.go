@@ -222,11 +222,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	r.ReadToEnd(context.Background())
 
 	hashing := fnv.New128a()
-
-	// Write some data to the hash function.
 	hashing.Write([]byte("#header-line\naaa\n"))
-
-	// Get the hash value.
 	hash := hashing.Sum(nil)
 
 	require.Equal(t, hash, r.Fingerprint.HashBytes)
