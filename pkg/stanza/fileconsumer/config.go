@@ -26,11 +26,9 @@ import (
 )
 
 const (
-	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
-	defaultFlushPeriod        = 500 * time.Millisecond
 )
 
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
@@ -50,40 +48,36 @@ var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
 // NewConfig creates a new input config with default values
 func NewConfig() *Config {
 	return &Config{
-		IncludeFileName:         true,
-		IncludeFilePath:         false,
-		IncludeFileNameResolved: false,
-		IncludeFilePathResolved: false,
-		PollInterval:            defaultPollInterval,
-		Encoding:                defaultEncoding,
-		StartAt:                 "end",
-		FingerprintSize:         fingerprint.DefaultSize,
-		MaxLogSize:              defaultMaxLogSize,
-		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
-		MaxBatches:              0,
-		FlushPeriod:             defaultFlushPeriod,
+		PollInterval:       defaultPollInterval,
+		MaxConcurrentFiles: defaultMaxConcurrentFiles,
+		StartAt:            "end",
+		FingerprintSize:    fingerprint.DefaultSize,
+		MaxLogSize:         reader.DefaultMaxLogSize,
+		Encoding:           defaultEncoding,
+		FlushPeriod:        reader.DefaultFlushPeriod,
+		IncludeFileName:    true,
 	}
 }
 
 // Config is the configuration of a file input operator
 type Config struct {
 	matcher.Criteria        `mapstructure:",squash"`
+	PollInterval            time.Duration   `mapstructure:"poll_interval,omitempty"`
+	MaxConcurrentFiles      int             `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
+	StartAt                 string          `mapstructure:"start_at,omitempty"`
+	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	Encoding                string          `mapstructure:"encoding,omitempty"`
+	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
+	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
+	FlushPeriod             time.Duration   `mapstructure:"force_flush_period,omitempty"`
 	IncludeFileName         bool            `mapstructure:"include_file_name,omitempty"`
 	IncludeFilePath         bool            `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool            `mapstructure:"include_file_name_resolved,omitempty"`
 	IncludeFilePathResolved bool            `mapstructure:"include_file_path_resolved,omitempty"`
-	PollInterval            time.Duration   `mapstructure:"poll_interval,omitempty"`
-	StartAt                 string          `mapstructure:"start_at,omitempty"`
-	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
-	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
-	MaxConcurrentFiles      int             `mapstructure:"max_concurrent_files,omitempty"`
-	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
-	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
-	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
-	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
-	Encoding                string          `mapstructure:"encoding,omitempty"`
-	FlushPeriod             time.Duration   `mapstructure:"force_flush_period,omitempty"`
 	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
+	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -159,23 +153,21 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
 		readerFactory: reader.Factory{
-			SugaredLogger: logger.With("component", "fileconsumer"),
-			Config: &reader.Config{
-				FingerprintSize:         int(c.FingerprintSize),
-				MaxLogSize:              int(c.MaxLogSize),
-				Emit:                    emit,
-				IncludeFileName:         c.IncludeFileName,
-				IncludeFilePath:         c.IncludeFilePath,
-				IncludeFileNameResolved: c.IncludeFileNameResolved,
-				IncludeFilePathResolved: c.IncludeFilePathResolved,
-				DeleteAtEOF:             c.DeleteAfterRead,
-				FlushTimeout:            c.FlushPeriod,
-			},
-			FromBeginning: startAtBeginning,
-			Encoding:      enc,
-			SplitFunc:     splitFunc,
-			TrimFunc:      trimFunc,
-			HeaderConfig:  hCfg,
+			SugaredLogger:           logger.With("component", "fileconsumer"),
+			FromBeginning:           startAtBeginning,
+			FingerprintSize:         int(c.FingerprintSize),
+			MaxLogSize:              int(c.MaxLogSize),
+			Encoding:                enc,
+			SplitFunc:               splitFunc,
+			TrimFunc:                trimFunc,
+			FlushTimeout:            c.FlushPeriod,
+			EmitFunc:                emit,
+			IncludeFileName:         c.IncludeFileName,
+			IncludeFilePath:         c.IncludeFilePath,
+			IncludeFileNameResolved: c.IncludeFileNameResolved,
+			IncludeFilePathResolved: c.IncludeFilePathResolved,
+			HeaderConfig:            hCfg,
+			DeleteAtEOF:             c.DeleteAfterRead,
 		},
 		fileMatcher:       fileMatcher,
 		pollInterval:      c.PollInterval,
