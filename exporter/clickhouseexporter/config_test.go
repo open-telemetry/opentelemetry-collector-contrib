@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				Database:         "otel",
 				Username:         "foo",
 				Password:         "bar",
-				TTLDays:          3,
+				TTL:              72 * time.Hour,
 				LogsTableName:    "otel_logs",
 				TracesTableName:  "otel_traces",
 				MetricsTableName: "otel_metrics",
