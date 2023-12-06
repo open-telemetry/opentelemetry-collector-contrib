@@ -4,6 +4,8 @@
 package alertmanagerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,5 +27,12 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+
+	if cfg.HTTPClientSettings.Endpoint == "" {
+		return errors.New("endpoint must be non-empty")
+	}
+	if cfg.DefaultSeverity == "" {
+		return errors.New("severity must be non-empty")
+	}
 	return nil
 }
