@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/sijms/go-ora/v2 v2.7.23
+	github.com/sijms/go-ora/v2 v2.7.24
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34
 	go.opentelemetry.io/collector/confmap v0.90.2-0.20231201205146-6e2fdc755b34

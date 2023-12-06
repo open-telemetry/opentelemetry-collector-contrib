@@ -33,10 +33,9 @@ func createDefaultConfig() component.Config {
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://localhost:9093",
-			Timeout:  30 * time.Second,
-			Headers:  map[string]configopaque.String{},
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
+			Endpoint:        "http://localhost:9093",
+			Timeout:         30 * time.Second,
+			Headers:         map[string]configopaque.String{},
 			WriteBufferSize: 512 * 1024,
 		},
 	}
