@@ -1155,7 +1155,6 @@ replace (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector => ./connector/countconnector
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector => ./connector/datadogconnector
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector => ./connector/exceptionsconnector
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector => ./connector/failoverconnector
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ./connector/routingconnector
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ./connector/servicegraphconnector
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ./connector/spanmetricsconnector

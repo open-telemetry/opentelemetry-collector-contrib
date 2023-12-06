@@ -39,6 +39,8 @@ func (f *tracesFailover) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	}
 	err := tc.ConsumeTraces(ctx, td)
 	if err == nil {
+		// trylock to make sure for concurrent calls multiple invocations don't try to update the failover
+		// state simultaneously and don't wait to acquire lock in pipeline selector
 		f.stableTryLock.Lock(f.failover.reportStable, idx)
 		return nil
 	}
