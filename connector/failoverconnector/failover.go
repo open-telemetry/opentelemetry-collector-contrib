@@ -40,10 +40,10 @@ func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config) *failov
 func (f *failoverRouter[C]) getCurrentConsumer() (C, int, bool) {
 	// if currentIndex incremented passed bounds of pipeline list
 	var nilConsumer C
-	if f.pS.CurrentIndex >= len(f.cfg.PipelinePriority) {
+	idx := f.pS.GetCurrentIndex()
+	if idx >= len(f.cfg.PipelinePriority) {
 		return nilConsumer, -1, false
 	}
-	idx := f.pS.GetCurrentIndex()
 	return f.consumers[idx], idx, true
 }
 
@@ -88,10 +88,11 @@ func (f *failoverRouter[C]) enableRetry(ctx context.Context) {
 		ticker := time.NewTicker(f.cfg.RetryInterval)
 		defer ticker.Stop()
 
+		stableIndex := f.pS.GetStableIndex()
 		var cancelFunc context.CancelFunc
 		// checkContinueRetry checks that any higher priority levels have retries remaining
 		// (have not exceeded their maxRetries)
-		for f.checkContinueRetry(f.pS.StableIndex) {
+		for f.checkContinueRetry(stableIndex) {
 			select {
 			case <-ticker.C:
 				// When the nextRetry interval starts we kill the existing iteration through
@@ -99,11 +100,12 @@ func (f *failoverRouter[C]) enableRetry(ctx context.Context) {
 				if cancelFunc != nil {
 					cancelFunc()
 				}
-				cancelFunc = f.handleRetry(ctx, f.pS.StableIndex)
+				cancelFunc = f.handleRetry(ctx, stableIndex)
 			case <-ctx.Done():
 				return
 			}
 		}
+		f.rS.InvokeCancel()
 	}()
 }
 

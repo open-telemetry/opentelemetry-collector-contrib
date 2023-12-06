@@ -20,10 +20,11 @@ type tracesFailover struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	config   *Config
-	failover *failoverRouter[consumer.Traces]
-	logger   *zap.Logger
-	tryLock  *state.TryLock
+	config        *Config
+	failover      *failoverRouter[consumer.Traces]
+	logger        *zap.Logger
+	errTryLock    *state.TryLock
+	stableTryLock *state.TryLock
 }
 
 func (f *tracesFailover) Capabilities() consumer.Capabilities {
@@ -38,7 +39,7 @@ func (f *tracesFailover) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	}
 	err := tc.ConsumeTraces(ctx, td)
 	if err == nil {
-		f.failover.reportStable(idx)
+		f.stableTryLock.Lock(f.failover.reportStable, idx)
 		return nil
 	}
 	return f.FailoverTraces(ctx, td)
@@ -53,11 +54,11 @@ func (f *tracesFailover) FailoverTraces(ctx context.Context, td ptrace.Traces) e
 			// in case of err handlePipelineError is called through tryLock
 			// tryLock is to avoid race conditions from concurrent calls to handlePipelineError, only first call should enter
 			// see state.TryLock
-			f.tryLock.Lock(f.failover.handlePipelineError, idx)
+			f.errTryLock.Lock(f.failover.handlePipelineError, idx)
 			continue
 		}
 		// when healthy pipeline is found, reported back to failover component
-		f.failover.reportStable(idx)
+		f.stableTryLock.Lock(f.failover.reportStable, idx)
 		return nil
 	}
 	f.logger.Error("All provided pipelines return errors, dropping data")
@@ -85,9 +86,10 @@ func newTracesToTraces(set connector.CreateSettings, cfg component.Config, trace
 		return nil, err
 	}
 	return &tracesFailover{
-		config:   config,
-		failover: failover,
-		logger:   set.TelemetrySettings.Logger,
-		tryLock:  state.NewTryLock(),
+		config:        config,
+		failover:      failover,
+		logger:        set.TelemetrySettings.Logger,
+		errTryLock:    state.NewTryLock(),
+		stableTryLock: state.NewTryLock(),
 	}, nil
 }
