@@ -5,6 +5,7 @@ package fingerprint
 
 import (
 	"fmt"
+	"hash/fnv"
 	"math/rand"
 	"os"
 	"testing"
@@ -133,81 +134,94 @@ func TestNew(t *testing.T) {
 	}
 }
 
-//func TestFingerprintCopy(t *testing.T) {
-//	t.Parallel()
-//	cases := []string{
-//		"",
-//		"hello",
-//		"asdfsfaddsfas",
-//		string(tokenWithLength(MinSize)),
-//		string(tokenWithLength(DefaultSize)),
-//		string(tokenWithLength(1234)),
-//	}
-//
-//	for _, tc := range cases {
-//		fp := &Fingerprint{FirstBytes: []byte(tc)}
-//
-//		cp := fp.Copy()
-//
-//		// Did not change original
-//		require.Equal(t, tc, string(fp.firstBytes))
-//
-//		// Copy is also good
-//		require.Equal(t, tc, string(cp.FirstBytes))
-//
-//		// Modify copy
-//		cp.FirstBytes = append(cp.FirstBytes, []byte("also")...)
-//
-//		// Still did not change original
-//		require.Equal(t, tc, string(fp.FirstBytes))
-//
-//		// Copy is modified
-//		require.Equal(t, tc+"also", string(cp.FirstBytes))
-//	}
-//}
-//
-//func TestEqual(t *testing.T) {
-//	empty := &Fingerprint{FirstBytes: []byte("")}
-//	empty2 := &Fingerprint{FirstBytes: []byte("")}
-//	hello := &Fingerprint{FirstBytes: []byte("hello")}
-//	hello2 := &Fingerprint{FirstBytes: []byte("hello")}
-//	world := &Fingerprint{FirstBytes: []byte("world")}
-//	world2 := &Fingerprint{FirstBytes: []byte("world")}
-//	helloworld := &Fingerprint{FirstBytes: []byte("helloworld")}
-//	helloworld2 := &Fingerprint{FirstBytes: []byte("helloworld")}
-//
-//	require.True(t, empty.Equal(empty2))
-//	require.True(t, hello.Equal(hello2))
-//	require.True(t, world.Equal(world2))
-//	require.True(t, helloworld.Equal(helloworld2))
-//
-//	require.False(t, hello.Equal(empty))
-//	require.False(t, empty.Equal(hello))
-//
-//	require.False(t, hello.Equal(world))
-//	require.False(t, world.Equal(hello))
-//
-//	require.False(t, hello.Equal(helloworld))
-//	require.False(t, helloworld.Equal(hello))
-//}
-//
-//func TestStartsWith(t *testing.T) {
-//	empty := &Fingerprint{FirstBytes: []byte("")}
-//	hello := &Fingerprint{FirstBytes: []byte("hello")}
-//	world := &Fingerprint{FirstBytes: []byte("world")}
-//	helloworld := &Fingerprint{FirstBytes: []byte("helloworld")}
-//
-//	// Empty never matches
-//	require.False(t, hello.StartsWith(empty))
-//	require.False(t, empty.StartsWith(hello))
-//
-//	require.True(t, hello.StartsWith(hello))
-//	require.False(t, hello.StartsWith(helloworld))
-//
-//	require.True(t, helloworld.StartsWith(hello))
-//	require.True(t, helloworld.StartsWith(helloworld))
-//	require.False(t, helloworld.StartsWith(world))
-//}
+func TestFingerprintCopy(t *testing.T) {
+	t.Parallel()
+	cases := []string{
+		"",
+		"hello",
+		"asdfsfaddsfas",
+		string(tokenWithLength(MinSize)),
+		string(tokenWithLength(DefaultSize)),
+		string(tokenWithLength(1234)),
+	}
+
+	for _, tc := range cases {
+
+		h := fnv.New128a()
+
+		// Write some data to the hash function.
+		h.Write([]byte(tc))
+
+		// Get the hash value.
+		hash := h.Sum(nil)
+
+		fp := &Fingerprint{firstBytes: []byte(tc), HashBytes: hash, BytesLength: len([]byte(tc))}
+
+		cp := fp.Copy()
+
+		// Did not change original
+		require.Equal(t, hash, fp.HashBytes)
+
+		// Copy is also good
+		require.Equal(t, hash, cp.HashBytes)
+
+		// Modify copy
+		cp.UpdateFingerPrint(int64(len([]byte(tc))), []byte("also"))
+		//cp.FirstBytes = append(cp.FirstBytes, []byte("also")...)
+
+		// Still did not change original
+		require.Equal(t, hash, fp.HashBytes)
+
+		// Copy is modified
+		h = fnv.New128a()
+		h.Write([]byte(tc + "also"))
+		newHash := h.Sum(nil)
+		require.Equal(t, newHash, cp.HashBytes)
+	}
+}
+
+func TestEqual(t *testing.T) {
+	empty := newFingerPrint([]byte(""))
+	empty2 := newFingerPrint([]byte(""))
+	hello := newFingerPrint([]byte("hello"))
+	hello2 := newFingerPrint([]byte("hello"))
+	world := newFingerPrint([]byte("world"))
+	world2 := newFingerPrint([]byte("world"))
+	helloworld := newFingerPrint([]byte("helloworld"))
+	helloworld2 := newFingerPrint([]byte("helloworld"))
+
+	require.True(t, empty.Equal(empty2))
+	require.True(t, hello.Equal(hello2))
+	require.True(t, world.Equal(world2))
+	require.True(t, helloworld.Equal(helloworld2))
+
+	require.False(t, hello.Equal(empty))
+	require.False(t, empty.Equal(hello))
+
+	require.False(t, hello.Equal(world))
+	require.False(t, world.Equal(hello))
+
+	require.False(t, hello.Equal(helloworld))
+	require.False(t, helloworld.Equal(hello))
+}
+
+func TestStartsWith(t *testing.T) {
+	empty := newFingerPrint([]byte(""))
+	hello := newFingerPrint([]byte("hello"))
+	world := newFingerPrint([]byte("world"))
+	helloworld := newFingerPrint([]byte("helloworld"))
+
+	// Empty never matches
+	require.False(t, hello.StartsWith(empty))
+	require.False(t, empty.StartsWith(hello))
+
+	require.True(t, hello.StartsWith(hello))
+	require.False(t, hello.StartsWith(helloworld))
+
+	require.True(t, helloworld.StartsWith(hello))
+	require.True(t, helloworld.StartsWith(helloworld))
+	require.False(t, helloworld.StartsWith(world))
+}
 
 // Generates a file filled with many random bytes, then
 // writes the same bytes to a second file, one byte at a time.
@@ -276,4 +290,12 @@ func tokenWithLength(length int) []byte {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
 	return b
+}
+
+func newFingerPrint(str []byte) *Fingerprint {
+	h := fnv.New128a()
+	h.Write(str)
+	hash := h.Sum(nil)
+	fp := &Fingerprint{firstBytes: str, HashBytes: hash, BytesLength: len(str)}
+	return fp
 }

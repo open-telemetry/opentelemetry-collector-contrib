@@ -35,20 +35,20 @@ func New(file *os.File, size int) (*Fingerprint, error) {
 	//if err != nil {
 	//	fmt.Printf("%s", "End of file error")
 	//}
-	hold := buf[:n]
+	fBytes := buf[:n]
 
 	h := fnv.New128a()
 
 	// Write some data to the hash function.
-	h.Write(hold)
+	h.Write(fBytes)
 
 	// Get the hash value.
 	hash := h.Sum(nil)
 
 	fp := &Fingerprint{
-		firstBytes:  hold,
+		firstBytes:  fBytes,
 		HashBytes:   hash,
-		BytesLength: len(hold),
+		BytesLength: len(fBytes),
 	}
 	//fmt.Println(hold)
 	//fmt.Println(fp.BytesLength)
@@ -63,16 +63,23 @@ func (f Fingerprint) Copy() *Fingerprint {
 	buf := make([]byte, len(f.firstBytes), cap(f.firstBytes))
 	n := copy(buf, f.firstBytes)
 	return &Fingerprint{
-		firstBytes: buf[:n],
+		firstBytes:  buf[:n],
+		HashBytes:   f.HashBytes,
+		BytesLength: f.BytesLength,
 	}
 }
 
-func (f Fingerprint) UpdateFingerPrint(offset int64, appendBytes []byte) {
+func (f *Fingerprint) UpdateFingerPrint(offset int64, appendBytes []byte) {
 	if f.firstBytes == nil {
 		f.firstBytes = appendBytes
 	} else {
 		f.firstBytes = append(f.firstBytes[:offset], appendBytes...)
 	}
+	h := fnv.New128a()
+	h.Write(f.firstBytes)
+	hash := h.Sum(nil)
+	f.HashBytes = hash
+	f.BytesLength = len(f.firstBytes)
 }
 
 // Equal returns true if the fingerprints have the same FirstBytes,
