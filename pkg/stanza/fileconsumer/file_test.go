@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -49,7 +50,7 @@ func TestDefaultBehaviors(t *testing.T) {
 	}()
 
 	// Should not emit the pre-existing token, even after flush period
-	sink.ExpectNoCallsUntil(t, defaultFlushPeriod)
+	sink.ExpectNoCallsUntil(t, reader.DefaultFlushPeriod)
 
 	// Complete token should be emitted quickly
 	filetest.WriteString(t, temp, " testlog2 \n")
@@ -60,8 +61,8 @@ func TestDefaultBehaviors(t *testing.T) {
 
 	// Incomplete token should not be emitted until after flush period
 	filetest.WriteString(t, temp, " testlog3 ")
-	sink.ExpectNoCallsUntil(t, defaultFlushPeriod/2)
-	time.Sleep(defaultFlushPeriod)
+	sink.ExpectNoCallsUntil(t, reader.DefaultFlushPeriod/2)
+	time.Sleep(reader.DefaultFlushPeriod)
 
 	token, attributes = sink.NextCall(t)
 	assert.Equal(t, []byte("testlog3"), token)
