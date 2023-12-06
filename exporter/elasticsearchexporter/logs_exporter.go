@@ -19,9 +19,7 @@ import (
 type elasticsearchLogsExporter struct {
 	logger *zap.Logger
 
-	// if logstash format enabled, this index will ignore and won't be used.
 	index string
-	// if logstash format enabled, exporter will use `logstashIndex` as final index write to.
 	logstashFormat LogstashFormatSettings
 	dynamicIndex   bool
 	maxAttempts    int
