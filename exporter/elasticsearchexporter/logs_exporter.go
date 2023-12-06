@@ -19,7 +19,7 @@ import (
 type elasticsearchLogsExporter struct {
 	logger *zap.Logger
 
-	index string
+	index          string
 	logstashFormat LogstashFormatSettings
 	dynamicIndex   bool
 	maxAttempts    int
