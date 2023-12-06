@@ -6,8 +6,13 @@
 package servicegraphconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 
 import (
+	"go.opentelemetry.io/collector/connector"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 )
 
-var NewFactory = servicegraphprocessor.NewConnectorFactoryFunc(metadata.Type, metadata.TracesToMetricsStability)
+// NewFactory returns a ConnectorFactory.
+func NewFactory() connector.Factory {
+	return servicegraphprocessor.NewConnectorFactoryFunc(metadata.Type, metadata.TracesToMetricsStability)
+}

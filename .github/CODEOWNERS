@@ -103,7 +103,6 @@ extension/headerssetterextension/                                       @open-te
 extension/healthcheckextension/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                                @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
 extension/jaegerremotesampling/                                         @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
-extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/ @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/oauth2clientauthextension/                                    @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                                     @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/dockerobserver/                                      @open-telemetry/collector-contrib-approvers @MovieStoreGuy
@@ -221,7 +220,6 @@ receiver/httpcheckreceiver/                                             @open-te
 receiver/iisreceiver/                                                   @open-telemetry/collector-contrib-approvers @Mrod1598 @djaglowski
 receiver/influxdbreceiver/                                              @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                                                @open-telemetry/collector-contrib-approvers @jpkrohling
-receiver/jaegerreceiver/internal/jaegerreceiverdeprecated/              @open-telemetry/collector-contrib-approvers @jpkrohling
 receiver/jmxreceiver/                                                   @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/journaldreceiver/                                              @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                                            @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv
