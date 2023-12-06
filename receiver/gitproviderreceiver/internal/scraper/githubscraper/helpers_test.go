@@ -173,7 +173,7 @@ func TestGenDefaultSearchQueryUser(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestGetDurationHrs(t *testing.T) {
+func TestGetAgeHrs(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		hrsAdd   time.Duration
