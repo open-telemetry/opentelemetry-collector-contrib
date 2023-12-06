@@ -58,6 +58,12 @@ otelcol --config=config.yaml --feature-gates=-exporter.datadogexporter.metricexp
 ```
 Note that we are currently migrating the Datadog metrics exporter to use the metrics serializer instead. The feature flag `exporter.datadogexporter.metricexportnativeclient` will be deprecated and eventually removed in the future, following the [feature lifecycle](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle).
 
+### Remap OTel’s service.name attribute to service for logs
+
+For Datadog Exporter versions 0.83.0 and later, the `service` field of OTel logs is populated as [OTel semantic convention](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.name`. However, `service.name` is not one of the default [service attributes](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute) in Datadog’s log preprocessing.
+
+To get the service field correctly populated in your logs, you can specify service.name to be the source of a log’s service by setting a [log service remapper processor](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute).
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

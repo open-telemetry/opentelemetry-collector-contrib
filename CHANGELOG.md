@@ -7,6 +7,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.90.1
+
+### 🧰 Bug fixes 🧰
+
+- `exporters`: Upgrade core dependency to remove noisy "Exporting finished" log message in exporters. (#29612)
+
 ## v0.90.0
 
 ### 🛑 Breaking changes 🛑

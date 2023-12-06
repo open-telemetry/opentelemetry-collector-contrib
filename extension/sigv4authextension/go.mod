@@ -3,28 +3,28 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.23.4
-	github.com/aws/aws-sdk-go-v2/config v1.25.10
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.8
-	github.com/aws/aws-sdk-go-v2/service/sts v1.26.1
+	github.com/aws/aws-sdk-go-v2 v1.23.5
+	github.com/aws/aws-sdk-go-v2/config v1.25.11
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.9
+	github.com/aws/aws-sdk-go-v2/service/sts v1.26.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.90.0
-	go.opentelemetry.io/collector/confmap v0.90.0
-	go.opentelemetry.io/collector/extension v0.90.0
-	go.opentelemetry.io/collector/extension/auth v0.90.0
+	go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector/confmap v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector/extension v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector/extension/auth v0.90.2-0.20231201205146-6e2fdc755b34
 	go.uber.org/zap v1.26.0
 	google.golang.org/grpc v1.59.0
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.8 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.7 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.7 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.9 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.8 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.8 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.18.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.8 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.18.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.2 // indirect
 	github.com/aws/smithy-go v1.18.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -37,9 +37,9 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.90.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.1-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.1-0.20231201205146-6e2fdc755b34 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
