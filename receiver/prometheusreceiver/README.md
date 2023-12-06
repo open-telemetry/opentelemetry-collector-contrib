@@ -112,6 +112,7 @@ The prometheus receiver also supports additional top-level options:
 - **use_start_time_metric**: When set to true, this enables retrieving the start time of all counter metrics from the process_start_time_seconds metric. This is only correct if all counters on that endpoint started after the process start time, and the process is the only actor exporting the metric after the process started. It should not be used in "exporters" which export counters that may have started before the process itself. Use only if you know what you are doing, as this may result in incorrect rate calculations. Defaults to false.
 - **start_time_metric_regex**: The regular expression for the start time metric, and is only applied when use_start_time_metric is enabled.  Defaults to process_start_time_seconds.
 - **enable_prometheus_ui_server**: [**Experimental**] When set to true, this enables the Prometheus UI server through the [Prometheus web handler](https://github.com/prometheus/prometheus/blob/main/web/web.go). The React app files will need to be accessible from the same directory location that the OpenTelemetry Collector is run from. See the [Prometheus UI README](https://github.com/prometheus/prometheus/blob/main/web/ui/README.md) for how to get a build of the app by running `npm run build`. This UI can be accessed through http://localhost:9090 while the OpenTelemetry Collector with the Prometheus Receiver is running.
+- **prometheus_ui_server_port**: [**Experimental**] When ``enable_prometheus_ui_server`` is set to true, this setting overrides the default port of the server from `9090` to the `uint16` value specified.
 
 For example,
 
@@ -122,6 +123,7 @@ receivers:
       use_start_time_metric: true
       start_time_metric_regex: foo_bar_.*
       enable_prometheus_ui_sever: true
+      prometheus_ui_server_port: 9091
       config:
         scrape_configs:
           - job_name: 'otel-collector'

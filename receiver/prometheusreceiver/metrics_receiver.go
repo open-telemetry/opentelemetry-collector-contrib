@@ -17,11 +17,11 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
-	"github.com/google/cadvisor/version"
 	"github.com/mitchellh/hashstructure/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/common/version"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
@@ -41,9 +41,9 @@ const (
 	gcIntervalDelta   = 1 * time.Minute
 
 	// Use same settings as Prometheus web server
-	maxConnections     			= 512
-	readTimeoutMinutes 			= 10
-	prometheusUIServerPort 	= 9090
+	maxConnections     			        = 512
+	readTimeoutMinutes 			        = 10
+	defaultPrometheusUIServerPort 	= uint16(9090)
 )
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
@@ -308,6 +308,11 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 	// Set up and start the web handler to suppor the server for the Prometheus UI.
 	// Run in agent mode.
 	if r.cfg.EnablePrometheusUIServer {
+		prometheusUIServerPort := defaultPrometheusUIServerPort
+		if r.cfg.PrometheusUIServerPort != 0 {
+			prometheusUIServerPort = r.cfg.PrometheusUIServerPort
+		}
+
 		webOptions := web.Options{
 			ScrapeManager: r.scrapeManager,
 			Context:       ctx,

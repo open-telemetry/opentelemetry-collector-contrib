@@ -58,7 +58,14 @@ type Config struct {
 	// protobuf negotiation when conferring with a prometheus client.
 	EnableProtobufNegotiation bool `mapstructure:"enable_protobuf_negotiation"`
 
+	// EnablePrometheusUIServer enables the receiver to host the Prometheus UI
+	// server in agent mode. This allows the user to view the config, service discovery,
+	// and targets for debugging purposes.
 	EnablePrometheusUIServer bool `mapstructure:"enable_prometheus_ui_server"`
+
+	// PrometheusUIServerPort overwrites the default port of 9090 for hosting
+	// the Prometheus UI server.
+	PrometheusUIServerPort uint16 `mapstructure:"prometheus_ui_server_port"`
 }
 
 type targetAllocator struct {
