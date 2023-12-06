@@ -216,8 +216,16 @@ func TestScraperExcludeDatabase(t *testing.T) {
 
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
-	_, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "multiple", "exclude.yaml")
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 type mockClientFactory struct{ mock.Mock }
