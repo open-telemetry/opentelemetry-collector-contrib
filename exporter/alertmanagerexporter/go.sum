@@ -90,6 +90,7 @@ github.com/prometheus/client_golang v1.17.0 h1:rl2sfwZMtSthVU752MqfjQozy7blglC+1
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/prometheus/client_model v0.5.0 h1:VQw1hfvPvk3Uv6Qf29VrPF32JB6rtbgI6cYPYQjL0Qw=
 github.com/prometheus/common v0.45.0 h1:2BGz0eBc2hdMDLnO/8n0jeB3oPrt2D08CekT0lneoxM=
+github.com/prometheus/common v0.45.0/go.mod h1:YJmSTw9BoKxJplESWWxlbyttQR4uaEcGyv9MZjVOJsY=
 github.com/prometheus/procfs v0.11.1 h1:xRC8Iq1yyca5ypa9n1EZnWZkt7dwcoRPQwX/5gwaUuI=
 github.com/prometheus/statsd_exporter v0.22.7 h1:7Pji/i2GuhK6Lu7DHrtTkFmNBCudCPT1pX2CziuyQR0=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
@@ -142,6 +143,8 @@ go.opentelemetry.io/collector/pdata v1.0.1-0.20231201205146-6e2fdc755b34 h1:dVqK
 go.opentelemetry.io/collector/pdata v1.0.1-0.20231201205146-6e2fdc755b34/go.mod h1:TsDFgs4JLNG7t6x9D8kGswXUz4mme+MyNChHx8zSF6k=
 go.opentelemetry.io/collector/receiver v0.90.2-0.20231201205146-6e2fdc755b34 h1:WR6mGsYoNDoqG4ecam1Wyna8GxOB/ATE2r3TbLTdZsE=
 go.opentelemetry.io/collector/receiver v0.90.2-0.20231201205146-6e2fdc755b34/go.mod h1:KAAfJus9Kn92XTqOQO5/ZftTYKBhpi2S8NW6n7Baefo=
+go.opentelemetry.io/collector/semconv v0.90.2-0.20231201205146-6e2fdc755b34 h1:kv7QJcgWCg+gvEtcAeFsmRD3DePlNlTWFOCNyuJ4sEY=
+go.opentelemetry.io/collector/semconv v0.90.2-0.20231201205146-6e2fdc755b34/go.mod h1:j/8THcqVxFna1FpvA2zYIsUperEtOaRaqoLYIN4doWw=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 h1:aFJWCqJMNjENlcleuuOkGAPH82y0yULBScfXcIEdS24=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1/go.mod h1:sEGXWArGqc3tVa+ekntsN65DmVbVeW+7lTKTjZF3/Fo=
 go.opentelemetry.io/otel v1.21.0 h1:hzLeKBZEL7Okw2mGzZ0cc4k/A7Fta0uoPgaJCr8fsFc=
