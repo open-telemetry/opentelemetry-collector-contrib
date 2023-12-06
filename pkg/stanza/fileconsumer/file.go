@@ -196,7 +196,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 		return nil, nil
 	}
 
-	if fp.BytesLength == 0 {
+	if fp.IsEmpty() {
 		// Empty file, don't read it until we can compare its fingerprint
 		if err = file.Close(); err != nil {
 			m.Debugw("problem closing file", zap.Error(err))

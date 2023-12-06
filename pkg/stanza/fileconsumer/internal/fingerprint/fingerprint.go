@@ -27,7 +27,6 @@ type Fingerprint struct {
 // New creates a new fingerprint from an open file
 func New(file *os.File, size int) (*Fingerprint, error) {
 	buf := make([]byte, size)
-	//file.Seek(0, 0)
 	n, err := file.ReadAt(buf, 0)
 	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("reading fingerprint bytes: %w", err)
@@ -35,9 +34,7 @@ func New(file *os.File, size int) (*Fingerprint, error) {
 	fBytes := buf[:n]
 
 	h := fnv.New128a()
-	// Write some data to the hash function.
 	h.Write(fBytes)
-	// Get the hash value.
 	hash := h.Sum(nil)
 
 	fp := &Fingerprint{
@@ -60,6 +57,7 @@ func (f Fingerprint) Copy() *Fingerprint {
 	}
 }
 
+// UpdateFingerPrint will update fingerprint with new bytes
 func (f *Fingerprint) UpdateFingerPrint(offset int64, appendBytes []byte) {
 	if f.firstBytes == nil {
 		f.firstBytes = appendBytes
@@ -100,4 +98,14 @@ func (f Fingerprint) StartsWith(old *Fingerprint) bool {
 	h.Write(f.firstBytes[:lenOld])
 	hash := h.Sum(nil)
 	return bytes.Equal(old.HashBytes, hash)
+}
+
+// IsCompleteFingerprint checks to see if fingerprint has room for updates
+func (f Fingerprint) IsCompleteFingerprint(maxFingerprintSize int, offset int64) bool {
+	return f.BytesLength == maxFingerprintSize || int(offset) > f.BytesLength
+}
+
+// IsEmpty checks to see if Fingerprint is empty
+func (f Fingerprint) IsEmpty() bool {
+	return f.BytesLength == 0
 }
