@@ -38,6 +38,7 @@ func newDbClient(db db, sql string, logger *zap.Logger) dbClient {
 }
 
 func (cl dbSQLClient) queryRows(ctx context.Context, args ...any) ([]stringMap, error) {
+	cl.logger.Debug("Running query", zap.String("query", cl.sql), zap.Any("parameters", args))
 	sqlRows, err := cl.db.QueryContext(ctx, cl.sql, args...)
 	if err != nil {
 		return nil, err
