@@ -88,16 +88,16 @@ func (f Fingerprint) Equal(other *Fingerprint) bool {
 // a fingerprint. As the file grows, its fingerprint is updated
 // until it reaches a maximum size, as configured on the operator
 func (f Fingerprint) StartsWith(old *Fingerprint) bool {
-	l0 := old.BytesLength
-	if l0 == 0 {
+	lenOld := old.BytesLength
+	if lenOld == 0 {
 		return false
 	}
-	l1 := len(f.firstBytes)
-	if l0 > l1 {
+	lenCurrent := len(f.firstBytes)
+	if lenOld > lenCurrent {
 		return false
 	}
 	h := fnv.New128a()
-	h.Write(f.firstBytes[:l0])
+	h.Write(f.firstBytes[:lenOld])
 	hash := h.Sum(nil)
 	return bytes.Equal(old.HashBytes, hash)
 }
