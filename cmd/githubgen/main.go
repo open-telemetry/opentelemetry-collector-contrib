@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
 
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"gopkg.in/yaml.v3"
 )
 
 const unmaintainedStatus = "unmaintained"
@@ -36,6 +38,8 @@ func main() {
 			generators = append(generators, issueTemplatesGenerator{})
 		case "codeowners":
 			generators = append(generators, codeownersGenerator{})
+		case "distributions":
+			generators = append(generators, distributionsGenerator{})
 		default:
 			panic(fmt.Sprintf("Unknown generator: %s", arg))
 		}
@@ -71,12 +75,19 @@ type metadata struct {
 	Status *Status `mapstructure:"status"`
 }
 
+type distributionData struct {
+	Name        string   `yaml:"name"`
+	Url         string   `yaml:"url"`
+	Maintainers []string `yaml:"maintainers,omitempty"`
+}
+
 type githubData struct {
 	folders           []string
 	codeowners        []string
 	allowlistFilePath string
 	maxLength         int
 	components        map[string]metadata
+	distributions     []distributionData
 }
 
 func loadMetadata(filePath string) (metadata, error) {
@@ -147,12 +158,23 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 	}
 	sort.Strings(codeownersList)
 
+	var distributions []distributionData
+	dd, err := os.ReadFile(filepath.Join(folder, "distributions.yaml"))
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(dd, &distributions)
+	if err != nil {
+		return err
+	}
+
 	data := &githubData{
 		folders:           foldersList,
 		codeowners:        codeownersList,
 		allowlistFilePath: allowlistFilePath,
 		maxLength:         maxLength,
 		components:        components,
+		distributions:     distributions,
 	}
 
 	for _, g := range generators {
