@@ -176,12 +176,15 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	}
 	rw.informerFactories = append(rw.informerFactories, factory)
 
-	dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(rw.dynamicClient, rw.config.MetadataCollectionInterval)
-	dynamicInformer := dynamicFactory.ForResource(gvr.HierarchicalResourceQuota)
-	rw.setupInformer(gvk.HierarchicalResourceQuota, dynamicInformer.Informer())
-	rw.informerFactories = append(rw.informerFactories, &(dynamicSharedInformerFactory{
-		DynamicSharedInformerFactory: dynamicFactory,
-	}))
+	isSupported, _ := rw.isKindSupported(gvk.HierarchicalResourceQuota)
+	if isSupported {
+		dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(rw.dynamicClient, rw.config.MetadataCollectionInterval)
+		dynamicInformer := dynamicFactory.ForResource(gvr.HierarchicalResourceQuota)
+		rw.setupInformer(gvk.HierarchicalResourceQuota, dynamicInformer.Informer())
+		rw.informerFactories = append(rw.informerFactories, &(dynamicSharedInformerFactory{
+			DynamicSharedInformerFactory: dynamicFactory,
+		}))
+	}
 
 	return nil
 }

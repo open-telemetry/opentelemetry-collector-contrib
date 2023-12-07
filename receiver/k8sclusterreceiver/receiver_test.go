@@ -293,6 +293,12 @@ func newFakeClientWithAllResources() *fake.Clientset {
 				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
 			},
 		},
+		{
+			GroupVersion: "hnc.x-k8s.io/v1alpha2",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.HierarchicalResourceQuota),
+			},
+		},
 	}
 	return client
 }
