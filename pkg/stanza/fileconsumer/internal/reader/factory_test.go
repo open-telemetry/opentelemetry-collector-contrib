@@ -42,29 +42,37 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 
 	sink := emittest.NewSink(emittest.WithCallBuffer(cfg.sinkCallBufferSize))
 	return &Factory{
-		SugaredLogger:   testutil.Logger(t),
-		FromBeginning:   cfg.fromBeginning,
-		FingerprintSize: cfg.fingerprintSize,
-		MaxLogSize:      cfg.maxLogSize,
-		Encoding:        cfg.encoding,
-		SplitFunc:       splitFunc,
-		TrimFunc:        cfg.trimFunc,
-		FlushTimeout:    cfg.flushPeriod,
-		EmitFunc:        sink.Callback,
+		SugaredLogger:           testutil.Logger(t),
+		FromBeginning:           cfg.fromBeginning,
+		FingerprintSize:         cfg.fingerprintSize,
+		MaxLogSize:              cfg.maxLogSize,
+		Encoding:                cfg.encoding,
+		SplitFunc:               splitFunc,
+		TrimFunc:                cfg.trimFunc,
+		FlushTimeout:            cfg.flushPeriod,
+		EmitFunc:                sink.Callback,
+		IncludeFileName:         cfg.includeFileName,
+		IncludeFilePath:         cfg.includeFilePath,
+		IncludeFileNameResolved: cfg.includeFileNameResolved,
+		IncludeFilePathResolved: cfg.includeFilePathResolved,
 	}, sink
 }
 
 type testFactoryOpt func(*testFactoryCfg)
 
 type testFactoryCfg struct {
-	fromBeginning      bool
-	fingerprintSize    int
-	maxLogSize         int
-	encoding           encoding.Encoding
-	splitCfg           split.Config
-	trimFunc           trim.Func
-	flushPeriod        time.Duration
-	sinkCallBufferSize int
+	fromBeginning           bool
+	fingerprintSize         int
+	maxLogSize              int
+	encoding                encoding.Encoding
+	splitCfg                split.Config
+	trimFunc                trim.Func
+	flushPeriod             time.Duration
+	sinkCallBufferSize      int
+	includeFileName         bool
+	includeFilePath         bool
+	includeFileNameResolved bool
+	includeFilePathResolved bool
 }
 
 func withFingerprintSize(size int) testFactoryOpt {
@@ -94,5 +102,29 @@ func withFlushPeriod(flushPeriod time.Duration) testFactoryOpt {
 func withSinkBufferSize(n int) testFactoryOpt {
 	return func(c *testFactoryCfg) {
 		c.sinkCallBufferSize = n
+	}
+}
+
+func includeFileName() testFactoryOpt {
+	return func(c *testFactoryCfg) {
+		c.includeFileName = true
+	}
+}
+
+func includeFilePath() testFactoryOpt {
+	return func(c *testFactoryCfg) {
+		c.includeFilePath = true
+	}
+}
+
+func includeFileNameResolved() testFactoryOpt {
+	return func(c *testFactoryCfg) {
+		c.includeFileNameResolved = true
+	}
+}
+
+func includeFilePathResolved() testFactoryOpt {
+	return func(c *testFactoryCfg) {
+		c.includeFilePathResolved = true
 	}
 }
