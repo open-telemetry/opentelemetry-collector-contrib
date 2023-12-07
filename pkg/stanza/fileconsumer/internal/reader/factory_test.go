@@ -25,8 +25,8 @@ const (
 
 func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink) {
 	cfg := &testFactoryCfg{
-		fingerprintSize:    fingerprint.DefaultSize,
 		fromBeginning:      true,
+		fingerprintSize:    fingerprint.DefaultSize,
 		maxLogSize:         defaultMaxLogSize,
 		encoding:           unicode.UTF8,
 		trimFunc:           trim.Whitespace,
@@ -42,25 +42,23 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 
 	sink := emittest.NewSink(emittest.WithCallBuffer(cfg.sinkCallBufferSize))
 	return &Factory{
-		SugaredLogger: testutil.Logger(t),
-		Config: &Config{
-			FingerprintSize: cfg.fingerprintSize,
-			MaxLogSize:      cfg.maxLogSize,
-			FlushTimeout:    cfg.flushPeriod,
-			Emit:            sink.Callback,
-		},
-		FromBeginning: cfg.fromBeginning,
-		Encoding:      cfg.encoding,
-		SplitFunc:     splitFunc,
-		TrimFunc:      cfg.trimFunc,
+		SugaredLogger:   testutil.Logger(t),
+		FromBeginning:   cfg.fromBeginning,
+		FingerprintSize: cfg.fingerprintSize,
+		MaxLogSize:      cfg.maxLogSize,
+		Encoding:        cfg.encoding,
+		SplitFunc:       splitFunc,
+		TrimFunc:        cfg.trimFunc,
+		FlushTimeout:    cfg.flushPeriod,
+		EmitFunc:        sink.Callback,
 	}, sink
 }
 
 type testFactoryOpt func(*testFactoryCfg)
 
 type testFactoryCfg struct {
-	fingerprintSize    int
 	fromBeginning      bool
+	fingerprintSize    int
 	maxLogSize         int
 	encoding           encoding.Encoding
 	splitCfg           split.Config

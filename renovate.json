@@ -35,6 +35,12 @@
       {
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
+        "groupName": "All OpenTelemetry Collector dev packages",
+        "matchUpdateTypes": ["digest"]
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
         "groupName": "All OpenTelemetry Collector packages"
       },
       {
