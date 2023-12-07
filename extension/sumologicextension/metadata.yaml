@@ -6,4 +6,4 @@ status:
     development: [extension]
   distributions: [sumo]
   codeowners:
-    active: []
+    active: [astencel-sumo, sumo-drosiek, swiatekm-sumo]
