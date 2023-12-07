@@ -181,6 +181,7 @@ func configureKerberos(config KerberosConfig, saramaConfig *sarama.Config) {
 
 func configureOauth2(config OAuth2, saramaConfig *sarama.Config) {
 	saramaConfig.Net.SASL.Enable = true
+	saramaConfig.Net.TLS.Enable = true
 	saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 	provider := newTokenProvider(config)
 	saramaConfig.Net.SASL.TokenProvider = provider
