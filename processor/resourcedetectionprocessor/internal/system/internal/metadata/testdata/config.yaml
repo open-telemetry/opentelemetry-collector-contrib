@@ -19,6 +19,8 @@ all_set:
       enabled: true
     host.ip:
       enabled: true
+    host.mac:
+      enabled: true
     host.name:
       enabled: true
     os.description:
@@ -44,6 +46,8 @@ none_set:
     host.id:
       enabled: false
     host.ip:
+      enabled: false
+    host.mac:
       enabled: false
     host.name:
       enabled: false
