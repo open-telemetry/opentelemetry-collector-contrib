@@ -49,6 +49,7 @@ Queries the host machine to retrieve the following resource attributes:
     * host.name
     * host.id
     * host.ip
+    * host.mac
     * host.cpu.vendor.id
     * host.cpu.family
     * host.cpu.model.id
