@@ -19,9 +19,9 @@ const MinSize = 16 // bytes
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file
 type Fingerprint struct {
-	firstBytes  []byte
-	HashBytes   []byte
-	BytesLength int
+	firstBytes []byte
+	HashBytes  []byte
+	NBytesUsed int
 }
 
 // New creates a new fingerprint from an open file
@@ -38,9 +38,9 @@ func New(file *os.File, size int) (*Fingerprint, error) {
 	hash := h.Sum(nil)
 
 	fp := &Fingerprint{
-		firstBytes:  fBytes,
-		HashBytes:   hash,
-		BytesLength: len(fBytes),
+		firstBytes: fBytes,
+		HashBytes:  hash,
+		NBytesUsed: len(fBytes),
 	}
 
 	return fp, nil
@@ -51,9 +51,9 @@ func (f Fingerprint) Copy() *Fingerprint {
 	buf := make([]byte, len(f.firstBytes), cap(f.firstBytes))
 	n := copy(buf, f.firstBytes)
 	return &Fingerprint{
-		firstBytes:  buf[:n],
-		HashBytes:   f.HashBytes,
-		BytesLength: f.BytesLength,
+		firstBytes: buf[:n],
+		HashBytes:  f.HashBytes,
+		NBytesUsed: f.NBytesUsed,
 	}
 }
 
@@ -68,13 +68,13 @@ func (f *Fingerprint) UpdateFingerPrint(offset int64, appendBytes []byte) {
 	h.Write(f.firstBytes)
 	hash := h.Sum(nil)
 	f.HashBytes = hash
-	f.BytesLength = len(f.firstBytes)
+	f.NBytesUsed = len(f.firstBytes)
 }
 
 // Equal returns true if the fingerprints have the same FirstBytes,
 // false otherwise. This does not compare other aspects of the fingerprints
 // because the primary purpose of a fingerprint is to convey a unique
-// identity, and only the FirstBytes field contributes to this goal.
+// identity, and the HashBytes field contributes to this goal.
 func (f Fingerprint) Equal(other *Fingerprint) bool {
 	return bytes.Equal(f.HashBytes, other.HashBytes)
 }
@@ -86,7 +86,7 @@ func (f Fingerprint) Equal(other *Fingerprint) bool {
 // a fingerprint. As the file grows, its fingerprint is updated
 // until it reaches a maximum size, as configured on the operator
 func (f Fingerprint) StartsWith(old *Fingerprint) bool {
-	lenOld := old.BytesLength
+	lenOld := old.NBytesUsed
 	if lenOld == 0 {
 		return false
 	}
@@ -94,18 +94,21 @@ func (f Fingerprint) StartsWith(old *Fingerprint) bool {
 	if lenOld > lenCurrent {
 		return false
 	}
+	if f.NBytesUsed == old.NBytesUsed {
+		return bytes.Equal(f.HashBytes, old.HashBytes)
+	}
 	h := fnv.New128a()
 	h.Write(f.firstBytes[:lenOld])
 	hash := h.Sum(nil)
 	return bytes.Equal(old.HashBytes, hash)
 }
 
-// IsCompleteFingerprint checks to see if fingerprint has room for updates
-func (f Fingerprint) IsCompleteFingerprint(maxFingerprintSize int, offset int64) bool {
-	return f.BytesLength == maxFingerprintSize || int(offset) > f.BytesLength
+// IsMaxSize checks to see if fingerprint has reached its maxed size
+func (f Fingerprint) IsMaxSize(maxFingerprintSize int, offset int64) bool {
+	return f.NBytesUsed == maxFingerprintSize || int(offset) > f.NBytesUsed
 }
 
 // IsEmpty checks to see if Fingerprint is empty
 func (f Fingerprint) IsEmpty() bool {
-	return f.BytesLength == 0
+	return f.NBytesUsed == 0
 }

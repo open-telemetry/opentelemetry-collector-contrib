@@ -1170,7 +1170,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			tempCopy := openFile(t, temp.Name())
 			fp, err := operator.readerFactory.NewFingerprint(temp)
 			require.NoError(t, err)
-			require.Equal(t, len([]byte("")), fp.BytesLength)
+			require.Equal(t, len([]byte("")), fp.NBytesUsed)
 
 			reader, err := operator.readerFactory.NewReader(tempCopy, fp)
 			require.NoError(t, err)
@@ -1241,7 +1241,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			tempCopy := openFile(t, temp.Name())
 			fp, err := operator.readerFactory.NewFingerprint(temp)
 			require.NoError(t, err)
-			require.Equal(t, len([]byte("")), fp.BytesLength)
+			require.Equal(t, len([]byte("")), fp.NBytesUsed)
 
 			reader, err := operator.readerFactory.NewReader(tempCopy, fp)
 			require.NoError(t, err)

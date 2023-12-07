@@ -164,7 +164,7 @@ func (r *Reader) Close() *Metadata {
 func (r *Reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
 	// or if fingerprint is behind Offset
-	if r.Fingerprint.IsCompleteFingerprint(r.FingerprintSize, r.Offset) {
+	if r.Fingerprint.IsMaxSize(r.FingerprintSize, r.Offset) {
 		return r.file.Read(dst)
 	}
 	n, err := r.file.Read(dst)

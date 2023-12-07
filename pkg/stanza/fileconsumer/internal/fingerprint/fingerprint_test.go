@@ -41,7 +41,7 @@ func TestNewDoesNotModifyOffset(t *testing.T) {
 	require.NoError(t, err)
 
 	// Validate the fingerprint is the correct size
-	require.Equal(t, len(fingerprint), fp.BytesLength)
+	require.Equal(t, len(fingerprint), fp.NBytesUsed)
 
 	// Validate that reading the fingerprint did not adjust the
 	// file descriptor's internal offset (as using Seek does)
@@ -129,7 +129,7 @@ func TestNew(t *testing.T) {
 			fp, err := New(temp, tc.fingerprintSize)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.expectedLen, fp.BytesLength)
+			require.Equal(t, tc.expectedLen, fp.NBytesUsed)
 		})
 	}
 }
@@ -151,7 +151,7 @@ func TestFingerprintCopy(t *testing.T) {
 		h.Write([]byte(tc))
 		hash := h.Sum(nil)
 
-		fp := &Fingerprint{firstBytes: []byte(tc), HashBytes: hash, BytesLength: len([]byte(tc))}
+		fp := &Fingerprint{firstBytes: []byte(tc), HashBytes: hash, NBytesUsed: len([]byte(tc))}
 
 		cp := fp.Copy()
 
@@ -291,6 +291,6 @@ func newFingerPrint(str []byte) *Fingerprint {
 	h := fnv.New128a()
 	h.Write(str)
 	hash := h.Sum(nil)
-	fp := &Fingerprint{firstBytes: str, HashBytes: hash, BytesLength: len(str)}
+	fp := &Fingerprint{firstBytes: str, HashBytes: hash, NBytesUsed: len(str)}
 	return fp
 }
