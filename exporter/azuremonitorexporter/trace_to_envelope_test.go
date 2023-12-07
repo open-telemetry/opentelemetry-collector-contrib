@@ -715,36 +715,6 @@ func defaultInternalRemoteDependencyDataValidations(
 	assert.Equal(t, "InProc", data.Type)
 }
 
-// Verifies that all attributes are copies to either the properties or measurements maps of the envelope's data element
-func assertAttributesCopiedToPropertiesOrMeasurements(
-	t *testing.T,
-	attributeMap pcommon.Map,
-	properties map[string]string,
-	measurements map[string]float64) {
-
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
-		switch v.Type() {
-		case pcommon.ValueTypeStr:
-			p, exists := properties[k]
-			assert.True(t, exists)
-			assert.Equal(t, v.Str(), p)
-		case pcommon.ValueTypeBool:
-			p, exists := properties[k]
-			assert.True(t, exists)
-			assert.Equal(t, strconv.FormatBool(v.Bool()), p)
-		case pcommon.ValueTypeInt:
-			m, exists := measurements[k]
-			assert.True(t, exists)
-			assert.Equal(t, float64(v.Int()), m)
-		case pcommon.ValueTypeDouble:
-			m, exists := measurements[k]
-			assert.True(t, exists)
-			assert.Equal(t, v.Double(), m)
-		}
-		return true
-	})
-}
-
 // Verifies that all attributes are copies to either the properties maps of the envelope's data element
 func assertAttributesCopiedToProperties(
 	t *testing.T,
