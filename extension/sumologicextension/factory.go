@@ -11,21 +11,22 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/metadata"
 )
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr           = "sumologic"
 	DefaultAPIBaseURL = "https://open-collectors.sumologic.com"
 )
 
 // NewFactory creates a factory for Sumo Logic extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.ExtensionStability,
 	)
 }
 
