@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
+type PathExpressionParser[K any] func(Path) (GetSetter[K], error)
 
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
@@ -19,7 +19,7 @@ type Enum int64
 
 type EnumSymbol string
 
-func newPath(fields []field) *Path {
+func newPath(fields []field) *basePath {
 	p := newPathHelper(fields)
 	if p == nil {
 		return nil
@@ -28,47 +28,47 @@ func newPath(fields []field) *Path {
 	return p
 }
 
-func newPathHelper(fields []field) *Path {
+func newPathHelper(fields []field) *basePath {
 	if len(fields) == 0 {
 		return nil
 	}
-	return &Path{
+	return &basePath{
 		name:     fields[0].Name,
 		key:      newKey(fields[0].Keys),
 		nextPath: newPath(fields[1:]),
 	}
 }
 
-func NewEmptyPath() Path {
-	return Path{
-		fetched: true,
-	}
+type Path interface {
+	Name() string
+	Next() (Path, bool)
+	Key() Key
 }
 
-type Path struct {
+type basePath struct {
 	name     string
-	key      *Key
-	nextPath *Path
+	key      Key
+	nextPath *basePath
 	fetched  bool
 }
 
-func (p *Path) Name() string {
+func (p *basePath) Name() string {
 	return p.name
 }
 
-func (p *Path) Next() (Path, bool) {
+func (p *basePath) Next() (Path, bool) {
 	if p.nextPath == nil {
-		return Path{}, false
+		return nil, false
 	}
 	p.nextPath.fetched = true
-	return *p.nextPath, true
+	return p.nextPath, true
 }
 
-func (p *Path) Keys() *Key {
+func (p *basePath) Key() Key {
 	return p.key
 }
 
-func (p *Path) isComplete() error {
+func (p *basePath) isComplete() error {
 	if !p.fetched {
 		return fmt.Errorf("path section '%v' was not fetched", p.name)
 	}
@@ -78,67 +78,59 @@ func (p *Path) isComplete() error {
 	return p.nextPath.isComplete()
 }
 
-func (k *Path) SetName(n string) {
-	k.name = n
-}
-func (k *Path) SetKeys(keys *Key) {
-	k.key = keys
-}
-
-func (k *Path) SetNext(np *Path) {
-	k.nextPath = np
-}
-
-func (k *Path) SetFetched(f bool) {
-	k.fetched = f
-}
-
-func newKey(keys []key) *Key {
+func newKey(keys []key) *baseKey {
 	if len(keys) == 0 {
 		return nil
 	}
-	return &Key{
+	return &baseKey{
 		s:       keys[0].String,
 		i:       keys[0].Int,
 		nextKey: newKey(keys[1:]),
 	}
 }
 
-func NewEmptyKey() Key {
-	return Key{}
+type Key interface {
+	String() *string
+	Int() *int64
+	Next() Key
 }
 
-type Key struct {
+type baseKey struct {
 	s       *string
 	i       *int64
-	nextKey *Key
+	nextKey *baseKey
+	fetched bool
 }
 
-func (k *Key) String() *string {
+func (k *baseKey) String() *string {
 	return k.s
 }
 
-func (k *Key) Int() *int64 {
+func (k *baseKey) Int() *int64 {
 	return k.i
 }
 
-func (k *Key) Next() *Key {
+func (k *baseKey) Next() Key {
 	if k.nextKey == nil {
 		return nil
 	}
 	return k.nextKey
 }
 
-func (k *Key) SetString(s *string) {
-	k.s = s
-}
-
-func (k *Key) SetInt(i *int64) {
-	k.i = i
-}
-
-func (k *Key) SetNext(nk *Key) {
-	k.nextKey = nk
+func (k *baseKey) isComplete() error {
+	if !k.fetched {
+		var val any
+		if k.s != nil {
+			val = *k.s
+		} else if k.i != nil {
+			val = *k.i
+		}
+		return fmt.Errorf("key section '%v' was not fetched", val)
+	}
+	if k.nextKey == nil {
+		return nil
+	}
+	return k.nextKey.isComplete()
 }
 
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {

@@ -62,18 +62,13 @@ func SetValue(value pcommon.Value, val interface{}) error {
 	case pcommon.Map:
 		v.CopyTo(value.SetEmptyMap())
 	case map[string]interface{}:
-		value.SetEmptyMap()
-		for mk, mv := range v {
-			key := ottl.NewEmptyKey()
-			key.SetString(&mk)
-			err = SetMapValue(value.Map(), key, mv)
-		}
+		err = value.FromRaw(v)
 	}
 	return err
 }
 
-func getIndexableValue(value pcommon.Value, keys *ottl.Key) (any, error) {
-	val, currentKey := value, keys
+func getIndexableValue(value pcommon.Value, key ottl.Key) (any, error) {
+	val, currentKey := value, key
 	var ok bool
 	for currentKey != nil {
 		switch val.Type() {
@@ -101,7 +96,7 @@ func getIndexableValue(value pcommon.Value, keys *ottl.Key) (any, error) {
 	return ottlcommon.GetValue(val), nil
 }
 
-func setIndexableValue(currentValue pcommon.Value, val any, keys *ottl.Key) error {
+func setIndexableValue(currentValue pcommon.Value, val any, key ottl.Key) error {
 	var newValue pcommon.Value
 	switch val.(type) {
 	case []string, []bool, []int64, []float64, [][]byte, []any:
@@ -114,7 +109,7 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys *ottl.Key) erro
 		return err
 	}
 
-	currentKey := keys
+	currentKey := key
 	for currentKey != nil {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:

@@ -14,53 +14,66 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
+type testKey struct {
+	s       *string
+	i       *int64
+	nextKey *testKey
+}
+
+func (k *testKey) String() *string {
+	return k.s
+}
+
+func (k *testKey) Int() *int64 {
+	return k.i
+}
+
+func (k *testKey) Next() ottl.Key {
+	if k.nextKey == nil {
+		return nil
+	}
+	return k.nextKey
+}
+
 func Test_GetSliceValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys func() ottl.Key
+		key  ottl.Key
 		err  error
 	}{
 		{
-			name: "no keys",
-			keys: func() ottl.Key { return ottl.NewEmptyKey() },
+			name: "no key",
+			key:  nil,
 			err:  fmt.Errorf("cannot get slice value without key"),
 		},
 		{
 			name: "first key not an integer",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("key"))
-				return k
+			key: &testKey{
+				s: ottltest.Strp("key"),
 			},
 			err: fmt.Errorf("non-integer indexing is not supported"),
 		},
 		{
 			name: "index too large",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetInt(ottltest.Intp(1))
-				return k
+			key: &testKey{
+				i: ottltest.Intp(1),
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetInt(ottltest.Intp(-1))
-				return k
+			key: &testKey{
+				i: ottltest.Intp(-1),
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
 		},
 		{
 			name: "invalid type",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetInt(ottltest.Intp(0))
-				k2 := ottl.NewEmptyKey()
-				k2.SetString(ottltest.Strp("string"))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				i: ottltest.Intp(0),
+				nextKey: &testKey{
+					s: ottltest.Strp("string"),
+				},
 			},
 			err: fmt.Errorf("type Str does not support string indexing"),
 		},
@@ -71,7 +84,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			s := pcommon.NewSlice()
 			s.AppendEmpty().SetStr("val")
 
-			_, err := GetSliceValue(s, tt.keys())
+			_, err := GetSliceValue(s, tt.key)
 			assert.Equal(t, tt.err, err)
 		})
 	}
@@ -80,50 +93,42 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 func Test_SetSliceValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys func() ottl.Key
+		keys ottl.Key
 		err  error
 	}{
 		{
-			name: "no keys",
-			keys: func() ottl.Key { return ottl.NewEmptyKey() },
+			name: "no key",
+			keys: nil,
 			err:  fmt.Errorf("cannot set slice value without key"),
 		},
 		{
 			name: "first key not an integer",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("key"))
-				return k
+			keys: &testKey{
+				s: ottltest.Strp("key"),
 			},
 			err: fmt.Errorf("non-integer indexing is not supported"),
 		},
 		{
 			name: "index too large",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetInt(ottltest.Intp(1))
-				return k
+			keys: &testKey{
+				i: ottltest.Intp(1),
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetInt(ottltest.Intp(-1))
-				return k
+			keys: &testKey{
+				i: ottltest.Intp(-1),
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
 		},
 		{
 			name: "invalid type",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetInt(ottltest.Intp(0))
-				k2 := ottl.NewEmptyKey()
-				k2.SetString(ottltest.Strp("string"))
-				k.SetNext(&k2)
-				return k
+			keys: &testKey{
+				i: ottltest.Intp(0),
+				nextKey: &testKey{
+					s: ottltest.Strp("string"),
+				},
 			},
 			err: fmt.Errorf("type Str does not support string indexing"),
 		},
@@ -134,7 +139,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			s := pcommon.NewSlice()
 			s.AppendEmpty().SetStr("val")
 
-			err := SetSliceValue(s, tt.keys(), "value")
+			err := SetSliceValue(s, tt.keys, "value")
 			assert.Equal(t, tt.err, err)
 		})
 	}

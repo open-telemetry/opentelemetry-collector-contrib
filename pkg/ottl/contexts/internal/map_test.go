@@ -17,82 +17,68 @@ import (
 func Test_GetMapValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys func() ottl.Key
+		key  ottl.Key
 		err  error
 	}{
 		{
-			name: "no keys",
-			keys: func() ottl.Key {
-				return ottl.NewEmptyKey()
-			},
-			err: fmt.Errorf("cannot get map value without key"),
+			name: "no key",
+			key:  nil,
+			err:  fmt.Errorf("cannot get map value without key"),
 		},
 		{
 			name: "first key not a string",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetInt(ottltest.Intp(0))
-				return k
+			key: &testKey{
+				i: ottltest.Intp(0),
 			},
 			err: fmt.Errorf("non-string indexing is not supported"),
 		},
 		{
 			name: "index map with int",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("map"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetInt(ottltest.Intp(0))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				s: ottltest.Strp("map"),
+				nextKey: &testKey{
+					i: ottltest.Intp(0),
+				},
 			},
 			err: fmt.Errorf("map must be indexed by a string"),
 		},
 		{
 			name: "index slice with string",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("slice"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetString(ottltest.Strp("invalid"))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				s: ottltest.Strp("slice"),
+				nextKey: &testKey{
+					s: ottltest.Strp("invalid"),
+				},
 			},
 			err: fmt.Errorf("slice must be indexed by an int"),
 		},
 		{
 			name: "index too large",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("slice"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetInt(ottltest.Intp(1))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				s: ottltest.Strp("slice"),
+				nextKey: &testKey{
+					i: ottltest.Intp(1),
+				},
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("slice"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetInt(ottltest.Intp(-1))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				s: ottltest.Strp("slice"),
+				nextKey: &testKey{
+					i: ottltest.Intp(-1),
+				},
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
 		},
 		{
 			name: "invalid type",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("string"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetString(ottltest.Strp("string"))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				s: ottltest.Strp("string"),
+				nextKey: &testKey{
+					s: ottltest.Strp("string"),
+				},
 			},
 			err: fmt.Errorf("type Str does not support string indexing"),
 		},
@@ -107,7 +93,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			s := m.PutEmptySlice("slice")
 			s.AppendEmpty()
 
-			_, err := GetMapValue(m, tt.keys())
+			_, err := GetMapValue(m, tt.key)
 			assert.Equal(t, tt.err, err)
 		})
 	}
@@ -117,11 +103,12 @@ func Test_GetMapValue_MissingKey(t *testing.T) {
 	m := pcommon.NewMap()
 	m.PutEmptyMap("map1").PutEmptyMap("map2")
 
-	k := ottl.NewEmptyKey()
-	k.SetString(ottltest.Strp("map1"))
-	k2 := ottl.NewEmptyKey()
-	k2.SetString(ottltest.Strp("unknown key"))
-	k.SetNext(&k2)
+	k := &testKey{
+		s: ottltest.Strp("map1"),
+		nextKey: &testKey{
+			s: ottltest.Strp("unknown key"),
+		},
+	}
 
 	result, err := GetMapValue(m, k)
 	assert.Nil(t, err)
@@ -131,80 +118,68 @@ func Test_GetMapValue_MissingKey(t *testing.T) {
 func Test_SetMapValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys func() ottl.Key
+		key  ottl.Key
 		err  error
 	}{
 		{
-			name: "no keys",
-			keys: func() ottl.Key { return ottl.Key{} },
+			name: "no key",
+			key:  nil,
 			err:  fmt.Errorf("cannot set map value without key"),
 		},
 		{
 			name: "first key not a string",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetInt(ottltest.Intp(0))
-				return k
+			key: &testKey{
+				i: ottltest.Intp(0),
 			},
 			err: fmt.Errorf("non-string indexing is not supported"),
 		},
 		{
 			name: "index map with int",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("map"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetInt(ottltest.Intp(0))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				s: ottltest.Strp("map"),
+				nextKey: &testKey{
+					i: ottltest.Intp(0),
+				},
 			},
 			err: fmt.Errorf("map must be indexed by a string"),
 		},
 		{
 			name: "index slice with string",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("slice"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetString(ottltest.Strp("map"))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				s: ottltest.Strp("slice"),
+				nextKey: &testKey{
+					s: ottltest.Strp("map"),
+				},
 			},
 			err: fmt.Errorf("slice must be indexed by an int"),
 		},
 		{
 			name: "slice index too large",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("slice"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetInt(ottltest.Intp(1))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				s: ottltest.Strp("slice"),
+				nextKey: &testKey{
+					i: ottltest.Intp(1),
+				},
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
 		},
 		{
 			name: "slice index too small",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("slice"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetInt(ottltest.Intp(-1))
-				k.SetNext(&k2)
-				return k
+			key: &testKey{
+				s: ottltest.Strp("slice"),
+				nextKey: &testKey{
+					i: ottltest.Intp(-1),
+				},
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
 		},
 		{
-			name: "slice index too small",
-			keys: func() ottl.Key {
-				k := ottl.NewEmptyKey()
-				k.SetString(ottltest.Strp("string"))
-				k2 := ottl.NewEmptyKey()
-				k2.SetString(ottltest.Strp("string"))
-				k.SetNext(&k2)
-				return k
+			name: "invalid type",
+			key: &testKey{
+				s: ottltest.Strp("string"),
+				nextKey: &testKey{
+					s: ottltest.Strp("string"),
+				},
 			},
 			err: fmt.Errorf("type Str does not support string indexing"),
 		},
@@ -219,7 +194,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			s := m.PutEmptySlice("slice")
 			s.AppendEmpty()
 
-			err := SetMapValue(m, tt.keys(), "value")
+			err := SetMapValue(m, tt.key, "value")
 			assert.Equal(t, tt.err, err)
 		})
 	}
@@ -229,14 +204,15 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 	m := pcommon.NewMap()
 	m.PutEmptyMap("map1").PutStr("test", "test")
 
-	k := ottl.NewEmptyKey()
-	k.SetString(ottltest.Strp("map1"))
-	k2 := ottl.NewEmptyKey()
-	k2.SetString(ottltest.Strp("map2"))
-	k3 := ottl.NewEmptyKey()
-	k3.SetString(ottltest.Strp("foo"))
-	k2.SetNext(&k3)
-	k.SetNext(&k2)
+	k := &testKey{
+		s: ottltest.Strp("map1"),
+		nextKey: &testKey{
+			s: ottltest.Strp("map2"),
+			nextKey: &testKey{
+				s: ottltest.Strp("foo"),
+			},
+		},
+	}
 
 	err := SetMapValue(m, k, "bar")
 	assert.Nil(t, err)
@@ -252,14 +228,15 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 func Test_SetMapValue_EmptyMap(t *testing.T) {
 	m := pcommon.NewMap()
 
-	k := ottl.NewEmptyKey()
-	k.SetString(ottltest.Strp("map1"))
-	k2 := ottl.NewEmptyKey()
-	k2.SetString(ottltest.Strp("map2"))
-	k3 := ottl.NewEmptyKey()
-	k3.SetString(ottltest.Strp("foo"))
-	k2.SetNext(&k3)
-	k.SetNext(&k2)
+	k := &testKey{
+		s: ottltest.Strp("map1"),
+		nextKey: &testKey{
+			s: ottltest.Strp("map2"),
+			nextKey: &testKey{
+				s: ottltest.Strp("foo"),
+			},
+		},
+	}
 
 	err := SetMapValue(m, k, "bar")
 	assert.Nil(t, err)

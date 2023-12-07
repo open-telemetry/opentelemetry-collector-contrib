@@ -125,9 +125,9 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func parsePath(path *ottl.Path) (ottl.GetSetter[TransformContext], error) {
+func parsePath(path ottl.Path) (ottl.GetSetter[TransformContext], error) {
 	if path != nil {
-		return newPathGetSetter(*path)
+		return newPathGetSetter(path)
 	}
 	return nil, fmt.Errorf("bad path %v", path)
 }
@@ -153,17 +153,17 @@ func newPathGetSetter(path ottl.Path) (ottl.GetSetter[TransformContext], error) 
 	case "severity_text":
 		return accessSeverityText(), nil
 	case "body":
-		nextPath, _ := path.Next()
-		switch nextPath.Name() {
-		case "string":
+		nextPath, hasNext := path.Next()
+		if hasNext && nextPath.Name() == "string" {
 			return accessStringBody(), nil
-		case "":
-			keys := path.Keys()
-			if keys == nil {
-				return accessBody(), nil
-			}
-			return accessBodyKey(*keys), nil
 		}
+
+		key := path.Key()
+		if key == nil {
+			return accessBody(), nil
+		}
+		return accessBodyKey(key), nil
+
 	case "attributes":
 		mapKey := path[0].Keys
 		if mapKey == nil {
@@ -285,15 +285,15 @@ func accessBody() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessBodyKey(keys ottl.Key) ottl.StandardGetSetter[TransformContext] {
+func accessBodyKey(key ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return internal.GetMapValue(tCtx.GetLogRecord().Body().Map(), keys)
+				return ottl.GetMapValue(tCtx.GetLogRecord().Body().Map(), key)
 			case pcommon.ValueTypeSlice:
-				return internal.GetSliceValue(tCtx.GetLogRecord().Body().Slice(), keys)
+				return internal.GetSliceValue(tCtx.GetLogRecord().Body().Slice(), key)
 			default:
 				return nil, fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
 			}
@@ -302,9 +302,9 @@ func accessBodyKey(keys ottl.Key) ottl.StandardGetSetter[TransformContext] {
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return internal.SetMapValue(tCtx.GetLogRecord().Body().Map(), keys, val)
+				return ottl.SetMapValue(tCtx.GetLogRecord().Body().Map(), key, val)
 			case pcommon.ValueTypeSlice:
-				return internal.SetSliceValue(tCtx.GetLogRecord().Body().Slice(), keys, val)
+				return internal.SetSliceValue(tCtx.GetLogRecord().Body().Slice(), key, val)
 			default:
 				return fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
 			}
