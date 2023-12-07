@@ -167,9 +167,6 @@ type MappingsSettings struct {
 	Dedup bool `mapstructure:"dedup"`
 
 	Dedot bool `mapstructure:"dedot"`
-
-	// Omit "Attributes." prefix on fields.
-	OmitAttributesPrefix bool `mapstructure:"omit_attributes_prefix"`
 }
 
 type MappingMode int

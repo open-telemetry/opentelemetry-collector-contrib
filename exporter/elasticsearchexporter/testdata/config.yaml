@@ -41,7 +41,7 @@ elasticsearch/log:
   sending_queue:
     enabled: true
   mapping:
-    omit_attributes_prefix: true
+    mode: raw
 elasticsearch/logstash_format:
   endpoints: [http://localhost:9200]
   logstash_format:
