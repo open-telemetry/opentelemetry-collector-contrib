@@ -58,7 +58,7 @@ for mod in ${beta_modules[@]}; do
 done
 
 # Check stable modules, none currently exist, uncomment when pdata is 1.0.0
-STABLE_MODULE="go.opentelemetry.io/collector/pdata "
+STABLE_MODULE="go.opentelemetry.io/collector/pdata"
 STABLE_MOD_VERSION=$(get_collector_version "$STABLE_MODULE" "$MAIN_MOD_FILE")
 check_collector_versions_correct "$STABLE_MODULE" "$STABLE_MOD_VERSION"
 for mod in ${stable_modules[@]}; do
