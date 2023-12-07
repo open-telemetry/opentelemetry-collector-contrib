@@ -49,6 +49,10 @@ receivers:
       - /var/log/*/app.log
     operators:
       - type: json_parser
+      # If your logs are not json, please make sure that you are using the regex_parser to parse out the timestamp into attributes.time.
+      # - type: regex_parser
+      #   id: parser-timestamp
+      #   ...
       # Layout needs to match log timestamp format. If this section is removed, timestamp will correspond to time log was intake by DD.
       - type: time_parser
         parse_from: attributes.time
