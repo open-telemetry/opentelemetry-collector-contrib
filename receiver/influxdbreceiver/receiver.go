@@ -203,6 +203,6 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (r *metricsReceiver) handlePing(w http.ResponseWriter, req *http.Request) {
+func (r *metricsReceiver) handlePing(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
