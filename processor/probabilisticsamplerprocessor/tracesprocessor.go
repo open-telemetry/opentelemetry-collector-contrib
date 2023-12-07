@@ -6,7 +6,6 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
 
@@ -100,25 +99,14 @@ func randomnessFromSpan(s ptrace.Span) (sampling.Randomness, *sampling.W3CTraceS
 	if err == nil && wts.OTelValue().HasRValue() {
 		// When the tracestate is OK and has r-value, use it.
 		randomness = wts.OTelValue().RValueRandomness()
-	} else if true /* s.Flags()&0x2 == 0x2 */ {
+	} else {
 		// See https://github.com/open-telemetry/opentelemetry-proto/pull/503
 		// which merged but unreleased at the time of writing.
+		//
+		// When we have an additional flag indicating this
+		// randomness is present we should inspect the flag
+		// and return that no randomness is available, here.
 		randomness = sampling.TraceIDToRandomness(s.TraceID())
-	} else {
-		// Note: Creating an R-value here is the best we can
-		// do.  Issue a warning?  This is OK-ish for head
-		// sampling but kind of nonsense for tail sampling.
-		// This is especially nonsense if the caller has set a
-		// T-value already, (TODO: is it better to just assume
-		// the flag was set in a tail sampler?  otherwise,
-		// inconsistent results)
-		randomness, _ = sampling.RValueToRandomness(
-			strconv.FormatUint(
-				sampling.MaxAdjustedCount+
-					uint64(rand.Int63n(sampling.MaxAdjustedCount)),
-				16)[1:],
-		)
-		wts.OTelValue().SetRValue(randomness)
 	}
 	return randomness, &wts, err
 }
@@ -241,6 +229,7 @@ func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTrace
 	if otts.HasTValue() {
 		incoming = otts.TValueThreshold().Probability()
 	}
+
 	threshold, _ := sampling.ProbabilityToThreshold(incoming * ts.ratio)
 	should := threshold.ShouldSample(rnd)
 	if should {

@@ -23,25 +23,25 @@ func TestParseW3CTraceState(t *testing.T) {
 	const ns = ""
 	for _, test := range []testCase{
 		// correct cases
-		{"ot=t:1", ns, "1", nil, nil},
-		{" ot=t:1 ", ns, "1", nil, nil},
-		{"ot=t:1", ns, "1", nil, nil},
-		{" ot=t:1 ", ns, "1", nil, nil},
-		{" ot=t:1,other=value ", ns, "1", map[string]string{
+		{"ot=th:1", ns, "1", nil, nil},
+		{" ot=th:1 ", ns, "1", nil, nil},
+		{"ot=th:1", ns, "1", nil, nil},
+		{" ot=th:1 ", ns, "1", nil, nil},
+		{" ot=th:1,other=value ", ns, "1", map[string]string{
 			"other": "value",
 		}, nil},
-		{"ot=t:1 , other=value", ns, "1", map[string]string{
+		{"ot=th:1 , other=value", ns, "1", map[string]string{
 			"other": "value",
 		}, nil},
 		{",,,", ns, ns, nil, nil},
-		{" , ot=t:1, , other=value ", ns, "1", map[string]string{
+		{" , ot=th:1, , other=value ", ns, "1", map[string]string{
 			"other": "value",
 		}, nil},
-		{"ot=t:100;r:abcdabcdabcdff", "abcdabcdabcdff", "100", nil, nil},
-		{" ot=t:100;r:abcdabcdabcdff", "abcdabcdabcdff", "100", nil, nil},
-		{"ot=t:100;r:abcdabcdabcdff ", "abcdabcdabcdff", "100", nil, nil},
-		{"ot=r:11111111111111", "11111111111111", ns, nil, nil},
-		{"ot=r:ffffffffffffff,unknown=value,other=something", "ffffffffffffff", ns, map[string]string{
+		{"ot=th:100;rv:abcdabcdabcdff", "abcdabcdabcdff", "100", nil, nil},
+		{" ot=th:100;rv:abcdabcdabcdff", "abcdabcdabcdff", "100", nil, nil},
+		{"ot=th:100;rv:abcdabcdabcdff ", "abcdabcdabcdff", "100", nil, nil},
+		{"ot=rv:11111111111111", "11111111111111", ns, nil, nil},
+		{"ot=rv:ffffffffffffff,unknown=value,other=something", "ffffffffffffff", ns, map[string]string{
 			"other":   "something",
 			"unknown": "value",
 		}, nil},

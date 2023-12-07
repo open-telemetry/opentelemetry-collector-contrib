@@ -22,9 +22,9 @@ type OTelTraceState struct {
 
 const (
 	// RName is the OTel tracestate field for R-value
-	RName = "r"
+	RName = "rv"
 	// TName is the OTel tracestate field for T-value
-	TName = "t"
+	TName = "th"
 
 	// hardMaxOTelLength is the maximum encoded size of an OTel
 	// tracestate value.

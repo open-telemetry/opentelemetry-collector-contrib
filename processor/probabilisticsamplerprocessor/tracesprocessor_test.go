@@ -20,6 +20,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 func TestNewTracesProcessor(t *testing.T) {
@@ -403,43 +404,158 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 // tracestate is correct.
 func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	sid := idutils.UInt64ToSpanID(0xfefefefe)
-	singleSpanWithAttrib := func(key string, attribValue pcommon.Value) ptrace.Traces {
+	singleSpanWithAttrib := func(ts, key string, attribValue pcommon.Value) ptrace.Traces {
 		traces := ptrace.NewTraces()
 		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.TraceState().FromRaw("")
+		span.TraceState().FromRaw(ts)
+		// This hard-coded TraceID will sample at 50% and not at 49%.
+		// The equivalent randomness is 0x80000000000000.
 		span.SetTraceID(pcommon.TraceID{
 			// Don't care (9 bytes)
 			0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe,
 			// Trace randomness (7 bytes)
 			0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		})
+		attribValue.CopyTo(span.Attributes().PutEmpty(key))
 		span.SetSpanID(sid)
 		return traces
 	}
 	tests := []struct {
-		name    string
-		cfg     *Config
-		key     string
-		value   pcommon.Value
-		sampled bool
+		name  string
+		cfg   *Config
+		ts    string
+		key   string
+		value pcommon.Value
+
+		// returns sampled, adjustedCount
+		sf func(SamplerMode) (bool, float64, string)
 	}{
 		{
-			name: "yes_sample",
+			name: "yes_sample_tid",
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
-			key:     "n/a",
-			value:   pcommon.NewValueInt(2),
-			sampled: true,
+			ts:    "",
+			key:   "n/a",
+			value: pcommon.NewValueInt(2),
+			sf:    func(SamplerMode) (bool, float64, string) { return true, 2, "ot=th:8" },
+		},
+		{
+			name: "yes_sample_rv1",
+			cfg: &Config{
+				SamplingPercentage: 1,
+			},
+			//    99/100 = .FD70A3D70A3D70A3D
+			ts:    "ot=rv:FD70A3D70A3D71", // note upper case passes through, is not generated
+			key:   "n/a",
+			value: pcommon.NewValueInt(2),
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1 / 0.01, "ot=rv:FD70A3D70A3D71;th:fd70a3d70a3d71"
+			},
+		},
+		{
+			name: "no_sample_rv2",
+			cfg: &Config{
+				SamplingPercentage: 1,
+			},
+			ts:    "ot=rv:FD70A3D70A3D70",
+			key:   "n/a",
+			value: pcommon.NewValueInt(2),
 		},
 		{
 			name: "no_sample",
 			cfg: &Config{
 				SamplingPercentage: 49,
 			},
-			key:     "n/a",
-			value:   pcommon.NewValueInt(2),
-			sampled: false,
+			key:   "n/a",
+			value: pcommon.NewValueInt(2),
+		},
+		{
+			name: "no_sample_rv1",
+			cfg: &Config{
+				SamplingPercentage: 1,
+			},
+			//    99/100 = .FD70A3D70A3D70A3D
+			ts:    "ot=rv:FD70A3D70A3D70",
+			key:   "n/a",
+			value: pcommon.NewValueInt(2),
+		},
+		{
+			name: "yes_sample_rv2",
+			cfg: &Config{
+				SamplingPercentage: 1,
+			},
+			// 99/100 = .FD70A3D70A3D70A3D
+			ts:    "ot=rv:fd70B000000000",
+			key:   "n/a",
+			value: pcommon.NewValueInt(2),
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1 / 0.01, "ot=rv:fd70B000000000;th:fd70a3d70a3d71"
+			},
+		},
+		{
+			name: "yes_sample_priority",
+			cfg: &Config{
+				SamplingPercentage: 1,
+			},
+			ts:    "",
+			key:   "sampling.priority",
+			value: pcommon.NewValueInt(2),
+			sf:    func(SamplerMode) (bool, float64, string) { return true, 0, "" },
+		},
+		{
+			name: "no_sample_priority",
+			cfg: &Config{
+				SamplingPercentage: 99,
+			},
+			ts:    "",
+			key:   "sampling.priority",
+			value: pcommon.NewValueInt(0),
+		},
+		{
+			name: "incoming_50",
+			cfg: &Config{
+				SamplingPercentage: 50,
+			},
+			ts:    "ot=rv:90000000000000;th:80000000000000", // note extra zeros!
+			key:   "n/a",
+			value: pcommon.NewValueInt(2),
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				if mode == Equalizing {
+					return true, 2, "ot=rv:90000000000000;th:8"
+				}
+				return false, 0, ""
+			},
+		},
+		{
+			name: "norvalue_50",
+			cfg: &Config{
+				SamplingPercentage: 50,
+			},
+			ts:    "ot=th:8",
+			key:   "n/a",
+			value: pcommon.NewValueInt(2),
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				if mode == Equalizing {
+					return true, 2, "ot=th:8"
+				}
+				return false, 0, ""
+			},
+		},
+		{
+			name: "incoming_rvalue_99",
+			cfg: &Config{
+				SamplingPercentage: 50,
+			},
+			ts:    "ot=rv:c0000000000000;th:8",
+			key:   "n/a",
+			value: pcommon.NewValueInt(2),
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				if mode == Equalizing {
+					return true, 2, "ot=rv:c0000000000000;th:8"
+				}
+				return true, 4, "ot=rv:c0000000000000;th:c"
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -453,18 +569,35 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				cfg.SamplerMode = mode
 				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 				require.NoError(t, err)
-				td := singleSpanWithAttrib(tt.key, tt.value)
+				td := singleSpanWithAttrib(tt.ts, tt.key, tt.value)
 
 				err = tsp.ConsumeTraces(context.Background(), td)
 				require.NoError(t, err)
 
 				sampledData := sink.AllTraces()
-				if tt.sampled {
+
+				var expectSampled bool
+				var expectCount float64
+				var expectTS string
+				if tt.sf != nil {
+					expectSampled, expectCount, expectTS = tt.sf(mode)
+				}
+				if expectSampled {
 					require.Equal(t, 1, len(sampledData))
 					assert.Equal(t, 1, sink.SpanCount())
+					got := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+					gotTs, err := sampling.NewW3CTraceState(got.TraceState().AsRaw())
+					require.NoError(t, err)
+					if expectCount == 0 {
+						assert.Equal(t, 0.0, gotTs.OTelValue().AdjustedCount())
+					} else {
+						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-9)
+					}
+					require.Equal(t, expectTS, got.TraceState().AsRaw())
 				} else {
 					require.Equal(t, 0, len(sampledData))
 					assert.Equal(t, 0, sink.SpanCount())
+					require.Equal(t, "", expectTS)
 				}
 			})
 		}

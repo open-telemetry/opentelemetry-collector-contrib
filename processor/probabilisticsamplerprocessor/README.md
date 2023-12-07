@@ -54,6 +54,7 @@ The following configuration options can be modified:
 - `attribute_source` (default = traceID, optional): defines where to look for the attribute in from_attribute. The allowed values are `traceID` or `record`.
 - `from_attribute` (default = null, optional): The optional name of a log record attribute used for sampling purposes, such as a unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.
 - `sampling_priority` (default = null, optional): The optional name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. 0 means to never sample the log record, and >= 100 means to always sample the log record.
+- `sampler_mode` (default = "", optional): The optional sampling mode.  One of "hash_seed", "equalizing", and "propotional".  By default, when not explicitly set, if "hash_seed" is non-zero, the "hash_seed" mode will be configured, otherwise the "proportional" mode is selected.
 
 ## Hashing
 
@@ -68,6 +69,7 @@ Sample 15% of the logs:
 ```yaml
 processors:
   probabilistic_sampler:
+    sampler_mode: hash_seed
     sampling_percentage: 15
 ```
 
@@ -76,6 +78,7 @@ Sample logs according to their logID attribute:
 ```yaml
 processors:
   probabilistic_sampler:
+    sampler_mode: hash_seed
     sampling_percentage: 15
     attribute_source: record # possible values: one of record or traceID
     from_attribute: logID # value is required if the source is not traceID
@@ -86,10 +89,54 @@ Sample logs according to the attribute `priority`:
 ```yaml
 processors:
   probabilistic_sampler:
+    sampler_mode: hash_seed
     sampling_percentage: 15
     sampling_priority: priority
 ```
 
+## Consistent Probability Sampling
+
+This processor includes an implementation of the tail sampling logic
+described in [OTEP
+235](https://github.com/open-telemetry/oteps/pull/235), which encodes
+probability sampling information in the OpenTelemetry sub-field of the
+W3C TraceState.  There are two modes supported.
+
+- `proportional`: In this mode, the `sampling_percentage`
+  configuration is applied such that the number of spans exiting the
+  sampling is proportional to the number of spans entering the
+  sampling, regardless of how much sampling was already applied.  All
+  sampling percentages are valid in this mode.
+- `equalizing`: In this mode, the `sampling_percentage` configuration
+  is applied such that spans exit the sampler reduced to a minimum
+  probability.  When spans arrive with probability equal to the
+  configured sampling percentage, the spans pass through unmodified.
+  When spans arrive with probability smaller than the configured
+  sampling percentage, errors are reported.  When spans arrive with
+  larger probability than the configured sampling percentage, they
+  will be reduced in number as spans exit with the configured sampling
+  percentage.
+  
+For example, to configure the proportional sampler, simply omit the
+`hash_seed` field:
+
+```
+processors:
+  probabilistic_sampler:
+	# no hash_seed is set, uses proportional consistent by default
+    sampling_percentage: 10
+```
+
+For example, to configure an equalizing sampler, set the mode explicitly:
+
+```
+processors:
+  probabilistic_sampler:
+	sampler_mode: equalizing
+    sampling_percentage: 10
+```
+
+## Detailed examples
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
