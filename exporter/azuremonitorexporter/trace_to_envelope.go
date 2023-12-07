@@ -557,7 +557,7 @@ func copyAndMapAttributes(
 	mappingFunc func(k string, v pcommon.Value)) {
 
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
-		setAttributeValueAsPropertyOrMeasurement(k, v, properties, measurements)
+		setAttributeValueAsProperty(k, v, properties)
 		if mappingFunc != nil {
 			mappingFunc(k, v)
 		}
@@ -743,6 +743,26 @@ func setAttributeValueAsPropertyOrMeasurement(
 		} else {
 			measurements[key] = attributeValue.Double()
 		}
+	}
+}
+
+func setAttributeValueAsProperty(
+	key string,
+	attributeValue pcommon.Value,
+	properties map[string]string) {
+
+	switch attributeValue.Type() {
+	case pcommon.ValueTypeBool:
+		properties[key] = strconv.FormatBool(attributeValue.Bool())
+
+	case pcommon.ValueTypeStr:
+		properties[key] = attributeValue.Str()
+
+	case pcommon.ValueTypeInt:
+		properties[key] = strconv.FormatInt(attributeValue.Int(), 10)
+
+	case pcommon.ValueTypeDouble:
+		properties[key] = strconv.FormatFloat(attributeValue.Double(), 'f', -1, 64)
 	}
 }
 
