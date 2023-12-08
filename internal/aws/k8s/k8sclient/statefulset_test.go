@@ -54,7 +54,7 @@ func TestStatefulSetClient(t *testing.T) {
 	fakeClientSet := fake.NewSimpleClientset(statefulSetObjects...)
 	client, _ := newStatefulSetClient(fakeClientSet, zap.NewNop(), setOption)
 
-	statefulSets := make([]interface{}, len(statefulSetObjects))
+	statefulSets := make([]any, len(statefulSetObjects))
 	for i := range statefulSetObjects {
 		statefulSets[i] = statefulSetObjects[i]
 	}

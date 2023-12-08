@@ -26,8 +26,16 @@ dataset/full:
     retry_shutdown_timeout: 24s
   logs:
     export_resource_info_on_event: true
+    export_resource_prefix: "_resource_"
     export_scope_info_on_event: true
+    export_scope_prefix: "_scope_"
+    export_separator: "_X_"
+    export_distinguishing_suffix: "_L_"
     decompose_complex_message_field: true
+    decomposed_complex_message_prefix: "_body_"
+  traces:
+    export_separator: "_Y_"
+    export_distinguishing_suffix: "_T_"
   server_host:
     use_hostname: false
     server_host: "server-host"

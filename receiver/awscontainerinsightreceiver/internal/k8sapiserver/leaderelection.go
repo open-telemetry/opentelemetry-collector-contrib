@@ -58,7 +58,7 @@ type eventBroadcaster interface {
 	StartRecordingToSink(sink record.EventSink) watch.Interface
 	// StartLogging starts sending events received from this EventBroadcaster to the given logging
 	// function. The return value can be ignored or used to stop recording, if desired.
-	StartLogging(logf func(format string, args ...interface{})) watch.Interface
+	StartLogging(logf func(format string, args ...any)) watch.Interface
 	// NewRecorder returns an EventRecorder that can be used to send events to this EventBroadcaster
 	// with the event source set to the given event source.
 	NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorder

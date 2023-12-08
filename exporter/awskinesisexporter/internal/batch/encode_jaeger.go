@@ -16,7 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-func partitionByTraceID(v interface{}) string {
+func partitionByTraceID(v any) string {
 	if s, ok := v.(*model.Span); ok && s != nil {
 		return s.TraceID.String()
 	}

@@ -24,7 +24,7 @@ This demo uses `docker-compose` and by default runs against the
 to the `examples/demo` folder and run:
 
 ```shell
-docker-compose up -d
+docker compose up -d
 ```
 
 The demo exposes the following backends:

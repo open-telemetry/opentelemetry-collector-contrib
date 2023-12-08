@@ -13,6 +13,8 @@ all_set:
       enabled: true
     faas.id:
       enabled: true
+    faas.instance:
+      enabled: true
     faas.name:
       enabled: true
     faas.version:
@@ -46,6 +48,8 @@ none_set:
     cloud.region:
       enabled: false
     faas.id:
+      enabled: false
+    faas.instance:
       enabled: false
     faas.name:
       enabled: false

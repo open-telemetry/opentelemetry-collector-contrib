@@ -34,6 +34,10 @@ type Config struct {
 	StoreExpirationLoop time.Duration `mapstructure:"store_expiration_loop"`
 	// VirtualNodePeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
 	VirtualNodePeerAttributes []string `mapstructure:"virtual_node_peer_attributes"`
+
+	// MetricsFlushInterval is the interval at which metrics are flushed to the exporter.
+	// If set to 0, metrics are flushed on every received batch of traces.
+	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 }
 
 type StoreConfig struct {

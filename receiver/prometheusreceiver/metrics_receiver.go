@@ -239,7 +239,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		r.settings.Logger.Info("Starting discovery manager")
 		if err := r.discoveryManager.Run(); err != nil {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
-			host.ReportFatalError(err)
+			_ = r.settings.TelemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 
@@ -267,8 +267,9 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 	}
 
 	r.scrapeManager = scrape.NewManager(&scrape.Options{
-		PassMetadataInContext: true,
-		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
+		PassMetadataInContext:     true,
+		EnableProtobufNegotiation: r.cfg.EnableProtobufNegotiation,
+		ExtraMetrics:              r.cfg.ReportExtraScrapeMetrics,
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},

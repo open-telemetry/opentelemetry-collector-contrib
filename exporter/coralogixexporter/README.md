@@ -80,24 +80,25 @@ Depending on your region, you might need to use a different domain. Here are the
 
 | Region  | Domain                        |
 |---------|---------------------------------|
-| USA1    | `coralogix.us`      |
-| APAC1   | `coralogix.in`      |
-| APAC2   | `coralogixsg.com`   |
-| EUROPE1 | `coralogix.com`     |
-| EUROPE2 | `eu2.coralogix.com` |
+| USA1    | `coralogix.us`        |
+| USA2    | `cx498.coralogix.com` |
+| APAC1   | `coralogix.in`        |
+| APAC2   | `coralogixsg.com`     |
+| EUROPE1 | `coralogix.com`       |
+| EUROPE2 | `eu2.coralogix.com`   |
 
 Additionally, Coralogix supports AWS PrivateLink, which provides private connectivity between virtual private clouds (VPCs), supported AWS services, and your on-premises networks without exposing your traffic to the public internet.
 
 Here are available AWS PrivateLink domains:
 
-| Region  | Domain                      |
-|---------|-----------------------------|
-| USA1    | `private.coralogix.com`     |
-| APAC1   | `private.coralogix.in`      |
-| APAC2   | `private.coralogixsg.com`   |
-| EUROPE1 | `private.coralogix.com`     |
-| EUROPE2 | `private.eu2.coralogix.com` |
-
+| Region  | Domain                                              |
+|---------|-----------------------------------------------------|
+| USA1    | `private.coralogix.com`                             |
+| USA2    | `ingress.private.cx498-aws-us-west-2.coralogix.com` |
+| APAC1   | `private.coralogix.in`                              |
+| APAC2   | `private.coralogixsg.com`                           |
+| EUROPE1 | `private.coralogix.com`                             |
+| EUROPE2 | `private.eu2.coralogix.com`                         |
 Learn more about [AWS PrivateLink in the documentation page](https://coralogix.com/docs/coralogix-amazon-web-services-aws-privatelink-endpoints/).
 
 ### Application and SubSystem attributes
@@ -117,13 +118,10 @@ exporters:
       - "k8s.namespace.name" 
       - "service.namespace"
     subsystem_name_attributes:
-      - "k8s.job.name"
       - "k8s.deployment.name"
       - "k8s.statefulset.name"
       - "k8s.daemonset.name"
       - "k8s.cronjob.name"
-      - "k8s.pod.name"
-      - "k8s.node.name"
       - "service.name"
 ```
 ### Host Attributes

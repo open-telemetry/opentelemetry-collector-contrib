@@ -50,7 +50,7 @@ func TestDaemonSetClient(t *testing.T) {
 	fakeClientSet := fake.NewSimpleClientset(daemonSetObjects...)
 	client, _ := newDaemonSetClient(fakeClientSet, zap.NewNop(), options)
 
-	daemonSets := make([]interface{}, len(daemonSetObjects))
+	daemonSets := make([]any, len(daemonSetObjects))
 	for i := range daemonSetObjects {
 		daemonSets[i] = daemonSetObjects[i]
 	}

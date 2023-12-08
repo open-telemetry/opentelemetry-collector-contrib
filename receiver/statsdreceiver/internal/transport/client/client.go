@@ -44,7 +44,10 @@ func NewStatsD(transport Transport, host string, port int) (*StatsD, error) {
 // connect populates the StatsD.Conn
 func (s *StatsD) connect(transport Transport) error {
 	if cl, ok := s.Conn.(io.Closer); ok {
-		cl.Close()
+		err := cl.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	address := fmt.Sprintf("%s:%d", s.Host, s.Port)
@@ -52,8 +55,10 @@ func (s *StatsD) connect(transport Transport) error {
 	var err error
 	switch transport {
 	case TCP:
-		// TODO: implement TCP support
-		return fmt.Errorf("TCP unsupported")
+		s.Conn, err = net.Dial("tcp", address)
+		if err != nil {
+			return err
+		}
 	case UDP:
 		var udpAddr *net.UDPAddr
 		udpAddr, err = net.ResolveUDPAddr("udp", address)
@@ -99,5 +104,5 @@ type Metric struct {
 
 // String formats a Metric into a StatsD message.
 func (m Metric) String() string {
-	return fmt.Sprintf("%s:%s|%s", m.Name, m.Value, m.Type)
+	return fmt.Sprintf("%s:%s|%s\n", m.Name, m.Value, m.Type)
 }

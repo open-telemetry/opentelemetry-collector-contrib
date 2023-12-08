@@ -22,6 +22,14 @@ func TestValidate(t *testing.T) {
 		expectedErr string
 	}{
 		{
+			name: "Valid config",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+				},
+			},
+		},
+		{
 			name: "Valid config with tls",
 			config: Config{
 				Logs: LogsConfig{
@@ -38,14 +46,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "missing endpoint",
 			config: Config{
-				Logs: LogsConfig{
-					TLS: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
-							CertFile: "some_cert_file",
-							KeyFile:  "some_key_file",
-						},
-					},
-				},
+				Logs: LogsConfig{},
 			},
 			expectedErr: errNoEndpoint.Error(),
 		},
@@ -54,12 +55,6 @@ func TestValidate(t *testing.T) {
 			config: Config{
 				Logs: LogsConfig{
 					Endpoint: "9999",
-					TLS: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
-							CertFile: "some_cert_file",
-							KeyFile:  "some_key_file",
-						},
-					},
 				},
 			},
 			expectedErr: "failed to split endpoint into 'host:port' pair",

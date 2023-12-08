@@ -7,7 +7,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 )
@@ -23,54 +23,54 @@ var (
 	mEventLatency       = stats.Int64("processor_groupbytrace_event_latency", "How long the queue events are taking to be processed", stats.UnitMilliseconds)
 )
 
-// MetricViews return the metrics views according to given telemetry level.
-func MetricViews() []*view.View {
+// metricViews return the metrics views according to given telemetry level.
+func metricViews() []*view.View {
 	return []*view.View{
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumTracesConf.Name()),
+			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mNumTracesConf.Name()),
 			Measure:     mNumTracesConf,
 			Description: mNumTracesConf.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumEventsInQueue.Name()),
+			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mNumEventsInQueue.Name()),
 			Measure:     mNumEventsInQueue,
 			Description: mNumEventsInQueue.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumTracesInMemory.Name()),
+			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mNumTracesInMemory.Name()),
 			Measure:     mNumTracesInMemory,
 			Description: mNumTracesInMemory.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mTracesEvicted.Name()),
+			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mTracesEvicted.Name()),
 			Measure:     mTracesEvicted,
 			Description: mTracesEvicted.Description(),
 			// sum allows us to start from 0, count will only show up if there's at least one eviction, which might take a while to happen (if ever!)
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mReleasedSpans.Name()),
+			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mReleasedSpans.Name()),
 			Measure:     mReleasedSpans,
 			Description: mReleasedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mReleasedTraces.Name()),
+			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mReleasedTraces.Name()),
 			Measure:     mReleasedTraces,
 			Description: mReleasedTraces.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mIncompleteReleases.Name()),
+			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mIncompleteReleases.Name()),
 			Measure:     mIncompleteReleases,
 			Description: mIncompleteReleases.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mEventLatency.Name()),
+			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mEventLatency.Name()),
 			Measure:     mEventLatency,
 			Description: mEventLatency.Description(),
 			TagKeys: []tag.Key{

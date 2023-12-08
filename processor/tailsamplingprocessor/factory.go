@@ -25,7 +25,7 @@ var onceMetrics sync.Once
 func NewFactory() processor.Factory {
 	onceMetrics.Do(func() {
 		// TODO: this is hardcoding the metrics level and skips error handling
-		_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
+		_ = view.Register(samplingProcessorMetricViews(configtelemetry.LevelNormal)...)
 	})
 
 	return processor.NewFactory(

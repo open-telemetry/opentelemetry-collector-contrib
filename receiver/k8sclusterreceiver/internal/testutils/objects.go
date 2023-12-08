@@ -7,7 +7,6 @@ import (
 	quotav1 "github.com/openshift/api/quota/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -28,25 +27,6 @@ func NewHPA(id string) *autoscalingv2.HorizontalPodAutoscaler {
 			DesiredReplicas: 7,
 		},
 		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
-			MinReplicas: &minReplicas,
-			MaxReplicas: 10,
-		},
-	}
-}
-
-func NewHPABeta(id string) *autoscalingv2beta2.HorizontalPodAutoscaler {
-	minReplicas := int32(2)
-	return &autoscalingv2beta2.HorizontalPodAutoscaler{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-hpa-" + id,
-			Namespace: "test-namespace",
-			UID:       types.UID("test-hpa-" + id + "-uid"),
-		},
-		Status: autoscalingv2beta2.HorizontalPodAutoscalerStatus{
-			CurrentReplicas: 5,
-			DesiredReplicas: 7,
-		},
-		Spec: autoscalingv2beta2.HorizontalPodAutoscalerSpec{
 			MinReplicas: &minReplicas,
 			MaxReplicas: 10,
 		},
@@ -220,6 +200,10 @@ func NewNode(id string) *corev1.Node {
 				"hugepages-2Mi":                 *resource.NewQuantity(2048, resource.DecimalSI),
 				"hugepages-5Mi":                 *resource.NewQuantity(2048, resource.DecimalSI),
 			},
+			NodeInfo: corev1.NodeSystemInfo{
+				KubeletVersion:   "v1.25.3",
+				KubeProxyVersion: "v1.25.3",
+			},
 		},
 	}
 }
@@ -280,8 +264,9 @@ func NewPodStatusWithContainer(containerName, containerID string) *corev1.PodSta
 
 func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID string) *corev1.PodStatus {
 	return &corev1.PodStatus{
-		Phase:  corev1.PodFailed,
-		Reason: "Evicted",
+		Phase:    corev1.PodFailed,
+		QOSClass: corev1.PodQOSBestEffort,
+		Reason:   "Evicted",
 		ContainerStatuses: []corev1.ContainerStatus{
 			{
 				Name:         containerName,
@@ -296,7 +281,7 @@ func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID strin
 		},
 	}
 }
-func WithOwnerReferences(or []v1.OwnerReference, obj interface{}) interface{} {
+func WithOwnerReferences(or []v1.OwnerReference, obj any) any {
 	switch o := obj.(type) {
 	case *corev1.Pod:
 		o.OwnerReferences = or

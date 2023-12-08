@@ -8,5 +8,5 @@ import (
 
 const (
 	Type          = "k8sobjects"
-	LogsStability = component.StabilityLevelAlpha
+	LogsStability = component.StabilityLevelBeta
 )

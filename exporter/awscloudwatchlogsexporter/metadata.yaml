@@ -6,4 +6,4 @@ status:
     beta: [logs]
   distributions: [contrib, observiq]
   codeowners:
-    active: [boostchicken]
+    active: [boostchicken, bryan-aguilar, rapphil]

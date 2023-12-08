@@ -33,7 +33,6 @@ type MetricsConfig struct {
 	ContainerBlockioIoTimeRecursive            MetricConfig `mapstructure:"container.blockio.io_time_recursive"`
 	ContainerBlockioIoWaitTimeRecursive        MetricConfig `mapstructure:"container.blockio.io_wait_time_recursive"`
 	ContainerBlockioSectorsRecursive           MetricConfig `mapstructure:"container.blockio.sectors_recursive"`
-	ContainerCPUPercent                        MetricConfig `mapstructure:"container.cpu.percent"`
 	ContainerCPUThrottlingDataPeriods          MetricConfig `mapstructure:"container.cpu.throttling_data.periods"`
 	ContainerCPUThrottlingDataThrottledPeriods MetricConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
 	ContainerCPUThrottlingDataThrottledTime    MetricConfig `mapstructure:"container.cpu.throttling_data.throttled_time"`
@@ -120,9 +119,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerBlockioSectorsRecursive: MetricConfig{
 			Enabled: false,
 		},
-		ContainerCPUPercent: MetricConfig{
-			Enabled: true,
-		},
 		ContainerCPUThrottlingDataPeriods: MetricConfig{
 			Enabled: false,
 		},
@@ -148,7 +144,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerCPUUtilization: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ContainerMemoryActiveAnon: MetricConfig{
 			Enabled: false,
@@ -303,6 +299,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for docker_stats resource attributes.

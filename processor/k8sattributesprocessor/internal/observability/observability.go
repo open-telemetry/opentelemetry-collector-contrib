@@ -23,6 +23,9 @@ func init() {
 		viewNamespacesAdded,
 		viewNamespacesUpdated,
 		viewNamespacesDeleted,
+		viewNodesAdded,
+		viewNodesUpdated,
+		viewNodesDeleted,
 	)
 }
 
@@ -35,6 +38,9 @@ var (
 	mNamespacesUpdated  = stats.Int64("otelsvc/k8s/namespace_updated", "Number of namespace update events received", "1")
 	mNamespacesAdded    = stats.Int64("otelsvc/k8s/namespace_added", "Number of namespace add events received", "1")
 	mNamespacesDeleted  = stats.Int64("otelsvc/k8s/namespace_deleted", "Number of namespace delete events received", "1")
+	mNodesUpdated       = stats.Int64("otelsvc/k8s/node_updated", "Number of node update events received", "1")
+	mNodesAdded         = stats.Int64("otelsvc/k8s/node_added", "Number of node add events received", "1")
+	mNodesDeleted       = stats.Int64("otelsvc/k8s/node_deleted", "Number of node delete events received", "1")
 	mReplicaSetsUpdated = stats.Int64("otelsvc/k8s/replicaset_updated", "Number of ReplicaSet update events received", "1")
 	mReplicaSetsAdded   = stats.Int64("otelsvc/k8s/replicaset_added", "Number of ReplicaSet add events received", "1")
 	mReplicaSetsDeleted = stats.Int64("otelsvc/k8s/replicaset_deleted", "Number of ReplicaSet delete events received", "1")
@@ -96,6 +102,27 @@ var viewNamespacesDeleted = &view.View{
 	Aggregation: view.Sum(),
 }
 
+var viewNodesUpdated = &view.View{
+	Name:        mNodesUpdated.Name(),
+	Description: mNodesUpdated.Description(),
+	Measure:     mNodesUpdated,
+	Aggregation: view.Sum(),
+}
+
+var viewNodesAdded = &view.View{
+	Name:        mNodesAdded.Name(),
+	Description: mNodesAdded.Description(),
+	Measure:     mNodesAdded,
+	Aggregation: view.Sum(),
+}
+
+var viewNodesDeleted = &view.View{
+	Name:        mNodesDeleted.Name(),
+	Description: mNodesDeleted.Description(),
+	Measure:     mNodesDeleted,
+	Aggregation: view.Sum(),
+}
+
 // RecordPodUpdated increments the metric that records pod update events received.
 func RecordPodUpdated() {
 	stats.Record(context.Background(), mPodsUpdated.M(int64(1)))
@@ -134,6 +161,21 @@ func RecordNamespaceAdded() {
 // RecordNamespaceDeleted increments the metric that records namespace events deleted.
 func RecordNamespaceDeleted() {
 	stats.Record(context.Background(), mNamespacesDeleted.M(int64(1)))
+}
+
+// RecordNodeUpdated increments the metric that records node update events received.
+func RecordNodeUpdated() {
+	stats.Record(context.Background(), mNodesUpdated.M(int64(1)))
+}
+
+// RecordNodeAdded increments the metric that records node add events receiver.
+func RecordNodeAdded() {
+	stats.Record(context.Background(), mNodesAdded.M(int64(1)))
+}
+
+// RecordNodeDeleted increments the metric that records node events deleted.
+func RecordNodeDeleted() {
+	stats.Record(context.Background(), mNodesDeleted.M(int64(1)))
 }
 
 // RecordReplicaSetUpdated increments the metric that records ReplicaSet update events received.

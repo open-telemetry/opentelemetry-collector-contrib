@@ -102,7 +102,7 @@ func TestFirehoseRequest(t *testing.T) {
 	testCases := map[string]struct {
 		headers          map[string]string
 		commonAttributes map[string]string
-		body             interface{}
+		body             any
 		consumer         firehoseConsumer
 		wantStatusCode   int
 		wantErr          error

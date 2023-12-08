@@ -4,10 +4,21 @@
 package trim // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 
 import (
+	"bufio"
 	"bytes"
 )
 
 type Func func([]byte) []byte
+
+func WithFunc(splitFunc bufio.SplitFunc, trimFunc Func) bufio.SplitFunc {
+	if trimFunc == nil {
+		return splitFunc
+	}
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		advance, token, err = splitFunc(data, atEOF)
+		return advance, trimFunc(token), err
+	}
+}
 
 type Config struct {
 	PreserveLeading  bool `mapstructure:"preserve_leading_whitespaces,omitempty"`
@@ -32,22 +43,37 @@ func Nop(token []byte) []byte {
 }
 
 func Leading(data []byte) []byte {
-	// TrimLeft to strip EOF whitespaces in case of using $ in regex
-	// For some reason newline and carriage return are being moved to beginning of next log
 	token := bytes.TrimLeft(data, "\r\n\t ")
-
-	// TrimLeft will return nil if data is an empty slice
 	if token == nil {
-		return []byte{}
+		// TrimLeft sometimes overwrites something with nothing.
+		// We need to override this behavior in order to preserve empty tokens.
+		return data
 	}
 	return token
 }
 
 func Trailing(data []byte) []byte {
-	// TrimRight to strip all whitespaces from the end of log
 	return bytes.TrimRight(data, "\r\n\t ")
 }
 
 func Whitespace(data []byte) []byte {
 	return Leading(Trailing(data))
+}
+
+func ToLength(splitFunc bufio.SplitFunc, maxLength int) bufio.SplitFunc {
+	if maxLength <= 0 {
+		return splitFunc
+	}
+	return func(data []byte, atEOF bool) (int, []byte, error) {
+		advance, token, err := splitFunc(data, atEOF)
+		if (advance == 0 && token == nil && err == nil) && len(data) >= maxLength {
+			// No token was found, but we have enough data to return a token of max length.
+			return maxLength, data[:maxLength], nil
+		}
+		if len(token) > maxLength {
+			// A token was found but it is longer than the max length.
+			return maxLength, token[:maxLength], nil
+		}
+		return advance, token, err
+	}
 }

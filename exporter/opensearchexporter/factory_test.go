@@ -25,7 +25,7 @@ func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	params := exportertest.NewNopCreateSettings()
 	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
-	require.Error(t, err, "expected an error when creating a traces exporter")
+	require.Error(t, err, "expected an error when creating a metrics exporter")
 }
 
 func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
@@ -36,6 +36,14 @@ func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
 	require.Error(t, err, "expected an error when creating a traces exporter")
 }
 
+func TestFactory_CreateLogsExporter_Fail(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	params := exportertest.NewNopCreateSettings()
+	_, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	require.Error(t, err, "expected an error when creating a logs exporter")
+}
+
 func TestFactory_CreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
@@ -43,6 +51,19 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 	})
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(context.TODO()))
+}
+
+func TestFactory_CreateLogsExporter(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = "https://opensearch.example.com:9200"
+	})
+	params := exportertest.NewNopCreateSettings()
+	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 

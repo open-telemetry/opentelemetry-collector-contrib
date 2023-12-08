@@ -107,7 +107,7 @@ type ExprString struct {
 }
 
 // Render will render an ExprString as a string
-func (e *ExprString) Render(env map[string]interface{}) (string, error) {
+func (e *ExprString) Render(env map[string]any) (string, error) {
 	var b strings.Builder
 	for i := 0; i < len(e.SubExprs); i++ {
 		b.WriteString(e.SubStrings[i])
@@ -142,16 +142,16 @@ func (p *patcher) Visit(node *ast.Node) {
 }
 
 var envPool = sync.Pool{
-	New: func() interface{} {
-		return map[string]interface{}{
+	New: func() any {
+		return map[string]any{
 			"os_env_func": os.Getenv,
 		}
 	},
 }
 
 // GetExprEnv returns a map of key/value pairs that can be be used to evaluate an expression
-func GetExprEnv(e *entry.Entry) map[string]interface{} {
-	env := envPool.Get().(map[string]interface{})
+func GetExprEnv(e *entry.Entry) map[string]any {
+	env := envPool.Get().(map[string]any)
 	env["$"] = e.Body
 	env["body"] = e.Body
 	env["attributes"] = e.Attributes
@@ -162,6 +162,6 @@ func GetExprEnv(e *entry.Entry) map[string]interface{} {
 }
 
 // PutExprEnv adds a key/value pair that will can be used to evaluate an expression
-func PutExprEnv(e map[string]interface{}) {
+func PutExprEnv(e map[string]any) {
 	envPool.Put(e)
 }

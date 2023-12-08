@@ -40,9 +40,8 @@ type Config struct {
 	// Values must be between 1-256 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$
 	Tags map[string]*string `mapstructure:"tags,omitempty"`
 
-	// QueueSettings is a subset of exporterhelper.QueueSettings,
-	// because only QueueSize is user-settable due to how AWS CloudWatch API works
-	QueueSettings QueueSettings `mapstructure:"sending_queue"`
+	// Queue settings frm the exporterhelper
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 
 	awsutil.AWSSessionSettings `mapstructure:",squash"`
 
@@ -58,11 +57,6 @@ type Config struct {
 	MiddlewareID *component.ID `mapstructure:"middleware,omitempty"`
 }
 
-type QueueSettings struct {
-	// QueueSize set the length of the sending queue
-	QueueSize int `mapstructure:"queue_size"`
-}
-
 var _ component.Config = (*Config)(nil)
 
 // Validate config
@@ -73,8 +67,9 @@ func (config *Config) Validate() error {
 	if config.LogStreamName == "" {
 		return errors.New("'log_stream_name' must be set")
 	}
-	if config.QueueSettings.QueueSize < 1 {
-		return errors.New("'sending_queue.queue_size' must be 1 or greater")
+
+	if err := config.QueueSettings.Validate(); err != nil {
+		return err
 	}
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
@@ -83,15 +78,6 @@ func (config *Config) Validate() error {
 		return errors.New("emf only is true, but raw log is false")
 	}
 	return cwlogs.ValidateTagsInput(config.Tags)
-}
-
-func (config *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
-	return exporterhelper.QueueSettings{
-		Enabled: true,
-		// due to the sequence token, there can be only one request in flight
-		NumConsumers: 1,
-		QueueSize:    config.QueueSettings.QueueSize,
-	}
 }
 
 // TODO(jbd): Add ARN role to config.

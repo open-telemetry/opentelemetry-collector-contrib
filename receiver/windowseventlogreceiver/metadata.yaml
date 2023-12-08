@@ -6,4 +6,4 @@ status:
     alpha: [logs]
   distributions: [splunk, observiq, sumo]
   codeowners:
-    active: [djaglowski, armstrmi]
+    active: [djaglowski, armstrmi, pjanotti]

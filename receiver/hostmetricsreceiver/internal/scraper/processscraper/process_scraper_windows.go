@@ -7,6 +7,7 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -28,7 +29,7 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.System, metadata.AttributeStateSystem)
 }
 
-func getProcessName(_ processHandle, exePath string) (string, error) {
+func getProcessName(_ context.Context, _ processHandle, exePath string) (string, error) {
 	if exePath == "" {
 		return "", fmt.Errorf("executable path is empty")
 	}
@@ -36,8 +37,8 @@ func getProcessName(_ processHandle, exePath string) (string, error) {
 	return filepath.Base(exePath), nil
 }
 
-func getProcessExecutable(proc processHandle) (string, error) {
-	exe, err := proc.Exe()
+func getProcessExecutable(ctx context.Context, proc processHandle) (string, error) {
+	exe, err := proc.ExeWithContext(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -48,8 +49,8 @@ func getProcessExecutable(proc processHandle) (string, error) {
 // matches the first argument before an unquoted space or slash
 var cmdRegex = regexp.MustCompile(`^((?:[^"]*?"[^"]*?")*?[^"]*?)(?:[ \/]|$)`)
 
-func getProcessCommand(proc processHandle) (*commandMetadata, error) {
-	cmdline, err := proc.Cmdline()
+func getProcessCommand(ctx context.Context, proc processHandle) (*commandMetadata, error) {
+	cmdline, err := proc.CmdlineWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -81,7 +81,7 @@ func (p *Transformer) Transform(entry *entry.Entry) error {
 
 	_, exist := entry.Delete(p.Field.Field)
 	if !exist {
-		return fmt.Errorf("remove: field does not exist")
+		return fmt.Errorf("remove: field does not exist: %s", p.Field.Field.String())
 	}
 	return nil
 }

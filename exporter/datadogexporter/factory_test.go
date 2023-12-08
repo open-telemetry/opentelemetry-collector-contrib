@@ -217,6 +217,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					SpanNameAsResourceName: true,
 					IgnoreResources:        []string{},
+					TraceBuffer:            10,
 				},
 				Logs: LogsConfig{
 					TCPAddr: confignet.TCPAddr{

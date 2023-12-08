@@ -35,6 +35,13 @@ var mertricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegi
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
 )
 
+// noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
+var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.DisableAPMStats",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Datadog Exporter will not compute APM Stats"),
+)
+
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
 	return mertricExportNativeClientFeatureGate.IsEnabled()

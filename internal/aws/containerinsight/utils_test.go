@@ -17,7 +17,7 @@ import (
 )
 
 func TestAggregateFields(t *testing.T) {
-	fields := []map[string]interface{}{
+	fields := []map[string]any{
 		{
 			"m1": float64(1),
 			"m2": float64(2),
@@ -42,10 +42,10 @@ func TestAggregateFields(t *testing.T) {
 	assert.Equal(t, expected, SumFields(fields))
 
 	// test empty input
-	assert.Nil(t, SumFields([]map[string]interface{}{}))
+	assert.Nil(t, SumFields([]map[string]any{}))
 
 	// test single input
-	fields = []map[string]interface{}{
+	fields = []map[string]any{
 		{
 			"m1": float64(2),
 			"m2": float64(3),
@@ -100,7 +100,7 @@ func TestIsPod(t *testing.T) {
 	assert.Equal(t, false, IsPod(TypeInstance))
 }
 
-func convertToInt64(value interface{}) int64 {
+func convertToInt64(value any) int64 {
 	switch t := value.(type) {
 	case int:
 		return int64(t)
@@ -121,7 +121,7 @@ func convertToInt64(value interface{}) int64 {
 	return -1
 }
 
-func convertToFloat64(value interface{}) float64 {
+func convertToFloat64(value any) float64 {
 	switch t := value.(type) {
 	case float32:
 		return float64(t)
@@ -134,7 +134,7 @@ func convertToFloat64(value interface{}) float64 {
 	return -1.0
 }
 
-func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string]interface{}, tags map[string]string,
+func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string]any, tags map[string]string,
 	expectedUnits map[string]string) {
 
 	rms := md.ResourceMetrics()
@@ -184,14 +184,14 @@ func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string
 }
 
 func TestConvertToOTLPMetricsForInvalidMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var tags map[string]string
 	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test container metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"node_cpu_limit": "an invalid value",
 	}
 
@@ -212,7 +212,7 @@ func TestConvertToOTLPMetricsForInvalidMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForClusterMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
@@ -220,7 +220,7 @@ func TestConvertToOTLPMetricsForClusterMetrics(t *testing.T) {
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test cluster-level metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"cluster_failed_node_count": int64(1),
 		"cluster_node_count":        int64(3),
 	}
@@ -238,7 +238,7 @@ func TestConvertToOTLPMetricsForClusterMetrics(t *testing.T) {
 	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
 
 	// test cluster namespace metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"namespace_number_of_running_pods": int64(8),
 	}
 	expectedUnits = map[string]string{
@@ -254,7 +254,7 @@ func TestConvertToOTLPMetricsForClusterMetrics(t *testing.T) {
 	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
 
 	// test cluster service metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"service_number_of_running_pods": int64(8),
 	}
 	expectedUnits = map[string]string{
@@ -272,7 +272,7 @@ func TestConvertToOTLPMetricsForClusterMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
@@ -280,7 +280,7 @@ func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test container metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"container_cpu_limit":                               int64(200),
 		"container_cpu_request":                             int64(200),
 		"container_cpu_usage_system":                        2.7662289817161336,
@@ -349,7 +349,7 @@ func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
 	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
 
 	// test container filesystem metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"container_filesystem_available":   int64(0),
 		"container_filesystem_capacity":    int64(21462233088),
 		"container_filesystem_usage":       int64(36864),
@@ -381,7 +381,7 @@ func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
@@ -389,7 +389,7 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test node metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"node_cpu_limit":                      int64(4000),
 		"node_cpu_request":                    int64(610),
 		"node_cpu_reserved_capacity":          15.25,
@@ -476,7 +476,7 @@ func TestConvertToOTLPMetricsForNodeMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForNodeDiskIOMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
@@ -484,7 +484,7 @@ func TestConvertToOTLPMetricsForNodeDiskIOMetrics(t *testing.T) {
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test node diskio metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"node_diskio_io_service_bytes_async": 6704.018980016907,
 		"node_diskio_io_service_bytes_read":  float64(0),
 		"node_diskio_io_service_bytes_sync":  284.2693560431197,
@@ -525,7 +525,7 @@ func TestConvertToOTLPMetricsForNodeDiskIOMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForNodeFSMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
@@ -533,7 +533,7 @@ func TestConvertToOTLPMetricsForNodeFSMetrics(t *testing.T) {
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test node filesystem metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"node_filesystem_available":   int64(4271607808),
 		"node_filesystem_capacity":    int64(21462233088),
 		"node_filesystem_inodes":      int64(8450312),
@@ -567,7 +567,7 @@ func TestConvertToOTLPMetricsForNodeFSMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForNodeNetMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
@@ -575,7 +575,7 @@ func TestConvertToOTLPMetricsForNodeNetMetrics(t *testing.T) {
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test node network metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"node_interface_network_rx_bytes":    294.8620421098953,
 		"node_interface_network_rx_dropped":  float64(0),
 		"node_interface_network_rx_errors":   float64(0),
@@ -613,7 +613,7 @@ func TestConvertToOTLPMetricsForNodeNetMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForNodeStatusMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
@@ -621,7 +621,7 @@ func TestConvertToOTLPMetricsForNodeStatusMetrics(t *testing.T) {
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test node network metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"node_status_condition_ready":               uint64(1),
 		"node_status_condition_disk_pressure":       uint64(1),
 		"node_status_condition_memory_pressure":     uint64(1),
@@ -657,14 +657,14 @@ func TestConvertToOTLPMetricsForNodeStatusMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForPodMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
 	now := time.Now()
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"pod_cpu_limit":                         int64(200),
 		"pod_cpu_request":                       int64(200),
 		"pod_cpu_reserved_capacity":             float64(5),
@@ -772,7 +772,7 @@ func TestConvertToOTLPMetricsForPodMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForPodNetMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
@@ -780,7 +780,7 @@ func TestConvertToOTLPMetricsForPodNetMetrics(t *testing.T) {
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test pod network metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"pod_interface_network_rx_bytes":    294.8620421098953,
 		"pod_interface_network_rx_dropped":  float64(0),
 		"pod_interface_network_rx_errors":   float64(0),
@@ -820,7 +820,7 @@ func TestConvertToOTLPMetricsForPodNetMetrics(t *testing.T) {
 }
 
 func TestConvertToOTLPMetricsForPodContainerStatusMetrics(t *testing.T) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	var expectedUnits map[string]string
 	var tags map[string]string
 	var md pmetric.Metrics
@@ -828,7 +828,7 @@ func TestConvertToOTLPMetricsForPodContainerStatusMetrics(t *testing.T) {
 	timestamp := strconv.FormatInt(now.UnixNano(), 10)
 
 	// test pod container status metrics
-	fields = map[string]interface{}{
+	fields = map[string]any{
 		"pod_container_status_running":                                      1,
 		"pod_container_status_terminated":                                   0,
 		"pod_container_status_waiting":                                      0,

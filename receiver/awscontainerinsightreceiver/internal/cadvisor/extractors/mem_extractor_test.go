@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
@@ -17,7 +17,7 @@ func TestMemStats(t *testing.T) {
 	result := testutils.LoadContainerInfo(t, "./testdata/PreInfoContainer.json")
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewMemMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric
@@ -45,7 +45,7 @@ func TestMemStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "container_memory_failures_total", 1010, 0.0000001)
 
 	// for node type
-	containerType = TypeNode
+	containerType = containerinsight.TypeNode
 	require.NoError(t, extractor.Shutdown())
 	extractor = NewMemMetricExtractor(nil)
 
@@ -74,7 +74,7 @@ func TestMemStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "node_memory_utilization", 2.68630981, 1.0e-8)
 
 	// for instance type
-	containerType = TypeInstance
+	containerType = containerinsight.TypeInstance
 	require.NoError(t, extractor.Shutdown())
 	extractor = NewMemMetricExtractor(nil)
 

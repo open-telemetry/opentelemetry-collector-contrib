@@ -111,7 +111,7 @@ func (d *daemonSetClient) shutdown() {
 	d.stopped = true
 }
 
-func transformFuncDaemonSet(obj interface{}) (interface{}, error) {
+func transformFuncDaemonSet(obj any) (any, error) {
 	daemonSet, ok := obj.(*appsv1.DaemonSet)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not DaemonSet type", obj)

@@ -51,6 +51,8 @@ all_set:
       enabled: true
     postgresql.wal.age:
       enabled: true
+    postgresql.wal.delay:
+      enabled: true
     postgresql.wal.lag:
       enabled: true
   resource_attributes:
@@ -111,6 +113,8 @@ none_set:
     postgresql.temp_files:
       enabled: false
     postgresql.wal.age:
+      enabled: false
+    postgresql.wal.delay:
       enabled: false
     postgresql.wal.lag:
       enabled: false

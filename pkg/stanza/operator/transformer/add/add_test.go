@@ -29,9 +29,9 @@ func TestProcessAndBuild(t *testing.T) {
 		e := entry.New()
 		e.ObservedTimestamp = now
 		e.Timestamp = time.Unix(1586632809, 0)
-		e.Body = map[string]interface{}{
+		e.Body = map[string]any{
 			"key": "val",
-			"nested": map[string]interface{}{
+			"nested": map[string]any{
 				"nestedkey": "nestedval",
 			},
 		}
@@ -50,7 +50,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body.(map[string]interface{})["new"] = "randomMessage"
+				e.Body.(map[string]any)["new"] = "randomMessage"
 				return e
 			},
 			false,
@@ -66,7 +66,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body.(map[string]interface{})["new"] = "val_suffix"
+				e.Body.(map[string]any)["new"] = "val_suffix"
 				return e
 			},
 			false,
@@ -76,8 +76,8 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *Config {
 				cfg := NewConfig()
 				cfg.Field = entry.NewBodyField("new")
-				cfg.Value = map[interface{}]interface{}{
-					"nest": map[interface{}]interface{}{
+				cfg.Value = map[any]any{
+					"nest": map[any]any{
 						"key": "val",
 					},
 				}
@@ -86,13 +86,13 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
-					"new": map[interface{}]interface{}{
-						"nest": map[interface{}]interface{}{
+					"new": map[any]any{
+						"nest": map[any]any{
 							"key": "val",
 						},
 					},
@@ -112,7 +112,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{"new": "some.attribute"}
+				e.Attributes = map[string]any{"new": "some.attribute"}
 				return e
 			},
 			false,
@@ -128,7 +128,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{"new": "some.resource"}
+				e.Resource = map[string]any{"new": "some.resource"}
 				return e
 			},
 			false,
@@ -144,7 +144,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{"new": "val_suffix"}
+				e.Resource = map[string]any{"new": "val_suffix"}
 				return e
 			},
 			false,
@@ -160,9 +160,9 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
 					"new": 1,
@@ -182,9 +182,9 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
 					"new": []int{1, 2, 3, 4},
@@ -204,9 +204,9 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": []int{1, 2, 3, 4},
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
 				}
@@ -225,7 +225,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"new": 1,
 				}
 				return e
@@ -243,7 +243,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"new": 1,
 				}
 				return e
@@ -255,7 +255,7 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *Config {
 				cfg := NewConfig()
 				cfg.Field = entry.NewAttributeField("one", "two")
-				cfg.Value = map[string]interface{}{
+				cfg.Value = map[string]any{
 					"new": 1,
 				}
 				return cfg
@@ -263,9 +263,9 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Attributes = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"new": 1,
 						},
 					},
@@ -279,7 +279,7 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *Config {
 				cfg := NewConfig()
 				cfg.Field = entry.NewResourceField("one", "two")
-				cfg.Value = map[string]interface{}{
+				cfg.Value = map[string]any{
 					"new": 1,
 				}
 				return cfg
@@ -287,9 +287,9 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"new": 1,
 						},
 					},
@@ -309,7 +309,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"fookey": "foo_val",
 				}
 				return e
@@ -327,7 +327,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"fookey": "foo_val",
 				}
 				return e

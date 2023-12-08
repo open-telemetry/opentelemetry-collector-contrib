@@ -49,14 +49,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.configSet == testSetDefault || test.configSet == testSetAll {
-				assert.Equal(t, "[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.configSet == testSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -87,10 +80,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerCPUPercentDataPoint(ts, 1)
-
 			allMetricsCount++
 			mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(ts, 1)
 
@@ -118,6 +107,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
 
@@ -491,18 +481,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
 					assert.EqualValues(t, "operation-val", attrVal.Str())
-				case "container.cpu.percent":
-					assert.False(t, validatedMetrics["container.cpu.percent"], "Found a duplicate in the metrics slice: container.cpu.percent")
-					validatedMetrics["container.cpu.percent"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
 				case "container.cpu.throttling_data.periods":
 					assert.False(t, validatedMetrics["container.cpu.throttling_data.periods"], "Found a duplicate in the metrics slice: container.cpu.throttling_data.periods")
 					validatedMetrics["container.cpu.throttling_data.periods"] = true

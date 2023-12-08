@@ -207,7 +207,8 @@ func TestCreateKcsb(t *testing.T) {
 			applicationID:     "",
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
 			wantAppID := tt.applicationID
 			gotKcsb := createKcsb(&tt.config, "1.0.0")

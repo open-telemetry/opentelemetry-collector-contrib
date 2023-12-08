@@ -115,7 +115,7 @@ func (c *podClient) shutdown() {
 	c.stopped = true
 }
 
-func transformFuncPod(obj interface{}) (interface{}, error) {
+func transformFuncPod(obj any) (any, error) {
 	pod, ok := obj.(*v1.Pod)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Pod type", obj)
@@ -123,7 +123,7 @@ func transformFuncPod(obj interface{}) (interface{}, error) {
 	info := new(PodInfo)
 	info.Name = pod.Name
 	info.Namespace = pod.Namespace
-	info.Uid = string(pod.UID)
+	info.UID = string(pod.UID)
 	info.Labels = pod.Labels
 	info.OwnerReferences = pod.OwnerReferences
 	info.Phase = pod.Status.Phase

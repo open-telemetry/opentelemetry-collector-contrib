@@ -19,8 +19,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver/internal/metadata"
 )
 
-// NewFactory creates a dummy factory.
-func NewFactory() receiver.Factory {
+// newFactoryAdapter creates a dummy factory.
+func newFactoryAdapter() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,

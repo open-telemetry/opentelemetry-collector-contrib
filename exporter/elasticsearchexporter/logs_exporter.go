@@ -7,11 +7,11 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -83,9 +83,10 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 		resource := rl.Resource()
 		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
+			scope := ills.At(j).Scope()
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, resource, logs.At(k)); err != nil {
+				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -96,10 +97,10 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 		}
 	}
 
-	return multierr.Combine(errs...)
+	return errors.Join(errs...)
 }
 
-func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord) error {
+func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
 		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, record)
@@ -108,7 +109,7 @@ func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
 	}
 
-	document, err := e.model.encodeLog(resource, record)
+	document, err := e.model.encodeLog(resource, record, scope)
 	if err != nil {
 		return fmt.Errorf("Failed to encode log event: %w", err)
 	}

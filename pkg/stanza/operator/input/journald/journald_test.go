@@ -72,13 +72,13 @@ func TestInputJournald(t *testing.T) {
 		return &fakeJournaldCmd{}
 	}
 
-	err = op.Start(testutil.NewMockPersister("test"))
+	err = op.Start(testutil.NewUnscopedMockPersister())
 	assert.EqualError(t, err, "journalctl command exited")
 	defer func() {
 		require.NoError(t, op.Stop())
 	}()
 
-	expected := map[string]interface{}{
+	expected := map[string]any{
 		"_BOOT_ID":                   "c4fa36de06824d21835c05ff80c54468",
 		"_CAP_EFFECTIVE":             "0",
 		"_TRANSPORT":                 "journal",
@@ -246,7 +246,7 @@ func TestInputJournaldError(t *testing.T) {
 		}
 	}
 
-	err = op.Start(testutil.NewMockPersister("test"))
+	err = op.Start(testutil.NewUnscopedMockPersister())
 	assert.EqualError(t, err, "journalctl command failed (<nil>): stderr output\n")
 	defer func() {
 		require.NoError(t, op.Stop())

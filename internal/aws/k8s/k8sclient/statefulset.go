@@ -111,7 +111,7 @@ func (d *statefulSetClient) shutdown() {
 	d.stopped = true
 }
 
-func transformFuncStatefulSet(obj interface{}) (interface{}, error) {
+func transformFuncStatefulSet(obj any) (any, error) {
 	statefulSet, ok := obj.(*appsv1.StatefulSet)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not StatefulSet type", obj)

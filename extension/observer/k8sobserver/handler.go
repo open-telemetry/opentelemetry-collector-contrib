@@ -29,7 +29,7 @@ type handler struct {
 
 func (h *handler) ListEndpoints() []observer.Endpoint {
 	var endpoints []observer.Endpoint
-	h.endpoints.Range(func(endpointID, endpoint interface{}) bool {
+	h.endpoints.Range(func(endpointID, endpoint any) bool {
 		if e, ok := endpoint.(observer.Endpoint); ok {
 			endpoints = append(endpoints, e)
 		} else {
@@ -41,7 +41,7 @@ func (h *handler) ListEndpoints() []observer.Endpoint {
 }
 
 // OnAdd is called in response to a new pod or node being detected.
-func (h *handler) OnAdd(objectInterface interface{}, _ bool) {
+func (h *handler) OnAdd(objectInterface any, _ bool) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {
@@ -59,7 +59,7 @@ func (h *handler) OnAdd(objectInterface interface{}, _ bool) {
 }
 
 // OnUpdate is called in response to an existing pod or node changing.
-func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
+func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	oldEndpoints := map[observer.EndpointID]observer.Endpoint{}
 	newEndpoints := map[observer.EndpointID]observer.Endpoint{}
 
@@ -131,7 +131,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 }
 
 // OnDelete is called in response to a pod or node being deleted.
-func (h *handler) OnDelete(objectInterface interface{}) {
+func (h *handler) OnDelete(objectInterface any) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {

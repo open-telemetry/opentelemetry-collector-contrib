@@ -88,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 							endpointID: "endpoint.id",
 						},
 						Rule:               `type == "port"`,
-						ResourceAttributes: map[string]interface{}{"one": "two"},
+						ResourceAttributes: map[string]any{"one": "two"},
 						rule:               portRule,
 					},
 					"nop/1": {
@@ -100,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 							endpointID: "endpoint.id",
 						},
 						Rule:               `type == "port"`,
-						ResourceAttributes: map[string]interface{}{"two": "three"},
+						ResourceAttributes: map[string]any{"two": "three"},
 						rule:               portRule,
 					},
 				},

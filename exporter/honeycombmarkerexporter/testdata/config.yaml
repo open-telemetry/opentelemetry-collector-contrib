@@ -1,0 +1,78 @@
+honeycomb: 
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+    - type: "fooType"
+      message_field: "test message"
+      url_field: "https://api.testhost.io"
+      rules:
+        resource_conditions:
+          - IsMatch(attributes["test"], ".*")
+        log_conditions:
+          - body == "test"
+
+honeycomb/color_no_type:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+    - color: "green"
+      message_field: "test message"
+      url_field: "https://api.testhost.io"
+      rules:
+        resource_conditions:
+          - IsMatch(attributes["test"], ".*")
+        log_conditions:
+          - body == "test"
+
+honeycomb/bad_syntax_log:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+    - type: "fooType"
+      message_field: "test message"
+      url_field: "https://api.testhost.io"
+      rules:
+        log_conditions:
+          - body == "test"
+          - set(attributes["body"], body)
+
+honeycomb/no_conditions:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+    - color: "green"
+      message_field: "test message"
+      url_field: "https://api.testhost.io"
+      rules:
+
+honeycomb/no_api_key:
+  api_key: ""
+  api_url: "https://api.testhost.io"
+  markers:
+    - type: "fooType"
+      message_field: "test message"
+      url_field: "https://api.testhost.io"
+      rules:
+        resource_conditions:
+          - IsMatch(attributes["test"], ".*")
+        log_conditions:
+          - body == "test"
+
+honeycomb/no_api_url:
+  api_key: "test-apikey"
+  api_url: ""
+  markers:
+    - type: "fooType"
+      message_field: "test message"
+      url_field: "https://api.testhost.io"
+      rules:
+        resource_conditions:
+          - IsMatch(attributes["test"], ".*")
+        log_conditions:
+          - body == "test"
+
+honeycomb/no_markers_supplied:
+  api_key: "test-apikey"
+  api_url: "https://api.testhost.io"
+  markers:
+

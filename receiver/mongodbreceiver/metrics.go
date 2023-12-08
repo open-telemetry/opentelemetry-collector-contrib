@@ -562,7 +562,7 @@ func collectMetric(document bson.M, path []string) (int64, error) {
 	return parseInt(metric)
 }
 
-func dig(document bson.M, path []string) (interface{}, error) {
+func dig(document bson.M, path []string) (any, error) {
 	curItem, remainingPath := path[0], path[1:]
 	value := document[curItem]
 	if value == nil {
@@ -574,7 +574,7 @@ func dig(document bson.M, path []string) (interface{}, error) {
 	return dig(value.(bson.M), remainingPath)
 }
 
-func parseInt(val interface{}) (int64, error) {
+func parseInt(val any) (int64, error) {
 	switch v := val.(type) {
 	case int:
 		return int64(v), nil

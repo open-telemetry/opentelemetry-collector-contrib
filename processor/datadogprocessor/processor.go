@@ -51,7 +51,13 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 	if err != nil {
 		return nil, err
 	}
-	logger.Warn("This component is deprecated in favor of the Datadog connector")
+	logger.Warn(
+		"The datadogprocessor has been deprecated in favor of the datadogconnector",
+		zap.String(
+			"documentation",
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/datadogprocessor/README.md#deprecated-in-favor-of-datadogconnector",
+		),
+	)
 	return &datadogProcessor{
 		logger:       logger,
 		nextConsumer: nextConsumer,

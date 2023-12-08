@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 type AutoCommit struct {
@@ -31,10 +32,20 @@ type MessageMarking struct {
 	OnError bool `mapstructure:"on_error"`
 }
 
+type HeaderExtraction struct {
+	ExtractHeaders bool     `mapstructure:"extract_headers"`
+	Headers        []string `mapstructure:"headers"`
+}
+
 // Config defines configuration for Kafka receiver.
 type Config struct {
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
+	// ResolveCanonicalBootstrapServersOnly makes Sarama do a DNS lookup for
+	// each of the provided brokers. It will then do a PTR lookup for each
+	// returned IP, and that set of names becomes the broker list. This can be
+	// required in SASL environments.
+	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
 	// The name of the kafka topic to consume from (default "otlp_spans")
@@ -53,13 +64,16 @@ type Config struct {
 	// Client, and shared by the Producer/Consumer.
 	Metadata kafkaexporter.Metadata `mapstructure:"metadata"`
 
-	Authentication kafkaexporter.Authentication `mapstructure:"auth"`
+	Authentication kafka.Authentication `mapstructure:"auth"`
 
 	// Controls the auto-commit functionality
 	AutoCommit AutoCommit `mapstructure:"autocommit"`
 
 	// Controls the way the messages are marked as consumed
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
+
+	// Extract headers from kafka records
+	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
 }
 
 const (

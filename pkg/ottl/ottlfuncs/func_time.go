@@ -12,8 +12,8 @@ import (
 )
 
 type TimeArguments[K any] struct {
-	Time   ottl.StringGetter[K] `ottlarg:"0"`
-	Format string               `ottlarg:"1"`
+	Time   ottl.StringGetter[K]
+	Format string
 }
 
 func NewTimeFactory[K any]() ottl.Factory[K] {
@@ -38,7 +38,7 @@ func Time[K any](inputTime ottl.StringGetter[K], format string) (ottl.ExprFunc[K
 		return nil, err
 	}
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

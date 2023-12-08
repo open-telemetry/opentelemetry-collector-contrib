@@ -46,16 +46,16 @@ func Test_newPathGetSetter(t *testing.T) {
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
-	newMap := make(map[string]interface{})
-	newMap2 := make(map[string]interface{})
+	newMap := make(map[string]any)
+	newMap2 := make(map[string]any)
 	newMap2["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
 	}{
 		{
@@ -271,6 +271,32 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(500_000_000),
 			newVal: int64(200_000_000),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "start_time",
+			path: []ottl.Field{
+				{
+					Name: "start_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "end_time",
+			path: []ottl.Field{
+				{
+					Name: "end_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
@@ -507,7 +533,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "attributes map[string]interface{}",
+			name: "attributes map[string]any",
 			path: []ottl.Field{
 				{
 					Name: "attributes",
@@ -575,7 +601,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					},
 				},
 			},
-			orig: func() interface{} {
+			orig: func() any {
 				return nil
 			}(),
 			newVal: "new",
@@ -726,6 +752,32 @@ func Test_newPathGetSetter(t *testing.T) {
 			newVal: pcommon.NewResource(),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				pcommon.NewResource().CopyTo(resource)
+			},
+		},
+		{
+			name: "start_time",
+			path: []ottl.Field{
+				{
+					Name: "start_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "end_time",
+			path: []ottl.Field{
+				{
+					Name: "end_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 	}

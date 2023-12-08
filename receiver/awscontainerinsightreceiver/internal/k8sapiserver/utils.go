@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package k8sapiserver
+package k8sapiserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 
 import (
 	"regexp"
@@ -39,7 +39,7 @@ var (
 	podConditionUnknownMetric = "pod_status_unknown"
 )
 
-func addPodStatusMetrics(field map[string]interface{}, pod *k8sclient.PodInfo) {
+func addPodStatusMetrics(field map[string]any, pod *k8sclient.PodInfo) {
 	for _, metricName := range podPhaseMetricNames {
 		field[metricName] = 0
 	}
@@ -50,7 +50,7 @@ func addPodStatusMetrics(field map[string]interface{}, pod *k8sclient.PodInfo) {
 	}
 }
 
-func addPodConditionMetrics(field map[string]interface{}, pod *k8sclient.PodInfo) {
+func addPodConditionMetrics(field map[string]any, pod *k8sclient.PodInfo) {
 	for _, metricName := range podConditionMetricNames {
 		field[metricName] = 0
 	}

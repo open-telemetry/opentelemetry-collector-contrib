@@ -333,7 +333,7 @@ func deepCopy(s *sampling.SamplingStrategyResponse) *sampling.SamplingStrategyRe
 	enc := gob.NewEncoder(&buf)
 	dec := gob.NewDecoder(&buf)
 	_ = enc.Encode(*s)
-	var copy sampling.SamplingStrategyResponse //nolint:revive
-	_ = dec.Decode(&copy)
-	return &copy
+	var result sampling.SamplingStrategyResponse //nolint:revive
+	_ = dec.Decode(&result)
+	return &result
 }

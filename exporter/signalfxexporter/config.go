@@ -130,10 +130,6 @@ type Config struct {
 	// to be used in a dimension key.
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 
-	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
-	// Deprecated: use HTTPClientSettings.MaxIdleConns or HTTPClientSettings.MaxIdleConnsPerHost instead.
-	MaxConnections int `mapstructure:"max_connections"`
-
 	// Whether to drop  histogram bucket metrics dispatched to Splunk Observability.
 	// Default value is set to false.
 	DropHistogramBuckets bool `mapstructure:"drop_histogram_buckets"`
@@ -146,6 +142,7 @@ type DimensionClientConfig struct {
 	MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host"`
 	MaxConnsPerHost     int           `mapstructure:"max_conns_per_host"`
 	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
+	Timeout             time.Duration `mapstructure:"timeout"`
 }
 
 func (cfg *Config) getMetricTranslator(logger *zap.Logger) (*translation.MetricTranslator, error) {
@@ -226,10 +223,6 @@ func (cfg *Config) Validate() error {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
-	if cfg.MaxConnections < 0 {
-		return errors.New(`cannot have a negative "max_connections"`)
-	}
-
 	return nil
 }
 
@@ -243,7 +236,7 @@ func setDefaultExcludes(cfg *Config) error {
 
 func loadConfig(bytes []byte) (Config, error) {
 	var cfg Config
-	var data map[string]interface{}
+	var data map[string]any
 	if err := yaml.Unmarshal(bytes, &data); err != nil {
 		return cfg, err
 	}

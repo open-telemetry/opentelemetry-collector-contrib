@@ -17,8 +17,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver/internal/metadata"
 )
 
-// NewFactory creates a factory for journald receiver
-func NewFactory() receiver.Factory {
+// newFactoryAdapter creates a factory for journald receiver
+func newFactoryAdapter() receiver.Factory {
 	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
 }
 
