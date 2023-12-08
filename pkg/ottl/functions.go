@@ -67,7 +67,7 @@ func (p *basePath) Key() key {
 
 func (p *basePath) isComplete() error {
 	if !p.fetched {
-		return fmt.Errorf("path section %q was not fetched", p.name)
+		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
 	}
 	if p.nextPath == nil {
 		return nil
@@ -129,7 +129,7 @@ func (k *baseKey) isComplete() error {
 		} else if k.i != nil {
 			val = *k.i
 		}
-		return fmt.Errorf("key section '%v' was not fetched", val)
+		return fmt.Errorf("the key %q was not used by the context during indexing", val)
 	}
 	if k.nextKey == nil {
 		return nil
