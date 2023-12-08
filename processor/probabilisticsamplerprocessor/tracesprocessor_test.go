@@ -428,12 +428,10 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 		ts    string
 		key   string
 		value pcommon.Value
-
-		// returns sampled, adjustedCount
-		sf func(SamplerMode) (bool, float64, string)
+		sf    func(SamplerMode) (sampled bool, adjCount float64, tracestate string)
 	}{
 		{
-			name: "simple_100",
+			name: "100 percent",
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
@@ -443,7 +441,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "yes_sample_tid",
+			name: "50 percent sampled",
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
@@ -451,31 +449,29 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			sf: func(SamplerMode) (bool, float64, string) { return true, 2, "ot=th:8" },
 		},
 		{
-			name: "yes_sample_rv1",
+			name: "1 percent sampled",
 			cfg: &Config{
 				SamplingPercentage: 1,
 			},
-			//    99/100 = .FD70A3D70A3D70A3D
+			//    99/100 = .fd70a3d70a3d70a3d
 			ts: "ot=rv:FD70A3D70A3D71", // note upper case passes through, is not generated
 			sf: func(SamplerMode) (bool, float64, string) {
 				return true, 1 / 0.01, "ot=rv:FD70A3D70A3D71;th:fd70a3d70a3d71"
 			},
 		},
 		{
-			name: "no_sample_rv2",
+			name: "1 percent sampled with rvalue and precision",
 			cfg: &Config{
 				SamplingPercentage: 1,
+				SamplingPrecision:  3,
 			},
-			ts: "ot=rv:FD70A3D70A3D70",
-		},
-		{
-			name: "no_sample",
-			cfg: &Config{
-				SamplingPercentage: 49,
+			ts: "ot=rv:FD70A3D70A3D71",
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1 / 0.01, "ot=rv:FD70A3D70A3D71;th:fd7"
 			},
 		},
 		{
-			name: "no_sample_rv1",
+			name: "1 percent not sampled with rvalue",
 			cfg: &Config{
 				SamplingPercentage: 1,
 			},
@@ -483,7 +479,13 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			ts: "ot=rv:FD70A3D70A3D70",
 		},
 		{
-			name: "yes_sample_rv2",
+			name: "49 percent not sampled",
+			cfg: &Config{
+				SamplingPercentage: 49,
+			},
+		},
+		{
+			name: "1 percent sampled with rvalue",
 			cfg: &Config{
 				SamplingPercentage: 1,
 			},
@@ -494,7 +496,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "yes_sample_priority",
+			name: "sampled by priority",
 			cfg: &Config{
 				SamplingPercentage: 1,
 			},
@@ -504,7 +506,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			sf:    func(SamplerMode) (bool, float64, string) { return true, 0, "" },
 		},
 		{
-			name: "no_sample_priority",
+			name: "not sampled by priority",
 			cfg: &Config{
 				SamplingPercentage: 99,
 			},
@@ -513,7 +515,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			value: pcommon.NewValueInt(0),
 		},
 		{
-			name: "incoming_50",
+			name: "incoming 50 percent",
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
@@ -526,7 +528,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "norvalue_50",
+			name: "incoming 50 percent with no rvalue",
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
@@ -539,7 +541,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "incoming_rvalue_75",
+			name: "equalizing vs proportional",
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
@@ -552,7 +554,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "inconsistent_yes1",
+			name: "inconsistent threshold arriving",
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
@@ -562,7 +564,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "inconsistent_no1",
+			name: "inconsistent threshold not samp,led",
 			cfg: &Config{
 				SamplingPercentage: 1,
 			},
@@ -572,18 +574,27 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "precision_3",
+			name: "40 percent precision 3",
 			cfg: &Config{
 				SamplingPercentage: 40,
 				SamplingPrecision:  3,
 			},
-			ts: "ot=rv:a0000000000000", // ;th:8 TODO fix
-			// this tolerance (b/c prec) then add a test
-			// like this with inconsistent-yes i.e.,
-			// testng that th:8 is discarded before th:999
-			// is added
+			ts: "ot=rv:a0000000000000",
 			sf: func(SamplerMode) (bool, float64, string) {
-				return true, 1 / 0.4, "ot=rv:a0000000000000;th:999"
+				return true, 1 / 0.4, "ot=rv:a0000000000000;th:99a"
+			},
+		},
+		{
+			name: "60 percent inconsistent resampled",
+			cfg: &Config{
+				SamplingPercentage: 60,
+				SamplingPrecision:  4,
+			},
+			// This th:8 is inconsistent with rv, is erased.  But, the
+			// rv qualifies for the 60% sampling (th:666666 repeating)
+			ts: "ot=rv:70000000000000;th:8",
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1 / 0.6, "ot=rv:70000000000000;th:6666"
 			},
 		},
 	}
@@ -619,8 +630,10 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					require.NoError(t, err)
 					if expectCount == 0 {
 						assert.Equal(t, 0.0, gotTs.OTelValue().AdjustedCount())
-					} else {
+					} else if cfg.SamplingPrecision == 0 {
 						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-9)
+					} else {
+						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-3)
 					}
 					require.Equal(t, expectTS, got.TraceState().AsRaw())
 				} else {
