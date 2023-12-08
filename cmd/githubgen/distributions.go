@@ -17,7 +17,7 @@ type distributionsGenerator struct {
 
 type distOutput struct {
 	Name        string              `yaml:"name"`
-	Url         string              `yaml:"url"`
+	URL         string              `yaml:"url"`
 	Maintainers []string            `yaml:"maintainers"`
 	Components  map[string][]string `yaml:"components"`
 }
@@ -46,7 +46,7 @@ func (cg distributionsGenerator) generate(data *githubData) error {
 		}
 		output := distOutput{
 			Name:        dist.Name,
-			Url:         dist.Url,
+			URL:         dist.URL,
 			Maintainers: dist.Maintainers,
 			Components:  components,
 		}

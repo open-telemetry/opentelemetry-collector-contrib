@@ -100,7 +100,7 @@ var (
 */
 
 // Tests proper assignment for a HTTP server span
-// http.scheme, http.host, http.target => data.Url
+// http.scheme, http.host, http.target => data.URL
 // Also sets a few other things to increase code coverage:
 // - a specific SpanStatus as opposed to none
 // - an error http.status_code
@@ -113,7 +113,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	span.Status().SetMessage("Fubar")
 	spanAttributes := span.Attributes()
 
-	// http.scheme, http.host, http.target => data.Url
+	// http.scheme, http.host, http.target => data.URL
 	spanAttributes.PutStr(conventions.AttributeHTTPScheme, "https")
 	spanAttributes.PutStr(conventions.AttributeHTTPHost, "foo")
 	spanAttributes.PutStr(conventions.AttributeHTTPTarget, "/bar?biz=baz")
@@ -254,7 +254,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet2(t *testing.T) {
 	span := getDefaultHTTPClientSpan()
 	spanAttributes := span.Attributes()
 
-	// http.scheme, http.host, http.target => data.Url
+	// http.scheme, http.host, http.target => data.URL
 	spanAttributes.PutInt(conventions.AttributeHTTPStatusCode, defaultHTTPStatusCode)
 	spanAttributes.PutStr(conventions.AttributeHTTPScheme, "https")
 	spanAttributes.PutStr(conventions.AttributeHTTPHost, "foo")

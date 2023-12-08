@@ -300,7 +300,7 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 	sb.Reset()
 
 	/*
-		To construct the value for data.Url we will use the following sets of attributes as defined by the otel spec
+		To construct the value for data.URL we will use the following sets of attributes as defined by the otel spec
 		Order of preference is:
 		http.scheme, http.host, http.target
 		http.scheme, http.server_name, net.host.port, http.target

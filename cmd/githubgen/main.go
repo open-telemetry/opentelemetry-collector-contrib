@@ -77,7 +77,7 @@ type metadata struct {
 
 type distributionData struct {
 	Name        string   `yaml:"name"`
-	Url         string   `yaml:"url"`
+	URL         string   `yaml:"url"`
 	Maintainers []string `yaml:"maintainers,omitempty"`
 }
 
