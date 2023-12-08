@@ -886,8 +886,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ./pkg/resourcetotelemetry
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ./pkg/sampling
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ./pkg/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ./pkg/translator/azure
