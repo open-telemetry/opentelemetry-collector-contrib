@@ -1,0 +1,35 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+
+
+processors:
+  batch:
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
+
+exporters:
+  datadog:
+    api:
+      site: ${env:DD_SITE}
+      key: ${env:DD_API_KEY}
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog]
