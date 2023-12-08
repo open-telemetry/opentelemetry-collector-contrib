@@ -2091,6 +2091,26 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			},
 			errorMode: PropagateError,
 		},
+		{
+			name: "SilentError error from condition",
+			condition: func(context.Context, any) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx any) (any, error) {
+				return 1, nil
+			},
+			errorMode: SilentError,
+		},
+		{
+			name: "SilentError error from function",
+			condition: func(context.Context, any) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx any) (any, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode: SilentError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2262,13 +2282,31 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 		errorMode  ErrorMode
 	}{
 		{
-			name: "Propagate Error from function",
+			name: "Propagate Error from condition",
 			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
 					return true, fmt.Errorf("test")
 				},
 			},
 			errorMode: PropagateError,
+		},
+		{
+			name: "Ignore Error from function with IgnoreError",
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "Ignore Error from function with SilentError",
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode: SilentError,
 		},
 	}
 	for _, tt := range tests {
@@ -2287,8 +2325,12 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 			}
 
 			result, err := conditions.Eval(context.Background(), nil)
-			assert.Error(t, err)
 			assert.False(t, result)
+			if tt.errorMode == PropagateError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
