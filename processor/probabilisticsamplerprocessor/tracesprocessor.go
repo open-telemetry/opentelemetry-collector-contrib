@@ -104,7 +104,7 @@ func randomnessFromSpan(s ptrace.Span) (sampling.Randomness, *sampling.W3CTraceS
 		// See https://github.com/open-telemetry/opentelemetry-proto/pull/503
 		// which merged but unreleased at the time of writing.
 		//
-		// When we have an additional flag indicating this
+		// Note: When we have an additional flag indicating this
 		// randomness is present we should inspect the flag
 		// and return that no randomness is available, here.
 		randomness = sampling.TraceIDToRandomness(s.TraceID())
@@ -193,16 +193,20 @@ func (ts *traceHasher) updateTracestate(_ pcommon.TraceID, _ bool, _ *sampling.W
 func (ts *traceEqualizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
 	rnd, wts, err := randomnessFromSpan(s)
 	if err != nil {
-		// TODO: Configure fail-open vs fail-closed?
-		return true, nil, err
+		return false, nil, err
 	}
 	otts := wts.OTelValue()
-	// Consistency check: if the TraceID is out of range
-	// (unless the TValue is zero), the TValue is a lie.
-	// If inconsistent, clear it.
-	if otts.HasTValue() && !otts.TValueThreshold().ShouldSample(rnd) {
-		err = ErrInconsistentArrivingTValue
-		otts.ClearTValue()
+	// Consistency check: if the TraceID is out of range, the
+	// TValue is a lie.  If inconsistent, clear it.
+	if otts.HasTValue() {
+		if !otts.TValueThreshold().ShouldSample(rnd) {
+			err = ErrInconsistentArrivingTValue
+			otts.ClearTValue()
+		}
+	} else if !otts.HasTValue() {
+		// Note: We could in this case attach another
+		// tracestate to signify that the incoming sampling
+		// threshold was at one point unknown.
 	}
 
 	return ts.traceIDThreshold.ShouldSample(rnd), wts, err
@@ -223,10 +227,11 @@ func (ts *traceEqualizer) updateTracestate(tid pcommon.TraceID, should bool, wts
 func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
 	rnd, wts, err := randomnessFromSpan(s)
 	if err != nil {
-		// TODO: Configure fail-open vs fail-closed?
-		return true, nil, err
+		return false, nil, err
 	}
 	otts := wts.OTelValue()
+	// Consistency check: if the TraceID is out of range, the
+	// TValue is a lie.  If inconsistent, clear it.
 	if otts.HasTValue() && !otts.TValueThreshold().ShouldSample(rnd) {
 		err = ErrInconsistentArrivingTValue
 		otts.ClearTValue()
@@ -235,6 +240,10 @@ func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTrace
 	incoming := 1.0
 	if otts.HasTValue() {
 		incoming = otts.TValueThreshold().Probability()
+	} else {
+		// Note: We could in this case attach another
+		// tracestate to signify that the incoming sampling
+		// threshold was at one point unknown.
 	}
 
 	threshold, _ := sampling.ProbabilityToThresholdWithPrecision(incoming*ts.ratio, ts.prec)
