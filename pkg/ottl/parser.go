@@ -268,7 +268,9 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
 			}
-			s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
+			if s.errorMode == IgnoreError {
+				s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
+			}
 		}
 	}
 	return nil
@@ -334,7 +336,9 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
 				return false, err
 			}
-			c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
+			if c.errorMode == IgnoreError {
+				c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
+			}
 			continue
 		}
 		if match {
