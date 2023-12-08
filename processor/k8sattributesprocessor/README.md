@@ -143,7 +143,7 @@ k8sattributes/2:
       - k8s.pod.start_time
    labels:
      - tag_name: app.label.component
-       key: app.kubenetes.io/component
+       key: app.kubernetes.io/component
        from: pod
   pod_association:
     - sources:
@@ -158,9 +158,9 @@ k8sattributes/2:
 
 ## Role-based access control
 
-The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid` or `k8s.deployment.name` the processor also needs `get`, `watch` and `list` permissions for `replicaset` resources. When extracting metadatas from `node`, the processor needs `get`, `watch` and `list` permissions for `node` resources.
+The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid` or `k8s.deployment.name` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources. When extracting metadatas from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources.
 
-Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
+Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 
 ```yaml
 apiVersion: v1
@@ -175,7 +175,7 @@ metadata:
   name: otel-collector
 rules:
 - apiGroups: [""]
-  resources: ["pods", "namespaces"]
+  resources: ["pods", "namespaces", "nodes"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["apps"]
   resources: ["replicasets"]
@@ -220,7 +220,7 @@ to complete the following steps:
 Add the following snippet under the pod env section of the OpenTelemetry container.
 
 ```yaml
-2. spec:
+spec:
   containers:
   - env:
     - name: KUBE_NODE_NAME

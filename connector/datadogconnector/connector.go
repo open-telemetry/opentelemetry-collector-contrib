@@ -82,9 +82,9 @@ func (c *connectorImp) Shutdown(context.Context) error {
 }
 
 // Capabilities implements the consumer interface.
-// tells use whether the component(connector) will mutate the data passed into it. if set to true the processor does modify the data
+// tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
 func (c *connectorImp) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: true} // ConsumeTraces puts a new attribute _dd.stats_computed
 }
 
 func (c *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {

@@ -416,7 +416,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
-    unit: "{ task }"
+    unit: "{ stage }"
     attributes: []
   spark.job.stage.result:
     description: Number of stages with a specific result in this job.
@@ -425,7 +425,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
-    unit: "{ task }"
+    unit: "{ stage }"
     attributes: [job_result]
   # metrics
   spark.driver.block_manager.disk.usage:

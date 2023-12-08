@@ -16,3 +16,9 @@ status:
   warnings: [Identity Conflict]
   codeowners:
     active: [boostchicken]
+tests:
+  config:
+    actions:
+      - key: attribute1
+        value: 123
+        action: insert

@@ -574,6 +574,7 @@ func commonEnvelopeValidations(
 	assert.Equal(t, defaultParentSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 	assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
 	assert.Equal(t, defaultServiceInstance, envelope.Tags[contracts.CloudRoleInstance])
+	assert.Contains(t, envelope.Tags[contracts.InternalSdkVersion], "otelc-")
 	assert.NotNil(t, envelope.Data)
 
 	if expectedEnvelopeName == defaultRequestDataEnvelopeName {

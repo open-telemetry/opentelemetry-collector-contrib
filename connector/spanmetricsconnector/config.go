@@ -46,6 +46,11 @@ type Config struct {
 	// Optional. See defaultDimensionsCacheSize in connector.go for the default value.
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
+	// ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for
+	// cumulative temporality to avoid memory leaks and correct metric timestamp resets.
+	// Optional. See defaultResourceMetricsCacheSize in connector.go for the default value.
+	ResourceMetricsCacheSize int `mapstructure:"resource_metrics_cache_size"`
+
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
 
 	Histogram HistogramConfig `mapstructure:"histogram"`
