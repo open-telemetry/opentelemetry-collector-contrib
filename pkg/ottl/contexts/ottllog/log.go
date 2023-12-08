@@ -135,15 +135,14 @@ func parsePath(path ottl.Path) (ottl.GetSetter[TransformContext], error) {
 func newPathGetSetter(path ottl.Path) (ottl.GetSetter[TransformContext], error) {
 	switch path.Name() {
 	case "cache":
-		mapKey := path[0].Keys
-		if mapKey == nil {
+		if path.Key() == nil {
 			return accessCache(), nil
 		}
-		return accessCacheKey(mapKey), nil
+		return accessCacheKey(path.Key()), nil
 	case "resource":
-		return internal.ResourcePathGetSetter[TransformContext](path[1:])
+		return internal.ResourcePathGetSetter[TransformContext](path.Next())
 	case "instrumentation_scope":
-		return internal.ScopePathGetSetter[TransformContext](path[1:])
+		return internal.ScopePathGetSetter[TransformContext](path.Next())
 	case "time_unix_nano":
 		return accessTimeUnixNano(), nil
 	case "observed_time_unix_nano":
@@ -153,40 +152,40 @@ func newPathGetSetter(path ottl.Path) (ottl.GetSetter[TransformContext], error) 
 	case "severity_text":
 		return accessSeverityText(), nil
 	case "body":
-		nextPath, hasNext := path.Next()
-		if hasNext && nextPath.Name() == "string" {
-			return accessStringBody(), nil
+		if path.Next() != nil {
+			if path.Next().Name() == "string" {
+				return accessStringBody(), nil
+			}
+		} else {
+			if path.Key() == nil {
+				return accessBody(), nil
+			}
+			return accessBodyKey(path.Key()), nil
 		}
-
-		key := path.Key()
-		if key == nil {
-			return accessBody(), nil
-		}
-		return accessBodyKey(key), nil
-
 	case "attributes":
-		mapKey := path[0].Keys
-		if mapKey == nil {
+		if path.Key() == nil {
 			return accessAttributes(), nil
 		}
-		return accessAttributesKey(mapKey), nil
+		return accessAttributesKey(path.Key()), nil
 	case "dropped_attributes_count":
 		return accessDroppedAttributesCount(), nil
 	case "flags":
 		return accessFlags(), nil
 	case "trace_id":
-		if len(path) == 1 {
+		if path.Next() != nil {
+			if path.Next().Name() == "string" {
+				return accessStringTraceID(), nil
+			}
+		} else {
 			return accessTraceID(), nil
 		}
-		if path[1].Name == "string" {
-			return accessStringTraceID(), nil
-		}
 	case "span_id":
-		if len(path) == 1 {
+		if path.Next() != nil {
+			if path.Next().Name() == "string" {
+				return accessStringSpanID(), nil
+			}
+		} else {
 			return accessSpanID(), nil
-		}
-		if path[1].Name == "string" {
-			return accessStringSpanID(), nil
 		}
 	}
 
@@ -207,13 +206,13 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessCacheKey(keys []ottl.key) ottl.StandardGetSetter[TransformContext] {
+func accessCacheKey(key ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return internal.GetMapValue(tCtx.getCache(), keys)
+			return internal.GetMapValue(tCtx.getCache(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			return internal.SetMapValue(tCtx.getCache(), keys, val)
+			return internal.SetMapValue(tCtx.getCache(), key, val)
 		},
 	}
 }
@@ -291,7 +290,7 @@ func accessBodyKey(key ottl.Key) ottl.StandardGetSetter[TransformContext] {
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return ottl.GetMapValue(tCtx.GetLogRecord().Body().Map(), key)
+				return internal.GetMapValue(tCtx.GetLogRecord().Body().Map(), key)
 			case pcommon.ValueTypeSlice:
 				return internal.GetSliceValue(tCtx.GetLogRecord().Body().Slice(), key)
 			default:
@@ -302,7 +301,7 @@ func accessBodyKey(key ottl.Key) ottl.StandardGetSetter[TransformContext] {
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return ottl.SetMapValue(tCtx.GetLogRecord().Body().Map(), key, val)
+				return internal.SetMapValue(tCtx.GetLogRecord().Body().Map(), key, val)
 			case pcommon.ValueTypeSlice:
 				return internal.SetSliceValue(tCtx.GetLogRecord().Body().Slice(), key, val)
 			default:
@@ -340,13 +339,13 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessAttributesKey(keys []ottl.key) ottl.StandardGetSetter[TransformContext] {
+func accessAttributesKey(key ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return internal.GetMapValue(tCtx.GetLogRecord().Attributes(), keys)
+			return internal.GetMapValue(tCtx.GetLogRecord().Attributes(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			return internal.SetMapValue(tCtx.GetLogRecord().Attributes(), keys, val)
+			return internal.SetMapValue(tCtx.GetLogRecord().Attributes(), key, val)
 		},
 	}
 }

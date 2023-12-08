@@ -17,15 +17,17 @@ type ResourceContext interface {
 }
 
 func ResourcePathGetSetter[K ResourceContext](path ottl.Path) (ottl.GetSetter[K], error) {
+	if path == nil {
+		return nil, fmt.Errorf("invalid resource path expression %v", path)
+	}
 	switch path.Name() {
 	case "":
 		return accessResource[K](), nil
 	case "attributes":
-		mapKeys := path.Keys()
-		if mapKeys == nil {
+		if path.Key() == nil {
 			return accessResourceAttributes[K](), nil
 		}
-		return accessResourceAttributesKey[K](*mapKeys), nil
+		return accessResourceAttributesKey[K](path.Key()), nil
 	case "dropped_attributes_count":
 		return accessResourceDroppedAttributesCount[K](), nil
 	default:

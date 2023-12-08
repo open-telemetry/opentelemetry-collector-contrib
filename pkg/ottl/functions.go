@@ -41,7 +41,7 @@ func newPathHelper(fields []field) *basePath {
 
 type Path interface {
 	Name() string
-	Next() (Path, bool)
+	Next() Path
 	Key() Key
 }
 
@@ -56,12 +56,12 @@ func (p *basePath) Name() string {
 	return p.name
 }
 
-func (p *basePath) Next() (Path, bool) {
+func (p *basePath) Next() Path {
 	if p.nextPath == nil {
-		return nil, false
+		return nil
 	}
 	p.nextPath.fetched = true
-	return p.nextPath, true
+	return p.nextPath
 }
 
 func (p *basePath) Key() Key {
