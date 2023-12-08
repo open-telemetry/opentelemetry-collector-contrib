@@ -6,10 +6,11 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/go-cmp v0.6.0
 	github.com/mongodb-forks/digest v1.0.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.93.0
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/atlas v0.36.0
 	go.opentelemetry.io/collector/component v0.95.0
@@ -97,3 +98,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl

@@ -6,13 +6,14 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.93.0
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.8.4
@@ -152,3 +153,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8ste
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal

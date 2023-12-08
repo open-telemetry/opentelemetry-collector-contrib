@@ -5,11 +5,12 @@ go 1.21
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.93.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/config/confignet v0.95.0
@@ -149,3 +150,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal

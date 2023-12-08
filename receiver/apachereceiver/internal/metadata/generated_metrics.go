@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -776,6 +777,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
 	metricApacheCPULoad            metricApacheCPULoad
 	metricApacheCPUTime            metricApacheCPUTime
 	metricApacheCurrentConnections metricApacheCurrentConnections
@@ -818,7 +821,22 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricApacheTraffic:            newMetricApacheTraffic(mbc.Metrics.ApacheTraffic),
 		metricApacheUptime:             newMetricApacheUptime(mbc.Metrics.ApacheUptime),
 		metricApacheWorkers:            newMetricApacheWorkers(mbc.Metrics.ApacheWorkers),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.ApacheServerName.Include != nil {
+		mb.resourceAttributeIncludeFilter["apache.server.name"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerName.Include)
+	}
+	if mbc.ResourceAttributes.ApacheServerName.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["apache.server.name"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerName.Exclude)
+	}
+	if mbc.ResourceAttributes.ApacheServerPort.Include != nil {
+		mb.resourceAttributeIncludeFilter["apache.server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerPort.Include)
+	}
+	if mbc.ResourceAttributes.ApacheServerPort.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["apache.server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerPort.Exclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -895,6 +913,19 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for name, val := range rm.Resource().Attributes().AsRaw() {
+		if filter, ok := mb.resourceAttributeIncludeFilter[name]; ok {
+			if !filter.Matches(val) {
+				return
+			}
+		}
+		if filter, ok := mb.resourceAttributeExcludeFilter[name]; ok {
+			if filter.Matches(val) {
+				return
+			}
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

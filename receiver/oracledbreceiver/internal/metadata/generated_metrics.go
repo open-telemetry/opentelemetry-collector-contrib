@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -1377,6 +1378,8 @@ type MetricsBuilder struct {
 	metricsCapacity                     int                  // maximum observed number of metrics per resource.
 	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                           component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter      map[string]filter.Filter
+	resourceAttributeExcludeFilter      map[string]filter.Filter
 	metricOracledbConsistentGets        metricOracledbConsistentGets
 	metricOracledbCPUTime               metricOracledbCPUTime
 	metricOracledbDbBlockGets           metricOracledbDbBlockGets
@@ -1449,7 +1452,16 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricOracledbTransactionsUsage:     newMetricOracledbTransactionsUsage(mbc.Metrics.OracledbTransactionsUsage),
 		metricOracledbUserCommits:           newMetricOracledbUserCommits(mbc.Metrics.OracledbUserCommits),
 		metricOracledbUserRollbacks:         newMetricOracledbUserRollbacks(mbc.Metrics.OracledbUserRollbacks),
+		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.OracledbInstanceName.Include != nil {
+		mb.resourceAttributeIncludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.Include)
+	}
+	if mbc.ResourceAttributes.OracledbInstanceName.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.Exclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -1541,6 +1553,19 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for name, val := range rm.Resource().Attributes().AsRaw() {
+		if filter, ok := mb.resourceAttributeIncludeFilter[name]; ok {
+			if !filter.Matches(val) {
+				return
+			}
+		}
+		if filter, ok := mb.resourceAttributeExcludeFilter[name]; ok {
+			if filter.Matches(val) {
+				return
+			}
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

@@ -5,6 +5,7 @@ package metadata
 import (
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -387,6 +388,8 @@ type MetricsBuilder struct {
 	metricsCapacity                    int                  // maximum observed number of metrics per resource.
 	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                          component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter     map[string]filter.Filter
+	resourceAttributeExcludeFilter     map[string]filter.Filter
 	metricRiakMemoryLimit              metricRiakMemoryLimit
 	metricRiakNodeOperationCount       metricRiakNodeOperationCount
 	metricRiakNodeOperationTimeMean    metricRiakNodeOperationTimeMean
@@ -417,7 +420,16 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricRiakNodeReadRepairCount:      newMetricRiakNodeReadRepairCount(mbc.Metrics.RiakNodeReadRepairCount),
 		metricRiakVnodeIndexOperationCount: newMetricRiakVnodeIndexOperationCount(mbc.Metrics.RiakVnodeIndexOperationCount),
 		metricRiakVnodeOperationCount:      newMetricRiakVnodeOperationCount(mbc.Metrics.RiakVnodeOperationCount),
+		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.RiakNodeName.Include != nil {
+		mb.resourceAttributeIncludeFilter["riak.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RiakNodeName.Include)
+	}
+	if mbc.ResourceAttributes.RiakNodeName.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["riak.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RiakNodeName.Exclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -488,6 +500,19 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for name, val := range rm.Resource().Attributes().AsRaw() {
+		if filter, ok := mb.resourceAttributeIncludeFilter[name]; ok {
+			if !filter.Matches(val) {
+				return
+			}
+		}
+		if filter, ok := mb.resourceAttributeExcludeFilter[name]; ok {
+			if filter.Matches(val) {
+				return
+			}
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

@@ -3,10 +3,13 @@
 package metadata
 
 import "go.opentelemetry.io/collector/confmap"
+import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filter"
 
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled bool            `mapstructure:"enabled"`
+	Include []filter.Config `mapstructure:"include"`
+	Exclude []filter.Config `mapstructure:"exclude"`
 
 	enabledSetByUser bool
 }

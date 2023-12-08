@@ -5,6 +5,7 @@ package metadata
 import (
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -1885,6 +1886,8 @@ type MetricsBuilder struct {
 	metricsCapacity                              int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                    component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter               map[string]filter.Filter
+	resourceAttributeExcludeFilter               map[string]filter.Filter
 	metricRedisClientsBlocked                    metricRedisClientsBlocked
 	metricRedisClientsConnected                  metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
@@ -1973,7 +1976,28 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricRedisRole:                              newMetricRedisRole(mbc.Metrics.RedisRole),
 		metricRedisSlavesConnected:                   newMetricRedisSlavesConnected(mbc.Metrics.RedisSlavesConnected),
 		metricRedisUptime:                            newMetricRedisUptime(mbc.Metrics.RedisUptime),
+		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.RedisVersion.Include != nil {
+		mb.resourceAttributeIncludeFilter["redis.version"] = filter.CreateFilter(mbc.ResourceAttributes.RedisVersion.Include)
+	}
+	if mbc.ResourceAttributes.RedisVersion.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["redis.version"] = filter.CreateFilter(mbc.ResourceAttributes.RedisVersion.Exclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.Include != nil {
+		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.Include)
+	}
+	if mbc.ResourceAttributes.ServerAddress.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.Exclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.Include != nil {
+		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.Include)
+	}
+	if mbc.ResourceAttributes.ServerPort.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.Exclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -2073,6 +2097,19 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for name, val := range rm.Resource().Attributes().AsRaw() {
+		if filter, ok := mb.resourceAttributeIncludeFilter[name]; ok {
+			if !filter.Matches(val) {
+				return
+			}
+		}
+		if filter, ok := mb.resourceAttributeExcludeFilter[name]; ok {
+			if filter.Matches(val) {
+				return
+			}
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

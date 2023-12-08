@@ -5,6 +5,7 @@ package metadata
 import (
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -705,6 +706,8 @@ type MetricsBuilder struct {
 	metricsCapacity                 int                  // maximum observed number of metrics per resource.
 	metricsBuffer                   pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                       component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter  map[string]filter.Filter
+	resourceAttributeExcludeFilter  map[string]filter.Filter
 	metricIisConnectionActive       metricIisConnectionActive
 	metricIisConnectionAnonymous    metricIisConnectionAnonymous
 	metricIisConnectionAttemptCount metricIisConnectionAttemptCount
@@ -747,7 +750,22 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricIisRequestRejected:        newMetricIisRequestRejected(mbc.Metrics.IisRequestRejected),
 		metricIisThreadActive:           newMetricIisThreadActive(mbc.Metrics.IisThreadActive),
 		metricIisUptime:                 newMetricIisUptime(mbc.Metrics.IisUptime),
+		resourceAttributeIncludeFilter:  make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:  make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.IisApplicationPool.Include != nil {
+		mb.resourceAttributeIncludeFilter["iis.application_pool"] = filter.CreateFilter(mbc.ResourceAttributes.IisApplicationPool.Include)
+	}
+	if mbc.ResourceAttributes.IisApplicationPool.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["iis.application_pool"] = filter.CreateFilter(mbc.ResourceAttributes.IisApplicationPool.Exclude)
+	}
+	if mbc.ResourceAttributes.IisSite.Include != nil {
+		mb.resourceAttributeIncludeFilter["iis.site"] = filter.CreateFilter(mbc.ResourceAttributes.IisSite.Include)
+	}
+	if mbc.ResourceAttributes.IisSite.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["iis.site"] = filter.CreateFilter(mbc.ResourceAttributes.IisSite.Exclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -824,6 +842,19 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for name, val := range rm.Resource().Attributes().AsRaw() {
+		if filter, ok := mb.resourceAttributeIncludeFilter[name]; ok {
+			if !filter.Matches(val) {
+				return
+			}
+		}
+		if filter, ok := mb.resourceAttributeExcludeFilter[name]; ok {
+			if filter.Matches(val) {
+				return
+			}
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

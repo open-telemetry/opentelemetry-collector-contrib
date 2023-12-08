@@ -1136,11 +1136,12 @@ func newMetricActiveDirectoryDsThreadCount(cfg MetricConfig) metricActiveDirecto
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                                           MetricsBuilderConfig // config of the metrics builder.
-	startTime                                                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                                  int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                                    pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                                        component.BuildInfo  // contains version information.
+	config          MetricsBuilderConfig // config of the metrics builder.
+	startTime       pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity int                  // maximum observed number of metrics per resource.
+	metricsBuffer   pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo       component.BuildInfo  // contains version information.
+
 	metricActiveDirectoryDsBindRate                                  metricActiveDirectoryDsBindRate
 	metricActiveDirectoryDsLdapBindLastSuccessfulTime                metricActiveDirectoryDsLdapBindLastSuccessfulTime
 	metricActiveDirectoryDsLdapBindRate                              metricActiveDirectoryDsLdapBindRate
@@ -1196,6 +1197,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricActiveDirectoryDsSuboperationRate:                          newMetricActiveDirectoryDsSuboperationRate(mbc.Metrics.ActiveDirectoryDsSuboperationRate),
 		metricActiveDirectoryDsThreadCount:                               newMetricActiveDirectoryDsThreadCount(mbc.Metrics.ActiveDirectoryDsThreadCount),
 	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -1273,6 +1275,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
