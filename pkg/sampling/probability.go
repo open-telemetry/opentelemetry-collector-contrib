@@ -5,12 +5,14 @@ package sampling
 
 import (
 	"errors"
-	"fmt"
 	"math"
 )
 
 // ErrProbabilityRange is returned when a value should be in the range [1/MaxAdjustedCount, 1].
 var ErrProbabilityRange = errors.New("sampling probability out of range (0x1p-56 <= valid <= 1)")
+
+// ErrPrecisionUnderflow is returned when a precision is too great for the range.
+var ErrPrecisionUnderflow = errors.New("sampling precision underflow")
 
 // MinSamplingProbability is the smallest representable probability
 // and is the inverse of MaxAdjustedCount.
@@ -35,17 +37,40 @@ func ProbabilityToThreshold(prob float64) (Threshold, error) {
 }
 
 func ProbabilityToThresholdWithPrecision(prob float64, prec uint8) (Threshold, error) {
-	th, err := ProbabilityToThreshold(prob)
-	if err != nil || prec == 0 || prec > 14 {
-		return th, err
+	// Assume full precision at 0.
+	if prec == 0 {
+		return ProbabilityToThreshold(prob)
 	}
-	scaled := th.unsigned
-	divisor := uint64(1) << (4 * (14 - prec))
-	rescaled := uint64(math.Round(float64(scaled/divisor)) * float64(divisor))
+	if !probabilityInRange(prob) {
+		return AlwaysSampleThreshold, ErrProbabilityRange
+	}
 
-	fmt.Printf("SCALED %x %x %x\n", scaled, divisor, rescaled)
+	// Adjust precision considering the significance of leading
+	// zeros.  If we can multiply the rejection probability by 16
+	// and still be less than 1, then there is a leading zero of
+	// obligatory precision.
+	for reject := 1 - prob; reject*16 < 1; {
+		reject *= 16
+		prec++
+	}
+
+	// Check if leading zeros plus precision is above the maximum.
+	// This is called underflow because the requested precision
+	// leads to complete no significant figures.
+	if prec > NumHexDigits {
+		return AlwaysSampleThreshold, ErrPrecisionUnderflow
+	}
+
+	scaled := uint64(math.Round(prob * MaxAdjustedCount))
+	rscaled := MaxAdjustedCount - scaled
+	shift := 4 * (14 - prec)
+	half := uint64(1) << (shift - 1)
+
+	rscaled = (rscaled + half) >> shift
+	rscaled = rscaled << shift
+
 	return Threshold{
-		unsigned: rescaled,
+		unsigned: rscaled,
 	}, nil
 }
 

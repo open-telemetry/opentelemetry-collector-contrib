@@ -229,6 +229,102 @@ func TestTValueSyntax(t *testing.T) {
 	}
 }
 
+func TestProbabilityToThresholdWithPrecision(t *testing.T) {
+	type kase struct {
+		prob    float64
+		exact   string
+		rounded []string
+	}
+
+	for _, test := range []kase{
+		// Note: remember 8 is half of 16: hex rounds up at 8+, down at 7-.
+		{
+			1 - 0x456789ap-28,
+			"456789a",
+			[]string{
+				"45678a",
+				"45679",
+				"4568",
+				"456",
+				"45",
+				"4",
+			},
+		},
+		// Add 3 leading zeros
+		{
+			1 - 0x456789ap-40,
+			"000456789a",
+			[]string{
+				"00045678a",
+				"00045679",
+				"0004568",
+				"000456",
+				"00045",
+				"0004",
+			},
+		},
+		// Rounding up
+		{
+			1 - 0x789abcdefp-40,
+			"0789abcdef",
+			[]string{
+				"0789abcdef",
+				"0789abcdf",
+				"0789abce",
+				"0789abd",
+				"0789ac",
+				"0789b",
+				"078a",
+				"079",
+				"08",
+			},
+		},
+		// Rounding down
+		{
+			1 - 0x12345678p-32,
+			"12345678",
+			[]string{
+				"1234568",
+				"123456",
+				"12345",
+				"1234",
+				"123",
+				"12",
+				"1",
+			},
+		},
+		// Zeros
+		{
+			1 - 0x80801p-28,
+			"0080801",
+			[]string{
+				"00808",
+				"008",
+			},
+		},
+	} {
+		t.Run(test.exact, func(t *testing.T) {
+			th, err := ProbabilityToThreshold(test.prob)
+			require.NoError(t, err)
+			require.Equal(t, th.TValue(), test.exact)
+
+			for _, round := range test.rounded {
+				t.Run(round, func(t *testing.T) {
+					// Requested precision is independent of leading zeros,
+					// so strip them to calculate test precision.
+					strip := round
+					for strip[0] == '0' {
+						strip = strip[1:]
+					}
+					rth, err := ProbabilityToThresholdWithPrecision(test.prob, uint8(len(strip)))
+					require.NoError(t, err)
+					require.Equal(t, round, rth.TValue())
+				})
+			}
+		})
+	}
+}
+
 // There were two benchmarks used to choose the implementation for the
 // Threshold type in this package.  The results indicate that it is
 // faster to compare a 56-bit number than to compare as 7 element
