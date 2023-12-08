@@ -67,7 +67,7 @@ func (p *basePath) Key() key {
 
 func (p *basePath) isComplete() error {
 	if !p.fetched {
-		return fmt.Errorf("path section '%v' was not fetched", p.name)
+		return fmt.Errorf("path section %q was not fetched", p.name)
 	}
 	if p.nextPath == nil {
 		return nil
