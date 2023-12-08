@@ -390,8 +390,32 @@ func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics
 
 type resourceKey [16]byte
 
+func filterResourceAttr(attr pcommon.Map) pcommon.Map {
+	m := pcommon.NewMap()
+	attr.CopyTo(m)
+
+	s := []string{
+		conventions.AttributeServiceName,
+		conventions.AttributeTelemetrySDKName,
+		conventions.AttributeTelemetrySDKLanguage,
+	}
+
+	m.RemoveIf(func(k string, v pcommon.Value) bool {
+		for _, sv := range s {
+			if k == sv {
+				return false
+			}
+		}
+
+		return true
+	})
+
+	return m
+}
+
 func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
-	key := resourceKey(pdatautil.MapHash(attr))
+	h := pdatautil.MapHash(filterResourceAttr(attr))
+	key := resourceKey(h)
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
 		v = &resourceMetrics{
