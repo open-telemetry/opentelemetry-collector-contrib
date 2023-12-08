@@ -2093,3 +2093,78 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 		),
 	)
 }
+
+func Test_basePath_Name(t *testing.T) {
+	bp := basePath{
+		name: "test",
+	}
+	assert.Equal(t, "test", bp.Name())
+}
+
+func Test_basePath_Next(t *testing.T) {
+	bp := basePath{
+		nextPath: &basePath{},
+	}
+	next := bp.Next()
+	assert.NotNil(t, next)
+	assert.Nil(t, next.Next())
+}
+
+func Test_basePath_Key(t *testing.T) {
+	k := &baseKey{}
+	bp := basePath{
+		key: k,
+	}
+	assert.Equal(t, k, bp.Key())
+}
+
+func Test_basePath_isComplete(t *testing.T) {
+	tests := []struct {
+		name          string
+		p             basePath
+		expectedError bool
+	}{
+		{
+			name: "fetched no next",
+			p: basePath{
+				fetched: true,
+			},
+		},
+		{
+			name: "fetched with next",
+			p: basePath{
+				fetched: true,
+				nextPath: &basePath{
+					fetched: true,
+				},
+			},
+		},
+		{
+			name: "not fetched no next",
+			p: basePath{
+				fetched: false,
+			},
+			expectedError: true,
+		},
+		{
+			name: "not fetched with next",
+			p: basePath{
+				fetched: true,
+				nextPath: &basePath{
+					fetched: false,
+				},
+			},
+			expectedError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.p.isComplete()
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

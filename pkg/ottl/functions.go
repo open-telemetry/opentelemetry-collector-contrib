@@ -18,6 +18,124 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
+func newPath(fields []Field) *basePath {
+	p := newPathHelper(fields)
+	if p == nil {
+		return nil
+	}
+	p.fetched = true
+	return p
+}
+
+func newPathHelper(fields []Field) *basePath {
+	if len(fields) == 0 {
+		return nil
+	}
+	return &basePath{
+		name:     fields[0].Name,
+		key:      newKey(fields[0].Keys),
+		nextPath: newPath(fields[1:]),
+	}
+}
+
+type path interface {
+	Name() string
+	Next() path
+	Key() key
+}
+
+var _ path = &basePath{}
+
+type basePath struct {
+	name     string
+	key      key
+	nextPath *basePath
+	fetched  bool
+}
+
+func (p *basePath) Name() string {
+	return p.name
+}
+
+func (p *basePath) Next() path {
+	if p.nextPath == nil {
+		return nil
+	}
+	p.nextPath.fetched = true
+	return p.nextPath
+}
+
+func (p *basePath) Key() key {
+	return p.key
+}
+
+func (p *basePath) isComplete() error {
+	if !p.fetched {
+		return fmt.Errorf("path section '%v' was not fetched", p.name)
+	}
+	if p.nextPath == nil {
+		return nil
+	}
+	return p.nextPath.isComplete()
+}
+
+func newKey(keys []Key) *baseKey {
+	if len(keys) == 0 {
+		return nil
+	}
+	return &baseKey{
+		s:       keys[0].String,
+		i:       keys[0].Int,
+		nextKey: newKey(keys[1:]),
+	}
+}
+
+type key interface {
+	String() *string
+	Int() *int64
+	Next() key
+}
+
+var _ key = &baseKey{}
+
+type baseKey struct {
+	s       *string
+	i       *int64
+	nextKey *baseKey
+	fetched bool
+}
+
+func (k *baseKey) String() *string {
+	return k.s
+}
+
+func (k *baseKey) Int() *int64 {
+	return k.i
+}
+
+func (k *baseKey) Next() key {
+	if k.nextKey == nil {
+		return nil
+	}
+	return k.nextKey
+}
+
+func (k *baseKey) isComplete() error {
+	if !k.fetched {
+		var val any
+		if k.s != nil {
+			val = *k.s
+		} else if k.i != nil {
+			val = *k.i
+		}
+		return fmt.Errorf("key section '%v' was not fetched", val)
+	}
+	if k.nextKey == nil {
+		return nil
+	}
+	return k.nextKey.isComplete()
+}
+
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {
