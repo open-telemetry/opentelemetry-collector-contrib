@@ -45,7 +45,7 @@ require (
 	github.com/google/uuid v1.4.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.3 // indirect
+	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
@@ -68,7 +68,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rs/cors v1.10.1 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.10 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.11 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
