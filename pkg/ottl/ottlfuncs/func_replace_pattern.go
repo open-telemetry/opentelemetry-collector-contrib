@@ -57,34 +57,51 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 		if originalValStr, ok := originalVal.(string); ok {
 			if compiledPattern.MatchString(originalValStr) {
 				if !fn.IsEmpty() {
-					result := []byte{}
-					submatches := compiledPattern.FindStringSubmatchIndex(originalValStr)
-					result = compiledPattern.ExpandString(result, replacementVal, originalValStr, submatches)
-					replacementVal = string(result)
-					fnVal := fn.Get()
-					replaceValGetter := ottl.StandardStringGetter[K]{
-						Getter: func(context.Context, K) (any, error) {
-							return replacementVal, nil
-						},
+					var updatedString string
+					foundMatch := false
+					updatedString = originalValStr
+					submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
+					for _, submatch := range submatches {
+						for i := 2; i < len(submatch); i += 2 {
+							fnVal := fn.Get()
+							old := originalValStr[submatch[i]:submatch[i+1]]
+							replaceValGetter := ottl.StandardStringGetter[K]{
+								Getter: func(context.Context, K) (any, error) {
+									return old, nil
+								},
+							}
+							replacementExpr, errNew := fnVal.Get(&replacePatternFuncArgs[K]{Input: replaceValGetter})
+							if errNew != nil {
+								return nil, errNew
+							}
+							replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+							if errNew != nil {
+								return nil, errNew
+							}
+							replacementValStr, ok := replacementValRaw.(string)
+							if !ok {
+								return nil, fmt.Errorf("replacement value is not a string")
+							}
+							updatedString = compiledPattern.ReplaceAllString(updatedString, replacementValStr)
+							foundMatch = true
+							err = target.Set(ctx, tCtx, updatedString)
+							if err != nil {
+								return nil, err
+							}
+						}
+						if !foundMatch {
+							err = target.Set(ctx, tCtx, updatedString)
+							if err != nil {
+								return nil, err
+							}
+						}
 					}
-					replacementExpr, errNew := fnVal.Get(&replacePatternFuncArgs[K]{Input: replaceValGetter})
-					if errNew != nil {
-						return nil, errNew
+				} else {
+					updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
+					err = target.Set(ctx, tCtx, updatedStr)
+					if err != nil {
+						return nil, err
 					}
-					replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
-					if errNew != nil {
-						return nil, errNew
-					}
-					replacementValStr, ok := replacementValRaw.(string)
-					if !ok {
-						return nil, fmt.Errorf("replacement value is not a string")
-					}
-					replacementVal = replacementValStr
-				}
-				updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
-				err = target.Set(ctx, tCtx, updatedStr)
-				if err != nil {
-					return nil, err
 				}
 			}
 		}

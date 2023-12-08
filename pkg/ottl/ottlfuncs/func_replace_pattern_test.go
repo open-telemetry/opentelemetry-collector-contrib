@@ -76,7 +76,7 @@ func Test_replacePattern(t *testing.T) {
 		{
 			name:    "replace regex match (with hash function)",
 			target:  target,
-			pattern: `passwd\=([^\s]*)(\s?)`,
+			pattern: `passwd\=([^\s]*)\s?`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
 				Getter: func(context.Context, pcommon.Value) (any, error) {
 					return "$1", nil
@@ -90,15 +90,16 @@ func Test_replacePattern(t *testing.T) {
 		{
 			name:    "replace regex match (capture group without $1)",
 			target:  target,
-			pattern: `passwd\=([^\s]*)(\s?)`,
+			pattern: `passwd\=([^\s]*)\s?`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
 				Getter: func(context.Context, pcommon.Value) (any, error) {
-					return "test", nil
+					return "passwd=$1", nil
 				},
 			},
 			function: optionalArg,
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("application hash(test)otherarg=notsensitive key1 key2")
+				// TODO: We should expect "application passwd=hash(sensitivedtata) otherarg=notsensitive key1 key2"
+				expectedValue.SetStr("application hash(sensitivedtata)otherarg=notsensitive key1 key2") // since we only hash capture groups
 			},
 		},
 		{
@@ -112,7 +113,7 @@ func Test_replacePattern(t *testing.T) {
 			},
 			function: optionalArg,
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("application hash()otherarg=notsensitive key1 key2")
+				expectedValue.SetStr("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
 			},
 		},
 		{

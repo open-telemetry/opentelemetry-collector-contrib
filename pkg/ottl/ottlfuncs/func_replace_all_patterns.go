@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -70,64 +71,86 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 			case modeValue:
 				if compiledPattern.MatchString(originalValue.Str()) {
 					if !fn.IsEmpty() {
-						result := []byte{}
-						submatches := compiledPattern.FindStringSubmatchIndex(originalValue.Str())
-						result = compiledPattern.ExpandString(result, replacementVal, originalValue.Str(), submatches)
-						replacementVal = string(result)
-						fnVal := fn.Get()
-						replaceValGetter := ottl.StandardStringGetter[K]{
-							Getter: func(context.Context, K) (any, error) {
-								return replacementVal, nil
-							},
+						var updatedString string
+						foundMatch := false
+						updatedString = originalValue.Str()
+						submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
+						for _, submatch := range submatches {
+							for i := 2; i < len(submatch); i += 2 {
+								fnVal := fn.Get()
+								old := originalValue.Str()[submatch[i]:submatch[i+1]]
+								replaceValGetter := ottl.StandardStringGetter[K]{
+									Getter: func(context.Context, K) (any, error) {
+										return old, nil
+									},
+								}
+								replacementExpr, errNew := fnVal.Get(&replaceAllPatternFuncArgs[K]{Input: replaceValGetter})
+								if errNew != nil {
+									return false
+								}
+								replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+								if errNew != nil {
+									return false
+								}
+								replacementValStr, ok := replacementValRaw.(string)
+								if !ok {
+									return false
+								}
+								updatedString = strings.ReplaceAll(updatedString, old, replacementValStr)
+								foundMatch = true
+								updated.PutStr(key, updatedString)
+							}
+							if !foundMatch {
+								originalValue.CopyTo(updated.PutEmpty(key))
+							}
 						}
-						replacementExpr, errNew := fnVal.Get(&replaceAllPatternFuncArgs[K]{Input: replaceValGetter})
-						if errNew != nil {
-							return false
-						}
-						replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
-						if errNew != nil {
-							return false
-						}
-						replacementValStr, ok := replacementValRaw.(string)
-						if !ok {
-							return false
-						}
-						replacementVal = replacementValStr
+					} else {
+						updatedString := compiledPattern.ReplaceAllString(originalValue.Str(), replacementVal)
+						updated.PutStr(key, updatedString)
 					}
-					updatedString := compiledPattern.ReplaceAllString(originalValue.Str(), replacementVal)
-					updated.PutStr(key, updatedString)
 				} else {
 					originalValue.CopyTo(updated.PutEmpty(key))
 				}
 			case modeKey:
 				if compiledPattern.MatchString(key) {
 					if !fn.IsEmpty() {
-						result := []byte{}
-						submatches := compiledPattern.FindStringSubmatchIndex(originalValue.Str())
-						result = compiledPattern.ExpandString(result, replacementVal, originalValue.Str(), submatches)
-						replacementVal = string(result)
-						fnVal := fn.Get()
-						replaceValGetter := ottl.StandardStringGetter[K]{
-							Getter: func(context.Context, K) (any, error) {
-								return replacementVal, nil
-							},
+						foundMatch := false
+						var updatedString string
+						updatedString = key
+						submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
+						for _, submatch := range submatches {
+							for i := 2; i < len(submatch); i += 2 {
+								fnVal := fn.Get()
+								old := originalValue.Str()[submatch[i]:submatch[i+1]]
+								replaceValGetter := ottl.StandardStringGetter[K]{
+									Getter: func(context.Context, K) (any, error) {
+										return old, nil
+									},
+								}
+								replacementExpr, errNew := fnVal.Get(&replaceAllPatternFuncArgs[K]{Input: replaceValGetter})
+								if errNew != nil {
+									return false
+								}
+								replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+								if errNew != nil {
+									return false
+								}
+								replacementValStr, ok := replacementValRaw.(string)
+								if !ok {
+									return false
+								}
+								updatedString = strings.ReplaceAll(updatedString, old, replacementValStr)
+								foundMatch = true
+								updated.PutStr(key, updatedString)
+							}
+							if !foundMatch {
+								originalValue.CopyTo(updated.PutEmpty(key))
+							}
 						}
-						replacementExpr, errNew := fnVal.Get(&replaceAllPatternFuncArgs[K]{Input: replaceValGetter})
-						if errNew != nil {
-							return false
-						}
-						replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
-						if errNew != nil {
-							return false
-						}
-						replacementValStr, ok := replacementValRaw.(string)
-						if !ok {
-							return false
-						}
-						replacementVal = replacementValStr
+					} else {
+						updatedKey := compiledPattern.ReplaceAllString(key, replacementVal)
+						originalValue.CopyTo(updated.PutEmpty(updatedKey))
 					}
-					updatedKey := compiledPattern.ReplaceAllString(key, replacementVal)
-					originalValue.CopyTo(updated.PutEmpty(updatedKey))
 				} else {
 					originalValue.CopyTo(updated.PutEmpty(key))
 				}
