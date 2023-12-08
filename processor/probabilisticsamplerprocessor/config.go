@@ -81,6 +81,10 @@ type Config struct {
 	// SamplingPriority (logs only) allows to use a log record attribute designed by the `sampling_priority` key
 	// to be used as the sampling priority of the log record.
 	SamplingPriority string `mapstructure:"sampling_priority"`
+
+	// How many hex digits of th: value to use, max, from 1 up to
+	// 14.  Default is 3.
+	SamplingPrecision uint8 `mapstructure:"sampling_precision"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -105,5 +109,12 @@ func (cfg *Config) Validate() error {
 	if cfg.AttributeSource != "" && !validAttributeSource[cfg.AttributeSource] {
 		return fmt.Errorf("invalid attribute source: %v. Expected: %v or %v", cfg.AttributeSource, traceIDAttributeSource, recordAttributeSource)
 	}
+
+	if cfg.SamplingPrecision == 0 {
+		return fmt.Errorf("invalid sampling precision: 0")
+	} else if cfg.SamplingPrecision > sampling.NumHexDigits {
+		return fmt.Errorf("sampling precision is too great, should be <= 14: %d", cfg.SamplingPrecision)
+	}
+
 	return nil
 }

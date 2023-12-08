@@ -416,7 +416,9 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			// Trace randomness (7 bytes)
 			0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		})
-		attribValue.CopyTo(span.Attributes().PutEmpty(key))
+		if key != "" {
+			attribValue.CopyTo(span.Attributes().PutEmpty(key))
+		}
 		span.SetSpanID(sid)
 		return traces
 	}
@@ -431,14 +433,22 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 		sf func(SamplerMode) (bool, float64, string)
 	}{
 		{
+			name: "simple_100",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			ts: "",
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1, "ot=th:0"
+			},
+		},
+		{
 			name: "yes_sample_tid",
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
-			ts:    "",
-			key:   "n/a",
-			value: pcommon.NewValueInt(2),
-			sf:    func(SamplerMode) (bool, float64, string) { return true, 2, "ot=th:8" },
+			ts: "",
+			sf: func(SamplerMode) (bool, float64, string) { return true, 2, "ot=th:8" },
 		},
 		{
 			name: "yes_sample_rv1",
@@ -446,9 +456,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				SamplingPercentage: 1,
 			},
 			//    99/100 = .FD70A3D70A3D70A3D
-			ts:    "ot=rv:FD70A3D70A3D71", // note upper case passes through, is not generated
-			key:   "n/a",
-			value: pcommon.NewValueInt(2),
+			ts: "ot=rv:FD70A3D70A3D71", // note upper case passes through, is not generated
 			sf: func(SamplerMode) (bool, float64, string) {
 				return true, 1 / 0.01, "ot=rv:FD70A3D70A3D71;th:fd70a3d70a3d71"
 			},
@@ -458,17 +466,13 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 1,
 			},
-			ts:    "ot=rv:FD70A3D70A3D70",
-			key:   "n/a",
-			value: pcommon.NewValueInt(2),
+			ts: "ot=rv:FD70A3D70A3D70",
 		},
 		{
 			name: "no_sample",
 			cfg: &Config{
 				SamplingPercentage: 49,
 			},
-			key:   "n/a",
-			value: pcommon.NewValueInt(2),
 		},
 		{
 			name: "no_sample_rv1",
@@ -476,9 +480,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				SamplingPercentage: 1,
 			},
 			//    99/100 = .FD70A3D70A3D70A3D
-			ts:    "ot=rv:FD70A3D70A3D70",
-			key:   "n/a",
-			value: pcommon.NewValueInt(2),
+			ts: "ot=rv:FD70A3D70A3D70",
 		},
 		{
 			name: "yes_sample_rv2",
@@ -486,9 +488,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				SamplingPercentage: 1,
 			},
 			// 99/100 = .FD70A3D70A3D70A3D
-			ts:    "ot=rv:fd70B000000000",
-			key:   "n/a",
-			value: pcommon.NewValueInt(2),
+			ts: "ot=rv:fd70B000000000",
 			sf: func(SamplerMode) (bool, float64, string) {
 				return true, 1 / 0.01, "ot=rv:fd70B000000000;th:fd70a3d70a3d71"
 			},
@@ -517,9 +517,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
-			ts:    "ot=rv:90000000000000;th:80000000000000", // note extra zeros!
-			key:   "n/a",
-			value: pcommon.NewValueInt(2),
+			ts: "ot=rv:90000000000000;th:80000000000000", // note extra zeros!
 			sf: func(mode SamplerMode) (bool, float64, string) {
 				if mode == Equalizing {
 					return true, 2, "ot=rv:90000000000000;th:8"
@@ -532,9 +530,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
-			ts:    "ot=th:8",
-			key:   "n/a",
-			value: pcommon.NewValueInt(2),
+			ts: "ot=th:8",
 			sf: func(mode SamplerMode) (bool, float64, string) {
 				if mode == Equalizing {
 					return true, 2, "ot=th:8"
@@ -543,18 +539,51 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "incoming_rvalue_99",
+			name: "incoming_rvalue_75",
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
-			ts:    "ot=rv:c0000000000000;th:8",
-			key:   "n/a",
-			value: pcommon.NewValueInt(2),
+			ts: "ot=rv:c0000000000000;th:8",
 			sf: func(mode SamplerMode) (bool, float64, string) {
 				if mode == Equalizing {
 					return true, 2, "ot=rv:c0000000000000;th:8"
 				}
 				return true, 4, "ot=rv:c0000000000000;th:c"
+			},
+		},
+		{
+			name: "inconsistent_yes1",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			ts: "ot=rv:40000000000000;th:8",
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1, "ot=rv:40000000000000;th:0"
+			},
+		},
+		{
+			name: "inconsistent_no1",
+			cfg: &Config{
+				SamplingPercentage: 1,
+			},
+			ts: "ot=rv:40000000000000;th:8",
+			sf: func(SamplerMode) (bool, float64, string) {
+				return false, 0, ""
+			},
+		},
+		{
+			name: "precision_3",
+			cfg: &Config{
+				SamplingPercentage: 40,
+				SamplingPrecision:  3,
+			},
+			ts: "ot=rv:a0000000000000", // ;th:8 TODO fix
+			// this tolerance (b/c prec) then add a test
+			// like this with inconsistent-yes i.e.,
+			// testng that th:8 is discarded before th:999
+			// is added
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1 / 0.4, "ot=rv:a0000000000000;th:999"
 			},
 		},
 	}

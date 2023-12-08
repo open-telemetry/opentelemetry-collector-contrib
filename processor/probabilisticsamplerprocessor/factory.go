@@ -20,6 +20,8 @@ import (
 
 var onceMetrics sync.Once
 
+const defaultPrecision = 3
+
 // NewFactory returns a new factory for the Probabilistic sampler processor.
 func NewFactory() processor.Factory {
 	onceMetrics.Do(func() {
@@ -36,8 +38,9 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		AttributeSource: defaultAttributeSource,
-		SamplerMode:     modeUnset,
+		AttributeSource:   defaultAttributeSource,
+		SamplerMode:       modeUnset,
+		SamplingPrecision: defaultPrecision,
 	}
 }
 

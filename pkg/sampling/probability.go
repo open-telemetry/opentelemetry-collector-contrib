@@ -5,6 +5,7 @@ package sampling
 
 import (
 	"errors"
+	"fmt"
 	"math"
 )
 
@@ -25,10 +26,26 @@ func ProbabilityToThreshold(prob float64) (Threshold, error) {
 	if !probabilityInRange(prob) {
 		return AlwaysSampleThreshold, ErrProbabilityRange
 	}
+
 	scaled := uint64(math.Round(prob * MaxAdjustedCount))
 
 	return Threshold{
 		unsigned: MaxAdjustedCount - scaled,
+	}, nil
+}
+
+func ProbabilityToThresholdWithPrecision(prob float64, prec uint8) (Threshold, error) {
+	th, err := ProbabilityToThreshold(prob)
+	if err != nil || prec == 0 || prec > 14 {
+		return th, err
+	}
+	scaled := th.unsigned
+	divisor := uint64(1) << (4 * (14 - prec))
+	rescaled := uint64(math.Round(float64(scaled/divisor)) * float64(divisor))
+
+	fmt.Printf("SCALED %x %x %x\n", scaled, divisor, rescaled)
+	return Threshold{
+		unsigned: rescaled,
 	}, nil
 }
 

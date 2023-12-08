@@ -83,6 +83,7 @@ type traceEqualizer struct {
 // traceEqualizer adjusts thresholds relatively.  Cannot be used with zero.
 type traceProportionalizer struct {
 	ratio float64
+	prec  uint8
 }
 
 // zeroProbability is a bypass for all cases with Percent==0.
@@ -149,7 +150,7 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 
 			tp.sampler = ts
 		case Equalizing:
-			threshold, err := sampling.ProbabilityToThreshold(ratio)
+			threshold, err := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
 			if err != nil {
 				return nil, err
 			}
@@ -161,6 +162,7 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		case Proportional:
 			tp.sampler = &traceProportionalizer{
 				ratio: ratio,
+				prec:  cfg.SamplingPrecision,
 			}
 		}
 	}
@@ -224,13 +226,18 @@ func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTrace
 		// TODO: Configure fail-open vs fail-closed?
 		return true, nil, err
 	}
-	incoming := 1.0
 	otts := wts.OTelValue()
+	if otts.HasTValue() && !otts.TValueThreshold().ShouldSample(rnd) {
+		err = ErrInconsistentArrivingTValue
+		otts.ClearTValue()
+	}
+
+	incoming := 1.0
 	if otts.HasTValue() {
 		incoming = otts.TValueThreshold().Probability()
 	}
 
-	threshold, _ := sampling.ProbabilityToThreshold(incoming * ts.ratio)
+	threshold, _ := sampling.ProbabilityToThresholdWithPrecision(incoming*ts.ratio, ts.prec)
 	should := threshold.ShouldSample(rnd)
 	if should {
 		_ = otts.UpdateTValueWithSampling(threshold, threshold.TValue())
