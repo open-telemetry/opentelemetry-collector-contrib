@@ -8,6 +8,7 @@ package redisreceiver
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -46,97 +47,99 @@ func TestOlderIntegration(t *testing.T) {
 				return redisPort
 			}),
 		),
+		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", "expected-old.yaml")),
 	).Run(t)
 }
 
-//func TestLatestIntegration(t *testing.T) {
-//	scraperinttest.NewIntegrationTest(
-//		NewFactory(),
-//		scraperinttest.WithContainerRequest(
-//			testcontainers.ContainerRequest{
-//				Image:        "redis:7.2.3",
-//				ExposedPorts: []string{redisPort},
-//				WaitingFor:   wait.ForListeningPort(redisPort),
-//			}),
-//		scraperinttest.WithCustomConfig(
-//			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
-//				rCfg := cfg.(*Config)
-//				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, redisPort))
-//			}),
-//		scraperinttest.WithCompareOptions(
-//			pmetrictest.IgnoreMetricValues(),
-//			pmetrictest.IgnoreMetricDataPointsOrder(),
-//			pmetrictest.IgnoreStartTimestamp(),
-//			pmetrictest.IgnoreTimestamp(),
-//			pmetrictest.ChangeResourceAttributeValue("server.address", func(_ string) string {
-//				return "localhost"
-//			}),
-//			pmetrictest.ChangeResourceAttributeValue("server.port", func(_ string) string {
-//				return redisPort
-//			}),
-//		),
-//	).Run(t)
-//}
-//func BooTestClusterIntegration(t *testing.T) {
-//    return
-//	networkName := "redis-net"
-//	startingNode := 1
-//	var waits []wait.Strategy
-//
-//	// Needs at least 6 containers to form a redis cluster with replication
-//	var containerRequests []scraperinttest.TestOption
-//	for i := 0; i < 6; i++ {
-//		containerWait := wait.ForListeningPort(redisPort)
-//		waits = append(waits, containerWait)
-//		containerRequests = append(containerRequests, scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
-//			Image:        "redis:7.2.3",
-//			Name:         fmt.Sprintf("redis-node%d", startingNode+i),
-//			ExposedPorts: []string{redisPort},
-//			WaitingFor:   containerWait,
-//			Networks:     []string{networkName},
-//		}))
-//	}
-//
-//	clusterCmd := []string{
-//		"/bin/bash -c 'yes | redis-cli --cluster create redis-node1:6379 redis-node2:6379 redis-node3:6379 redis-node4:6379 redis-node5:6379 redis-node6:6379 --cluster-replicas 1'",
-//	}
-//	//also needs to run a command, but can be done on existing container.
-//	clusterCreateRequest := scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
-//		Image:      "redis:7.2.3",
-//		WaitingFor: wait.ForAll(waits...),
-//		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
-//			PostStarts: []testcontainers.ContainerHook{
-//				scraperinttest.RunScript(clusterCmd),
-//			},
-//		}},
-//	})
-//
-//	scraperinttest.NewIntegrationTest(
-//		NewFactory(),
-//		scraperinttest.WithNetworkRequest(testcontainers.NetworkRequest{Name: networkName}),
-//		containerRequests[0],
-//		containerRequests[1],
-//		containerRequests[2],
-//		containerRequests[3],
-//		containerRequests[4],
-//		containerRequests[5],
-//		clusterCreateRequest,
-//		scraperinttest.WithCustomConfig(
-//			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
-//				rCfg := cfg.(*Config)
-//				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, redisPort))
-//			}),
-//		scraperinttest.WithCompareOptions(
-//			pmetrictest.IgnoreMetricValues(),
-//			pmetrictest.IgnoreMetricDataPointsOrder(),
-//			pmetrictest.IgnoreStartTimestamp(),
-//			pmetrictest.IgnoreTimestamp(),
-//			pmetrictest.ChangeResourceAttributeValue("server.address", func(_ string) string {
-//				return "localhost"
-//			}),
-//			pmetrictest.ChangeResourceAttributeValue("server.port", func(_ string) string {
-//				return redisPort
-//			}),
-//		),
-//	).Run(t)
-//}
+func TestLatestIntegration(t *testing.T) {
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithContainerRequest(
+			testcontainers.ContainerRequest{
+				Image:        "redis:7.2.3",
+				ExposedPorts: []string{redisPort},
+				WaitingFor:   wait.ForListeningPort(redisPort),
+			}),
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, redisPort))
+			}),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.ChangeResourceAttributeValue("server.address", func(_ string) string {
+				return "localhost"
+			}),
+			pmetrictest.ChangeResourceAttributeValue("server.port", func(_ string) string {
+				return redisPort
+			}),
+		),
+		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", "expected-latest.yaml")),
+	).Run(t)
+}
+func TestClusterIntegration(t *testing.T) {
+	networkName := "redis-net"
+	startingNode := 1
+	var waits []wait.Strategy
+
+	// Needs at least 6 containers to form a redis cluster with replication
+	var containerRequests []scraperinttest.TestOption
+	for i := 0; i < 6; i++ {
+		containerWait := wait.ForListeningPort(redisPort)
+		waits = append(waits, containerWait)
+		containerRequests = append(containerRequests, scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
+			Image:        "redis:7.2.3",
+			Name:         fmt.Sprintf("redis-node%d", startingNode+i),
+			ExposedPorts: []string{redisPort},
+			WaitingFor:   containerWait,
+			Networks:     []string{networkName},
+		}))
+	}
+
+	clusterCmd := []string{
+		"/bin/bash -c 'yes | redis-cli --cluster create redis-node1:6379 redis-node2:6379 redis-node3:6379 redis-node4:6379 redis-node5:6379 redis-node6:6379 --cluster-replicas 1'",
+	}
+	//also needs to run a command, but can be done on existing container.
+	clusterCreateRequest := scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
+		Image:      "redis:7.2.3",
+		WaitingFor: wait.ForAll(waits...),
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
+			PostStarts: []testcontainers.ContainerHook{
+				scraperinttest.RunScript(clusterCmd),
+			},
+		}},
+	})
+
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithNetworkRequest(testcontainers.NetworkRequest{Name: networkName}),
+		containerRequests[0],
+		containerRequests[1],
+		containerRequests[2],
+		containerRequests[3],
+		containerRequests[4],
+		containerRequests[5],
+		clusterCreateRequest,
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, redisPort))
+			}),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.ChangeResourceAttributeValue("server.address", func(_ string) string {
+				return "localhost"
+			}),
+			pmetrictest.ChangeResourceAttributeValue("server.port", func(_ string) string {
+				return redisPort
+			}),
+		),
+		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", "expected-cluster.yaml")),
+	).Run(t)
+}

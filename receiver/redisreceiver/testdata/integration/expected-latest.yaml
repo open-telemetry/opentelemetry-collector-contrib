@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: redis.version
           value:
-            stringValue: 9.0.3
+            stringValue: 7.2.3
     scopeMetrics:
       - metrics:
           - description: Number of clients pending on a blocking call
