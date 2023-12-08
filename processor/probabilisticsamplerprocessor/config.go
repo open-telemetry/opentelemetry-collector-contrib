@@ -65,7 +65,7 @@ type Config struct {
 	// - "proportional": Using an OTel-specified consistent sampling
 	//   mechanism, this sampler reduces the effective sampling
 	//   probability of each span by `SamplingProbability`.
-	SamplerMode SamplerMode `mapstructure:"sampler_mode"`
+	SamplerMode SamplerMode `mapstructure:"mode"`
 
 	///////
 	// Logs only fields below.
