@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: redis.version
           value:
-            stringValue: 7.2.3
+            stringValue: 6.0.3
     scopeMetrics:
       - metrics:
           - description: Number of clients pending on a blocking call
@@ -111,20 +111,6 @@ resourceMetrics:
                         stringValue: user_children
                   startTimeUnixNano: "1687339331739210000"
                   timeUnixNano: "1687339332739210000"
-                - asDouble: 0.056115
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: user_main_thread
-                  startTimeUnixNano: "1702002339535279558"
-                  timeUnixNano: "1702002390537133441"
-                - asDouble: 0.216444
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: sys_main_thread
-                  startTimeUnixNano: "1702002339535279558"
-                  timeUnixNano: "1702002390537133441"
               isMonotonic: true
             unit: s
           - description: Number of evicted keys due to maxmemory limit

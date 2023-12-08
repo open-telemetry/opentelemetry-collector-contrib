@@ -1,0 +1,44 @@
+# Use the official Redis image as the base
+FROM redis:7.2.3
+
+# For debug
+RUN apt update
+RUN apt install --assume-yes net-tools && apt --assume-yes install procps && apt install --assume-yes neovim
+
+# Seems to be an upstream issue with testcontainers or scraperint when using named nodes or clusters, so manually do it
+
+
+COPY cluster.sh /usr/local/bin/cluster.sh
+COPY configure-nodes.sh /usr/local/bin/configure-nodes.sh
+COPY redis-cluster.conf /etc/redis-cluster.conf
+
+RUN chown redis:redis /usr/local/bin/cluster.sh
+RUN chmod +x /usr/local/bin/cluster.sh
+
+RUN chown redis:redis /usr/local/bin/configure-nodes.sh
+RUN chmod +x /usr/local/bin/configure-nodes.sh
+
+RUN configure-nodes.sh
+RUN chown redis:redis /etc/redis-cluster*.conf
+
+RUN mkdir -p /var/log/redis
+RUN chgrp redis /var/log/redis
+
+#redis-server /etc/redis-cluster-6379.conf && \
+#    redis-server /etc/redis-cluster-6380.conf && \
+#    redis-server /etc/redis-cluster-6381.conf && \
+#    redis-server /etc/redis-cluster-6382.conf && \
+#    redis-server /etc/redis-cluster-6383.conf && \
+#    redis-server /etc/redis-cluster-6384.conf
+## Prevent the container from exiting
+#RUN echo 'tail -f /dev/null' >> /usr/local/bin/cluster.sh
+
+
+EXPOSE 6379
+EXPOSE 6380
+EXPOSE 6381
+EXPOSE 6382
+EXPOSE 6383
+EXPOSE 6384
+ENTRYPOINT ["cluster.sh"]
+CMD ["cluster.sh"]
