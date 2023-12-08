@@ -10,4 +10,4 @@ status:
   - redhat
   - sumo
   codeowners:
-    active: [jpkrohling, frzifus]
+    active: [yurishkuro, frzifus]
