@@ -922,7 +922,7 @@ func TestResourceMetricsCache(t *testing.T) {
 
 		// add resource attributes to simulate additional resources providing data
 		for j := 0; j < traces.ResourceSpans().Len(); j++ {
-			traces.ResourceSpans().At(j).Resource().Attributes().PutStr("dummy", fmt.Sprintf("%d", i))
+			traces.ResourceSpans().At(j).Resource().Attributes().PutStr(conventions.AttributeTelemetrySDKName, fmt.Sprintf("%d", i))
 		}
 
 		err = p.ConsumeTraces(ctx, traces)
