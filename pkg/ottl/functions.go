@@ -118,6 +118,7 @@ func (k *baseKey) Next() key {
 	if k.nextKey == nil {
 		return nil
 	}
+	k.nextKey.fetched = true
 	return k.nextKey
 }
 
