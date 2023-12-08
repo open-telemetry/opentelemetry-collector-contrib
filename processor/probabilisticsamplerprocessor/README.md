@@ -54,7 +54,8 @@ The following configuration options can be modified:
 - `attribute_source` (default = traceID, optional): defines where to look for the attribute in from_attribute. The allowed values are `traceID` or `record`.
 - `from_attribute` (default = null, optional): The optional name of a log record attribute used for sampling purposes, such as a unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.
 - `sampling_priority` (default = null, optional): The optional name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. 0 means to never sample the log record, and >= 100 means to always sample the log record.
-- `sampler_mode` (default = "", optional): The optional sampling mode.  One of "hash_seed", "equalizing", and "propotional".  By default, when not explicitly set, if "hash_seed" is non-zero, the "hash_seed" mode will be configured, otherwise the "proportional" mode is selected.
+- `mode` (default = "", optional): The optional sampling mode.  One of "hash_seed", "equalizing", and "propotional".  By default, when not explicitly set, if "hash_seed" is non-zero, the "hash_seed" mode will be configured, otherwise the "proportional" mode is selected.
+- `sampling_precision` (default = 3, optional): The number of digits of precision used to express the desired exactness.
 
 ## Hashing
 
@@ -69,7 +70,7 @@ Sample 15% of the logs:
 ```yaml
 processors:
   probabilistic_sampler:
-    sampler_mode: hash_seed
+    mode: hash_seed
     sampling_percentage: 15
 ```
 
@@ -78,7 +79,7 @@ Sample logs according to their logID attribute:
 ```yaml
 processors:
   probabilistic_sampler:
-    sampler_mode: hash_seed
+    mode: hash_seed
     sampling_percentage: 15
     attribute_source: record # possible values: one of record or traceID
     from_attribute: logID # value is required if the source is not traceID
@@ -89,7 +90,7 @@ Sample logs according to the attribute `priority`:
 ```yaml
 processors:
   probabilistic_sampler:
-    sampler_mode: hash_seed
+    mode: hash_seed
     sampling_percentage: 15
     sampling_priority: priority
 ```
@@ -132,11 +133,18 @@ For example, to configure an equalizing sampler, set the mode explicitly:
 ```
 processors:
   probabilistic_sampler:
-	sampler_mode: equalizing
+	mode: equalizing
     sampling_percentage: 10
 ```
 
+The optional `sampling_precision` field determines how many
+hexadecimal digits are used to express the sampling rejection
+threshold.  By default, 3 hex digits are used.  For example, 60%
+sampling is approximated as "666" with precision 3, because the
+rejection threshold of 40% is approximated by `0x666` out of `0x1000`,
+indicating a sampling probability of precisely 60.009765625%.
+
 ## Detailed examples
 
-Refer to [config.yaml](./testdata/config.yaml) for detailed
-examples on using the processor.
+Refer to [config.yaml](./testdata/config.yaml) for detailed examples
+on using the processor.
