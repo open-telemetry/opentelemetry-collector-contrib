@@ -2168,3 +2168,35 @@ func Test_basePath_isComplete(t *testing.T) {
 		})
 	}
 }
+
+func Test_newPath(t *testing.T) {
+	fields := []Field{
+		{
+			Name: "body",
+		},
+		{
+			Name: "string",
+		},
+	}
+	p := newPath(fields)
+	assert.Equal(t, "body", p.name)
+	p = p.nextPath
+	assert.Equal(t, "string", p.name)
+	assert.Nil(t, p.nextPath)
+}
+
+func Test_newKey(t *testing.T) {
+	keys := []Key{
+		{
+			String: ottltest.Strp("foo"),
+		},
+		{
+			String: ottltest.Strp("bar"),
+		},
+	}
+	k := newKey(keys)
+	assert.Equal(t, "foo", *k.s)
+	k = k.nextKey
+	assert.Equal(t, "bar", *k.s)
+	assert.Nil(t, k.nextKey)
+}

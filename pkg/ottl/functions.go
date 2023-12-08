@@ -19,23 +19,19 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 type Enum int64
 
 func newPath(fields []Field) *basePath {
-	p := newPathHelper(fields)
-	if p == nil {
-		return nil
-	}
-	p.fetched = true
-	return p
-}
-
-func newPathHelper(fields []Field) *basePath {
 	if len(fields) == 0 {
 		return nil
 	}
-	return &basePath{
-		name:     fields[0].Name,
-		key:      newKey(fields[0].Keys),
-		nextPath: newPath(fields[1:]),
+	var current *basePath
+	for i := len(fields) - 1; i >= 0; i-- {
+		current = &basePath{
+			name:     fields[i].Name,
+			key:      newKey(fields[i].Keys),
+			nextPath: current,
+		}
 	}
+	current.fetched = true
+	return current
 }
 
 type path interface {
@@ -83,11 +79,16 @@ func newKey(keys []Key) *baseKey {
 	if len(keys) == 0 {
 		return nil
 	}
-	return &baseKey{
-		s:       keys[0].String,
-		i:       keys[0].Int,
-		nextKey: newKey(keys[1:]),
+	var current *baseKey
+	for i := len(keys) - 1; i >= 0; i-- {
+		current = &baseKey{
+			s:       keys[i].String,
+			i:       keys[i].Int,
+			nextKey: current,
+		}
 	}
+	current.fetched = true
+	return current
 }
 
 type key interface {
