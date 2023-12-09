@@ -28,7 +28,7 @@ attributes:
     description: The full name of the Git repository
     type: string
   branch.name:
-    description: The name of the branch in a given repository
+    description: The name of the Git branch
     type: string
 
 metrics:
