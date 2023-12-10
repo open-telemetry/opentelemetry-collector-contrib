@@ -108,8 +108,6 @@ type MetricDescriptor struct {
 	StorageResolution int `mapstructure:"storage_resolution"`
 }
 
-type StorageResolution int
-
 var _ component.Config = (*Config)(nil)
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
