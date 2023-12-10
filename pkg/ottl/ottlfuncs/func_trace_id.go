@@ -38,7 +38,7 @@ func traceID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
 	var idArr [16]byte
 	copy(idArr[:16], bytes)
 	id := pcommon.TraceID(idArr)
-	return func(context.Context, K) (interface{}, error) {
+	return func(context.Context, K) (any, error) {
 		return id, nil
 	}, nil
 }

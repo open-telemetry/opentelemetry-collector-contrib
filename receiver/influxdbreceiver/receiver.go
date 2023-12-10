@@ -156,7 +156,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 			return
 		}
 
-		fields := make(map[string]interface{})
+		fields := make(map[string]any)
 		for k, vField, err = lpDecoder.NextField(); k != nil && err == nil; k, vField, err = lpDecoder.NextField() {
 			fields[string(k)] = vField.Interface()
 		}

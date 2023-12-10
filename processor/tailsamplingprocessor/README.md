@@ -29,7 +29,7 @@ The following configuration options are required:
 
 Multiple policies exist today and it is straight forward to add more. These include:
 - `always_sample`: Sample all traces
-- `latency`: Sample based on the duration of the trace. The duration is determined by looking at the earliest start time and latest end time, without taking into consideration what happened in between.
+- `latency`: Sample based on the duration of the trace. The duration is determined by looking at the earliest start time and latest end time, without taking into consideration what happened in between. Supplying no upper bound will result in a policy sampling anything greater than `threshold_ms`.
 - `numeric_attribute`: Sample based on number attributes (resource and record)
 - `probabilistic`: Sample a percentage of traces. Read [a comparison with the Probabilistic Sampling Processor](#probabilistic-sampling-processor-compared-to-the-tail-sampling-processor-with-the-probabilistic-policy).
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
@@ -48,7 +48,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
-- `num_traces` (default = 50000): Number of traces kept in memory
+- `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
@@ -77,7 +77,7 @@ processors:
           {
             name: test-policy-2,
             type: latency,
-            latency: {threshold_ms: 5000}
+            latency: {threshold_ms: 5000, upper_threshold_ms: 10000}
           },
           {
             name: test-policy-3,
@@ -211,7 +211,7 @@ Imagine that you wish to configure the processor to implement the following rule
 
 1. **Rule 1:** Not all teams are ready to move to tail sampling. Therefore, sample all traces that are not from the team `team_a`.
 
-1. **Rule 2:** Sample only 1 percent of Readiness/liveness probes
+1. **Rule 2:** Sample only 0.1 percent of Readiness/liveness probes
 
 1. **Rule 3:** `service-1` has a noisy endpoint `/v1/name/{id}`. Sample only 1 percent of such traces.
 
@@ -427,3 +427,11 @@ As a rule of thumb, if you want to add probabilistic sampling and...
 
 [probabilistic_sampling_processor]: ../probabilisticsamplerprocessor
 [loadbalancing_exporter]: ../../exporter/loadbalancingexporter
+
+## FAQ
+
+**Q. Why am I seeing high values for the error metric `sampling_trace_dropped_too_early`?**
+
+**A.** This is likely a load issue. If the collector is processing more traces in-memory than the `num_traces` configuration
+option allows, some will have to be dropped before they can be sampled. Increasing the value of `num_traces` can
+help resolve this error, at the expense of increased memory usage.

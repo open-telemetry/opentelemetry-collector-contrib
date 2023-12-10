@@ -4,3 +4,8 @@ kubeadmConfigPatches:
   - |
     kind: KubeletConfiguration
     serverTLSBootstrap: true
+nodes:
+  - role: control-plane
+    labels:
+      # used in k8sattributesprocessor e2e test
+      foo: too

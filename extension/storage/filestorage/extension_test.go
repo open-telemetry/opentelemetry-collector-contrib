@@ -11,10 +11,12 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -183,6 +185,70 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 	data, err = client2.Get(ctx, "key")
 	require.NoError(t, err)
 	require.Equal(t, myBytes2, data)
+}
+
+func TestSanitize(t *testing.T) {
+	testCases := []struct {
+		name          string
+		componentName string
+		sanitizedName string
+	}{
+		{
+			name:          "safe characters",
+			componentName: `.UPPERCASE-lowercase_1234567890`,
+			sanitizedName: `.UPPERCASE-lowercase_1234567890`,
+		},
+		{
+			name:          "name with a slash",
+			componentName: `logs/json`,
+			sanitizedName: `logs~002Fjson`,
+		},
+		{
+			name:          "name with a tilde",
+			componentName: `logs~json`,
+			sanitizedName: `logs~007Ejson`,
+		},
+		{
+			name:          "popular unsafe characters",
+			componentName: `tilde~slash/backslash\colon:asterisk*questionmark?quote'doublequote"angle<>pipe|exclamationmark!percent%space `,
+			sanitizedName: `tilde~007Eslash~002Fbackslash~005Ccolon~003Aasterisk~002Aquestionmark~003Fquote~0027doublequote~0022angle~003C~003Epipe~007Cexclamationmark~0021percent~0025space~0020`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			assert.Equal(t, testCase.sanitizedName, sanitize(testCase.componentName))
+		})
+	}
+}
+
+func TestComponentNameWithUnsafeCharacters(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("extension.filestorage.replaceUnsafeCharacters", true)
+	require.NoError(t, err)
+
+	tempDir := t.TempDir()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+
+	client, err := se.GetClient(
+		context.Background(),
+		component.KindReceiver,
+		newTestEntity("my/slashed/component*"),
+		"",
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, client)
+
+	client.Close(context.Background())
 }
 
 func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {

@@ -96,7 +96,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 		udpInput, err := udpInputCfg.Build(logger)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve upd config: %w", err)
+			return nil, fmt.Errorf("failed to resolve udp config: %w", err)
 		}
 
 		udpInput.SetOutputIDs([]string{syslogParser.ID()})
@@ -150,34 +150,32 @@ func OctetSplitFuncBuilder(_ encoding.Encoding) (bufio.SplitFunc, error) {
 
 func newOctetFrameSplitFunc(flushAtEOF bool) bufio.SplitFunc {
 	frameRegex := regexp.MustCompile(`^[1-9]\d*\s`)
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	return func(data []byte, atEOF bool) (int, []byte, error) {
 		frameLoc := frameRegex.FindIndex(data)
 		if frameLoc == nil {
 			// Flush if no more data is expected
 			if len(data) != 0 && atEOF && flushAtEOF {
-				token = data
-				advance = len(data)
-				return
+				return len(data), data, nil
 			}
 			return 0, nil, nil
 		}
 
 		frameMaxIndex := frameLoc[1]
-		// delimit space between length and log
+		// Remove the delimiter (space) between length and log, and parse the length
 		frameLenValue, err := strconv.Atoi(string(data[:frameMaxIndex-1]))
 		if err != nil {
-			return 0, nil, err // read more data and try again.
+			// This should not be possible because the regex matched.
+			// However, return an error just in case.
+			return 0, nil, err
 		}
 
-		advance = frameMaxIndex + frameLenValue
-		// the limitation here is that we can only line split within a single buffer
-		// the context of buffer length cannot be pass onto the next scan
-		capacity := cap(data)
-		if advance > capacity {
-			return capacity, data, nil
+		advance := frameMaxIndex + frameLenValue
+		if advance > len(data) {
+			if atEOF && flushAtEOF {
+				return len(data), data, nil
+			}
+			return 0, nil, nil
 		}
-		token = data[:advance]
-		err = nil
-		return
+		return advance, data[:advance], nil
 	}
 }

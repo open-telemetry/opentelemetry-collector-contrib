@@ -10,6 +10,7 @@ datadog/api:
       "old_name1": "new_name1"
       "old_name2": "new_name2"
     span_name_as_resource_name: true
+    trace_buffer: 10
 
 datadog/api2:
   hostname: customhostname

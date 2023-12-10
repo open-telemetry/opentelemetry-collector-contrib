@@ -205,7 +205,8 @@ func Test_timeSeriesSignature(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.Type().String(), &tt.lbs))
+			lbs := tt.lbs
+			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.Type().String(), &lbs))
 		})
 	}
 }
@@ -504,7 +505,7 @@ func Test_getPromExemplars(t *testing.T) {
 }
 
 func TestAddResourceTargetInfo(t *testing.T) {
-	resourceAttrMap := map[string]interface{}{
+	resourceAttrMap := map[string]any{
 		conventions.AttributeServiceName:       "service-name",
 		conventions.AttributeServiceNamespace:  "service-namespace",
 		conventions.AttributeServiceInstanceID: "service-instance-id",
@@ -705,7 +706,7 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &createdLabels): {
 						Labels: createdLabels,
 						Samples: []prompb.Sample{
-							{Value: float64(convertTimeStamp(ts))},
+							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
 						},
 					},
 				}
@@ -815,7 +816,7 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &createdLabels): {
 						Labels: createdLabels,
 						Samples: []prompb.Sample{
-							{Value: float64(convertTimeStamp(ts))},
+							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
 						},
 					},
 				}

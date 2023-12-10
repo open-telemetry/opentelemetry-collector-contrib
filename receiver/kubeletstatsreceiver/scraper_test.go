@@ -170,6 +170,12 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			ContainerMemoryUsage: metadata.MetricConfig{
 				Enabled: false,
 			},
+			K8sContainerCPULimitUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sContainerCPURequestUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
 			K8sContainerMemoryLimitUtilization: metadata.MetricConfig{
 				Enabled: true,
 			},
@@ -248,6 +254,12 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			K8sPodMemoryUsage: metadata.MetricConfig{
 				Enabled: false,
 			},
+			K8sPodCPULimitUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sPodCPURequestUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
 			K8sPodMemoryLimitUtilization: metadata.MetricConfig{
 				Enabled: true,
 			},
@@ -291,19 +303,43 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 
 	md, err := r.Scrape(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, 4, md.DataPointCount())
+	require.Equal(t, 8, md.DataPointCount())
 
-	assert.Equal(t, "k8s.pod.memory_limit_utilization", md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
-	assert.True(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue() <= 1)
-	assert.True(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue() >= 0)
-	assert.Equal(t, "k8s.pod.memory_request_utilization", md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Name())
-	assert.True(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue() > 1)
+	currentMetric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "k8s.pod.cpu_limit_utilization", currentMetric.Name())
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() <= 1)
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() >= 0)
 
-	assert.Equal(t, "k8s.container.memory_limit_utilization", md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Name())
-	assert.True(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue() <= 1)
-	assert.True(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue() >= 0)
-	assert.Equal(t, "k8s.container.memory_request_utilization", md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1).Name())
-	assert.True(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue() > 1)
+	currentMetric = md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1)
+	assert.Equal(t, "k8s.pod.cpu_request_utilization", currentMetric.Name())
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() > 1)
+
+	currentMetric = md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2)
+	assert.Equal(t, "k8s.pod.memory_limit_utilization", currentMetric.Name())
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() <= 1)
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() >= 0)
+
+	currentMetric = md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3)
+	assert.Equal(t, "k8s.pod.memory_request_utilization", currentMetric.Name())
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() > 1)
+
+	currentMetric = md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "k8s.container.cpu_limit_utilization", currentMetric.Name())
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() <= 1)
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() >= 0)
+
+	currentMetric = md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1)
+	assert.Equal(t, "k8s.container.cpu_request_utilization", currentMetric.Name())
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() > 1)
+
+	currentMetric = md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(2)
+	assert.Equal(t, "k8s.container.memory_limit_utilization", currentMetric.Name())
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() <= 1)
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() >= 0)
+
+	currentMetric = md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(3)
+	assert.Equal(t, "k8s.container.memory_request_utilization", currentMetric.Name())
+	assert.True(t, currentMetric.Gauge().DataPoints().At(0).DoubleValue() > 1)
 
 }
 

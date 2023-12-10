@@ -59,7 +59,11 @@ func newKubletScraper(
 			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set),
 			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
-		needsResources: metricsConfig.Metrics.K8sPodMemoryLimitUtilization.Enabled ||
+		needsResources: metricsConfig.Metrics.K8sPodCPULimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodCPURequestUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerCPULimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerCPURequestUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,

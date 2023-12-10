@@ -362,7 +362,7 @@ const (
 		t.Run(tt.name, func(t *testing.T) {
 			tmpdir := t.TempDir()
 			err := generateFile("templates/status.go.tmpl",
-				filepath.Join(tmpdir, "generated_status.go"), tt.md)
+				filepath.Join(tmpdir, "generated_status.go"), tt.md, "metadata")
 			require.NoError(t, err)
 			actual, err := os.ReadFile(filepath.Join(tmpdir, "generated_status.go"))
 			require.NoError(t, err)

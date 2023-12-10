@@ -217,6 +217,20 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.pod.cpu_limit_utilization:
+    enabled: false
+    description: "Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.pod.cpu_request_utilization:
+    enabled: false
+    description: "Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted."
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   k8s.pod.memory_limit_utilization:
     enabled: false
     description: "Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
@@ -337,6 +351,20 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.container.cpu_limit_utilization:
+    enabled: false
+    description: "Container cpu utilization as a ratio of the container's limits"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.container.cpu_request_utilization:
+    enabled: false
+    description: "Container cpu utilization as a ratio of the container's requests"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   k8s.container.memory_limit_utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the container's limits"

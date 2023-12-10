@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	defaultHTTPTimeout = time.Second * 5
+	defaultHTTPTimeout = time.Second * 10
 	defaultMaxConns    = 100
 
 	defaultDimMaxBuffered         = 10000
@@ -46,6 +46,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	maxConnCount := defaultMaxConns
 	idleConnTimeout := 30 * time.Second
+	timeout := 10 * time.Second
 
 	return &Config{
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
@@ -69,6 +70,7 @@ func createDefaultConfig() component.Config {
 			MaxIdleConns:        defaultDimMaxIdleConns,
 			MaxIdleConnsPerHost: defaultDimMaxIdleConnsPerHost,
 			IdleConnTimeout:     idleConnTimeout,
+			Timeout:             timeout,
 		},
 	}
 }

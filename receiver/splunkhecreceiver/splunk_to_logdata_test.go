@@ -50,7 +50,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Event:      "value",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -71,7 +71,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Event:      12.3,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -93,8 +93,8 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",
-					Event:      []interface{}{"foo", "bar"},
-					Fields: map[string]interface{}{
+					Event:      []any{"foo", "bar"},
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -120,8 +120,8 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",
-					Event:      map[string]interface{}{"foos": []interface{}{"foo", "bar", "foobar"}, "bool": false, "someInt": int64(12)},
-					Fields: map[string]interface{}{
+					Event:      map[string]any{"foos": []any{"foo", "bar", "foobar"}, "bool": false, "someInt": int64(12)},
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -152,7 +152,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Event:      "value",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -172,7 +172,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Event:      "value",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"foo": "bar",
 					},
 				},
@@ -213,7 +213,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "1",
 					Index:      "1",
 					Event:      "Event-1",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value1",
 					},
 				},
@@ -224,7 +224,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "2",
 					Index:      "2",
 					Event:      "Event-2",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value2",
 					},
 				},
@@ -235,7 +235,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "1",
 					Index:      "1",
 					Event:      "Event-3",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value1",
 					},
 				},
@@ -246,7 +246,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "2",
 					Index:      "2",
 					Event:      "Event-4",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value2",
 					},
 				},
@@ -257,7 +257,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "1",
 					Index:      "2",
 					Event:      "Event-5",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value1-2",
 					},
 				},
@@ -268,7 +268,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					SourceType: "2",
 					Index:      "1",
 					Event:      "Event-6",
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"field": "value2-1",
 					},
 				},
@@ -530,7 +530,7 @@ func TestConvertToValueFloat(t *testing.T) {
 
 func TestConvertToValueMap(t *testing.T) {
 	value := pcommon.NewValueEmpty()
-	assert.NoError(t, convertToValue(zap.NewNop(), map[string]interface{}{"foo": "bar"}, value))
+	assert.NoError(t, convertToValue(zap.NewNop(), map[string]any{"foo": "bar"}, value))
 	atts := pcommon.NewValueMap()
 	attMap := atts.Map()
 	attMap.PutStr("foo", "bar")
@@ -539,7 +539,7 @@ func TestConvertToValueMap(t *testing.T) {
 
 func TestConvertToValueArray(t *testing.T) {
 	value := pcommon.NewValueEmpty()
-	assert.NoError(t, convertToValue(zap.NewNop(), []interface{}{"foo"}, value))
+	assert.NoError(t, convertToValue(zap.NewNop(), []any{"foo"}, value))
 	arrValue := pcommon.NewValueSlice()
 	arr := arrValue.Slice()
 	arr.AppendEmpty().SetStr("foo")
@@ -551,9 +551,9 @@ func TestConvertToValueInvalid(t *testing.T) {
 }
 
 func TestConvertToValueInvalidInMap(t *testing.T) {
-	assert.Error(t, convertToValue(zap.NewNop(), map[string]interface{}{"foo": splunk.Event{}}, pcommon.NewValueEmpty()))
+	assert.Error(t, convertToValue(zap.NewNop(), map[string]any{"foo": splunk.Event{}}, pcommon.NewValueEmpty()))
 }
 
 func TestConvertToValueInvalidInArray(t *testing.T) {
-	assert.Error(t, convertToValue(zap.NewNop(), []interface{}{splunk.Event{}}, pcommon.NewValueEmpty()))
+	assert.Error(t, convertToValue(zap.NewNop(), []any{splunk.Event{}}, pcommon.NewValueEmpty()))
 }

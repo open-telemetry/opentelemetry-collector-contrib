@@ -51,15 +51,32 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for file resource attributes.
 type ResourceAttributesConfig struct {
-	MapResourceAttr        ResourceAttributeConfig `mapstructure:"map.resource.attr"`
-	OptionalResourceAttr   ResourceAttributeConfig `mapstructure:"optional.resource.attr"`
-	SliceResourceAttr      ResourceAttributeConfig `mapstructure:"slice.resource.attr"`
-	StringEnumResourceAttr ResourceAttributeConfig `mapstructure:"string.enum.resource.attr"`
-	StringResourceAttr     ResourceAttributeConfig `mapstructure:"string.resource.attr"`
+	MapResourceAttr                  ResourceAttributeConfig `mapstructure:"map.resource.attr"`
+	OptionalResourceAttr             ResourceAttributeConfig `mapstructure:"optional.resource.attr"`
+	SliceResourceAttr                ResourceAttributeConfig `mapstructure:"slice.resource.attr"`
+	StringEnumResourceAttr           ResourceAttributeConfig `mapstructure:"string.enum.resource.attr"`
+	StringResourceAttr               ResourceAttributeConfig `mapstructure:"string.resource.attr"`
+	StringResourceAttrDisableWarning ResourceAttributeConfig `mapstructure:"string.resource.attr_disable_warning"`
+	StringResourceAttrRemoveWarning  ResourceAttributeConfig `mapstructure:"string.resource.attr_remove_warning"`
+	StringResourceAttrToBeRemoved    ResourceAttributeConfig `mapstructure:"string.resource.attr_to_be_removed"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -77,6 +94,15 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		StringResourceAttr: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		StringResourceAttrDisableWarning: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		StringResourceAttrRemoveWarning: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		StringResourceAttrToBeRemoved: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

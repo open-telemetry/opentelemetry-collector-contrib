@@ -2,9 +2,25 @@
 
 package metadata
 
+import "go.opentelemetry.io/collector/confmap"
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/system resource attributes.
@@ -17,6 +33,8 @@ type ResourceAttributesConfig struct {
 	HostCPUStepping    ResourceAttributeConfig `mapstructure:"host.cpu.stepping"`
 	HostCPUVendorID    ResourceAttributeConfig `mapstructure:"host.cpu.vendor.id"`
 	HostID             ResourceAttributeConfig `mapstructure:"host.id"`
+	HostIP             ResourceAttributeConfig `mapstructure:"host.ip"`
+	HostMac            ResourceAttributeConfig `mapstructure:"host.mac"`
 	HostName           ResourceAttributeConfig `mapstructure:"host.name"`
 	OsDescription      ResourceAttributeConfig `mapstructure:"os.description"`
 	OsType             ResourceAttributeConfig `mapstructure:"os.type"`
@@ -46,6 +64,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		HostID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostIP: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostMac: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		HostName: ResourceAttributeConfig{

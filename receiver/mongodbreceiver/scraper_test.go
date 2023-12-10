@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -121,14 +121,14 @@ func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
 		partialErr        bool
-		setupMockClient   func(t *testing.T) client
+		setupMockClient   func(t *testing.T) *fakeClient
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
 		expectedErr       error
 	}{
 		{
 			desc:       "Nil client",
 			partialErr: false,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				return nil
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -139,7 +139,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Failed to fetch database names",
 			partialErr: true,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
@@ -155,7 +155,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Failed to fetch collection names",
 			partialErr: true,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
@@ -181,7 +181,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Failed to scrape client stats",
 			partialErr: true,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
@@ -209,7 +209,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Failed to scrape with partial errors on metrics",
 			partialErr: true,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
@@ -240,7 +240,7 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc:       "Successful scrape",
 			partialErr: false,
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(t *testing.T) *fakeClient {
 				fc := &fakeClient{}
 				adminStatus, err := loadAdminStatusAsMap()
 				require.NoError(t, err)
@@ -288,7 +288,15 @@ func TestScraperScrape(t *testing.T) {
 			scraperCfg.MetricsBuilderConfig.Metrics.MongodbHealth.Enabled = true
 
 			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), scraperCfg)
-			scraper.client = tc.setupMockClient(t)
+
+			// Set removeDatabaseAttr as true to simulate enable removeDatabaseAttrFeatureGate
+			scraper.removeDatabaseAttr = true
+
+			mc := tc.setupMockClient(t)
+			if mc != nil {
+				scraper.client = mc
+			}
+
 			actualMetrics, err := scraper.scrape(context.Background())
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
@@ -307,6 +315,10 @@ func TestScraperScrape(t *testing.T) {
 				}
 			}
 
+			if mc != nil {
+				mc.AssertExpectations(t)
+			}
+
 			if tc.partialErr {
 				require.True(t, scrapererror.IsPartialScrapeError(err))
 			} else {
@@ -323,7 +335,6 @@ func TestScraperScrape(t *testing.T) {
 
 func TestTopMetricsAggregation(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
 
 	loadedTop, err := loadTop()
 	require.NoError(t, err)

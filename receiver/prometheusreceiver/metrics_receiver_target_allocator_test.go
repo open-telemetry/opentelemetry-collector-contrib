@@ -42,7 +42,7 @@ type mockTargetAllocatorResponse struct {
 
 type mockTargetAllocatorResponseRaw struct {
 	code int
-	data interface{}
+	data any
 }
 
 type hTTPSDResponse struct {
@@ -162,7 +162,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			responses: Responses{
 				responses: map[string][]mockTargetAllocatorResponseRaw{
 					"/scrape_configs": {
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
@@ -256,7 +256,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			responses: Responses{
 				responses: map[string][]mockTargetAllocatorResponseRaw{
 					"/scrape_configs": {
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
@@ -348,7 +348,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 				responses: map[string][]mockTargetAllocatorResponseRaw{
 					"/scrape_configs": {
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
@@ -368,7 +368,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"metric_relabel_configs": nil,
 							},
 						}},
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
@@ -460,8 +460,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 				responses: map[string][]mockTargetAllocatorResponseRaw{
 					"/scrape_configs": {
-						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]interface{}{}},
-						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]interface{}{}},
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]any{}},
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]any{}},
 					},
 				},
 			},

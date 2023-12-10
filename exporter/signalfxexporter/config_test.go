@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				AccessToken: "testToken",
 				Realm:       "ap0",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Timeout:             5 * time.Second,
+					Timeout:             10 * time.Second,
 					Headers:             nil,
 					MaxIdleConns:        &hundred,
 					MaxIdleConnsPerHost: &hundred,
@@ -74,6 +74,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: 20,
 					MaxConnsPerHost:     20,
 					IdleConnTimeout:     30 * time.Second,
+					Timeout:             10 * time.Second,
 				},
 				TranslationRules:    nil,
 				ExcludeMetrics:      nil,
@@ -140,6 +141,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: 10,
 					MaxConnsPerHost:     10000,
 					IdleConnTimeout:     2 * time.Hour,
+					Timeout:             20 * time.Second,
 				},
 				TranslationRules: []translation.Rule{
 					{
@@ -184,14 +186,14 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						MetricName: "metric4",
-						Dimensions: map[string]interface{}{
+						Dimensions: map[string]any{
 							"dimension_key": "dimension_val",
 						},
 					},
 					{
 						MetricName: "metric5",
-						Dimensions: map[string]interface{}{
-							"dimension_key": []interface{}{"dimension_val1", "dimension_val2"},
+						Dimensions: map[string]any{
+							"dimension_key": []any{"dimension_val1", "dimension_val2"},
 						},
 					},
 					{
@@ -202,7 +204,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						MetricName: "cpu.utilization",
-						Dimensions: map[string]interface{}{
+						Dimensions: map[string]any{
 							"container_name": "/^[A-Z][A-Z]$/",
 						},
 					},
@@ -485,14 +487,6 @@ func TestConfigValidateErrors(t *testing.T) {
 			},
 		},
 		{
-			name: "Negative MaxConnections",
-			cfg: &Config{
-				Realm:          "us0",
-				AccessToken:    "access_token",
-				MaxConnections: -1,
-			},
-		},
-		{
 			name: "Negative Timeout",
 			cfg: &Config{
 				Realm:              "us0",
@@ -551,7 +545,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, tt.cfg.Unmarshal(confmap.NewFromStringMap(map[string]interface{}{})))
+			require.NoError(t, tt.cfg.Unmarshal(confmap.NewFromStringMap(map[string]any{})))
 			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
 		})
 	}

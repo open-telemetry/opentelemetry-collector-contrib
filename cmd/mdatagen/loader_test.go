@@ -74,7 +74,41 @@ func Test_loadMetadata(t *testing.T) {
 						},
 						FullName: "map.resource.attr",
 					},
+					"string.resource.attr_disable_warning": {
+						Description: "Resource attribute with any string value.",
+						Warnings: warnings{
+							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
+						},
+						Enabled: true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.resource.attr_disable_warning",
+					},
+					"string.resource.attr_remove_warning": {
+						Description: "Resource attribute with any string value.",
+						Warnings: warnings{
+							IfConfigured: "This resource_attribute is deprecated and will be removed soon.",
+						},
+						Enabled: false,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.resource.attr_remove_warning",
+					},
+					"string.resource.attr_to_be_removed": {
+						Description: "Resource attribute with any string value.",
+						Warnings: warnings{
+							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
+						},
+						Enabled: true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.resource.attr_to_be_removed",
+					},
 				},
+
 				Attributes: map[attributeName]attribute{
 					"enum_attr": {
 						Description:  "Attribute with a known set of string values.",

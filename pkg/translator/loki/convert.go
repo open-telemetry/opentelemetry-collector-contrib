@@ -55,18 +55,6 @@ func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defau
 		out = out.Merge(labels)
 	}
 
-	// get tenant hint from resource attributes, fallback to record attributes
-	// if it is not found
-	if resourcesToLabel, found := resAttrs.Get(hintTenant); !found {
-		if attributesToLabel, found := logAttrs.Get(hintTenant); found {
-			labels := convertAttributesToLabels(logAttrs, attributesToLabel)
-			out = out.Merge(labels)
-		}
-	} else {
-		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
-		out = out.Merge(labels)
-	}
-
 	return out
 }
 

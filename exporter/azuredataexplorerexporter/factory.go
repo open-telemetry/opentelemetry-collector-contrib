@@ -74,7 +74,9 @@ func createMetricsExporter(
 		set,
 		adxCfg,
 		adp.metricsDataPusher,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(adxCfg.TimeoutSettings),
+		exporterhelper.WithRetry(adxCfg.RetrySettings),
+		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
 
 	if err != nil {
@@ -104,7 +106,9 @@ func createTracesExporter(
 		set,
 		adxCfg,
 		adp.tracesDataPusher,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(adxCfg.TimeoutSettings),
+		exporterhelper.WithRetry(adxCfg.RetrySettings),
+		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
 
 	if err != nil {
@@ -134,7 +138,9 @@ func createLogsExporter(
 		set,
 		adxCfg,
 		adp.logsDataPusher,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(adxCfg.TimeoutSettings),
+		exporterhelper.WithRetry(adxCfg.RetrySettings),
+		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
 
 	if err != nil {

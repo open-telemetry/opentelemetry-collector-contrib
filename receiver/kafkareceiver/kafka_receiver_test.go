@@ -6,7 +6,6 @@ package kafkareceiver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -30,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 func TestNewTracesReceiver_version_err(t *testing.T) {
@@ -37,7 +37,8 @@ func TestNewTracesReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), defaultTracesUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
+	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -46,7 +47,8 @@ func TestNewTracesReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), defaultTracesUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
+	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -55,7 +57,7 @@ func TestNewTracesReceiver_encoding_err(t *testing.T) {
 func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
-		Authentication: kafkaexporter.Authentication{
+		Authentication: kafka.Authentication{
 			TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/doesnotexist",
@@ -67,7 +69,8 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), defaultTracesUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
+	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -78,7 +81,8 @@ func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
 		InitialOffset: "foo",
 		Encoding:      defaultEncoding,
 	}
-	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), defaultTracesUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
+	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errInvalidInitialOffset.Error())
@@ -131,8 +135,8 @@ func TestTracesReceiver_error(t *testing.T) {
 }
 
 func TestTracesConsumerGroupHandler(t *testing.T) {
-	view.Unregister(MetricViews()...)
-	views := MetricViews()
+	view.Unregister(metricViews()...)
+	views := metricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
@@ -181,8 +185,8 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 }
 
 func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
-	view.Unregister(MetricViews()...)
-	views := MetricViews()
+	view.Unregister(metricViews()...)
+	views := metricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
@@ -298,7 +302,8 @@ func TestNewMetricsReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), defaultMetricsUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
+	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -307,7 +312,8 @@ func TestNewMetricsReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), defaultMetricsUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
+	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -316,7 +322,7 @@ func TestNewMetricsReceiver_encoding_err(t *testing.T) {
 func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
-		Authentication: kafkaexporter.Authentication{
+		Authentication: kafka.Authentication{
 			TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/doesnotexist",
@@ -328,7 +334,8 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), defaultMetricsUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
+	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -339,7 +346,8 @@ func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
 		InitialOffset: "foo",
 		Encoding:      defaultEncoding,
 	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), defaultMetricsUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
+	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errInvalidInitialOffset.Error())
@@ -392,8 +400,8 @@ func TestMetricsReceiver_error(t *testing.T) {
 }
 
 func TestMetricsConsumerGroupHandler(t *testing.T) {
-	view.Unregister(MetricViews()...)
-	views := MetricViews()
+	view.Unregister(metricViews()...)
+	views := metricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
@@ -442,8 +450,8 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 }
 
 func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
-	view.Unregister(MetricViews()...)
-	views := MetricViews()
+	view.Unregister(metricViews()...)
+	views := metricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
@@ -557,7 +565,8 @@ func TestNewLogsReceiver_version_err(t *testing.T) {
 		Encoding:        defaultEncoding,
 		ProtocolVersion: "none",
 	}
-	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
+	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -566,7 +575,8 @@ func TestNewLogsReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
 	}
-	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
+	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -575,7 +585,7 @@ func TestNewLogsReceiver_encoding_err(t *testing.T) {
 func TestNewLogsExporter_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
-		Authentication: kafkaexporter.Authentication{
+		Authentication: kafka.Authentication{
 			TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/doesnotexist",
@@ -587,7 +597,8 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 			Full: false,
 		},
 	}
-	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
+	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)
@@ -598,7 +609,8 @@ func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
 		InitialOffset: "foo",
 		Encoding:      defaultEncoding,
 	}
-	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
+	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errInvalidInitialOffset.Error())
@@ -651,8 +663,8 @@ func TestLogsReceiver_error(t *testing.T) {
 }
 
 func TestLogsConsumerGroupHandler(t *testing.T) {
-	view.Unregister(MetricViews()...)
-	views := MetricViews()
+	view.Unregister(metricViews()...)
+	views := metricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
@@ -701,8 +713,8 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 }
 
 func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
-	view.Unregister(MetricViews()...)
-	views := MetricViews()
+	view.Unregister(metricViews()...)
+	views := metricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
@@ -916,30 +928,8 @@ func TestGetLogsUnmarshaler_encoding_text(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers())
+			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers("Test Version", zap.NewNop()))
 			assert.NoError(t, err)
-		})
-	}
-}
-
-func TestGetLogsUnmarshaler_encoding_text_error(t *testing.T) {
-	tests := []struct {
-		name     string
-		encoding string
-	}{
-		{
-			name:     "text encoding has typo",
-			encoding: "text_uft-8",
-		},
-		{
-			name:     "text encoding is a random string",
-			encoding: "text_vnbqgoba156",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers())
-			assert.ErrorContains(t, err, fmt.Sprintf("unsupported encoding '%v'", test.encoding[5:]))
 		})
 	}
 }
@@ -948,7 +938,8 @@ func TestCreateLogsReceiver_encoding_text_error(t *testing.T) {
 	cfg := Config{
 		Encoding: "text_uft-8",
 	}
-	_, err := newLogsReceiver(cfg, receivertest.NewNopCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
+	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[cfg.Encoding]
+	_, err := newLogsReceiver(cfg, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	// encoding error comes first
 	assert.Error(t, err, "unsupported encoding")
 }

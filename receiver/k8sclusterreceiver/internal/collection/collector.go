@@ -69,6 +69,7 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 		if crm.ScopeMetrics().Len() > 0 {
 			crm.MoveTo(customRMs.AppendEmpty())
 		}
+		node.RecordMetrics(dc.metricsBuilder, o.(*corev1.Node), ts)
 	})
 	dc.metadataStore.ForEach(gvk.Namespace, func(o any) {
 		namespace.RecordMetrics(dc.metricsBuilder, o.(*corev1.Namespace), ts)

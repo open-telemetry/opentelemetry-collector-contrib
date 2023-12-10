@@ -40,13 +40,13 @@ func TestPullObject(t *testing.T) {
 
 	mockClient := newMockDynamicClient()
 	mockClient.createPods(
-		generatePod("pod1", "default", map[string]interface{}{
+		generatePod("pod1", "default", map[string]any{
 			"environment": "production",
 		}, "1"),
-		generatePod("pod2", "default", map[string]interface{}{
+		generatePod("pod2", "default", map[string]any{
 			"environment": "test",
 		}, "2"),
-		generatePod("pod3", "default_ignore", map[string]interface{}{
+		generatePod("pod3", "default_ignore", map[string]any{
 			"environment": "production",
 		}, "3"),
 	)
@@ -88,7 +88,7 @@ func TestWatchObject(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	mockClient.createPods(
-		generatePod("pod1", "default", map[string]interface{}{
+		generatePod("pod1", "default", map[string]any{
 			"environment": "production",
 		}, "1"),
 	)
@@ -125,13 +125,13 @@ func TestWatchObject(t *testing.T) {
 	assert.Equal(t, 0, consumer.Count())
 
 	mockClient.createPods(
-		generatePod("pod2", "default", map[string]interface{}{
+		generatePod("pod2", "default", map[string]any{
 			"environment": "test",
 		}, "2"),
-		generatePod("pod3", "default_ignore", map[string]interface{}{
+		generatePod("pod3", "default_ignore", map[string]any{
 			"environment": "production",
 		}, "3"),
-		generatePod("pod4", "default", map[string]interface{}{
+		generatePod("pod4", "default", map[string]any{
 			"environment": "production",
 		}, "4"),
 	)
@@ -140,7 +140,7 @@ func TestWatchObject(t *testing.T) {
 	assert.Equal(t, 2, consumer.Count())
 
 	mockClient.deletePods(
-		generatePod("pod2", "default", map[string]interface{}{
+		generatePod("pod2", "default", map[string]any{
 			"environment": "test",
 		}, "2"),
 	)
@@ -157,7 +157,7 @@ func TestExludeDeletedTrue(t *testing.T) {
 	mockClient := newMockDynamicClient()
 
 	mockClient.createPods(
-		generatePod("pod1", "default", map[string]interface{}{
+		generatePod("pod1", "default", map[string]any{
 			"environment": "production",
 		}, "1"),
 	)
@@ -197,7 +197,7 @@ func TestExludeDeletedTrue(t *testing.T) {
 	assert.Equal(t, 0, consumer.Count())
 
 	mockClient.deletePods(
-		generatePod("pod1", "default", map[string]interface{}{
+		generatePod("pod1", "default", map[string]any{
 			"environment": "test",
 		}, "1"),
 	)

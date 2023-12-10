@@ -91,3 +91,6 @@ metrics:
 | slice.resource.attr | Resource attribute with a slice value. | Any Slice | true |
 | string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true |
 | string.resource.attr | Resource attribute with any string value. | Any Str | true |
+| string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true |
+| string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false |
+| string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true |

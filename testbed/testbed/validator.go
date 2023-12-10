@@ -80,13 +80,13 @@ func NewCorrectTestValidator(senderName string, receiverName string, provider Da
 
 func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 	if assert.EqualValues(tc.t,
-		int64(tc.LoadGenerator.DataItemsSent()),
+		int64(tc.LoadGenerator.DataItemsSent())-int64(tc.LoadGenerator.PermanentErrors()),
 		int64(tc.MockBackend.DataItemsReceived()),
 		"Received and sent counters do not match.") {
 		log.Printf("Sent and received data counters match.")
 	}
 	if len(tc.MockBackend.ReceivedTraces) > 0 {
-		v.assertSentRecdTracingDataEqual(tc.MockBackend.ReceivedTraces)
+		v.assertSentRecdTracingDataEqual(append(tc.MockBackend.ReceivedTraces, tc.MockBackend.DroppedTraces...))
 	}
 	assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
 }

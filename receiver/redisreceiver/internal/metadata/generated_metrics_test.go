@@ -49,6 +49,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -187,6 +188,8 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetRedisVersion("redis.version-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort("server.port-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

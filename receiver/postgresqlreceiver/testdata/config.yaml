@@ -9,6 +9,8 @@ postgresql/all:
   password: ${env:POSTGRESQL_PASSWORD}
   databases:
     - otel
+  exclude_databases:
+    - template0
   collection_interval: 10s
   tls:
     insecure: false

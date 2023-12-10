@@ -28,7 +28,6 @@ func RecordMetrics(mb *metadata.MetricsBuilder, j *batchv1.Job, ts pcommon.Times
 	rb.SetK8sNamespaceName(j.Namespace)
 	rb.SetK8sJobName(j.Name)
 	rb.SetK8sJobUID(string(j.UID))
-	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

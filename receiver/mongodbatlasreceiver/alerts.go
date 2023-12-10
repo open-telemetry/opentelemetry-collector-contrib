@@ -340,7 +340,8 @@ func (a *alertsReceiver) shutdownPoller(ctx context.Context) error {
 func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert, project *mongodbatlas.Project) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	var errs error
-	for _, alert := range alerts {
+	for i := range alerts {
+		alert := alerts[i]
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
 		resourceAttrs := resourceLogs.Resource().Attributes()
 		resourceAttrs.PutStr("mongodbatlas.group.id", alert.GroupID)

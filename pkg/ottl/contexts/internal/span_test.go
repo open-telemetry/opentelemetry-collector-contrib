@@ -42,8 +42,8 @@ func TestSpanPathGetSetter(t *testing.T) {
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(span ptrace.Span)
 	}{
 		{
@@ -523,7 +523,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 					},
 				},
 			},
-			orig: func() interface{} {
+			orig: func() any {
 				return nil
 			}(),
 			newVal: "new",

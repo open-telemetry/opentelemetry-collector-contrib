@@ -49,7 +49,7 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapGetter[K], stra
 		return nil, fmt.Errorf("invalid value for strategy, %v, must be 'insert', 'update' or 'upsert'", strategy)
 	}
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		targetMap, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

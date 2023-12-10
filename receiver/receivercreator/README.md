@@ -122,6 +122,12 @@ Note that the backticks below are not typos--they indicate the value is set dyna
 
 None
 
+`type == "k8s.service"`
+
+| Resource Attribute | Default           |
+|--------------------|-------------------|
+| k8s.namespace.name | \`namespace\`     |
+
 `type == "k8s.node"`
 
 | Resource Attribute | Default           |
@@ -145,7 +151,7 @@ Similar to the per-endpoint type `resource_attributes` described above but for i
 
 ## Rule Expressions
 
-Each rule must start with `type == ("pod"|"port"|"hostport"|"container"|"k8s.node") &&` such that the rule matches
+Each rule must start with `type == ("pod"|"port"|"hostport"|"container"|"k8s.service"|"k8s.node") &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 
@@ -203,6 +209,20 @@ targeting it will have different variables available.
 | host           | Hostname or IP of the underlying host the container is running on |
 | transport      | Transport protocol used by the endpoint (TCP or UDP)              |
 | labels         | User-specified metadata labels on the container                   |
+
+### Kubernetes Service
+
+| Variable       | Description                                                       |
+|----------------|-------------------------------------------------------------------|
+| type                  | `"k8s.service"`                                                                                                        |
+| id                    | ID of source endpoint                                                                                                  |
+| name                  | The name of the Kubernetes service                                                                                     |
+| namespace             | The namespace of the service                                                                                           |
+| uid                   | The unique ID for the service                                                                                          |
+| labels                | The map of labels set on the service                                                                                   |
+| annotations           | The map of annotations set on the service                                                                              |
+| service_type          | The type of the kubernetes service: ClusterIP, NodePort, LoadBalancer, ExternalName                                    |
+| cluster_ip            | The cluster IP assigned to the service                                                                                 |
 
 ### Kubernetes Node
 
@@ -290,6 +310,15 @@ receivers:
             - container
             - pod
             - node
+    receivers:
+      httpcheck:
+        # Configure probing if standard prometheus annotations are set on the pod.
+        rule: type == "k8s.service" && annotations["prometheus.io/probe"] == "true"
+        config:
+          targets:
+          - endpoint: 'http://`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
+            method: GET
+          collection_interval: 10s
 
 processors:
   exampleprocessor:

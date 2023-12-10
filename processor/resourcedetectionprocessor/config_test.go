@@ -152,7 +152,7 @@ func TestLoadConfig(t *testing.T) {
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, *tt.expected.(*Config), *cfg.(*Config))
 		})
 	}
 }

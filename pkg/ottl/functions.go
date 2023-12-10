@@ -123,7 +123,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			if !ok {
 				return fmt.Errorf("undefined function %s", name)
 			}
-			val = StandardFunctionGetter[K]{fCtx: FunctionContext{Set: p.telemetrySettings}, fact: f}
+			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(arg.Value, fieldType)
 		default:

@@ -70,6 +70,28 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			{{- end }}
 			{{- end }}
+			{{- range $name, $attr := .ResourceAttributes }}
+			{{- if and $attr.Enabled $attr.Warnings.IfEnabled }}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- if $attr.Warnings.IfEnabledNotSet }}
+			if test.configSet == testSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $attr.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- if $attr.Warnings.IfConfigured }}
+			if test.configSet == testSetAll || test.configSet == testSetNone {
+				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- end }}
+
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0

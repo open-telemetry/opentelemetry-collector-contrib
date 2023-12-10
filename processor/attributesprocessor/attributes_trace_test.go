@@ -26,8 +26,8 @@ import (
 type testCase struct {
 	name               string
 	serviceName        string
-	inputAttributes    map[string]interface{}
-	expectedAttributes map[string]interface{}
+	inputAttributes    map[string]any
+	expectedAttributes map[string]any
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -39,7 +39,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp processor.Traces) {
 	})
 }
 
-func generateTraceData(serviceName, spanName string, attrs map[string]interface{}) ptrace.Traces {
+func generateTraceData(serviceName, spanName string, attrs map[string]any) ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
@@ -107,18 +107,18 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		{
 			name:            "apply processor",
 			serviceName:     "svcB",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"attribute1": 123,
 			},
 		},
 		{
 			name:        "apply processor with different value for exclude property",
 			serviceName: "svcB",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"attribute1":     123,
 				"NoModification": false,
 			},
@@ -126,16 +126,16 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		{
 			name:               "incorrect name for include property",
 			serviceName:        "noname",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name:        "attribute match for exclude property",
 			serviceName: "svcB",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"NoModification": true,
 			},
 		},
@@ -171,18 +171,18 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 		{
 			name:            "apply",
 			serviceName:     "svcB",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"attribute1": 123,
 			},
 		},
 		{
 			name:        "apply",
 			serviceName: "svcB",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"attribute1":     123,
 				"NoModification": false,
 			},
@@ -190,22 +190,22 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 		{
 			name:               "incorrect_span_name",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name:               "dont_apply",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name:        "incorrect_span_name_with_attr",
 			serviceName: "svcB",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"NoModification": true,
 			},
 		},
@@ -239,18 +239,18 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		{
 			name:            "apply_to_span_with_no_attrs",
 			serviceName:     "svcB",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"attribute1": 123,
 			},
 		},
 		{
 			name:        "apply_to_span_with_attr",
 			serviceName: "svcB",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"attribute1":     123,
 				"NoModification": false,
 			},
@@ -258,22 +258,22 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		{
 			name:               "incorrect_span_name",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name:               "apply_dont_apply",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		{
 			name:        "incorrect_span_name_with_attr",
 			serviceName: "svcB",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"NoModification": true,
 			},
 		},
@@ -306,37 +306,37 @@ func TestAttributes_Hash(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "String",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user.email": "john.doe@example.com",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user.email": "836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f",
 			},
 		},
 		{
 			name: "Int",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user.id": 10,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user.id": "a111f275cc2e7588000001d300a31e76336d15b9d314cd1a1d8f3d3556975eed",
 			},
 		},
 		{
 			name: "Double",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user.balance": 99.1,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user.balance": "05fabd78b01be9692863cb0985f600c99da82979af18db5c55173c2a30adb924",
 			},
 		},
 		{
 			name: "Bool",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user.authenticated": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user.authenticated": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
 			},
 		},
@@ -365,82 +365,82 @@ func TestAttributes_Convert(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "int to int",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.int": 1,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.int": 1,
 			},
 		},
 		{
 			name: "true to int",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.int": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.int": 1,
 			},
 		},
 		{
 			name: "false to int",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.int": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.int": 0,
 			},
 		},
 		{
 			name: "String to int (good)",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.int": "123",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.int": 123,
 			},
 		},
 		{
 			name: "String to int (bad)",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.int": "int-10",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.int": "int-10",
 			},
 		},
 		{
 			name: "String to double (int-ish)",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.double": "123",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.double": 123.0,
 			},
 		},
 		{
 			name: "String to double (double-ish)",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.double": "123.6",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.double": 123.6,
 			},
 		},
 		{
 			name: "String to double (bad)",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.double": "int-10",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.double": "int-10",
 			},
 		},
 		{
 			name: "Double to string",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"to.string": 99.1,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"to.string": "99.1",
 			},
 		},
@@ -468,25 +468,25 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	testCases := []testCase{
 		{
 			name:            "apply_to_span_with_no_attrs",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"attribute1": 123,
 			},
 		},
 		{
 			name: "apply_to_span_with_attr",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"NoModification": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"attribute1":     123,
 				"NoModification": false,
 			},
 		},
 		{
 			name:               "dont_apply",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 	}
 

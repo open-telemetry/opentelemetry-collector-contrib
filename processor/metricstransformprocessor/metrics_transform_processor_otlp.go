@@ -454,7 +454,7 @@ func copyMetricDetails(from, to pmetric.Metric) {
 	case pmetric.MetricTypeHistogram:
 		to.SetEmptyHistogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
 	case pmetric.MetricTypeExponentialHistogram:
-		to.SetEmptyExponentialHistogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
+		to.SetEmptyExponentialHistogram().SetAggregationTemporality(from.ExponentialHistogram().AggregationTemporality())
 	case pmetric.MetricTypeSummary:
 		to.SetEmptySummary()
 	}

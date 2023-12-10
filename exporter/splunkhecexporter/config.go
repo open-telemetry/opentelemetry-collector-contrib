@@ -86,10 +86,6 @@ type Config struct {
 	// Splunk index, optional name of the Splunk index.
 	Index string `mapstructure:"index"`
 
-	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open. Defaults to 100.
-	// Deprecated: use HTTPClientSettings.MaxIdleConns or HTTPClientSettings.MaxIdleConnsPerHost instead.
-	MaxConnections uint `mapstructure:"max_connections"`
-
 	// Disable GZip compression. Defaults to false.
 	DisableCompression bool `mapstructure:"disable_compression"`
 

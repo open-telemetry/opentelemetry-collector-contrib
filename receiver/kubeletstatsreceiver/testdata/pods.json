@@ -11,11 +11,11 @@
             "name":"kube-scheduler",
             "resources": {
               "requests": {
-                "cpu": "50m",
+                "cpu": "2m",
                 "memory": "10M"
               },
               "limits": {
-                "cpu": "100m",
+                "cpu": "4m",
                 "memory": "100M"
               }
             }

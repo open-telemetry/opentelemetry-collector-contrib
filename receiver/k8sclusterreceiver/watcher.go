@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
@@ -56,7 +55,6 @@ type resourceWatcher struct {
 	informerFactories   []sharedInformer
 	metadataStore       *metadata.Store
 	logger              *zap.Logger
-	sampledLogger       *zap.Logger
 	metadataConsumers   []metadataConsumer
 	initialTimeout      time.Duration
 	initialSyncDone     *atomic.Bool
@@ -73,18 +71,8 @@ type metadataConsumer func(metadata []*experimentalmetricmetadata.MetadataUpdate
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(set receiver.CreateSettings, cfg *Config, metadataStore *metadata.Store) *resourceWatcher {
-	// Create a sampled logger for error messages.
-	core := zapcore.NewSamplerWithOptions(
-		set.Logger.Core(),
-		1*time.Second,
-		1,    // 1 per second initially
-		1000, // then 1/1000 of messages
-	)
-	sampledLogger := zap.New(core)
-
 	return &resourceWatcher{
 		logger:                   set.Logger,
-		sampledLogger:            sampledLogger,
 		metadataStore:            metadataStore,
 		initialSyncDone:          &atomic.Bool{},
 		initialSyncTimedOut:      &atomic.Bool{},
@@ -98,7 +86,7 @@ func newResourceWatcher(set receiver.CreateSettings, cfg *Config, metadataStore 
 func (rw *resourceWatcher) initialize() error {
 	client, err := rw.makeClient(rw.config.APIConfig)
 	if err != nil {
-		return fmt.Errorf("Failed to create Kubernnetes client: %w", err)
+		return fmt.Errorf("Failed to create Kubernetes client: %w", err)
 	}
 	rw.client = client
 
@@ -255,7 +243,7 @@ func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer c
 	rw.metadataStore.Setup(gvk, informer.GetStore())
 }
 
-func (rw *resourceWatcher) onAdd(obj interface{}) {
+func (rw *resourceWatcher) onAdd(obj any) {
 	rw.waitForInitialInformerSync()
 
 	// Sync metadata only if there's at least one destination for it to sent.
@@ -270,7 +258,7 @@ func (rw *resourceWatcher) hasDestination() bool {
 	return len(rw.metadataConsumers) != 0 || rw.entityLogConsumer != nil
 }
 
-func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
+func (rw *resourceWatcher) onUpdate(oldObj, newObj any) {
 	rw.waitForInitialInformerSync()
 
 	// Sync metadata only if there's at least one destination for it to sent.
@@ -282,7 +270,7 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 }
 
 // objMetadata returns the metadata for the given object.
-func (rw *resourceWatcher) objMetadata(obj interface{}) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	switch o := obj.(type) {
 	case *corev1.Pod:
 		return pod.GetMetadata(o, rw.metadataStore, rw.logger)
@@ -386,7 +374,7 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 		if logs.LogRecordCount() != 0 {
 			err := rw.entityLogConsumer.ConsumeLogs(context.Background(), logs)
 			if err != nil {
-				rw.sampledLogger.Error("Error sending entity events to the consumer", zap.Error(err))
+				rw.logger.Error("Error sending entity events to the consumer", zap.Error(err))
 
 				// Note: receiver contract says that we need to retry sending if the
 				// returned error is not Permanent. However, we are not doing it here.

@@ -255,12 +255,12 @@ func getConfig() (*Config, bool) {
 	}, true
 }
 
-func createTraces() (ptrace.Traces, string, map[string]interface{}) {
+func createTraces() (ptrace.Traces, string, map[string]any) {
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
 	span.Status().SetMessage("STATUS_MESSAGE")
-	attrs := map[string]interface{}{
+	attrs := map[string]any{
 		"k0": "v0",
 		"k1": "v1",
 	}
@@ -280,10 +280,10 @@ func createTraces() (ptrace.Traces, string, map[string]interface{}) {
 	return td, traceutil.TraceIDToHexOrEmptyString(span.TraceID()), attrs
 }
 
-func createLogs() (plog.Logs, string, map[string]interface{}) {
+func createLogs() (plog.Logs, string, map[string]any) {
 	testLogs := plog.NewLogs()
 	tID := uuid.New().String()
-	attrs := map[string]interface{}{
+	attrs := map[string]any{
 		"l0": "a0",
 		"l1": "a1",
 	}
@@ -305,10 +305,10 @@ func createLogs() (plog.Logs, string, map[string]interface{}) {
 	return testLogs, traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID()), attrs
 }
 
-func createMetrics() (pmetric.Metrics, map[string]interface{}, string) {
+func createMetrics() (pmetric.Metrics, map[string]any, string) {
 	tm := pmetric.NewMetrics()
 	tID := uuid.New().String()
-	attrs := map[string]interface{}{
+	attrs := map[string]any{
 		"m1": "a0",
 		"m2": "a1",
 	}

@@ -28,7 +28,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	cfg := factory.CreateDefaultConfig()
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	badCfg := &JournaldConfig{
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{},

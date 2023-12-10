@@ -132,6 +132,7 @@ receivers:
   kubeletstats:
     collection_interval: 20s
     auth_type: "kubeConfig"
+    context: "my-context"
     insecure_skip_verify: true
     endpoint: "${env:K8S_NODE_NAME}"
 exporters:
@@ -145,6 +146,7 @@ service:
 ```
 Note that using `auth_type` `kubeConfig`, the endpoint should only be the node name as the communication to the kubelet is proxied by the API server configured in the `kubeConfig`.
 `insecure_skip_verify` still applies by overriding the `kubeConfig` settings.
+If no `context` is specified, the current context or the default context is used.
 
 ### Extra metadata labels
 
@@ -226,3 +228,24 @@ The following parameters can also be specified:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+### Role-based access control
+
+The Kubelet Stats Receiver needs `get` permissions on the `nodes/stats` resources. Additionally, when using `extra_metadata_labels` or any of the `{request|limit}_utilization` metrics the processor also needs `get` permissions for `nodes/proxy` resources.
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+  - apiGroups: [""]
+    resources: ["nodes/stats"]
+    verbs: ["get"]
+    
+  # Only needed if you are using extra_metadata_labels or
+  # are collecting the request/limit utilization metrics
+  - apiGroups: [""]
+    resources: ["nodes/proxy"]
+    verbs: ["get"]
+```

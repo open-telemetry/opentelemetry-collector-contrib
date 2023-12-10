@@ -316,7 +316,7 @@ type metricK8sContainerReady struct {
 func (m *metricK8sContainerReady) init() {
 	m.data.SetName("k8s.container.ready")
 	m.data.SetDescription("Whether a container has passed its readiness probe (0 for no, 1 for yes)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1296,7 +1296,7 @@ type metricK8sNamespacePhase struct {
 func (m *metricK8sNamespacePhase) init() {
 	m.data.SetName("k8s.namespace.phase")
 	m.data.SetDescription("The current phase of namespaces (1 for active and 0 for terminating)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1335,6 +1335,57 @@ func newMetricK8sNamespacePhase(cfg MetricConfig) metricK8sNamespacePhase {
 	return m
 }
 
+type metricK8sNodeCondition struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.condition metric with initial data.
+func (m *metricK8sNodeCondition) init() {
+	m.data.SetName("k8s.node.condition")
+	m.data.SetDescription("The condition of a particular Node.")
+	m.data.SetUnit("{condition}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sNodeCondition) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, conditionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("condition", conditionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeCondition) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeCondition) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeCondition(cfg MetricConfig) metricK8sNodeCondition {
+	m := metricK8sNodeCondition{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sPodPhase struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1345,7 +1396,7 @@ type metricK8sPodPhase struct {
 func (m *metricK8sPodPhase) init() {
 	m.data.SetName("k8s.pod.phase")
 	m.data.SetDescription("Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1394,7 +1445,7 @@ type metricK8sPodStatusReason struct {
 func (m *metricK8sPodStatusReason) init() {
 	m.data.SetName("k8s.pod.status_reason")
 	m.data.SetDescription("Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1639,7 +1690,7 @@ type metricK8sResourceQuotaHardLimit struct {
 func (m *metricK8sResourceQuotaHardLimit) init() {
 	m.data.SetName("k8s.resource_quota.hard_limit")
 	m.data.SetDescription("The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1690,7 +1741,7 @@ type metricK8sResourceQuotaUsed struct {
 func (m *metricK8sResourceQuotaUsed) init() {
 	m.data.SetName("k8s.resource_quota.used")
 	m.data.SetDescription("The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1937,7 +1988,7 @@ type metricOpenshiftAppliedclusterquotaLimit struct {
 func (m *metricOpenshiftAppliedclusterquotaLimit) init() {
 	m.data.SetName("openshift.appliedclusterquota.limit")
 	m.data.SetDescription("The upper limit for a particular resource in a specific namespace.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1989,7 +2040,7 @@ type metricOpenshiftAppliedclusterquotaUsed struct {
 func (m *metricOpenshiftAppliedclusterquotaUsed) init() {
 	m.data.SetName("openshift.appliedclusterquota.used")
 	m.data.SetDescription("The usage for a particular resource in a specific namespace.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2041,7 +2092,7 @@ type metricOpenshiftClusterquotaLimit struct {
 func (m *metricOpenshiftClusterquotaLimit) init() {
 	m.data.SetName("openshift.clusterquota.limit")
 	m.data.SetDescription("The configured upper limit for a particular resource.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2092,7 +2143,7 @@ type metricOpenshiftClusterquotaUsed struct {
 func (m *metricOpenshiftClusterquotaUsed) init() {
 	m.data.SetName("openshift.clusterquota.used")
 	m.data.SetDescription("The usage for a particular resource with a configured limit.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -2168,6 +2219,7 @@ type MetricsBuilder struct {
 	metricK8sJobMaxParallelPods               metricK8sJobMaxParallelPods
 	metricK8sJobSuccessfulPods                metricK8sJobSuccessfulPods
 	metricK8sNamespacePhase                   metricK8sNamespacePhase
+	metricK8sNodeCondition                    metricK8sNodeCondition
 	metricK8sPodPhase                         metricK8sPodPhase
 	metricK8sPodStatusReason                  metricK8sPodStatusReason
 	metricK8sReplicasetAvailable              metricK8sReplicasetAvailable
@@ -2229,6 +2281,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sJobMaxParallelPods:               newMetricK8sJobMaxParallelPods(mbc.Metrics.K8sJobMaxParallelPods),
 		metricK8sJobSuccessfulPods:                newMetricK8sJobSuccessfulPods(mbc.Metrics.K8sJobSuccessfulPods),
 		metricK8sNamespacePhase:                   newMetricK8sNamespacePhase(mbc.Metrics.K8sNamespacePhase),
+		metricK8sNodeCondition:                    newMetricK8sNodeCondition(mbc.Metrics.K8sNodeCondition),
 		metricK8sPodPhase:                         newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
 		metricK8sPodStatusReason:                  newMetricK8sPodStatusReason(mbc.Metrics.K8sPodStatusReason),
 		metricK8sReplicasetAvailable:              newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
@@ -2334,6 +2387,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sJobMaxParallelPods.emit(ils.Metrics())
 	mb.metricK8sJobSuccessfulPods.emit(ils.Metrics())
 	mb.metricK8sNamespacePhase.emit(ils.Metrics())
+	mb.metricK8sNodeCondition.emit(ils.Metrics())
 	mb.metricK8sPodPhase.emit(ils.Metrics())
 	mb.metricK8sPodStatusReason.emit(ils.Metrics())
 	mb.metricK8sReplicasetAvailable.emit(ils.Metrics())
@@ -2503,6 +2557,11 @@ func (mb *MetricsBuilder) RecordK8sJobSuccessfulPodsDataPoint(ts pcommon.Timesta
 // RecordK8sNamespacePhaseDataPoint adds a data point to k8s.namespace.phase metric.
 func (mb *MetricsBuilder) RecordK8sNamespacePhaseDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sNamespacePhase.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeConditionDataPoint adds a data point to k8s.node.condition metric.
+func (mb *MetricsBuilder) RecordK8sNodeConditionDataPoint(ts pcommon.Timestamp, val int64, conditionAttributeValue string) {
+	mb.metricK8sNodeCondition.recordDataPoint(mb.startTime, ts, val, conditionAttributeValue)
 }
 
 // RecordK8sPodPhaseDataPoint adds a data point to k8s.pod.phase metric.
