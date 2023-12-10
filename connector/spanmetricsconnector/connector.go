@@ -32,7 +32,8 @@ const (
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 
-	defaultDimensionsCacheSize = 1000
+	defaultDimensionsCacheSize      = 1000
+	defaultResourceMetricsCacheSize = 1000
 
 	metricNameDuration = "duration"
 	metricNameCalls    = "calls"
@@ -51,10 +52,7 @@ type connectorImp struct {
 	// Additional dimensions to add to metrics.
 	dimensions []dimension
 
-	// The starting time of the data points.
-	startTimestamp pcommon.Timestamp
-
-	resourceMetrics map[resourceKey]*resourceMetrics
+	resourceMetrics *cache.Cache[resourceKey, *resourceMetrics]
 
 	keyBuf *bytes.Buffer
 
@@ -79,6 +77,8 @@ type resourceMetrics struct {
 	sums       metrics.SumMetrics
 	events     metrics.SumMetrics
 	attributes pcommon.Map
+	// startTimestamp captures when the first data points for this resource are recorded.
+	startTimestamp pcommon.Timestamp
 }
 
 type dimension struct {
@@ -110,11 +110,15 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		return nil, err
 	}
 
+	resourceMetricsCache, err := cache.NewCache[resourceKey, *resourceMetrics](cfg.ResourceMetricsCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
 	return &connectorImp{
 		logger:                logger,
 		config:                *cfg,
-		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
-		resourceMetrics:       make(map[resourceKey]*resourceMetrics),
+		resourceMetrics:       resourceMetricsCache,
 		dimensions:            newDimensions(cfg.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
@@ -236,7 +240,8 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 // buildMetrics collects the computed raw metrics data and builds OTLP metrics.
 func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
-	for _, rawMetrics := range p.resourceMetrics {
+
+	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
 		rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
 
@@ -246,22 +251,22 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
-		sums.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
+		sums.BuildMetrics(metric, rawMetrics.startTimestamp, p.config.GetAggregationTemporality())
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
-			histograms.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
+			histograms.BuildMetrics(metric, rawMetrics.startTimestamp, p.config.GetAggregationTemporality())
 		}
 
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(p.config.Namespace, metricNameEvents))
-			events.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
+			events.BuildMetrics(metric, rawMetrics.startTimestamp, p.config.GetAggregationTemporality())
 		}
-	}
+	})
 
 	return m
 }
@@ -269,19 +274,19 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 func (p *connectorImp) resetState() {
 	// If delta metrics, reset accumulated data
 	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		p.resourceMetrics = make(map[resourceKey]*resourceMetrics)
+		p.resourceMetrics.Purge()
 		p.metricKeyToDimensions.Purge()
-		p.startTimestamp = pcommon.NewTimestampFromTime(time.Now())
 	} else {
+		p.resourceMetrics.RemoveEvictedItems()
 		p.metricKeyToDimensions.RemoveEvictedItems()
 
 		// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
 		if p.config.Histogram.Disable {
 			return
 		}
-		for _, m := range p.resourceMetrics {
+		p.resourceMetrics.ForEach(func(_ resourceKey, m *resourceMetrics) {
 			m.histograms.Reset(true)
-		}
+		})
 
 	}
 }
@@ -387,15 +392,16 @@ type resourceKey [16]byte
 
 func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
 	key := resourceKey(pdatautil.MapHash(attr))
-	v, ok := p.resourceMetrics[key]
+	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
 		v = &resourceMetrics{
-			histograms: initHistogramMetrics(p.config),
-			sums:       metrics.NewSumMetrics(),
-			events:     metrics.NewSumMetrics(),
-			attributes: attr,
+			histograms:     initHistogramMetrics(p.config),
+			sums:           metrics.NewSumMetrics(),
+			events:         metrics.NewSumMetrics(),
+			attributes:     attr,
+			startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
 		}
-		p.resourceMetrics[key] = v
+		p.resourceMetrics.Add(key, v)
 	}
 	return v
 }
