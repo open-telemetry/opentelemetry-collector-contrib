@@ -9,6 +9,7 @@ require (
 	github.com/jaegertracing/jaeger v1.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.90.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.90.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.90.1
 	github.com/openzipkin/zipkin-go v0.4.2
@@ -54,8 +55,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.90.1 // indirect
-	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
