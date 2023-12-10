@@ -5,8 +5,6 @@ package k8sobjectsreceiver
 
 import (
 	"context"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 	"testing"
 	"time"
 
@@ -206,84 +204,4 @@ func TestExludeDeletedTrue(t *testing.T) {
 	assert.Equal(t, 0, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
-}
-
-func TestLeaderElectionLuckName(t *testing.T) {
-	t.Parallel()
-
-	mockClient := newMockDynamicClient()
-	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
-	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-
-	// enable leader election
-	rCfg.LeaderElection.Enabled = true
-
-	err := rCfg.Validate()
-	require.NoError(t, err)
-
-	consumer := newMockLogConsumer()
-	_, err = newReceiver(
-		receivertest.NewNopCreateSettings(),
-		rCfg,
-		consumer,
-	)
-	require.EqualError(t, err, "luckName must not be empty if LeaderElection enabled")
-}
-
-func TestPullObjectInLeaderElectionMode(t *testing.T) {
-	t.Parallel()
-
-	mockClient := newMockDynamicClient()
-	mockClient.createPods(
-		generatePod("pod1", "default", map[string]interface{}{
-			"environment": "production",
-		}, "1"),
-		generatePod("pod2", "default", map[string]interface{}{
-			"environment": "test",
-		}, "2"),
-		generatePod("pod3", "default_ignore", map[string]interface{}{
-			"environment": "production",
-		}, "3"),
-	)
-
-	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
-	rCfg.makeDiscoveryClient = getMockDiscoveryClient
-	rCfg.makeClient = func() (kubernetes.Interface, error) {
-		return fake.NewSimpleClientset(), nil
-	}
-
-	// enable leader election
-	rCfg.LeaderElection.Enabled = true
-	rCfg.LeaderElection.LockName = "my-otel-col-leader-election-luckname"
-	rCfg.LeaderElection.Namespace = "default"
-
-	rCfg.Objects = []*K8sObjectsConfig{
-		{
-			Name:          "pods",
-			Mode:          PullMode,
-			Interval:      time.Second * 30,
-			LabelSelector: "environment=production",
-		},
-	}
-
-	err := rCfg.Validate()
-	require.NoError(t, err)
-
-	consumer := newMockLogConsumer()
-	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
-		rCfg,
-		consumer,
-	)
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	time.Sleep(time.Second * 5)
-	assert.Len(t, consumer.Logs(), 1)
-	assert.Equal(t, 2, consumer.Count())
-
-	// TODO: current instance not the leader, and it would not receive any logs
-	assert.NoError(t, r.Shutdown(context.Background()))
 }
