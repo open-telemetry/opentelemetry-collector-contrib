@@ -78,5 +78,5 @@ func ValidateStorageResolution(input int) error {
 		60:
 		return nil
 	}
-	return errors.New("invalid value for storage resolution.  Please make sure to use the following values: 1 or 60")
+	return errors.New("invalid value for storage resolution. Please make sure to use the following values: 1 or 60")
 }

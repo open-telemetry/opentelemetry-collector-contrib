@@ -87,13 +87,6 @@ type Config struct {
 	// Otherwise, sending metrics as Embedded Metric Format version 0 (without "_aws")
 	Version string `mapstructure:"version"`
 
-	// StorageResolution is an OPTIONAL integer value representing the storage resolution for the corresponding metric. Setting this to 1 specifies this metric as
-	// a high-resolution metric, so that CloudWatch stores the metric with sub-minute resolution down to one second. Setting this to 60 specifies this metric as
-	// standard-resolution, which CloudWatch stores at 1-minute resolution. Values SHOULD be valid CloudWatch supported resolutions, 1 or 60. If a value is not
-	// provided, then a default value of 60 is assumed.
-	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure_metricdefinition
-	StorageResolution int `mapstructure:"storage_resolution"`
-
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger
 }
@@ -106,7 +99,16 @@ type MetricDescriptor struct {
 	// Overwrite set to true means the existing metric descriptor will be overwritten or a new metric descriptor will be created; false means
 	// the descriptor will only be configured if empty.
 	Overwrite bool `mapstructure:"overwrite"`
+	// StorageResolution is an OPTIONAL integer value representing the storage resolution for the corresponding metric. Setting this to 1 specifies this metric as
+	// a high-resolution metric, so that CloudWatch stores the metric with sub-minute resolution down to one second. Setting this to 60 specifies this metric as
+	// standard-resolution, which CloudWatch stores at 1-minute resolution. Values SHOULD be valid CloudWatch supported resolutions, 1 or 60. If a value is not
+	// provided, then a default value of 60 is assumed.
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure_metricdefinition
+	// This setting can be overwritten by the StorageResolution value in the metric declaration.
+	StorageResolution int `mapstructure:"storage_resolution"`
 }
+
+type StorageResolution int
 
 var _ component.Config = (*Config)(nil)
 
@@ -128,19 +130,22 @@ func (config *Config) Validate() error {
 		if descriptor.MetricName == "" {
 			continue
 		}
+
+		if retErr := cwlogs.ValidateStorageResolution(descriptor.StorageResolution); retErr != nil {
+			config.logger.Warn("Dropped unsupported metric descriptor.", zap.String("storage_resolution", retErr.Error()))
+			continue
+		}
+
 		if _, ok := eMFSupportedUnits[descriptor.Unit]; ok {
 			validDescriptors = append(validDescriptors, descriptor)
 		} else {
-			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.Unit))
+			config.logger.Warn("Dropped unsupported metric descriptor.", zap.String("unit", descriptor.Unit))
 		}
+
 	}
 	config.MetricDescriptors = validDescriptors
 
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
-		return retErr
-	}
-
-	if retErr := cwlogs.ValidateStorageResolution(config.StorageResolution); retErr != nil {
 		return retErr
 	}
 

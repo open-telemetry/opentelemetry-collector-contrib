@@ -6,6 +6,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"regexp"
 	"sort"
 	"strings"
@@ -26,6 +27,13 @@ type MetricDeclaration struct {
 	// (Optional) List of label matchers that define matching rules to filter against
 	// the labels of incoming metrics.
 	LabelMatchers []*LabelMatcher `mapstructure:"label_matchers"`
+	// StorageResolution is an OPTIONAL integer value representing the storage resolution for the corresponding metric. Setting this to 1 specifies this metric as
+	// a high-resolution metric, so that CloudWatch stores the metric with sub-minute resolution down to one second. Setting this to 60 specifies this metric as
+	// standard-resolution, which CloudWatch stores at 1-minute resolution. Values SHOULD be valid CloudWatch supported resolutions, 1 or 60. If a value is not
+	// provided, then a default value of 60 is assumed.
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure_metricdefinition
+	// Setting this will overwrite the StorageResolution value in the metric descriptor.
+	StorageResolution int `mapstructure:"storage_resolution"`
 
 	// metricRegexList is a list of compiled regexes for metric name selectors.
 	metricRegexList []*regexp.Regexp
@@ -106,6 +114,10 @@ func (m *MetricDeclaration) init(logger *zap.Logger) (err error) {
 	m.metricRegexList = make([]*regexp.Regexp, len(m.MetricNameSelectors))
 	for i, selector := range m.MetricNameSelectors {
 		m.metricRegexList[i] = regexp.MustCompile(selector)
+	}
+
+	if retErr := cwlogs.ValidateStorageResolution(m.StorageResolution); retErr != nil {
+		return retErr
 	}
 
 	// Initialize label matchers

@@ -243,6 +243,32 @@ func TestMetricDeclarationInit(t *testing.T) {
 		assert.Equal(t, 2, len(m.Dimensions))
 	})
 
+	t.Run("with storageResolution", func(t *testing.T) {
+		m := &MetricDeclaration{
+			Dimensions: [][]string{
+				{"foo"},
+				{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
+			},
+			MetricNameSelectors: []string{"a.*", "b$", "aa+"},
+			StorageResolution:   1,
+		}
+		err := m.init(logger)
+		assert.Nil(t, err)
+	})
+
+	t.Run("with invalid storageResolution", func(t *testing.T) {
+		m := &MetricDeclaration{
+			Dimensions: [][]string{
+				{"foo"},
+				{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
+			},
+			MetricNameSelectors: []string{"a.*", "b$", "aa+"},
+			StorageResolution:   2,
+		}
+		err := m.init(logger)
+		assert.NotNil(t, err)
+	})
+
 	// Test removal of dimension sets with more than 10 elements
 	t.Run("dimension set with more than 10 elements", func(t *testing.T) {
 		m := &MetricDeclaration{

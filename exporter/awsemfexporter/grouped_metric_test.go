@@ -405,8 +405,49 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
 	})
 
-}
+	t.Run("Apply storage resolution", func(t *testing.T) {
+		emfCalcs := setupEmfCalculators()
+		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 
+		groupedMetrics := make(map[any]*groupedMetric)
+
+		metric := generateTestGaugeMetric("foo", doubleValueType)
+		rms := metric.ResourceMetrics()
+		ilms := rms.At(0).ScopeMetrics()
+		metrics := ilms.At(0).Metrics()
+
+		descriptor := map[string]MetricDescriptor{
+			"foo": {
+				MetricName:        "foo",
+				StorageResolution: 1,
+			},
+		}
+
+		expectedMetricInfo := map[string]*metricInfo{
+			"foo": {
+				value:             0.1,
+				unit:              "Count",
+				storageResolution: 1,
+			},
+		}
+
+		err := addToGroupedMetric(metrics.At(0), groupedMetrics,
+			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type()),
+			true, zap.NewNop(),
+			descriptor,
+			testCfg,
+			emfCalcs)
+		assert.Nil(t, err)
+
+		assert.Equal(t, 1, len(groupedMetrics))
+
+		for _, v := range groupedMetrics {
+			assert.Equal(t, len(expectedMetricInfo), len(v.metrics))
+			assert.Equal(t, expectedMetricInfo, v.metrics)
+			assert.Equal(t, 2, len(v.labels))
+		}
+	})
+}
 func TestAddKubernetesWrapper(t *testing.T) {
 	t.Run("Test basic creation", func(t *testing.T) {
 		dockerObj := struct {

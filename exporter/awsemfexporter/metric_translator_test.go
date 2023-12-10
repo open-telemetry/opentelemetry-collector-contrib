@@ -1259,6 +1259,39 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			},
 		},
 		{
+			"single metric declaration with storage resolution",
+			[]*MetricDeclaration{
+				{
+					Dimensions:          [][]string{{"a"}, {"a", "c"}, {"b", "d"}},
+					MetricNameSelectors: []string{"metric.*"},
+					StorageResolution:   1,
+				},
+			},
+			[]cWMeasurement{
+				{
+					Namespace:  namespace,
+					Dimensions: [][]string{{"a"}, {"a", "c"}},
+					Metrics: []map[string]string{
+						{
+							"Name":              "metric1",
+							"Unit":              "Count",
+							"StorageResolution": "1",
+						},
+						{
+							"Name":              "metric2",
+							"Unit":              "Count",
+							"StorageResolution": "1",
+						},
+						{
+							"Name":              "metric3",
+							"Unit":              "Seconds",
+							"StorageResolution": "1",
+						},
+					},
+				},
+			},
+		},
+		{
 			"multiple metric declarations, all unique",
 			[]*MetricDeclaration{
 				{
@@ -1298,6 +1331,72 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}},
+					Metrics: []map[string]string{
+						{
+							"Name": "metric3",
+							"Unit": "Seconds",
+						},
+					},
+				},
+			},
+		},
+
+		{
+			"multiple metric declarations, with mixed storage resolution",
+			[]*MetricDeclaration{
+				{
+					Dimensions:          [][]string{{"a", "c"}, {"b", "d"}},
+					MetricNameSelectors: []string{"metric1"},
+					StorageResolution:   1,
+				},
+				{
+					Dimensions:          [][]string{{"a"}, {"b"}, {"b", "d"}},
+					MetricNameSelectors: []string{"metric(1|2)"},
+					StorageResolution:   60,
+				},
+				{
+					Dimensions:          [][]string{{"a", "b"}},
+					MetricNameSelectors: []string{"metric3"},
+					StorageResolution:   0,
+				},
+			},
+			[]cWMeasurement{
+				{
+					Namespace:  namespace,
+					Dimensions: [][]string{{"a"}, {"b"}},
+					Metrics: []map[string]string{
+						{
+							"Name":              "metric1",
+							"Unit":              "Count",
+							"StorageResolution": "60",
+						},
+					},
+				},
+				{
+					Namespace:  namespace,
+					Dimensions: [][]string{{"a", "c"}},
+					Metrics: []map[string]string{
+						{
+							"Name":              "metric1",
+							"Unit":              "Count",
+							"StorageResolution": "1",
+						},
+					},
+				},
+				{
+					Namespace:  namespace,
+					Dimensions: [][]string{{"a"}, {"b"}},
+					Metrics: []map[string]string{
+						{
+							"Name":              "metric2",
+							"Unit":              "Count",
+							"StorageResolution": "60",
+						},
+					},
+				},
+				{
+					Namespace:  namespace,
+					Dimensions: [][]string{{"a", "b"}},
 					Metrics: []map[string]string{
 						{
 							"Name": "metric3",

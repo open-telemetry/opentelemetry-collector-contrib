@@ -4,6 +4,7 @@
 package awsemfexporter
 
 import (
+	"go.uber.org/zap/zaptest/observer"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -173,11 +174,14 @@ func TestRetentionValidateWrong(t *testing.T) {
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		logger:                      zap.NewNop(),
 	}
-	assert.Error(t, component.ValidateConfig(wrongcfg))
 
+	assert.Error(t, component.ValidateConfig(wrongcfg))
 }
 
-func TestStorageResolutionValidateCorrect(t *testing.T) {
+func TestMetricDescriptorStorageResolutionValidateCorrect(t *testing.T) {
+	obs, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(obs)
+
 	cfg := &Config{
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
@@ -185,13 +189,23 @@ func TestStorageResolutionValidateCorrect(t *testing.T) {
 		},
 		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-		logger:                      zap.NewNop(),
-		StorageResolution:           1,
+		logger:                      logger,
+		MetricDeclarations: []*MetricDeclaration{
+			{
+				Dimensions:          [][]string{{"label1"}, {"label1", "label2"}},
+				MetricNameSelectors: []string{"metric.*"},
+				StorageResolution:   1,
+			},
+		},
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.Len(t, logs.All(), 0)
 }
 
-func TestStorageResolutionValidateWrong(t *testing.T) {
+func TestMetricDescriptorStorageResolutionValidateWrong(t *testing.T) {
+	obs, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(obs)
+
 	wrongcfg := &Config{
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
@@ -199,11 +213,19 @@ func TestStorageResolutionValidateWrong(t *testing.T) {
 		},
 		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-		logger:                      zap.NewNop(),
-		StorageResolution:           2,
+		logger:                      logger,
+		MetricDeclarations: []*MetricDeclaration{
+			{
+				Dimensions:          [][]string{{"label1"}, {"label1", "label2"}},
+				MetricNameSelectors: []string{"metric.*"},
+				StorageResolution:   2,
+			},
+		},
 	}
-	assert.Error(t, component.ValidateConfig(wrongcfg))
+	assert.Nil(t, component.ValidateConfig(wrongcfg))
+	require.Len(t, logs.All(), 1)
 
+	assert.Equal(t, "Dropped metric declaration.", logs.All()[0].Message)
 }
 
 func TestValidateTags(t *testing.T) {

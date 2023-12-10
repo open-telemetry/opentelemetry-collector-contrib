@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -237,9 +238,6 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 		if metricInfo.unit != "" {
 			metrics[idx]["Unit"] = metricInfo.unit
 		}
-		if metricInfo.storageResolution == 1 {
-			metrics[idx]["StorageResolution"] = "1"
-		}
 
 		idx++
 	}
@@ -309,9 +307,10 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 		if metricInfo.unit != "" {
 			metric["Unit"] = metricInfo.unit
 		}
-		if metricInfo.storageResolution == 1 {
-			metric["StorageResolution"] = "1"
+		if metricInfo.storageResolution > 0 {
+			metric["StorageResolution"] = strconv.Itoa(metricInfo.storageResolution)
 		}
+
 		metricDeclKey := fmt.Sprint(metricDeclIdx)
 		if group, ok := metricDeclGroups[metricDeclKey]; ok {
 			group.metrics = append(group.metrics, metric)
@@ -333,25 +332,54 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 	// Translate each group into a CW Measurement
 	cWMeasurements = make([]cWMeasurement, 0, len(metricDeclGroups))
 	for _, group := range metricDeclGroups {
-		var dimensions [][]string
-		// Extract dimensions from matched metric declarations
+		// Extract dimensions from matched metric declarations. We can have different storage resolutions per dimension,
+		// so we need to group dimensions by storage resolution.
+		dimensionsSet := make(map[int][][]string)
 		for _, metricDeclIdx := range group.metricDeclIdxList {
 			dims := metricDeclarations[metricDeclIdx].ExtractDimensions(labels)
-			dimensions = append(dimensions, dims...)
+			if len(dims) > 0 {
+				sr := metricDeclarations[metricDeclIdx].StorageResolution
+				dimensionsSet[sr] = append(dimensionsSet[sr], dims...)
+			}
 		}
-		dimensions = append(dimensions, rollupDimensionArray...)
 
-		// De-duplicate dimensions
-		dimensions = dedupDimensions(dimensions)
+		// Add rolled-up dimensions to every dimension set and deduplicate.
+		for k, _ := range dimensionsSet {
+			dimensionsSet[k] = append(dimensionsSet[k], rollupDimensionArray...)
+			dimensionsSet[k] = dedupDimensions(dimensionsSet[k])
+		}
 
 		// Export metrics only with non-empty dimensions list
-		if len(dimensions) > 0 {
-			cwm := cWMeasurement{
-				Namespace:  groupedMetric.metadata.namespace,
-				Dimensions: dimensions,
-				Metrics:    group.metrics,
+		if len(dimensionsSet) > 0 {
+			for sr, dimensions := range dimensionsSet {
+				// Defaults.
+				if sr == 0 {
+					cwm := cWMeasurement{
+						Namespace:  groupedMetric.metadata.namespace,
+						Dimensions: dimensions,
+						Metrics:    group.metrics,
+					}
+					cWMeasurements = append(cWMeasurements, cwm)
+					continue
+				}
+
+				// Storage resolution is specified in the metric declaration. The metric declaration always has the
+				// highest priority.
+				newStorageResolution := strconv.Itoa(sr)
+				var newMetrics []map[string]string
+
+				for _, metric := range group.metrics {
+					metric["StorageResolution"] = newStorageResolution
+					newMetrics = append(newMetrics, metric)
+				}
+
+				cwm := cWMeasurement{
+					Namespace:  groupedMetric.metadata.namespace,
+					Dimensions: dimensions,
+					Metrics:    newMetrics,
+				}
+				cWMeasurements = append(cWMeasurements, cwm)
 			}
-			cWMeasurements = append(cWMeasurements, cwm)
 		}
 	}
 

@@ -71,12 +71,9 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[any]*groupedMetri
 			}
 
 			metric := &metricInfo{
-				value: dp.value,
-				unit:  translateUnit(pmd, descriptor),
-			}
-
-			if config.StorageResolution == 1 {
-				metric.storageResolution = 1
+				value:             dp.value,
+				unit:              translateUnit(pmd, descriptor),
+				storageResolution: storageResolution(pmd, descriptor),
 			}
 
 			if dp.timestampMs > 0 {
@@ -183,9 +180,19 @@ func mapGetHelper(labels map[string]string, key string) string {
 	return ""
 }
 
-func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {
+func storageResolution(metric pmetric.Metric, descriptors map[string]MetricDescriptor) int {
+	if descriptor, exists := descriptors[metric.Name()]; exists {
+		if descriptor.StorageResolution > 0 {
+			return descriptor.StorageResolution
+		}
+	}
+
+	return 0
+}
+
+func translateUnit(metric pmetric.Metric, descriptors map[string]MetricDescriptor) string {
 	unit := metric.Unit()
-	if descriptor, exists := descriptor[metric.Name()]; exists {
+	if descriptor, exists := descriptors[metric.Name()]; exists {
 		if unit == "" || descriptor.Overwrite {
 			return descriptor.Unit
 		}
