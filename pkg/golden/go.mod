@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.90.1
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.1-0.20231211180437-7ec38e5c1992
+	go.opentelemetry.io/collector/pdata v1.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
