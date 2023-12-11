@@ -273,7 +273,7 @@ func TestExporter_PushEvent(t *testing.T) {
 			defaultCfg = *cfg
 		})
 
-		mustSendLogsWithAttributes(t, exporter, nil, nil)
+		mustSendLogsWithAttributes(t, exporter, nil, nil, "")
 
 		rec.WaitItems(1)
 	})
@@ -317,6 +317,7 @@ func TestExporter_PushEvent(t *testing.T) {
 			map[string]string{
 				indexPrefix: prefix,
 			},
+			"",
 		)
 		rec.WaitItems(1)
 	})
