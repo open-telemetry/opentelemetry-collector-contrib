@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	delta      = "AGGREGATION_TEMPORALITY_DELTA"
-	cumulative = "AGGREGATION_TEMPORALITY_CUMULATIVE"
+	delta                           = "AGGREGATION_TEMPORALITY_DELTA"
+	cumulative                      = "AGGREGATION_TEMPORALITY_CUMULATIVE"
+	dynamicExemplarAttributeKeyName = "tail_sampling.sampled"
 )
 
 var defaultHistogramBucketsMs = []float64{
@@ -84,9 +85,16 @@ type HistogramConfig struct {
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
 }
 
+type ExemplarDynamicExportConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// Attribute name to be used to check if exemplar should be stored.
+	AttributeKeyName string `mapstructure:"attribute_key_name"`
+}
+
 type ExemplarsConfig struct {
-	Enabled         bool `mapstructure:"enabled"`
-	MaxPerDataPoint *int `mapstructure:"max_per_data_point"`
+	Enabled         bool                         `mapstructure:"enabled"`
+	MaxPerDataPoint *int                         `mapstructure:"max_per_data_point"`
+	DynamicConfig   *ExemplarDynamicExportConfig `mapstructure:"dynamic"`
 }
 
 type ExponentialHistogramConfig struct {

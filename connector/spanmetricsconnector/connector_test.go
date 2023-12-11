@@ -411,6 +411,20 @@ func disabledExemplarsConfig() ExemplarsConfig {
 func enabledExemplarsConfig() ExemplarsConfig {
 	return ExemplarsConfig{
 		Enabled: true,
+		DynamicConfig: &ExemplarDynamicExportConfig{
+			Enabled: false,
+		},
+	}
+}
+
+func enabledExemplarsConfigWithDynamicConfig() ExemplarsConfig {
+	return ExemplarsConfig{
+		Enabled: true,
+		DynamicConfig: &ExemplarDynamicExportConfig{
+			Enabled: true,
+			// This is the default value for the dynamic config.
+			AttributeKeyName: "export.exemplars",
+		},
 	}
 }
 
@@ -1440,6 +1454,79 @@ func TestExemplarsForSumMetrics(t *testing.T) {
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
 						assert.Greater(t, dp.Exemplars().Len(), 0)
+					}
+				}
+			}
+		}
+	}
+}
+func TestExemplarsForSumMetricsWithDynamicConfigAndAttributeSet(t *testing.T) {
+	mcon := consumertest.NewNop()
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfigWithDynamicConfig, enabledEventsConfig, cumulative, []string{}, zaptest.NewLogger(t), nil)
+	traces := buildSampleTrace()
+
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
+				span.Attributes().PutBool("export.exemplars", true)
+			}
+		}
+	}
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	err := p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+	metrics := p.buildMetrics()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				if metric.Type() == pmetric.MetricTypeSum {
+					dps := metric.Sum().DataPoints()
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Greater(t, dp.Exemplars().Len(), 0)
+					}
+				}
+			}
+		}
+	}
+}
+func TestExemplarsForSumMetricsWithDynamicConfigAndAttributeNotSet(t *testing.T) {
+	mcon := consumertest.NewNop()
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfigWithDynamicConfig, enabledEventsConfig, cumulative, []string{}, zaptest.NewLogger(t), nil)
+	traces := buildSampleTrace()
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	err := p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+	metrics := p.buildMetrics()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				if metric.Type() == pmetric.MetricTypeSum {
+					dps := metric.Sum().DataPoints()
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Equal(t, dp.Exemplars().Len(), 0)
 					}
 				}
 			}

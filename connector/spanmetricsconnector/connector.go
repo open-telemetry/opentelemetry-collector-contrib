@@ -345,13 +345,15 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if !p.config.Histogram.Disable {
 					// aggregate histogram metrics
 					h := histograms.GetOrCreate(key, attributes)
-					p.addExemplar(span, duration, h)
+					if p.shouldAddExemplar(span) {
+						p.addExemplar(span, duration, h)
+					}
 					h.Observe(duration)
 
 				}
 				// aggregate sums metrics
 				s := sums.GetOrCreate(key, attributes)
-				if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+				if p.shouldAddExemplar(span) {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
 				s.Add(1)
@@ -375,7 +377,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 							p.metricKeyToDimensions.Add(eKey, eAttributes)
 						}
 						e := events.GetOrCreate(eKey, eAttributes)
-						if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+						if p.shouldAddExemplar(span) {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
 						}
 						e.Add(1)
@@ -386,11 +388,26 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	}
 }
 
-func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics.Histogram) {
+func (p *connectorImp) shouldAddExemplar(span ptrace.Span) bool {
 	if !p.config.Exemplars.Enabled {
-		return
+		return false
 	}
 	if span.TraceID().IsEmpty() {
+		return false
+	}
+
+	if p.config.Exemplars.DynamicConfig.Enabled {
+		attrValue, exists := span.Attributes().Get(p.config.Exemplars.DynamicConfig.AttributeKeyName)
+		if !exists || !attrValue.Bool() {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics.Histogram) {
+	if !p.shouldAddExemplar(span) {
 		return
 	}
 

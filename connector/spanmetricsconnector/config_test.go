@@ -53,6 +53,10 @@ func TestLoadConfig(t *testing.T) {
 				MetricsFlushInterval:     30 * time.Second,
 				Exemplars: ExemplarsConfig{
 					Enabled: true,
+					DynamicConfig: &ExemplarDynamicExportConfig{
+						Enabled:          false,
+						AttributeKeyName: "tail_sampling.sampled",
+					},
 				},
 				Histogram: HistogramConfig{
 					Unit: metrics.Seconds,
@@ -78,6 +82,13 @@ func TestLoadConfig(t *testing.T) {
 						MaxSize: 10,
 					},
 				},
+				Exemplars: ExemplarsConfig{
+					Enabled: false,
+					DynamicConfig: &ExemplarDynamicExportConfig{
+						Enabled:          false,
+						AttributeKeyName: "tail_sampling.sampled",
+					},
+				},
 			},
 		},
 		{
@@ -96,7 +107,30 @@ func TestLoadConfig(t *testing.T) {
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     15 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
-				Exemplars:                ExemplarsConfig{Enabled: true},
+				Exemplars: ExemplarsConfig{
+					Enabled: true,
+					DynamicConfig: &ExemplarDynamicExportConfig{
+						Enabled:          false,
+						AttributeKeyName: "tail_sampling.sampled",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "dynamic_expemplars_enabled"),
+			expected: &Config{
+				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				DimensionsCacheSize:      defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     15 * time.Second,
+				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Exemplars: ExemplarsConfig{
+					Enabled: true,
+					DynamicConfig: &ExemplarDynamicExportConfig{
+						Enabled:          true,
+						AttributeKeyName: "tail_sampling.sampled",
+					},
+				},
 			},
 		},
 		{
@@ -107,7 +141,14 @@ func TestLoadConfig(t *testing.T) {
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     15 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
-				Exemplars:                ExemplarsConfig{Enabled: true, MaxPerDataPoint: &defaultMaxPerDatapoint},
+				Exemplars: ExemplarsConfig{
+					Enabled:         true,
+					MaxPerDataPoint: &defaultMaxPerDatapoint,
+					DynamicConfig: &ExemplarDynamicExportConfig{
+						Enabled:          false,
+						AttributeKeyName: "tail_sampling.sampled",
+					},
+				},
 			},
 		},
 		{
@@ -119,6 +160,13 @@ func TestLoadConfig(t *testing.T) {
 				ResourceMetricsKeyAttributes: []string{"service.name", "telemetry.sdk.language", "telemetry.sdk.name"},
 				MetricsFlushInterval:         15 * time.Second,
 				Histogram:                    HistogramConfig{Disable: false, Unit: defaultUnit},
+				Exemplars: ExemplarsConfig{
+					Enabled: false,
+					DynamicConfig: &ExemplarDynamicExportConfig{
+						Enabled:          false,
+						AttributeKeyName: "tail_sampling.sampled",
+					},
+				},
 			},
 		},
 	}

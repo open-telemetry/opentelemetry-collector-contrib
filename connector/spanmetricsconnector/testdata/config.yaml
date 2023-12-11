@@ -75,3 +75,9 @@ spanmetrics/resource_metrics_key_attributes:
     - service.name
     - telemetry.sdk.language
     - telemetry.sdk.name
+spanmetrics/dynamic_expemplars_enabled:
+  exemplars:
+    enabled: true
+    dynamic:
+      enabled: true
+      attribute_key_name: tail_sampling.sampled
