@@ -18,6 +18,15 @@ if [[ -z "${COMPONENT:-}" ]]; then
     exit 1
 fi
 
+# For a component to be considered valid, it must match the entire component name
+CUR_DIRECTORY=$(dirname "$0")
+VALID_COMPONENT=$(bash "${CUR_DIRECTORY}/get-components.sh" | grep -x $COMPONENT)
+
+if [[ -z "${VALID_COMPONENT:-}" ]]; then
+    echo ""
+    exit 0
+fi
+
 # grep exits with status code 1 if there are no matches,
 # so we manually set RESULT to 0 if nothing is found.
 RESULT=$(grep -c "${COMPONENT}" .github/CODEOWNERS || true)
