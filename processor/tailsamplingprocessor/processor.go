@@ -45,17 +45,19 @@ type policy struct {
 // tailSamplingSpanProcessor handles the incoming trace data and uses the given sampling
 // policy to sample traces.
 type tailSamplingSpanProcessor struct {
-	ctx             context.Context
-	nextConsumer    consumer.Traces
-	maxNumTraces    uint64
-	policies        []*policy
-	logger          *zap.Logger
-	idToTrace       sync.Map
-	policyTicker    timeutils.TTicker
-	tickerFrequency time.Duration
-	decisionBatcher idbatcher.Batcher
-	deleteChan      chan pcommon.TraceID
-	numTracesOnMap  *atomic.Uint64
+	ctx                  context.Context
+	nextConsumer         consumer.Traces
+	maxNumTraces         uint64
+	policies             []*policy
+	logger               *zap.Logger
+	idToTrace            sync.Map
+	policyTicker         timeutils.TTicker
+	tickerFrequency      time.Duration
+	decisionBatcher      idbatcher.Batcher
+	deleteChan           chan pcommon.TraceID
+	numTracesOnMap       *atomic.Uint64
+	processorMode        ProcessorMode
+	sampledAttributeName string
 
 	// This is for reusing the slice by each call of `makeDecision`. This
 	// was previously identified to be a bottleneck using profiling.
@@ -116,15 +118,16 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 	}
 
 	tsp := &tailSamplingSpanProcessor{
-		ctx:             ctx,
-		nextConsumer:    nextConsumer,
-		maxNumTraces:    cfg.NumTraces,
-		logger:          settings.Logger,
-		decisionBatcher: inBatcher,
-		policies:        policies,
-		tickerFrequency: time.Second,
-		numTracesOnMap:  &atomic.Uint64{},
-
+		ctx:                  ctx,
+		nextConsumer:         nextConsumer,
+		maxNumTraces:         cfg.NumTraces,
+		logger:               settings.Logger,
+		decisionBatcher:      inBatcher,
+		policies:             policies,
+		tickerFrequency:      time.Second,
+		numTracesOnMap:       &atomic.Uint64{},
+		processorMode:        cfg.ProcessorMode,
+		sampledAttributeName: cfg.SampledAttributeName,
 		// We allocate exactly 1 element, because that's the exact amount
 		// used in any place.
 		mutatorsBuf: make([]tag.Mutator, 1),
@@ -206,20 +209,46 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
+
 		trace := d.(*sampling.TraceData)
-		trace.DecisionTime = time.Now()
+		if tsp.processorMode == PreSample || tsp.processorMode == Default {
 
-		decision, policy := tsp.makeDecision(id, trace, &metrics)
+			trace.DecisionTime = time.Now()
 
-		// Sampled or not, remove the batches
-		trace.Lock()
-		allSpans := trace.ReceivedBatches
-		trace.FinalDecision = decision
-		trace.ReceivedBatches = ptrace.NewTraces()
-		trace.Unlock()
+			decision, policy := tsp.makeDecision(id, trace, &metrics)
 
-		if decision == sampling.Sampled {
-			_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
+			// Sampled or not, remove the batches
+			trace.Lock()
+			allSpans := trace.ReceivedBatches
+			trace.FinalDecision = decision
+			trace.ReceivedBatches = ptrace.NewTraces()
+			trace.Unlock()
+
+			if tsp.processorMode == PreSample {
+				// Forward all spans to the next consumer, but add attribute about sampling decision to each span.
+				// This is done only in PreSample mode.
+				ctx := tsp.ctx
+				if decision == sampling.Sampled {
+					tsp.markTraceAsSampled(&allSpans)
+					ctx = policy.ctx
+				}
+
+				_ = tsp.nextConsumer.ConsumeTraces(ctx, allSpans)
+
+			} else if decision == sampling.Sampled {
+				_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
+			}
+		} else {
+			trace.Lock()
+			allSpans := trace.ReceivedBatches
+			trace.ReceivedBatches = ptrace.NewTraces()
+			trace.Unlock()
+
+			// Check if trace is marked as samples
+			sampled := tsp.isTraceSampled(&allSpans)
+			if sampled {
+				_ = tsp.nextConsumer.ConsumeTraces(tsp.ctx, allSpans)
+			}
 		}
 	}
 
@@ -236,6 +265,40 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		zap.Int64("droppedPriorToEvaluation", metrics.idNotFoundOnMapCount),
 		zap.Int64("policyEvaluationErrors", metrics.evaluateErrorCount),
 	)
+}
+
+func (tsp *tailSamplingSpanProcessor) markTraceAsSampled(spans *ptrace.Traces) {
+	for i := 0; i < spans.ResourceSpans().Len(); i++ {
+		rs := spans.ResourceSpans().At(i)
+		ilss := rs.ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			spans := ils.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				span.Attributes().PutBool(tsp.sampledAttributeName, true)
+			}
+		}
+	}
+}
+
+func (tsp *tailSamplingSpanProcessor) isTraceSampled(spans *ptrace.Traces) bool {
+	for i := 0; i < spans.ResourceSpans().Len(); i++ {
+		rs := spans.ResourceSpans().At(i)
+		ilss := rs.ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			spans := ils.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				decision, exists := span.Attributes().Get(tsp.sampledAttributeName)
+				if exists && decision.Bool() {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *policy) {

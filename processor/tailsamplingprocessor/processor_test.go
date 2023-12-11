@@ -130,6 +130,7 @@ func TestTraceIntegrity(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
+		processorMode:   Default,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -250,6 +251,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testLatencyPolicy,
+		ProcessorMode:           Default,
 	}
 	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -371,6 +373,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
+		processorMode:   Default,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -433,6 +436,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
+		processorMode:   Default,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -502,6 +506,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
+		processorMode:   Default,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -566,6 +571,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
+		processorMode:   Default,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -630,6 +636,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		mutatorsBuf:     make([]tag.Mutator, 1),
 		numTracesOnMap:  &atomic.Uint64{},
+		processorMode:   Default,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -694,6 +701,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
+		processorMode:   Default,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -762,6 +770,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
+		processorMode:   Default,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -820,9 +829,10 @@ func TestSubSecondDecisionTime(t *testing.T) {
 	msp := new(consumertest.TracesSink)
 
 	tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), msp, Config{
-		DecisionWait: 500 * time.Millisecond,
-		NumTraces:    uint64(50000),
-		PolicyCfgs:   testPolicy,
+		DecisionWait:  500 * time.Millisecond,
+		NumTraces:     uint64(50000),
+		PolicyCfgs:    testPolicy,
+		ProcessorMode: Default,
 	})
 	require.NoError(t, err)
 
