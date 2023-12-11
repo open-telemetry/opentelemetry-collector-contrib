@@ -118,7 +118,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 
 	// Since marshaling json is not guaranteed to be in order
 	// within a string, using a map to compare that the expected values are there
-	unkeyedOtlpJson := map[string]any{
+	unkeyedOtlpJSON := map[string]any{
 		"resourceSpans": []any{
 			map[string]any{
 				"resource": map[string]any{},
@@ -165,10 +165,10 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		},
 	}
 
-	unkeyedOtlpJsonResult := make([]any, 1)
-	unkeyedOtlpJsonResult[0] = unkeyedOtlpJson
+	unkeyedOtlpJSONResult := make([]any, 1)
+	unkeyedOtlpJSONResult[0] = unkeyedOtlpJSON
 
-	keyedOtlpJson1 := map[string]any{
+	keyedOtlpJSON1 := map[string]any{
 		"resourceSpans": []any{
 			map[string]any{
 				"resource": map[string]any{},
@@ -207,7 +207,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 
 	unkeyedMessageKey := []sarama.Encoder{nil}
 
-	keyedOtlpJson2 := map[string]any{
+	keyedOtlpJSON2 := map[string]any{
 		"resourceSpans": []any{
 			map[string]any{
 				"resource": map[string]any{},
@@ -234,13 +234,13 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		},
 	}
 
-	keyedOtlpJsonResult := make([]any, 2)
-	keyedOtlpJsonResult[0] = keyedOtlpJson1
-	keyedOtlpJsonResult[1] = keyedOtlpJson2
+	keyedOtlpJSONResult := make([]any, 2)
+	keyedOtlpJSONResult[0] = keyedOtlpJSON1
+	keyedOtlpJSONResult[1] = keyedOtlpJSON2
 
 	keyedMessageKey := []sarama.Encoder{sarama.ByteEncoder("0102030405060708090a0b0c0d0e0f10"), sarama.ByteEncoder("1112131415161718191a1b1c1d1e1f20")}
 
-	unkeyedZipkinJson := []any{
+	unkeyedZipkinJSON := []any{
 		map[string]any{
 			"traceId":       "0102030405060708090a0b0c0d0e0f10",
 			"id":            "0001020304050607",
@@ -273,10 +273,10 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		},
 	}
 
-	unkeyedZipkinJsonResult := make([]any, 1)
-	unkeyedZipkinJsonResult[0] = unkeyedZipkinJson
+	unkeyedZipkinJSONResult := make([]any, 1)
+	unkeyedZipkinJSONResult[0] = unkeyedZipkinJSON
 
-	keyedZipkinJson1 := []any{
+	keyedZipkinJSON1 := []any{
 		map[string]any{
 			"traceId":       "0102030405060708090a0b0c0d0e0f10",
 			"id":            "0001020304050607",
@@ -299,7 +299,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		},
 	}
 
-	keyedZipkinJson2 := []any{
+	keyedZipkinJSON2 := []any{
 		map[string]any{
 			"traceId":       "1112131415161718191a1b1c1d1e1f20",
 			"id":            "161718191a1b1c00",
@@ -312,9 +312,9 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		},
 	}
 
-	keyedZipkinJsonResult := make([]any, 2)
-	keyedZipkinJsonResult[0] = keyedZipkinJson1
-	keyedZipkinJsonResult[1] = keyedZipkinJson2
+	keyedZipkinJSONResult := make([]any, 2)
+	keyedZipkinJSONResult[0] = keyedZipkinJSON1
+	keyedZipkinJSONResult[1] = keyedZipkinJSON2
 
 	tests := []struct {
 		encoding            string
@@ -324,10 +324,10 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		expectedMessageKey  []sarama.Encoder
 		unmarshaled         any
 	}{
-		{encoding: "otlp_json", numExpectedMessages: 1, expectedJSON: unkeyedOtlpJsonResult, expectedMessageKey: unkeyedMessageKey, unmarshaled: map[string]any{}},
-		{encoding: "otlp_json", keyed: true, numExpectedMessages: 2, expectedJSON: keyedOtlpJsonResult, expectedMessageKey: keyedMessageKey, unmarshaled: map[string]any{}},
-		{encoding: "zipkin_json", numExpectedMessages: 1, expectedJSON: unkeyedZipkinJsonResult, expectedMessageKey: unkeyedMessageKey, unmarshaled: []map[string]any{}},
-		{encoding: "zipkin_json", keyed: true, numExpectedMessages: 2, expectedJSON: keyedZipkinJsonResult, expectedMessageKey: keyedMessageKey, unmarshaled: []map[string]any{}},
+		{encoding: "otlp_json", numExpectedMessages: 1, expectedJSON: unkeyedOtlpJSONResult, expectedMessageKey: unkeyedMessageKey, unmarshaled: map[string]any{}},
+		{encoding: "otlp_json", keyed: true, numExpectedMessages: 2, expectedJSON: keyedOtlpJSONResult, expectedMessageKey: keyedMessageKey, unmarshaled: map[string]any{}},
+		{encoding: "zipkin_json", numExpectedMessages: 1, expectedJSON: unkeyedZipkinJSONResult, expectedMessageKey: unkeyedMessageKey, unmarshaled: []map[string]any{}},
+		{encoding: "zipkin_json", keyed: true, numExpectedMessages: 2, expectedJSON: keyedZipkinJSONResult, expectedMessageKey: keyedMessageKey, unmarshaled: []map[string]any{}},
 	}
 
 	for _, test := range tests {
