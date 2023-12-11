@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
+	"strings"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/featuregate"
@@ -25,7 +27,7 @@ var (
 	hostCPUModelAndFamilyAsStringID          = "processor.resourcedetection.hostCPUModelAndFamilyAsString"
 	hostCPUModelAndFamilyAsStringFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		hostCPUModelAndFamilyAsStringID,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("Change type of host.cpu.model.id and host.cpu.model.family to string."),
 		featuregate.WithRegisterFromVersion("v0.89.0"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/495"),
@@ -69,6 +71,17 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 	}, nil
 }
 
+// toIEEERA converts a MAC address to IEEE RA format.
+// Per the spec: "MAC Addresses MUST be represented in IEEE RA hexadecimal form: as hyphen-separated
+// octets in uppercase hexadecimal form from most to least significant."
+// Golang returns MAC addresses as colon-separated octets in lowercase hexadecimal form from most
+// to least significant, so we need to:
+// - Replace colons with hyphens
+// - Convert to uppercase
+func toIEEERA(mac net.HardwareAddr) string {
+	return strings.ToUpper(strings.ReplaceAll(mac.String(), ":", "-"))
+}
+
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	var hostname string
@@ -81,6 +94,28 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	hostArch, err := d.provider.HostArch()
 	if err != nil {
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting host architecture: %w", err)
+	}
+
+	var hostIPAttribute []any
+	if d.cfg.ResourceAttributes.HostIP.Enabled {
+		hostIPs, errIPs := d.provider.HostIPs()
+		if errIPs != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting host IP addresses: %w", errIPs)
+		}
+		for _, ip := range hostIPs {
+			hostIPAttribute = append(hostIPAttribute, ip.String())
+		}
+	}
+
+	var hostMACAttribute []any
+	if d.cfg.ResourceAttributes.HostMac.Enabled {
+		hostMACs, errMACs := d.provider.HostMACs()
+		if errMACs != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get host MAC addresses: %w", errMACs)
+		}
+		for _, mac := range hostMACs {
+			hostMACAttribute = append(hostMACAttribute, toIEEERA(mac))
+		}
 	}
 
 	osDescription, err := d.provider.OSDescription(ctx)
@@ -107,6 +142,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 				}
 			}
 			d.rb.SetHostArch(hostArch)
+			d.rb.SetHostIP(hostIPAttribute)
+			d.rb.SetHostMac(hostMACAttribute)
 			d.rb.SetOsDescription(osDescription)
 			if len(cpuInfo) > 0 {
 				err = setHostCPUInfo(d, cpuInfo[0])
@@ -160,13 +197,13 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
 	d.logger.Debug("getting host's cpuinfo", zap.String("coreID", cpuInfo.CoreID))
 	d.rb.SetHostCPUVendorID(cpuInfo.VendorID)
 	if hostCPUModelAndFamilyAsStringFeatureGate.IsEnabled() {
-		d.rb.SetHostCPUFamily(cpuInfo.Family)
-	} else {
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29025
-		d.logger.Warn("This attribute will change from int to string. Switch now using the feature gate.",
+		d.logger.Info("This attribute changed from int to string. Temporarily switch back to int using the feature gate.",
 			zap.String("attribute", "host.cpu.family"),
 			zap.String("feature gate", hostCPUModelAndFamilyAsStringID),
 		)
+		d.rb.SetHostCPUFamily(cpuInfo.Family)
+	} else {
 		family, err := strconv.ParseInt(cpuInfo.Family, 10, 64)
 		if err != nil {
 			return fmt.Errorf("failed to convert cpuinfo family to integer: %w", err)
@@ -179,13 +216,13 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
 	// ISSUE: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27675
 	if cpuInfo.Model != "" {
 		if hostCPUModelAndFamilyAsStringFeatureGate.IsEnabled() {
-			d.rb.SetHostCPUModelID(cpuInfo.Model)
-		} else {
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29025
-			d.logger.Warn("This attribute will change from int to string. Switch now using the feature gate.",
+			d.logger.Info("This attribute changed from int to string. Temporarily switch back to int using the feature gate.",
 				zap.String("attribute", "host.cpu.model.id"),
 				zap.String("feature gate", hostCPUModelAndFamilyAsStringID),
 			)
+			d.rb.SetHostCPUModelID(cpuInfo.Model)
+		} else {
 			model, err := strconv.ParseInt(cpuInfo.Model, 10, 64)
 			if err != nil {
 				return fmt.Errorf("failed to convert cpuinfo model to integer: %w", err)

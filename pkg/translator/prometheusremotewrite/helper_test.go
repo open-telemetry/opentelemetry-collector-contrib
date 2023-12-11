@@ -905,7 +905,7 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &createdLabels): {
 						Labels: createdLabels,
 						Samples: []prompb.Sample{
-							{Value: float64(convertTimeStamp(ts))},
+							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
 						},
 					},
 				}
@@ -1016,7 +1016,7 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &createdLabels): {
 						Labels: createdLabels,
 						Samples: []prompb.Sample{
-							{Value: float64(convertTimeStamp(ts))},
+							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
 						},
 					},
 				}

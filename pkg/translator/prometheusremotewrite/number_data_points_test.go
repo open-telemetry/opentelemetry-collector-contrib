@@ -163,7 +163,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 					timeSeriesSignature(pmetric.MetricTypeSum.String(), &createdLabels): {
 						Labels: createdLabels,
 						Samples: []prompb.Sample{
-							{Value: float64(convertTimeStamp(ts))},
+							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
 						},
 					},
 				}

@@ -533,7 +533,7 @@ func TestLogUnknownError(t *testing.T) {
 
 func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
-
+	expectedComponentName := "mockComponentName"
 	tests := []struct {
 		name                 string
 		buildInfo            component.BuildInfo
@@ -544,44 +544,44 @@ func TestUserAgent(t *testing.T) {
 			"emptyLogGroup",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"",
-			"opentelemetry-collector-contrib/1.0",
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s)", expectedComponentName),
 		},
 		{
 			"buildInfoCommandUsed",
 			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
 			"",
-			"test-collector-contrib/1.0",
+			fmt.Sprintf("test-collector-contrib/1.0 (%s)", expectedComponentName),
 		},
 		{
 			"non container insights",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.1"},
 			"test-group",
-			"opentelemetry-collector-contrib/1.1",
+			fmt.Sprintf("opentelemetry-collector-contrib/1.1 (%s)", expectedComponentName),
 		},
 		{
 			"container insights EKS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/eks-cluster-name/performance",
-			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
 		},
 		{
 			"container insights ECS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/ecs/containerinsights/ecs-cluster-name/performance",
-			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
 		},
 		{
 			"container insights prometheus",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/cluster-name/prometheus",
-			"opentelemetry-collector-contrib/1.0 (ContainerInsights)",
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
 		},
 	}
 
-	session, _ := session.NewSession()
+	testSession, _ := session.NewSession()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, session)
+			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, testSession, expectedComponentName)
 			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
 
 			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{

@@ -456,7 +456,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
 
-	mh := newAssertNoErrorHost(t)
+	mh := newAssertNoErrHost(t)
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start log reception")
 	require.NoError(t, r.Start(context.Background(), mh), "should not fail to start log on second Start call")
 
@@ -898,21 +898,21 @@ func (b badReqBody) Close() error {
 	return nil
 }
 
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
+// assertNoErrHost implements a component.Host that asserts that there were no errors.
+type assertNoErrHost struct {
 	component.Host
 	*testing.T
 }
 
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
+// newAssertNoErrHost returns a new instance of assertNoErrHost.
+func newAssertNoErrHost(t *testing.T) component.Host {
+	return &assertNoErrHost{
 		Host: componenttest.NewNopHost(),
 		T:    t,
 	}
 }
 
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
+func (aneh *assertNoErrHost) ReportFatalError(err error) {
 	assert.NoError(aneh, err)
 }
 

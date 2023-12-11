@@ -35,6 +35,9 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 			},
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			Capabilities: Capabilities{
+				ReportsEffectiveConfig: true,
+			},
 		}, cfg)
 }
 
