@@ -6,10 +6,10 @@ package kafkaexporter
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/IBM/sarama"
 	"testing"
 	"time"
 
+	"github.com/IBM/sarama"
 	zipkin "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
