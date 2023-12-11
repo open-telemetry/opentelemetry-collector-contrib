@@ -29,11 +29,10 @@ func createHourFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 
 func Hour[K any](t ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		tim, err := t.Get(ctx, tCtx)
+		time, err := t.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("returning hour", tim)
 		return int64(tim.Hour()), nil
 	}, nil
 }

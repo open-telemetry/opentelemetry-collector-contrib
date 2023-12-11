@@ -467,7 +467,7 @@ The returned type is `int64`.
 
 Examples:
 
-- `Hour(Now())
+- `Hour(Now())`
 
 ### Hours
 
