@@ -33,6 +33,6 @@ func Hour[K any](t ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
 		if err != nil {
 			return nil, err
 		}
-		return int64(tim.Hour()), nil
+		return int64(time.Hour()), nil
 	}, nil
 }
