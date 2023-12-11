@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
@@ -134,15 +135,17 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
-			err = consumererror.NewPermanent(err)
+			prwe.settings.Logger.Warn("Failed to translate metrics: %s", zap.Error(err))
+			prwe.settings.Logger.Warn("Exporting remaining %s metrics.", zap.Int("converted", len(tsMap)))
 		}
 
 		var m []*prompb.MetricMetadata
 		if prwe.exporterSettings.SendMetadata {
 			m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
 		}
+
 		// Call export even if a conversion error, since there may be points that were successfully converted.
-		return multierr.Combine(err, prwe.handleExport(ctx, tsMap, m))
+		return prwe.handleExport(ctx, tsMap, m)
 	}
 }
 

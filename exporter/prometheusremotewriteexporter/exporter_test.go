@@ -419,6 +419,11 @@ func Test_PushMetrics(t *testing.T) {
 
 	emptySummaryBatch := getMetricsFromMetricList(invalidMetrics[emptySummary])
 
+	// partial success (or partial failure) cases
+
+	partialSuccess1 := getMetricsFromMetricList(validMetrics1[validSum], validMetrics2[validSum],
+		validMetrics1[validIntGauge], validMetrics2[validIntGauge], invalidMetrics[emptyGauge])
+
 	// staleNaN cases
 	staleNaNHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNHistogram])
 	staleNaNEmptyHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNEmptyHistogram])
@@ -469,7 +474,6 @@ func Test_PushMetrics(t *testing.T) {
 			name:             "invalid_type_case",
 			metrics:          invalidTypeBatch,
 			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
 		},
 		{
 			name:               "intSum_case",
@@ -570,28 +574,31 @@ func Test_PushMetrics(t *testing.T) {
 			metrics:          emptyDoubleGaugeBatch,
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
 		},
 		{
 			name:             "emptyCumulativeSum_case",
 			metrics:          emptyCumulativeSumBatch,
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
 		},
 		{
 			name:             "emptyCumulativeHistogram_case",
 			metrics:          emptyCumulativeHistogramBatch,
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
 		},
 		{
 			name:             "emptySummary_case",
 			metrics:          emptySummaryBatch,
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
+		},
+		{
+			name:               "partialSuccess_case",
+			metrics:            partialSuccess1,
+			reqTestFunc:        checkFunc,
+			httpResponseCode:   http.StatusAccepted,
+			expectedTimeSeries: 4,
 		},
 		{
 			name:               "staleNaNIntGauge_case",
