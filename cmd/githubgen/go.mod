@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/google/go-github/v53 v53.2.0
-	go.opentelemetry.io/collector/confmap v0.90.2-0.20231208183206-eed3b4e9c5ef
+	go.opentelemetry.io/collector/confmap v0.90.2-0.20231211180437-7ec38e5c1992
 )
 
 require (
