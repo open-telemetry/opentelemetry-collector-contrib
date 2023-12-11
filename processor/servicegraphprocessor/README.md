@@ -119,7 +119,7 @@ The following settings can be optionally configured:
 
 - `store` defines the config for the in-memory store used to find requests between services by pairing spans.
     - `ttl` - TTL is the time to live for items in the store.
-      - Default: `2ms`
+      - Default: `2s`
     - `max_items` - MaxItems is the maximum number of items to keep in the store.
       - Default: `1000` 
 - `cache_loop` - the time to cleans the cache periodically
