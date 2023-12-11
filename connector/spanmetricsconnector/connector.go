@@ -118,7 +118,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 	}
 
 	resourceMetricsKeyAttributes := make(map[string]bool)
-	for i := 0; i < len(cfg.ResourceMetricsKeyAttributes); i += 1 {
+	for i := 0; i < len(cfg.ResourceMetricsKeyAttributes); i++ {
 		resourceMetricsKeyAttributes[cfg.ResourceMetricsKeyAttributes[i]] = true
 	}
 
