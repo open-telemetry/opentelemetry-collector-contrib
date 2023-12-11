@@ -57,10 +57,17 @@ type Config struct {
 	Pipeline string `mapstructure:"pipeline"`
 
 	HTTPClientSettings `mapstructure:",squash"`
-	Discovery          DiscoverySettings `mapstructure:"discover"`
-	Retry              RetrySettings     `mapstructure:"retry"`
-	Flush              FlushSettings     `mapstructure:"flush"`
-	Mapping            MappingsSettings  `mapstructure:"mapping"`
+	Discovery          DiscoverySettings      `mapstructure:"discover"`
+	Retry              RetrySettings          `mapstructure:"retry"`
+	Flush              FlushSettings          `mapstructure:"flush"`
+	Mapping            MappingsSettings       `mapstructure:"mapping"`
+	LogstashFormat     LogstashFormatSettings `mapstructure:"logstash_format"`
+}
+
+type LogstashFormatSettings struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	PrefixSeparator string `mapstructure:"prefix_separator"`
+	DateFormat      string `mapstructure:"date_format"`
 }
 
 type DynamicIndexSetting struct {
