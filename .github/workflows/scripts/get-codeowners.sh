@@ -9,6 +9,10 @@
 
 set -euo pipefail
 
+get_component_type() {
+  echo "${COMPONENT}" | cut -f 1 -d '/'
+}
+
 get_codeowners() {
   echo "$((grep -m 1 "^${1}" .github/CODEOWNERS || true) | sed 's/   */ /g' | cut -f3- -d ' ')"
 }
@@ -18,11 +22,12 @@ if [[ -z "${COMPONENT:-}" ]]; then
     exit 1
 fi
 
-# For a component to be considered valid, it must match the entire component name
+COMPONENT_TYPE=$(get_component_type "${COMPONENT}")
 CUR_DIRECTORY=$(dirname "$0")
-VALID_COMPONENT=$(bash "${CUR_DIRECTORY}/get-components.sh" | grep -x $COMPONENT)
+VALID_COMPONENT=$(bash "${CUR_DIRECTORY}/get-components.sh" | grep -x "${COMPONENT}" || true)
+VALID_COMPONENT_WITH_TYPE=$(bash "${CUR_DIRECTORY}/get-components.sh" | grep -x "$COMPONENT$COMPONENT_TYPE" || true)
 
-if [[ -z "${VALID_COMPONENT:-}" ]]; then
+if [ -z "${VALID_COMPONENT:-}" ] && [ -z "${VALID_COMPONENT_WITH_TYPE:-}" ]; then
     echo ""
     exit 0
 fi
@@ -35,7 +40,6 @@ RESULT=$(grep -c "${COMPONENT}" .github/CODEOWNERS || true)
 # if so, try to narrow things down by appending the component
 # or a forward slash to the label.
 if [[ ${RESULT} != 1 ]]; then
-    COMPONENT_TYPE=$(echo "${COMPONENT}" | cut -f 1 -d '/')
     OWNERS="$(get_codeowners "${COMPONENT}${COMPONENT_TYPE}")"
 
     if [[ -z "${OWNERS:-}" ]]; then
