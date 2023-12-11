@@ -54,8 +54,9 @@ Set the environment variable `LOGICMONITOR_BEARER_TOKEN`
 ```
 ## Resource Mapping for Logs
 
-As per the LogicMonitor's Log Ingestion [documentation](https://www.logicmonitor.com/support/lm-logs/sending-logs-to-the-lm-logs-ingestion-api), if more than one resource property exists, only the first property will be mapped. In case of OTLP logs, there can be multiple resource attributes and its order also cannot be guaranteed, 
-Recently we have made the resource mapping for logs more flexible. With that, any of the resource attributes present in the log matches can be considered for resource mapping. 
+As per the LogicMonitor's [Log Ingestion documentation](https://www.logicmonitor.com/support/lm-logs/sending-logs-to-the-lm-logs-ingestion-api), if more than one resource property exists, only the first property will be mapped. In case of OTLP logs, there can be multiple resource attributes and its order also cannot be guaranteed.
+
+Recently we have made the resource mapping for logs more flexible. With that, any of the resource attributes present in the log matches can be considered for resource mapping.
 But, this is not the default behaviour. In order to make the resource mapping flexible, you can configure the `resource_mapping_op` in the LogicMonitor's exporter.
 
 ```yaml
