@@ -27,6 +27,7 @@ type generator interface {
 // .github/CODEOWNERS
 // .github/ALLOWLIST
 // .github/ISSUE_TEMPLATES/*.yaml (list of components)
+// reports/distributions/*
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
 	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
