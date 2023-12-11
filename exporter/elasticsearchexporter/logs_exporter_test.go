@@ -174,7 +174,7 @@ func TestExporter_PushEvent(t *testing.T) {
 			rec.Record(docs)
 
 			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","application":"myapp","attrKey1":"abc","attrKey2":"def","error":{"stack_trace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
-			actual := fmt.Sprintf("%s", docs[0].Document)
+			actual := string(docs[0].Document)
 			assert.Equal(t, expected, actual)
 
 			return itemsAllOK(docs)
