@@ -22,7 +22,7 @@ func must[T any](t T, err error) T {
 	return t
 }
 
-func mustNot[T any](t T, err error) error {
+func mustNot[T any](_ T, err error) error {
 	if err == nil {
 		return fmt.Errorf("expected an error, got nil")
 	}
@@ -31,7 +31,7 @@ func mustNot[T any](t T, err error) error {
 
 func probabilityToTValue(prob float64) (string, error) {
 	th, err := ProbabilityToThreshold(prob)
-	return string(th.TValue()), err
+	return th.TValue(), err
 }
 
 func tValueToProbability(tv string) (float64, error) {

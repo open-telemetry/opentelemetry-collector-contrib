@@ -72,8 +72,9 @@ func ProbabilityToThresholdWithPrecision(prob float64, prec uint8) (Threshold, e
 	shift := 4 * (14 - prec)
 	half := uint64(1) << (shift - 1)
 
-	rscaled = (rscaled + half) >> shift
-	rscaled = rscaled << shift
+	rscaled += half
+	rscaled >>= shift
+	rscaled <<= shift
 
 	return Threshold{
 		unsigned: rscaled,

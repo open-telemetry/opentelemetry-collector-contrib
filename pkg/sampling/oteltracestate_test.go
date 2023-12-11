@@ -39,7 +39,7 @@ func TestOTelTraceStateTValueSerialize(t *testing.T) {
 
 	require.True(t, otts.HasAnyValue())
 	var w strings.Builder
-	otts.Serialize(&w)
+	require.NoError(t, otts.Serialize(&w))
 	require.Equal(t, orig, w.String())
 }
 
@@ -53,7 +53,7 @@ func TestOTelTraceStateZero(t *testing.T) {
 	require.Equal(t, 1.0, otts.TValueThreshold().Probability())
 
 	var w strings.Builder
-	otts.Serialize(&w)
+	require.NoError(t, otts.Serialize(&w))
 	require.Equal(t, orig, w.String())
 }
 
@@ -72,7 +72,7 @@ func TestOTelTraceStateRValuePValue(t *testing.T) {
 	require.Equal(t, []KV{{"p", "2"}}, otts.ExtraValues())
 
 	var w strings.Builder
-	otts.Serialize(&w)
+	require.NoError(t, otts.Serialize(&w))
 	require.Equal(t, "p:2", w.String())
 }
 
@@ -91,7 +91,7 @@ func TestOTelTraceStateTValueUpdate(t *testing.T) {
 
 	const updated = "rv:abcdefabcdefab;th:3"
 	var w strings.Builder
-	otts.Serialize(&w)
+	require.NoError(t, otts.Serialize(&w))
 	require.Equal(t, updated, w.String())
 }
 
@@ -108,7 +108,7 @@ func TestOTelTraceStateRTUpdate(t *testing.T) {
 
 	const updated = "rv:00000000000003;th:3;a:b"
 	var w strings.Builder
-	otts.Serialize(&w)
+	require.NoError(t, otts.Serialize(&w))
 	require.Equal(t, updated, w.String())
 }
 
@@ -121,7 +121,7 @@ func TestOTelTraceStateRTClear(t *testing.T) {
 
 	const updated = "a:b"
 	var w strings.Builder
-	otts.Serialize(&w)
+	require.NoError(t, otts.Serialize(&w))
 	require.Equal(t, updated, w.String())
 }
 
@@ -245,7 +245,7 @@ func TestParseOTelTraceState(t *testing.T) {
 			// on success Serialize() should not modify
 			// test by re-parsing
 			var w strings.Builder
-			otts.Serialize(&w)
+			require.NoError(t, otts.Serialize(&w))
 			cpy, err := NewOTelTraceState(w.String())
 			require.NoError(t, err)
 			require.Equal(t, otts, cpy)

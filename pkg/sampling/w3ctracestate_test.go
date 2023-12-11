@@ -98,7 +98,7 @@ func TestParseW3CTraceState(t *testing.T) {
 			// on success Serialize() should not modify
 			// test by re-parsing
 			var w strings.Builder
-			w3c.Serialize(&w)
+			require.NoError(t, w3c.Serialize(&w))
 			cpy, err := NewW3CTraceState(w.String())
 			require.NoError(t, err, "with %v", w.String())
 			require.Equal(t, w3c, cpy, "with %v", w.String())
