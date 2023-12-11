@@ -39,3 +39,16 @@ func Test_Hour(t *testing.T) {
 		})
 	}
 }
+
+func Test_Hour_Error(t *testing.T) {
+	var getter ottl.TimeGetter[any] = &ottl.StandardTimeGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
+			return "not a time", nil
+		},
+	}
+	exprFunc, err := Hour(getter)
+	assert.NoError(t, err)
+	result, err := exprFunc(context.Background(), nil)
+	assert.Nil(t, result)
+	assert.Error(t, err)
+}
