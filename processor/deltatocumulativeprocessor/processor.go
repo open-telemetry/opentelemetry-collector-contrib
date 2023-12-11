@@ -2,7 +2,6 @@ package deltatocumulativeprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
-	"errors"
 
 	"go.uber.org/zap"
 
@@ -26,22 +25,37 @@ type Processor struct {
 	cancel context.CancelFunc
 
 	aggr metrics.Aggregator
+	emit Emitter
 }
 
-func newProcessor(cfg *Config, log *zap.Logger) *Processor {
+func newProcessor(cfg *Config, log *zap.Logger, next consumer.Metrics) *Processor {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	aggr := streams.NewTracker(delta.Aggregator())
+
+	emit := Emitter{
+		Interval: cfg.Interval,
+
+		dest: next,
+		aggr: aggr,
+		log:  log,
+	}
 
 	proc := Processor{
 		log:    log,
 		ctx:    ctx,
 		cancel: cancel,
-		aggr:   streams.NewTracker(delta.Aggregator()),
+		next:   next,
+
+		aggr: aggr,
+		emit: emit,
 	}
 
 	return &proc
 }
 
 func (p *Processor) Start(ctx context.Context, host component.Host) error {
+	go p.emit.Run(p.ctx)
 	return nil
 }
 
@@ -55,8 +69,6 @@ func (p *Processor) Capabilities() consumer.Capabilities {
 }
 
 func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	var errs error
-
 	metrics.Filter(md, func(m metrics.Metric) bool {
 		switch m.Type() {
 		case pmetric.MetricTypeSum:
@@ -72,8 +84,5 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		return false
 	})
 
-	if err := p.next.ConsumeMetrics(ctx, md); err != nil {
-		errs = errors.Join(err)
-	}
-	return errs
+	return p.next.ConsumeMetrics(ctx, md)
 }
