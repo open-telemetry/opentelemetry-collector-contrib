@@ -10,7 +10,7 @@
 set -euo pipefail
 
 get_codeowners() {
-  echo "$((grep -m 1 "${1}" .github/CODEOWNERS || true) | sed 's/   */ /g' | cut -f3- -d ' ')"
+  echo "$((grep -m 1 "^${1}" .github/CODEOWNERS || true) | sed 's/   */ /g' | cut -f3- -d ' ')"
 }
 
 if [[ -z "${COMPONENT:-}" ]]; then
