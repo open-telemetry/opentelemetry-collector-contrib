@@ -5,9 +5,9 @@ go 1.20
 require (
 	github.com/expr-lang/expr v1.15.6
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.91.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/confmap v0.91.0
