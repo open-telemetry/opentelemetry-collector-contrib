@@ -24,6 +24,8 @@ type Config struct {
 
 	// ApiToken of Logicmonitor Platform
 	APIToken APIToken `mapstructure:"api_token"`
+	// Logs defines the Logs exporter specific configuration
+	Logs LogsConfig `mapstructure:"logs"`
 }
 
 type APIToken struct {
@@ -31,14 +33,19 @@ type APIToken struct {
 	AccessKey configopaque.String `mapstructure:"access_key"`
 }
 
+// LogsConfig defines the logs exporter specific configuration options
+type LogsConfig struct {
+	ResourceMappingOperation string `mapstructure:"resource_mapping_op"`
+}
+
 func (c *Config) Validate() error {
 	if c.Endpoint == "" {
-		return fmt.Errorf("Endpoint should not be empty")
+		return fmt.Errorf("endpoint should not be empty")
 	}
 
 	u, err := url.Parse(c.Endpoint)
 	if err != nil || u.Scheme == "" || u.Host == "" {
-		return fmt.Errorf("Endpoint must be valid")
+		return fmt.Errorf("endpoint must be valid")
 	}
 	return nil
 }

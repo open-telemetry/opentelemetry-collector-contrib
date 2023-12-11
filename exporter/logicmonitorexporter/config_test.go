@@ -34,7 +34,7 @@ func TestConfigValidation(t *testing.T) {
 				},
 			},
 			wantErr:      true,
-			errorMessage: "Endpoint should not be empty",
+			errorMessage: "endpoint should not be empty",
 		},
 		{
 			name: "missing http scheme",
@@ -44,7 +44,7 @@ func TestConfigValidation(t *testing.T) {
 				},
 			},
 			wantErr:      true,
-			errorMessage: "Endpoint must be valid",
+			errorMessage: "endpoint must be valid",
 		},
 		{
 			name: "invalid endpoint format",
@@ -54,7 +54,7 @@ func TestConfigValidation(t *testing.T) {
 				},
 			},
 			wantErr:      true,
-			errorMessage: "Endpoint must be valid",
+			errorMessage: "endpoint must be valid",
 		},
 		{
 			name: "valid config",
@@ -121,6 +121,22 @@ func TestLoadConfig(t *testing.T) {
 					Headers: map[string]configopaque.String{
 						"Authorization": "Bearer <token>",
 					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resource-mapping-op"),
+			expected: &Config{
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://company.logicmonitor.com/rest",
+					Headers: map[string]configopaque.String{
+						"Authorization": "Bearer <token>",
+					},
+				},
+				Logs: LogsConfig{
+					ResourceMappingOperation: "OR",
 				},
 			},
 		},
