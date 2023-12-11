@@ -24,6 +24,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver v0.90.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.90.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.90.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension v0.90.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.90.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.90.1
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
@@ -428,3 +429,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ../../internal/collectd
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension => ../../extension/remotetapextension
