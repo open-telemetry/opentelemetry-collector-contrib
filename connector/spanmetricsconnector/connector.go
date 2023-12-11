@@ -54,6 +54,8 @@ type connectorImp struct {
 
 	resourceMetrics *cache.Cache[resourceKey, *resourceMetrics]
 
+	resourceMetricsKeyAttributes map[string]bool
+
 	keyBuf *bytes.Buffer
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
@@ -115,17 +117,23 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		return nil, err
 	}
 
+	resourceMetricsKeyAttributes := make(map[string]bool)
+	for i := 0; i < len(cfg.ResourceMetricsKeyAttributes); i += 1 {
+		resourceMetricsKeyAttributes[cfg.ResourceMetricsKeyAttributes[i]] = true
+	}
+
 	return &connectorImp{
-		logger:                logger,
-		config:                *cfg,
-		resourceMetrics:       resourceMetricsCache,
-		dimensions:            newDimensions(cfg.Dimensions),
-		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
-		metricKeyToDimensions: metricKeyToDimensionsCache,
-		ticker:                ticker,
-		done:                  make(chan struct{}),
-		eDimensions:           newDimensions(cfg.Events.Dimensions),
-		events:                cfg.Events,
+		logger:                       logger,
+		config:                       *cfg,
+		resourceMetrics:              resourceMetricsCache,
+		resourceMetricsKeyAttributes: resourceMetricsKeyAttributes,
+		dimensions:                   newDimensions(cfg.Dimensions),
+		keyBuf:                       bytes.NewBuffer(make([]byte, 0, 1024)),
+		metricKeyToDimensions:        metricKeyToDimensionsCache,
+		ticker:                       ticker,
+		done:                         make(chan struct{}),
+		eDimensions:                  newDimensions(cfg.Events.Dimensions),
+		events:                       cfg.Events,
 	}, nil
 }
 
@@ -391,15 +399,14 @@ func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics
 type resourceKey [16]byte
 
 func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
+	if len(p.resourceMetricsKeyAttributes) == 0 {
+		h := pdatautil.MapHash(attr)
+		return resourceKey(h)
+	}
 	m := pcommon.NewMap()
 	attr.CopyTo(m)
-	s := map[string]bool{
-		conventions.AttributeServiceName:          true,
-		conventions.AttributeTelemetrySDKName:     true,
-		conventions.AttributeTelemetrySDKLanguage: true,
-	}
 	m.RemoveIf(func(k string, v pcommon.Value) bool {
-		return !s[k]
+		return !p.resourceMetricsKeyAttributes[k]
 	})
 	h := pdatautil.MapHash(m)
 	return resourceKey(h)
