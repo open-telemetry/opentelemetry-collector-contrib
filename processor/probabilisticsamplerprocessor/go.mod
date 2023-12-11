@@ -3,12 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/proba
 go 1.20
 
 require (
-<<<<<<< Updated upstream
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.1
-=======
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.89.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.0.0-00010101000000-000000000000
->>>>>>> Stashed changes
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.90.2-0.20231208183206-eed3b4e9c5ef
