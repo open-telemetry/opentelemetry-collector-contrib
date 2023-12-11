@@ -40,7 +40,7 @@ func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config) *failov
 func (f *failoverRouter[C]) getCurrentConsumer() (C, int, bool) {
 	// if currentIndex incremented passed bounds of pipeline list
 	var nilConsumer C
-	idx := f.pS.GetCurrentIndex()
+	idx := f.pS.CurrentIndex()
 	if idx >= len(f.cfg.PipelinePriority) {
 		return nilConsumer, -1, false
 	}
@@ -63,7 +63,7 @@ func (f *failoverRouter[C]) registerConsumers() error {
 func (f *failoverRouter[C]) handlePipelineError(idx int) {
 	// avoids race condition in case of consumeSIGNAL invocations
 	// where index was updated during execution
-	if idx != f.pS.GetCurrentIndex() {
+	if idx != f.pS.CurrentIndex() {
 		return
 	}
 	doRetry := f.pS.IndexIsStable(idx)
@@ -88,7 +88,7 @@ func (f *failoverRouter[C]) enableRetry(ctx context.Context) {
 		ticker := time.NewTicker(f.cfg.RetryInterval)
 		defer ticker.Stop()
 
-		stableIndex := f.pS.GetStableIndex()
+		stableIndex := f.pS.StableIndex()
 		var cancelFunc context.CancelFunc
 		// checkContinueRetry checks that any higher priority levels have retries remaining
 		// (have not exceeded their maxRetries)
@@ -113,41 +113,14 @@ func (f *failoverRouter[C]) enableRetry(ctx context.Context) {
 // interval starts in the middle of the execution
 func (f *failoverRouter[C]) handleRetry(parentCtx context.Context, stableIndex int) context.CancelFunc {
 	retryCtx, cancelFunc := context.WithCancel(parentCtx)
-	go f.retryHighPriorityPipelines(retryCtx, stableIndex)
+	go f.pS.RetryHighPriorityPipelines(retryCtx, stableIndex, f.cfg.RetryGap)
 	return cancelFunc
-}
-
-// retryHighPriorityPipelines responsible for single iteration through all higher priority pipelines
-func (f *failoverRouter[C]) retryHighPriorityPipelines(ctx context.Context, stableIndex int) {
-	ticker := time.NewTicker(f.cfg.RetryGap)
-
-	defer ticker.Stop()
-
-	for i := 0; i < stableIndex; i++ {
-		// if stableIndex was updated to a higher priority level during the execution of the goroutine
-		// will return to avoid overwriting higher priority level with lower one
-		if stableIndex > f.pS.GetStableIndex() {
-			return
-		}
-		// checks that max retries were not used for this index
-		if f.pS.MaxRetriesUsed(i) {
-			continue
-		}
-		select {
-		// return when context is cancelled by parent goroutine
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			// when ticker triggers currentIndex is updated
-			f.pS.SetToRetryIndex(i)
-		}
-	}
 }
 
 // checkStopRetry checks if retry should be suspended if all higher priority levels have exceeded their max retries
 func (f *failoverRouter[C]) checkContinueRetry(index int) bool {
 	for i := 0; i < index; i++ {
-		if f.pS.PipelineRetries[i] < f.cfg.MaxRetries {
+		if f.pS.IndexRetryCount(i) < f.cfg.MaxRetries {
 			return true
 		}
 	}
@@ -157,11 +130,14 @@ func (f *failoverRouter[C]) checkContinueRetry(index int) bool {
 // reportStable reports back to the failoverRouter that the current priority level that was called by Consume.SIGNAL was
 // stable
 func (f *failoverRouter[C]) reportStable(idx int) {
-	// is stableIndex is already the known stableIndex return
-	if f.pS.IndexIsStable(idx) {
-		return
-	}
-	// if the stableIndex is a retried index, the update the stable index to the retried index
-	// NOTE retry will not stop due to potential higher priority index still available
-	f.pS.SetNewStableIndex(idx)
+	f.pS.ReportStable(idx)
+}
+
+// For Testing
+func (f *failoverRouter[C]) GetConsumerAtIndex(idx int) C {
+	return f.consumers[idx]
+}
+
+func (f *failoverRouter[C]) ModifyConsumerAtIndex(idx int, c C) {
+	f.consumers[idx] = c
 }

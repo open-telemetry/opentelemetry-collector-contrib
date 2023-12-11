@@ -41,7 +41,7 @@ func (f *tracesFailover) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	if err == nil {
 		// trylock to make sure for concurrent calls multiple invocations don't try to update the failover
 		// state simultaneously and don't wait to acquire lock in pipeline selector
-		f.stableTryLock.Lock(f.failover.reportStable, idx)
+		f.stableTryLock.TryExecute(f.failover.reportStable, idx)
 		return nil
 	}
 	return f.FailoverTraces(ctx, td)
@@ -56,11 +56,11 @@ func (f *tracesFailover) FailoverTraces(ctx context.Context, td ptrace.Traces) e
 			// in case of err handlePipelineError is called through tryLock
 			// tryLock is to avoid race conditions from concurrent calls to handlePipelineError, only first call should enter
 			// see state.TryLock
-			f.errTryLock.Lock(f.failover.handlePipelineError, idx)
+			f.errTryLock.TryExecute(f.failover.handlePipelineError, idx)
 			continue
 		}
 		// when healthy pipeline is found, reported back to failover component
-		f.stableTryLock.Lock(f.failover.reportStable, idx)
+		f.stableTryLock.TryExecute(f.failover.reportStable, idx)
 		return nil
 	}
 	f.logger.Error("All provided pipelines return errors, dropping data")

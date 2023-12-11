@@ -9,30 +9,18 @@ import (
 )
 
 type TryLock struct {
-	lock chan struct{}
+	lock sync.Mutex
+}
+
+func (t *TryLock) TryExecute(fn func(int), arg int) {
+	if t.lock.TryLock() {
+		defer t.lock.Unlock()
+		fn(arg)
+	}
 }
 
 func NewTryLock() *TryLock {
-	return &TryLock{
-		lock: make(chan struct{}, 1),
-	}
-}
-
-// Lock tries to write to a channel of size 1 to maintain a single access point to a resource
-// if not default case will return
-// NOTE: may need to update logic in future so that concurrent calls to consume<SIGNAL> block while the lock is acquired
-// and then return automatically once lock is released to avoid repeated calls to consume<SIGNAL> before indexes are updated
-func (tl *TryLock) Lock(fn func(int), arg int) {
-	select {
-	case tl.lock <- struct{}{}:
-		defer tl.Unlock()
-		fn(arg)
-	default:
-	}
-}
-
-func (tl *TryLock) Unlock() {
-	<-tl.lock
+	return &TryLock{}
 }
 
 // Manages cancel function for retry goroutine, ends up cleaner than using channels
