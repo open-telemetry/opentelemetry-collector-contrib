@@ -5,11 +5,11 @@ go 1.20
 require (
 	github.com/aws/aws-sdk-go v1.48.14
 	github.com/google/uuid v1.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.91.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/confmap v0.91.0

@@ -17,19 +17,19 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
 	github.com/aws/aws-sdk-go v1.48.14
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.91.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/config/confignet v0.91.0
@@ -181,13 +181,13 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.90.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.90.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.90.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.90.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.90.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.90.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.90.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.91.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.91.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.91.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.91.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.91.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.91.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.91.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0-rc.3 // indirect
