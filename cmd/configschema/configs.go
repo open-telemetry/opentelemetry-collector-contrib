@@ -113,6 +113,16 @@ func GetCfgInfo(components otelcol.Factories, componentType, componentName strin
 			Group:       componentType,
 			CfgInstance: f.CreateDefaultConfig(),
 		}, nil
+	case connector:
+		f := components.Connectors[t]
+		if f == nil {
+			return CfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
+		}
+		return CfgInfo{
+			Type:        f.Type(),
+			Group:       componentType,
+			CfgInstance: f.CreateDefaultConfig(),
+		}, nil
 	case extension:
 		f := components.Extensions[t]
 		if f == nil {

@@ -95,3 +95,46 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConfig_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr string
+	}{
+		{
+			name: "NoEndpoint",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.HTTPClientSettings.Endpoint = ""
+				return cfg
+			}(),
+			wantErr: "endpoint must be non-empty",
+		},
+		{
+			name: "NoSeverity",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.DefaultSeverity = ""
+				return cfg
+			}(),
+			wantErr: "severity must be non-empty",
+		},
+		{
+			name:    "Success",
+			cfg:     createDefaultConfig().(*Config),
+			wantErr: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, tt.wantErr)
+			}
+		})
+	}
+}

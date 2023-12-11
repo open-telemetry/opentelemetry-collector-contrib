@@ -8,6 +8,18 @@ This document contains documentation for both types of OTTL functions:
 - [Functions](#functions) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
+## Design principles
+
+For the standard OTTL functions described in this document, we specify design principles to ensure they are always
+secure and safe for use:
+
+- Built-in OTTL functions may not access the file system, network, or any other I/O devices.
+- Built-in OTTL functions may share information only through their parameters and results.
+- Built-in OTTL functions must be terminating; they must not loop forever.
+
+OTTL functions are implemented in Go, and so are only limited by what can be implemented in a Go program.
+User-defined OTTL functions may therefore not adhere the above principles.
+
 ## Working with functions
 
 Functions generally expect specific types to be returned by `Paths`.
@@ -298,6 +310,7 @@ Available Converters:
 - [Duration](#duration)
 - [Int](#int)
 - [IsBool](#isbool)
+- [IsDouble](#isdouble)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
@@ -506,6 +519,22 @@ Examples:
 
 
 - `IsBool(attributes["any key"])`
+
+### IsDouble
+
+`IsDouble(value)`
+
+The `IsDouble` Converter returns true if the given value is a double.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+If `value` is a `float64` or a `pcommon.ValueTypeDouble` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsDouble(body)`
+
+- `IsDouble(attributes["maybe a double"])`
 
 ### IsMap
 
