@@ -102,7 +102,7 @@ extension/encoding/zipkinencodingextension/                             @open-te
 extension/headerssetterextension/                                       @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                                @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
-extension/jaegerremotesampling/                                         @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
+extension/jaegerremotesampling/                                         @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/oauth2clientauthextension/                                    @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                                     @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/dockerobserver/                                      @open-telemetry/collector-contrib-approvers @MovieStoreGuy
@@ -219,7 +219,7 @@ receiver/hostmetricsreceiver/                                           @open-te
 receiver/httpcheckreceiver/                                             @open-telemetry/collector-contrib-approvers @codeboten
 receiver/iisreceiver/                                                   @open-telemetry/collector-contrib-approvers @Mrod1598 @djaglowski
 receiver/influxdbreceiver/                                              @open-telemetry/collector-contrib-approvers @jacobmarble
-receiver/jaegerreceiver/                                                @open-telemetry/collector-contrib-approvers @jpkrohling
+receiver/jaegerreceiver/                                                @open-telemetry/collector-contrib-approvers @yurishkuro
 receiver/jmxreceiver/                                                   @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/journaldreceiver/                                              @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                                            @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv
