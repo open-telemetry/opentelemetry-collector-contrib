@@ -24,11 +24,11 @@ if [[ -z "${COMPONENT:-}" ]]; then
     exit 1
 fi
 
-COMPONENT_TYPE=$(get_component_type "${COMPONENT}")
-OWNERS="$(get_codeowners "${COMPONENT}${COMPONENT_TYPE}")"
+OWNERS="$(get_codeowners "${COMPONENT}")"
 
 if [[ -z "${OWNERS:-}" ]]; then
-    OWNERS="$(get_codeowners "${COMPONENT}")"
+    COMPONENT_TYPE=$(get_component_type "${COMPONENT}")
+    OWNERS="$(get_codeowners "${COMPONENT}${COMPONENT_TYPE}")"
 fi
 
 echo "${OWNERS}"
