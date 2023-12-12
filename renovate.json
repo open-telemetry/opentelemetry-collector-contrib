@@ -65,7 +65,7 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchUpdateTypes": ["minor", "major"]
+        "matchUpdateTypes": ["minor", "patch"]
       }
     ],
     "ignoreDeps": [

@@ -15,7 +15,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.8.1
 	github.com/DataDog/sketches-go v1.4.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
-	github.com/aws/aws-sdk-go v1.48.14
+	github.com/aws/aws-sdk-go v1.49.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.91.0
@@ -98,7 +98,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
 	github.com/envoyproxy/go-control-plane v0.11.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect
-	github.com/expr-lang/expr v1.15.6 // indirect
+	github.com/expr-lang/expr v1.15.7 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -206,7 +206,7 @@ require (
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/prometheus/prometheus v0.48.0 // indirect
+	github.com/prometheus/prometheus v0.48.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.21 // indirect
