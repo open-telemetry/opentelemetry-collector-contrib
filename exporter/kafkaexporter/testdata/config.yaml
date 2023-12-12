@@ -11,6 +11,7 @@ kafka:
     max_message_bytes: 10000000
     required_acks: -1 # WaitForAll
   timeout: 10s
+  partition_traces_by_id: true
   auth:
     plain_text:
       username: jdoe
