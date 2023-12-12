@@ -110,7 +110,7 @@ func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option 
 	}
 
 	if config.Logs.ResourceMappingOperation != "" {
-		opts = append(opts, lmsdklogs.WithResourceMappingOperation(config.Logs.ResourceMappingOperation))
+		opts = append(opts, lmsdklogs.WithResourceMappingOperation(string(config.Logs.ResourceMappingOperation)))
 	}
 
 	return opts

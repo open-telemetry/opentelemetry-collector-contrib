@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -136,7 +137,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Logs: LogsConfig{
-					ResourceMappingOperation: "OR",
+					ResourceMappingOperation: "or",
 				},
 			},
 		},
@@ -153,6 +154,38 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestUnmarshal(t *testing.T) {
+	tests := []struct {
+		name      string
+		configMap *confmap.Conf
+		cfg       *Config
+		err       string
+	}{
+		{
+			name: "invalid resource mapping operation",
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"logs": map[string]any{
+					"resource_mapping_op": "invalid_op",
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'logs.resource_mapping_op': unsupported mapping operation \"invalid_op\"",
+		},
+	}
+
+	f := NewFactory()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := f.CreateDefaultConfig().(*Config)
+			err := component.UnmarshalConfig(tt.configMap, cfg)
+			if err != nil || tt.err != "" {
+				assert.EqualError(t, err, tt.err)
+			} else {
+				assert.Equal(t, tt.cfg, cfg)
+			}
 		})
 	}
 }
