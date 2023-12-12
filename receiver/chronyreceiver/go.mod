@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chrony
 go 1.20
 
 require (
-	github.com/facebook/time v0.0.0-20231128150504-4139d74a0f50
+	github.com/facebook/time v0.0.0-20231206192019-f0661e49c89f
 	github.com/google/go-cmp v0.6.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tilinna/clock v1.1.0
