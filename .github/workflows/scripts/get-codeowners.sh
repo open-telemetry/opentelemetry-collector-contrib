@@ -24,17 +24,8 @@ if [[ -z "${COMPONENT:-}" ]]; then
     exit 1
 fi
 
-# grep exits with status code 1 if there are no matches,
-# so we manually set RESULT to 0 if nothing is found.
-RESULT=$(grep -c "${COMPONENT}" .github/CODEOWNERS || true)
-
-# there may be more than 1 component matching a label
-# if so, try to narrow things down by appending the component
-# or a forward slash to the label.
-if [[ ${RESULT} != 1 ]]; then
-    COMPONENT_TYPE=$(get_component_type "${COMPONENT}")
-    OWNERS="$(get_codeowners "${COMPONENT}${COMPONENT_TYPE}")"
-fi
+COMPONENT_TYPE=$(get_component_type "${COMPONENT}")
+OWNERS="$(get_codeowners "${COMPONENT}${COMPONENT_TYPE}")"
 
 if [[ -z "${OWNERS:-}" ]]; then
     OWNERS="$(get_codeowners "${COMPONENT}")"
