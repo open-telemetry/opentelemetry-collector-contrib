@@ -117,9 +117,9 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		return nil, err
 	}
 
-	resourceMetricsKeyAttributes := make(map[string]bool)
-	for i := 0; i < len(cfg.ResourceMetricsKeyAttributes); i++ {
-		resourceMetricsKeyAttributes[cfg.ResourceMetricsKeyAttributes[i]] = true
+	resourceMetricsKeyAttributes := make(map[string]bool, len(cfg.ResourceMetricsKeyAttributes))
+	for _, attr := range cfg.ResourceMetricsKeyAttributes {
+		resourceMetricsKeyAttributes[attr] = true
 	}
 
 	return &connectorImp{
@@ -400,16 +400,14 @@ type resourceKey [16]byte
 
 func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 	if len(p.resourceMetricsKeyAttributes) == 0 {
-		h := pdatautil.MapHash(attr)
-		return resourceKey(h)
+		return pdatautil.MapHash(attr)
 	}
 	m := pcommon.NewMap()
 	attr.CopyTo(m)
-	m.RemoveIf(func(k string, v pcommon.Value) bool {
+	m.RemoveIf(func(k string, _ pcommon.Value) bool {
 		return !p.resourceMetricsKeyAttributes[k]
 	})
-	h := pdatautil.MapHash(m)
-	return resourceKey(h)
+	return pdatautil.MapHash(m)
 }
 
 func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
