@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/aws/aws-sdk-go v1.49.0
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.91.0
 	github.com/stretchr/testify v1.8.4

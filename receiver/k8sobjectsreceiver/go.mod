@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobj
 go 1.20
 
 require (
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.91.0
