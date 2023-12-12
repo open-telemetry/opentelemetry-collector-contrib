@@ -2,9 +2,15 @@ name: splunk
 url: https://github.com/signalfx/splunk-otel-collector
 maintainers:
     - atoulme
+    - crobert-1
     - dmitryax
     - hughesjj
-    - rfitzpatrick
+    - jeffreyc-splunk
+    - jinja2
+    - jvoravong
+    - panotti
+    - rmfitzpatrick
+    - samiura
 components:
     connector:
         - spanmetrics
