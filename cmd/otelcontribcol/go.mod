@@ -273,11 +273,11 @@ require (
 	github.com/DataDog/go-sqllexer v0.0.8 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.8.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.8.3 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.8.3 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.8.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.9.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.9.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.9.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.9.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.9.0 // indirect
 	github.com/DataDog/sketches-go v1.4.3 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
