@@ -14,7 +14,7 @@ get_component_type() {
 }
 
 get_codeowners() {
-  echo "$((grep -m 1 "^${1}/ " .github/CODEOWNERS || true) | \
+  echo "$((grep -m 1 "^${1}/\s" .github/CODEOWNERS || true) | \
         sed 's/   */ /g' | \
         cut -f3- -d ' ')"
 }
@@ -22,16 +22,6 @@ get_codeowners() {
 if [[ -z "${COMPONENT:-}" ]]; then
     echo "COMPONENT has not been set, please ensure it is set."
     exit 1
-fi
-
-COMPONENT_TYPE=$(get_component_type "${COMPONENT}")
-CUR_DIRECTORY=$(dirname "$0")
-VALID_COMPONENT=$(bash "${CUR_DIRECTORY}/get-components.sh" | grep -x "${COMPONENT}" || true)
-VALID_COMPONENT_WITH_TYPE=$(bash "${CUR_DIRECTORY}/get-components.sh" | grep -x "${COMPONENT}${COMPONENT_TYPE}" || true)
-
-if [[ -z "${VALID_COMPONENT:-}" ]] && [[ -z "${VALID_COMPONENT_WITH_TYPE:-}" ]]; then
-    echo ""
-    exit 0
 fi
 
 # grep exits with status code 1 if there are no matches,
@@ -42,6 +32,7 @@ RESULT=$(grep -c "${COMPONENT}" .github/CODEOWNERS || true)
 # if so, try to narrow things down by appending the component
 # or a forward slash to the label.
 if [[ ${RESULT} != 1 ]]; then
+    COMPONENT_TYPE=$(get_component_type "${COMPONENT}")
     OWNERS="$(get_codeowners "${COMPONENT}${COMPONENT_TYPE}")"
 fi
 
