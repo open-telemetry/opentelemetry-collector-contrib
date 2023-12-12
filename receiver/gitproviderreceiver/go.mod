@@ -6,7 +6,6 @@ require (
 	github.com/Khan/genqlient v0.6.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v53 v53.2.0
-	github.com/google/go-github/v57 v57.0.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/config/confighttp v0.91.0

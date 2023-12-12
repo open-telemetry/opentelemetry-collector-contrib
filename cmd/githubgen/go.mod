@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/google/go-github/v53 v53.2.0
-	github.com/google/go-github/v57 v57.0.0
 	go.opentelemetry.io/collector/confmap v0.91.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -13,6 +12,7 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
