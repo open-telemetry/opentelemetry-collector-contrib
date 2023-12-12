@@ -10,7 +10,7 @@ concurrency:
 jobs:
   add-owner:
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
     steps:
       - name: run
         uses: kentaro-m/auto-assign-action@v1.2.5
