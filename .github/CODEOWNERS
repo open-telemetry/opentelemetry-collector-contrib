@@ -271,6 +271,21 @@ testbed/                                                 @open-telemetry/collect
 testbed/mockdatareceivers/mockawsxrayreceiver/           @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 testbed/mockdatasenders/mockdatadogagentexporter/        @open-telemetry/collector-contrib-approvers @boostchicken
 
+#####################################################
+#
+# List of distribution maintainers for OpenTelemetry Collector Contrib
+#
+#####################################################
+reports/distributions/core.yaml     @open-telemetry/collector-contrib-approvers 
+reports/distributions/contrib.yaml  @open-telemetry/collector-contrib-approvers 
+reports/distributions/aws.yaml      @open-telemetry/collector-contrib-approvers 
+reports/distributions/grafana.yaml  @open-telemetry/collector-contrib-approvers 
+reports/distributions/observiq.yaml @open-telemetry/collector-contrib-approvers 
+reports/distributions/redhat.yaml   @open-telemetry/collector-contrib-approvers 
+reports/distributions/splunk.yaml   @open-telemetry/collector-contrib-approvers atoulme dmitryax hughesjj rfitzpatrick
+reports/distributions/sumo.yaml     @open-telemetry/collector-contrib-approvers 
+reports/distributions/liatrio.yaml  @open-telemetry/collector-contrib-approvers 
+
 
 ## UNMAINTAINED components
 
