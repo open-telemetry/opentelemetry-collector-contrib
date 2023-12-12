@@ -7,19 +7,20 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.51.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.90.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.91.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.90.2-0.20231201205146-6e2fdc755b34
-	go.opentelemetry.io/collector/config/configtls v0.90.2-0.20231201205146-6e2fdc755b34
-	go.opentelemetry.io/collector/confmap v0.90.2-0.20231201205146-6e2fdc755b34
-	go.opentelemetry.io/collector/consumer v0.90.2-0.20231201205146-6e2fdc755b34
-	go.opentelemetry.io/collector/exporter v0.90.2-0.20231201205146-6e2fdc755b34
-	go.opentelemetry.io/collector/pdata v1.0.1-0.20231201205146-6e2fdc755b34
-	go.opentelemetry.io/collector/semconv v0.90.2-0.20231201205146-6e2fdc755b34
+	go.opentelemetry.io/collector/component v0.91.0
+	go.opentelemetry.io/collector/config/configtls v0.91.0
+	go.opentelemetry.io/collector/confmap v0.91.0
+	go.opentelemetry.io/collector/consumer v0.91.0
+	go.opentelemetry.io/collector/exporter v0.91.0
+	go.opentelemetry.io/collector/pdata v1.0.0
+	go.opentelemetry.io/collector/semconv v0.91.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 )
@@ -61,12 +62,12 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
-	go.opentelemetry.io/collector/extension v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.1-0.20231201205146-6e2fdc755b34 // indirect
-	go.opentelemetry.io/collector/receiver v0.90.2-0.20231201205146-6e2fdc755b34 // indirect
+	go.opentelemetry.io/collector v0.91.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.91.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.91.0 // indirect
+	go.opentelemetry.io/collector/extension v0.91.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.91.0 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
@@ -83,6 +84,8 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../internal/kafka
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../../pkg/batchpersignal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 
