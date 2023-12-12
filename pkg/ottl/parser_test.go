@@ -105,8 +105,8 @@ func Test_parse(t *testing.T) {
 											{
 												Value: value{
 													Literal: &mathExprLiteral{
-														Path: &Path{
-															Fields: []Field{
+														Path: &path{
+															Fields: []field{
 																{
 																	Name: "bear",
 																},
@@ -138,14 +138,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bar"),
 													},
@@ -179,11 +179,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("message"),
 													},
@@ -202,11 +202,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("device_name"),
 													},
@@ -237,11 +237,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("message"),
 													},
@@ -272,11 +272,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("message"),
 													},
@@ -307,14 +307,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "bar",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("x"),
 													},
@@ -336,7 +336,7 @@ func Test_parse(t *testing.T) {
 								Literal: &mathExprLiteral{
 									Converter: &converter{
 										Function: "Test",
-										Keys: []Key{
+										Keys: []key{
 											{
 												Int: ottltest.Intp(0),
 											},
@@ -363,14 +363,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bar"),
 													},
@@ -397,8 +397,8 @@ func Test_parse(t *testing.T) {
 							Comparison: &comparison{
 								Left: value{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -426,14 +426,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bar"),
 													},
@@ -460,8 +460,8 @@ func Test_parse(t *testing.T) {
 							Comparison: &comparison{
 								Left: value{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -489,14 +489,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bar"),
 													},
@@ -523,8 +523,8 @@ func Test_parse(t *testing.T) {
 							Comparison: &comparison{
 								Left: value{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -613,11 +613,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bytes"),
 													},
@@ -648,11 +648,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -683,11 +683,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -718,11 +718,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -755,11 +755,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -796,11 +796,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -840,11 +840,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -911,11 +911,11 @@ func Test_parse(t *testing.T) {
 										},
 										{
 											Literal: &mathExprLiteral{
-												Path: &Path{
-													Fields: []Field{
+												Path: &path{
+													Fields: []field{
 														{
 															Name: "attributes",
-															Keys: []Key{
+															Keys: []key{
 																{
 																	String: ottltest.Strp("test"),
 																},
@@ -944,11 +944,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -1029,8 +1029,8 @@ func Test_parse(t *testing.T) {
 										Left: &addSubTerm{
 											Left: &mathValue{
 												Literal: &mathExprLiteral{
-													Path: &Path{
-														Fields: []Field{
+													Path: &path{
+														Fields: []field{
 															{
 																Name: "three",
 															},
@@ -1103,8 +1103,8 @@ func Test_parseCondition_full(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1130,8 +1130,8 @@ func Test_parseCondition_full(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1194,8 +1194,8 @@ func Test_parseCondition_full(t *testing.T) {
 									Left: &addSubTerm{
 										Left: &mathValue{
 											Literal: &mathExprLiteral{
-												Path: &Path{
-													Fields: []Field{
+												Path: &path{
+													Fields: []field{
 														{
 															Name: "three",
 														},
@@ -1234,8 +1234,8 @@ func Test_parseCondition_full(t *testing.T) {
 	}
 }
 
-func testParsePath(val *Path) (GetSetter[any], error) {
-	if val != nil && len(val.Fields) > 0 && (val.Fields[0].Name == "name" || val.Fields[0].Name == "attributes") {
+func testParsePath[K any](p Path[K]) (GetSetter[any], error) {
+	if p != nil && (p.Name() == "name" || p.Name() == "attributes") {
 		return &StandardGetSetter[any]{
 			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				return tCtx, nil
@@ -1246,14 +1246,14 @@ func testParsePath(val *Path) (GetSetter[any], error) {
 			},
 		}, nil
 	}
-	if val.Fields[0].Name == "dur1" || val.Fields[0].Name == "dur2" {
+	if p != nil && (p.Name() == "dur1" || p.Name() == "dur2") {
 		return &StandardGetSetter[any]{
 			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Duration)
 				if !ok {
 					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
 				}
-				return m[val.Fields[0].Name], nil
+				return m[p.Name()], nil
 			},
 			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
@@ -1261,14 +1261,14 @@ func testParsePath(val *Path) (GetSetter[any], error) {
 			},
 		}, nil
 	}
-	if val.Fields[0].Name == "time1" || val.Fields[0].Name == "time2" {
+	if p != nil && (p.Name() == "time1" || p.Name() == "time2") {
 		return &StandardGetSetter[any]{
 			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Time)
 				if !ok {
 					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
 				}
-				return m[val.Fields[0].Name], nil
+				return m[p.Name()], nil
 			},
 			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
@@ -1276,7 +1276,7 @@ func testParsePath(val *Path) (GetSetter[any], error) {
 			},
 		}, nil
 	}
-	return nil, fmt.Errorf("bad path %v", val)
+	return nil, fmt.Errorf("bad path %v", p)
 }
 
 // Helper for test cases where the WHERE clause is all that matters.
@@ -1289,8 +1289,8 @@ func setNameTest(b *booleanExpression) *parsedStatement {
 				{
 					Value: value{
 						Literal: &mathExprLiteral{
-							Path: &Path{
-								Fields: []Field{
+							Path: &path{
+								Fields: []field{
 									{
 										Name: "name",
 									},
@@ -1525,8 +1525,8 @@ func Test_parseWhere(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1547,8 +1547,8 @@ func Test_parseWhere(t *testing.T) {
 								Comparison: &comparison{
 									Left: value{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -1575,8 +1575,8 @@ func Test_parseWhere(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1599,8 +1599,8 @@ func Test_parseWhere(t *testing.T) {
 								Comparison: &comparison{
 									Left: value{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -1651,8 +1651,8 @@ func Test_parseWhere(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1780,7 +1780,7 @@ func Test_ParseStatements_Error(t *testing.T) {
 
 	p, _ := NewParser(
 		CreateFactoryMap[any](),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -1810,7 +1810,7 @@ func Test_ParseConditions_Error(t *testing.T) {
 
 	p, _ := NewParser(
 		CreateFactoryMap[any](),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
