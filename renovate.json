@@ -14,6 +14,7 @@
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_9_3",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_0",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4.lpu",
+      "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4lpu",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.5_0"
     ],
     "packageRules": [
