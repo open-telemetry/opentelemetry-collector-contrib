@@ -3,7 +3,7 @@
 > ⚠️⚠️⚠️ **Warning** ⚠️⚠️⚠️
 >
 > The `check_collector_pipeline` feature of this extension is not working as expected. It
-> is recommended to not use the feature. The work to to add a new version of the healthcheck extension
+> is recommended to not use the feature. The work to add a new version of the healthcheck extension
 > that relies on individual component status is in progress. To avoid breaking backwards compatibility,
 > the configuration will not be changed until the new extension is available as a replacement for this
 > one. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11780 for more
