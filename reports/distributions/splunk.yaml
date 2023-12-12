@@ -60,6 +60,7 @@ components:
         - kafkametrics
         - kubeletstats
         - mongodbatlas
+        - mysql
         - oracledb
         - postgresql
         - prometheus
