@@ -7,16 +7,15 @@
     "constraints": {
       "go": "1.20"
     },
-    "extends": [
-      "config:base"
-    ],
     "schedule": ["every tuesday"],
+    "extends": ["config:recommended"],
     "ignorePaths": [
       "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_9_3",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_0",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4.lpu",
+      "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4lpu",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.5_0"
     ],
     "packageRules": [
@@ -41,27 +40,32 @@
       {
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
-        "groupName": "All OpenTelemetry Collector packages"
+        "groupName": "All OpenTelemetry Collector packages",
+        "matchUpdateTypes": ["major", "minor", "patch"]
       },
       {
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://github.com/aws"],
-        "groupName": "All github.com/aws packages"
+        "groupName": "All github.com/aws packages",
+        "matchUpdateTypes": ["minor", "patch"]
       },
       {
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://github.com/azure"],
-        "groupName": "All github.com/azure packages"
+        "groupName": "All github.com/azure packages",
+        "matchUpdateTypes": ["minor", "patch"]
       },
       {
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://github.com/datadog"],
-        "groupName": "All github.com/datadog packages"
+        "groupName": "All github.com/datadog packages",
+        "matchUpdateTypes": ["minor", "patch"]
       },
       {
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
-        "groupName": "All github.com/googlecloudplatform packages"
+        "groupName": "All github.com/googlecloudplatform packages",
+        "matchUpdateTypes": ["minor", "patch"]
       },
       {
         "matchManagers": ["gomod"],
@@ -71,5 +75,6 @@
     "ignoreDeps": [
       "github.com/mattn/go-ieproxy",
       "github.com/DataDog/datadog-agent/pkg/trace/exportable"
-    ]
+    ],
+    "prConcurrentLimit": 50
   }
