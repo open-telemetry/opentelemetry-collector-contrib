@@ -27,7 +27,7 @@ CUR_DIRECTORY=$(dirname "$0")
 VALID_COMPONENT=$(bash "${CUR_DIRECTORY}/get-components.sh" | grep -x "${COMPONENT}" || true)
 VALID_COMPONENT_WITH_TYPE=$(bash "${CUR_DIRECTORY}/get-components.sh" | grep -x "$COMPONENT$COMPONENT_TYPE" || true)
 
-if [ -z "${VALID_COMPONENT:-}" ] && [ -z "${VALID_COMPONENT_WITH_TYPE:-}" ]; then
+if [[ -z "${VALID_COMPONENT:-}" ]] && [[ -z "${VALID_COMPONENT_WITH_TYPE:-}" ]]; then
     echo ""
     exit 0
 fi
