@@ -4,15 +4,18 @@
 package supervisor
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"math/rand"
 	"net"
+	"net/http"
 	"os"
-	"runtime"
 	"sort"
 	"sync/atomic"
+	"text/template"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -24,6 +27,9 @@ import (
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/open-telemetry/opamp-go/server"
+	serverTypes "github.com/open-telemetry/opamp-go/server/types"
+	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
@@ -31,8 +37,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/healthchecker"
 )
 
-// This Supervisor is developed specifically for the OpenTelemetry Collector.
-const agentType = "io.opentelemetry.collector"
+var (
+	//go:embed templates/bootstrap.yaml
+	bootstrapConfTpl string
+
+	//go:embed templates/extraconfig.yaml
+	extraConfigTpl string
+
+	//go:embed templates/owntelemetry.yaml
+	ownTelemetryTpl string
+)
 
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
@@ -51,11 +65,20 @@ type Supervisor struct {
 	// Supervisor's own config.
 	config config.Supervisor
 
+	agentDescription *protobufs.AgentDescription
+
 	// Agent's instance id.
 	instanceID ulid.ULID
 
+	// The name of the agent.
+	agentName string
+
 	// The version of the agent.
 	agentVersion string
+
+	bootstrapTemplate    *template.Template
+	extraConfigTemplate  *template.Template
+	ownTelemetryTemplate *template.Template
 
 	// A config section to be added to the Collector's config to fetch its own metrics.
 	// TODO: store this persistently so that when starting we can compose the effective
@@ -97,12 +120,24 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		effectiveConfig:              &atomic.Value{},
 	}
 
+	if err := s.createTemplates(); err != nil {
+		return nil, err
+	}
+
 	if err := s.loadConfig(configFile); err != nil {
 		return nil, fmt.Errorf("error loading config: %w", err)
 	}
 
+	id, err := s.createInstanceID()
+
+	if err != nil {
+		return nil, err
+	}
+
+	s.instanceID = id
+
 	if err := s.getBootstrapInfo(); err != nil {
-		s.logger.Error("Couldn't get agent version", zap.Error(err))
+		return nil, fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
 	port, err := s.findRandomPort()
@@ -113,16 +148,8 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", port)
 
-	id, err := s.createInstanceID()
-
-	if err != nil {
-		return nil, err
-	}
-
-	s.instanceID = id
-
 	logger.Debug("Supervisor starting",
-		zap.String("id", s.instanceID.String()), zap.String("type", agentType), zap.String("version", s.agentVersion))
+		zap.String("id", s.instanceID.String()), zap.String("name", s.agentName), zap.String("version", s.agentVersion))
 
 	s.loadAgentEffectiveConfig()
 
@@ -143,6 +170,26 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	go s.runAgentProcess()
 
 	return s, nil
+}
+
+func (s *Supervisor) createTemplates() error {
+	var err error
+	s.bootstrapTemplate, err = template.New("bootstrap").Parse(bootstrapConfTpl)
+	if err != nil {
+		return err
+	}
+
+	s.extraConfigTemplate, err = template.New("bootstrap").Parse(extraConfigTpl)
+	if err != nil {
+		return err
+	}
+
+	s.ownTelemetryTemplate, err = template.New("bootstrap").Parse(ownTelemetryTpl)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Supervisor) loadConfig(configFile string) error {
@@ -166,10 +213,102 @@ func (s *Supervisor) loadConfig(configFile string) error {
 	return nil
 }
 
-// TODO: Implement bootstrapping https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21071
-// nolint: unparam
 func (s *Supervisor) getBootstrapInfo() (err error) {
-	s.agentVersion = "1.0.0"
+	port, err := s.findRandomPort()
+
+	if err != nil {
+		return err
+	}
+
+	supervisorPort, err := s.findRandomPort()
+
+	if err != nil {
+		return err
+	}
+
+	var cfg bytes.Buffer
+
+	s.bootstrapTemplate.Execute(&cfg, map[string]any{
+		"EndpointPort":   port,
+		"InstanceUid":    s.instanceID.String(),
+		"SupervisorPort": supervisorPort,
+	})
+
+	s.writeEffectiveConfigToFile(cfg.String(), s.effectiveConfigFilePath)
+
+	srv := server.New(s.logger.Sugar())
+
+	done := make(chan struct{}, 1)
+	var connected bool
+
+	srv.Start(server.StartSettings{
+		Settings: server.Settings{
+			Callbacks: server.CallbacksStruct{
+				OnConnectingFunc: func(request *http.Request) serverTypes.ConnectionResponse {
+					connected = true
+					return serverTypes.ConnectionResponse{
+						Accept: true,
+						ConnectionCallbacks: server.ConnectionCallbacksStruct{
+							OnMessageFunc: func(conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+								if message.AgentDescription != nil {
+									s.agentDescription = message.AgentDescription
+									identAttr := s.agentDescription.IdentifyingAttributes
+
+									for _, attr := range identAttr {
+										switch attr.Key {
+										case semconv.AttributeServiceName:
+											s.agentName = attr.Value.GetStringValue()
+										case semconv.AttributeServiceVersion:
+											s.agentVersion = attr.Value.GetStringValue()
+										}
+									}
+
+									done <- struct{}{}
+								}
+
+								return &protobufs.ServerToAgent{}
+							},
+						},
+					}
+				},
+			},
+		},
+		ListenEndpoint: fmt.Sprintf("localhost:%d", supervisorPort),
+	})
+
+	cmd, err := commander.NewCommander(
+		s.logger,
+		s.config.Agent,
+		"--config", s.effectiveConfigFilePath,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	cmd.Start(context.Background())
+
+	select {
+	case <-time.After(3 * time.Second):
+		if connected {
+			return errors.New("collector connected but never responded with an AgentDescription message")
+		} else {
+			return errors.New("collector's OpAMP client never connected to the Supervisor")
+		}
+	case <-done:
+	}
+
+	err = cmd.Stop(context.Background())
+
+	if err != nil {
+		return err
+	}
+
+	err = srv.Stop(context.Background())
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -252,7 +391,7 @@ func (s *Supervisor) startOpAMP() error {
 		},
 		Capabilities: s.Capabilities(),
 	}
-	err = s.opampClient.SetAgentDescription(s.createAgentDescription())
+	err = s.opampClient.SetAgentDescription(s.agentDescription)
 	if err != nil {
 		return err
 	}
@@ -287,57 +426,23 @@ func (s *Supervisor) createInstanceID() (ulid.ULID, error) {
 
 }
 
-func keyVal(key, val string) *protobufs.KeyValue {
-	return &protobufs.KeyValue{
-		Key: key,
-		Value: &protobufs.AnyValue{
-			Value: &protobufs.AnyValue_StringValue{StringValue: val},
+func (s *Supervisor) composeExtraLocalConfig() []byte {
+	var cfg bytes.Buffer
+	err := s.extraConfigTemplate.Execute(
+		&cfg,
+		map[string]any{
+			"ServiceName":    s.agentName,
+			"ServiceVersion": s.agentVersion,
+			"InstanceId":     s.instanceID.String(),
+			"Healthcheck":    s.agentHealthCheckEndpoint,
 		},
-	}
-}
-
-func (s *Supervisor) createAgentDescription() *protobufs.AgentDescription {
-	hostname, _ := os.Hostname()
-
-	return &protobufs.AgentDescription{
-		IdentifyingAttributes: []*protobufs.KeyValue{
-			keyVal("service.name", agentType),
-			keyVal("service.version", s.agentVersion),
-			keyVal("service.instance.id", s.instanceID.String()),
-		},
-		NonIdentifyingAttributes: []*protobufs.KeyValue{
-			keyVal("os.family", runtime.GOOS),
-			keyVal("host.name", hostname),
-		},
-	}
-}
-
-func (s *Supervisor) composeExtraLocalConfig() string {
-	return fmt.Sprintf(`
-service:
-  telemetry:
-    logs:
-      # Enables JSON log output for the Agent.
-      encoding: json
-    resource:
-      # Set resource attributes required by OpAMP spec.
-      # See https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescriptionidentifying_attributes
-      service.name: %s
-      service.version: %s
-      service.instance.id: %s
-
-  # Enable extension to allow the Supervisor to check health.
-  extensions: [health_check]
-
-extensions:
-  health_check:
-    endpoint: %s
-`,
-		agentType,
-		s.agentVersion,
-		s.instanceID.String(),
-		s.agentHealthCheckEndpoint,
 	)
+	if err != nil {
+		s.logger.Error("Could not compose local config", zap.Error(err))
+		return nil
+	}
+
+	return cfg.Bytes()
 }
 
 func (s *Supervisor) loadAgentEffectiveConfig() {
@@ -349,7 +454,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 		effectiveConfigBytes = effFromFile
 	} else {
 		// No effective config file, just use the initial config.
-		effectiveConfigBytes = []byte(s.composeExtraLocalConfig())
+		effectiveConfigBytes = s.composeExtraLocalConfig()
 	}
 
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
@@ -375,11 +480,10 @@ func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 }
 
 func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.TelemetryConnectionSettings) (configChanged bool) {
-	var cfg string
+	var cfg bytes.Buffer
 	if settings.DestinationEndpoint == "" {
 		// No destination. Disable metric collection.
 		s.logger.Debug("Disabling own metrics pipeline in the config")
-		cfg = ""
 	} else {
 		s.logger.Debug("Enabling own metrics pipeline in the config")
 
@@ -390,37 +494,20 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 			return
 		}
 
-		cfg = fmt.Sprintf(
-			`
-receivers:
-  # Collect own metrics
-  prometheus/own_metrics:
-    config:
-      scrape_configs:
-        - job_name: 'otel-collector'
-          scrape_interval: 10s
-          static_configs:
-            - targets: ['0.0.0.0:%d']  
-exporters:
-  otlphttp/own_metrics:
-    metrics_endpoint: %s
-
-service:
-  telemetry:
-    metrics:
-      address: :%d
-  pipelines:
-    metrics/own_metrics:
-      receivers: [prometheus/own_metrics]
-      exporters: [otlphttp/own_metrics]
-`,
-			port,
-			settings.DestinationEndpoint,
-			port,
+		err = s.ownTelemetryTemplate.Execute(
+			&cfg,
+			map[string]any{
+				"PrometheusPort":  port,
+				"MetricsEndpoint": settings.DestinationEndpoint,
+			},
 		)
-	}
+		if err != nil {
+			s.logger.Error("Could not setup own metrics", zap.Error(err))
+			return
+		}
 
-	s.agentConfigOwnMetricsSection.Store(cfg)
+	}
+	s.agentConfigOwnMetricsSection.Store(cfg.String())
 
 	// Need to recalculate the Agent config so that the metric config is included in it.
 	configChanged, err := s.recalcEffectiveConfig()
@@ -481,7 +568,7 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 	}
 
 	// Merge local config last since it has the highest precedence.
-	if err = k.Load(rawbytes.Provider([]byte(s.composeExtraLocalConfig())), yaml.Parser()); err != nil {
+	if err = k.Load(rawbytes.Provider(s.composeExtraLocalConfig()), yaml.Parser()); err != nil {
 		return false, err
 	}
 
@@ -737,7 +824,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			zap.String("old_id", s.instanceID.String()),
 			zap.String("new_id", newInstanceID.String()))
 		s.instanceID = newInstanceID
-		err = s.opampClient.SetAgentDescription(s.createAgentDescription())
+		err = s.opampClient.SetAgentDescription(s.agentDescription)
 		if err != nil {
 			s.logger.Error("Failed to send agent description to OpAMP server")
 		}

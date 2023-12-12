@@ -12,6 +12,7 @@ require (
 	github.com/open-telemetry/opamp-go v0.10.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/config/configtls v0.91.0
+	go.opentelemetry.io/collector/semconv v0.91.0
 	go.uber.org/zap v1.26.0
 )
 
