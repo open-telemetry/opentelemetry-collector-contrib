@@ -84,6 +84,13 @@ func (rb *ResourceBuilder) SetHostIP(val []any) {
 	}
 }
 
+// SetHostMac sets provided value as "host.mac" attribute.
+func (rb *ResourceBuilder) SetHostMac(val []any) {
+	if rb.config.HostMac.Enabled {
+		rb.res.Attributes().PutEmptySlice("host.mac").FromRaw(val)
+	}
+}
+
 // SetHostName sets provided value as "host.name" attribute.
 func (rb *ResourceBuilder) SetHostName(val string) {
 	if rb.config.HostName.Enabled {

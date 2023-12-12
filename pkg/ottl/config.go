@@ -13,12 +13,13 @@ type ErrorMode string
 const (
 	IgnoreError    ErrorMode = "ignore"
 	PropagateError ErrorMode = "propagate"
+	SilentError    ErrorMode = "silent"
 )
 
 func (e *ErrorMode) UnmarshalText(text []byte) error {
 	str := ErrorMode(strings.ToLower(string(text)))
 	switch str {
-	case IgnoreError, PropagateError:
+	case IgnoreError, PropagateError, SilentError:
 		*e = str
 		return nil
 	default:
