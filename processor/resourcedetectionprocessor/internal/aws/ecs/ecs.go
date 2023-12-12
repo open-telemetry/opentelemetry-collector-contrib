@@ -66,13 +66,17 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 	d.rb.SetAwsEcsTaskFamily(tmdeResp.Family)
 	d.rb.SetAwsEcsTaskRevision(tmdeResp.Revision)
 
-	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
+	region, account, taskID := parseTaskARN(tmdeResp.TaskARN)
 	if account != "" {
 		d.rb.SetCloudAccountID(account)
 	}
 
 	if region != "" {
 		d.rb.SetCloudRegion(region)
+	}
+
+	if taskID != "" {
+		d.rb.SetAwsEcsTaskID(taskID)
 	}
 
 	// TMDE returns the cluster short name or ARN, so we need to construct the ARN if necessary
@@ -110,15 +114,25 @@ func constructClusterArn(cluster, region, account string) string {
 	return fmt.Sprintf("arn:aws:ecs:%s:%s:cluster/%s", region, account, cluster)
 }
 
-// Parses the AWS Account ID and AWS Region from a task ARN
+// Parses ECS Task ARN into subcomponents according to its spec
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#ecs-resource-ids
-func parseRegionAndAccount(taskARN string) (region string, account string) {
+func parseTaskARN(taskARN string) (region string, account string, taskID string) {
 	parts := strings.Split(taskARN, ":")
 	if len(parts) >= 5 {
-		return parts[3], parts[4]
+		region := parts[3]
+		account := parts[4]
+
+		// ECS Task ARNs come in two versions. In the old one, the last part of the ARN contains
+		// only the "task/<task-id>". In the new one, it contains "task/cluster-name/task-id".
+		// This handles both cases.
+		taskInfo := parts[5]
+		taskInfoParts := strings.Split(taskInfo, "/")
+		taskID := taskInfoParts[len(taskInfoParts)-1]
+
+		return region, account, taskID
 	}
 
-	return "", ""
+	return "", "", ""
 }
 
 // Filter out non-normal containers, our own container since we assume the collector is run as a sidecar,
