@@ -138,7 +138,7 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 		if cfg.Histogram.Exponential.MaxSize != 0 {
 			maxSize = cfg.Histogram.Exponential.MaxSize
 		}
-		return metrics.NewExponentialHistogramMetrics(maxSize)
+		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint)
 	}
 
 	var bounds []float64
@@ -156,7 +156,7 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 		}
 	}
 
-	return metrics.NewExplicitHistogramMetrics(bounds)
+	return metrics.NewExplicitHistogramMetrics(bounds, cfg.Exemplars.MaxPerDataPoint)
 }
 
 // unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
@@ -396,8 +396,8 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 	if !ok {
 		v = &resourceMetrics{
 			histograms:     initHistogramMetrics(p.config),
-			sums:           metrics.NewSumMetrics(),
-			events:         metrics.NewSumMetrics(),
+			sums:           metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			events:         metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
 			attributes:     attr,
 			startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
 		}
