@@ -176,14 +176,19 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	}
 	rw.informerFactories = append(rw.informerFactories, factory)
 
-	isSupported, _ := rw.isKindSupported(gvk.HierarchicalResourceQuota)
-	if isSupported {
+	isSupported, err := rw.isKindSupported(gvk.HierarchicalResourceQuota)
+	if err != nil {
+		return err
+	} else if isSupported {
 		dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(rw.dynamicClient, rw.config.MetadataCollectionInterval)
 		dynamicInformer := dynamicFactory.ForResource(gvr.HierarchicalResourceQuota)
 		rw.setupInformer(gvk.HierarchicalResourceQuota, dynamicInformer.Informer())
 		rw.informerFactories = append(rw.informerFactories, &(dynamicSharedInformerFactory{
 			DynamicSharedInformerFactory: dynamicFactory,
 		}))
+	} else {
+		rw.logger.Warn("Server doesn't support any of the group versions defined for the kind",
+			zap.String("kind", gvk.HierarchicalResourceQuota.Kind))
 	}
 
 	return nil

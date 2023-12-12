@@ -7,25 +7,54 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func RecordMetrics(mb *metadata.MetricsBuilder, hrq *unstructured.Unstructured, ts pcommon.Timestamp) {
-	name, _, _ := unstructured.NestedString(hrq.Object, "metadata", "name")
-	uid, _, _ := unstructured.NestedString(hrq.Object, "metadata", "uid")
-	namespace, _, _ := unstructured.NestedString(hrq.Object, "metadata", "namespace")
-	statusHard, _, _ := unstructured.NestedMap(hrq.Object, "status", "hard")
-	for k, v := range statusHard {
-		val := parseQuantityValue(k, v.(string))
-		mb.RecordK8sHierarchicalResourceQuotaHardLimitDataPoint(ts, val, k)
+func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, hrq *unstructured.Unstructured, ts pcommon.Timestamp) {
+	name, found, err := unstructured.NestedString(hrq.Object, "metadata", "name")
+	if err != nil {
+		logger.Error("Failed to get HierarchicalResourceQuota name property.", zap.Error(err))
+		return
+	} else if !found {
+		logger.Error("Not found HierarchicalResourceQuota name property.")
+		return
 	}
-	statusUsed, _, _ := unstructured.NestedMap(hrq.Object, "status", "used")
-	for k, v := range statusUsed {
-		val := parseQuantityValue(k, v.(string))
-		mb.RecordK8sHierarchicalResourceQuotaUsedDataPoint(ts, val, k)
+	// uid and namespace are optional properties.
+	uid, found, err := unstructured.NestedString(hrq.Object, "metadata", "uid")
+	if err != nil {
+		logger.Debug("Failed to get HierarchicalResourceQuota uid property.", zap.Error(err))
+	} else if !found {
+		logger.Debug("Not found HierarchicalResourceQuota uid property.")
+	}
+	namespace, found, err := unstructured.NestedString(hrq.Object, "metadata", "namespace")
+	if err != nil {
+		logger.Debug("Failed to get HierarchicalResourceQuota namespace property.", zap.Error(err))
+	} else if !found {
+		logger.Debug("Not found HierarchicalResourceQuota namespace property.")
+	}
+
+	statusHard, found, err := unstructured.NestedMap(hrq.Object, "status", "hard")
+	if err != nil {
+		logger.Warn("Failed to get HierarchicalResourceQuota status.hard property.", zap.Error(err))
+	} else if found {
+		for k, v := range statusHard {
+			val := parseQuantityValue(k, v.(string))
+			mb.RecordK8sHierarchicalResourceQuotaHardLimitDataPoint(ts, val, k)
+		}
+	}
+
+	statusUsed, found, err := unstructured.NestedMap(hrq.Object, "status", "used")
+	if err != nil {
+		logger.Warn("Failed to get HierarchicalResourceQuota status.used property.", zap.Error(err))
+	} else if found {
+		for k, v := range statusUsed {
+			val := parseQuantityValue(k, v.(string))
+			mb.RecordK8sHierarchicalResourceQuotaUsedDataPoint(ts, val, k)
+		}
 	}
 
 	rb := mb.NewResourceBuilder()

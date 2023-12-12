@@ -107,7 +107,7 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 		clusterresourcequota.RecordMetrics(dc.metricsBuilder, o.(*quotav1.ClusterResourceQuota), ts)
 	})
 	dc.metadataStore.ForEach(gvk.HierarchicalResourceQuota, func(o any) {
-		hierarchicalresourcequota.RecordMetrics(dc.metricsBuilder, o.(*unstructured.Unstructured), ts)
+		hierarchicalresourcequota.RecordMetrics(dc.settings.Logger, dc.metricsBuilder, o.(*unstructured.Unstructured), ts)
 	})
 
 	m := dc.metricsBuilder.Emit()

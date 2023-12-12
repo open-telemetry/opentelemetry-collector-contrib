@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -24,7 +25,7 @@ func TestHierarchicalRequestQuotaMetrics(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mbc := metadata.DefaultMetricsBuilderConfig()
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
-	RecordMetrics(mb, hrq, ts)
+	RecordMetrics(zap.NewNop(), mb, hrq, ts)
 	m := mb.Emit()
 
 	expected := pmetric.NewMetrics()
@@ -40,7 +41,7 @@ func TestHierarchicalRequestQuotaMetricsEnabled(t *testing.T) {
 	mbc.Metrics.K8sHierarchicalResourceQuotaHardLimit.Enabled = true
 	mbc.Metrics.K8sHierarchicalResourceQuotaUsed.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
-	RecordMetrics(mb, hrq, ts)
+	RecordMetrics(zap.NewNop(), mb, hrq, ts)
 	m := mb.Emit()
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
