@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datado
 go 1.20
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-devel
+	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-rc.7
 	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-devel.0.20231030140030-aa8a206e6ac7
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.3
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/pdata v1.0.0
 )
@@ -19,8 +19,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.49.0-rc.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.8.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.8.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.8.3 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.8.3 // indirect
 	github.com/DataDog/sketches-go v1.4.3 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
