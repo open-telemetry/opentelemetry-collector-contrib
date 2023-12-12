@@ -1,0 +1,6 @@
+name: liatrio
+url: https://github.com/liatrio/liatrio-otel-collector
+maintainers: []
+components:
+    receiver:
+        - gitprovider

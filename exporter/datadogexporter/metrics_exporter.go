@@ -65,10 +65,6 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 		options = append(options, otlpmetrics.WithQuantiles())
 	}
 
-	if cfg.Metrics.ExporterConfig.ResourceAttributesAsTags {
-		options = append(options, otlpmetrics.WithResourceAttributesAsTags())
-	}
-
 	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags {
 		options = append(options, otlpmetrics.WithInstrumentationScopeMetadataAsTags())
 	}
