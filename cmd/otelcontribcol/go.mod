@@ -186,7 +186,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.91.0
-	github.com/prometheus/prometheus v0.48.0
+	github.com/prometheus/prometheus v0.48.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/config/configgrpc v0.91.0
@@ -290,7 +290,7 @@ require (
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
-	github.com/SAP/go-hdb v1.6.3 // indirect
+	github.com/SAP/go-hdb v1.6.5 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/aerospike/aerospike-client-go/v6 v6.13.0 // indirect
@@ -370,7 +370,7 @@ require (
 	github.com/envoyproxy/go-control-plane v0.11.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect
 	github.com/euank/go-kmsg-parser v2.0.0+incompatible // indirect
-	github.com/expr-lang/expr v1.15.6 // indirect
+	github.com/expr-lang/expr v1.15.7 // indirect
 	github.com/facebook/time v0.0.0-20231206192019-f0661e49c89f // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -602,7 +602,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/sapm-proto v0.13.0 // indirect
-	github.com/sijms/go-ora/v2 v2.7.24 // indirect
+	github.com/sijms/go-ora/v2 v2.7.26 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snowflakedb/gosnowflake v1.7.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect

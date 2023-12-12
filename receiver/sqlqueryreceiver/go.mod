@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 go 1.20
 
 require (
-	github.com/SAP/go-hdb v1.6.3
+	github.com/SAP/go-hdb v1.6.5
 	github.com/denisenkom/go-mssqldb v0.12.3
 	github.com/docker/go-connections v0.4.0
 	github.com/go-sql-driver/mysql v1.7.1
@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.91.0
-	github.com/sijms/go-ora/v2 v2.7.24
+	github.com/sijms/go-ora/v2 v2.7.26
 	github.com/snowflakedb/gosnowflake v1.7.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
@@ -64,7 +64,7 @@ require (
 	github.com/docker/docker v24.0.7+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
-	github.com/expr-lang/expr v1.15.6 // indirect
+	github.com/expr-lang/expr v1.15.7 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -128,7 +128,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
-	golang.org/x/exp v0.0.0-20231127185646-65229373498e // indirect
+	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect

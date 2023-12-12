@@ -31,7 +31,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.91.0
 	github.com/prometheus/common v0.45.0
-	github.com/prometheus/prometheus v0.48.0
+	github.com/prometheus/prometheus v0.48.1
 	github.com/shirou/gopsutil/v3 v3.23.11
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
@@ -96,7 +96,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
 	github.com/envoyproxy/go-control-plane v0.11.1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect
-	github.com/expr-lang/expr v1.15.6 // indirect
+	github.com/expr-lang/expr v1.15.7 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
