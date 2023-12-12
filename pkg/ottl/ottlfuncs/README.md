@@ -459,7 +459,7 @@ Examples:
 
 `Hour(value)`
 
-The `Hour` Converter returns the hour from the specified time.
+The `Hour` Converter returns the hour from the specified time.  The Converter [uses the `time.Hour` function](https://pkg.go.dev/time#Time.Hour).
 
 `value` is a `time.Time`. If `value` is another type an error is returned.
 
