@@ -5,6 +5,7 @@ go 1.20
 
 require (
 	github.com/hashicorp/golang-lru v1.0.2
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tilinna/clock v1.1.0
