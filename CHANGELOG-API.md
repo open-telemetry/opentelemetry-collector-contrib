@@ -7,6 +7,16 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.91.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Rename `Statements` to `StatementSequence`. Remove `Eval` function from `StatementSequence`, use `ConditionSequence` instead. (#29598)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ConditionSequence` for evaluating lists of conditions (#29339)
+
 ## v0.90.0
 
 ### 🛑 Breaking changes 🛑
