@@ -279,6 +279,7 @@ Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/lates
     * aws.ecs.cluster.arn
     * aws.ecs.task.arn
     * aws.ecs.task.family
+    * aws.ecs.task.id
     * aws.ecs.task.revision
     * aws.ecs.launchtype (V4 only)
     * aws.log.group.names (V4 only)

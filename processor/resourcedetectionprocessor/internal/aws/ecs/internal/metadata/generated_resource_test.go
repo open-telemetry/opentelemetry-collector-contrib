@@ -17,6 +17,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetAwsEcsLaunchtype("aws.ecs.launchtype-val")
 			rb.SetAwsEcsTaskArn("aws.ecs.task.arn-val")
 			rb.SetAwsEcsTaskFamily("aws.ecs.task.family-val")
+			rb.SetAwsEcsTaskID("aws.ecs.task.id-val")
 			rb.SetAwsEcsTaskRevision("aws.ecs.task.revision-val")
 			rb.SetAwsLogGroupArns([]any{"aws.log.group.arns-item1", "aws.log.group.arns-item2"})
 			rb.SetAwsLogGroupNames([]any{"aws.log.group.names-item1", "aws.log.group.names-item2"})
@@ -33,9 +34,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 14, res.Attributes().Len())
+				assert.Equal(t, 15, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 14, res.Attributes().Len())
+				assert.Equal(t, 15, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -62,6 +63,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "aws.ecs.task.family-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("aws.ecs.task.id")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "aws.ecs.task.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("aws.ecs.task.revision")
 			assert.True(t, ok)
