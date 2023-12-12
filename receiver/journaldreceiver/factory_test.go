@@ -34,6 +34,7 @@ func TestCreateAndShutdown(t *testing.T) {
 	factory := NewFactory()
 	defaultConfig := factory.CreateDefaultConfig()
 	cfg := defaultConfig.(*JournaldConfig) // This cast should work on all platforms.
+	cfg.InputConfig.Dmesg = true           // Setting this property just to confirm availability on all platforms.
 
 	ctx := context.Background()
 	settings := receivertest.NewNopCreateSettings()
