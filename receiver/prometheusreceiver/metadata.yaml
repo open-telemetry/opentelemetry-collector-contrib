@@ -12,5 +12,6 @@ status:
   - observiq
   - splunk
   - sumo
+  - liatrio
   codeowners:
     active: [Aneurysm9, dashpole]
