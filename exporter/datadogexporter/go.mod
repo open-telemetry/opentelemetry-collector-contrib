@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-rc.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.18.0
-	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
+	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.8.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.8.3
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.8.3
