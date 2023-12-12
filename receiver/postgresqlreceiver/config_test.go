@@ -139,6 +139,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
+		expected.ExcludeDatabases = []string{"template0"}
 		expected.CollectionInterval = 10 * time.Second
 		expected.TLSClientSetting = configtls.TLSClientSetting{
 			Insecure:           false,
