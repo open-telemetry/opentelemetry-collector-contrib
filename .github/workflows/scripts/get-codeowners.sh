@@ -14,7 +14,7 @@ get_component_type() {
 }
 
 get_codeowners() {
-  echo "$((grep -m 1 "^${1}/" .github/CODEOWNERS || true) | \
+  echo "$((grep -m 1 "^${1}/ " .github/CODEOWNERS || true) | \
         sed 's/   */ /g' | \
         cut -f3- -d ' ')"
 }
