@@ -8,6 +8,7 @@
       "go": "1.20"
     },
     "schedule": ["every tuesday"],
+    "extends": ["config:recommended"],
     "ignorePaths": [
       "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
