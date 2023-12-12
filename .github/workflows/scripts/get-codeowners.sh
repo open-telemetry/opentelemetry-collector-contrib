@@ -14,7 +14,13 @@ get_component_type() {
 }
 
 get_codeowners() {
-  echo "$((grep -m 1 "^${1}/\s" .github/CODEOWNERS || true) | \
+  # grep arguments explained:
+  #   -m 1: Match the first occurrence
+  #   ^: Match from the beginning of the line
+  #   ${1}: Insert first argument given to this function
+  #   [\/]\?: Match 0 or 1 instances of a forward slash
+  #   \s: Match any whitespace character
+  echo "$((grep -m 1 "^${1}[\/]\?\s" .github/CODEOWNERS || true) | \
         sed 's/   */ /g' | \
         cut -f3- -d ' ')"
 }
