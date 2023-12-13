@@ -1,9 +1,8 @@
 # Use the official Redis image as the base
 FROM redis:7.2.3
 
-# For debug
-RUN apt update
-RUN apt install --assume-yes net-tools && apt --assume-yes install procps && apt install --assume-yes neovim
+# For debug, uncomment this
+# RUN apt update && apt install --assume-yes net-tools && apt --assume-yes install procps && apt install --assume-yes neovim
 
 # Seems to be an upstream issue with testcontainers or scraperint when using named nodes or clusters, so manually do it
 
@@ -23,16 +22,6 @@ RUN chown redis:redis /etc/redis-cluster*.conf
 
 RUN mkdir -p /var/log/redis
 RUN chgrp redis /var/log/redis
-
-#redis-server /etc/redis-cluster-6379.conf && \
-#    redis-server /etc/redis-cluster-6380.conf && \
-#    redis-server /etc/redis-cluster-6381.conf && \
-#    redis-server /etc/redis-cluster-6382.conf && \
-#    redis-server /etc/redis-cluster-6383.conf && \
-#    redis-server /etc/redis-cluster-6384.conf
-## Prevent the container from exiting
-#RUN echo 'tail -f /dev/null' >> /usr/local/bin/cluster.sh
-
 
 EXPOSE 6379
 EXPOSE 6380
