@@ -149,6 +149,7 @@ components:
         - mongodb
         - mongodbatlas
         - mysql
+        - namedpipe
         - nginx
         - nsxt
         - opencensus
