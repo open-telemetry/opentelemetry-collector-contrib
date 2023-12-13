@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -72,13 +73,28 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 				if compiledPattern.MatchString(originalValue.Str()) {
 					if !fn.IsEmpty() {
 						var updatedString string
+						var groupNum int
 						foundMatch := false
 						updatedString = originalValue.Str()
 						submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
+						// check if the string is indeed a group number string
+						if !IsGroupNumString(replacementVal) {
+							updatedString = compiledPattern.ReplaceAllString(originalValue.Str(), replacementVal)
+							updated.PutStr(key, updatedString)
+							return true
+						}
+						// parse the group number string to get actual group number
+						captureGroup := strings.TrimPrefix(replacementVal, "$")
+						groupNum, err = strconv.Atoi(captureGroup)
+						if err != nil {
+							return false
+						}
 						for _, submatch := range submatches {
-							for i := 2; i < len(submatch); i += 2 {
+							groupStart := 2 * groupNum
+							groupEnd := 2*groupStart - 1
+							if len(submatch) > groupEnd {
 								fnVal := fn.Get()
-								old := originalValue.Str()[submatch[i]:submatch[i+1]]
+								old := originalValue.Str()[submatch[groupStart]:submatch[groupEnd]]
 								replaceValGetter := ottl.StandardStringGetter[K]{
 									Getter: func(context.Context, K) (any, error) {
 										return old, nil
@@ -118,10 +134,24 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 						var updatedString string
 						updatedString = key
 						submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
+						// check if the string is indeed a group number string or if there is no capture group
+						if !IsGroupNumString(replacementVal) {
+							updatedString = compiledPattern.ReplaceAllString(originalValue.Str(), replacementVal)
+							updated.PutStr(key, updatedString)
+							return true
+						}
+						// parse the group number string to get actual group number
+						captureGroup := strings.TrimPrefix(replacementVal, "$")
+						groupNum, err := strconv.Atoi(captureGroup)
+						if err != nil {
+							return false
+						}
 						for _, submatch := range submatches {
-							for i := 2; i < len(submatch); i += 2 {
+							groupStart := 2 * groupNum
+							groupEnd := 2*groupStart - 1
+							if len(submatch) > groupEnd {
 								fnVal := fn.Get()
-								old := originalValue.Str()[submatch[i]:submatch[i+1]]
+								old := originalValue.Str()[submatch[groupStart]:submatch[groupEnd]]
 								replaceValGetter := ottl.StandardStringGetter[K]{
 									Getter: func(context.Context, K) (any, error) {
 										return old, nil

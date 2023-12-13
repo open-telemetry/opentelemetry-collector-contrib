@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -36,6 +38,12 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function)
 }
 
+// function to check if a string is a group number string like "$1", "$2", ...
+func IsGroupNumString(s string) bool {
+	match, _ := regexp.MatchString(`^\$\d+$`, s)
+	return match
+}
+
 func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
@@ -58,13 +66,32 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 			if compiledPattern.MatchString(originalValStr) {
 				if !fn.IsEmpty() {
 					var updatedString string
+					var groupNum int
 					foundMatch := false
 					updatedString = originalValStr
+					// check if the string is indeed a group number string
+					if !IsGroupNumString(replacementVal) {
+						updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
+						err = target.Set(ctx, tCtx, updatedStr)
+						if err != nil {
+							return nil, err
+						}
+						return nil, nil
+					}
+					// parse the group number string to get actual group number
+					captureGroup := strings.TrimPrefix(replacementVal, "$")
+					groupNum, err = strconv.Atoi(captureGroup)
+					if err != nil {
+						return nil, err
+					}
 					submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
 					for _, submatch := range submatches {
-						for i := 2; i < len(submatch); i += 2 {
+						groupStart := 2 * groupNum
+						groupEnd := 2*groupStart - 1
+						if len(submatch) > groupEnd {
+							fmt.Println("submatch: ", submatch)
 							fnVal := fn.Get()
-							old := originalValStr[submatch[i]:submatch[i+1]]
+							old := originalValStr[submatch[groupStart]:submatch[groupEnd]]
 							replaceValGetter := ottl.StandardStringGetter[K]{
 								Getter: func(context.Context, K) (any, error) {
 									return old, nil

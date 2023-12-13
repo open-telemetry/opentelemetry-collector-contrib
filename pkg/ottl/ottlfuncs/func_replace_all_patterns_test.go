@@ -59,8 +59,8 @@ func Test_replaceAllPatterns(t *testing.T) {
 			},
 			function: optionalArg,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello world")
-				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test", "hello {universe} world")
+				expectedMap.PutStr("test2", "hello {universe}")
 				expectedMap.PutStr("test3", "goodbye world1 and world2")
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
@@ -241,7 +241,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutStr("test2", "hello")
-				expectedMap.PutStr("test3", "goodbye hash(world1) and hash(world2)")
+				expectedMap.PutStr("test3", "goodbye hash(world1) and world2")
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
