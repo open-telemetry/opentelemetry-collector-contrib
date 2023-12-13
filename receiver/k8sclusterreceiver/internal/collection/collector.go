@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
@@ -107,7 +108,12 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 		clusterresourcequota.RecordMetrics(dc.metricsBuilder, o.(*quotav1.ClusterResourceQuota), ts)
 	})
 	dc.metadataStore.ForEach(gvk.HierarchicalResourceQuota, func(o any) {
-		hierarchicalresourcequota.RecordMetrics(dc.settings.Logger, dc.metricsBuilder, o.(*unstructured.Unstructured), ts)
+		hrq, err := hierarchicalresourcequota.Transform(o.(*unstructured.Unstructured))
+		if err != nil {
+			dc.settings.Logger.Error("failed to transform to metadate store object", zap.Error(err))
+		} else {
+			hierarchicalresourcequota.RecordMetrics(dc.metricsBuilder, hrq, ts)
+		}
 	})
 
 	m := dc.metricsBuilder.Emit()

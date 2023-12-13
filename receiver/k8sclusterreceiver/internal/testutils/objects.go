@@ -11,8 +11,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/hierarchical-namespaces/api/v1alpha2"
 )
 
 func NewHPA(id string) *autoscalingv2.HorizontalPodAutoscaler {
@@ -399,27 +399,25 @@ func NewCronJob(id string) *batchv1.CronJob {
 	}
 }
 
-func NewHierarchicalResourceQuota(id string) *unstructured.Unstructured {
-	return &unstructured.Unstructured{
-		Object: map[string]any{
-			"metadata": map[string]any{
-				"name":      "test-hierarchicalresourcequota-" + id,
-				"uid":       "test-hierarchicalresourcequota-" + id + "-uid",
-				"namespace": "test-namespace",
-				"labels": map[string]string{
-					"foo":  "bar",
-					"foo1": "",
-				},
+func NewHierarchicalResourceQuota(id string) *v1alpha2.HierarchicalResourceQuota {
+	return &v1alpha2.HierarchicalResourceQuota{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-hierarchicalresourcequota-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-hierarchicalresourcequota-" + id + "-uid"),
+			Labels: map[string]string{
+				"foo":  "bar",
+				"foo1": "",
 			},
-			"status": map[string]any{
-				"hard": map[string]any{
-					"requests.cpu":    "1",
-					"requests.memory": "1Gi",
-				},
-				"used": map[string]any{
-					"requests.cpu":    "500m",
-					"requests.memory": "512Mi",
-				},
+		},
+		Status: v1alpha2.HierarchicalResourceQuotaStatus{
+			Hard: corev1.ResourceList{
+				"requests.cpu":    resource.MustParse("1"),
+				"requests.memory": resource.MustParse("1Gi"),
+			},
+			Used: corev1.ResourceList{
+				"requests.cpu":    resource.MustParse("500m"),
+				"requests.memory": resource.MustParse("512Mi"),
 			},
 		},
 	}

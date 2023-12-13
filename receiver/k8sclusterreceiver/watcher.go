@@ -151,6 +151,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		"CronJob":                 {gvk.CronJob},
 		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler},
 	}
+
 	for kind, gvks := range supportedKinds {
 		anySupported := false
 		for _, gvk := range gvks {
