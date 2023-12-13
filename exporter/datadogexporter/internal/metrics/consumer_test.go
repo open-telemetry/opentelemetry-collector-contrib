@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -28,7 +29,9 @@ func (t testProvider) Source(context.Context) (source.Source, error) {
 }
 
 func newTranslator(t *testing.T, logger *zap.Logger) *metrics.Translator {
-	tr, err := metrics.NewTranslator(logger,
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = logger
+	tr, err := metrics.NewTranslator(set,
 		metrics.WithHistogramMode(metrics.HistogramModeDistributions),
 		metrics.WithNumberMode(metrics.NumberModeCumulativeToDelta),
 		metrics.WithFallbackSourceProvider(testProvider("fallbackHostname")),
