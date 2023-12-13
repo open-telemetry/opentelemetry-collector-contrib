@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/expr-lang/expr v1.15.7
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.91.0
