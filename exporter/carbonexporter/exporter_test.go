@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -98,7 +100,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				defer ln.Close()
 			}
 
-			config := &Config{Endpoint: addr, Timeout: 1000 * time.Millisecond}
+			config := &Config{TCPAddr: confignet.TCPAddr{Endpoint: addr}, TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1000 * time.Millisecond}}
 			exp, err := newCarbonExporter(config, exportertest.NewNopCreateSettings())
 			require.NoError(t, err)
 
