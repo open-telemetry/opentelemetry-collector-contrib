@@ -964,13 +964,14 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 
 		// add resource attributes to simulate additional resources providing data
 		for j := 0; j < traces.ResourceSpans().Len(); j++ {
-			traces.ResourceSpans().At(j).Resource().Attributes().PutStr("dummy", fmt.Sprintf("%d", i))
+			traces.ResourceSpans().At(j).Resource().Attributes().PutStr("not included in resource key attributes", fmt.Sprintf("%d", i))
 		}
 
 		err = p.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
 	}
 
+	// validate that the additional resources providing data did not result in additional resource metrics
 	assert.Equal(t, 2, p.resourceMetrics.Len())
 }
 

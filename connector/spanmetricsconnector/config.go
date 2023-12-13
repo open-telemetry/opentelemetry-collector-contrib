@@ -55,6 +55,7 @@ type Config struct {
 	// This can be used to avoid situations where resource attributes may change across service restarts, causing
 	// metric counters to break (and duplicate).
 	// e.g. ["service.name", "telemetry.sdk.language", "telemetry.sdk.name"]
+	// See https://opentelemetry.io/docs/specs/semconv/resource/ for possible attributes.
 	ResourceMetricsKeyAttributes []string `mapstructure:"resource_metrics_key_attributes"`
 
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
