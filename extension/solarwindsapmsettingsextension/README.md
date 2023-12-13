@@ -20,18 +20,16 @@ Example:
 ```yaml
 extensions:
   solarwindsapmsettings:
-    endpoint: "apm.collector.cloud.solarwinds.com:443"
+    endpoint: "<endpoint>"
     key: "<token>:<name>"
     interval: 1m
 ```
 
-### endpoint (Optional)
-The endpoint which this extension calls `getSettings`.
-
-Default: `apm.collector.cloud.solarwinds.com:443`
+### endpoint (Required)
+The APM collector endpoint which this extension calls `getSettings`. See [here](https://documentation.solarwinds.com/en/success_center/observability/content/system_requirements/endpoints.htm) for our APM collector endpoints.
 
 ### key (Required)
-The key in format `<token>:<name>` for `getSettings` from Solarwinds APM collector.
+The service key in format `<token>:<name>` for `getSettings` from Solarwinds APM collector. See [here](https://documentation.solarwinds.com/en/success_center/observability/content/configure/configure-services.htm) for configuring a service key.
 
 ### interval (Optional)
 Periodic interval to get Solarwinds APM specific settings from Solarwinds APM collector.
