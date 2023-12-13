@@ -13,6 +13,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.Endpoint, DefaultEndpoint)
-	assert.Equal(t, ocfg.Interval, DefaultInterval)
+	assert.Empty(t, ocfg.Endpoint, "There is no default endpoint")
+	assert.Empty(t, ocfg.Key, "There is no default key")
+	assert.Equal(t, ocfg.Interval, DefaultInterval, "Wrong default interval")
 }

@@ -8,13 +8,11 @@ import (
 )
 
 const (
-	DefaultEndpoint = "apm.collector.cloud.solarwinds.com:443"
 	DefaultInterval = "1m"
 )
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint: DefaultEndpoint,
 		Interval: DefaultInterval,
 	}
 }
