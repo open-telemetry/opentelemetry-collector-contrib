@@ -284,7 +284,7 @@ reports/distributions/grafana.yaml  @open-telemetry/collector-contrib-approvers
 reports/distributions/observiq.yaml @open-telemetry/collector-contrib-approvers 
 reports/distributions/redhat.yaml   @open-telemetry/collector-contrib-approvers 
 reports/distributions/splunk.yaml   @open-telemetry/collector-contrib-approvers @atoulme @crobert-1 @dmitryax @hughesjj @jeffreyc-splunk @jinja2 @jvoravong @panotti @rmfitzpatrick @samiura
-reports/distributions/sumo.yaml     @open-telemetry/collector-contrib-approvers 
+reports/distributions/sumo.yaml     @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @kkujawa-sumo @rnishtala-sumo @sumo-drosiek @swiatekm-sumo
 reports/distributions/liatrio.yaml  @open-telemetry/collector-contrib-approvers 
 
 
