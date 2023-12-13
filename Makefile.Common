@@ -81,6 +81,11 @@ ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/local/*' \
                                 -type f | sort)
 
+ALL_SRC_AND_SHELL := $(shell find $(ALL_PKG_DIRS) -name '*.go' -o -name "*.sh" \
+                                -not -path '*/third_party/*' \
+                                -not -path '*/local/*' \
+                                -type f | sort)
+
 # All source code and documents. Used in spell check.
 ALL_SRC_AND_DOC := $(shell find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" \
                                 -not -path '*/third_party/*' \
@@ -97,7 +102,6 @@ all-pkgs:
 
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
-
 all-pkg-dirs:
 	@echo $(ALL_PKG_DIRS) | tr ' ' '\n' | sort
 
@@ -143,7 +147,7 @@ benchmark:
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
-	@ADDLICENSEOUT=`$(ADDLICENSE) -s=only -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
+	@ADDLICENSEOUT=`$(ADDLICENSE) -s=only -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC_AND_SHELL) 2>&1`; \
 		if [ "$$ADDLICENSEOUT" ]; then \
 			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENSEOUT\n"; \
@@ -154,13 +158,15 @@ addlicense: $(ADDLICENSE)
 
 .PHONY: checklicense
 checklicense: $(ADDLICENSE)
-	@licRes=$$(for f in $$(find . -type f \( -iname '*.go' -o -iname '*.sh' \) ! -path '**/third_party/*') ; do \
+	@licRes=$$(for f in $(ALL_SRC_AND_SHELL); do \
 	           awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 			   awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 	   done); \
 	   if [ -n "$${licRes}" ]; then \
 	           echo "license header checking failed:"; echo "$${licRes}"; \
 	           exit 1; \
+		else \
+			echo "Check License finished successfully"; \
 	   fi
 
 .PHONY: checklinks
