@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v57/github"
 	"go.uber.org/zap"
 )
 
