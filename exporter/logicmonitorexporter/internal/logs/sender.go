@@ -11,7 +11,6 @@ import (
 
 	lmsdklogs "github.com/logicmonitor/lm-data-sdk-go/api/logs"
 	"github.com/logicmonitor/lm-data-sdk-go/model"
-	"github.com/logicmonitor/lm-data-sdk-go/utils"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -23,15 +22,8 @@ type Sender struct {
 }
 
 // NewSender creates a new Sender
-func NewSender(ctx context.Context, endpoint string, client *http.Client, authParams utils.AuthParams, logger *zap.Logger) (*Sender, error) {
-	options := []lmsdklogs.Option{
-		lmsdklogs.WithLogBatchingDisabled(),
-		lmsdklogs.WithAuthentication(authParams),
-		lmsdklogs.WithHTTPClient(client),
-		lmsdklogs.WithEndpoint(endpoint),
-	}
-
-	logIngestClient, err := lmsdklogs.NewLMLogIngest(ctx, options...)
+func NewSender(ctx context.Context, logger *zap.Logger, opts ...lmsdklogs.Option) (*Sender, error) {
+	logIngestClient, err := lmsdklogs.NewLMLogIngest(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logIngestClient: %w", err)
 	}
