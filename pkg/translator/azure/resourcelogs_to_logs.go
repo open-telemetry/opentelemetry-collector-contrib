@@ -6,6 +6,7 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
@@ -34,6 +35,10 @@ const (
 	azureResultSignature   = "azure.result.signature"
 	azureResultDescription = "azure.result.description"
 	azureTenantID          = "azure.tenant.id"
+)
+
+var (
+	errMissingTimestamp = errors.New("missing timestamp")
 )
 
 // azureRecords represents an array of Azure log records
@@ -127,15 +132,13 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 }
 
 func getTimestamp(record azureLogRecord) (pcommon.Timestamp, error) {
-	var s string
 	if record.Time != "" {
-		s = record.Time
-
+		return asTimestamp(record.Time)
 	} else if record.Timestamp != "" {
-		s = record.Timestamp
+		return asTimestamp(record.Timestamp)
 	}
 
-	return asTimestamp(s)
+	return 0, errMissingTimestamp
 }
 
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
