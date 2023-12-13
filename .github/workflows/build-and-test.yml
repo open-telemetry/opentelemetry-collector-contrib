@@ -134,6 +134,7 @@ jobs:
           - internal
           - pkg
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'renovate[bot]' }}
     timeout-minutes: 30
     steps:
       - name: Checkout Repo

@@ -76,5 +76,6 @@
       "github.com/mattn/go-ieproxy",
       "github.com/DataDog/datadog-agent/pkg/trace/exportable"
     ],
-    "prConcurrentLimit": 50
+    "prConcurrentLimit": 50,
+    "suppressNotifications": ["prEditedNotification"]
   }

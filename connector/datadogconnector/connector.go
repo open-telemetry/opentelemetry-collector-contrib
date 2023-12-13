@@ -41,18 +41,18 @@ type connectorImp struct {
 var _ component.Component = (*connectorImp)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // function to create a new connector
-func newConnector(logger *zap.Logger, _ component.Config, metricsConsumer consumer.Metrics, tracesConsumer consumer.Traces) (*connectorImp, error) {
-	logger.Info("Building datadog connector")
+func newConnector(set component.TelemetrySettings, _ component.Config, metricsConsumer consumer.Metrics, tracesConsumer consumer.Traces) (*connectorImp, error) {
+	set.Logger.Info("Building datadog connector")
 
 	in := make(chan *pb.StatsPayload, 100)
-	trans, err := metrics.NewTranslator(logger)
+	trans, err := metrics.NewTranslator(set)
 
 	ctx := context.Background()
 	if err != nil {
 		return nil, err
 	}
 	return &connectorImp{
-		logger:          logger,
+		logger:          set.Logger,
 		agent:           datadog.NewAgent(ctx, in),
 		translator:      trans,
 		in:              in,

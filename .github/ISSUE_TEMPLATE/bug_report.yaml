@@ -221,6 +221,7 @@ body:
       - receiver/mongodb
       - receiver/mongodbatlas
       - receiver/mysql
+      - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
       - receiver/opencensus
