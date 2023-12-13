@@ -23,6 +23,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -750,8 +751,9 @@ func createTestMetricsWithStats() pmetric.Metrics {
 		"custom_attribute":                         "custom_value",
 	})
 	dest := md.ResourceMetrics()
-	logger, _ := zap.NewDevelopment()
-	trans, err := metrics.NewTranslator(logger)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger, _ = zap.NewDevelopment()
+	trans, err := metrics.NewTranslator(set)
 	if err != nil {
 		panic(err)
 	}

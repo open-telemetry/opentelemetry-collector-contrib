@@ -18,6 +18,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -50,7 +51,7 @@ type metricsExporter struct {
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
-func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source.Provider) (*otlpmetrics.Translator, error) {
+func translatorFromConfig(set component.TelemetrySettings, cfg *Config, sourceProvider source.Provider) (*otlpmetrics.Translator, error) {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
@@ -82,7 +83,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
 		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
-	return otlpmetrics.NewTranslator(logger, options...)
+	return otlpmetrics.NewTranslator(set, options...)
 }
 
 func newMetricsExporter(
@@ -94,7 +95,7 @@ func newMetricsExporter(
 	apmStatsProcessor api.StatsProcessor,
 	metadataReporter *inframetadata.Reporter,
 ) (*metricsExporter, error) {
-	tr, err := translatorFromConfig(params.Logger, cfg, sourceProvider)
+	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, sourceProvider)
 	if err != nil {
 		return nil, err
 	}

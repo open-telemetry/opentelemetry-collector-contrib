@@ -1229,7 +1229,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		{
 			name:   "initialize histogram with no config provided",
 			config: Config{},
-			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs),
+			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil),
 		},
 		{
 			name: "Disable histogram",
@@ -1247,7 +1247,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Milliseconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil),
 		},
 		{
 			name: "initialize explicit histogram with default bounds (seconds)",
@@ -1256,7 +1256,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Seconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds, nil),
 		},
 		{
 			name: "initialize explicit histogram with bounds (seconds)",
@@ -1271,7 +1271,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}),
+			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}, nil),
 		},
 		{
 			name: "initialize explicit histogram with bounds (ms)",
@@ -1286,7 +1286,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}),
+			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}, nil),
 		},
 		{
 			name: "initialize exponential histogram",
@@ -1298,7 +1298,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(10),
+			want: metrics.NewExponentialHistogramMetrics(10, nil),
 		},
 		{
 			name: "initialize exponential histogram with default max buckets count",
@@ -1308,7 +1308,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Exponential: &ExponentialHistogramConfig{},
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize),
+			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize, nil),
 		},
 	}
 	for _, tt := range tests {
