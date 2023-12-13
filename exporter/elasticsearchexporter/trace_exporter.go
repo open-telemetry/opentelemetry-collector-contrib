@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -18,9 +19,10 @@ import (
 type elasticsearchTracesExporter struct {
 	logger *zap.Logger
 
-	index        string
-	dynamicIndex bool
-	maxAttempts  int
+	index          string
+	logstashFormat LogstashFormatSettings
+	dynamicIndex   bool
+	maxAttempts    int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -54,10 +56,11 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		client:      client,
 		bulkIndexer: bulkIndexer,
 
-		index:        cfg.TracesIndex,
-		dynamicIndex: cfg.TracesDynamicIndex.Enabled,
-		maxAttempts:  maxAttempts,
-		model:        model,
+		index:          cfg.TracesIndex,
+		dynamicIndex:   cfg.TracesDynamicIndex.Enabled,
+		maxAttempts:    maxAttempts,
+		model:          model,
+		logstashFormat: cfg.LogstashFormat,
 	}, nil
 }
 
@@ -99,6 +102,14 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, span)
 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
+		if err != nil {
+			return err
+		}
+		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeSpan(resource, span, scope)

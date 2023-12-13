@@ -14,6 +14,7 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"gopkg.in/yaml.v3"
 )
 
 const unmaintainedStatus = "unmaintained"
@@ -22,11 +23,11 @@ type generator interface {
 	generate(data *githubData) error
 }
 
-// Generates files specific to Github or Dependabot according to status metadata:
+// Generates files specific to Github according to status metadata:
 // .github/CODEOWNERS
 // .github/ALLOWLIST
-// .github/dependabot.yml
 // .github/ISSUE_TEMPLATES/*.yaml (list of components)
+// reports/distributions/*
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
 	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
@@ -36,16 +37,16 @@ func main() {
 		switch arg {
 		case "issue-templates":
 			generators = append(generators, issueTemplatesGenerator{})
-		case "dependabot":
-			generators = append(generators, dependabotGenerator{})
 		case "codeowners":
 			generators = append(generators, codeownersGenerator{})
+		case "distributions":
+			generators = append(generators, distributionsGenerator{})
 		default:
 			panic(fmt.Sprintf("Unknown generator: %s", arg))
 		}
 	}
 	if len(generators) == 0 {
-		generators = []generator{issueTemplatesGenerator{}, dependabotGenerator{}, codeownersGenerator{}}
+		generators = []generator{issueTemplatesGenerator{}, codeownersGenerator{}}
 	}
 	if err := run(*folder, *allowlistFilePath, generators); err != nil {
 		log.Fatal(err)
@@ -75,13 +76,19 @@ type metadata struct {
 	Status *Status `mapstructure:"status"`
 }
 
+type distributionData struct {
+	Name        string   `yaml:"name"`
+	URL         string   `yaml:"url"`
+	Maintainers []string `yaml:"maintainers,omitempty"`
+}
+
 type githubData struct {
 	folders           []string
 	codeowners        []string
 	allowlistFilePath string
 	maxLength         int
 	components        map[string]metadata
-	dependabotData    *dependabotData
+	distributions     []distributionData
 }
 
 func loadMetadata(filePath string) (metadata, error) {
@@ -107,12 +114,6 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 
 	components := map[string]metadata{}
 	var foldersList []string
-	dependabotData := &dependabotData{
-		Version: 2,
-		Updates: []dependabotUpdate{
-			newDependabotUpdate("", 5),
-		},
-	}
 	maxLength := 0
 	allCodeowners := map[string]struct{}{}
 	err := filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
@@ -128,10 +129,7 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 			key := currentFolder
 			components[key] = m
 			foldersList = append(foldersList, key)
-			_, err = os.Stat(filepath.Join(currentFolder, "go.mod"))
-			if err == nil { // go.mod file exists.
-				dependabotData.Updates = append(dependabotData.Updates, newDependabotUpdate(currentFolder, makePriority(m.Status)))
-			}
+
 			for stability := range m.Status.Stability {
 				if stability == unmaintainedStatus {
 					// do not account for unmaintained status to change the max length of the component line.
@@ -161,13 +159,23 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 	}
 	sort.Strings(codeownersList)
 
+	var distributions []distributionData
+	dd, err := os.ReadFile(filepath.Join(folder, "distributions.yaml"))
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(dd, &distributions)
+	if err != nil {
+		return err
+	}
+
 	data := &githubData{
 		folders:           foldersList,
 		codeowners:        codeownersList,
 		allowlistFilePath: allowlistFilePath,
 		maxLength:         maxLength,
 		components:        components,
-		dependabotData:    dependabotData,
+		distributions:     distributions,
 	}
 
 	for _, g := range generators {

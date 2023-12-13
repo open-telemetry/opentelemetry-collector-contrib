@@ -18,6 +18,126 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
+func newPath(fields []Field) *basePath {
+	if len(fields) == 0 {
+		return nil
+	}
+	var current *basePath
+	for i := len(fields) - 1; i >= 0; i-- {
+		current = &basePath{
+			name:     fields[i].Name,
+			key:      newKey(fields[i].Keys),
+			nextPath: current,
+		}
+	}
+	current.fetched = true
+	return current
+}
+
+type path interface {
+	Name() string
+	Next() path
+	Key() key
+}
+
+var _ path = &basePath{}
+
+type basePath struct {
+	name     string
+	key      key
+	nextPath *basePath
+	fetched  bool
+}
+
+func (p *basePath) Name() string {
+	return p.name
+}
+
+func (p *basePath) Next() path {
+	if p.nextPath == nil {
+		return nil
+	}
+	p.nextPath.fetched = true
+	return p.nextPath
+}
+
+func (p *basePath) Key() key {
+	return p.key
+}
+
+func (p *basePath) isComplete() error {
+	if !p.fetched {
+		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
+	}
+	if p.nextPath == nil {
+		return nil
+	}
+	return p.nextPath.isComplete()
+}
+
+func newKey(keys []Key) *baseKey {
+	if len(keys) == 0 {
+		return nil
+	}
+	var current *baseKey
+	for i := len(keys) - 1; i >= 0; i-- {
+		current = &baseKey{
+			s:       keys[i].String,
+			i:       keys[i].Int,
+			nextKey: current,
+		}
+	}
+	current.fetched = true
+	return current
+}
+
+type key interface {
+	String() *string
+	Int() *int64
+	Next() key
+}
+
+var _ key = &baseKey{}
+
+type baseKey struct {
+	s       *string
+	i       *int64
+	nextKey *baseKey
+	fetched bool
+}
+
+func (k *baseKey) String() *string {
+	return k.s
+}
+
+func (k *baseKey) Int() *int64 {
+	return k.i
+}
+
+func (k *baseKey) Next() key {
+	if k.nextKey == nil {
+		return nil
+	}
+	k.nextKey.fetched = true
+	return k.nextKey
+}
+
+func (k *baseKey) isComplete() error {
+	if !k.fetched {
+		var val any
+		if k.s != nil {
+			val = *k.s
+		} else if k.i != nil {
+			val = *k.i
+		}
+		return fmt.Errorf("the key %q was not used by the context during indexing", val)
+	}
+	if k.nextKey == nil {
+		return nil
+	}
+	return k.nextKey.isComplete()
+}
+
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {

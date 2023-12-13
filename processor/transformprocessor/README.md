@@ -37,10 +37,11 @@ Each context will be processed in the order specified and each statement for a c
 
 The transform processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing a statement.
 
-| error_mode            | description                                                                                                                |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------|
-| ignore                | The processor ignores errors returned by statements and continues on to the next statement.  This is the recommended mode. |
-| propagate             | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.        |
+| error_mode | description                                                                                                                                 |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| ignore     | The processor ignores errors returned by statements, logs the error, and continues on to the next statement.  This is the recommended mode. |
+| silent     | The processor ignores errors returned by statements, does not log the error, and continues on to the next statement.                        |
+| propagate  | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.                         |
 
 If not specified, `propagate` will be used.
 

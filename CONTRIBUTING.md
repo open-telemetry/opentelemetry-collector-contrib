@@ -201,7 +201,6 @@ When submitting a component to the community, consider breaking it down into sep
     * `make genotelcontribcol`
     * `make genoteltestbedcol`
     * `make generate`
-    * `make  gendependabot`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
 * **Second PR** should include the concrete implementation of the component. If the
@@ -233,6 +232,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
+* [@Bryan Aguilar](https://github.com/bryan-aguilar)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -377,7 +377,13 @@ Code Ownership is ultimately up to the judgement of the existing Code Owners and
 
 ### How to become a Code Owner
 
-To become a Code Owner, open a PR adding your GitHub username to the active codeowners entry in the component's `metadata.yaml` file. 
+To become a Code Owner, open a PR with the following changes:
+
+1. Add your GitHub username to the active codeowners entry in the component's `metadata.yaml` file.
+2. Run the command `make update-codeowners`.
+      * Note: A GitHub [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) must be configured for this command to work.
+      * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make generate` to regenerate the component's README header.
+
 Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
 
 ## Makefile Guidelines

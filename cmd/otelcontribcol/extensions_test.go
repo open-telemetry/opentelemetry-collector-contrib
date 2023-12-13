@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
@@ -211,6 +212,12 @@ func TestDefaultExtensions(t *testing.T) {
 			skipLifecycle: true,
 			getConfigFn: func() component.Config {
 				return extFactories["jaegerremotesampling"].CreateDefaultConfig().(*jaegerremotesampling.Config)
+			},
+		},
+		{
+			extension: "remotetap",
+			getConfigFn: func() component.Config {
+				return extFactories["remotetap"].CreateDefaultConfig().(*remotetapextension.Config)
 			},
 		},
 	}

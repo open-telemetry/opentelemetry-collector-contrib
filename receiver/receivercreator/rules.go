@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/builtin"
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/builtin"
+	"github.com/expr-lang/expr/vm"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -35,7 +35,7 @@ func newRule(ruleStr string) (rule, error) {
 		return rule{}, errors.New("rule must specify type")
 	}
 
-	// TODO: Maybe use https://godoc.org/github.com/antonmedv/expr#Env in type checking
+	// TODO: Maybe use https://godoc.org/github.com/expr-lang/expr#Env in type checking
 	// depending on type == specified.
 	v, err := expr.Compile(
 		ruleStr,

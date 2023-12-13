@@ -3,7 +3,6 @@ include ./Makefile.Common
 RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
-OTEL_RC_VERSION=main
 OTEL_STABLE_VERSION=main
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
@@ -146,13 +145,6 @@ push-tags: $(MULTIMOD)
 		git push ${REMOTE} $${tag}; \
 	done;
 
-DEPENDABOT_PATH=".github/dependabot.yml"
-.PHONY: gendependabot
-gendependabot:
-	cd cmd/githubgen && $(GOCMD) install .
-	githubgen dependabot
-
-
 # Define a delegation target for each module
 .PHONY: $(ALL_MODS)
 $(ALL_MODS):
@@ -240,10 +232,17 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
-.PHONY: gengithub
-gengithub:
+.PHONY: githubgen-install
+githubgen-install:
 	cd cmd/githubgen && $(GOCMD) install .
+
+.PHONY: gengithub
+gengithub: githubgen-install
 	githubgen
+
+.PHONY: gendistributions
+gendistributions: githubgen-install
+	githubgen distributions
 
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
@@ -295,7 +294,10 @@ telemetrygen:
 
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
-	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector --commit-hash $(OTEL_STABLE_VERSION)
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
+	git add . && git commit -s -m "[chore] multimod update stable modules"
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
+	git add . && git commit -s -m "[chore] multimod update beta modules"
 	$(MAKE) gotidy
 
 .PHONY: otel-from-tree
