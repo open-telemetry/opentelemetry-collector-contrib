@@ -4,24 +4,34 @@
 package main
 
 import (
+	_ "embed"
 	"sort"
+
+	"gopkg.in/yaml.v3"
 )
 
-// distros is a collection of distributions that can be referenced in the metadata.yaml files.
-// The rules below apply to every distribution added to this list:
-// - The distribution must be open source.
-// - The link must point to a publicly accessible repository.
-var distros = map[string]string{
-	"core":     "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
-	"contrib":  "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
-	"aws":      "https://github.com/aws-observability/aws-otel-collector",
-	"grafana":  "https://github.com/grafana/agent",
-	"observiq": "https://github.com/observIQ/observiq-otel-collector",
-	"redhat":   "https://github.com/os-observability/redhat-opentelemetry-collector",
-	"splunk":   "https://github.com/signalfx/splunk-otel-collector",
-	"sumo":     "https://github.com/SumoLogic/sumologic-otel-collector",
-	"liatrio":  "https://github.com/liatrio/liatrio-otel-collector",
+//go:generate cp -r ../../distributions.yaml .distributions.yaml
+//go:embed .distributions.yaml
+var distrosBytes []byte
+
+func init() {
+	var dd []distroData
+	err := yaml.Unmarshal(distrosBytes, &dd)
+	if err != nil {
+		panic(err)
+	}
+	for _, d := range dd {
+		distros[d.Name] = d.URL
+	}
 }
+
+type distroData struct {
+	Name string `yaml:"name"`
+	URL  string `yaml:"url"`
+}
+
+// distros is a collection of distributions that can be referenced in the metadata.yaml files.
+var distros = map[string]string{}
 
 type Codeowners struct {
 	// Active codeowners
