@@ -62,3 +62,9 @@ spanmetrics/invalid_histogram_unit:
 spanmetrics/exemplars_enabled:
   exemplars:
     enabled: true
+
+# exemplars enabled with max per datapoint configured
+spanmetrics/exemplars_enabled_with_max_per_datapoint:
+  exemplars:
+    enabled: true
+    max_per_data_point: 5
