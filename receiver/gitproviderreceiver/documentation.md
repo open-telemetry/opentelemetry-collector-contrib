@@ -47,7 +47,7 @@ The amount of time for a PR to be approved
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The full name of the Git repository | Any Str |
-| branch.name | The name of the branch in a given repository | Any Str |
+| branch.name | The name of the Git branch | Any Str |
 
 ### git.repository.pull_request.deployment.time
 
@@ -62,7 +62,7 @@ The amount of time for a merged PR to be deployed
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The full name of the Git repository | Any Str |
-| branch.name | The name of the branch in a given repository | Any Str |
+| branch.name | The name of the Git branch | Any Str |
 
 ### git.repository.pull_request.merge.time
 
@@ -77,7 +77,7 @@ The amount of time a PR has been merged
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The full name of the Git repository | Any Str |
-| branch.name | The name of the branch in a given repository | Any Str |
+| branch.name | The name of the Git branch | Any Str |
 
 ### git.repository.pull_request.merged.count
 
@@ -120,7 +120,7 @@ The amount of time a PR has been open
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The full name of the Git repository | Any Str |
-| branch.name | The name of the branch in a given repository | Any Str |
+| branch.name | The name of the Git branch | Any Str |
 
 ## Optional Metrics
 
