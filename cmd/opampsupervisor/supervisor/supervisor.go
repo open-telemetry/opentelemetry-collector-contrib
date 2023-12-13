@@ -255,8 +255,10 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 				for _, attr := range identAttr {
 					switch attr.Key {
 					case semconv.AttributeServiceInstanceID:
+						// TODO Consider this a critical error
+						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
 						if attr.Value.GetStringValue() != s.instanceID.String() {
-							s.logger.Warn(
+							s.logger.Error(
 								"Client's instance ID does not match with the instance ID set by the Supervisor",
 								zap.String("expected", s.instanceID.String()),
 								zap.String("saw", attr.Value.GetStringValue()),
