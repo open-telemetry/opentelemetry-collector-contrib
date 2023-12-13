@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -27,7 +28,7 @@ type benchFile struct {
 }
 
 func simpleTextFile(b *testing.B, file *os.File) *benchFile {
-	line := string(tokenWithLength(49)) + "\n"
+	line := string(filetest.TokenWithLength(49)) + "\n"
 	return &benchFile{
 		File: file,
 		log: func(_ int) {
@@ -150,7 +151,7 @@ func BenchmarkFileInput(b *testing.B) {
 
 			var files []*benchFile
 			for _, path := range bench.paths {
-				file := openFile(b, filepath.Join(rootDir, path))
+				file := filetest.OpenFile(b, filepath.Join(rootDir, path))
 				files = append(files, simpleTextFile(b, file))
 			}
 

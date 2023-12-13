@@ -2093,3 +2093,282 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 		),
 	)
 }
+
+func Test_basePath_Name(t *testing.T) {
+	bp := basePath{
+		name: "test",
+	}
+	assert.Equal(t, "test", bp.Name())
+}
+
+func Test_basePath_Next(t *testing.T) {
+	bp := basePath{
+		nextPath: &basePath{},
+	}
+	next := bp.Next()
+	assert.NotNil(t, next)
+	assert.Nil(t, next.Next())
+}
+
+func Test_basePath_Key(t *testing.T) {
+	k := &baseKey{}
+	bp := basePath{
+		key: k,
+	}
+	assert.Equal(t, k, bp.Key())
+}
+
+func Test_basePath_isComplete(t *testing.T) {
+	tests := []struct {
+		name          string
+		p             basePath
+		expectedError bool
+	}{
+		{
+			name: "fetched no next",
+			p: basePath{
+				fetched: true,
+			},
+		},
+		{
+			name: "fetched with next",
+			p: basePath{
+				fetched: true,
+				nextPath: &basePath{
+					fetched: true,
+				},
+			},
+		},
+		{
+			name: "not fetched no next",
+			p: basePath{
+				fetched: false,
+			},
+			expectedError: true,
+		},
+		{
+			name: "not fetched with next",
+			p: basePath{
+				fetched: true,
+				nextPath: &basePath{
+					fetched: false,
+				},
+			},
+			expectedError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.p.isComplete()
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_basePath_NextWithIsComplete(t *testing.T) {
+	tests := []struct {
+		name          string
+		pathFunc      func() *basePath
+		expectedError bool
+	}{
+		{
+			name: "fetched",
+			pathFunc: func() *basePath {
+				bp := basePath{
+					fetched: true,
+					nextPath: &basePath{
+						fetched: false,
+					},
+				}
+				bp.Next()
+				return &bp
+			},
+		},
+		{
+			name: "not fetched enough",
+			pathFunc: func() *basePath {
+				bp := basePath{
+					fetched: true,
+					nextPath: &basePath{
+						fetched: false,
+						nextPath: &basePath{
+							fetched: false,
+						},
+					},
+				}
+				bp.Next()
+				return &bp
+			},
+			expectedError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.pathFunc().isComplete()
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_newPath(t *testing.T) {
+	fields := []Field{
+		{
+			Name: "body",
+		},
+		{
+			Name: "string",
+		},
+	}
+	p := newPath(fields)
+	assert.Equal(t, "body", p.name)
+	p = p.nextPath
+	assert.Equal(t, "string", p.name)
+	assert.Nil(t, p.nextPath)
+}
+
+func Test_baseKey_String(t *testing.T) {
+	bp := baseKey{
+		s: ottltest.Strp("test"),
+	}
+	assert.Equal(t, "test", *bp.String())
+}
+
+func Test_baseKey_Int(t *testing.T) {
+	bp := baseKey{
+		i: ottltest.Intp(1),
+	}
+	assert.Equal(t, int64(1), *bp.Int())
+}
+
+func Test_baseKey_Next(t *testing.T) {
+	bp := baseKey{
+		nextKey: &baseKey{},
+	}
+	next := bp.Next()
+	assert.NotNil(t, next)
+	assert.Nil(t, next.Next())
+}
+
+func Test_baseKey_isComplete(t *testing.T) {
+	tests := []struct {
+		name          string
+		p             baseKey
+		expectedError bool
+	}{
+		{
+			name: "fetched no next",
+			p: baseKey{
+				fetched: true,
+			},
+		},
+		{
+			name: "fetched with next",
+			p: baseKey{
+				fetched: true,
+				nextKey: &baseKey{
+					fetched: true,
+				},
+			},
+		},
+		{
+			name: "not fetched no next",
+			p: baseKey{
+				fetched: false,
+			},
+			expectedError: true,
+		},
+		{
+			name: "not fetched with next",
+			p: baseKey{
+				fetched: true,
+				nextKey: &baseKey{
+					fetched: false,
+				},
+			},
+			expectedError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.p.isComplete()
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_baseKey_NextWithIsComplete(t *testing.T) {
+	tests := []struct {
+		name          string
+		keyFunc       func() *baseKey
+		expectedError bool
+	}{
+		{
+			name: "fetched",
+			keyFunc: func() *baseKey {
+				bk := baseKey{
+					fetched: true,
+					nextKey: &baseKey{
+						fetched: false,
+					},
+				}
+				bk.Next()
+				return &bk
+			},
+		},
+		{
+			name: "not fetched enough",
+			keyFunc: func() *baseKey {
+				bk := baseKey{
+					fetched: true,
+					nextKey: &baseKey{
+						fetched: false,
+						nextKey: &baseKey{
+							fetched: false,
+						},
+					},
+				}
+				bk.Next()
+				return &bk
+			},
+			expectedError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.keyFunc().isComplete()
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_newKey(t *testing.T) {
+	keys := []Key{
+		{
+			String: ottltest.Strp("foo"),
+		},
+		{
+			String: ottltest.Strp("bar"),
+		},
+	}
+	k := newKey(keys)
+	assert.Equal(t, "foo", *k.s)
+	k = k.nextKey
+	assert.Equal(t, "bar", *k.s)
+	assert.Nil(t, k.nextKey)
+}

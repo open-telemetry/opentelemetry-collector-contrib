@@ -20,7 +20,7 @@ Supported pipeline types: traces
 The following settings are required:
 
 - `endpoint` : Alertmanager endpoint to send events
-- `severity` (default info): Default severity for Alerts
+- `severity`: Default severity for Alerts
 
 
 The following settings are optional:
@@ -31,7 +31,6 @@ The following settings are optional:
 - `generator_url` is the source of the alerts to be used in Alertmanager's payload. The default value is "opentelemetry-collector", and can be set to the URL of the opentelemetry collector.
 - `severity_attribute`is the spanevent Attribute name which can be used instead of default severity string in Alert payload
    eg: If severity_attribute is set to "foo" and the SpanEvent has an attribute called foo, foo's attribute value will be used as the severity value for that particular Alert generated from the SpanEvent.
-
 
 
 Example config:

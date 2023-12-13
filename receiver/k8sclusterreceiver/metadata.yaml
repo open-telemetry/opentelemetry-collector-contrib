@@ -5,7 +5,7 @@ status:
   stability:
     beta: [metrics]
     development: [logs]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib, splunk, observiq, sumo, liatrio]
   codeowners:
     active: [dmitryax, TylerHelmuth, povilasv]
 
@@ -166,6 +166,8 @@ resource_attributes:
     description: The version of Kube Proxy running on the node.
     type: string
     enabled: false
+    warnings:
+      if_configured: k8s.kubeproxy.version resource attribute is deprecated and will be removed soon.
 
   openshift.clusterquota.uid:
     description: The k8s ClusterResourceQuota uid.
