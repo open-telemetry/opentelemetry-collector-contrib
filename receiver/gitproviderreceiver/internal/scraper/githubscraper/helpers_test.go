@@ -133,7 +133,7 @@ func MockServer(responses *responses) *http.ServeMux {
 		if contribResp.responseCode == http.StatusOK {
 			contribs, err := json.Marshal(contribResp.contribs[contribResp.page])
 			if err != nil {
-				fmt.Printf("error marshalling response: %v", err)
+				fmt.Printf("error marshaling response: %v", err)
 			}
 			link := fmt.Sprintf(
 				"<https://api.github.com/repositories/placeholder/contributors?per_page=100&page=%d>; rel=\"next\"",
