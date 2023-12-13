@@ -227,6 +227,7 @@ receiver/memcachedreceiver/                              @open-telemetry/collect
 receiver/mongodbatlasreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/mongodbreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/mysqlreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/namedpipereceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nginxreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nsxtreceiver/                                   @open-telemetry/collector-contrib-approvers @dashpole @schmikei
 receiver/opencensusreceiver/                             @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
