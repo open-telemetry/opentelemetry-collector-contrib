@@ -1,0 +1,14 @@
+server:
+  endpoint: ws://{{.url}}/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: false
+  reports_own_metrics: false
+  reports_health: false
+  accepts_remote_config: false
+  reports_remote_config: false
+
+agent:
+  executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}

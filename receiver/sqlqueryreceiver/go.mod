@@ -12,8 +12,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.91.0
-	github.com/sijms/go-ora/v2 v2.7.24
-	github.com/snowflakedb/gosnowflake v1.7.0
+	github.com/sijms/go-ora/v2 v2.7.26
+	github.com/snowflakedb/gosnowflake v1.7.1
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
 	go.opentelemetry.io/collector/component v0.91.0

@@ -9,8 +9,14 @@
 
 set -euo pipefail
 
+get_component_type() {
+  echo "${COMPONENT}" | cut -f 1 -d '/'
+}
+
 get_codeowners() {
-  echo "$((grep -m 1 "${1}" .github/CODEOWNERS || true) | sed 's/   */ /g' | cut -f3- -d ' ')"
+  echo "$((grep -m 1 "^${1}/\s" .github/CODEOWNERS || true) | \
+        sed 's/   */ /g' | \
+        cut -f3- -d ' ')"
 }
 
 if [[ -z "${COMPONENT:-}" ]]; then
@@ -26,14 +32,12 @@ RESULT=$(grep -c "${COMPONENT}" .github/CODEOWNERS || true)
 # if so, try to narrow things down by appending the component
 # or a forward slash to the label.
 if [[ ${RESULT} != 1 ]]; then
-    COMPONENT_TYPE=$(echo "${COMPONENT}" | cut -f 1 -d '/')
+    COMPONENT_TYPE=$(get_component_type "${COMPONENT}")
     OWNERS="$(get_codeowners "${COMPONENT}${COMPONENT_TYPE}")"
+fi
 
-    if [[ -z "${OWNERS:-}" ]]; then
-        OWNERS="$(get_codeowners "${COMPONENT}/")"
-    fi
-else
-    OWNERS="$(get_codeowners $COMPONENT)"
+if [[ -z "${OWNERS:-}" ]]; then
+    OWNERS="$(get_codeowners "${COMPONENT}")"
 fi
 
 echo "${OWNERS}"
