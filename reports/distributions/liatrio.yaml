@@ -1,6 +1,7 @@
 name: liatrio
 url: https://github.com/liatrio/liatrio-otel-collector
-maintainers: []
+maintainers:
+    - adrielp
 components:
     connector:
         - spanmetrics
