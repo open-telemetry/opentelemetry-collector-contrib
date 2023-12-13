@@ -1,0 +1,25 @@
+name: redhat
+url: https://github.com/os-observability/redhat-opentelemetry-collector
+maintainers: []
+components:
+    exporter:
+        - prometheus
+    extension:
+        - basicauth
+        - bearertokenauth
+        - health_check
+        - jaegerremotesampling
+        - oauth2client
+        - pprof
+    processor:
+        - attributes
+        - filter
+        - k8sattributes
+        - resource
+        - resourcedetection
+        - routing
+        - span
+    receiver:
+        - jaeger
+        - opencensus
+        - zipkin
