@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
@@ -23,7 +22,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factories.Processors[metadata.Type] = NewFactory()
-	factories.Connectors[metadata.Type] = newConnectorFactory()
+	factories.Connectors[metadata.Type] = NewConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)
 
 	// Test
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)
@@ -66,8 +65,4 @@ func TestLoadConfig(t *testing.T) {
 		cfg.Connectors[component.NewID(metadata.Type)],
 	)
 
-}
-
-func newConnectorFactory() connector.Factory {
-	return NewConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)()
 }
