@@ -147,7 +147,6 @@ func Test_IsList(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
 func Test_IsList_Error(t *testing.T) {
 	exprFunc := isList[any](&ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, interface{}) (interface{}, error) {
@@ -156,7 +155,5 @@ func Test_IsList_Error(t *testing.T) {
 	})
 	result, err := exprFunc(context.Background(), nil)
 	assert.Equal(t, false, result)
-	assert.Error(t, err)
-	_, ok := err.(ottl.TypeError)
-	assert.True(t, ok)
+	assert.IsType(t, ottl.TypeError(""), err)
 }
