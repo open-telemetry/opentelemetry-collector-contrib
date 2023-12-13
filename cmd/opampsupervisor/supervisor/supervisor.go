@@ -239,42 +239,40 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	srv := server.New(s.logger.Sugar())
 
 	done := make(chan struct{}, 1)
-	var connected bool
+	var connected atomic.Bool
 
-	srv.Start(server.StartSettings{
-		Settings: server.Settings{
-			Callbacks: server.CallbacksStruct{
-				OnConnectingFunc: func(request *http.Request) serverTypes.ConnectionResponse {
-					connected = true
-					return serverTypes.ConnectionResponse{
-						Accept: true,
-						ConnectionCallbacks: server.ConnectionCallbacksStruct{
-							OnMessageFunc: func(conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
-								if message.AgentDescription != nil {
-									s.agentDescription = message.AgentDescription
-									identAttr := s.agentDescription.IdentifyingAttributes
+	srv.Start(newServerSettings(flattenedSettings{
+		endpoint: fmt.Sprintf("localhost:%d", supervisorPort),
+		onConnectingFunc: func(request *http.Request) {
+			connected.Store(true)
 
-									for _, attr := range identAttr {
-										switch attr.Key {
-										case semconv.AttributeServiceName:
-											s.agentName = attr.Value.GetStringValue()
-										case semconv.AttributeServiceVersion:
-											s.agentVersion = attr.Value.GetStringValue()
-										}
-									}
-
-									done <- struct{}{}
-								}
-
-								return &protobufs.ServerToAgent{}
-							},
-						},
-					}
-				},
-			},
 		},
-		ListenEndpoint: fmt.Sprintf("localhost:%d", supervisorPort),
-	})
+		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
+			if message.AgentDescription != nil {
+				s.agentDescription = message.AgentDescription
+				identAttr := s.agentDescription.IdentifyingAttributes
+
+				for _, attr := range identAttr {
+					switch attr.Key {
+					case semconv.AttributeServiceInstanceID:
+						if attr.Value.GetStringValue() != s.instanceID.String() {
+							s.logger.Warn(
+								"Client's instance ID does not match with the instance ID set by the Supervisor",
+								zap.String("expected", s.instanceID.String()),
+								zap.String("saw", attr.Value.GetStringValue()),
+							)
+						}
+					case semconv.AttributeServiceName:
+						s.agentName = attr.Value.GetStringValue()
+					case semconv.AttributeServiceVersion:
+						s.agentVersion = attr.Value.GetStringValue()
+					}
+				}
+
+				done <- struct{}{}
+			}
+		},
+	}))
 
 	cmd, err := commander.NewCommander(
 		s.logger,
@@ -290,7 +288,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	select {
 	case <-time.After(3 * time.Second):
-		if connected {
+		if connected.Load() {
 			return errors.New("collector connected but never responded with an AgentDescription message")
 		} else {
 			return errors.New("collector's OpAMP client never connected to the Supervisor")
