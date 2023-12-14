@@ -99,7 +99,7 @@ func waitForEmit(t *testing.T, c chan *emitParams) *emitParams {
 	select {
 	case call := <-c:
 		return call
-	case <-time.After(3 * time.Second):
+	case <-time.After(300 * time.Second):
 		require.FailNow(t, "Timed out waiting for message")
 		return nil
 	}

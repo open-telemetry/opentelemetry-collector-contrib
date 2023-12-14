@@ -1163,3 +1163,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ../../internal/collectd
+
+replace go.mongodb.org/mongo-driver v1.13.0 => go.mongodb.org/mongo-driver v1.12.0
+
+replace github.com/go-kit/kit v0.10.0 => github.com/go-kit/kit v0.12.0

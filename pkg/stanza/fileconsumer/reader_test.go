@@ -221,9 +221,9 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	r.Metadata.Fingerprint, _ = r.NewFingerprintFromFile()
 	r.ReadToEnd(context.Background())
 
-	hashing := fnv.New128a()
+	hashing := fnv.New64()
 	hashing.Write([]byte("#header-line\naaa\n"))
-	hash := hashing.Sum(nil)
+	hash := hashing.Sum64()
 
 	require.Equal(t, hash, r.Fingerprint.HashBytes)
 }

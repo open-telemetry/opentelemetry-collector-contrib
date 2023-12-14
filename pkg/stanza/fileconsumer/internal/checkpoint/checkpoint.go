@@ -29,9 +29,22 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 	var errs []error
 	// Encode each known file
 	for _, rmd := range rmds {
-		if err := enc.Encode(rmd); err != nil {
-			errs = append(errs, fmt.Errorf("encode metadata: %w", err))
+		if rmd != nil {
+			fingerPrint := rmd.Fingerprint.Copy()
+			fingerPrint.FirstBytes = nil
+			meta := &reader.Metadata{
+				Fingerprint:     fingerPrint,
+				Offset:          rmd.Offset,
+				FileAttributes:  rmd.FileAttributes,
+				HeaderFinalized: rmd.HeaderFinalized,
+				FlushState:      rmd.FlushState,
+			}
+			if err := enc.Encode(meta); err != nil {
+				errs = append(errs, fmt.Errorf("encode metadata: %w", err))
+			}
+
 		}
+
 	}
 
 	if err := persister.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
@@ -68,7 +81,9 @@ func Load(ctx context.Context, persister operator.Persister) ([]*reader.Metadata
 		if err = dec.Decode(rmd); err != nil {
 			return nil, err
 		}
-
+		if rmd.Fingerprint.HashBytes == 0 && rmd.Fingerprint.BytesUsed == 0 {
+			rmd.Fingerprint.AddHash()
+		}
 		// Migrate readers that used FileAttributes.HeaderAttributes
 		// This block can be removed in a future release, tentatively v0.90.0
 		if ha, ok := rmd.FileAttributes["HeaderAttributes"]; ok {
