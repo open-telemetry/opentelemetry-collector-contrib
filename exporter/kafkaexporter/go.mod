@@ -9,7 +9,7 @@ require (
 	github.com/jaegertracing/jaeger v1.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.91.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.90.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.91.0
 	github.com/openzipkin/zipkin-go v0.4.2
