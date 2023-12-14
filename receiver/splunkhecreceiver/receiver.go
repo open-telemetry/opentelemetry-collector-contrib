@@ -50,7 +50,7 @@ const (
 	gzipEncoding              = "gzip"
 	httpContentEncodingHeader = "Content-Encoding"
 	httpContentTypeHeader     = "Content-Type"
-	httpJsonTypeHeader        = "application/json"
+	httpJSONTypeHeader        = "application/json"
 )
 
 var (
