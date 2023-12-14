@@ -17,6 +17,10 @@ resource_attributes:
     description: "The name of the Node"
     enabled: true
     type: string
+  k8s.node.start_time:
+    description: "The start time of the Node."
+    enabled: true
+    type: string
   k8s.pod.uid:
     description: "The UID of the Pod"
     enabled: true

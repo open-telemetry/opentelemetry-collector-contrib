@@ -91,6 +91,7 @@ func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, no
 
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
+	rb.SetK8sNodeStartTime(node.GetCreationTimestamp().String())
 	rb.SetOpencensusResourcetype("k8s")
 	rb.Emit().MoveTo(rm.Resource())
 	return rm

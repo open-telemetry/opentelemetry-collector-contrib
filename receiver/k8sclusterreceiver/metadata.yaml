@@ -70,6 +70,11 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.node.start_time:
+    description: "The start time of the Node."
+    enabled: true
+    type: string
+
   container.id:
     description: The container id.
     type: string
