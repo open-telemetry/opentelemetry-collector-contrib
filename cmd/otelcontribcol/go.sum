@@ -1584,8 +1584,8 @@ go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738/go.mod h1:dnLIgRNXwCJa5e+c6mI
 go.etcd.io/etcd/api/v3 v3.5.0/go.mod h1:cbVKeC6lCfl7j/8jBhAK6aIYO9XOjdptoxU/nLQcPvs=
 go.etcd.io/etcd/client/pkg/v3 v3.5.0/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v2 v2.305.0/go.mod h1:h9puh54ZTgAKtEbut2oe9P4L/oqKCVB6xsXlzd7alYQ=
-go.mongodb.org/atlas v0.35.0 h1:fLSPEyv+QcrG5djPWMekaM+BEVfEVBKQO4yEUQl4CQ4=
-go.mongodb.org/atlas v0.35.0/go.mod h1:nfPldE9dSama6G2IbIzmEza02Ly7yFZjMMVscaM0uEc=
+go.mongodb.org/atlas v0.36.0 h1:m05S3AO7zkl+bcG1qaNsEKBnAqnKx2FDwLooHpIG3j4=
+go.mongodb.org/atlas v0.36.0/go.mod h1:nfPldE9dSama6G2IbIzmEza02Ly7yFZjMMVscaM0uEc=
 go.mongodb.org/mongo-driver v1.11.4/go.mod h1:PTSz5yu21bkT/wXpkS7WR5f0ddqw5quethTUn9WM+2g=
 go.mongodb.org/mongo-driver v1.13.1 h1:YIc7HTYsKndGK4RFzJ3covLz1byri52x0IoMB0Pt/vk=
 go.mongodb.org/mongo-driver v1.13.1/go.mod h1:wcDf1JBCXy2mOW0bWHwO/IOYqdca1MPCwDtFu/Z9+eo=
