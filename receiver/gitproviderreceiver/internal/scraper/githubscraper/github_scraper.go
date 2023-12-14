@@ -21,9 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal/metadata"
 )
 
-var (
-	errClientNotInitErr = errors.New("http client not initialized")
-)
+var errClientNotInitErr = errors.New("http client not initialized")
 
 type githubScraper struct {
 	client   *http.Client
@@ -138,7 +136,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 					age := getAge(pr.CreatedAt, pr.MergedAt)
 
-					ghs.mb.RecordGitRepositoryPullRequestMergeTimeDataPoint(now, age, name, pr.HeadRefName)
+					ghs.mb.RecordGitRepositoryPullRequestMergedTimeDataPoint(now, age, name, pr.HeadRefName)
 
 				} else {
 					open++
@@ -150,7 +148,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					if pr.Reviews.TotalCount > 0 {
 						age := getAge(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)
 
-						ghs.mb.RecordGitRepositoryPullRequestApprovalTimeDataPoint(now, age, name, pr.HeadRefName)
+						ghs.mb.RecordGitRepositoryPullRequestApprovedTimeDataPoint(now, age, name, pr.HeadRefName)
 					}
 				}
 			}
