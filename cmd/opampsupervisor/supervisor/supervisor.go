@@ -129,14 +129,13 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	}
 
 	id, err := s.createInstanceID()
-
 	if err != nil {
 		return nil, err
 	}
 
 	s.instanceID = id
 
-	if err := s.getBootstrapInfo(); err != nil {
+	if err = s.getBootstrapInfo(); err != nil {
 		return nil, fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
@@ -215,24 +214,25 @@ func (s *Supervisor) loadConfig(configFile string) error {
 
 func (s *Supervisor) getBootstrapInfo() (err error) {
 	port, err := s.findRandomPort()
-
 	if err != nil {
 		return err
 	}
 
 	supervisorPort, err := s.findRandomPort()
-
 	if err != nil {
 		return err
 	}
 
 	var cfg bytes.Buffer
 
-	s.bootstrapTemplate.Execute(&cfg, map[string]any{
+	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
 		"EndpointPort":   port,
 		"InstanceUid":    s.instanceID.String(),
 		"SupervisorPort": supervisorPort,
 	})
+	if err != nil {
+		return err
+	}
 
 	s.writeEffectiveConfigToFile(cfg.String(), s.effectiveConfigFilePath)
 
@@ -241,7 +241,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	done := make(chan struct{}, 1)
 	var connected atomic.Bool
 
-	srv.Start(newServerSettings(flattenedSettings{
+	err = srv.Start(newServerSettings(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", supervisorPort),
 		onConnectingFunc: func(request *http.Request) {
 			connected.Store(true)
@@ -275,18 +275,22 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 			}
 		},
 	}))
+	if err != nil {
+		return err
+	}
 
 	cmd, err := commander.NewCommander(
 		s.logger,
 		s.config.Agent,
 		"--config", s.effectiveConfigFilePath,
 	)
-
 	if err != nil {
 		return err
 	}
 
-	cmd.Start(context.Background())
+	if err = cmd.Start(context.Background()); err != nil {
+		return err
+	}
 
 	select {
 	case <-time.After(3 * time.Second):
@@ -298,15 +302,11 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	case <-done:
 	}
 
-	err = cmd.Stop(context.Background())
-
-	if err != nil {
+	if err = cmd.Stop(context.Background()); err != nil {
 		return err
 	}
 
-	err = srv.Stop(context.Background())
-
-	if err != nil {
+	if err = srv.Stop(context.Background()); err != nil {
 		return err
 	}
 
