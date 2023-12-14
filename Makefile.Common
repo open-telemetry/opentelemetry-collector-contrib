@@ -82,8 +82,8 @@ ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -type f | sort)
 
 ALL_SRC_AND_SHELL := find . -iname '*.go' -o -iname "*.sh" \
-                                -not -path '**/third_party/*' \
-                                -not -path '**/local/*' \
+                                -not -path '*/third_party/*' \
+                                -not -path '*/local/*' \
                                 -type f | sort
 
 # All source code and documents. Used in spell check.
@@ -167,7 +167,7 @@ checklicense: $(ADDLICENSE)
 		echo "$$f"; \
 		awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 		awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
-		$(ADDLICENSE_CMD) -c 2&>1 && echo "$$f"; \
+		$(ADDLICENSE_CMD) -c 2>&1 && echo "$$f"; \
 		done); \
 	if [ -n "$${licRes}" ]; then \
 		echo "license header checking failed:"; echo "$${licRes}"; \
