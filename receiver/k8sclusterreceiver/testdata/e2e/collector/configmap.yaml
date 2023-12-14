@@ -15,6 +15,7 @@ data:
     processors:
     receivers:
       k8s_cluster:
+        collection_interval: 1s
         
     service:
       telemetry:

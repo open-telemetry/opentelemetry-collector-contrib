@@ -61,6 +61,11 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, err)
 	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
 	require.NoError(t, err)
+	metricsConsumer := new(consumertest.MetricsSink)
+	tracesConsumer := new(consumertest.TracesSink)
+	logsConsumer := new(consumertest.LogsSink)
+	otlpShutdownFn := setUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer)
+	defer otlpShutdownFn()
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, dynamicClient, testID)
@@ -75,9 +80,6 @@ func TestE2E(t *testing.T) {
 		k8stest.WaitForTelemetryGenToStart(t, dynamicClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
-	metricsConsumer := new(consumertest.MetricsSink)
-	tracesConsumer := new(consumertest.TracesSink)
-	logsConsumer := new(consumertest.LogsSink)
 	wantEntries := 128 // Minimal number of metrics/traces/logs to wait for.
 	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer)
 
@@ -484,7 +486,7 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 	return err
 }
 
-func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink) {
+func setUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
 
@@ -495,9 +497,11 @@ func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc 
 	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, lc)
 	require.NoError(t, err, "failed creating logs receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
+	return func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
-	}()
+	}
+}
+func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink) {
 
 	timeoutMinutes := 3
 	require.Eventuallyf(t, func() bool {

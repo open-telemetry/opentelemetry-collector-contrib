@@ -48,6 +48,9 @@ func TestE2E(t *testing.T) {
 	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
 	require.NoError(t, err)
 
+	metricsConsumer, closeSinkFn := setUpSync(t)
+	defer closeSinkFn()
+
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, dynamicClient, testID)
 
@@ -57,7 +60,6 @@ func TestE2E(t *testing.T) {
 		}
 	}()
 
-	metricsConsumer := new(consumertest.MetricsSink)
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
@@ -108,17 +110,20 @@ func TestE2E(t *testing.T) {
 	)
 }
 
-func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
+func setUpSync(t *testing.T) (*consumertest.MetricsSink, func()) {
+	sink := new(consumertest.MetricsSink)
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
 
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mc)
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, err, "failed creating metrics receiver")
-	defer func() {
+	return sink, func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
-	}()
+	}
+}
 
+func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
 	timeoutMinutes := 3
 	require.Eventuallyf(t, func() bool {
 		return len(mc.AllMetrics()) > entriesNum
