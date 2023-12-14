@@ -54,7 +54,7 @@ type connectorImp struct {
 
 	resourceMetrics *cache.Cache[resourceKey, *resourceMetrics]
 
-	resourceMetricsKeyAttributes map[string]bool
+	resourceMetricsKeyAttributes map[string]struct{}
 
 	keyBuf *bytes.Buffer
 
@@ -117,9 +117,10 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		return nil, err
 	}
 
-	resourceMetricsKeyAttributes := make(map[string]bool, len(cfg.ResourceMetricsKeyAttributes))
+	resourceMetricsKeyAttributes := make(map[string]struct{}, len(cfg.ResourceMetricsKeyAttributes))
+	var s struct{}
 	for _, attr := range cfg.ResourceMetricsKeyAttributes {
-		resourceMetricsKeyAttributes[attr] = true
+		resourceMetricsKeyAttributes[attr] = s
 	}
 
 	return &connectorImp{
@@ -405,7 +406,8 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 	m := pcommon.NewMap()
 	attr.CopyTo(m)
 	m.RemoveIf(func(k string, _ pcommon.Value) bool {
-		return !p.resourceMetricsKeyAttributes[k]
+		_, ok := p.resourceMetricsKeyAttributes[k]
+		return !ok
 	})
 	return pdatautil.MapHash(m)
 }
