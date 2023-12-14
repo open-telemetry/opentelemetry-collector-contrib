@@ -82,9 +82,16 @@ ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC := $(shell find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" \
-                                -not -path '*/third_party/*' \
-                                -type f | sort)
+ALL_SRC_AND_DOC_CMD := find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
+ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
+	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
+	MISSPELL_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
+	MISSPELL_CORRECTION_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
+else
+	ALL_SRC_AND_DOC := $(shell $(ALL_SRC_AND_DOC_CMD))
+	MISSPELL_CMD := $(MISSPELL) $(ALL_SRC_AND_DOC)
+	MISSPELL_CORRECTION_CMD := $(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
+endif
 
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell $(GOCMD) list $(sort $(dir $(ALL_SRC))))
@@ -190,11 +197,11 @@ tidy:
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
-	@$(MISSPELL) $(ALL_SRC_AND_DOC)
+	@$(MISSPELL_CMD)
 
 .PHONY: misspell-correction
 misspell-correction: $(TOOLS_BIN_DIR)/misspell
-	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
+	$(MISSPELL_CORRECTION_CMD)
 
 .PHONY: moddownload
 moddownload:

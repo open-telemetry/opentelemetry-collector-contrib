@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzio
 go 1.20
 
 require (
-	github.com/hashicorp/go-hclog v1.5.0
-	github.com/jaegertracing/jaeger v1.51.0
+	github.com/hashicorp/go-hclog v1.6.2
+	github.com/jaegertracing/jaeger v1.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.91.0
 	github.com/stretchr/testify v1.8.4
@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0
 	go.opentelemetry.io/collector/semconv v0.91.0
 	go.uber.org/zap v1.26.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231211222908-989df2bf70f3
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0
 	google.golang.org/protobuf v1.31.0
 )
 
