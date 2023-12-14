@@ -1156,7 +1156,3 @@ replace (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ../../connector/servicegraphconnector
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../../connector/spanmetricsconnector
 )
-
-replace go.mongodb.org/mongo-driver v1.13.0 => go.mongodb.org/mongo-driver v1.12.0
-
-replace github.com/go-kit/kit v0.10.0 => github.com/go-kit/kit v0.12.0
