@@ -25,10 +25,10 @@ resource_attributes:
 ## Attributes that will be uncommented when the rest of the metrics are added
 attributes:
   repository.name:
-    description: The full name of the Git repository
+    description: The full name of a Git repository
     type: string
   branch.name:
-    description: The name of the Git branch
+    description: The name of a Git branch
     type: string
 
 metrics:
@@ -41,49 +41,49 @@ metrics:
     attributes: []
   git.repository.branch.count:
     enabled: true
-    description: Number of branches in the repository
+    description: Number of branches in a repository
     unit: 1
     gauge:
       value_type: int
     attributes: [repository.name]
   git.repository.contributor.count:
     enabled: false
-    description: Total number of unique contributors to this repository
+    description: Total number of unique contributors to a repository
     unit: 1
     gauge:
       value_type: int
     attributes: [repository.name]
   git.repository.pull_request.merged.count:
     enabled: true
-    description: The amount of merged pull requests
+    description: The number of merged pull requests in a repository
     unit: 1
     gauge:
       value_type: int
     attributes: [repository.name]
   git.repository.pull_request.open.count:
     enabled: true
-    description: The amount of open pull requests
+    description: The number of open pull requests in a repository
     unit: 1
     gauge:
       value_type: int
     attributes: [repository.name]
   git.repository.pull_request.open.time:
     enabled: true
-    description: The amount of time a PR has been open
+    description: The amount of time a pull request has been open
     unit: 1
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
-  git.repository.pull_request.merge.time:
+  git.repository.pull_request.merged.time:
     enabled: true
-    description: The amount of time a PR has been merged
+    description: The amount of time it took a pull request to go from open to merged
     unit: 1
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
-  git.repository.pull_request.approval.time:
+  git.repository.pull_request.approved.time:
     enabled: true
-    description: The amount of time for a PR to be approved
+    description: The amount of time it took a pull request to go from open to approved
     unit: 1
     gauge:
       value_type: int
