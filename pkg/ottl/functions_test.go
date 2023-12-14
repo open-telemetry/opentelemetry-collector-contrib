@@ -2098,7 +2098,9 @@ func Test_basePath_Name(t *testing.T) {
 	bp := basePath{
 		name: "test",
 	}
-	assert.Equal(t, "test", bp.Name())
+	n, err := bp.Name()
+	assert.NoError(t, err)
+	assert.Equal(t, "test", n)
 }
 
 func Test_basePath_Next(t *testing.T) {
@@ -2238,14 +2240,20 @@ func Test_baseKey_String(t *testing.T) {
 	bp := baseKey{
 		s: ottltest.Strp("test"),
 	}
-	assert.Equal(t, "test", *bp.String())
+	s, err := bp.String()
+	assert.NoError(t, err)
+	assert.NotNil(t, s)
+	assert.Equal(t, "test", *s)
 }
 
 func Test_baseKey_Int(t *testing.T) {
 	bp := baseKey{
 		i: ottltest.Intp(1),
 	}
-	assert.Equal(t, int64(1), *bp.Int())
+	i, err := bp.Int()
+	assert.NoError(t, err)
+	assert.NotNil(t, i)
+	assert.Equal(t, int64(1), *i)
 }
 
 func Test_baseKey_Next(t *testing.T) {

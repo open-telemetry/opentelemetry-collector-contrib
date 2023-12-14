@@ -35,7 +35,7 @@ func newPath(fields []Field) *basePath {
 }
 
 type path interface {
-	Name() string
+	Name() (string, error)
 	Next() path
 	Key() key
 }
@@ -49,8 +49,8 @@ type basePath struct {
 	fetched  bool
 }
 
-func (p *basePath) Name() string {
-	return p.name
+func (p *basePath) Name() (string, error) {
+	return p.name, nil
 }
 
 func (p *basePath) Next() path {
@@ -92,8 +92,8 @@ func newKey(keys []Key) *baseKey {
 }
 
 type key interface {
-	String() *string
-	Int() *int64
+	String() (*string, error)
+	Int() (*int64, error)
 	Next() key
 }
 
@@ -106,12 +106,12 @@ type baseKey struct {
 	fetched bool
 }
 
-func (k *baseKey) String() *string {
-	return k.s
+func (k *baseKey) String() (*string, error) {
+	return k.s, nil
 }
 
-func (k *baseKey) Int() *int64 {
-	return k.i
+func (k *baseKey) Int() (*int64, error) {
+	return k.i, nil
 }
 
 func (k *baseKey) Next() key {
