@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // newCarbonExporter returns a new Carbon exporter.
@@ -20,7 +22,7 @@ func newCarbonExporter(cfg *Config, set exporter.CreateSettings) (exporter.Metri
 		connPool: newTCPConnPool(cfg.Endpoint, cfg.Timeout),
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	exp, err := exporterhelper.NewMetricsExporter(
 		context.TODO(),
 		set,
 		cfg,
@@ -29,6 +31,11 @@ func newCarbonExporter(cfg *Config, set exporter.CreateSettings) (exporter.Metri
 		exporterhelper.WithQueue(cfg.QueueConfig),
 		exporterhelper.WithRetry(cfg.RetryConfig),
 		exporterhelper.WithShutdown(sender.Shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return resourcetotelemetry.WrapMetricsExporter(cfg.ResourceToTelemetryConfig, exp), nil
 }
 
 // carbonSender is the struct tying the translation function and the TCP
