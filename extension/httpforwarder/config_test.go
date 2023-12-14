@@ -20,6 +20,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
+	defaultClientSettings := confighttp.NewDefaultHTTPClientSettings()
 
 	tests := []struct {
 		id       component.ID
@@ -40,7 +41,9 @@ func TestLoadConfig(t *testing.T) {
 					Headers: map[string]configopaque.String{
 						"otel_http_forwarder": "dev",
 					},
-					Timeout: 5 * time.Second,
+					MaxIdleConns:    defaultClientSettings.MaxIdleConns,
+					IdleConnTimeout: defaultClientSettings.IdleConnTimeout,
+					Timeout:         5 * time.Second,
 				},
 			},
 		},
