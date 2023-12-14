@@ -173,7 +173,7 @@ func TestGenDefaultSearchQueryUser(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestGetAgeHrs(t *testing.T) {
+func TestGetAge(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		hrsAdd   time.Duration
@@ -181,28 +181,22 @@ func TestGetAgeHrs(t *testing.T) {
 		expected float64
 	}{
 		{
-			desc:     "TestSubHalfHour",
+			desc:     "TestHalfHourDiff",
 			hrsAdd:   0 * time.Hour,
-			minsAdd:  time.Duration(25) * time.Minute,
-			expected: 0,
+			minsAdd:  time.Duration(30) * time.Minute,
+			expected: 60 * 30,
 		},
 		{
-			desc:     "TestOverHalfHour",
-			hrsAdd:   0 * time.Hour,
-			minsAdd:  time.Duration(45) * time.Minute,
-			expected: 1,
+			desc:     "TestHourDiff",
+			hrsAdd:   1 * time.Hour,
+			minsAdd:  0 * time.Minute,
+			expected: 60 * 60,
 		},
 		{
-			desc:     "TestSubHalfHourWithHrs",
-			hrsAdd:   time.Duration(1) * time.Hour,
-			minsAdd:  time.Duration(25) * time.Minute,
-			expected: 1,
-		},
-		{
-			desc:     "TestOverHalfHourWithHrs",
-			hrsAdd:   time.Duration(1) * time.Hour,
-			minsAdd:  time.Duration(45) * time.Minute,
-			expected: 2,
+			desc:     "TestDayDiff",
+			hrsAdd:   24 * time.Hour,
+			minsAdd:  0 * time.Minute,
+			expected: 60 * 60 * 24,
 		},
 	}
 
@@ -211,7 +205,7 @@ func TestGetAgeHrs(t *testing.T) {
 			min := time.Now()
 			max := min.Add(tc.hrsAdd).Add(tc.minsAdd)
 
-			actual := getAgeHrs(min, max)
+			actual := getAge(min, max)
 
 			assert.Equal(t, int64(tc.expected), actual)
 		})
