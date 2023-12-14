@@ -44,14 +44,14 @@ type datadogProcessor struct {
 	exit chan struct{}
 }
 
-func newProcessor(ctx context.Context, logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) (*datadogProcessor, error) {
+func newProcessor(ctx context.Context, set component.TelemetrySettings, config component.Config, nextConsumer consumer.Traces) (*datadogProcessor, error) {
 	cfg := config.(*Config)
 	in := make(chan *pb.StatsPayload, 100)
-	trans, err := metrics.NewTranslator(logger)
+	trans, err := metrics.NewTranslator(set)
 	if err != nil {
 		return nil, err
 	}
-	logger.Warn(
+	set.Logger.Warn(
 		"The datadogprocessor has been deprecated in favor of the datadogconnector",
 		zap.String(
 			"documentation",
@@ -59,7 +59,7 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 		),
 	)
 	return &datadogProcessor{
-		logger:       logger,
+		logger:       set.Logger,
 		nextConsumer: nextConsumer,
 		agent:        datadog.NewAgent(ctx, in),
 		translator:   trans,

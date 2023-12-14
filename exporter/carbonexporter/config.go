@@ -7,26 +7,26 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"time"
+
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Defaults for not specified configuration settings.
 const (
-	DefaultEndpoint    = "localhost:2003"
-	DefaultSendTimeout = 5 * time.Second
+	defaultEndpoint = "localhost:2003"
 )
 
 // Config defines configuration for Carbon exporter.
 type Config struct {
-
-	// Endpoint specifies host and port to send metrics in the Carbon plaintext
-	// format. The default value is defined by the DefaultEndpoint constant.
-	Endpoint string `mapstructure:"endpoint"`
+	// Specifies the connection endpoint config. The default value is "localhost:2003".
+	confignet.TCPAddr `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// Timeout is the maximum duration allowed to connecting and sending the
-	// data to the Carbon/Graphite backend.
-	// The default value is defined by the DefaultSendTimeout constant.
-	Timeout time.Duration `mapstructure:"timeout"`
+	// data to the Carbon/Graphite backend. The default value is 5s.
+	exporterhelper.TimeoutSettings `mapstructure:",squash"`     // squash ensures fields are correctly decoded in embedded struct.
+	QueueConfig                    exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	RetryConfig                    exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 }
 
 func (cfg *Config) Validate() error {

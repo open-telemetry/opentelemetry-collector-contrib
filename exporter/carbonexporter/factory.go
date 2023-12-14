@@ -7,7 +7,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter/internal/metadata"
 )
@@ -22,8 +24,12 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint: DefaultEndpoint,
-		Timeout:  DefaultSendTimeout,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: defaultEndpoint,
+		},
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		QueueConfig:     exporterhelper.NewDefaultQueueSettings(),
+		RetryConfig:     exporterhelper.NewDefaultRetrySettings(),
 	}
 }
 
