@@ -19,8 +19,8 @@ subtext: |
   - git.repository.pull_request.open.count
   - git.repository.pull_request.open.time
   - git.repository.pull_request.merged.count
-  - git.repository.pull_request.merge.time
-  - git.repository.pull_request.approval.time
+  - git.repository.pull_request.merged.time
+  - git.repository.pull_request.approved.time
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
