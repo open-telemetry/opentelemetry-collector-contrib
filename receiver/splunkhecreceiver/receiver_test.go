@@ -40,7 +40,7 @@ import (
 func assertHecSuccessResponse(t *testing.T, resp *http.Response, body any) {
 	status := resp.StatusCode
 	assert.Equal(t, http.StatusOK, status)
-	assert.Equal(t, httpJsonTypeHeader, resp.Header.Get(httpContentTypeHeader))
+	assert.Equal(t, httpJSONTypeHeader, resp.Header.Get(httpContentTypeHeader))
 	assert.Equal(t, map[string]any{"code": float64(0), "text": "Success"}, body)
 }
 

@@ -232,7 +232,7 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 }
 
 func (r *splunkReceiver) writeSuccessResponse(ctx context.Context, resp http.ResponseWriter, eventCount int) {
-	resp.Header().Set(httpContentTypeHeader, httpJsonTypeHeader)
+	resp.Header().Set(httpContentTypeHeader, httpJSONTypeHeader)
 	resp.WriteHeader(http.StatusOK)
 	if _, err := resp.Write(okRespBody); err != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, eventCount, err)
