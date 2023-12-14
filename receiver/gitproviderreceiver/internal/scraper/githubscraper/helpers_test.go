@@ -182,20 +182,20 @@ func TestGetAge(t *testing.T) {
 	}{
 		{
 			desc:     "TestHalfHourDiff",
-			hrsAdd:   0 * time.Hour,
+			hrsAdd:   time.Duration(0) * time.Hour,
 			minsAdd:  time.Duration(30) * time.Minute,
 			expected: 60 * 30,
 		},
 		{
 			desc:     "TestHourDiff",
-			hrsAdd:   1 * time.Hour,
-			minsAdd:  0 * time.Minute,
+			hrsAdd:   time.Duration(1) * time.Hour,
+			minsAdd:  time.Duration(0) * time.Minute,
 			expected: 60 * 60,
 		},
 		{
 			desc:     "TestDayDiff",
-			hrsAdd:   24 * time.Hour,
-			minsAdd:  0 * time.Minute,
+			hrsAdd:   time.Duration(24) * time.Hour,
+			minsAdd:  time.Duration(0) * time.Minute,
 			expected: 60 * 60 * 24,
 		},
 	}
