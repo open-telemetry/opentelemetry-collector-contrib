@@ -1426,8 +1426,8 @@ github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFR
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 h1:32k2QLgsKhcEs55q4REPKyIadvid5FPy2+VMgvbmKJ0=
 github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3/go.mod h1:gJrXWi7wSGXfiC7+VheQaz+ypdCt5SmZNL+BRxUe7y4=
-github.com/signalfx/sapm-proto v0.13.0 h1:yEkp1+MAU4vZvnJMp56uhVlRjlvCK7KQjBg0g2Apw8k=
-github.com/signalfx/sapm-proto v0.13.0/go.mod h1:C72HjeCW5v0Llk6pIVJ/ZH8A5GbiZpCCSkE1dSlpWxY=
+github.com/signalfx/sapm-proto v0.14.0 h1:KWh3I5E4EkelB19aP1/54Ik8khSioC/RVRW/riOfRGg=
+github.com/signalfx/sapm-proto v0.14.0/go.mod h1:Km6PskZh966cqNoUn3AmRyGRix5VfwnxVBvn2vjRC9U=
 github.com/sijms/go-ora/v2 v2.7.26 h1:+o/1ej7znA/Wpklv9eTiyp4Jqn2DU9Urw9YHrtPRP64=
 github.com/sijms/go-ora/v2 v2.7.26/go.mod h1:EHxlY6x7y9HAsdfumurRfTd+v8NrEOTR3Xl4FWlH6xk=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
