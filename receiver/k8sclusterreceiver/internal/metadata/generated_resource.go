@@ -168,6 +168,13 @@ func (rb *ResourceBuilder) SetK8sNodeName(val string) {
 	}
 }
 
+// SetK8sNodeStartTime sets provided value as "k8s.node.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sNodeStartTime(val string) {
+	if rb.config.K8sNodeStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.node.start_time", val)
+	}
+}
+
 // SetK8sNodeUID sets provided value as "k8s.node.uid" attribute.
 func (rb *ResourceBuilder) SetK8sNodeUID(val string) {
 	if rb.config.K8sNodeUID.Enabled {
