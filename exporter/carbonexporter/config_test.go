@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -55,6 +56,9 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+				},
+				ResourceToTelemetryConfig: resourcetotelemetry.Settings{
+					Enabled: true,
 				},
 			},
 		},
