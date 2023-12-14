@@ -7,13 +7,11 @@ all_set:
       enabled: true
     git.repository.count:
       enabled: true
-    git.repository.pull_request.approval.time:
-      enabled: true
-    git.repository.pull_request.deployment.time:
-      enabled: true
-    git.repository.pull_request.merge.time:
+    git.repository.pull_request.approved.time:
       enabled: true
     git.repository.pull_request.merged.count:
+      enabled: true
+    git.repository.pull_request.merged.time:
       enabled: true
     git.repository.pull_request.open.count:
       enabled: true
@@ -32,13 +30,11 @@ none_set:
       enabled: false
     git.repository.count:
       enabled: false
-    git.repository.pull_request.approval.time:
-      enabled: false
-    git.repository.pull_request.deployment.time:
-      enabled: false
-    git.repository.pull_request.merge.time:
+    git.repository.pull_request.approved.time:
       enabled: false
     git.repository.pull_request.merged.count:
+      enabled: false
+    git.repository.pull_request.merged.time:
       enabled: false
     git.repository.pull_request.open.count:
       enabled: false

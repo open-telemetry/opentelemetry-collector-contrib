@@ -88,10 +88,3 @@ metrics:
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
-  git.repository.pull_request.deployment.time:
-    enabled: true
-    description: The amount of time for a merged PR to be deployed
-    unit: 1
-    gauge:
-      value_type: int
-    attributes: [repository.name, branch.name]

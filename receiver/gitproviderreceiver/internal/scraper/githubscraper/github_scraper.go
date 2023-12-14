@@ -140,11 +140,6 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 					ghs.mb.RecordGitRepositoryPullRequestMergeTimeDataPoint(now, age, name, pr.HeadRefName)
 
-					if pr.MergeCommit.Deployments.TotalCount > 0 {
-						age = getAge(pr.CreatedAt, pr.MergeCommit.Deployments.Nodes[0].CreatedAt)
-
-						ghs.mb.RecordGitRepositoryPullRequestDeploymentTimeDataPoint(now, age, name, pr.HeadRefName)
-					}
 				} else {
 					open++
 
