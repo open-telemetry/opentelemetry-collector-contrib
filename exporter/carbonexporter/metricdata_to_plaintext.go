@@ -16,10 +16,9 @@ const (
 	sanitizedRune = '_'
 
 	// Tag related constants per Carbon plaintext protocol.
-	tagPrefix                 = ";"
-	tagKeyValueSeparator      = "="
-	tagValueEmptyPlaceholder  = "<empty>"
-	tagValueNotSetPlaceholder = "<null>"
+	tagPrefix                = ";"
+	tagKeyValueSeparator     = "="
+	tagValueEmptyPlaceholder = "<empty>"
 
 	// Constants used when converting from distribution metrics to Carbon format.
 	distributionBucketSuffix             = ".bucket"
