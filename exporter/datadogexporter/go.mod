@@ -3,19 +3,19 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.20
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.89
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-rc.1
-	github.com/DataDog/datadog-api-client-go/v2 v2.18.0
-	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.8.1
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.8.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.8.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.1
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.8.1
+	github.com/DataDog/agent-payload/v5 v5.0.101
+	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-rc.7
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-rc.7
+	github.com/DataDog/datadog-api-client-go/v2 v2.20.0
+	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.9.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.9.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.9.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.9.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.9.0
 	github.com/DataDog/sketches-go v1.4.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
-	github.com/aws/aws-sdk-go v1.49.0
+	github.com/aws/aws-sdk-go v1.49.1
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.91.0
@@ -65,12 +65,12 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.2.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.50.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.50.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.0-rc.7 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-sqllexer v0.0.8 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
@@ -126,7 +126,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gophercloud/gophercloud v1.7.0 // indirect
@@ -144,6 +144,7 @@ require (
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/nomad/api v0.0.0-20230721134942-515895c7690c // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hetznercloud/hcloud-go/v2 v2.4.0 // indirect

@@ -1,6 +1,12 @@
 name: sumo
 url: https://github.com/SumoLogic/sumologic-otel-collector
-maintainers: []
+maintainers:
+    - aboguszewski-sumo
+    - astencel-sumo
+    - kkujawa-sumo
+    - rnishtala-sumo
+    - sumo-drosiek
+    - swiatekm-sumo
 components:
     connector:
         - count
