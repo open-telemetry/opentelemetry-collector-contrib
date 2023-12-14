@@ -24,7 +24,7 @@ Number of branches in a repository
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The full name of a Git repository | Any Str |
+| repository.name | The name of a Git repository | Any Str |
 
 ### git.repository.count
 
@@ -46,7 +46,7 @@ The amount of time it took a pull request to go from open to approved
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The full name of a Git repository | Any Str |
+| repository.name | The name of a Git repository | Any Str |
 | branch.name | The name of a Git branch | Any Str |
 
 ### git.repository.pull_request.merged.count
@@ -61,7 +61,7 @@ The number of merged pull requests in a repository
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The full name of a Git repository | Any Str |
+| repository.name | The name of a Git repository | Any Str |
 
 ### git.repository.pull_request.merged.time
 
@@ -75,7 +75,7 @@ The amount of time it took a pull request to go from open to merged
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The full name of a Git repository | Any Str |
+| repository.name | The name of a Git repository | Any Str |
 | branch.name | The name of a Git branch | Any Str |
 
 ### git.repository.pull_request.open.count
@@ -90,7 +90,7 @@ The number of open pull requests in a repository
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The full name of a Git repository | Any Str |
+| repository.name | The name of a Git repository | Any Str |
 
 ### git.repository.pull_request.open.time
 
@@ -104,7 +104,7 @@ The amount of time a pull request has been open
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The full name of a Git repository | Any Str |
+| repository.name | The name of a Git repository | Any Str |
 | branch.name | The name of a Git branch | Any Str |
 
 ## Optional Metrics
@@ -129,7 +129,7 @@ Total number of unique contributors to a repository
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The full name of a Git repository | Any Str |
+| repository.name | The name of a Git repository | Any Str |
 
 ## Resource Attributes
 

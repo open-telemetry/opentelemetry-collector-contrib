@@ -25,7 +25,7 @@ resource_attributes:
 ## Attributes that will be uncommented when the rest of the metrics are added
 attributes:
   repository.name:
-    description: The full name of a Git repository
+    description: The name of a Git repository
     type: string
   branch.name:
     description: The name of a Git branch
