@@ -17,19 +17,19 @@ import (
 )
 
 type collectDRecord struct {
-	Dsnames        []*string              `json:"dsnames"`
-	Dstypes        []*string              `json:"dstypes"`
-	Host           *string                `json:"host"`
-	Interval       *float64               `json:"interval"`
-	Plugin         *string                `json:"plugin"`
-	PluginInstance *string                `json:"plugin_instance"`
-	Time           *float64               `json:"time"`
-	TypeS          *string                `json:"type"`
-	TypeInstance   *string                `json:"type_instance"`
-	Values         []*json.Number         `json:"values"`
-	Message        *string                `json:"message"`
-	Meta           map[string]interface{} `json:"meta"`
-	Severity       *string                `json:"severity"`
+	Dsnames        []*string      `json:"dsnames"`
+	Dstypes        []*string      `json:"dstypes"`
+	Host           *string        `json:"host"`
+	Interval       *float64       `json:"interval"`
+	Plugin         *string        `json:"plugin"`
+	PluginInstance *string        `json:"plugin_instance"`
+	Time           *float64       `json:"time"`
+	TypeS          *string        `json:"type"`
+	TypeInstance   *string        `json:"type_instance"`
+	Values         []*json.Number `json:"values"`
+	Message        *string        `json:"message"`
+	Meta           map[string]any `json:"meta"`
+	Severity       *string        `json:"severity"`
 }
 
 type createMetricInfo struct {

@@ -269,33 +269,33 @@ func TestValue_FromAttribute(t *testing.T) {
 
 func TestDocument_Serialize_Flat(t *testing.T) {
 	tests := map[string]struct {
-		attrs map[string]interface{}
+		attrs map[string]any
 		want  string
 	}{
 		"no nesting with multiple fields": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a": "test",
 				"b": 1,
 			},
 			want: `{"a":"test","b":1}`,
 		},
 		"shared prefix": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a.str": "test",
 				"a.i":   1,
 			},
 			want: `{"a.i":1,"a.str":"test"}`,
 		},
 		"multiple namespaces with dot": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a.str": "test",
 				"b.i":   1,
 			},
 			want: `{"a.str":"test","b.i":1}`,
 		},
 		"nested maps": {
-			attrs: map[string]interface{}{
-				"a": map[string]interface{}{
+			attrs: map[string]any{
+				"a": map[string]any{
 					"str": "test",
 					"i":   1,
 				},
@@ -303,8 +303,8 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 			want: `{"a.i":1,"a.str":"test"}`,
 		},
 		"multi-level nested namespace maps": {
-			attrs: map[string]interface{}{
-				"a": map[string]interface{}{
+			attrs: map[string]any{
+				"a": map[string]any{
 					"b.str": "test",
 					"i":     1,
 				},
@@ -330,33 +330,33 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 
 func TestDocument_Serialize_Dedot(t *testing.T) {
 	tests := map[string]struct {
-		attrs map[string]interface{}
+		attrs map[string]any
 		want  string
 	}{
 		"no nesting with multiple fields": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a": "test",
 				"b": 1,
 			},
 			want: `{"a":"test","b":1}`,
 		},
 		"shared prefix": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a.str": "test",
 				"a.i":   1,
 			},
 			want: `{"a":{"i":1,"str":"test"}}`,
 		},
 		"multiple namespaces": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a.str": "test",
 				"b.i":   1,
 			},
 			want: `{"a":{"str":"test"},"b":{"i":1}}`,
 		},
 		"nested maps": {
-			attrs: map[string]interface{}{
-				"a": map[string]interface{}{
+			attrs: map[string]any{
+				"a": map[string]any{
 					"str": "test",
 					"i":   1,
 				},
@@ -364,8 +364,8 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 			want: `{"a":{"i":1,"str":"test"}}`,
 		},
 		"multi-level nested namespace maps": {
-			attrs: map[string]interface{}{
-				"a": map[string]interface{}{
+			attrs: map[string]any{
+				"a": map[string]any{
 					"b.c.str": "test",
 					"i":       1,
 				},

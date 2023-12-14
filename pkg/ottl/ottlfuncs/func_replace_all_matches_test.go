@@ -30,7 +30,7 @@ func Test_replaceAllMatches(t *testing.T) {
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Map]](ottlValue)
 
 	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -48,7 +48,7 @@ func Test_replaceAllMatches(t *testing.T) {
 			target:  target,
 			pattern: "hello*",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
-				Getter: func(context.Context, pcommon.Map) (interface{}, error) {
+				Getter: func(context.Context, pcommon.Map) (any, error) {
 					return "hello {universe}", nil
 				},
 			},
@@ -64,7 +64,7 @@ func Test_replaceAllMatches(t *testing.T) {
 			target:  target,
 			pattern: "hello*",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
-				Getter: func(context.Context, pcommon.Map) (interface{}, error) {
+				Getter: func(context.Context, pcommon.Map) (any, error) {
 					return "hello {universe}", nil
 				},
 			},
@@ -80,7 +80,7 @@ func Test_replaceAllMatches(t *testing.T) {
 			target:  target,
 			pattern: "nothing*",
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
-				Getter: func(context.Context, pcommon.Map) (interface{}, error) {
+				Getter: func(context.Context, pcommon.Map) (any, error) {
 					return "nothing {matches}", nil
 				},
 			},
@@ -114,19 +114,19 @@ func Test_replaceAllMatches(t *testing.T) {
 
 func Test_replaceAllMatches_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
-	replacement := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+	replacement := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
 			return "{replacement}", nil
 		},
 	}
-	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 
-	exprFunc, err := replaceAllMatches[interface{}](target, "*", replacement, function)
+	exprFunc, err := replaceAllMatches[any](target, "*", replacement, function)
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
@@ -134,19 +134,19 @@ func Test_replaceAllMatches_bad_input(t *testing.T) {
 
 func Test_replaceAllMatches_bad_function_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
-	replacement := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+	replacement := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
 	}
-	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 
-	exprFunc, err := replaceAllMatches[interface{}](target, "regexp", replacement, function)
+	exprFunc, err := replaceAllMatches[any](target, "regexp", replacement, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -157,25 +157,25 @@ func Test_replaceAllMatches_bad_function_input(t *testing.T) {
 
 func Test_replaceAllMatches_bad_function_result(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
-	replacement := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+	replacement := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
 			return "{replacement}", nil
 		},
 	}
-	ottlValue := ottl.StandardFunctionGetter[interface{}]{
+	ottlValue := ottl.StandardFunctionGetter[any]{
 		FCtx: ottl.FunctionContext{
 			Set: componenttest.NewNopTelemetrySettings(),
 		},
-		Fact: StandardConverters[interface{}]()["IsString"],
+		Fact: StandardConverters[any]()["IsString"],
 	}
-	function := ottl.NewTestingOptional[ottl.FunctionGetter[interface{}]](ottlValue)
+	function := ottl.NewTestingOptional[ottl.FunctionGetter[any]](ottlValue)
 
-	exprFunc, err := replaceAllMatches[interface{}](target, "regexp", replacement, function)
+	exprFunc, err := replaceAllMatches[any](target, "regexp", replacement, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -184,19 +184,19 @@ func Test_replaceAllMatches_bad_function_result(t *testing.T) {
 }
 
 func Test_replaceAllMatches_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
-	replacement := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+	replacement := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
 			return "{anything}", nil
 		},
 	}
-	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 
-	exprFunc, err := replaceAllMatches[interface{}](target, "*", replacement, function)
+	exprFunc, err := replaceAllMatches[any](target, "*", replacement, function)
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)

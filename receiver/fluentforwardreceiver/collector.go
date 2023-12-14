@@ -54,10 +54,11 @@ func (c *Collector) processEvents(ctx context.Context) {
 			// efficiency on LogResource allocations.
 			c.fillBufferUntilChanEmpty(logSlice)
 
-			stats.Record(context.Background(), observ.RecordsGenerated.M(int64(out.LogRecordCount())))
+			logRecordCount := out.LogRecordCount()
+			stats.Record(context.Background(), observ.RecordsGenerated.M(int64(logRecordCount)))
 			obsCtx := c.obsrecv.StartLogsOp(ctx)
 			err := c.nextConsumer.ConsumeLogs(obsCtx, out)
-			c.obsrecv.EndLogsOp(obsCtx, "fluent", out.LogRecordCount(), err)
+			c.obsrecv.EndLogsOp(obsCtx, "fluent", logRecordCount, err)
 		}
 	}
 }

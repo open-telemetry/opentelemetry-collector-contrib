@@ -76,7 +76,7 @@ type serviceGraphProcessor struct {
 	metricMutex sync.RWMutex
 	keyToMetric map[string]metricSeries
 
-	shutdownCh chan interface{}
+	shutdownCh chan any
 }
 
 func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProcessor {
@@ -116,7 +116,7 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 		reqServerDurationSecondsBucketCounts: make(map[string][]uint64),
 		reqDurationBounds:                    bounds,
 		keyToMetric:                          make(map[string]metricSeries),
-		shutdownCh:                           make(chan interface{}),
+		shutdownCh:                           make(chan any),
 	}
 }
 

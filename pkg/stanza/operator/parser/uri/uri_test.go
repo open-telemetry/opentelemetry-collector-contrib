@@ -74,12 +74,12 @@ func TestProcess(t *testing.T) {
 				Body: "https://google.com:443/path?user=dev",
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"host": "google.com",
 					"port": "443",
 					"path": "/path",
-					"query": map[string]interface{}{
-						"user": []interface{}{
+					"query": map[string]any{
+						"user": []any{
 							"dev",
 						},
 					},
@@ -97,19 +97,19 @@ func TestProcess(t *testing.T) {
 				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"url": "https://google.com:443/path?user=dev",
 				},
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"url": "https://google.com:443/path?user=dev",
-					"url2": map[string]interface{}{
+					"url2": map[string]any{
 						"host": "google.com",
 						"port": "443",
 						"path": "/path",
-						"query": map[string]interface{}{
-							"user": []interface{}{
+						"query": map[string]any{
+							"user": []any{
 								"dev",
 							},
 						},
@@ -126,20 +126,20 @@ func TestProcess(t *testing.T) {
 				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"url": "https://google.com:443/path?user=dev",
 				},
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"url": "https://google.com:443/path?user=dev",
 				},
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"host": "google.com",
 					"port": "443",
 					"path": "/path",
-					"query": map[string]interface{}{
-						"user": []interface{}{
+					"query": map[string]any{
+						"user": []any{
 							"dev",
 						},
 					},
@@ -164,19 +164,19 @@ func TestProcess(t *testing.T) {
 func TestParserParse(t *testing.T) {
 	cases := []struct {
 		name       string
-		inputBody  interface{}
-		outputBody map[string]interface{}
+		inputBody  any
+		outputBody map[string]any
 		expectErr  bool
 	}{
 		{
 			"string",
 			"http://www.google.com/app?env=prod",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 				"host":   "www.google.com",
 				"path":   "/app",
-				"query": map[string]interface{}{
-					"env": []interface{}{
+				"query": map[string]any{
+					"env": []any{
 						"prod",
 					},
 				},
@@ -204,13 +204,13 @@ func TestParseURI(t *testing.T) {
 	cases := []struct {
 		name       string
 		inputBody  string
-		outputBody map[string]interface{}
+		outputBody map[string]any
 		expectErr  bool
 	}{
 		{
 			"scheme-http",
 			"http://",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 			},
 			false,
@@ -218,7 +218,7 @@ func TestParseURI(t *testing.T) {
 		{
 			"scheme-user",
 			"http://myuser:mypass@",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 				"user":   "myuser",
 			},
@@ -227,7 +227,7 @@ func TestParseURI(t *testing.T) {
 		{
 			"scheme-host",
 			"http://golang.com",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 				"host":   "golang.com",
 			},
@@ -236,7 +236,7 @@ func TestParseURI(t *testing.T) {
 		{
 			"scheme-host-root",
 			"http://golang.com/",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 				"host":   "golang.com",
 				"path":   "/",
@@ -246,7 +246,7 @@ func TestParseURI(t *testing.T) {
 		{
 			"scheme-host-minimal",
 			"http://golang",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 				"host":   "golang",
 			},
@@ -255,13 +255,13 @@ func TestParseURI(t *testing.T) {
 		{
 			"host-missing-scheme",
 			"golang.org",
-			map[string]interface{}{},
+			map[string]any{},
 			true,
 		},
 		{
 			"sheme-port",
 			"http://:8080",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 				"port":   "8080",
 			},
@@ -270,13 +270,13 @@ func TestParseURI(t *testing.T) {
 		{
 			"port-missing-scheme",
 			":8080",
-			map[string]interface{}{},
+			map[string]any{},
 			true,
 		},
 		{
 			"path",
 			"/docs",
-			map[string]interface{}{
+			map[string]any{
 				"path": "/docs",
 			},
 			false,
@@ -284,7 +284,7 @@ func TestParseURI(t *testing.T) {
 		{
 			"path-advanced",
 			`/x/y%2Fz`,
-			map[string]interface{}{
+			map[string]any{
 				"path": `/x/y%2Fz`,
 			},
 			false,
@@ -292,7 +292,7 @@ func TestParseURI(t *testing.T) {
 		{
 			"path-root",
 			"/",
-			map[string]interface{}{
+			map[string]any{
 				"path": "/",
 			},
 			false,
@@ -300,10 +300,10 @@ func TestParseURI(t *testing.T) {
 		{
 			"path-query",
 			"/v1/app?user=golang",
-			map[string]interface{}{
+			map[string]any{
 				"path": "/v1/app",
-				"query": map[string]interface{}{
-					"user": []interface{}{
+				"query": map[string]any{
+					"user": []any{
 						"golang",
 					},
 				},
@@ -313,13 +313,13 @@ func TestParseURI(t *testing.T) {
 		{
 			"invalid-query",
 			"?q;go",
-			map[string]interface{}{},
+			map[string]any{},
 			true,
 		},
 		{
 			"scheme-path",
 			"http:///v1/app",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 				"path":   "/v1/app",
 			},
@@ -328,14 +328,14 @@ func TestParseURI(t *testing.T) {
 		{
 			"scheme-host-query",
 			"https://app.com?token=0000&env=prod&env=stage",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "https",
 				"host":   "app.com",
-				"query": map[string]interface{}{
-					"token": []interface{}{
+				"query": map[string]any{
+					"token": []any{
 						"0000",
 					},
-					"env": []interface{}{
+					"env": []any{
 						"prod",
 						"stage",
 					},
@@ -346,7 +346,7 @@ func TestParseURI(t *testing.T) {
 		{
 			"minimal",
 			"http://golang.org",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 				"host":   "golang.org",
 			},
@@ -355,20 +355,20 @@ func TestParseURI(t *testing.T) {
 		{
 			"advanced",
 			"https://go:password@golang.org:8443/v2/app?env=stage&token=456&index=105838&env=prod",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "https",
 				"user":   "go",
 				"host":   "golang.org",
 				"port":   "8443",
 				"path":   "/v2/app",
-				"query": map[string]interface{}{
-					"token": []interface{}{
+				"query": map[string]any{
+					"token": []any{
 						"456",
 					},
-					"index": []interface{}{
+					"index": []any{
 						"105838",
 					},
-					"env": []interface{}{
+					"env": []any{
 						"stage",
 						"prod",
 					},
@@ -379,10 +379,10 @@ func TestParseURI(t *testing.T) {
 		{
 			"magnet",
 			"magnet:?xt=urn:sha1:HNCKHTQCWBTRNJIV4WNAE52SJUQCZO6C",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "magnet",
-				"query": map[string]interface{}{
-					"xt": []interface{}{
+				"query": map[string]any{
+					"xt": []any{
 						"urn:sha1:HNCKHTQCWBTRNJIV4WNAE52SJUQCZO6C",
 					},
 				},
@@ -392,7 +392,7 @@ func TestParseURI(t *testing.T) {
 		{
 			"sftp",
 			"sftp://ftp.com//home/name/employee.csv",
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "sftp",
 				"host":   "ftp.com",
 				"path":   "//home/name/employee.csv",
@@ -402,26 +402,26 @@ func TestParseURI(t *testing.T) {
 		{
 			"missing-schema",
 			"golang.org/app",
-			map[string]interface{}{},
+			map[string]any{},
 			true,
 		},
 		{
 			"query-advanced",
 			"?token=0000&env=prod&env=stage&task=update&task=new&action=update",
-			map[string]interface{}{
-				"query": map[string]interface{}{
-					"token": []interface{}{
+			map[string]any{
+				"query": map[string]any{
+					"token": []any{
 						"0000",
 					},
-					"env": []interface{}{
+					"env": []any{
 						"prod",
 						"stage",
 					},
-					"task": []interface{}{
+					"task": []any{
 						"update",
 						"new",
 					},
-					"action": []interface{}{
+					"action": []any{
 						"update",
 					},
 				},
@@ -431,9 +431,9 @@ func TestParseURI(t *testing.T) {
 		{
 			"query",
 			"?token=0000",
-			map[string]interface{}{
-				"query": map[string]interface{}{
-					"token": []interface{}{
+			map[string]any{
+				"query": map[string]any{
+					"token": []any{
 						"0000",
 					},
 				},
@@ -443,15 +443,15 @@ func TestParseURI(t *testing.T) {
 		{
 			"query-empty",
 			"?",
-			map[string]interface{}{},
+			map[string]any{},
 			false,
 		},
 		{
 			"query-empty-key",
 			"?user=",
-			map[string]interface{}{
-				"query": map[string]interface{}{
-					"user": []interface{}{
+			map[string]any{
+				"query": map[string]any{
+					"user": []any{
 						"", // no value
 					},
 				},
@@ -463,7 +463,7 @@ func TestParseURI(t *testing.T) {
 		{
 			"query-no-?-prefix",
 			"user=dev",
-			map[string]interface{}{},
+			map[string]any{},
 			true,
 		},
 	}
@@ -499,7 +499,7 @@ func TestURLToMap(t *testing.T) {
 	cases := []struct {
 		name       string
 		inputBody  *url.URL
-		outputBody map[string]interface{}
+		outputBody map[string]any
 	}{
 		{
 			"absolute-uri",
@@ -509,13 +509,13 @@ func TestURLToMap(t *testing.T) {
 				Path:     "/app",
 				RawQuery: "stage=prod&stage=dev",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "https",
 				"host":   "google.com",
 				"port":   "8443",
 				"path":   "/app",
-				"query": map[string]interface{}{
-					"stage": []interface{}{
+				"query": map[string]any{
+					"stage": []any{
 						"prod",
 						"dev",
 					},
@@ -528,7 +528,7 @@ func TestURLToMap(t *testing.T) {
 				Scheme: "http",
 				Host:   "google.com",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"scheme": "http",
 				"host":   "google.com",
 			},
@@ -539,10 +539,10 @@ func TestURLToMap(t *testing.T) {
 				Path:     "/app",
 				RawQuery: "stage=prod&stage=dev",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"path": "/app",
-				"query": map[string]interface{}{
-					"stage": []interface{}{
+				"query": map[string]any{
+					"stage": []any{
 						"prod",
 						"dev",
 					},
@@ -554,7 +554,7 @@ func TestURLToMap(t *testing.T) {
 			&url.URL{
 				Path: "/app",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"path": "/app",
 			},
 		},
@@ -563,9 +563,9 @@ func TestURLToMap(t *testing.T) {
 			&url.URL{
 				RawQuery: "stage=prod&stage=dev",
 			},
-			map[string]interface{}{
-				"query": map[string]interface{}{
-					"stage": []interface{}{
+			map[string]any{
+				"query": map[string]any{
+					"stage": []any{
 						"prod",
 						"dev",
 					},
@@ -576,7 +576,7 @@ func TestURLToMap(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := make(map[string]interface{})
+			m := make(map[string]any)
 			require.Equal(t, tc.outputBody, urlToMap(tc.inputBody, m))
 		})
 	}
@@ -586,7 +586,7 @@ func TestQueryToMap(t *testing.T) {
 	cases := []struct {
 		name       string
 		inputBody  url.Values
-		outputBody map[string]interface{}
+		outputBody map[string]any
 	}{
 		{
 			"query",
@@ -596,9 +596,9 @@ func TestQueryToMap(t *testing.T) {
 					"dev",
 				},
 			},
-			map[string]interface{}{
-				"query": map[string]interface{}{
-					"stage": []interface{}{
+			map[string]any{
+				"query": map[string]any{
+					"stage": []any{
 						"prod",
 						"dev",
 					},
@@ -608,13 +608,13 @@ func TestQueryToMap(t *testing.T) {
 		{
 			"empty",
 			url.Values{},
-			map[string]interface{}{},
+			map[string]any{},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := make(map[string]interface{})
+			m := make(map[string]any)
 			require.Equal(t, tc.outputBody, queryToMap(tc.inputBody, m))
 		})
 	}
@@ -624,7 +624,7 @@ func TestQueryParamValuesToMap(t *testing.T) {
 	cases := []struct {
 		name       string
 		inputBody  []string
-		outputBody []interface{}
+		outputBody []any
 	}{
 		{
 			"simple",
@@ -632,7 +632,7 @@ func TestQueryParamValuesToMap(t *testing.T) {
 				"prod",
 				"dev",
 			},
-			[]interface{}{
+			[]any{
 				"prod",
 				"dev",
 			},
@@ -640,7 +640,7 @@ func TestQueryParamValuesToMap(t *testing.T) {
 		{
 			"empty",
 			[]string{},
-			[]interface{}{},
+			[]any{},
 		},
 	}
 
@@ -662,7 +662,7 @@ func BenchmarkParserParse(b *testing.B) {
 }
 
 func BenchmarkURLToMap(b *testing.B) {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	v := "https://dev:password@www.golang.org:8443/v1/app/stage?token=d9e28b1d-2c7b-4853-be6a-d94f34a5d4ab&env=prod&env=stage&token=c6fa29f9-a31b-4584-b98d-aa8473b0e18d&region=us-east1b&mode=fast"
 	u, err := url.ParseRequestURI(v)
 	if err != nil {
@@ -674,7 +674,7 @@ func BenchmarkURLToMap(b *testing.B) {
 }
 
 func BenchmarkQueryToMap(b *testing.B) {
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	v := "?token=d9e28b1d-2c7b-4853-be6a-d94f34a5d4ab&env=prod&env=stage&token=c6fa29f9-a31b-4584-b98d-aa8473b0e18d&region=us-east1b&mode=fast"
 	u, err := url.ParseQuery(v)
 	if err != nil {

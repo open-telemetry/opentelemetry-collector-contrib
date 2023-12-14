@@ -32,6 +32,13 @@ var renamedSettings = []deprecatedError{
 			c.Metrics.HistConfig.SendAggregations = c.Metrics.HistConfig.SendCountSum
 		},
 	},
+	{
+		oldName: "traces::peer_service_aggregation",
+		newName: "traces::peer_tags_aggregation",
+		updateFn: func(c *Config) {
+			c.Traces.PeerTagsAggregation = c.Traces.PeerServiceAggregation
+		},
+	},
 }
 
 // Error implements the error interface.

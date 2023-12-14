@@ -53,6 +53,7 @@ func (m *handleCountManager) GetProcessHandleCount(pid int64) (uint32, error) {
 
 type wmiHandleCountQueryer struct{}
 
+//revive:disable-next-line:var-naming
 type Win32_Process struct {
 	ProcessID   int64
 	HandleCount uint32

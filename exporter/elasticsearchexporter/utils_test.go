@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -130,8 +131,8 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 		w.Header().Add("X-Elastic-Product", "Elasticsearch")
 
 		enc := json.NewEncoder(w)
-		return enc.Encode(map[string]interface{}{
-			"version": map[string]interface{}{
+		return enc.Encode(map[string]any{
+			"version": map[string]any{
 				"number": currentESVersion,
 			},
 		})
@@ -250,4 +251,29 @@ func fillResourceAttributeMap(attrs pcommon.Map, mp map[string]string) {
 	for k, v := range mp {
 		attrs.PutStr(k, v)
 	}
+}
+
+func TestGetSuffixTime(t *testing.T) {
+	defaultCfg := createDefaultConfig().(*Config)
+	defaultCfg.LogstashFormat.Enabled = true
+	testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
+	index, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.Nil(t, err)
+	assert.Equal(t, index, "logs-generic-default-2023.12.02")
+
+	defaultCfg.LogsIndex = "logstash"
+	defaultCfg.LogstashFormat.PrefixSeparator = "."
+	otelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.Nil(t, err)
+	assert.Equal(t, otelLogsIndex, "logstash.2023.12.02")
+
+	defaultCfg.LogstashFormat.DateFormat = "%Y-%m-%d"
+	newOtelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.Nil(t, err)
+	assert.Equal(t, newOtelLogsIndex, "logstash.2023-12-02")
+
+	defaultCfg.LogstashFormat.DateFormat = "%d/%m/%Y"
+	newOtelLogsIndexWithSpecDataFormat, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.Nil(t, err)
+	assert.Equal(t, newOtelLogsIndexWithSpecDataFormat, "logstash.02/12/2023")
 }

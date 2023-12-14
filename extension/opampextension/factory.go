@@ -26,6 +26,9 @@ func createDefaultConfig() component.Config {
 		Server: &OpAMPServer{
 			WS: &OpAMPWebsocket{},
 		},
+		Capabilities: Capabilities{
+			ReportsEffectiveConfig: true,
+		},
 	}
 }
 

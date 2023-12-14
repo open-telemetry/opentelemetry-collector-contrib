@@ -25,6 +25,9 @@ func newCarbonExporter(cfg *Config, set exporter.CreateSettings) (exporter.Metri
 		set,
 		cfg,
 		sender.pushMetricsData,
+		// We don't use exporterhelper.WithTimeout because the TCP connection does not accept writing with context.
+		exporterhelper.WithQueue(cfg.QueueConfig),
+		exporterhelper.WithRetry(cfg.RetryConfig),
 		exporterhelper.WithShutdown(sender.Shutdown))
 }
 
@@ -57,7 +60,7 @@ func (cs *carbonSender) Shutdown(context.Context) error {
 // https://github.com/signalfx/gateway/blob/master/protocol/carbon/conn_pool.go
 // but not its implementation).
 //
-// It keeps a unbounded "stack" of TCPConn instances always "popping" the most
+// It keeps an unbounded "stack" of TCPConn instances always "popping" the most
 // recently returned to the pool. There is no accounting to terminating old
 // unused connections as that was the case on the prior art mentioned above.
 type connPool struct {

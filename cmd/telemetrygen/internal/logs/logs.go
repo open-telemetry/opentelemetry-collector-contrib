@@ -10,33 +10,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
-
-type exporter interface {
-	export(plog.Logs) error
-}
-
-type gRPCClientExporter struct {
-	client plogotlp.GRPCClient
-}
-
-func (e *gRPCClientExporter) export(logs plog.Logs) error {
-	req := plogotlp.NewExportRequestFromLogs(logs)
-	if _, err := e.client.Export(context.Background(), req); err != nil {
-		return err
-	}
-	return nil
-}
 
 // Start starts the log telemetry generator
 func Start(cfg *Config) error {
@@ -45,24 +25,12 @@ func Start(cfg *Config) error {
 		return err
 	}
 
-	if cfg.UseHTTP {
-		return fmt.Errorf("http is not supported by 'telemetrygen logs'")
-	}
-
-	if !cfg.Insecure {
-		return fmt.Errorf("'telemetrygen logs' only supports insecure gRPC")
-	}
-
-	// only support grpc in insecure mode
-	clientConn, err := grpc.DialContext(context.TODO(), cfg.Endpoint(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	e, err := newExporter(context.Background(), cfg)
 	if err != nil {
 		return err
 	}
-	exporter := &gRPCClientExporter{
-		client: plogotlp.NewGRPCClient(clientConn),
-	}
 
-	if err = Run(cfg, exporter, logger); err != nil {
+	if err = Run(cfg, e, logger); err != nil {
 		logger.Error("failed to stop the exporter", zap.Error(err))
 		return err
 	}

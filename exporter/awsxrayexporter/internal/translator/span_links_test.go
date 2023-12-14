@@ -16,7 +16,7 @@ import (
 func TestSpanLinkSimple(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -46,7 +46,7 @@ func TestSpanLinkSimple(t *testing.T) {
 func TestSpanLinkEmpty(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -62,7 +62,7 @@ func TestSpanLinkEmpty(t *testing.T) {
 func TestOldSpanLinkError(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -88,7 +88,7 @@ func TestOldSpanLinkError(t *testing.T) {
 func TestTwoSpanLinks(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -138,7 +138,7 @@ func TestTwoSpanLinks(t *testing.T) {
 func TestSpanLinkComplexAttributes(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
@@ -180,21 +180,21 @@ func TestSpanLinkComplexAttributes(t *testing.T) {
 	assert.Equal(t, int64(112233), segment.Links[0].Attributes["myKey3"])
 	assert.Equal(t, 3.1415, segment.Links[0].Attributes["myKey4"])
 
-	assert.Equal(t, "apple", segment.Links[0].Attributes["myKey5"].([]interface{})[0])
-	assert.Equal(t, "pear", segment.Links[0].Attributes["myKey5"].([]interface{})[1])
-	assert.Equal(t, "banana", segment.Links[0].Attributes["myKey5"].([]interface{})[2])
+	assert.Equal(t, "apple", segment.Links[0].Attributes["myKey5"].([]any)[0])
+	assert.Equal(t, "pear", segment.Links[0].Attributes["myKey5"].([]any)[1])
+	assert.Equal(t, "banana", segment.Links[0].Attributes["myKey5"].([]any)[2])
 
-	assert.Equal(t, true, segment.Links[0].Attributes["myKey6"].([]interface{})[0])
-	assert.Equal(t, false, segment.Links[0].Attributes["myKey6"].([]interface{})[1])
-	assert.Equal(t, false, segment.Links[0].Attributes["myKey6"].([]interface{})[2])
-	assert.Equal(t, true, segment.Links[0].Attributes["myKey6"].([]interface{})[0])
+	assert.Equal(t, true, segment.Links[0].Attributes["myKey6"].([]any)[0])
+	assert.Equal(t, false, segment.Links[0].Attributes["myKey6"].([]any)[1])
+	assert.Equal(t, false, segment.Links[0].Attributes["myKey6"].([]any)[2])
+	assert.Equal(t, true, segment.Links[0].Attributes["myKey6"].([]any)[0])
 
-	assert.Equal(t, int64(1234), segment.Links[0].Attributes["myKey7"].([]interface{})[0])
-	assert.Equal(t, int64(5678), segment.Links[0].Attributes["myKey7"].([]interface{})[1])
-	assert.Equal(t, int64(9012), segment.Links[0].Attributes["myKey7"].([]interface{})[2])
+	assert.Equal(t, int64(1234), segment.Links[0].Attributes["myKey7"].([]any)[0])
+	assert.Equal(t, int64(5678), segment.Links[0].Attributes["myKey7"].([]any)[1])
+	assert.Equal(t, int64(9012), segment.Links[0].Attributes["myKey7"].([]any)[2])
 
-	assert.Equal(t, 2.718, segment.Links[0].Attributes["myKey8"].([]interface{})[0])
-	assert.Equal(t, 1.618, segment.Links[0].Attributes["myKey8"].([]interface{})[1])
+	assert.Equal(t, 2.718, segment.Links[0].Attributes["myKey8"].([]any)[0])
+	assert.Equal(t, 1.618, segment.Links[0].Attributes["myKey8"].([]any)[1])
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 

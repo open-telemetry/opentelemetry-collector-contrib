@@ -49,7 +49,9 @@ func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix str
 
 func getSessionConfig(config *Config) *aws.Config {
 	sessionConfig := &aws.Config{
-		Region: aws.String(config.S3Uploader.Region),
+		Region:           aws.String(config.S3Uploader.Region),
+		S3ForcePathStyle: &config.S3Uploader.S3ForcePathStyle,
+		DisableSSL:       &config.S3Uploader.DisableSSL,
 	}
 
 	endpoint := config.S3Uploader.Endpoint

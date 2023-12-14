@@ -23,7 +23,8 @@ SRC_ROOT := $(shell git rev-parse --show-toplevel)
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
-GOTEST_OPT?= -race -timeout 300s -parallel 4 --tags=$(GO_BUILD_TAGS)
+GOTEST_TIMEOUT?= 300s
+GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS) -run=Integration
@@ -68,6 +69,7 @@ CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
+GCI                 := $(TOOLS_BIN_DIR)/gci
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -80,9 +82,16 @@ ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC := $(shell find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" \
-                                -not -path '*/third_party/*' \
-                                -type f | sort)
+ALL_SRC_AND_DOC_CMD := find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
+ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
+	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
+	MISSPELL_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
+	MISSPELL_CORRECTION_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
+else
+	ALL_SRC_AND_DOC := $(shell $(ALL_SRC_AND_DOC_CMD))
+	MISSPELL_CMD := $(MISSPELL) $(ALL_SRC_AND_DOC)
+	MISSPELL_CORRECTION_CMD := $(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
+endif
 
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell $(GOCMD) list $(sort $(dir $(ALL_SRC))))
@@ -188,17 +197,17 @@ tidy:
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
-	@$(MISSPELL) $(ALL_SRC_AND_DOC)
+	@$(MISSPELL_CMD)
 
 .PHONY: misspell-correction
 misspell-correction: $(TOOLS_BIN_DIR)/misspell
-	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
+	$(MISSPELL_CORRECTION_CMD)
 
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
 
-.PHONY: updatedep
-updatedep:
-	$(PWD)/internal/buildscripts/update-dep
-	@$(MAKE) tidy
+.PHONY: gci
+gci: $(TOOLS_BIN_DIR)/gci
+	@echo "running $(GCI)"
+	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $(ALL_SRC_AND_DOC)

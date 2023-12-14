@@ -289,6 +289,9 @@ func TestScraperScrape(t *testing.T) {
 
 			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), scraperCfg)
 
+			// Set removeDatabaseAttr as true to simulate enable removeDatabaseAttrFeatureGate
+			scraper.removeDatabaseAttr = true
+
 			mc := tc.setupMockClient(t)
 			if mc != nil {
 				scraper.client = mc
@@ -332,7 +335,6 @@ func TestScraperScrape(t *testing.T) {
 
 func TestTopMetricsAggregation(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
 
 	loadedTop, err := loadTop()
 	require.NoError(t, err)

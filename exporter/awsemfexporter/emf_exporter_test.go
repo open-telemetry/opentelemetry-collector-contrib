@@ -168,7 +168,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
-		resourceAttributeMap: map[string]interface{}{
+		resourceAttributeMap: map[string]any{
 			"aws.ecs.cluster.name": "test-cluster-name",
 			"aws.ecs.task.id":      "test-task-id",
 		},
@@ -199,7 +199,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
-		resourceAttributeMap: map[string]interface{}{
+		resourceAttributeMap: map[string]any{
 			"aws.ecs.cluster.name": "test-cluster-name",
 			"aws.ecs.task.id":      "test-task-id",
 		},
@@ -230,7 +230,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
-		resourceAttributeMap: map[string]interface{}{
+		resourceAttributeMap: map[string]any{
 			"aws.ecs.cluster.name": "test-cluster-name",
 			"aws.ecs.task.id":      "test-task-id",
 		},

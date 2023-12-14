@@ -7,11 +7,9 @@ agoallikmaa
 architjugran
 asaharn
 billmeyer
-eedorenko
 emreyalvac
 keep94
 kiranmayib
-kkujawa-sumo
 leonsp-ai
 liqiangz
 oded-dd
@@ -22,3 +20,5 @@ yiyang5055
 am-kinetica
 mcube8
 sokoide
+zdaratom
+braydonk

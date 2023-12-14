@@ -76,7 +76,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 				{
 					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
 					Offset:      3,
-					FileAttributes: map[string]interface{}{
+					FileAttributes: map[string]any{
 						"hello": "world",
 					},
 				},
@@ -88,7 +88,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 				{
 					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("ab")},
 					Offset:      2,
-					FileAttributes: map[string]interface{}{
+					FileAttributes: map[string]any{
 						"hello2": "world2",
 					},
 					HeaderFinalized: true,
@@ -132,7 +132,7 @@ func TestMigrateHeaderAttributes(t *testing.T) {
 		{
 			Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
 			Offset:      3,
-			FileAttributes: map[string]interface{}{
+			FileAttributes: map[string]any{
 				"hello": "world",
 			},
 		},

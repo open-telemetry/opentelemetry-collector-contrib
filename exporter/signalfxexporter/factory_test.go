@@ -615,7 +615,7 @@ func getMetrics(metrics []map[string]string) pmetric.Metrics {
 	return md
 }
 
-func testReadJSON(f string, v interface{}) error {
+func testReadJSON(f string, v any) error {
 	bytes, err := os.ReadFile(f)
 	if err != nil {
 		return err

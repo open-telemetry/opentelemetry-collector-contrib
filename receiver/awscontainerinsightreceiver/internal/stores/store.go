@@ -20,8 +20,8 @@ var _ cadvisor.Decorator = &K8sDecorator{}
 // CIMetric represents the raw metric interface for container insights
 type CIMetric interface {
 	HasField(key string) bool
-	AddField(key string, val interface{})
-	GetField(key string) interface{}
+	AddField(key string, val any)
+	GetField(key string) any
 	HasTag(key string) bool
 	AddTag(key, val string)
 	GetTag(key string) string
@@ -29,7 +29,7 @@ type CIMetric interface {
 }
 
 type K8sStore interface {
-	Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]interface{}) bool
+	Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]any) bool
 	RefreshTick(ctx context.Context)
 }
 
@@ -89,7 +89,7 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 }
 
 func (k *K8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.CAdvisorMetric {
-	kubernetesBlob := map[string]interface{}{}
+	kubernetesBlob := map[string]any{}
 	for _, store := range k.stores {
 		ok := store.Decorate(k.ctx, metric, kubernetesBlob)
 		if !ok {

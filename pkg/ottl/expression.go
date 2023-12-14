@@ -17,22 +17,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
-type ExprFunc[K any] func(ctx context.Context, tCtx K) (interface{}, error)
+type ExprFunc[K any] func(ctx context.Context, tCtx K) (any, error)
 
 type Expr[K any] struct {
 	exprFunc ExprFunc[K]
 }
 
-func (e Expr[K]) Eval(ctx context.Context, tCtx K) (interface{}, error) {
+func (e Expr[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 	return e.exprFunc(ctx, tCtx)
 }
 
 type Getter[K any] interface {
-	Get(ctx context.Context, tCtx K) (interface{}, error)
+	Get(ctx context.Context, tCtx K) (any, error)
 }
 
 type Setter[K any] interface {
-	Set(ctx context.Context, tCtx K, val interface{}) error
+	Set(ctx context.Context, tCtx K, val any) error
 }
 
 type GetSetter[K any] interface {
@@ -41,23 +41,23 @@ type GetSetter[K any] interface {
 }
 
 type StandardGetSetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
-	Setter func(ctx context.Context, tCtx K, val interface{}) error
+	Getter func(ctx context.Context, tCtx K) (any, error)
+	Setter func(ctx context.Context, tCtx K, val any) error
 }
 
-func (path StandardGetSetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+func (path StandardGetSetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	return path.Getter(ctx, tCtx)
 }
 
-func (path StandardGetSetter[K]) Set(ctx context.Context, tCtx K, val interface{}) error {
+func (path StandardGetSetter[K]) Set(ctx context.Context, tCtx K, val any) error {
 	return path.Setter(ctx, tCtx, val)
 }
 
 type literal[K any] struct {
-	value interface{}
+	value any
 }
 
-func (l literal[K]) Get(context.Context, K) (interface{}, error) {
+func (l literal[K]) Get(context.Context, K) (any, error) {
 	return l.value, nil
 }
 
@@ -66,7 +66,7 @@ type exprGetter[K any] struct {
 	keys []Key
 }
 
-func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	result, err := g.expr.Eval(ctx, tCtx)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 					return nil, fmt.Errorf("key not found in map")
 				}
 				result = ottlcommon.GetValue(val)
-			case map[string]interface{}:
+			case map[string]any:
 				val, ok := r[*k.String]
 				if !ok {
 					return nil, fmt.Errorf("key not found in map")
@@ -102,7 +102,7 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
 				}
 				result = ottlcommon.GetValue(r.At(int(*k.Int)))
-			case []interface{}:
+			case []any:
 				if int(*k.Int) >= len(r) || int(*k.Int) < 0 {
 					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
 				}
@@ -121,7 +121,7 @@ type listGetter[K any] struct {
 	slice []Getter[K]
 }
 
-func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	evaluated := make([]any, len(l.slice))
 
 	for i, v := range l.slice {
@@ -150,7 +150,7 @@ type StringGetter[K any] interface {
 
 // StandardStringGetter is a basic implementation of StringGetter
 type StandardStringGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 // Get retrieves a string value.
@@ -185,7 +185,7 @@ type IntGetter[K any] interface {
 
 // StandardIntGetter is a basic implementation of IntGetter
 type StandardIntGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 // Get retrieves an int64 value.
@@ -220,7 +220,7 @@ type FloatGetter[K any] interface {
 
 // StandardFloatGetter is a basic implementation of FloatGetter
 type StandardFloatGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 // Get retrieves a float64 value.
@@ -244,6 +244,41 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 		return 0, TypeError(fmt.Sprintf("expected float64 but got %v", v.Type()))
 	default:
 		return 0, TypeError(fmt.Sprintf("expected float64 but got %T", val))
+	}
+}
+
+// BoolGetter is a Getter that must return a bool.
+type BoolGetter[K any] interface {
+	// Get retrieves a bool value.
+	Get(ctx context.Context, tCtx K) (bool, error)
+}
+
+// StandardBoolGetter is a basic implementation of BoolGetter
+type StandardBoolGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+// Get retrieves a bool value.
+// If the value is not a bool a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardBoolGetter[K]) Get(ctx context.Context, tCtx K) (bool, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return false, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return false, TypeError("expected bool but got nil")
+	}
+	switch v := val.(type) {
+	case bool:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeBool {
+			return v.Bool(), nil
+		}
+		return false, TypeError(fmt.Sprintf("expected bool but got %v", v.Type()))
+	default:
+		return false, TypeError(fmt.Sprintf("expected bool but got %T", val))
 	}
 }
 
@@ -297,7 +332,7 @@ type PMapGetter[K any] interface {
 
 // StandardPMapGetter is a basic implementation of PMapGetter
 type StandardPMapGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 // Get retrieves a pcommon.Map value.
@@ -341,7 +376,7 @@ type StringLikeGetter[K any] interface {
 }
 
 type StandardStringLikeGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, error) {
@@ -389,7 +424,7 @@ type FloatLikeGetter[K any] interface {
 }
 
 type StandardFloatLikeGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, error) {
@@ -453,7 +488,7 @@ type IntLikeGetter[K any] interface {
 }
 
 type StandardIntLikeGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, error) {
@@ -503,6 +538,64 @@ func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, erro
 		}
 	default:
 		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
+	}
+	return &result, nil
+}
+
+// BoolLikeGetter is a Getter that returns a bool by converting the underlying value to a bool if necessary.
+type BoolLikeGetter[K any] interface {
+	// Get retrieves a bool value.
+	// Unlike `BoolGetter`, the expectation is that the underlying value is converted to a bool if possible.
+	// If the value cannot be converted to a bool, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
+	Get(ctx context.Context, tCtx K) (*bool, error)
+}
+
+type StandardBoolLikeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+func (g StandardBoolLikeGetter[K]) Get(ctx context.Context, tCtx K) (*bool, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return nil, nil
+	}
+	var result bool
+	switch v := val.(type) {
+	case bool:
+		result = v
+	case int:
+		result = v != 0
+	case int64:
+		result = v != 0
+	case string:
+		result, err = strconv.ParseBool(v)
+		if err != nil {
+			return nil, err
+		}
+	case float64:
+		result = v != 0.0
+	case pcommon.Value:
+		switch v.Type() {
+		case pcommon.ValueTypeBool:
+			result = v.Bool()
+		case pcommon.ValueTypeInt:
+			result = v.Int() != 0
+		case pcommon.ValueTypeStr:
+			result, err = strconv.ParseBool(v.Str())
+			if err != nil {
+				return nil, err
+			}
+		case pcommon.ValueTypeDouble:
+			result = v.Double() != 0.0
+		default:
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
+		}
+	default:
+		return nil, TypeError(fmt.Sprintf("unsupported type: %T", val))
 	}
 	return &result, nil
 }
@@ -583,7 +676,7 @@ type TimeGetter[K any] interface {
 
 // StandardTimeGetter is a basic implementation of TimeGetter
 type StandardTimeGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 // Get retrieves a time.Time value.
@@ -613,7 +706,7 @@ type DurationGetter[K any] interface {
 
 // StandardDurationGetter is a basic implementation of DurationGetter
 type StandardDurationGetter[K any] struct {
-	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
 // Get retrieves an time.Duration value.

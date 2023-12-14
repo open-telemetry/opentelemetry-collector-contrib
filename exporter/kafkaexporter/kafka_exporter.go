@@ -134,6 +134,10 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
 	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
 
+	if config.ResolveCanonicalBootstrapServersOnly {
+		c.Net.ResolveCanonicalBootstrapServers = true
+	}
+
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -183,6 +187,11 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
+	}
+	if config.PartitionTracesByID {
+		if keyableMarshaler, ok := marshaler.(KeyableTracesMarshaler); ok {
+			keyableMarshaler.Key()
+		}
 	}
 	producer, err := newSaramaProducer(config)
 	if err != nil {

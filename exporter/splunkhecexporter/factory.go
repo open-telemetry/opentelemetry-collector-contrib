@@ -20,10 +20,12 @@ import (
 )
 
 const (
-	defaultMaxIdleCons     = 100
-	defaultHTTPTimeout     = 10 * time.Second
-	defaultIdleConnTimeout = 10 * time.Second
-	defaultSplunkAppName   = "OpenTelemetry Collector Contrib"
+	defaultMaxIdleCons          = 100
+	defaultHTTPTimeout          = 10 * time.Second
+	defaultHTTP2ReadIdleTimeout = time.Second * 10
+	defaultHTTP2PingTimeout     = time.Second * 10
+	defaultIdleConnTimeout      = 10 * time.Second
+	defaultSplunkAppName        = "OpenTelemetry Collector Contrib"
 )
 
 // TODO: Find a place for this to be shared.
@@ -55,10 +57,12 @@ func createDefaultConfig() component.Config {
 		LogDataEnabled:       true,
 		ProfilingDataEnabled: true,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:             defaultHTTPTimeout,
-			IdleConnTimeout:     &defaultIdleConnTimeout,
-			MaxIdleConnsPerHost: &defaultMaxConns,
-			MaxIdleConns:        &defaultMaxConns,
+			Timeout:              defaultHTTPTimeout,
+			IdleConnTimeout:      &defaultIdleConnTimeout,
+			MaxIdleConnsPerHost:  &defaultMaxConns,
+			MaxIdleConns:         &defaultMaxConns,
+			HTTP2ReadIdleTimeout: defaultHTTP2ReadIdleTimeout,
+			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
 		},
 		SplunkAppName:           defaultSplunkAppName,
 		RetrySettings:           exporterhelper.NewDefaultRetrySettings(),

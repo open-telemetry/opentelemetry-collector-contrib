@@ -23,7 +23,7 @@ type Detector interface {
 	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
 }
 
-type DetectorConfig interface{}
+type DetectorConfig any
 
 type ResourceDetectorConfig interface {
 	GetConfigFromType(DetectorType) DetectorConfig

@@ -62,7 +62,7 @@ type InputOperator struct {
 }
 
 // NewEntry will create a new entry using the `attributes`, and `resource` configuration.
-func (i *InputOperator) NewEntry(value interface{}) (*entry.Entry, error) {
+func (i *InputOperator) NewEntry(value any) (*entry.Entry, error) {
 	entry := entry.New()
 	entry.Body = value
 

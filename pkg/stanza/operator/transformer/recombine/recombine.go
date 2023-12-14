@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/vm"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -115,7 +115,7 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		overwriteWithOldest: overwriteWithOldest,
 		batchMap:            make(map[string]*sourceBatch),
 		batchPool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return &sourceBatch{
 					entries:    []*entry.Entry{},
 					recombined: &bytes.Buffer{},

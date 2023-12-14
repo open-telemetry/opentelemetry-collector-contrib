@@ -26,7 +26,7 @@ func TestFSStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}
 
-	expectedFields := map[string]interface{}{
+	expectedFields := map[string]any{
 		"container_filesystem_usage":       uint64(25661440),
 		"container_filesystem_capacity":    uint64(21462233088),
 		"container_filesystem_available":   uint64(0),
@@ -59,7 +59,7 @@ func TestFSStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result2[0], nil, containerType)
 	}
 
-	expectedFields = map[string]interface{}{
+	expectedFields = map[string]any{
 		"node_filesystem_available":   uint64(67108864),
 		"node_filesystem_capacity":    uint64(67108864),
 		"node_filesystem_inodes":      uint64(2052980),
@@ -74,7 +74,7 @@ func TestFSStats(t *testing.T) {
 	}
 	AssertContainsTaggedField(t, cMetrics[0], expectedFields, expectedTags)
 
-	expectedFields = map[string]interface{}{
+	expectedFields = map[string]any{
 		"node_filesystem_available":   uint64(6925574144),
 		"node_filesystem_capacity":    uint64(21462233088),
 		"node_filesystem_inodes":      uint64(10484672),
@@ -89,7 +89,7 @@ func TestFSStats(t *testing.T) {
 	}
 	AssertContainsTaggedField(t, cMetrics[1], expectedFields, expectedTags)
 
-	expectedFields = map[string]interface{}{
+	expectedFields = map[string]any{
 		"node_filesystem_available":   uint64(10682417152),
 		"node_filesystem_capacity":    uint64(10726932480),
 		"node_filesystem_inodes":      uint64(5242880),

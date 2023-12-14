@@ -4,13 +4,14 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |
-| Distributions | [contrib], [aws], [observiq], [redhat], [splunk], [sumo] |
+| Distributions | [contrib], [aws], [liatrio], [observiq], [redhat], [splunk], [sumo] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fresourcedetection%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fresourcedetection) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fresourcedetection%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fresourcedetection) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [aws]: https://github.com/aws-observability/aws-otel-collector
+[liatrio]: https://github.com/liatrio/liatrio-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [redhat]: https://github.com/os-observability/redhat-opentelemetry-collector
 [splunk]: https://github.com/signalfx/splunk-otel-collector
@@ -48,6 +49,8 @@ Queries the host machine to retrieve the following resource attributes:
     * host.arch
     * host.name
     * host.id
+    * host.ip
+    * host.mac
     * host.cpu.vendor.id
     * host.cpu.family
     * host.cpu.model.id
@@ -277,6 +280,7 @@ Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/lates
     * aws.ecs.cluster.arn
     * aws.ecs.task.arn
     * aws.ecs.task.family
+    * aws.ecs.task.id
     * aws.ecs.task.revision
     * aws.ecs.launchtype (V4 only)
     * aws.log.group.names (V4 only)
@@ -318,6 +322,10 @@ processors:
 
     * cloud.provider ("aws")
     * cloud.platform ("aws_eks")
+    * k8s.cluster.name
+
+Note: The kubernetes cluster name is only available when running on EC2 instances, and requires permission to run the `EC2:DescribeInstances` [action](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html).
+If you see an error with the message `context deadline exceeded`, please increase the timeout setting in your config.
 
 Example:
 
@@ -325,7 +333,7 @@ Example:
 processors:
   resourcedetection/eks:
     detectors: [env, eks]
-    timeout: 2s
+    timeout: 15s
     override: false
 ```
 

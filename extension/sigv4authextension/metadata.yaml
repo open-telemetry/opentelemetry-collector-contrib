@@ -9,5 +9,6 @@ status:
   - aws
   - grafana
   - sumo
+  - liatrio
   codeowners:
     active: [Aneurysm9, erichsueh3]
