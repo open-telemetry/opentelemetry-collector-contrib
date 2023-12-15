@@ -192,7 +192,7 @@ type editor struct {
 	Function  string     `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
 	Arguments []argument `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 	// If keys are matched return an error
-	Keys []Key `parser:"( @@ )*"`
+	Keys []key `parser:"( @@ )*"`
 }
 
 func (i *editor) checkForCustomError() error {
@@ -214,7 +214,7 @@ func (i *editor) checkForCustomError() error {
 type converter struct {
 	Function  string     `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
 	Arguments []argument `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
-	Keys      []Key      `parser:"( @@ )*"`
+	Keys      []key      `parser:"( @@ )*"`
 }
 
 type argument struct {
@@ -250,18 +250,18 @@ func (v *value) checkForCustomError() error {
 	return nil
 }
 
-// Path represents a telemetry path mathExpression.
-type Path struct {
-	Fields []Field `parser:"@@ ( '.' @@ )*"`
+// path represents a telemetry path mathExpression.
+type path struct {
+	Fields []field `parser:"@@ ( '.' @@ )*"`
 }
 
-// Field is an item within a Path.
-type Field struct {
+// field is an item within a path.
+type field struct {
 	Name string `parser:"@Lowercase"`
-	Keys []Key  `parser:"( @@ )*"`
+	Keys []key  `parser:"( @@ )*"`
 }
 
-type Key struct {
+type key struct {
 	String *string `parser:"'[' (@String "`
 	Int    *int64  `parser:"| @Int) ']'"`
 }
@@ -305,7 +305,7 @@ type mathExprLiteral struct {
 	Converter *converter `parser:"| @@"`
 	Float     *float64   `parser:"| @Float"`
 	Int       *int64     `parser:"| @Int"`
-	Path      *Path      `parser:"| @@ )"`
+	Path      *path      `parser:"| @@ )"`
 }
 
 func (m *mathExprLiteral) checkForCustomError() error {

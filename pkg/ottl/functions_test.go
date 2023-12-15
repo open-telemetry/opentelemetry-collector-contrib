@@ -83,7 +83,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	p, _ := NewParser(
 		functions,
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -150,8 +150,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -176,8 +176,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -283,8 +283,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 						Name: "get_setter_arg",
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -323,8 +323,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -407,7 +407,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 func Test_NewFunctionCall(t *testing.T) {
 	p, _ := NewParser(
 		defaultFunctionsForTests(),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -542,8 +542,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -620,8 +620,8 @@ func Test_NewFunctionCall(t *testing.T) {
 													{
 														Value: value{
 															Literal: &mathExprLiteral{
-																Path: &Path{
-																	Fields: []Field{
+																Path: &path{
+																	Fields: []field{
 																		{
 																			Name: "name",
 																		},
@@ -766,8 +766,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -777,8 +777,8 @@ func Test_NewFunctionCall(t *testing.T) {
 									},
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -877,8 +877,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -899,8 +899,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -921,8 +921,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -979,8 +979,8 @@ func Test_NewFunctionCall(t *testing.T) {
 									},
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -996,8 +996,8 @@ func Test_NewFunctionCall(t *testing.T) {
 													{
 														Value: value{
 															Literal: &mathExprLiteral{
-																Path: &Path{
-																	Fields: []Field{
+																Path: &path{
+																	Fields: []field{
 																		{
 																			Name: "name",
 																		},
@@ -1168,8 +1168,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1264,8 +1264,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1305,8 +1305,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1344,8 +1344,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1414,7 +1414,7 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 	)
 	p, _ := NewParser(
 		CreateFactoryMap[any](fact),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -1425,8 +1425,8 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 			{
 				Value: value{
 					Literal: &mathExprLiteral{
-						Path: &Path{
-							Fields: []Field{
+						Path: &path{
+							Fields: []field{
 								{
 									Name: "name",
 								},
@@ -1461,8 +1461,8 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 			{
 				Value: value{
 					Literal: &mathExprLiteral{
-						Path: &Path{
-							Fields: []Field{
+						Path: &path{
+							Fields: []field{
 								{
 									Name: "name",
 								},
@@ -2220,7 +2220,7 @@ func Test_basePath_NextWithIsComplete(t *testing.T) {
 }
 
 func Test_newPath(t *testing.T) {
-	fields := []Field{
+	fields := []field{
 		{
 			Name: "body",
 		},
@@ -2229,10 +2229,12 @@ func Test_newPath(t *testing.T) {
 		},
 	}
 	p := newPath[any](fields)
-	assert.Equal(t, "body", p.name)
-	p = p.nextPath
-	assert.Equal(t, "string", p.name)
-	assert.Nil(t, p.nextPath)
+	assert.Equal(t, "body", p.Name())
+	assert.Nil(t, p.Key())
+	p = p.Next()
+	assert.Equal(t, "string", p.Name())
+	assert.Nil(t, p.Key())
+	assert.Nil(t, p.Next())
 }
 
 func Test_baseKey_String(t *testing.T) {
@@ -2365,7 +2367,7 @@ func Test_baseKey_NextWithIsComplete(t *testing.T) {
 }
 
 func Test_newKey(t *testing.T) {
-	keys := []Key{
+	keys := []key{
 		{
 			String: ottltest.Strp("foo"),
 		},
@@ -2374,8 +2376,14 @@ func Test_newKey(t *testing.T) {
 		},
 	}
 	k := newKey[any](keys)
-	assert.Equal(t, "foo", *k.s)
-	k = k.nextKey
-	assert.Equal(t, "bar", *k.s)
-	assert.Nil(t, k.nextKey)
+	s, err := k.String(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, s)
+	assert.Equal(t, "foo", *s)
+	k = k.Next()
+	s, err = k.String(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, s)
+	assert.Equal(t, "bar", *s)
+	assert.Nil(t, k.Next())
 }
