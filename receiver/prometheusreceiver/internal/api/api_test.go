@@ -62,10 +62,8 @@ type testReport struct {
 
 // borrowed from https://github.com/prometheus/prometheus/blob/344c8ff97ce261dbaaf2720f1e5164a8fee19184/web/api/v1/api_test.go#L106
 func newTestTargetRetriever(targetsInfo []*testTargetParams) *testTargetRetriever {
-	var activeTargets map[string][]*scrape.Target
-	var droppedTargets map[string][]*scrape.Target
-	activeTargets = make(map[string][]*scrape.Target)
-	droppedTargets = make(map[string][]*scrape.Target)
+	activeTargets := make(map[string][]*scrape.Target)
+	droppedTargets := make(map[string][]*scrape.Target)
 
 	for _, t := range targetsInfo {
 		nt := scrape.NewTarget(t.Labels, t.DiscoveredLabels, t.Params)
