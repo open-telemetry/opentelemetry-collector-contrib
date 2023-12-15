@@ -241,7 +241,27 @@ func Test_replaceAllPatterns(t *testing.T) {
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutStr("test2", "hello")
-				expectedMap.PutStr("test3", "goodbye hash(world1) and world2")
+				expectedMap.PutStr("test3", "goodbye hash(world1)")
+				expectedMap.PutInt("test4", 1234)
+				expectedMap.PutDouble("test5", 1234)
+				expectedMap.PutBool("test6", true)
+			},
+		},
+		{
+			name:    "regex match (with multiple capture groups and hash function)",
+			target:  target,
+			mode:    modeValue,
+			pattern: `(world1) and (world2)`,
+			replacement: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (any, error) {
+					return "$2", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye hash(world2)")
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
@@ -251,7 +271,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			name:    "regex match (with multiple matches from one capture group and hash function)",
 			target:  target,
 			mode:    modeValue,
-			pattern: `(world[\d^)])`,
+			pattern: `(world\d)`,
 			replacement: ottl.StandardStringGetter[pcommon.Map]{
 				Getter: func(context.Context, pcommon.Map) (any, error) {
 					return "$1", nil

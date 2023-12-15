@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -44,6 +43,43 @@ func IsGroupNumString(s string) bool {
 	return match
 }
 
+func ApplyReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string) (string, error) {
+	var updatedString string
+	updatedString = originalValStr
+	submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
+	for _, submatch := range submatches {
+		fullMatch := originalValStr[submatch[0]:submatch[1]]
+		result := compiledPattern.ExpandString([]byte{}, replacementVal, originalValStr, submatch)
+		fnVal := fn.Get()
+		replaceValGetter := ottl.StandardStringGetter[K]{
+			Getter: func(context.Context, K) (any, error) {
+				return string(result), nil
+			},
+		}
+		replacementExpr, errNew := fnVal.Get(&replacePatternFuncArgs[K]{Input: replaceValGetter})
+		if errNew != nil {
+			return "", errNew
+		}
+		replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+		if errNew != nil {
+			return "", errNew
+		}
+		replacementValStr, ok := replacementValRaw.(string)
+		if !ok {
+			return "", fmt.Errorf("the replacement value must be a string")
+		}
+		// if there are submatches then use the resolved capture group value
+		if len(submatch) > 2 {
+			updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementValStr)
+		}
+		// if there are no submatches and the replacement string isn't a capture group then use the replacement value as is
+		if !IsGroupNumString(replacementVal) {
+			updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementVal)
+		}
+	}
+	return updatedString, nil
+}
+
 func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
@@ -66,62 +102,13 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 			if compiledPattern.MatchString(originalValStr) {
 				if !fn.IsEmpty() {
 					var updatedString string
-					var groupNum int
-					foundMatch := false
-					updatedString = originalValStr
-					// check if the string is indeed a group number string
-					if !IsGroupNumString(replacementVal) {
-						updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
-						err = target.Set(ctx, tCtx, updatedStr)
-						if err != nil {
-							return nil, err
-						}
-						return nil, nil
-					}
-					// parse the group number string to get actual group number
-					captureGroup := strings.TrimPrefix(replacementVal, "$")
-					groupNum, err = strconv.Atoi(captureGroup)
+					updatedString, err = ApplyReplaceFunction[K](ctx, tCtx, compiledPattern, fn, originalValStr, replacementVal)
 					if err != nil {
 						return nil, err
 					}
-					submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
-					for _, submatch := range submatches {
-						groupStart := 2 * groupNum
-						groupEnd := 2*groupStart - 1
-						if len(submatch) > groupEnd {
-							fmt.Println("submatch: ", submatch)
-							fnVal := fn.Get()
-							old := originalValStr[submatch[groupStart]:submatch[groupEnd]]
-							replaceValGetter := ottl.StandardStringGetter[K]{
-								Getter: func(context.Context, K) (any, error) {
-									return old, nil
-								},
-							}
-							replacementExpr, errNew := fnVal.Get(&replacePatternFuncArgs[K]{Input: replaceValGetter})
-							if errNew != nil {
-								return nil, errNew
-							}
-							replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
-							if errNew != nil {
-								return nil, errNew
-							}
-							replacementValStr, ok := replacementValRaw.(string)
-							if !ok {
-								return nil, fmt.Errorf("replacement value is not a string")
-							}
-							updatedString = compiledPattern.ReplaceAllString(updatedString, replacementValStr)
-							foundMatch = true
-							err = target.Set(ctx, tCtx, updatedString)
-							if err != nil {
-								return nil, err
-							}
-						}
-						if !foundMatch {
-							err = target.Set(ctx, tCtx, updatedString)
-							if err != nil {
-								return nil, err
-							}
-						}
+					err = target.Set(ctx, tCtx, updatedString)
+					if err != nil {
+						return nil, err
 					}
 				} else {
 					updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
@@ -129,6 +116,12 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 					if err != nil {
 						return nil, err
 					}
+				}
+			} else {
+				updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
+				err = target.Set(ctx, tCtx, updatedStr)
+				if err != nil {
+					return nil, err
 				}
 			}
 		}
