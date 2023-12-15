@@ -235,7 +235,7 @@ type value struct {
 	Bytes          *byteSlice       `parser:"| @Bytes"`
 	String         *string          `parser:"| @String"`
 	Bool           *boolean         `parser:"| @Boolean"`
-	Enum           *EnumSymbol      `parser:"| @Uppercase (?! Lowercase)"`
+	Enum           *enumSymbol      `parser:"| @Uppercase (?! Lowercase)"`
 	FunctionName   *string          `parser:"| @(Uppercase(Uppercase | Lowercase)*)"`
 	List           *list            `parser:"| @@)"`
 }
@@ -423,7 +423,7 @@ func (m *mathOp) String() string {
 	}
 }
 
-type EnumSymbol string
+type enumSymbol string
 
 // buildLexer constructs a SimpleLexer definition.
 // Note that the ordering of these rules matters.

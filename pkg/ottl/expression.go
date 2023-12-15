@@ -616,7 +616,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	}
 
 	if val.Enum != nil {
-		enum, err := p.enumParser(val.Enum)
+		enum, err := p.enumParser((*EnumSymbol)(val.Enum))
 		if err != nil {
 			return nil, err
 		}

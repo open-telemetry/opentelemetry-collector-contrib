@@ -219,7 +219,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
+								Enum: (*enumSymbol)(ottltest.Strp("SHA256")),
 							},
 						},
 					},
@@ -289,7 +289,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								Enum: (*EnumSymbol)(ottltest.Strp("S")),
+								Enum: (*enumSymbol)(ottltest.Strp("S")),
 							},
 						},
 					},
@@ -700,7 +700,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+								Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM")),
 							},
 						},
 					},

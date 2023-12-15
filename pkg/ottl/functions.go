@@ -19,6 +19,8 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
+type EnumSymbol string
+
 func newPath[K any](fields []field) Path[K] {
 	if len(fields) == 0 {
 		return nil
@@ -430,7 +432,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		}
 		return StandardTimeGetter[K]{Getter: arg.Get}, nil
 	case name == "Enum":
-		arg, err := p.enumParser(argVal.Enum)
+		arg, err := p.enumParser((*EnumSymbol)(argVal.Enum))
 		if err != nil {
 			return nil, fmt.Errorf("must be an Enum")
 		}
