@@ -37,7 +37,7 @@ func TestScrape(t *testing.T) {
 		cfg,
 		consumertest.NewNop(),
 	)
-	scraper.newWatcher = newMockWatcherFactory(nil, 1)
+	scraper.newWatcher = newMockWatcherFactory(nil)
 	scraper.newWatcherFromPath = newMockWatcherFactorFromPath(nil, 1)
 	scraper.expandWildcardPath = func(s string) ([]string, error) {
 		return []string{strings.Replace(s, "*", "Instance", 1)}, nil
@@ -72,7 +72,7 @@ func TestScrapeFailure(t *testing.T) {
 	)
 
 	expectedError := "failure to collect metric"
-	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError), 1)("", "", "")
+	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError))("", "", "")
 	require.NoError(t, err)
 	scraper.totalWatcherRecorders = []watcherRecorder{
 		{
@@ -83,7 +83,8 @@ func TestScrapeFailure(t *testing.T) {
 		},
 	}
 
-	scraper.scrape(context.Background())
+	_, err = scraper.scrape(context.Background())
+	require.NoError(t, err)
 
 	require.Equal(t, 1, obs.Len())
 	log := obs.All()[0]
@@ -107,7 +108,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 	)
 
 	expectedError := "failure to collect metric"
-	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError), 1)("", "", "")
+	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError))("", "", "")
 	require.NoError(t, err)
 	scraper.queueMaxAgeWatchers = []instanceWatcher{
 		{
@@ -116,7 +117,8 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 		},
 	}
 
-	scraper.scrape(context.Background())
+	_, err = scraper.scrape(context.Background())
+	require.NoError(t, err)
 
 	require.Equal(t, 1, obs.Len())
 	log := obs.All()[0]
@@ -136,7 +138,7 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 	)
 
 	expectedError := "Failed to scrape counter \"counter\": A counter with a negative denominator value was detected.\r\n"
-	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError), 1)("", "", "")
+	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError))("", "", "")
 	require.NoError(t, err)
 	scraper.queueMaxAgeWatchers = []instanceWatcher{
 		{
@@ -162,10 +164,10 @@ type mockPerfCounter struct {
 	value    float64
 }
 
-func newMockWatcherFactory(watchErr error, value float64) func(string, string,
+func newMockWatcherFactory(watchErr error) func(string, string,
 	string) (winperfcounters.PerfCounterWatcher, error) {
 	return func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
-		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
+		return &mockPerfCounter{watchErr: watchErr, value: 1}, nil
 	}
 }
 
