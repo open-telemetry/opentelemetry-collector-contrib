@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -134,16 +133,10 @@ func (t *tcpServer) handleConnection(
 	conn net.Conn,
 ) {
 	defer conn.Close()
-	var span *trace.Span
 	reader := bufio.NewReader(conn)
 	reporterActive := false
 	var ctx context.Context
 	for {
-		if span != nil {
-			span.End()
-			span = nil
-		}
-
 		if err := conn.SetDeadline(time.Now().Add(t.idleTimeout)); err != nil {
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - conn.SetDeadLine error: %v",
@@ -188,7 +181,6 @@ func (t *tcpServer) handleConnection(
 				// Since this is a TCP connection it seems reasonable to close the
 				// connection as a way to report "error" back to client and minimize
 				// the effect of a client constantly submitting bad data.
-				span.End()
 				return
 			}
 		}
@@ -201,7 +193,6 @@ func (t *tcpServer) handleConnection(
 				if reporterActive {
 					t.reporter.OnMetricsProcessed(ctx, 0, err)
 				}
-				span.End()
 				return
 			}
 		}
@@ -215,7 +206,6 @@ func (t *tcpServer) handleConnection(
 			if reporterActive {
 				t.reporter.OnMetricsProcessed(ctx, 0, err)
 			}
-			span.End()
 			return
 		}
 	}
