@@ -7,4 +7,5 @@ status:
     beta: [traces, metrics]
   distributions: [contrib, aws, observiq]
   codeowners:
-    active: [mx-psi, gbbr, dineshg13, liustanley, songy23, mackjmr]
+    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr]
+    emeritus: [gbbr]

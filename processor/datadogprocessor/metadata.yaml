@@ -6,4 +6,5 @@ status:
     deprecated: [traces]
   distributions: [contrib]
   codeowners:
-    active: [mx-psi, gbbr, dineshg13]
+    active: [mx-psi, dineshg13]
+    emeritus: [gbbr]
