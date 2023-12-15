@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -27,6 +28,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -640,4 +644,77 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	// Shutdown the processor
 	assert.NoError(t, p.Shutdown(context.Background()))
+}
+
+func setupTelemetry(reader *sdkmetric.ManualReader) component.TelemetrySettings {
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.MetricsLevel = configtelemetry.LevelNormal
+
+	settings.MeterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	return settings
+}
+
+func TestValidateOwnTelemetry(t *testing.T) {
+	cfg := &Config{
+		MetricsExporter: "mock",
+		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Store: StoreConfig{
+			MaxItems: 10,
+			TTL:      time.Second,
+		},
+	}
+
+	mockMetricsExporter := newMockMetricsExporter()
+
+	reader := sdkmetric.NewManualReader()
+	set := setupTelemetry(reader)
+	p := newProcessor(set, cfg)
+	p.tracesConsumer = consumertest.NewNop()
+
+	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("mock"): mockMetricsExporter,
+		},
+	})
+
+	assert.NoError(t, p.Start(context.Background(), mHost))
+
+	// ConsumeTraces
+	td := buildSampleTrace(t, "first")
+	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+
+	// Make series stale and force a cache cleanup
+	for key, metric := range p.keyToMetric {
+		metric.lastUpdated = 0
+		p.keyToMetric[key] = metric
+	}
+	p.cleanCache()
+	assert.Equal(t, 0, len(p.keyToMetric))
+
+	// ConsumeTraces with a trace with different attribute value
+	td = buildSampleTrace(t, "second")
+	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+
+	// Shutdown the processor
+	assert.NoError(t, p.Shutdown(context.Background()))
+
+	rm := metricdata.ResourceMetrics{}
+	assert.NoError(t, reader.Collect(context.Background(), &rm))
+	require.Len(t, rm.ScopeMetrics, 1)
+	sm := rm.ScopeMetrics[0]
+	require.Len(t, sm.Metrics, 1)
+	got := sm.Metrics[0]
+	want := metricdata.Metrics{
+		Name:        "processor/servicegraph/total_edges",
+		Description: "Total number of unique edges",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints: []metricdata.DataPoint[int64]{
+				{Value: 2},
+			},
+		},
+	}
+	metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 }
