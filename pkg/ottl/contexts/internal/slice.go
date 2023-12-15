@@ -14,7 +14,7 @@ import (
 
 func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, key ottl.Key[K]) (any, error) {
 	if key == nil {
-		return nil, fmt.Errorf("non-integer indexing is not supported")
+		return nil, fmt.Errorf("cannot get slice value without key")
 	}
 
 	i, err := key.Int(ctx, tCtx)
@@ -36,7 +36,7 @@ func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, key ottl
 
 func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, key ottl.Key[K], val any) error {
 	if key == nil {
-		return fmt.Errorf("non-integer indexing is not supported")
+		return fmt.Errorf("cannot set slice value without key")
 	}
 
 	i, err := key.Int(ctx, tCtx)

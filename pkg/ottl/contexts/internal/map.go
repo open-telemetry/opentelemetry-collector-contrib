@@ -35,7 +35,7 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, key ottl.Key
 
 func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, key ottl.Key[K], val any) error {
 	if key == nil {
-		return fmt.Errorf("non-string indexing is not supported")
+		return fmt.Errorf("cannot set map value without key")
 	}
 
 	s, err := key.String(ctx, tCtx)
