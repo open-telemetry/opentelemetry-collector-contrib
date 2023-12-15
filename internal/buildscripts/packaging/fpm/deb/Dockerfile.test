@@ -1,6 +1,6 @@
 # A debian11 image with systemd enabled.  Must be run with:
 # `-d --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro` flags
-FROM debian:11
+FROM debian:12
 
 ENV container docker
 ENV DEBIAN_FRONTEND noninteractive

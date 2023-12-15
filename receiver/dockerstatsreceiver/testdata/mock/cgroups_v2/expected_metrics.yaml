@@ -52,6 +52,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
+          - description: CPU shares set for the container.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: container.cpu.shares
+            unit: "1"
           - description: Number of periods with throttling active.
             name: container.cpu.throttling_data.periods
             sum:
@@ -122,12 +130,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
-          - description: 'Percent of CPU used by the container.'
+          - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
                 - asDouble: 0.041326615629205886
-                  startTimeUnixNano: "1687762436307743000"
-                  timeUnixNano: "1687762436315926000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.utilization
             unit: "1"
           - description: The amount of anonymous memory that has been identified as active by the kernel.
@@ -378,10 +386,20 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{pids}'
+          - description: Number of restarts for the container.
+            name: container.restarts
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{restarts}'
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 5.343272557349942e+06
+                - asDouble: 1.5026932099271942e+07
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime

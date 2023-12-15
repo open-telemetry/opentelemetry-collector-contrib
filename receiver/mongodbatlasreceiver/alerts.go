@@ -340,16 +340,15 @@ func (a *alertsReceiver) shutdownPoller(ctx context.Context) error {
 func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert, project *mongodbatlas.Project) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	var errs error
-	for _, alert := range alerts {
+	for i := range alerts {
+		alert := alerts[i]
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
 		resourceAttrs := resourceLogs.Resource().Attributes()
 		resourceAttrs.PutStr("mongodbatlas.group.id", alert.GroupID)
 		resourceAttrs.PutStr("mongodbatlas.alert.config.id", alert.AlertConfigID)
 		resourceAttrs.PutStr("mongodbatlas.org.id", project.OrgID)
 		resourceAttrs.PutStr("mongodbatlas.project.name", project.Name)
-		// nolint G601
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.cluster.name", &alert.ClusterName)
-		// nolint G601
 		putStringToMapNotNil(resourceAttrs, "mongodbatlas.replica_set.name", &alert.ReplicaSetName)
 
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -384,19 +383,12 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 		attrs.PutStr("id", alert.ID)
 
 		// These attributes are optional and may not be present, depending on the alert type.
-		// nolint G601
 		putStringToMapNotNil(attrs, "metric.name", &alert.MetricName)
-		// nolint G601
 		putStringToMapNotNil(attrs, "type_name", &alert.EventTypeName)
-		// nolint G601
 		putStringToMapNotNil(attrs, "last_notified", &alert.LastNotified)
-		// nolint G601
 		putStringToMapNotNil(attrs, "resolved", &alert.Resolved)
-		// nolint G601
 		putStringToMapNotNil(attrs, "acknowledgement.comment", &alert.AcknowledgementComment)
-		// nolint G601
 		putStringToMapNotNil(attrs, "acknowledgement.username", &alert.AcknowledgingUsername)
-		// nolint G601
 		putStringToMapNotNil(attrs, "acknowledgement.until", &alert.AcknowledgedUntil)
 
 		if alert.CurrentValue != nil {

@@ -37,6 +37,7 @@ The following settings can be optionally configured:
     - `zipkin_json`: the payload is serialized to Zipkin v2 JSON Span.
   - The following encodings are valid *only* for **logs**.
     - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
+- `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `auth`
   - `plain_text`
     - `username`: The username to use.

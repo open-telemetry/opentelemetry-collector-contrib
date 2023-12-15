@@ -38,15 +38,6 @@ func TestTrace10kSPS(t *testing.T) {
 		resourceSpec testbed.ResourceSpec
 	}{
 		{
-			"JaegerGRPC",
-			datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 100,
-			},
-		},
-		{
 			"OpenCensus",
 			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
@@ -157,6 +148,28 @@ func TestTrace10kSPS(t *testing.T) {
 			)
 		})
 	}
+}
+
+func TestTrace10kSPSJaegerGRPC(t *testing.T) {
+	port := testbed.GetAvailablePort(t)
+	receiver := datareceivers.NewJaegerDataReceiver(port)
+	Scenario10kItemsPerSecondAlternateBackend(
+		t,
+		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		receiver,
+		testbed.NewOTLPDataReceiver(port),
+		testbed.ResourceSpec{
+			ExpectedMaxCPU: 40,
+			ExpectedMaxRAM: 100,
+		},
+		performanceResultsSummary,
+		map[string]string{
+			"batch": `
+  batch:
+`,
+		},
+		nil,
+	)
 }
 
 func TestTraceNoBackend10kSPS(t *testing.T) {
@@ -403,11 +416,6 @@ func TestTraceAttributesProcessor(t *testing.T) {
 		receiver testbed.DataReceiver
 	}{
 		{
-			"JaegerGRPC",
-			datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
-		},
-		{
 			"OTLP",
 			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
@@ -496,4 +504,90 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
+	port := testbed.GetAvailablePort(t)
+	sender := datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+	receiver := datareceivers.NewJaegerDataReceiver(port)
+	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	// Use processor to add attributes to certain spans.
+	processors := map[string]string{
+		"batch": `
+  batch:
+`,
+		"attributes": `
+  attributes:
+    include:
+      match_type: regexp
+      services: ["service-to-add.*"]
+      span_names: ["span-to-add-.*"]
+    actions:
+      - action: insert
+        key: "new_attr"
+        value: "string value"
+`,
+	}
+
+	agentProc := testbed.NewChildProcessCollector()
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+
+	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
+	dataProvider := testbed.NewPerfTestDataProvider(options)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.PerfTestValidator{},
+		performanceResultsSummary,
+	)
+	defer tc.Stop()
+
+	tc.MockBackend = testbed.NewMockBackend(tc.ComposeTestResultFileName("backend.log"), testbed.NewOTLPDataReceiver(port))
+
+	tc.StartBackend()
+	tc.StartAgent()
+	defer tc.StopAgent()
+
+	tc.EnableRecording()
+
+	require.NoError(t, sender.Start())
+
+	// Create a span that matches "include" filter.
+	spanToInclude := "span-to-add-attr"
+	// Create a service name that matches "include" filter.
+	nodeToInclude := "service-to-add-attr"
+
+	// verifySpan verifies that attributes was added to the internal data span.
+	verifySpan := func(span ptrace.Span) {
+		require.NotNil(t, span)
+		require.Equal(t, span.Attributes().Len(), 1)
+		attrVal, ok := span.Attributes().Get("new_attr")
+		assert.True(t, ok)
+		assert.EqualValues(t, "string value", attrVal.Str())
+	}
+
+	verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan)
+
+	// Create a service name that does not match "include" filter.
+	nodeToExclude := "service-not-to-add-attr"
+
+	verifySingleSpan(t, tc, nodeToExclude, spanToInclude, func(span ptrace.Span) {
+		// Verify attributes was not added to the new internal data span.
+		assert.Equal(t, span.Attributes().Len(), 0)
+	})
+
+	// Create another span that does not match "include" filter.
+	spanToExclude := "span-not-to-add-attr"
+	verifySingleSpan(t, tc, nodeToInclude, spanToExclude, func(span ptrace.Span) {
+		// Verify attributes was not added to the new internal data span.
+		assert.Equal(t, span.Attributes().Len(), 0)
+	})
 }

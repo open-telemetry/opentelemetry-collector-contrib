@@ -4,7 +4,6 @@
 package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 
 import (
-	"context"
 	"errors"
 	"net"
 
@@ -41,23 +40,6 @@ type Metric struct {
 // Reporter is used to report (via zPages, logs, metrics, etc) the events
 // happening when the Server is receiving and processing data.
 type Reporter interface {
-	// OnDataReceived is called when a message or request is received from
-	// a client. The returned context should be used in other calls to the same
-	// reporter instance. The caller code should include a call to end the
-	// returned span.
-	OnDataReceived(ctx context.Context) context.Context
-
-	// OnTranslationError is used to report a translation error from original
-	// format to the internal format of the Collector. The context
-	// passed to it should be the ones returned by OnDataReceived.
-	OnTranslationError(ctx context.Context, err error)
-
-	// OnMetricsProcessed is called when the received data is passed to next
-	// consumer on the pipeline. The context passed to it should be the
-	// one returned by OnDataReceived. The error should be error returned by
-	// the next consumer - the reporter is expected to handle nil error too.
-	OnMetricsProcessed(ctx context.Context, numReceivedMessages int, err error)
-
 	// OnDebugf allows less structured reporting for debugging scenarios.
 	OnDebugf(
 		template string,

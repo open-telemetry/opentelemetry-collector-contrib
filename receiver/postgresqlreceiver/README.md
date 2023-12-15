@@ -39,6 +39,8 @@ The following settings are optional:
 
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
 
+- `exclude_databases` (default = `[]`): List of databases which will be excluded when collecting statistics.
+
 The following settings are also optional and nested under `tls` to help configure client transport security
 
 - `insecure` (default = `false`): Whether to enable client transport security for the postgresql connection.
@@ -70,7 +72,7 @@ receivers:
       key_file: /home/otel/mypostgreskey.key
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md). 
+The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 
 ## Metrics
 
