@@ -13,9 +13,8 @@ import (
 	"runtime"
 	"strings"
 
-	"go.opentelemetry.io/collector/exporter"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
