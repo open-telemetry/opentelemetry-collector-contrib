@@ -5,6 +5,7 @@ package carbonexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -12,33 +13,44 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // newCarbonExporter returns a new Carbon exporter.
 func newCarbonExporter(cfg *Config, set exporter.CreateSettings) (exporter.Metrics, error) {
 	sender := carbonSender{
-		connPool: newTCPConnPool(cfg.Endpoint, cfg.Timeout),
+		writer: newTCPConnPool(cfg.Endpoint, cfg.Timeout),
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	exp, err := exporterhelper.NewMetricsExporter(
 		context.TODO(),
 		set,
 		cfg,
 		sender.pushMetricsData,
+		// We don't use exporterhelper.WithTimeout because the TCP connection does not accept writing with context.
+		exporterhelper.WithQueue(cfg.QueueConfig),
+		exporterhelper.WithRetry(cfg.RetryConfig),
 		exporterhelper.WithShutdown(sender.Shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return resourcetotelemetry.WrapMetricsExporter(cfg.ResourceToTelemetryConfig, exp), nil
 }
 
 // carbonSender is the struct tying the translation function and the TCP
 // connections into an implementations of exporterhelper.PushMetricsData so
 // the exporter can leverage the helper and get consistent observability.
 type carbonSender struct {
-	connPool *connPool
+	writer io.WriteCloser
 }
 
 func (cs *carbonSender) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
 	lines := metricDataToPlaintext(md)
 
-	if _, err := cs.connPool.Write([]byte(lines)); err != nil {
+	if _, err := cs.writer.Write([]byte(lines)); err != nil {
 		// Use the sum of converted and dropped since the write failed for all.
 		return err
 	}
@@ -47,8 +59,7 @@ func (cs *carbonSender) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 }
 
 func (cs *carbonSender) Shutdown(context.Context) error {
-	cs.connPool.Close()
-	return nil
+	return cs.writer.Close()
 }
 
 // connPool is a very simple implementation of a pool of net.TCPConn instances.
@@ -57,12 +68,12 @@ func (cs *carbonSender) Shutdown(context.Context) error {
 // https://github.com/signalfx/gateway/blob/master/protocol/carbon/conn_pool.go
 // but not its implementation).
 //
-// It keeps a unbounded "stack" of TCPConn instances always "popping" the most
+// It keeps an unbounded "stack" of TCPConn instances always "popping" the most
 // recently returned to the pool. There is no accounting to terminating old
 // unused connections as that was the case on the prior art mentioned above.
 type connPool struct {
 	mtx      sync.Mutex
-	conns    []*net.TCPConn
+	conns    []net.Conn
 	endpoint string
 	timeout  time.Duration
 }
@@ -70,7 +81,7 @@ type connPool struct {
 func newTCPConnPool(
 	endpoint string,
 	timeout time.Duration,
-) *connPool {
+) io.WriteCloser {
 	return &connPool{
 		endpoint: endpoint,
 		timeout:  timeout,
@@ -78,19 +89,8 @@ func newTCPConnPool(
 }
 
 func (cp *connPool) Write(bytes []byte) (int, error) {
-	var conn *net.TCPConn
+	var conn net.Conn
 	var err error
-
-	// The deferred function below is what puts back connections on the pool.
-	defer func() {
-		if err == nil {
-			cp.mtx.Lock()
-			cp.conns = append(cp.conns, conn)
-			cp.mtx.Unlock()
-		} else if conn != nil {
-			conn.Close()
-		}
-	}()
 
 	start := time.Now()
 	cp.mtx.Lock()
@@ -105,6 +105,18 @@ func (cp *connPool) Write(bytes []byte) (int, error) {
 			return 0, err
 		}
 	}
+
+	// The deferred function below is what puts back connections on the pool if no error.
+	defer func() {
+		if err != nil {
+			// err already not nil, so will not influence retry logic because of the connection close.
+			err = multierr.Append(err, conn.Close())
+			return
+		}
+		cp.mtx.Lock()
+		cp.conns = append(cp.conns, conn)
+		cp.mtx.Unlock()
+	}()
 
 	// There is no way to do a call equivalent to recvfrom with an empty buffer
 	// to check if the connection was terminated (if the size of the buffer is
@@ -134,20 +146,22 @@ func (cp *connPool) Write(bytes []byte) (int, error) {
 	return n, err
 }
 
-func (cp *connPool) Close() {
+func (cp *connPool) Close() error {
 	cp.mtx.Lock()
 	defer cp.mtx.Unlock()
 
+	var errs error
 	for _, conn := range cp.conns {
-		conn.Close()
+		errs = multierr.Append(errs, conn.Close())
 	}
 	cp.conns = nil
+	return errs
 }
 
-func (cp *connPool) createTCPConn() (*net.TCPConn, error) {
+func (cp *connPool) createTCPConn() (net.Conn, error) {
 	c, err := net.DialTimeout("tcp", cp.endpoint, cp.timeout)
 	if err != nil {
 		return nil, err
 	}
-	return c.(*net.TCPConn), err
+	return c, err
 }

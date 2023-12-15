@@ -95,10 +95,11 @@ and the OpenTelemetry attributes.
 | resultSignature (optional)       | azure.result.signature (attribute)     | 
 | resultType (optional)            | azure.result.type (attribute)          | 
 | tenantId (required, tenant logs) | azure.tenant.id (attribute)            | 
-| time (required)                  | time_unix_nano (field)                 | 
+| time or timeStamp (required)     | time_unix_nano (time takes precedence) |
 | identity (optional)              | azure.identity (attribute, nested)     |
 
-Note: JSON does not distinguish between fixed and floating point numbers. All
+Notes:
+* JSON does not distinguish between fixed and floating point numbers. All
 JSON numbers are encoded as doubles.
 
 For Metrics the Azure Metric Records are an array
