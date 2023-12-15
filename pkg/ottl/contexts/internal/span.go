@@ -73,13 +73,13 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 	case "kind":
 		nextPath := path.Next()
 		if nextPath != nil {
-			switch path.Next().Name() {
+			switch nextPath.Name() {
 			case "string":
 				return accessStringKind[K](), nil
 			case "deprecated_string":
 				return accessDeprecatedStringKind[K](), nil
 			default:
-				return nil, fmt.Errorf("invalid span path expression %v", path.Next().Name())
+				return nil, fmt.Errorf("invalid span path expression %v", nextPath.Name())
 			}
 		} else {
 			return accessKind[K](), nil
@@ -111,13 +111,13 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 	case "status":
 		nextPath := path.Next()
 		if nextPath != nil {
-			switch path.Next().Name() {
+			switch nextPath.Name() {
 			case "code":
 				return accessStatusCode[K](), nil
 			case "message":
 				return accessStatusMessage[K](), nil
 			default:
-				return nil, fmt.Errorf("invalid span path expression %v", path.Next().Name())
+				return nil, fmt.Errorf("invalid span path expression %v", nextPath.Name())
 			}
 		} else {
 			return accessStatus[K](), nil
