@@ -5,7 +5,6 @@ package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -19,9 +18,6 @@ type Config struct {
 
 	// The URL of the podman server.  Default is "unix:///run/podman/podman.sock"
 	Endpoint string `mapstructure:"endpoint"`
-
-	// The maximum amount of time to wait for Podman API responses.  Default is 5s
-	Timeout time.Duration `mapstructure:"timeout"`
 
 	APIVersion    string              `mapstructure:"api_version"`
 	SSHKey        string              `mapstructure:"ssh_key"`

@@ -11,7 +11,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/azure"
@@ -23,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
@@ -229,7 +232,7 @@ func TestPusher(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
-	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "")
+	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "source-hostname")
 	require.NoError(t, err)
 
 	attrs := testutil.NewAttributeMap(map[string]string{
@@ -242,7 +245,11 @@ func TestPusher(t *testing.T) {
 	defer server.Close()
 	pcfg.MetricsEndpoint = server.URL
 
-	go RunPusher(ctx, params, pcfg, hostProvider, attrs)
+	pusher := NewPusher(mockExporterCreateSettings, pcfg)
+	reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
+	require.NoError(t, err)
+
+	go RunPusher(ctx, params, pcfg, hostProvider, attrs, reporter)
 
 	body := <-server.MetadataChan
 	var recvMetadata payload.HostMetadata

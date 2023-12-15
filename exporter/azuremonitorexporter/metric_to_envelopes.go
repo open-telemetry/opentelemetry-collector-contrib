@@ -56,6 +56,7 @@ func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric, resource pc
 			applyResourcesToDataProperties(metricData.Properties, resourceAttributes)
 			applyInstrumentationScopeValueToDataProperties(metricData.Properties, instrumentationScope)
 			applyCloudTagsToEnvelope(envelope, resourceAttributes)
+			applyInternalSdkVersionTagToEnvelope(envelope)
 
 			setAttributesAsProperties(timedDataPoint.attributes, metricData.Properties)
 
@@ -87,6 +88,7 @@ func newMetricPacker(logger *zap.Logger) *metricPacker {
 }
 
 func (packer metricPacker) getMetricTimedData(metric pmetric.Metric) metricTimedData {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return newScalarMetric(metric.Name(), metric.Gauge().DataPoints())

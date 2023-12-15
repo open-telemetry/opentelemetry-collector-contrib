@@ -26,10 +26,8 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for gitprovider metrics.
 type MetricsConfig struct {
 	GitRepositoryBranchCount      MetricConfig `mapstructure:"git.repository.branch.count"`
-	GitRepositoryBranchTime       MetricConfig `mapstructure:"git.repository.branch.time"`
 	GitRepositoryContributorCount MetricConfig `mapstructure:"git.repository.contributor.count"`
 	GitRepositoryCount            MetricConfig `mapstructure:"git.repository.count"`
-	GitRepositoryPullRequestTime  MetricConfig `mapstructure:"git.repository.pull_request.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -37,16 +35,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		GitRepositoryBranchCount: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryBranchTime: MetricConfig{
-			Enabled: true,
-		},
 		GitRepositoryContributorCount: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		GitRepositoryCount: MetricConfig{
-			Enabled: true,
-		},
-		GitRepositoryPullRequestTime: MetricConfig{
 			Enabled: true,
 		},
 	}
@@ -55,6 +47,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for gitprovider resource attributes.

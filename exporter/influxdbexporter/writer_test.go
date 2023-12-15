@@ -5,8 +5,10 @@ package influxdbexporter
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -15,6 +17,8 @@ import (
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 func Test_influxHTTPWriterBatch_optimizeTags(t *testing.T) {
@@ -111,7 +115,7 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 			batch := &influxHTTPWriterBatch{
 				influxHTTPWriter: &influxHTTPWriter{
 					encoderPool: sync.Pool{
-						New: func() interface{} {
+						New: func() any {
 							e := new(lineprotocol.Encoder)
 							e.SetLax(false)
 							e.SetPrecision(lineprotocol.Nanosecond)
@@ -126,9 +130,9 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 				},
 			}
 
-			err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]interface{}{"f": int64(1)}, time.Unix(1, 0), 0)
+			err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
 			require.NoError(t, err)
-			err = batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]interface{}{"f": int64(2)}, time.Unix(2, 0), 0)
+			err = batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(2)}, time.Unix(2, 0), 0)
 			require.NoError(t, err)
 			err = batch.WriteBatch(context.Background())
 			require.NoError(t, err)
@@ -140,4 +144,66 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
+	var recordedRequest *http.Request
+	var recordedRequestBody []byte
+	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if assert.Nil(t, recordedRequest) {
+			recordedRequest = r
+			recordedRequestBody, _ = io.ReadAll(r.Body)
+		}
+	}))
+	t.Cleanup(noopHTTPServer.Close)
+
+	nowTime := time.Unix(1000, 2000)
+
+	influxWriter, err := newInfluxHTTPWriter(
+		new(common.NoopLogger),
+		&Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: noopHTTPServer.URL,
+			},
+		},
+		component.TelemetrySettings{})
+	require.NoError(t, err)
+	influxWriter.httpClient = noopHTTPServer.Client()
+	influxWriterBatch := influxWriter.NewBatch()
+
+	err = influxWriterBatch.EnqueuePoint(
+		context.Background(),
+		"m",
+		map[string]string{"k": "v", "empty": ""},
+		map[string]any{"f": int64(1)},
+		nowTime,
+		common.InfluxMetricValueTypeUntyped)
+	require.NoError(t, err)
+	err = influxWriterBatch.WriteBatch(context.Background())
+	require.NoError(t, err)
+
+	if assert.NotNil(t, recordedRequest) {
+		assert.Equal(t, "m,k=v f=1i 1000000002000", strings.TrimSpace(string(recordedRequestBody)))
+	}
+}
+
+func Test_composeWriteURL_doesNotPanic(t *testing.T) {
+	assert.NotPanics(t, func() {
+		cfg := &Config{}
+		_, err := composeWriteURL(cfg)
+		assert.NoError(t, err)
+	})
+
+	assert.NotPanics(t, func() {
+		cfg := &Config{
+			V1Compatibility: V1Compatibility{
+				Enabled:  true,
+				DB:       "my-db",
+				Username: "my-username",
+				Password: "my-password",
+			},
+		}
+		_, err := composeWriteURL(cfg)
+		assert.NoError(t, err)
+	})
 }

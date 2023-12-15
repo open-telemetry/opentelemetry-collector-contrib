@@ -64,6 +64,8 @@ If set, the `multiline` configuration block instructs the `tcplog` receiver to s
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
 
+The `omit_pattern` setting can be used to omit the start/end pattern from each entry.
+
 #### Supported encodings
 
 | Key        | Description

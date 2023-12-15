@@ -12,8 +12,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "25"
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{nodes}'
           - description: The health status of the cluster.
             name: elasticsearch.cluster.health
@@ -25,22 +25,22 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: green
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: red
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: status
                       value:
                         stringValue: yellow
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{status}'
           - description: The number of unfinished fetches.
             name: elasticsearch.cluster.in_flight_fetch
@@ -48,8 +48,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{fetches}'
           - description: The total number of nodes in the cluster.
             name: elasticsearch.cluster.nodes
@@ -57,8 +57,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "46"
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{nodes}'
           - description: The number of cluster-level changes that have not yet been executed.
             name: elasticsearch.cluster.pending_tasks
@@ -66,8 +66,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{tasks}'
           - description: The number of shards in the cluster.
             name: elasticsearch.cluster.shards
@@ -79,43 +79,43 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "23"
                   attributes:
                     - key: state
                       value:
                         stringValue: active_primary
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
                     - key: state
                       value:
                         stringValue: initializing
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "10"
                   attributes:
                     - key: state
                       value:
                         stringValue: relocating
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: state
                       value:
                         stringValue: unassigned
-                  startTimeUnixNano: "1662458370557980000"
-                  timeUnixNano: "1662458370559258000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: state
                       value:
                         stringValue: unassigned_delayed
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{shards}'
         scope:
           name: otelcol/elasticsearchreceiver
@@ -143,8 +143,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -153,8 +153,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -163,8 +163,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "13"
                   attributes:
                     - key: aggregation
@@ -173,8 +173,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -183,8 +183,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "8"
                   attributes:
                     - key: aggregation
@@ -193,8 +193,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -203,8 +203,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "10"
                   attributes:
                     - key: aggregation
@@ -213,8 +213,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -223,8 +223,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "5"
                   attributes:
                     - key: aggregation
@@ -233,8 +233,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "6"
                   attributes:
                     - key: aggregation
@@ -243,8 +243,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -253,8 +253,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -263,8 +263,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -273,8 +273,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "13"
                   attributes:
                     - key: aggregation
@@ -283,8 +283,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -293,8 +293,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "8"
                   attributes:
                     - key: aggregation
@@ -303,8 +303,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -313,8 +313,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "10"
                   attributes:
                     - key: aggregation
@@ -323,8 +323,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -333,8 +333,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "5"
                   attributes:
                     - key: aggregation
@@ -343,8 +343,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "6"
                   attributes:
                     - key: aggregation
@@ -353,8 +353,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
           - description: Time spent on operations for an index.
@@ -370,8 +370,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "82"
                   attributes:
                     - key: aggregation
@@ -380,8 +380,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "192"
                   attributes:
                     - key: aggregation
@@ -390,8 +390,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -400,8 +400,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "938"
                   attributes:
                     - key: aggregation
@@ -410,8 +410,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -420,8 +420,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "52"
                   attributes:
                     - key: aggregation
@@ -430,8 +430,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "169"
                   attributes:
                     - key: aggregation
@@ -440,8 +440,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "30"
                   attributes:
                     - key: aggregation
@@ -450,8 +450,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: aggregation
@@ -460,8 +460,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -470,8 +470,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
                     - key: aggregation
@@ -480,8 +480,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "82"
                   attributes:
                     - key: aggregation
@@ -490,8 +490,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "192"
                   attributes:
                     - key: aggregation
@@ -500,8 +500,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -510,8 +510,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "938"
                   attributes:
                     - key: aggregation
@@ -520,8 +520,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -530,8 +530,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "52"
                   attributes:
                     - key: aggregation
@@ -540,8 +540,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "169"
                   attributes:
                     - key: aggregation
@@ -550,8 +550,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "30"
                   attributes:
                     - key: aggregation
@@ -560,8 +560,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: aggregation
@@ -570,8 +570,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -580,8 +580,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: ms
           - description: The size of the shards assigned to this index.
@@ -594,8 +594,8 @@ resourceMetrics:
                     - key: aggregation
                       value:
                         stringValue: total
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
         scope:
           name: otelcol/elasticsearchreceiver
@@ -623,8 +623,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -633,8 +633,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -643,8 +643,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "13"
                   attributes:
                     - key: aggregation
@@ -653,8 +653,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -663,8 +663,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "8"
                   attributes:
                     - key: aggregation
@@ -673,8 +673,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -683,8 +683,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "10"
                   attributes:
                     - key: aggregation
@@ -693,8 +693,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -703,8 +703,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "5"
                   attributes:
                     - key: aggregation
@@ -713,8 +713,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "6"
                   attributes:
                     - key: aggregation
@@ -723,8 +723,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -733,8 +733,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -743,8 +743,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -753,8 +753,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "13"
                   attributes:
                     - key: aggregation
@@ -763,8 +763,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -773,8 +773,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "8"
                   attributes:
                     - key: aggregation
@@ -783,8 +783,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -793,8 +793,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "10"
                   attributes:
                     - key: aggregation
@@ -803,8 +803,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -813,8 +813,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "5"
                   attributes:
                     - key: aggregation
@@ -823,8 +823,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "6"
                   attributes:
                     - key: aggregation
@@ -833,8 +833,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
           - description: Time spent on operations for an index.
@@ -850,8 +850,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "82"
                   attributes:
                     - key: aggregation
@@ -860,8 +860,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "192"
                   attributes:
                     - key: aggregation
@@ -870,8 +870,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -880,8 +880,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "938"
                   attributes:
                     - key: aggregation
@@ -890,8 +890,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -900,8 +900,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "52"
                   attributes:
                     - key: aggregation
@@ -910,8 +910,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "169"
                   attributes:
                     - key: aggregation
@@ -920,8 +920,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "30"
                   attributes:
                     - key: aggregation
@@ -930,8 +930,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: aggregation
@@ -940,8 +940,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -950,8 +950,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
                     - key: aggregation
@@ -960,8 +960,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "82"
                   attributes:
                     - key: aggregation
@@ -970,8 +970,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "192"
                   attributes:
                     - key: aggregation
@@ -980,8 +980,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -990,8 +990,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "938"
                   attributes:
                     - key: aggregation
@@ -1000,8 +1000,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -1010,8 +1010,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "52"
                   attributes:
                     - key: aggregation
@@ -1020,8 +1020,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "169"
                   attributes:
                     - key: aggregation
@@ -1030,8 +1030,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "30"
                   attributes:
                     - key: aggregation
@@ -1040,8 +1040,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: aggregation
@@ -1050,8 +1050,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -1060,8 +1060,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: ms
           - description: The size of the shards assigned to this index.
@@ -1074,8 +1074,8 @@ resourceMetrics:
                     - key: aggregation
                       value:
                         stringValue: total
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
         scope:
           name: otelcol/elasticsearchreceiver

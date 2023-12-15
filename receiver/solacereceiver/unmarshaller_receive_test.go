@@ -25,8 +25,8 @@ func TestReceiveUnmarshallerMapResourceSpan(t *testing.T) {
 	tests := []struct {
 		name                        string
 		spanData                    *receive_v1.SpanData
-		want                        map[string]interface{}
-		expectedUnmarshallingErrors interface{}
+		want                        map[string]any
+		expectedUnmarshallingErrors any
 	}{
 		{
 			name: "Maps All Fields When Present",
@@ -35,7 +35,7 @@ func TestReceiveUnmarshallerMapResourceSpan(t *testing.T) {
 				MessageVpnName: &vpnName,
 				SolosVersion:   version,
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"service.name":        routerName,
 				"service.instance.id": vpnName,
 				"service.version":     version,
@@ -44,7 +44,7 @@ func TestReceiveUnmarshallerMapResourceSpan(t *testing.T) {
 		{
 			name:     "Does Not Map Fields When Not Present",
 			spanData: &receive_v1.SpanData{},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"service.version": "",
 				"service.name":    "",
 			},
@@ -144,8 +144,8 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 	tests := []struct {
 		name                        string
 		spanData                    *receive_v1.SpanData
-		want                        map[string]interface{}
-		expectedUnmarshallingErrors interface{}
+		want                        map[string]any
+		expectedUnmarshallingErrors any
 	}{
 		{
 			name: "With All Valid Attributes",
@@ -183,7 +183,7 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"messaging.system":                                        "SolacePubSub+",
 				"messaging.operation":                                     "receive",
 				"messaging.protocol":                                      "MQTT",
@@ -239,7 +239,7 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 					"special_key": nil,
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"messaging.system":                                        "SolacePubSub+",
 				"messaging.operation":                                     "receive",
 				"messaging.protocol":                                      "MQTT",
@@ -283,7 +283,7 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				},
 			},
 			// we no longer expect the port when the IP is not present
-			want: map[string]interface{}{
+			want: map[string]any{
 				"messaging.system":                                        "SolacePubSub+",
 				"messaging.operation":                                     "receive",
 				"messaging.protocol":                                      "MQTT",
@@ -321,7 +321,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 		name                 string
 		spanData             *receive_v1.SpanData
 		populateExpectedSpan func(span ptrace.Span)
-		unmarshallingErrors  interface{}
+		unmarshallingErrors  any
 	}{
 		{ // don't expect any events when none are present in the span data
 			name:                 "No Events",
@@ -340,7 +340,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
+				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 					"messaging.solace.partition_number":     345,
@@ -360,7 +360,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "sometopic enqueue", 123456789, map[string]interface{}{
+				populateEvent(t, span, "sometopic enqueue", 123456789, map[string]any{
 					"messaging.solace.destination_type":      "topic-endpoint",
 					"messaging.solace.enqueue_error_message": someErrorString,
 					"messaging.solace.rejects_all_enqueues":  true,
@@ -382,11 +382,11 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
+				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
-				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
+				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
@@ -422,7 +422,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "commit", 123456789, map[string]interface{}{
+				populateEvent(t, span, "commit", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -447,7 +447,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "end", 123456789, map[string]interface{}{
+				populateEvent(t, span, "end", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator": "administrator",
 					"messaging.solace.transaction_xid":       "0000007b-000814fe-804020100804020100",
 				})
@@ -471,7 +471,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "prepare", 123456789, map[string]interface{}{
+				populateEvent(t, span, "prepare", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":     "broker",
 					"messaging.solace.transaction_xid":           "0000007b--",
 					"messaging.solace.transaction_error_message": someErrorString,
@@ -487,7 +487,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "Unknown Transaction Event (12345)", 123456789, map[string]interface{}{
+				populateEvent(t, span, "Unknown Transaction Event (12345)", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator": "client",
 				})
 			},
@@ -504,7 +504,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "rollback", 123456789, map[string]interface{}{
+				populateEvent(t, span, "rollback", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator": "Unknown Transaction Initiator (12345)",
 				})
 			},
@@ -538,15 +538,15 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
+				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
-				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
+				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": true,
 				})
-				populateEvent(t, span, "rollback_only", 123456789, map[string]interface{}{
+				populateEvent(t, span, "rollback_only", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -574,7 +574,7 @@ func TestReceiveUnmarshallerRGMID(t *testing.T) {
 		name     string
 		in       []byte
 		expected string
-		numErr   interface{}
+		numErr   any
 	}{
 		{
 			name:     "Valid RGMID",
@@ -620,7 +620,7 @@ func TestReceiveUnmarshallerReceiveBaggageString(t *testing.T) {
 			name:    "Valid baggage",
 			baggage: `someKey=someVal`,
 			expected: func(m pcommon.Map) {
-				assert.NoError(t, m.FromRaw(map[string]interface{}{
+				assert.NoError(t, m.FromRaw(map[string]any{
 					"messaging.solace.message.baggage.someKey": "someVal",
 				}))
 			},
@@ -629,7 +629,7 @@ func TestReceiveUnmarshallerReceiveBaggageString(t *testing.T) {
 			name:    "Valid baggage with properties",
 			baggage: `someKey=someVal;someProp=someOtherThing,someOtherKey=someOtherVal;someProp=NewProp123;someOtherProp=AnotherProp192`,
 			expected: func(m pcommon.Map) {
-				assert.NoError(t, m.FromRaw(map[string]interface{}{
+				assert.NoError(t, m.FromRaw(map[string]any{
 					"messaging.solace.message.baggage.someKey":               "someVal",
 					"messaging.solace.message.baggage_metadata.someKey":      "someProp=someOtherThing",
 					"messaging.solace.message.baggage.someOtherKey":          `someOtherVal`,
@@ -668,7 +668,7 @@ func TestReceiveUnmarshallerReceiveBaggageString(t *testing.T) {
 func TestReceiveUnmarshallerInsertUserProperty(t *testing.T) {
 	emojiVal := 0xf09f92a9
 	testCases := []struct {
-		data         interface{}
+		data         any
 		expectedType pcommon.ValueType
 		validate     func(val pcommon.Value)
 	}{

@@ -77,3 +77,19 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 		require.FailNow(t, "Timed out waiting for entry to be processed")
 	}
 }
+
+func TestSyslogProtocolConfig(t *testing.T) {
+	for _, proto := range []string{"RFC5424", "rfc5424", "RFC3164", "rfc3164"} {
+		cfg := basicConfig()
+		cfg.Protocol = proto
+		_, err := cfg.Build(testutil.Logger(t))
+		require.NoError(t, err)
+	}
+
+	for _, proto := range []string{"RFC5424a", "rfc5424b", "RFC3164c", "rfc3164d"} {
+		cfg := basicConfig()
+		cfg.Protocol = proto
+		_, err := cfg.Build(testutil.Logger(t))
+		require.Error(t, err)
+	}
+}

@@ -21,11 +21,7 @@ import (
 )
 
 func TestSendLogs(t *testing.T) {
-	authParams := utils.AuthParams{
-		AccessID:    "testId",
-		AccessKey:   "testKey",
-		BearerToken: "testToken",
-	}
+
 	t.Run("should not return error", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			response := lmsdklogs.LMLogIngestResponse{
@@ -39,10 +35,10 @@ func TestSendLogs(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		sender, err := NewSender(ctx, ts.URL, ts.Client(), authParams, zap.NewNop())
+		sender, err := NewSender(ctx, zap.NewNop(), buildLogIngestTestOpts(ts.URL, ts.Client())...)
 		assert.NoError(t, err)
 
-		logInput := translator.ConvertToLMLogInput("test msg", utils.NewTimestampFromTime(time.Now()).String(), map[string]interface{}{"system.hostname": "test"}, map[string]interface{}{"cloud.provider": "aws"})
+		logInput := translator.ConvertToLMLogInput("test msg", utils.NewTimestampFromTime(time.Now()).String(), map[string]any{"system.hostname": "test"}, map[string]any{"cloud.provider": "aws"})
 		err = sender.SendLogs(ctx, []model.LogInput{logInput})
 		cancel()
 		assert.NoError(t, err)
@@ -61,10 +57,10 @@ func TestSendLogs(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		sender, err := NewSender(ctx, ts.URL, ts.Client(), authParams, zap.NewNop())
+		sender, err := NewSender(ctx, zap.NewNop(), buildLogIngestTestOpts(ts.URL, ts.Client())...)
 		assert.NoError(t, err)
 
-		logInput := translator.ConvertToLMLogInput("test msg", utils.NewTimestampFromTime(time.Now()).String(), map[string]interface{}{"system.hostname": "test"}, map[string]interface{}{"cloud.provider": "aws"})
+		logInput := translator.ConvertToLMLogInput("test msg", utils.NewTimestampFromTime(time.Now()).String(), map[string]any{"system.hostname": "test"}, map[string]any{"cloud.provider": "aws"})
 		err = sender.SendLogs(ctx, []model.LogInput{logInput})
 		cancel()
 		assert.Error(t, err)
@@ -84,13 +80,29 @@ func TestSendLogs(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		sender, err := NewSender(ctx, ts.URL, ts.Client(), authParams, zap.NewNop())
+		sender, err := NewSender(ctx, zap.NewNop(), buildLogIngestTestOpts(ts.URL, ts.Client())...)
 		assert.NoError(t, err)
 
-		logInput := translator.ConvertToLMLogInput("test msg", utils.NewTimestampFromTime(time.Now()).String(), map[string]interface{}{"system.hostname": "test"}, map[string]interface{}{"cloud.provider": "aws"})
+		logInput := translator.ConvertToLMLogInput("test msg", utils.NewTimestampFromTime(time.Now()).String(), map[string]any{"system.hostname": "test"}, map[string]any{"cloud.provider": "aws"})
 		err = sender.SendLogs(ctx, []model.LogInput{logInput})
 		cancel()
 		assert.Error(t, err)
 		assert.Equal(t, false, consumererror.IsPermanent(err))
 	})
+}
+
+func buildLogIngestTestOpts(endpoint string, client *http.Client) []lmsdklogs.Option {
+	authParams := utils.AuthParams{
+		AccessID:    "testId",
+		AccessKey:   "testKey",
+		BearerToken: "testToken",
+	}
+
+	opts := []lmsdklogs.Option{
+		lmsdklogs.WithLogBatchingDisabled(),
+		lmsdklogs.WithAuthentication(authParams),
+		lmsdklogs.WithHTTPClient(client),
+		lmsdklogs.WithEndpoint(endpoint),
+	}
+	return opts
 }

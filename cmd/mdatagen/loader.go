@@ -109,7 +109,7 @@ type metric struct {
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
 	// Unit of the metric.
-	Unit string `mapstructure:"unit"`
+	Unit *string `mapstructure:"unit"`
 
 	// Sum stores metadata for sum metric type
 	Sum *sum `mapstructure:"sum,omitempty"`
@@ -141,11 +141,11 @@ func (m metric) Data() MetricData {
 }
 
 type warnings struct {
-	// A warning that will be displayed if the metric is enabled in user config.
+	// A warning that will be displayed if the field is enabled in user config.
 	IfEnabled string `mapstructure:"if_enabled"`
 	// A warning that will be displayed if `enabled` field is not set explicitly in user config.
 	IfEnabledNotSet string `mapstructure:"if_enabled_not_set"`
-	// A warning that will be displayed if the metrics is configured by user in any way.
+	// A warning that will be displayed if the field is configured by user in any way.
 	IfConfigured string `mapstructure:"if_configured"`
 }
 
@@ -162,6 +162,8 @@ type attribute struct {
 	Type ValueType `mapstructure:"type"`
 	// FullName is the attribute name populated from the map key.
 	FullName attributeName `mapstructure:"-"`
+	// Warnings that will be shown to user under specified conditions.
+	Warnings warnings `mapstructure:"warnings"`
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
@@ -197,6 +199,12 @@ func (a attribute) TestValue() string {
 	return ""
 }
 
+type tests struct {
+	Config              any  `mapstructure:"config"`
+	SkipLifecycle       bool `mapstructure:"skip_lifecycle"`
+	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
+}
+
 type metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
@@ -216,6 +224,8 @@ type metadata struct {
 	ScopeName string `mapstructure:"-"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+
+	Tests *tests `mapstructure:"tests"`
 }
 
 func setAttributesFullName(attrs map[attributeName]attribute) {

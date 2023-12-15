@@ -26,8 +26,6 @@ type Config struct {
 	//
 	// The default value is unix:///var/run/chrony/chronyd.sock
 	Endpoint string `mapstructure:"endpoint"`
-	// Timeout controls the max time allowed to read data from chronyd
-	Timeout time.Duration `mapstructure:"timeout"`
 }
 
 var (
@@ -37,12 +35,13 @@ var (
 )
 
 func newDefaultCongfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.Timeout = 10 * time.Second
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		ScraperControllerSettings: cfg,
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 
 		Endpoint: "unix:///var/run/chrony/chronyd.sock",
-		Timeout:  10 * time.Second,
 	}
 }
 

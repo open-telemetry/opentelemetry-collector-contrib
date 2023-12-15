@@ -356,7 +356,7 @@ func file_cls_proto_rawDescGZIP() []byte {
 }
 
 var file_cls_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_cls_proto_goTypes = []interface{}{
+var file_cls_proto_goTypes = []any{
 	(*Log)(nil),          // 0: Log
 	(*LogTag)(nil),       // 1: LogTag
 	(*LogGroup)(nil),     // 2: LogGroup
@@ -381,7 +381,7 @@ func file_cls_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_cls_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_cls_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Log); i {
 			case 0:
 				return &v.state
@@ -393,7 +393,7 @@ func file_cls_proto_init() {
 				return nil
 			}
 		}
-		file_cls_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_cls_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*LogTag); i {
 			case 0:
 				return &v.state
@@ -405,7 +405,7 @@ func file_cls_proto_init() {
 				return nil
 			}
 		}
-		file_cls_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_cls_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*LogGroup); i {
 			case 0:
 				return &v.state
@@ -417,7 +417,7 @@ func file_cls_proto_init() {
 				return nil
 			}
 		}
-		file_cls_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_cls_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*LogGroupList); i {
 			case 0:
 				return &v.state
@@ -429,7 +429,7 @@ func file_cls_proto_init() {
 				return nil
 			}
 		}
-		file_cls_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_cls_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*Log_Content); i {
 			case 0:
 				return &v.state

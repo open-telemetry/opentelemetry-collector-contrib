@@ -239,6 +239,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 // isValidAggregationTemporality checks whether an OTel metric has a valid
 // aggregation temporality for conversion to a Prometheus metric.
 func isValidAggregationTemporality(metric pmetric.Metric) bool {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 		return true
@@ -346,7 +347,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	startTimestamp := pt.StartTimestamp()
 	if settings.ExportCreatedMetric && startTimestamp != 0 {
 		labels := createLabels(createdSuffix)
-		addCreatedTimeSeriesIfNeeded(tsMap, labels, startTimestamp, metric.Type().String())
+		addCreatedTimeSeriesIfNeeded(tsMap, labels, startTimestamp, pt.Timestamp(), metric.Type().String())
 	}
 }
 
@@ -414,6 +415,7 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 	var ts pcommon.Timestamp
 	// handle individual metric based on type
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dataPoints := metric.Gauge().DataPoints()
@@ -514,7 +516,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 	startTimestamp := pt.StartTimestamp()
 	if settings.ExportCreatedMetric && startTimestamp != 0 {
 		createdLabels := createLabels(baseName + createdSuffix)
-		addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, metric.Type().String())
+		addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, pt.Timestamp(), metric.Type().String())
 	}
 }
 
@@ -524,6 +526,7 @@ func addCreatedTimeSeriesIfNeeded(
 	series map[string]*prompb.TimeSeries,
 	labels []prompb.Label,
 	startTimestamp pcommon.Timestamp,
+	timestamp pcommon.Timestamp,
 	metricType string,
 ) {
 	sig := timeSeriesSignature(metricType, &labels)
@@ -532,7 +535,8 @@ func addCreatedTimeSeriesIfNeeded(
 			Labels: labels,
 			Samples: []prompb.Sample{
 				{ // convert ns to ms
-					Value: float64(convertTimeStamp(startTimestamp)),
+					Value:     float64(convertTimeStamp(startTimestamp)),
+					Timestamp: convertTimeStamp(timestamp),
 				},
 			},
 		}

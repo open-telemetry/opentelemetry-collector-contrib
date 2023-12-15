@@ -31,6 +31,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisClientsMaxInputBuffer:             MetricConfig{Enabled: true},
 					RedisClientsMaxOutputBuffer:            MetricConfig{Enabled: true},
 					RedisCmdCalls:                          MetricConfig{Enabled: true},
+					RedisCmdLatency:                        MetricConfig{Enabled: true},
 					RedisCmdUsec:                           MetricConfig{Enabled: true},
 					RedisCommands:                          MetricConfig{Enabled: true},
 					RedisCommandsProcessed:                 MetricConfig{Enabled: true},
@@ -61,7 +62,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisUptime:                            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					RedisVersion: ResourceAttributeConfig{Enabled: true},
+					RedisVersion:  ResourceAttributeConfig{Enabled: true},
+					ServerAddress: ResourceAttributeConfig{Enabled: true},
+					ServerPort:    ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -74,6 +77,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisClientsMaxInputBuffer:             MetricConfig{Enabled: false},
 					RedisClientsMaxOutputBuffer:            MetricConfig{Enabled: false},
 					RedisCmdCalls:                          MetricConfig{Enabled: false},
+					RedisCmdLatency:                        MetricConfig{Enabled: false},
 					RedisCmdUsec:                           MetricConfig{Enabled: false},
 					RedisCommands:                          MetricConfig{Enabled: false},
 					RedisCommandsProcessed:                 MetricConfig{Enabled: false},
@@ -104,7 +108,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisUptime:                            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					RedisVersion: ResourceAttributeConfig{Enabled: false},
+					RedisVersion:  ResourceAttributeConfig{Enabled: false},
+					ServerAddress: ResourceAttributeConfig{Enabled: false},
+					ServerPort:    ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -141,13 +147,17 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				RedisVersion: ResourceAttributeConfig{Enabled: true},
+				RedisVersion:  ResourceAttributeConfig{Enabled: true},
+				ServerAddress: ResourceAttributeConfig{Enabled: true},
+				ServerPort:    ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				RedisVersion: ResourceAttributeConfig{Enabled: false},
+				RedisVersion:  ResourceAttributeConfig{Enabled: false},
+				ServerAddress: ResourceAttributeConfig{Enabled: false},
+				ServerPort:    ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

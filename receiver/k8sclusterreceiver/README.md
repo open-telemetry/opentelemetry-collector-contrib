@@ -5,13 +5,14 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 |               | [development]: logs   |
-| Distributions | [contrib], [observiq], [splunk], [sumo] |
+| Distributions | [contrib], [liatrio], [observiq], [splunk], [sumo] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8scluster%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8scluster) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8scluster%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8scluster) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@povilasv](https://www.github.com/povilasv) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[liatrio]: https://github.com/liatrio/liatrio-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
@@ -19,14 +20,14 @@
 
 The Kubernetes Cluster receiver collects cluster-level metrics and entity events from the Kubernetes
 API server. It uses the K8s API to listen for updates. A single instance of this
-receiver can be used to monitor a cluster.
+receiver should be used to monitor a cluster.
 
-Currently this receiver supports authentication via service accounts only. See [example](#example)
+Currently, this receiver supports authentication via service accounts only. See [example](#example)
 for more information.
 
 ## Metrics
 
-Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml and [documentation.md](./documentation.md).
+Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) and [documentation.md](./documentation.md).
 
 ## Configuration
 
@@ -46,7 +47,7 @@ frequency at which metrics are emitted by this receiver.
 - `metadata_collection_interval` (default = `5m`): Collection interval for metadata
 for K8s entities such as pods, nodes, etc.
 Metadata of the particular entity in the cluster is collected when the entity changes.
-In addition metadata of all entities is collected periodically even if no changes happen.
+In addition, metadata of all entities is collected periodically even if no changes happen.
 This setting controls the interval between periodic collections.
 Setting the duration to 0 will disable periodic collection (however will not impact
 metadata collection on changes).
@@ -137,7 +138,7 @@ for the format of emitted log records.
 ## Example
 
 Here is an example deployment of the collector that sets up this receiver along with
-the logging exporter.
+the debug exporter.
 
 Follow the below sections to setup various Kubernetes resources required for the deployment.
 
@@ -159,15 +160,15 @@ data:
       k8s_cluster:
         collection_interval: 10s
     exporters:
-      logging:
+      debug:
     service:
       pipelines:
         metrics:
           receivers: [k8s_cluster]
-          exporters: [logging]
+          exporters: [debug]
         logs/entity_events:
           receivers: [k8s_cluster]
-          exporters: [logging]
+          exporters: [debug]
 EOF
 ```
 

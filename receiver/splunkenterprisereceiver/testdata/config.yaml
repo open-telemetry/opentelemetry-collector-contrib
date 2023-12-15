@@ -1,0 +1,18 @@
+# Example config for the Splunk Enterprise Receiver.
+basicauth/client:
+  client_auth:
+    username: admin
+    password: securityFirst
+
+splunkenterprise:
+  # required settings
+  auth: basicauth/client # must use basicauthextension
+  endpoint: "https://localhost:8089"  # Optional settings
+  collection_interval: 10s
+  timeout: 11s
+  # Also optional: metric settings
+  metrics:
+    splunk.license.index.usage:
+      enabled: true
+    splunk.indexer.throughput:
+      enabled: false

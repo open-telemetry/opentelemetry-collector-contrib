@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
-func SetValue(value pcommon.Value, val interface{}) error {
+func SetValue(value pcommon.Value, val any) error {
 	var err error
 	switch v := val.(type) {
 	case string:
@@ -61,7 +61,7 @@ func SetValue(value pcommon.Value, val interface{}) error {
 		v.CopyTo(value.SetEmptySlice())
 	case pcommon.Map:
 		v.CopyTo(value.SetEmptyMap())
-	case map[string]interface{}:
+	case map[string]any:
 		value.SetEmptyMap()
 		for mk, mv := range v {
 			err = SetMapValue(value.Map(), []ottl.Key{{String: &mk}}, mv)
@@ -71,7 +71,8 @@ func SetValue(value pcommon.Value, val interface{}) error {
 }
 
 func getIndexableValue(value pcommon.Value, keys []ottl.Key) (any, error) {
-	val, ok := value, false
+	val := value
+	var ok bool
 	for i := 0; i < len(keys); i++ {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:

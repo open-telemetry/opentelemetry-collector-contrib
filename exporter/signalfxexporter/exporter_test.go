@@ -189,14 +189,14 @@ func TestConsumeMetrics(t *testing.T) {
 			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
-			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
 			require.NoError(t, err)
 			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
 				sfxClientBase: sfxClientBase{
 					ingestURL: serverURL,
 					client:    client,
-					zippers: sync.Pool{New: func() interface{} {
+					zippers: sync.Pool{New: func() any {
 						return gzip.NewWriter(nil)
 					}},
 				},
@@ -729,13 +729,14 @@ func TestConsumeMetadata(t *testing.T) {
 		cfg.ExcludeMetrics,
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
+		false,
 	)
 	require.NoError(t, err)
 	type args struct {
 		metadata []*metadata.MetadataUpdate
 	}
 	type fields struct {
-		payLoad map[string]interface{}
+		payLoad map[string]any
 	}
 	tests := []struct {
 		name                   string
@@ -750,8 +751,8 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test property updates",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{
+				map[string]any{
+					"customProperties": map[string]any{
 						"prop.erty1": "val1",
 						"property2":  nil,
 						"prop.erty3": "val33",
@@ -810,12 +811,12 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test tag updates",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{},
-					"tags": []interface{}{
+				map[string]any{
+					"customProperties": map[string]any{},
+					"tags": []any{
 						"tag.1",
 					},
-					"tagsToRemove": []interface{}{
+					"tagsToRemove": []any{
 						"tag/2",
 					},
 				},
@@ -852,16 +853,16 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test quick successive updates",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{
+				map[string]any{
+					"customProperties": map[string]any{
 						"property1": nil,
 						"property2": "val2",
 						"property3": nil,
 					},
-					"tags": []interface{}{
+					"tags": []any{
 						"tag/2",
 					},
-					"tagsToRemove": []interface{}{
+					"tagsToRemove": []any{
 						"tag.1",
 					},
 				},
@@ -922,8 +923,8 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test updates on dimensions with nonalphanumeric characters (other than the default allow list)",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{
+				map[string]any{
+					"customProperties": map[string]any{
 						"prop.erty1": "val1",
 						"property2":  nil,
 						"prop.erty3": "val33",
@@ -1011,7 +1012,7 @@ func TestConsumeMetadata(t *testing.T) {
 				assert.Equal(t, tt.expectedDimensionKey, dimPair[0])
 				assert.Equal(t, tt.expectedDimensionValue, dimPair[1])
 
-				p := map[string]interface{}{
+				p := map[string]any{
 					"customProperties": map[string]*string{},
 					"tags":             []string{},
 					"tagsToRemove":     []string{},
@@ -1088,7 +1089,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
 	require.NoError(b, err)
 	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
@@ -1097,7 +1098,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 			client: &http.Client{
 				Timeout: 1 * time.Second,
 			},
-			zippers: sync.Pool{New: func() interface{} {
+			zippers: sync.Pool{New: func() any {
 				return gzip.NewWriter(nil)
 			}},
 		},
@@ -1281,7 +1282,7 @@ func TestTLSIngestConnection(t *testing.T) {
 func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
 	require.NoError(t, err)
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.")
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1324,7 +1325,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		cfg.ExcludeMetrics,
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
-	)
+		false)
 	require.NoError(t, err)
 
 	metadata := []*metadata.MetadataUpdate{

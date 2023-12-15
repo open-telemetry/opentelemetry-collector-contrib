@@ -1,0 +1,41 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: rattr1
+          value:
+            stringValue: "5"
+        - key: rattr2
+          value:
+            stringValue: "1"
+    scopeMetrics:
+      - metrics:
+          - description: test description
+            gauge:
+              dataPoints:
+                - asInt: "3"
+                  timeUnixNano: "1651783494931319000"
+            name: metric1
+            unit: By
+        scope:
+          name: otelcol/snmpreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: rattr1
+          value:
+            stringValue: "5"
+        - key: rattr2
+          value:
+            stringValue: "2"
+    scopeMetrics:
+      - metrics:
+          - description: test description
+            gauge:
+              dataPoints:
+                - asInt: "4"
+                  timeUnixNano: "1651783494931319000"
+            name: metric1
+            unit: By
+        scope:
+          name: otelcol/snmpreceiver
+          version: latest

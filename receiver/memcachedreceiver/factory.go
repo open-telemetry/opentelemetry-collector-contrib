@@ -33,10 +33,10 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	cfg.CollectionInterval = defaultCollectionInterval
+	cfg.Timeout = defaultTimeout
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		Timeout:                   defaultTimeout,
 		NetAddr: confignet.NetAddr{
 			Endpoint: defaultEndpoint,
 		},

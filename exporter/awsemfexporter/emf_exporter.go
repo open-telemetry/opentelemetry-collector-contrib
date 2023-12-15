@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
@@ -29,7 +30,7 @@ const (
 )
 
 type emfExporter struct {
-	pusherMap        map[cwlogs.PusherKey]cwlogs.Pusher
+	pusherMap        map[cwlogs.StreamKey]cwlogs.Pusher
 	svcStructuredLog *cwlogs.Client
 	config           *Config
 
@@ -55,7 +56,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(set.Logger, awsConfig, set.BuildInfo, config.LogGroupName, config.LogRetention, config.Tags, session)
+	svcStructuredLog := cwlogs.NewClient(set.Logger, awsConfig, set.BuildInfo, config.LogGroupName, config.LogRetention, config.Tags, session, metadata.Type)
 	collectorIdentifier, err := uuid.NewRandom()
 
 	if err != nil {
@@ -68,7 +69,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		metricTranslator: newMetricTranslator(*config),
 		retryCnt:         *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
-		pusherMap:        map[cwlogs.PusherKey]cwlogs.Pusher{},
+		pusherMap:        map[cwlogs.StreamKey]cwlogs.Pusher{},
 	}
 
 	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
@@ -91,9 +92,9 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 			})
 		}
 	}
-	emf.config.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
+	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
 
-	groupedMetrics := make(map[interface{}]*groupedMetric)
+	groupedMetrics := make(map[any]*groupedMetric)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
 	outputDestination := emf.config.OutputDestination
 
@@ -105,22 +106,20 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	}
 
 	for _, groupedMetric := range groupedMetrics {
-		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, emf.config)
-		putLogEvent := translateCWMetricToEMF(cWMetric, emf.config)
+		putLogEvent, err := translateGroupedMetricToEmf(groupedMetric, emf.config, defaultLogStream)
+		if err != nil {
+			return err
+		}
 		// Currently we only support two options for "OutputDestination".
 		if strings.EqualFold(outputDestination, outputDestinationStdout) {
-			fmt.Println(*putLogEvent.InputLogEvent.Message)
-		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-			logGroup := groupedMetric.metadata.logGroup
-			logStream := groupedMetric.metadata.logStream
-			if logStream == "" {
-				logStream = defaultLogStream
+			if putLogEvent != nil &&
+				putLogEvent.InputLogEvent != nil &&
+				putLogEvent.InputLogEvent.Message != nil {
+				fmt.Println(*putLogEvent.InputLogEvent.Message)
 			}
+		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
 
-			emfPusher := emf.getPusher(cwlogs.PusherKey{
-				LogGroupName:  logGroup,
-				LogStreamName: logStream,
-			})
+			emfPusher := emf.getPusher(putLogEvent.StreamKey)
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
 				if returnError != nil {
@@ -144,12 +143,12 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		}
 	}
 
-	emf.config.logger.Info("Finish processing resource metrics", zap.Any("labels", labels))
+	emf.config.logger.Debug("Finish processing resource metrics", zap.Any("labels", labels))
 
 	return nil
 }
 
-func (emf *emfExporter) getPusher(key cwlogs.PusherKey) cwlogs.Pusher {
+func (emf *emfExporter) getPusher(key cwlogs.StreamKey) cwlogs.Pusher {
 
 	var ok bool
 	if _, ok = emf.pusherMap[key]; !ok {

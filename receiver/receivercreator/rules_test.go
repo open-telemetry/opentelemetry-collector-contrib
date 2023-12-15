@@ -28,9 +28,11 @@ func Test_ruleEval(t *testing.T) {
 		{"basic port", args{`type == "port" && name == "http" && pod.labels["app"] == "redis"`, portEndpoint}, true, false},
 		{"basic hostport", args{`type == "hostport" && port == 1234 && process_name == "splunk"`, hostportEndpoint}, true, false},
 		{"basic pod", args{`type == "pod" && labels["region"] == "west-1"`, podEndpoint}, true, false},
+		{"basic service", args{`type == "k8s.service" && labels["region"] == "west-1"`, serviceEndpoint}, true, false},
 		{"annotations", args{`type == "pod" && annotations["scrape"] == "true"`, podEndpoint}, true, false},
 		{"basic container", args{`type == "container" && labels["region"] == "east-1"`, containerEndpoint}, true, false},
 		{"basic k8s.node", args{`type == "k8s.node" && kubelet_endpoint_port == 10250`, k8sNodeEndpoint}, true, false},
+		{"relocated type builtin", args{`type == "k8s.node" && typeOf("some string") == "string"`, k8sNodeEndpoint}, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

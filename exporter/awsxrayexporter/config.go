@@ -24,4 +24,7 @@ type Config struct {
 	LogGroupNames []string `mapstructure:"aws_log_groups"`
 	// TelemetryConfig contains the options for telemetry collection.
 	TelemetryConfig telemetry.Config `mapstructure:"telemetry,omitempty"`
+
+	// skipTimestampValidation if enabled, will skip timestamp validation logic on the trace ID
+	skipTimestampValidation bool
 }

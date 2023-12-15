@@ -7,16 +7,16 @@
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Frouting%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Frouting) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Frouting%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Frouting) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling), [@mwear](https://www.github.com/mwear) |
 
-[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 
 ## Supported Pipeline Types
 
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
 | ------------------------ | ------------------------ | ----------------- |
-| traces | traces | [development] |
-| metrics | metrics | [development] |
-| logs | logs | [development] |
+| traces | traces | [alpha] |
+| metrics | metrics | [alpha] |
+| logs | logs | [alpha] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
@@ -35,7 +35,8 @@ The following settings are available:
 - `table.statement (required)`: the routing condition provided as the [OTTL] statement.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
-- `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `ignore` and `propagate`. If `ignored` is used and a statement's condition has an error then the payload will be routed to the default pipelines.  If not supplied, `propagate` is used.
+- `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignored` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
+- `match_once (optional, default: false)`: determines whether the connector matches multiple statements or not. If enabled, the payload will be routed to the first pipeline in the `table` whose routing condition is met.
 
 Example:
 
@@ -55,16 +56,27 @@ connectors:
   routing:
     default_pipelines: [traces/jaeger]
     error_mode: ignore
+    match_once: false
     table:
       - statement: route() where attributes["X-Tenant"] == "acme"
         pipelines: [traces/jaeger-acme]
       - statement: delete_key(attributes, "X-Tenant") where IsMatch(attributes["X-Tenant"], ".*corp")
         pipelines: [traces/jaeger-ecorp]
 
+  routing/match_once:
+    default_pipelines: [traces/jaeger]
+    error_mode: ignore
+    match_once: true
+    table:
+      - statement: route() where attributes["X-Tenant"] == "acme"
+        pipelines: [traces/jaeger-acme]
+      - statement: route() where attributes["X-Tenant"] == ".*acme"
+        pipelines: [traces/jaeger-ecorp]
+
 service:
   pipelines:
     traces/in:
-      receivers: [oltp]
+      receivers: [otlp]
       exporters: [routing]
     traces/jaeger:
       receivers: [routing]

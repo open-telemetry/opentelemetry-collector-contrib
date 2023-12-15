@@ -42,10 +42,9 @@ func replacePatternWithAttrValue(s, patternKey string, attrMap map[string]string
 			return replace(s, pattern, value, logger)
 		} else if value, ok := attrMap[patternKeyToAttributeMap[patternKey]]; ok {
 			return replace(s, pattern, value, logger)
-		} else {
-			logger.Debug("No resource attribute found for pattern " + pattern)
-			return strings.ReplaceAll(s, pattern, "undefined"), false
 		}
+		logger.Debug("No resource attribute found for pattern " + pattern)
+		return strings.ReplaceAll(s, pattern, "undefined"), false
 	}
 	return s, true
 }

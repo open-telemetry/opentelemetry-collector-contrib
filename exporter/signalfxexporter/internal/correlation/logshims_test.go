@@ -7,12 +7,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/signalfx/signalfx-agent/pkg/apm/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
 )
 
 func newShimTest() (*observer.ObservedLogs, zapShim) {

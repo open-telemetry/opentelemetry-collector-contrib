@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
@@ -34,7 +34,7 @@ type metricsReceiver struct {
 
 	logger common.Logger
 
-	obsrecv *obsreport.Receiver
+	obsrecv *receiverhelper.ObsReport
 
 	settings component.TelemetrySettings
 }
@@ -45,7 +45,7 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 	if err != nil {
 		return nil, err
 	}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "http",
 		ReceiverCreateSettings: settings,
@@ -73,6 +73,7 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	router := http.NewServeMux()
 	router.HandleFunc("/write", r.handleWrite)        // InfluxDB 1.x
 	router.HandleFunc("/api/v2/write", r.handleWrite) // InfluxDB 2.x
+	router.HandleFunc("/ping", r.handlePing)
 
 	r.wg.Add(1)
 	r.server, err = r.httpServerSettings.ToServer(host, r.settings, router)
@@ -106,10 +107,14 @@ const (
 )
 
 var precisions = map[string]lineprotocol.Precision{
-	lineprotocol.Nanosecond.String():  lineprotocol.Nanosecond,
-	lineprotocol.Microsecond.String(): lineprotocol.Microsecond,
-	lineprotocol.Millisecond.String(): lineprotocol.Millisecond,
-	lineprotocol.Second.String():      lineprotocol.Second,
+	"ns": lineprotocol.Nanosecond,
+	"n":  lineprotocol.Nanosecond,
+	"µs": lineprotocol.Microsecond,
+	"µ":  lineprotocol.Microsecond,
+	"us": lineprotocol.Microsecond,
+	"u":  lineprotocol.Microsecond,
+	"ms": lineprotocol.Millisecond,
+	"s":  lineprotocol.Second,
 }
 
 func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) {
@@ -152,7 +157,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 			return
 		}
 
-		fields := make(map[string]interface{})
+		fields := make(map[string]any)
 		for k, vField, err = lpDecoder.NextField(); k != nil && err == nil; k, vField, err = lpDecoder.NextField() {
 			fields[string(k)] = vField.Interface()
 		}
@@ -195,5 +200,9 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (r *metricsReceiver) handlePing(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }

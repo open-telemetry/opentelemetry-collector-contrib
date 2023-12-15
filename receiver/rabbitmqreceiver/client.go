@@ -66,7 +66,7 @@ func (c *rabbitmqClient) GetQueues(ctx context.Context) ([]*models.Queue, error)
 	return queues, nil
 }
 
-func (c *rabbitmqClient) get(ctx context.Context, path string, respObj interface{}) error {
+func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) error {
 	// Construct endpoint and create request
 	url := c.hostEndpoint + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)

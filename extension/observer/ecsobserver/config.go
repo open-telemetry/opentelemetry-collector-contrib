@@ -65,8 +65,8 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// DefaultConfig only applies docker label
-func DefaultConfig() Config {
+// defaultConfig only applies docker label
+func defaultConfig() Config {
 	return Config{
 		ClusterName:     "default",
 		ClusterRegion:   os.Getenv(awsRegionEnvKey),

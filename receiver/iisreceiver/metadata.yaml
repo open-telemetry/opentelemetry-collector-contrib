@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib, observiq, sumo]
   codeowners:
-    active: [mrod1598, djaglowski]
+    active: [Mrod1598, djaglowski]
 
 resource_attributes:
   iis.site:

@@ -119,17 +119,16 @@ func (d *dockerObserver) ListEndpoints() []observer.Endpoint {
 // containerEndpoints generates a list of observer.Endpoint given a Docker ContainerJSON.
 // This function will only generate endpoints if a container is in the Running state and not Paused.
 func (d *dockerObserver) containerEndpoints(c *dtypes.ContainerJSON) []observer.Endpoint {
-	var endpoints []observer.Endpoint
 
 	if !c.State.Running || c.State.Running && c.State.Paused {
-		return endpoints
+		return nil
 	}
 
 	knownPorts := map[nat.Port]bool{}
 	for k := range c.Config.ExposedPorts {
 		knownPorts[k] = true
 	}
-
+	endpoints := make([]observer.Endpoint, 0, len(knownPorts))
 	// iterate over exposed ports and try to create endpoints
 	for portObj := range knownPorts {
 		endpoint := d.endpointForPort(portObj, c)

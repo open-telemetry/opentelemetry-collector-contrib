@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // newCarbonExporter returns a new Carbon exporter.
@@ -20,12 +22,20 @@ func newCarbonExporter(cfg *Config, set exporter.CreateSettings) (exporter.Metri
 		connPool: newTCPConnPool(cfg.Endpoint, cfg.Timeout),
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	exp, err := exporterhelper.NewMetricsExporter(
 		context.TODO(),
 		set,
 		cfg,
 		sender.pushMetricsData,
+		// We don't use exporterhelper.WithTimeout because the TCP connection does not accept writing with context.
+		exporterhelper.WithQueue(cfg.QueueConfig),
+		exporterhelper.WithRetry(cfg.RetryConfig),
 		exporterhelper.WithShutdown(sender.Shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return resourcetotelemetry.WrapMetricsExporter(cfg.ResourceToTelemetryConfig, exp), nil
 }
 
 // carbonSender is the struct tying the translation function and the TCP
@@ -57,7 +67,7 @@ func (cs *carbonSender) Shutdown(context.Context) error {
 // https://github.com/signalfx/gateway/blob/master/protocol/carbon/conn_pool.go
 // but not its implementation).
 //
-// It keeps a unbounded "stack" of TCPConn instances always "popping" the most
+// It keeps an unbounded "stack" of TCPConn instances always "popping" the most
 // recently returned to the pool. There is no accounting to terminating old
 // unused connections as that was the case on the prior art mentioned above.
 type connPool struct {

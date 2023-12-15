@@ -17,9 +17,9 @@ import (
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 )
 
@@ -32,8 +32,8 @@ type MockAwsXrayReceiver struct {
 	server *http.Server
 
 	nextConsumer consumer.Traces
-	obsrecv      *obsreport.Receiver
-	httpsObsrecv *obsreport.Receiver
+	obsrecv      *receiverhelper.ObsReport
+	httpsObsrecv *receiverhelper.ObsReport
 }
 
 // New creates a new awsxrayreceiver.MockAwsXrayReceiver reference.
@@ -45,11 +45,11 @@ func New(
 		return nil, component.ErrNilNextConsumer
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}
-	httpsObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: params.ID, Transport: "https", ReceiverCreateSettings: params})
+	httpsObsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverID: params.ID, Transport: "https", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 		log.Fatalln(err)
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 
 	if err = json.Unmarshal(body, &result); err != nil {
 		log.Fatalln(err)
@@ -140,13 +140,13 @@ func (ar *MockAwsXrayReceiver) Shutdown(context.Context) error {
 }
 
 func ToTraces(rawSeg []byte) (ptrace.Traces, error) {
-	var result map[string]interface{}
+	var result map[string]any
 	err := json.Unmarshal(rawSeg, &result)
 	if err != nil {
 		return ptrace.Traces{}, err
 	}
 
-	records, ok := result["TraceSegmentDocuments"].([]interface{})
+	records, ok := result["TraceSegmentDocuments"].([]any)
 	if !ok {
 		panic("Not a slice")
 	}

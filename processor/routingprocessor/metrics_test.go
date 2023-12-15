@@ -471,3 +471,46 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		assert.Equal(t, attr.Double(), float64(-1.0))
 	})
 }
+
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26462
+func TestMetricsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
+	// prepare
+	defaultExp := &mockMetricsExporter{}
+	firstExp := &mockMetricsExporter{}
+
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+		},
+	})
+
+	exp, err := newMetricProcessor(noopTelemetrySettings, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 0`,
+				Exporters: []string{"otlp/1"},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	m := pmetric.NewMetrics()
+
+	rm := m.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutInt("value", 1)
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetEmptyGauge()
+	metric.SetName("cpu")
+
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	// test
+	// before #26464, this would panic
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+	// verify
+	assert.Len(t, defaultExp.AllMetrics(), 1)
+	assert.Len(t, firstExp.AllMetrics(), 0)
+}

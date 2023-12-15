@@ -150,12 +150,11 @@ func NewPusher(params exporter.CreateSettings, pcfg PusherConfig) inframetadata.
 
 // RunPusher to push host metadata payloads from the host where the Collector is running periodically to Datadog intake.
 // This function is blocking and it is meant to be run on a goroutine.
-func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map) {
+func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map, reporter *inframetadata.Reporter) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
 	defer params.Logger.Debug("Shut down host metadata routine")
-	pusher := NewPusher(params, pcfg)
 
 	// Get host metadata from resources and fill missing info using our exporter.
 	// Currently we only retrieve it once but still send the same payload
@@ -169,23 +168,18 @@ func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherC
 		hostMetadata = metadataFromAttributes(attrs)
 	}
 	fillHostMetadata(params, pcfg, p, &hostMetadata)
-
-	// Run one first time at startup
-	if err := pusher.Push(ctx, hostMetadata); err != nil {
-		params.Logger.Warn("Initial host metadata failed", zap.Error(err))
-	} else {
-		params.Logger.Info("Sent initial host metadata")
+	// Consume one first time
+	if err := reporter.ConsumeHostMetadata(hostMetadata); err != nil {
+		params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadata))
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C: // Send host metadata
-			if err := pusher.Push(ctx, hostMetadata); err != nil {
-				params.Logger.Warn("Sending host metadata failed", zap.Error(err))
-			} else {
-				params.Logger.Info("Sent host metadata")
+		case <-ticker.C:
+			if err := reporter.ConsumeHostMetadata(hostMetadata); err != nil {
+				params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadata))
 			}
 		}
 	}

@@ -9,7 +9,7 @@ exporters:
     endpoint: "127.0.0.1:55680"
     tls:
       insecure: true
-  logging:
+  debug:
     loglevel: info
 
 processors:
@@ -20,8 +20,8 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, logging]
+      exporters: [otlp, debug]
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, logging]
+      exporters: [otlp, debug]

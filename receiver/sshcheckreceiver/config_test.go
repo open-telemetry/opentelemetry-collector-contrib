@@ -4,10 +4,13 @@
 package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -32,7 +35,7 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "missing password and keyfile",
+			desc: "missing password and key_file",
 			cfg: &Config{
 				SSHClientSettings: configssh.SSHClientSettings{
 					Username: "otelu",
@@ -82,7 +85,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: error(nil),
 		},
 		{
-			desc: "no error with keyfile",
+			desc: "no error with key_file",
 			cfg: &Config{
 				SSHClientSettings: configssh.SSHClientSettings{
 					Endpoint: "localhost:2222",
@@ -104,4 +107,37 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	// load test config
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	rcvrs, err := cm.Sub("receivers")
+	require.NoError(t, err)
+	sshconf, err := rcvrs.Sub("sshcheck")
+	require.NoError(t, err)
+	// unmarshal to receiver config
+	actualConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
+	require.True(t, ok)
+	require.NoError(t, sshconf.Unmarshal(actualConfig))
+
+	// set expected config
+	expectedConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
+	require.True(t, ok)
+
+	expectedConfig.ScraperControllerSettings = scraperhelper.ScraperControllerSettings{
+		InitialDelay:       time.Second,
+		CollectionInterval: 10 * time.Second,
+	}
+	expectedConfig.SSHClientSettings = configssh.SSHClientSettings{
+		Endpoint:      "notdefault:1313",
+		Username:      "notdefault_username",
+		Password:      "notdefault_password",
+		KeyFile:       "notdefault/path/keyfile",
+		KnownHosts:    "path/to/collector_known_hosts",
+		IgnoreHostKey: false,
+		Timeout:       10 * time.Second,
+	}
+	require.Equal(t, expectedConfig, actualConfig)
 }

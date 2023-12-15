@@ -28,41 +28,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const operatorType = "journald_input"
 const waitDuration = 1 * time.Second
 
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
-
-// NewConfig creates a new input config with default values
-func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
-}
-
-// NewConfigWithID creates a new input config with default values
-func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, operatorType),
-		StartAt:     "end",
-		Priority:    "info",
-	}
-}
-
-// Config is the configuration of a journald input operator
-type Config struct {
-	helper.InputConfig `mapstructure:",squash"`
-
-	Directory *string       `mapstructure:"directory,omitempty"`
-	Files     []string      `mapstructure:"files,omitempty"`
-	StartAt   string        `mapstructure:"start_at,omitempty"`
-	Units     []string      `mapstructure:"units,omitempty"`
-	Priority  string        `mapstructure:"priority,omitempty"`
-	Matches   []MatchConfig `mapstructure:"matches,omitempty"`
-	Grep      string        `mapstructure:"grep,omitempty"`
-}
-
-type MatchConfig map[string]string
 
 // Build will build a journald input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
@@ -113,10 +83,18 @@ func (c Config) buildArgs() ([]string, error) {
 		args = append(args, "--unit", unit)
 	}
 
+	for _, identifier := range c.Identifiers {
+		args = append(args, "--identifier", identifier)
+	}
+
 	args = append(args, "--priority", c.Priority)
 
 	if len(c.Grep) > 0 {
 		args = append(args, "--grep", c.Grep)
+	}
+
+	if c.Dmesg {
+		args = append(args, "--dmesg")
 	}
 
 	switch {
@@ -323,7 +301,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 }
 
 func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, error) {
-	var body map[string]interface{}
+	var body map[string]any
 	err := operator.json.Unmarshal(line, &body)
 	if err != nil {
 		return nil, "", err

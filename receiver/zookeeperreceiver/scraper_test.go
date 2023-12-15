@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
@@ -288,8 +288,6 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, "zookeeper", z.Name())
 
-			ctx := context.Background()
-
 			if tt.setConnectionDeadline != nil {
 				z.setConnectionDeadline = tt.setConnectionDeadline
 			}
@@ -301,7 +299,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.sendCmd != nil {
 				z.sendCmd = tt.sendCmd
 			}
-
+			ctx, cancel := context.WithTimeout(context.Background(), z.config.Timeout)
+			defer cancel()
 			actualMetrics, err := z.scrape(ctx)
 			require.NoError(t, z.shutdown(ctx))
 

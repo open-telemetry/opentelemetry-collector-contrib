@@ -8,5 +8,5 @@ import (
 
 const (
 	Type             = "haproxy"
-	MetricsStability = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelBeta
 )

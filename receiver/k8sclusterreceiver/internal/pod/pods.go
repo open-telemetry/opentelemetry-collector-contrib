@@ -41,7 +41,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			NodeName: pod.Spec.NodeName,
 		},
 		Status: corev1.PodStatus{
-			Phase: pod.Status.Phase,
+			Phase:    pod.Status.Phase,
+			QOSClass: pod.Status.QOSClass,
 		},
 	}
 	for _, cs := range pod.Status.ContainerStatuses {
@@ -70,16 +71,34 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 
 func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
 	mb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
+	mb.RecordK8sPodStatusReasonDataPoint(ts, int64(reasonToInt(pod.Status.Reason)))
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(pod.Namespace)
 	rb.SetK8sNodeName(pod.Spec.NodeName)
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sPodUID(string(pod.UID))
-	rb.SetOpencensusResourcetype("k8s")
+	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	for _, c := range pod.Spec.Containers {
 		container.RecordSpecMetrics(logger, mb, c, pod, ts)
+	}
+}
+
+func reasonToInt(reason string) int32 {
+	switch reason {
+	case "Evicted":
+		return 1
+	case "NodeAffinity":
+		return 2
+	case "NodeLost":
+		return 3
+	case "Shutdown":
+		return 4
+	case "UnexpectedAdmissionError":
+		return 5
+	default:
+		return 6
 	}
 }
 

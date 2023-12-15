@@ -457,6 +457,48 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 }
 
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26462
+func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
+	// prepare
+	defaultExp := &mockTracesExporter{}
+	firstExp := &mockTracesExporter{}
+
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+		},
+	})
+
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 0`,
+				Exporters: []string{"otlp/1"},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	tr := ptrace.NewTraces()
+	rl := tr.ResourceSpans().AppendEmpty()
+	rl.Resource().Attributes().PutInt("value", 1)
+	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("span")
+
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	// test
+	// before #26464, this would panic
+	require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+	// verify
+	assert.Len(t, defaultExp.AllTraces(), 1)
+	assert.Len(t, firstExp.AllTraces(), 0)
+
+}
+
 func TestTraceProcessorCapabilities(t *testing.T) {
 	// prepare
 	config := &Config{

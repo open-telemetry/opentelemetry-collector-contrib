@@ -1,0 +1,10 @@
+{
+  "records": [
+    {
+      "time": "2022-11-11T04:48:27.6767145Z",
+      "resourceId": "/RESOURCE_ID",
+      "operationName": "SecretGet",
+      "category": "AuditEvent"
+    }
+  ]
+}

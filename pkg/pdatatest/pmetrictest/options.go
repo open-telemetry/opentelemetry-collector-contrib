@@ -6,6 +6,7 @@ package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -59,6 +60,7 @@ func maskMetricSliceValues(metrics pmetric.MetricSlice, metricNames ...string) {
 
 func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 	var dataPointSlice pmetric.NumberDataPointSlice
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dataPointSlice = metric.Gauge().DataPoints()
@@ -96,6 +98,7 @@ func maskTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
@@ -139,6 +142,7 @@ func maskStartTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
@@ -236,6 +240,81 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
 			}
 		}
+	}
+}
+
+// MatchMetricAttributeValue is a CompareMetricsOption that transforms a metric attribute value based on a regular expression.
+func MatchMetricAttributeValue(attributeName string, pattern string, metricNames ...string) CompareMetricsOption {
+	re := regexp.MustCompile(pattern)
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		matchMetricAttributeValue(expected, attributeName, re, metricNames)
+		matchMetricAttributeValue(actual, attributeName, re, metricNames)
+	})
+}
+
+func matchMetricAttributeValue(metrics pmetric.Metrics, attributeName string, re *regexp.Regexp, metricNames []string) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			matchMetricSliceAttributeValues(ilms.At(j).Metrics(), attributeName, re, metricNames)
+		}
+	}
+}
+
+func matchMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName string, re *regexp.Regexp, metricNames []string) {
+	metricNameSet := make(map[string]bool, len(metricNames))
+	for _, metricName := range metricNames {
+		metricNameSet[metricName] = true
+	}
+
+	for i := 0; i < metrics.Len(); i++ {
+		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
+			dps := getDataPointSlice(metrics.At(i))
+			matchDataPointSliceAttributeValues(dps, attributeName, re)
+
+			// If attribute values are ignored, some data points may become
+			// indistinguishable from each other, but sorting by value allows
+			// for a reasonably thorough comparison and a deterministic outcome.
+			dps.Sort(func(a, b pmetric.NumberDataPoint) bool {
+				if a.IntValue() < b.IntValue() {
+					return true
+				}
+				if a.DoubleValue() < b.DoubleValue() {
+					return true
+				}
+				return false
+			})
+		}
+	}
+}
+
+func matchDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, attributeName string, re *regexp.Regexp) {
+	for i := 0; i < dataPoints.Len(); i++ {
+		attributes := dataPoints.At(i).Attributes()
+		attribute, ok := attributes.Get(attributeName)
+		if ok {
+			results := re.FindStringSubmatch(attribute.Str())
+			if len(results) > 0 {
+				attribute.SetStr(results[0])
+			}
+		}
+	}
+}
+
+// MatchResourceAttributeValue is a CompareMetricsOption that transforms a resource attribute value based on a regular expression.
+func MatchResourceAttributeValue(attributeName string, pattern string) CompareMetricsOption {
+	re := regexp.MustCompile(pattern)
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		matchResourceAttributeValue(expected, attributeName, re)
+		matchResourceAttributeValue(actual, attributeName, re)
+	})
+}
+
+func matchResourceAttributeValue(metrics pmetric.Metrics, attributeName string, re *regexp.Regexp) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		internal.MatchResourceAttributeValue(rms.At(i).Resource(), attributeName, re)
 	}
 }
 
@@ -392,6 +471,7 @@ func sortMetricDataPointSlices(ms pmetric.Metrics) {
 		for j := 0; j < ms.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					sortNumberDataPointSlice(m.Gauge().DataPoints())

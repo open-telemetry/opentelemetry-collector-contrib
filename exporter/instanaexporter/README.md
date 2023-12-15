@@ -62,8 +62,6 @@ receivers:
 processors:
   batch:
 exporters:
-  logging:
-    loglevel: debug
   instana:
     endpoint: ${env:INSTANA_ENDPOINT_URL}
     agent_key: ${env:INSTANA_AGENT_KEY}

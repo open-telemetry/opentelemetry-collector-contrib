@@ -3,8 +3,7 @@ type: coralogix
 status:
   class: exporter
   stability:
-    beta: [traces, metrics]
-    alpha: [logs]
+    beta: [traces, metrics, logs]
   distributions: [contrib, observiq]
   codeowners:
-    active: [oded-dd, povilasv, matej-g]
+    active: [povilasv, matej-g]

@@ -513,7 +513,7 @@ func TestGetScalarData(t *testing.T) {
 				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu1 := gosnmp.SnmpPDU{
-					Value: uint64(math.MaxUint64),
+					Value: float64(math.MaxFloat64),
 					Name:  "1",
 					Type:  gosnmp.Counter64,
 				}
@@ -883,7 +883,7 @@ func TestGetIndexedData(t *testing.T) {
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				pdu := gosnmp.SnmpPDU{
-					Value: uint64(math.MaxUint64),
+					Value: float64(math.MaxFloat64),
 					Name:  "1.1",
 					Type:  gosnmp.Counter64,
 				}

@@ -103,10 +103,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		event := &watch.Event{
 			Type: watch.Added,
 			Object: &unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind":       "Event",
 					"apiVersion": "v1",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name": "generic-name",
 					},
 				},
@@ -143,10 +143,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		event := &watch.Event{
 			Type: watch.Added,
 			Object: &unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind":       "Event",
 					"apiVersion": "v1",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name": "generic-name",
 					},
 				},

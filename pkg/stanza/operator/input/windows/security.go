@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-func parseSecurity(message string) (string, map[string]interface{}) {
+func parseSecurity(message string) (string, map[string]any) {
 	var subject string
-	details := map[string]interface{}{}
+	details := map[string]any{}
 
 	mp := newMessageProcessor(message)
 
@@ -58,8 +58,8 @@ func parseSecurity(message string) (string, map[string]interface{}) {
 	return subject, details
 }
 
-func (mp *messageProcessor) consumeSubsection(depth int) map[string]interface{} {
-	sub := map[string]interface{}{}
+func (mp *messageProcessor) consumeSubsection(depth int) map[string]any {
+	sub := map[string]any{}
 	for mp.hasNext() {
 		l := mp.next()
 		switch l.t {

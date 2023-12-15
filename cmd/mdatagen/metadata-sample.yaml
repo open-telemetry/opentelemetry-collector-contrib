@@ -41,6 +41,27 @@ resource_attributes:
     type: map 
     enabled: true
 
+  string.resource.attr_disable_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true 
+    warnings:
+      if_enabled_not_set: This resource_attribute will be disabled by default soon.
+
+  string.resource.attr_remove_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: false 
+    warnings:
+      if_configured: This resource_attribute is deprecated and will be removed soon.
+
+  string.resource.attr_to_be_removed:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true 
+    warnings:
+      if_enabled: This resource_attribute is deprecated and will be removed soon.
+
 attributes:
   string_attr:
     description: Attribute with any string value.
@@ -86,6 +107,16 @@ metrics:
     enabled: false
     description: "[DEPRECATED] Gauge double metric disabled by default."
     unit: 1
+    gauge:
+      value_type: double
+    attributes: [string_attr, boolean_attr]
+    warnings:
+      if_configured: This metric is deprecated and will be removed soon.
+
+  optional.metric.empty_unit:
+    enabled: false
+    description: "[DEPRECATED] Gauge double metric disabled by default."
+    unit: ""
     gauge:
       value_type: double
     attributes: [string_attr, boolean_attr]

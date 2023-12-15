@@ -20,9 +20,9 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -75,7 +75,7 @@ type sfxReceiver struct {
 	logsConsumer    consumer.Logs
 	server          *http.Server
 	shutdownWG      sync.WaitGroup
-	obsrecv         *obsreport.Receiver
+	obsrecv         *receiverhelper.ObsReport
 }
 
 var _ receiver.Metrics = (*sfxReceiver)(nil)
@@ -89,7 +89,7 @@ func newReceiver(
 	if config.TLSSetting != nil {
 		transport = "https"
 	}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,

@@ -41,7 +41,7 @@ func TestLogsQueryReceiver_Collect(t *testing.T) {
 
 	logRecord = logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
 	assert.Equal(t, "63", logRecord.Body().Str())
-	assert.NotEqual(t, logRecord.ObservedTimestamp(), pcommon.NewTimestampFromTime(now))
+	assert.GreaterOrEqual(t, logRecord.ObservedTimestamp(), pcommon.NewTimestampFromTime(now))
 
 	assert.Equal(t,
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).ObservedTimestamp(),

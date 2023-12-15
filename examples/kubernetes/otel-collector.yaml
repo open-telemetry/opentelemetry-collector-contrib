@@ -12,7 +12,7 @@ data:
         exclude:
           # Exclude logs from all containers named otel-collector
           - /var/log/pods/*/otel-collector/*.log
-        start_at: beginning
+        start_at: end
         include_file_path: true
         include_file_name: false
         operators:
@@ -113,14 +113,14 @@ data:
           - from: connection
 
     exporters:
-      logging:
-        loglevel: debug
+      debug:
+        verbosity: detailed
     service:
       pipelines:
         logs:
           receivers: [filelog]
           processors: [k8sattributes]
-          exporters: [logging]
+          exporters: [debug]
 
 ---
 apiVersion: apps/v1

@@ -21,5 +21,5 @@ resourceLogs:
             severityText: TEST
             spanId: ""
             timeUnixNano: "11651379494838206464"
-            traceId: 7b20d1349ef9b6d6f9d4d1d4a3ac2e82
+            traceId: 8b20d1349ef9b6d6f9d4d1d4a3ac2e82
         scope: {}

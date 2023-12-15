@@ -8,7 +8,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
@@ -22,22 +22,22 @@ var (
 	statCountLogsSampled   = stats.Int64("count_logs_sampled", "Count of logs that were sampled or not", stats.UnitDimensionless)
 )
 
-// SamplingProcessorMetricViews return the metrics views according to given telemetry level.
-func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
+// samplingProcessorMetricViews return the metrics views according to given telemetry level.
+func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 	if level == configtelemetry.LevelNone {
 		return nil
 	}
 
 	sampledTagKeys := []tag.Key{tagPolicyKey, tagSampledKey}
 	countTracesSampledView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statCountTracesSampled.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountTracesSampled.Name()),
 		Measure:     statCountTracesSampled,
 		Description: statCountTracesSampled.Description(),
 		TagKeys:     sampledTagKeys,
 		Aggregation: view.Sum(),
 	}
 	countLogsSampledView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statCountLogsSampled.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountLogsSampled.Name()),
 		Measure:     statCountLogsSampled,
 		Description: statCountLogsSampled.Description(),
 		TagKeys:     sampledTagKeys,

@@ -21,6 +21,7 @@ type Settings struct {
 	DisableTargetInfo   bool
 	ExportCreatedMetric bool
 	AddMetricSuffixes   bool
+	SendMetadata        bool
 }
 
 // FromMetrics converts pmetric.Metrics to prometheus remote write format.
@@ -50,6 +51,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 				}
 
 				// handle individual metric based on type
+				//exhaustive:enforce
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
 					dataPoints := metric.Gauge().DataPoints()

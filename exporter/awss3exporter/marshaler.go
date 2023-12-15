@@ -23,7 +23,7 @@ var (
 	ErrUnknownMarshaler = errors.New("unknown marshaler")
 )
 
-func NewMarshaler(mType MarshalerType, logger *zap.Logger) (marshaler, error) {
+func newMarshaler(mType MarshalerType, logger *zap.Logger) (marshaler, error) {
 	marshaler := &s3Marshaler{logger: logger}
 	switch mType {
 	case OtlpJSON:

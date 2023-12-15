@@ -8,6 +8,18 @@ This document contains documentation for both types of OTTL functions:
 - [Functions](#functions) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
+## Design principles
+
+For the standard OTTL functions described in this document, we specify design principles to ensure they are always
+secure and safe for use:
+
+- Built-in OTTL functions may not access the file system, network, or any other I/O devices.
+- Built-in OTTL functions may share information only through their parameters and results.
+- Built-in OTTL functions must be terminating; they must not loop forever.
+
+OTTL functions are implemented in Go, and so are only limited by what can be implemented in a Go program.
+User-defined OTTL functions may therefore not adhere the above principles.
+
 ## Working with functions
 
 Functions generally expect specific types to be returned by `Paths`.
@@ -16,6 +28,7 @@ Some functions are able to handle different types and will generally convert tho
 In these situations the function will error if it does not know how to do the conversion.
 Use `ErrorMode` to determine how the `Statement` handles these errors.
 See the component-specific guides for how each uses error mode:
+
 - [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#ottl)
 - [routingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor#tech-preview-opentelemetry-transformation-language-statements-as-routing-conditions)
 - [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config)
@@ -26,11 +39,12 @@ Editors are what OTTL uses to transform telemetry.
 
 Editors:
 
-- Are allowed to transform telemetry.  When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
-- May have side effects.  Some Functions may generate telemetry and add it to the telemetry payload to be processed in this batch.
-- May return values.  Although not common and not required, Functions may return values.
+- Are allowed to transform telemetry. When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
+- May have side effects. Some Functions may generate telemetry and add it to the telemetry payload to be processed in this batch.
+- May return values. Although not common and not required, Functions may return values.
 
 Available Editors:
+
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
@@ -55,8 +69,8 @@ The key will be deleted from the map.
 
 Examples:
 
-- `delete_key(attributes, "http.request.header.authorization")`
 
+- `delete_key(attributes, "http.request.header.authorization")`
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
 
@@ -72,10 +86,10 @@ All keys that match the pattern will be deleted from the map.
 
 Examples:
 
-- `delete_key(attributes, "http.request.header.authorization")`
 
+- `delete_matching_keys(attributes, "(?i).*password.*")`
 
-- `delete_key(resource.attributes, "http.request.header.authorization")`
+- `delete_matching_keys(resource.attributes, "(?i).*password.*")`
 
 ### keep_keys
 
@@ -126,6 +140,7 @@ The `merge_maps` function merges the source map into the target map using the su
 `target` is a `pdata.Map` type field. `source` is a `pdata.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
 
 If strategy is:
+
 - `insert`: Insert the value from `source` into `target` where the key does not already exist.
 - `update`: Update the entry in `target` with the value from `source` where the key does exist.
 - `upsert`: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
@@ -144,11 +159,11 @@ Examples:
 
 ### replace_all_matches
 
-`replace_all_matches(target, pattern, replacement)`
+`replace_all_matches(target, pattern, replacement, function)`
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
+`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching string with the hash value of `replacement`.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
@@ -158,10 +173,11 @@ There is currently a bug with OTTL that does not allow the pattern to end with `
 Examples:
 
 - `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
+- `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256)`
 
 ### replace_all_patterns
 
-`replace_all_patterns(target, mode, regex, replacement)`
+`replace_all_patterns(target, mode, regex, replacement, function)`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
@@ -173,6 +189,8 @@ If one or more sections of `target` match `regex` they will get replaced with `r
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
 
+The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching regex pattern with the hash value of `replacement`.
+
 There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
 If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
 [See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
@@ -182,6 +200,7 @@ Examples:
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.", SHA256)`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -189,7 +208,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 ### replace_match
 
-`replace_match(target, pattern, replacement)`
+`replace_match(target, pattern, replacement, function)`
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
@@ -197,16 +216,19 @@ The `replace_match` function allows replacing entire strings if they match a glo
 
 If `target` matches `pattern` it will get replaced with `replacement`.
 
+The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching glob pattern with the hash value of `replacement`.
+
 There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
 [See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
 - `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
+- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256)`
 
 ### replace_pattern
 
-`replace_pattern(target, regex, replacement)`
+`replace_pattern(target, regex, replacement, function)`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
@@ -216,6 +238,8 @@ If one or more sections of `target` match `regex` they will get replaced with `r
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
 
+The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces a matching regex pattern with the hash value of `replacement`.
+
 There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
 If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
 [See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
@@ -224,6 +248,7 @@ Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
 - `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
+- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.", SHA256)`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -275,23 +300,42 @@ Converters are pure functions that take OTTL values as input and output a single
 Unlike functions, they do not modify any input telemetry and always return a value.
 
 Available Converters:
+
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Hour](#hour)
+- [Hours](#hours)
+- [Double](#double)
 - [Duration](#duration)
 - [Int](#int)
+- [IsBool](#isbool)
+- [IsDouble](#isdouble)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
+- [Len](#len)
 - [Log](#log)
+- [Microseconds](#microseconds)
+- [Milliseconds](#milliseconds)
+- [Minutes](#minutes)
+- [Nanoseconds](#nanoseconds)
+- [Now](#now)
 - [ParseJSON](#parsejson)
+- [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
+- [Substring](#substring)
 - [Time](#time)
 - [TraceID](#traceid)
-- [Substring](#substring)
+- [TruncateTime](#truncatetime)
+- [UnixMicro](#unixmicro)
+- [UnixMilli](#unixmilli)
+- [UnixNano](#unixnano)
+- [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
 
 ### Concat
@@ -337,13 +381,36 @@ Examples:
 
 - `ConvertCase(metric.name, "snake")`
 
+### Double
+
+The `Double` Converter converts an inputted `value` into a double.
+
+The returned type is float64.
+
+The input `value` types:
+* float64. returns the `value` without changes.
+* string. Tries to parse a double from string. If it fails then nil will be returned.
+* bool. If `value` is true, then the function will return 1 otherwise 0.
+* int64. The function converts the integer to a double.
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Double(attributes["http.status_code"])`
+
+
+- `Double("2.0")`
+
 ### Duration
 
 `Duration(duration)`
 
-The `Duration` Converter takes a string representation of a duration and converts it to a Golang `time.duration`.
+The `Duration` Converter takes a string representation of a duration and converts it to a [Golang `time.duration`](https://pkg.go.dev/time#ParseDuration).
 
-`duration` is a string.
+`duration` is a string. Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 If either `duration` is nil or is in a format that cannot be converted to Golang `time.duration`, an error is returned.
 
@@ -352,6 +419,22 @@ Examples:
 - `Duration("3s")`
 - `Duration("333ms")`
 - `Duration("1000000h")`
+
+### ExtractPatterns
+
+`ExtractPatterns(target, pattern)`
+
+The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
+
+`target` is a Getter that returns a string. `pattern` is a regex string.
+
+If `target` is not a string or nil `ExtractPatterns` will return an error. If `pattern` does not contain at least 1 named capture group then `ExtractPatterns` will error on startup.
+
+Examples:
+
+- `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+
+- `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
 ### FNV
 
@@ -372,6 +455,34 @@ Examples:
 
 - `FNV("name")`
 
+### Hour
+
+`Hour(value)`
+
+The `Hour` Converter returns the hour from the specified time.  The Converter [uses the `time.Hour` function](https://pkg.go.dev/time#Time.Hour).
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Hour(Now())`
+
+### Hours
+
+`Hours(value)`
+
+The `Hours` Converter returns the duration as a floating point number of hours.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `float64`.
+
+Examples:
+
+- `Hours(Duration("1h"))`
+
 ### Int
 
 `Int(value)`
@@ -381,10 +492,11 @@ The `Int` Converter converts the `value` to int type.
 The returned type is int64.
 
 The input `value` types:
-* float64. Fraction is discharged (truncation towards zero).
-* string. Trying to parse an integer from string if it fails then nil will be returned.
-* bool. If `value` is true, then the function will return 1 otherwise 0.
-* int64. The function returns the `value` without changes.
+
+- float64. Fraction is discharged (truncation towards zero).
+- string. Trying to parse an integer from string if it fails then nil will be returned.
+- bool. If `value` is true, then the function will return 1 otherwise 0.
+- int64. The function returns the `value` without changes.
 
 If `value` is another type or parsing failed nil is always returned.
 
@@ -396,6 +508,48 @@ Examples:
 
 
 - `Int("2.0")`
+
+### IsBool
+
+`IsBool(value)`
+
+The `IsBool` Converter evaluates whether the given `value` is a boolean or not.
+
+Specifically, it will return `true` if the provided `value` is one of the following:
+
+1. A Go's native `bool` type.
+2. A `pcommon.ValueTypeBool`.
+
+Otherwise, it will return `false`.
+
+Examples:
+
+- `IsBool(false)`
+
+
+- `IsBool(pcommon.NewValueBool(false))`
+
+
+- `IsBool(42)`
+
+
+- `IsBool(attributes["any key"])`
+
+### IsDouble
+
+`IsDouble(value)`
+
+The `IsDouble` Converter returns true if the given value is a double.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+If `value` is a `float64` or a `pcommon.ValueTypeDouble` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsDouble(body)`
+
+- `IsDouble(attributes["maybe a double"])`
 
 ### IsMap
 
@@ -487,8 +641,8 @@ If target is not a float64, it will be converted to one:
 
 - int64s are converted to float64s
 - strings are converted using `strconv`
-- booleans are converted using `1` for `true` and `0` for `false`.  This means passing `false` to the function will cause an error.
-- int, float, string, and bool OTLP Values are converted following the above rules depending on their type.  Other types cause an error.
+- booleans are converted using `1` for `true` and `0` for `false`. This means passing `false` to the function will cause an error.
+- int, float, string, and bool OTLP Values are converted following the above rules depending on their type. Other types cause an error.
 
 If target is nil an error is returned.
 
@@ -498,6 +652,75 @@ Examples:
 
 
 - `Int(Log(attributes["duration_ms"])`
+
+### Microseconds
+
+`Microseconds(value)`
+
+The `Microseconds` Converter returns the duration as an integer millisecond count.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Microseconds(Duration("1h"))`
+
+### Milliseconds
+
+`Milliseconds(value)`
+
+The `Milliseconds` Converter returns the duration as an integer millisecond count.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Milliseconds(Duration("1h"))`
+
+### Minutes
+
+`Minutes(value)`
+
+The `Minutes` Converter returns the duration as a floating point number of minutes.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `float64`.
+
+Examples:
+
+- `Minutes(Duration("1h"))`
+
+### Nanoseconds
+
+`Nanoseconds(value)`
+
+The `Nanoseconds` Converter returns the duration as an integer nanosecond count.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Nanoseconds(Duration("1h"))`
+
+### Now
+
+`Now()`
+
+The `Now` function returns the current time as represented by `time.Now()` in Go.
+
+The returned type is `time.Time`.
+
+Examples:
+
+- `UnixSeconds(Now())`
+- `set(start_time, Now())`
 
 ### ParseJSON
 
@@ -529,6 +752,20 @@ Examples:
 
 
 - `ParseJSON(body)`
+
+### Seconds
+
+`Seconds(value)`
+
+The `Seconds` Converter returns the duration as a floating point number of seconds.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `float64`.
+
+Examples:
+
+- `Seconds(Duration("1h"))`
 
 ### SHA1
 
@@ -586,7 +823,7 @@ Examples:
 
 ### Split
 
-`Split(target, delimiter)`
+```Split(target, delimiter)```
 
 The `Split` Converter separates a string by the delimiter, and returns an array of substrings.
 
@@ -599,7 +836,22 @@ There is currently a bug with OTTL that does not allow the target string to end 
 
 Examples:
 
-- ```Split("A|B|C", "|")```
+- `Split("A|B|C", "|")`
+
+### Substring
+
+`Substring(target, start, length)`
+
+The `Substring` Converter returns a substring from the given start index to the specified length.
+
+`target` is a string. `start` and `length` are `int64`.
+
+If `target` is not a string or is nil, an error is returned.
+If the start/length exceed the length of the `target` string, an error is returned.
+
+Examples:
+
+- `Substring("123456789", 0, 3)`
 
 ### Time
 
@@ -625,20 +877,75 @@ Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
 
-### Substring
+### TruncateTime
 
-`Substring(target, start, length)`
+`TruncateTime(time, duration)`
 
-The `Substring` Converter returns a substring from the given start index to the specified length.
+The `TruncateTime` Converter returns the given time rounded down to a multiple of the given duration. The Converter [uses the `time.Truncate` function](https://pkg.go.dev/time#Time.Truncate).
 
-`target` is a string. `start` and `length` are `int64`.
+`time` is a `time.Time`. `duration` is a `time.Duration`. If `time` is not a `time.Time` or if `duration` is not a `time.Duration`, an error will be returned.
 
-If `target` is not a string or is nil, an error is returned.
-If the start/length exceed the length of the `target` string, an error is returned.
+While some common paths can return a `time.Time` object, you will most like need to use the [Duration Converter](#duration) to create a `time.Duration`.
 
 Examples:
 
-- `Substring("123456789", 0, 3)`
+- `TruncateTime(start_time, Duration("1s"))`
+
+### UnixMicro
+
+`UnixMicro(value)`
+
+The `UnixMicro` Converter returns the time as a Unix time, the number of microseconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixMicro(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UnixMilli
+
+`UnixMilli(value)`
+
+The `UnixMilli` Converter returns the time as a Unix time, the number of milliseconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixMilli(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UnixNano
+
+`UnixNano(value)`
+
+The `UnixNano` Converter returns the time as a Unix time, the number of nanoseconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixNano(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UnixSeconds
+
+`UnixSeconds(value)`
+
+The `UnixSeconds` Converter returns the time as a Unix time, the number of seconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
 
 ### UUID
 
@@ -649,9 +956,10 @@ The `UUID` function generates a v4 uuid string.
 ## Function syntax
 
 Functions should be named and formatted according to the following standards.
+
 - Function names MUST start with a verb unless it is a Factory that creates a new type.
 - Converters MUST be UpperCamelCase.
 - Function names that contain multiple words MUST separate those words with `_`.
-- Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
-- Functions that interact with a single item MUST NOT have plurality in the name.  If a function would interact with multiple items due to a condition, like `where`, it is still considered singular.  Ex: `set`, `delete`, `replace_match`.
+- Functions that interact with multiple items MUST have plurality in the name. Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
+- Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
 - Functions that change a specific target MUST set the target as the first parameter.

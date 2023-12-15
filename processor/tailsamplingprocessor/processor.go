@@ -6,6 +6,7 @@ package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"math"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -23,6 +24,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+)
+
+var (
+	tagUpsertSampled    = tag.Upsert(tagSampledKey, "true")
+	tagUpsertNotSampled = tag.Upsert(tagSampledKey, "false")
 )
 
 // policy combines a sampling policy evaluator with the destinations to be
@@ -50,6 +56,18 @@ type tailSamplingSpanProcessor struct {
 	decisionBatcher idbatcher.Batcher
 	deleteChan      chan pcommon.TraceID
 	numTracesOnMap  *atomic.Uint64
+
+	// This is for reusing the slice by each call of `makeDecision`. This
+	// was previously identified to be a bottleneck using profiling.
+	mutatorsBuf []tag.Mutator
+}
+
+// spanAndScope a structure for holding information about span and its instrumentation scope.
+// required for preserving the instrumentation library information while sampling.
+// We use pointers there to fast find the span in the map.
+type spanAndScope struct {
+	span                 *ptrace.Span
+	instrumentationScope *pcommon.InstrumentationScope
 }
 
 const (
@@ -63,15 +81,16 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		return nil, component.ErrNilNextConsumer
 	}
 
-	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())
-	inBatcher, err := idbatcher.New(numDecisionBatches, cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
-	if err != nil {
-		return nil, err
-	}
-
+	policyNames := map[string]bool{}
 	policies := make([]*policy, len(cfg.PolicyCfgs))
 	for i := range cfg.PolicyCfgs {
 		policyCfg := &cfg.PolicyCfgs[i]
+
+		if policyNames[policyCfg.Name] {
+			return nil, fmt.Errorf("duplicate policy name %q", policyCfg.Name)
+		}
+		policyNames[policyCfg.Name] = true
+
 		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(tagSourceFormat, sourceFormat))
 		if err != nil {
 			return nil, err
@@ -88,6 +107,14 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		policies[i] = p
 	}
 
+	// this will start a goroutine in the background, so we run it only if everything went
+	// well in creating the policies
+	numDecisionBatches := math.Max(1, cfg.DecisionWait.Seconds())
+	inBatcher, err := idbatcher.New(uint64(numDecisionBatches), cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+	if err != nil {
+		return nil, err
+	}
+
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             ctx,
 		nextConsumer:    nextConsumer,
@@ -97,6 +124,10 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		policies:        policies,
 		tickerFrequency: time.Second,
 		numTracesOnMap:  &atomic.Uint64{},
+
+		// We allocate exactly 1 element, because that's the exact amount
+		// used in any place.
+		mutatorsBuf: make([]tag.Mutator, 1),
 	}
 
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
@@ -124,7 +155,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewAlwaysSample(settings), nil
 	case Latency:
 		lfCfg := cfg.LatencyCfg
-		return sampling.NewLatency(settings, lfCfg.ThresholdMs), nil
+		return sampling.NewLatency(settings, lfCfg.ThresholdMs, lfCfg.UpperThresholdmsMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
 		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue, nafCfg.InvertMatch), nil
@@ -261,8 +292,9 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		finalDecision = sampling.Sampled
 	}
 
-	for _, p := range tsp.policies {
-		switch finalDecision {
+	mutators := tsp.mutatorsBuf
+	for i, p := range tsp.policies {
+		switch trace.Decisions[i] {
 		case sampling.Sampled:
 			// any single policy that decides to sample will cause the decision to be sampled
 			// the nextConsumer will get the context from the first matching policy
@@ -270,21 +302,40 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 				matchingPolicy = p
 			}
 
+			mutators[0] = tagUpsertSampled
 			_ = stats.RecordWithTags(
 				p.ctx,
-				[]tag.Mutator{tag.Upsert(tagSampledKey, "true")},
+				mutators,
 				statCountTracesSampled.M(int64(1)),
 			)
 			metrics.decisionSampled++
 
 		case sampling.NotSampled:
+			mutators[0] = tagUpsertNotSampled
 			_ = stats.RecordWithTags(
 				p.ctx,
-				[]tag.Mutator{tag.Upsert(tagSampledKey, "false")},
+				mutators,
 				statCountTracesSampled.M(int64(1)),
 			)
 			metrics.decisionNotSampled++
 		}
+	}
+
+	switch finalDecision {
+	case sampling.Sampled:
+		mutators[0] = tagUpsertSampled
+		_ = stats.RecordWithTags(
+			tsp.ctx,
+			mutators,
+			statCountGlobalTracesSampled.M(int64(1)),
+		)
+	case sampling.NotSampled:
+		mutators[0] = tagUpsertNotSampled
+		_ = stats.RecordWithTags(
+			tsp.ctx,
+			mutators,
+			statCountGlobalTracesSampled.M(int64(1)),
+		)
 	}
 
 	return finalDecision, matchingPolicy
@@ -299,16 +350,21 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]*ptrace.Span {
-	idToSpans := make(map[pcommon.TraceID][]*ptrace.Span)
+func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
+	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
 	ilss := resourceSpans.ScopeSpans()
 	for j := 0; j < ilss.Len(); j++ {
-		spans := ilss.At(j).Spans()
+		scope := ilss.At(j)
+		spans := scope.Spans()
+		is := scope.Scope()
 		spansLen := spans.Len()
 		for k := 0; k < spansLen; k++ {
 			span := spans.At(k)
 			key := span.TraceID()
-			idToSpans[key] = append(idToSpans[key], &span)
+			idToSpans[key] = append(idToSpans[key], spanAndScope{
+				span:                 &span,
+				instrumentationScope: &is,
+			})
 		}
 	}
 	return idToSpans
@@ -316,9 +372,9 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.
 
 func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.ResourceSpans) {
 	// Group spans per their traceId to minimize contention on idToTrace
-	idToSpans := tsp.groupSpansByTraceKey(resourceSpans)
+	idToSpansAndScope := tsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
-	for id, spans := range idToSpans {
+	for id, spans := range idToSpansAndScope {
 		lenSpans := int64(len(spans))
 		lenPolicies := len(tsp.policies)
 		initialDecisions := make([]sampling.Decision, lenPolicies)
@@ -422,12 +478,23 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
 }
 
-func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spans []*ptrace.Span) {
+func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) {
 	rs := dest.ResourceSpans().AppendEmpty()
 	rss.Resource().CopyTo(rs.Resource())
-	ils := rs.ScopeSpans().AppendEmpty()
-	for _, span := range spans {
-		sp := ils.Spans().AppendEmpty()
-		span.CopyTo(sp)
+
+	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
+	for _, spanAndScope := range spanAndScopes {
+		// If the scope of the spanAndScope is not in the map, add it to the map and the destination.
+		if scope, ok := scopePointerToNewScope[spanAndScope.instrumentationScope]; !ok {
+			is := rs.ScopeSpans().AppendEmpty()
+			spanAndScope.instrumentationScope.CopyTo(is.Scope())
+			scopePointerToNewScope[spanAndScope.instrumentationScope] = &is
+
+			sp := is.Spans().AppendEmpty()
+			spanAndScope.span.CopyTo(sp)
+		} else {
+			sp := scope.Spans().AppendEmpty()
+			spanAndScope.span.CopyTo(sp)
+		}
 	}
 }

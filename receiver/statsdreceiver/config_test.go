@@ -54,6 +54,13 @@ func TestLoadConfig(t *testing.T) {
 							MaxSize: 170,
 						},
 					},
+					{
+						StatsdType:   "distribution",
+						ObserverType: "histogram",
+						Histogram: protocol.HistogramConfig{
+							MaxSize: 170,
+						},
+					},
 				},
 			},
 		},

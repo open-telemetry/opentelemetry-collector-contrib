@@ -192,7 +192,6 @@ The following configuration options are supported:
     - `regex`: Match resource keys by regex.
   - `cumulative_normalization` (default = true): If true, normalizes cumulative metrics without start times or with explicit reset points by subtracting subsequent points from the initial point. It is enabled by default. Since it caches starting points, it may result inincreased memory usage.
   - `sum_of_squared_deviation` (default = false): If true, enables calculation of an estimated sum of squared deviation.  It is an estimate, and is not exact.
-  - `compression` (optional): Enable gzip compression for gRPC requests (valid vlaues: `gzip`).
   - `experimental_wal` (default = []): If provided, enables use of a write ahead
     log for time series requests.
     - `directory` (default = `./`): Path to local directory for WAL file.
@@ -216,11 +215,6 @@ The following configuration options are supported:
     - `prefix`: Match resource keys by prefix.
     - `regex`: Match resource keys by regex.
   - `compression` (optional): Enable gzip compression for gRPC requests (valid vlaues: `gzip`).
-- `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
-  - `enabled` (default = false)
-  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
-  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
-  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 - `sending_queue` (optional): Configuration for how to buffer traces before sending.
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
@@ -229,7 +223,7 @@ The following configuration options are supported:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
 
-Note: These `retry_on_failure` and `sending_queue` are provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
+Note: The `sending_queue` is provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
 
 Beyond standard YAML configuration as outlined in the sections that follow,
 exporters that leverage the net/http package (all do today) also respect the

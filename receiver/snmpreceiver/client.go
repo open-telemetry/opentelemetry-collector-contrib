@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gosnmp/gosnmp"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -30,7 +29,7 @@ const (
 type SNMPData struct {
 	columnOID string // optional
 	oid       string
-	value     interface{}
+	value     any
 	valueType oidDataType
 }
 
@@ -62,7 +61,7 @@ var _ client = (*snmpClient)(nil)
 func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 	// Create goSNMP client
 	goSNMP := newGoSNMPWrapper()
-	goSNMP.SetTimeout(5 * time.Second)
+	goSNMP.SetTimeout(cfg.Timeout)
 
 	// Set goSNMP version based on config
 	switch cfg.Version {
@@ -327,7 +326,7 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
 	// Condense gosnmp data types to our client's simplified data types
 	switch pdu.Type { // nolint:exhaustive
 	// Integer types
-	case gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
+	case gosnmp.Counter64, gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
 		value, err := c.toInt64(pdu.Name, pdu.Value)
 		if err != nil {
 			clientSNMPData.valueType = notSupportedVal
@@ -373,7 +372,7 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
 // This is a convenience function to make working with SnmpPDU's easier - it
 // reduces the need for type assertions. A int64 is convenient, as SNMP can
 // return int32, uint32, and int64.
-func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
+func (c snmpClient) toInt64(name string, value any) (int64, error) {
 	switch value := value.(type) { // shadow
 	case uint:
 		return int64(value), nil
@@ -393,6 +392,8 @@ func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
 		return int64(value), nil
 	case uint32:
 		return int64(value), nil
+	case uint64:
+		return int64(value), nil
 	default:
 		return 0, fmt.Errorf("incompatible type while converting OID '%s' data to int64", name)
 	}
@@ -404,7 +405,7 @@ func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
 // This is a convenience function to make working with SnmpPDU's easier - it
 // reduces the need for type assertions. A float64 is convenient, as SNMP can
 // return float32 and float64.
-func (c snmpClient) toFloat64(name string, value interface{}) (float64, error) {
+func (c snmpClient) toFloat64(name string, value any) (float64, error) {
 	switch value := value.(type) { // shadow
 	case float32:
 		return float64(value), nil
@@ -427,7 +428,7 @@ func (c snmpClient) toFloat64(name string, value interface{}) (float64, error) {
 //
 // This is a convenience function to make working with SnmpPDU's easier - it
 // reduces the need for type assertions.
-func toString(value interface{}) string {
+func toString(value any) string {
 	switch value := value.(type) { // shadow
 	case []byte:
 		return string(value)

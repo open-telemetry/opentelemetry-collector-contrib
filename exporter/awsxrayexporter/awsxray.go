@@ -109,7 +109,8 @@ func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace
 					spans.At(k), resource,
 					config.(*Config).IndexedAttributes,
 					config.(*Config).IndexAllAttributes,
-					config.(*Config).LogGroupNames)
+					config.(*Config).LogGroupNames,
+					config.(*Config).skipTimestampValidation)
 				if localErr != nil {
 					logger.Debug("Error translating span.", zap.Error(localErr))
 					continue

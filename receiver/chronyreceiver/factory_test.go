@@ -51,10 +51,10 @@ func TestCreatingMetricsReceiver(t *testing.T) {
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 30 * time.Second,
+				Timeout:            10 * time.Second,
 			},
 			MetricsBuilderConfig: mbc,
 			Endpoint:             "udp://localhost:323",
-			Timeout:              10 * time.Second,
 		},
 		consumertest.NewNop(),
 	)

@@ -80,16 +80,8 @@ func LogsToLokiRequests(ld plog.Logs, defaultLabelsEnabled map[string]bool) map[
 
 				group.report.NumSubmitted++
 
-				processed := model.LabelSet{}
-				for label := range entry.Labels {
-					// Loki doesn't support dots in label names
-					// labelName is normalized label name to follow Prometheus label names standard
-					labelName := prometheustranslator.NormalizeLabel(string(label))
-					processed[model.LabelName(labelName)] = entry.Labels[label]
-				}
-
 				// create the stream name based on the labels
-				labels := processed.String()
+				labels := entry.Labels.String()
 				if stream, ok := group.streams[labels]; ok {
 					stream.Entries = append(stream.Entries, *entry.Entry)
 					continue
@@ -128,7 +120,7 @@ type PushEntry struct {
 	Labels model.LabelSet
 }
 
-// LogToLokiEntry converts LogRecord into Loki log entry enriched with labels and tenant
+// LogToLokiEntry converts LogRecord into Loki log entry enriched with normalized labels
 func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.InstrumentationScope, defaultLabelsEnabled map[string]bool) (*PushEntry, error) {
 	// we may remove attributes, so change only our version
 	log := plog.NewLogRecord()
@@ -155,9 +147,17 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 		return nil, err
 	}
 
+	labels := model.LabelSet{}
+	for label := range mergedLabels {
+		// Loki doesn't support dots in label names
+		// labelName is normalized label name to follow Prometheus label names standard
+		labelName := prometheustranslator.NormalizeLabel(string(label))
+		labels[model.LabelName(labelName)] = mergedLabels[label]
+	}
+
 	return &PushEntry{
 		Entry:  entry,
-		Labels: mergedLabels,
+		Labels: labels,
 	}, nil
 }
 

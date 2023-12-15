@@ -400,6 +400,47 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 }
 
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26462
+func TestLogsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
+	// prepare
+	defaultExp := &mockLogsExporter{}
+	firstExp := &mockLogsExporter{}
+
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeLogs: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+		},
+	})
+
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 0`,
+				Exporters: []string{"otlp/1"},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	l := plog.NewLogs()
+
+	rl := l.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutInt("value", 1)
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	// test
+	// before #26464, this would panic
+	require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+	// verify
+	assert.Len(t, defaultExp.AllLogs(), 1)
+	assert.Len(t, firstExp.AllLogs(), 0)
+}
+
 type mockLogsExporter struct {
 	mockComponent
 	consumertest.LogsSink

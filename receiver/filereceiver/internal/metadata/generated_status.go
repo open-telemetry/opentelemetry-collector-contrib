@@ -9,6 +9,4 @@ import (
 const (
 	Type             = "file"
 	MetricsStability = component.StabilityLevelDevelopment
-	TracesStability  = component.StabilityLevelDevelopment
-	LogsStability    = component.StabilityLevelDevelopment
 )

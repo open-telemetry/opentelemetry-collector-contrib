@@ -93,7 +93,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr := mergeTemplatedAndDiscoveredConfigs(
 		receiverWithEndpoint, map[string]any{
 			endpointConfigKey: "an.endpoint",
-		}, map[string]interface{}{},
+		}, map[string]any{},
 	)
 	require.Equal(t, map[string]any{endpointConfigKey: "an.endpoint"}, inheritedEndpointConfMap.ToStringMap())
 	require.Equal(t, "an.endpoint", inheritedEndpoint)
@@ -112,7 +112,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr = mergeTemplatedAndDiscoveredConfigs(
 		receiverWithoutEndpoint, map[string]any{
 			endpointConfigKey: "an.endpoint",
-		}, map[string]interface{}{},
+		}, map[string]any{},
 	)
 	require.Equal(t, map[string]any{endpointConfigKey: "an.endpoint"}, inheritedEndpointConfMap.ToStringMap())
 	require.Equal(t, "an.endpoint", inheritedEndpoint)

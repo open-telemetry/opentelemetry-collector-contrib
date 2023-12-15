@@ -36,8 +36,8 @@ type statsdReceiver struct {
 	cancel       context.CancelFunc
 }
 
-// New creates the StatsD receiver with the given parameters.
-func New(
+// newReceiver creates the StatsD receiver with the given parameters.
+func newReceiver(
 	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
@@ -72,6 +72,8 @@ func buildTransportServer(config Config) (transport.Server, error) {
 	switch strings.ToLower(config.NetAddr.Transport) {
 	case "", "udp":
 		return transport.NewUDPServer(config.NetAddr.Endpoint)
+	case "tcp":
+		return transport.NewTCPServer(config.NetAddr.Endpoint)
 	}
 
 	return nil, fmt.Errorf("unsupported transport %q", config.NetAddr.Transport)
@@ -89,6 +91,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ticker := time.NewTicker(r.config.AggregationInterval)
 	err = r.parser.Initialize(
 		r.config.EnableMetricType,
+		r.config.EnableSimpleTags,
 		r.config.IsMonotonicCounter,
 		r.config.TimerHistogramMapping,
 	)

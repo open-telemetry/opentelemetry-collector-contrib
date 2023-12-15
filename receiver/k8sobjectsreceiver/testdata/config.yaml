@@ -8,3 +8,31 @@ k8sobjects:
       mode: watch
       group: events.k8s.io
       namespaces: [default]
+      exclude_watch_type: [DELETED]
+k8sobjects/pull_with_resource:
+  objects:
+    - name: pods
+      mode: pull
+      resource_version: "1"
+    - name: events
+      mode: pull
+k8sobjects/watch_with_resource:
+  objects:
+    - name: events
+      mode: watch
+      group: events.k8s.io
+      namespaces: [default]
+    - name: events
+      mode: watch
+      group: events.k8s.io
+      namespaces: [default]
+      resource_version: "2"
+k8sobjects/invalid_resource:
+  objects:
+    - name: fake_resource
+      mode: watch
+k8sobjects/exclude_deleted_with_pull:
+  objects:
+    - name: events
+      mode: pull
+      exclude_watch_type: [DELETED]

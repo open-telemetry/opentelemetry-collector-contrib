@@ -505,7 +505,7 @@ func TestAMQPSubstituteVariables(t *testing.T) {
 // testFunctionEquality will check that the pointer names are the same for the two functions.
 // It is not a perfect comparison but will perform well differentiating between anonymous
 // functions and the amqp named functinos
-func testFunctionEquality(t *testing.T, f1, f2 interface{}) {
+func testFunctionEquality(t *testing.T, f1, f2 any) {
 	assert.True(t, (f1 == nil) == (f2 == nil))
 	if f1 == nil {
 		return

@@ -14,8 +14,8 @@ import (
 )
 
 type ConvertCaseArguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
-	ToCase string               `ottlarg:"1"`
+	Target ottl.StringGetter[K]
+	ToCase string
 }
 
 func NewConvertCaseFactory[K any]() ottl.Factory[K] {
@@ -37,7 +37,7 @@ func convertCase[K any](target ottl.StringGetter[K], toCase string) (ottl.ExprFu
 		return nil, fmt.Errorf("invalid case: %s, allowed cases are: lower, upper, snake, camel", toCase)
 	}
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

@@ -8,5 +8,5 @@ import (
 
 const (
 	Type            = "datadog"
-	TracesStability = component.StabilityLevelBeta
+	TracesStability = component.StabilityLevelDeprecated
 )

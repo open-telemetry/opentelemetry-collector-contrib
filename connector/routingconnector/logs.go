@@ -72,7 +72,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		rtx := ottlresource.NewTransformContext(rlogs.Resource())
 
 		noRoutesMatch := true
-		for _, route := range c.router.routes {
+		for _, route := range c.router.routeSlice {
 			_, isMatch, err := route.statement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
@@ -84,6 +84,9 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			if isMatch {
 				noRoutesMatch = false
 				c.group(groups, route.consumer, rlogs)
+				if c.config.MatchOnce {
+					break
+				}
 			}
 
 		}

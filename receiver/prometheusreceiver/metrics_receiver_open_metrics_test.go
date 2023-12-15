@@ -74,7 +74,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 func verifyFailTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
@@ -107,7 +107,7 @@ func TestOpenMetricsFail(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
@@ -142,7 +142,7 @@ func TestOpenMetricsInvalid(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 }
 
 // reads test data from testdata/openmetrics directory
@@ -228,7 +228,7 @@ func TestInfoStatesetMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, false, "")
+	testComponent(t, targets, nil)
 
 }
 
@@ -246,6 +246,7 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 	e1 := []testExpectation{
 		assertMetricPresent("foo",
 			compareMetricIsMonotonic(false),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -264,6 +265,7 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 			}),
 		assertMetricPresent("bar",
 			compareMetricIsMonotonic(false),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{

@@ -4,6 +4,7 @@
 package zipkinv1
 
 import (
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"math"
@@ -51,7 +52,7 @@ func TestV1ThriftToTraces(t *testing.T) {
 
 	var zSpans []*zipkincore.Span
 	require.NoError(t, json.Unmarshal(blob, &zSpans), "failed to unmarshal json test file")
-	thriftBytes := zipkin.SerializeThrift(zSpans)
+	thriftBytes := zipkin.SerializeThrift(context.TODO(), zSpans)
 
 	td, err := thriftUnmarshaler{}.UnmarshalTraces(thriftBytes)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")

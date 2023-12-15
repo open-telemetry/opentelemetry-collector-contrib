@@ -376,6 +376,104 @@ The inodes used by the filesystem. This may not equal inodes - free because file
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### container.uptime
+
+The time since the container started
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | true |
+
+### k8s.container.cpu_limit_utilization
+
+Container cpu utilization as a ratio of the container's limits
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.container.cpu_request_utilization
+
+Container cpu utilization as a ratio of the container's requests
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.container.memory_limit_utilization
+
+Container memory utilization as a ratio of the container's limits
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.container.memory_request_utilization
+
+Container memory utilization as a ratio of the container's requests
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.node.uptime
+
+The time since the node started
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | true |
+
+### k8s.pod.cpu_limit_utilization
+
+Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.pod.cpu_request_utilization
+
+Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.pod.memory_limit_utilization
+
+Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.pod.memory_request_utilization
+
+Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.pod.uptime
+
+The time since the pod started
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | true |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

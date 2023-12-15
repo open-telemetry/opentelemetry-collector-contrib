@@ -20,11 +20,6 @@ jaeger/customname:
       max_packet_size: 65_536
       workers: 5
       socket_buffer_size: 0
-  remote_sampling:
-    host_endpoint: "0.0.0.0:5778"
-    endpoint: "jaeger-collector:1234"
-    strategy_file: "/etc/strategies.json"
-    strategy_file_reload_interval: 10s
 # The following demonstrates how to enable protocols with defaults.
 jaeger/defaults:
   protocols:

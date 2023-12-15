@@ -1,0 +1,203 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: a
+          value:
+            stringValue: AAAA
+    scopeMetrics:
+      - metrics:
+          - description: Yet another fake metric for test
+            name: storage.amplitude
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "30"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "4000000"
+                - asInt: "10"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "3000000"
+                - asInt: "30"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: BBBB
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "0"
+                  attributes:
+                    - key: d
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+        scope:
+          attributes:
+            - key: a
+              value:
+                stringValue: AAA
+          name: otelcol/FakeMetric
+          version: latest
+      - metrics:
+          - description: Fake Metric
+            name: storage.amplitude
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "3000000"
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+        scope:
+          attributes:
+            - key: a
+              value:
+                stringValue: CCCC
+          name: otelcol/anotherfakereceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: a
+          value:
+            stringValue: BBB
+    scopeMetrics:
+      - metrics:
+          - description: Sort + Timestamp normalization (full standardize)
+            name: test.b
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: a
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "3000000"
+                - asInt: "1"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: a
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "4000000"
+                - asInt: "6"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: a
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "5000000"
+                - asInt: "4"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: b
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2"
+                  attributes:
+                    - key: b
+                      value:
+                        stringValue: b
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "4"
+                  attributes:
+                    - key: d
+                      value:
+                        stringValue: d
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "5"
+                  attributes:
+                    - key: d
+                      value:
+                        stringValue: d
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "3000000"
+              isMonotonic: true
+            unit: By
+          - description: Sort + Timestamp normalization (full standardize) second test
+            name: test.a
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: a
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "4000000"
+                - asInt: "3"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: a
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "3000000"
+                - asInt: "6"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: a
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "5000000"
+                - asInt: "2"
+                  attributes:
+                    - key: b
+                      value:
+                        stringValue: b
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "4"
+                  attributes:
+                    - key: d
+                      value:
+                        stringValue: d
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "3000000"
+                - asInt: "5"
+                  attributes:
+                    - key: d
+                      value:
+                        stringValue: d
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: By
+        scope:
+          attributes:
+            - key: b
+              value:
+                stringValue: BBB
+          name: otelcol/standardization
+          version: latest

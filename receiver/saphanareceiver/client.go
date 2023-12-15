@@ -23,7 +23,7 @@ type client interface {
 
 // Wraps the result of a query so that it can be mocked in tests
 type resultWrapper interface {
-	Scan(dest ...interface{}) error
+	Scan(dest ...any) error
 	Close() error
 	Next() bool
 }
@@ -43,7 +43,7 @@ func (w *standardResultWrapper) Next() bool {
 	return w.rows.Next()
 }
 
-func (w *standardResultWrapper) Scan(dest ...interface{}) error {
+func (w *standardResultWrapper) Scan(dest ...any) error {
 	return w.rows.Scan(dest...)
 }
 
@@ -148,7 +148,7 @@ func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query *monitor
 ROW_ITERATOR:
 	for rows.Next() {
 		expectedFields := len(query.orderedMetricLabels) + len(query.orderedResourceLabels) + len(query.orderedStats)
-		rowFields := make([]interface{}, expectedFields)
+		rowFields := make([]any, expectedFields)
 
 		// Build a list of addresses that rows.Scan will load column data into
 		for i := range rowFields {
@@ -206,7 +206,7 @@ ROW_ITERATOR:
 	return data, errors.Combine()
 }
 
-func convertInterfaceToString(input interface{}) (sql.NullString, error) {
+func convertInterfaceToString(input any) (sql.NullString, error) {
 	if val, ok := input.(*sql.NullString); ok {
 		return *val, nil
 	}

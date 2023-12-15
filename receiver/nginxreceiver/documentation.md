@@ -49,17 +49,3 @@ Total number of requests made to the server since it started
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | requests | Sum | Int | Cumulative | true |
-
-### temp.connections_current
-
-Temporary placeholder for old version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| connections | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | The state of a connection | Str: ``active``, ``reading``, ``writing``, ``waiting`` |

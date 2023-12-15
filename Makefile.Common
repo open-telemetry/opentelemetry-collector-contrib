@@ -3,10 +3,19 @@
 # otherwise in the example command pipe, only the exit code of `tee` is recorded instead of `go test` which can cause
 # test to pass in CI when they should not.
 SHELL = /bin/bash
-ifeq ($(shell uname -s),Windows)
-	.SHELLFLAGS = /o pipefile /c
+.SHELLFLAGS = -o pipefail -c
+
+SHELL_CASE_EXP = case "$$(uname -s)" in CYGWIN*|MINGW*|MSYS*) echo "true";; esac;
+UNIX_SHELL_ON_WINDOWS := $(shell $(SHELL_CASE_EXP))
+
+ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
+	# The "sed" transformation below is needed on Windows, since commands like `go list -f '{{ .Dir }}'`
+	# return Windows paths and such paths are incompatible with other *nix tools, like `find`,
+	# used by the Makefile shell.
+	# The backslash needs to be doubled so its passed correctly to the shell. 
+	NORMALIZE_DIRS = sed -e 's/^/\\//' -e 's/://' -e 's/\\\\/\\//g' | sort
 else
-	.SHELLFLAGS = -o pipefail -c
+	NORMALIZE_DIRS = sort
 endif
 
 # SRC_ROOT is the top of the source tree.
@@ -14,7 +23,8 @@ SRC_ROOT := $(shell git rev-parse --show-toplevel)
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
-GOTEST_OPT?= -race -timeout 300s -parallel 4 --tags=$(GO_BUILD_TAGS)
+GOTEST_TIMEOUT?= 300s
+GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS) -run=Integration
@@ -50,7 +60,7 @@ MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
 MISSPELL            := $(TOOLS_BIN_DIR)/misspell -error
 MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
 LINT                := $(TOOLS_BIN_DIR)/golangci-lint
-MULITMOD            := $(TOOLS_BIN_DIR)/multimod
+MULTIMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
 GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
@@ -59,11 +69,12 @@ CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
+GCI                 := $(TOOLS_BIN_DIR)/gci
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
-ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sort)
+ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | $(NORMALIZE_DIRS))
 
 ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/third_party/*' \
@@ -71,9 +82,16 @@ ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC := $(shell find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" \
-                                -not -path '*/third_party/*' \
-                                -type f | sort)
+ALL_SRC_AND_DOC_CMD := find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
+ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
+	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
+	MISSPELL_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
+	MISSPELL_CORRECTION_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
+else
+	ALL_SRC_AND_DOC := $(shell $(ALL_SRC_AND_DOC_CMD))
+	MISSPELL_CMD := $(MISSPELL) $(ALL_SRC_AND_DOC)
+	MISSPELL_CORRECTION_CMD := $(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
+endif
 
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell $(GOCMD) list $(sort $(dir $(ALL_SRC))))
@@ -165,7 +183,7 @@ fmt: $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners --verbose --build-tags integration --path-prefix $(shell basename "$(CURDIR)")
+	$(LINT) run --allow-parallel-runners --verbose --build-tags integration --timeout=30m --path-prefix $(shell basename "$(CURDIR)")
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
@@ -179,17 +197,17 @@ tidy:
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
-	@$(MISSPELL) $(ALL_SRC_AND_DOC)
+	@$(MISSPELL_CMD)
 
 .PHONY: misspell-correction
 misspell-correction: $(TOOLS_BIN_DIR)/misspell
-	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
+	$(MISSPELL_CORRECTION_CMD)
 
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
 
-.PHONY: updatedep
-updatedep:
-	$(PWD)/internal/buildscripts/update-dep
-	@$(MAKE) tidy
+.PHONY: gci
+gci: $(TOOLS_BIN_DIR)/gci
+	@echo "running $(GCI)"
+	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $(ALL_SRC_AND_DOC)

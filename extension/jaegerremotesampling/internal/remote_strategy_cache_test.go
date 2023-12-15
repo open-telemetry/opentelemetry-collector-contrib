@@ -11,32 +11,34 @@ import (
 	"time"
 
 	"github.com/fortytw2/leaktest"
-	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/tilinna/clock"
 )
 
 const cacheTestItemTTL = 50 * time.Millisecond
 
-var testStrategyResponseA = &sampling.SamplingStrategyResponse{
-	ProbabilisticSampling: &sampling.ProbabilisticSamplingStrategy{
-		SamplingRate: 0.1337,
+var testStrategyResponseA = &api_v2.SamplingStrategyResponse{
+	StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC,
+	OperationSampling: &api_v2.PerOperationSamplingStrategies{
+		DefaultSamplingProbability: 0.1337,
 	},
 }
 
-var testStrategyResponseB = &sampling.SamplingStrategyResponse{
-	OperationSampling: &sampling.PerOperationSamplingStrategies{
+var testStrategyResponseB = &api_v2.SamplingStrategyResponse{
+	StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC,
+	OperationSampling: &api_v2.PerOperationSamplingStrategies{
 		DefaultSamplingProbability: 0.001,
-		PerOperationStrategies: []*sampling.OperationSamplingStrategy{
+		PerOperationStrategies: []*api_v2.OperationSamplingStrategy{
 			{
 				Operation: "always-sampled-op",
-				ProbabilisticSampling: &sampling.ProbabilisticSamplingStrategy{
+				ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
 					SamplingRate: 1.0,
 				},
 			},
 			{
 				Operation: "never-sampled-op",
-				ProbabilisticSampling: &sampling.ProbabilisticSamplingStrategy{
+				ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
 					SamplingRate: 0,
 				},
 			},
@@ -248,7 +250,7 @@ func Test_serviceStrategyCache_Concurrency(t *testing.T) {
 					"contended-for-service",
 				} {
 					if _, ok := cache.get(context.Background(), svcName); !ok {
-						cache.put(context.Background(), svcName, &sampling.SamplingStrategyResponse{})
+						cache.put(context.Background(), svcName, &api_v2.SamplingStrategyResponse{})
 					}
 				}
 			}

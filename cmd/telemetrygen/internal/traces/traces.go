@@ -6,12 +6,14 @@ package traces
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -20,46 +22,23 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
-	}
-
-	grpcExpOpt := []otlptracegrpc.Option{
-		otlptracegrpc.WithEndpoint(cfg.Endpoint),
-		otlptracegrpc.WithDialOption(
-			grpc.WithBlock(),
-		),
-	}
-
-	httpExpOpt := []otlptracehttp.Option{
-		otlptracehttp.WithEndpoint(cfg.Endpoint),
-		otlptracehttp.WithURLPath(cfg.HTTPPath),
-	}
-
-	if cfg.Insecure {
-		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithInsecure())
-		httpExpOpt = append(httpExpOpt, otlptracehttp.WithInsecure())
-	}
-
-	if len(cfg.Headers) > 0 {
-		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithHeaders(cfg.Headers))
-		httpExpOpt = append(httpExpOpt, otlptracehttp.WithHeaders(cfg.Headers))
 	}
 
 	var exp *otlptrace.Exporter
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
-		exp, err = otlptracehttp.New(context.Background(), httpExpOpt...)
+		exp, err = otlptracehttp.New(context.Background(), httpExporterOptions(cfg)...)
 	} else {
 		logger.Info("starting gRPC exporter")
-		exp, err = otlptracegrpc.New(context.Background(), grpcExpOpt...)
+		exp, err = otlptracegrpc.New(context.Background(), grpcExporterOptions(cfg)...)
 	}
 
 	if err != nil {
@@ -121,25 +100,42 @@ func Run(c *Config, logger *zap.Logger) error {
 		logger.Info("generation of traces is limited", zap.Float64("per-second", float64(limit)))
 	}
 
+	var statusCode codes.Code
+
+	switch strings.ToLower(c.StatusCode) {
+	case "0", "unset", "":
+		statusCode = codes.Unset
+	case "1", "error":
+		statusCode = codes.Error
+	case "2", "ok":
+		statusCode = codes.Ok
+	default:
+		return fmt.Errorf("expected `status-code` to be one of (Unset, Error, Ok) or (0, 1, 2), got %q instead", c.StatusCode)
+	}
+
 	wg := sync.WaitGroup{}
 
 	running := &atomic.Bool{}
 	running.Store(true)
+
+	telemetryAttributes := c.GetTelemetryAttributes()
 
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
 		w := worker{
 			numTraces:        c.NumTraces,
 			propagateContext: c.PropagateContext,
+			statusCode:       statusCode,
 			limitPerSecond:   limit,
 			totalDuration:    c.TotalDuration,
 			running:          running,
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
 			loadSize:         c.LoadSize,
+			spanDuration:     c.SpanDuration,
 		}
 
-		go w.simulateTraces()
+		go w.simulateTraces(telemetryAttributes)
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)

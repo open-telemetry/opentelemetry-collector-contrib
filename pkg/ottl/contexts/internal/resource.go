@@ -36,10 +36,10 @@ func ResourcePathGetSetter[K ResourceContext](path []ottl.Field) (ottl.GetSetter
 
 func accessResource[K ResourceContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return tCtx.GetResource(), nil
 		},
-		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx K, val any) error {
 			if newRes, ok := val.(pcommon.Resource); ok {
 				newRes.CopyTo(tCtx.GetResource())
 			}
@@ -50,10 +50,10 @@ func accessResource[K ResourceContext]() ottl.StandardGetSetter[K] {
 
 func accessResourceAttributes[K ResourceContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return tCtx.GetResource().Attributes(), nil
 		},
-		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx K, val any) error {
 			if attrs, ok := val.(pcommon.Map); ok {
 				attrs.CopyTo(tCtx.GetResource().Attributes())
 			}
@@ -64,10 +64,10 @@ func accessResourceAttributes[K ResourceContext]() ottl.StandardGetSetter[K] {
 
 func accessResourceAttributesKey[K ResourceContext](keys []ottl.Key) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return GetMapValue(tCtx.GetResource().Attributes(), keys)
 		},
-		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx K, val any) error {
 			return SetMapValue(tCtx.GetResource().Attributes(), keys, val)
 		},
 	}
@@ -75,10 +75,10 @@ func accessResourceAttributesKey[K ResourceContext](keys []ottl.Key) ottl.Standa
 
 func accessResourceDroppedAttributesCount[K ResourceContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return int64(tCtx.GetResource().DroppedAttributesCount()), nil
 		},
-		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx K, val any) error {
 			if i, ok := val.(int64); ok {
 				tCtx.GetResource().SetDroppedAttributesCount(uint32(i))
 			}

@@ -8,20 +8,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/tilinna/clock"
 )
 
 type serviceStrategyCache interface {
-	get(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, bool)
-	put(ctx context.Context, serviceName string, response *sampling.SamplingStrategyResponse)
+	get(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, bool)
+	put(ctx context.Context, serviceName string, response *api_v2.SamplingStrategyResponse)
 	Close() error
 }
 
 // serviceStrategyCacheEntry is a timestamped sampling strategy response
 type serviceStrategyCacheEntry struct {
 	retrievedAt      time.Time
-	strategyResponse *sampling.SamplingStrategyResponse
+	strategyResponse *api_v2.SamplingStrategyResponse
 }
 
 // serviceStrategyTTLCache is a naive in-memory TTL serviceStrategyTTLCache of service-specific sampling strategies
@@ -55,7 +55,7 @@ func newServiceStrategyCache(itemTTL time.Duration) serviceStrategyCache {
 func (c *serviceStrategyTTLCache) get(
 	ctx context.Context,
 	serviceName string,
-) (*sampling.SamplingStrategyResponse, bool) {
+) (*api_v2.SamplingStrategyResponse, bool) {
 	c.rw.RLock()
 	defer c.rw.RUnlock()
 	found, ok := c.items[serviceName]
@@ -72,7 +72,7 @@ func (c *serviceStrategyTTLCache) get(
 func (c *serviceStrategyTTLCache) put(
 	ctx context.Context,
 	serviceName string,
-	response *sampling.SamplingStrategyResponse,
+	response *api_v2.SamplingStrategyResponse,
 ) {
 	c.rw.Lock()
 	defer c.rw.Unlock()
@@ -120,11 +120,11 @@ func (c *serviceStrategyTTLCache) staleItem(ctx context.Context, item serviceStr
 
 type noopStrategyCache struct{}
 
-func (n *noopStrategyCache) get(_ context.Context, _ string) (*sampling.SamplingStrategyResponse, bool) {
+func (n *noopStrategyCache) get(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, bool) {
 	return nil, false
 }
 
-func (n *noopStrategyCache) put(_ context.Context, _ string, _ *sampling.SamplingStrategyResponse) {
+func (n *noopStrategyCache) put(_ context.Context, _ string, _ *api_v2.SamplingStrategyResponse) {
 }
 
 func (n *noopStrategyCache) Close() error {

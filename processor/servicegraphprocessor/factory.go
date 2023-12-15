@@ -22,9 +22,10 @@ const (
 	connectorStability                    = component.StabilityLevelDevelopment
 	virtualNodeFeatureGateID              = "processor.servicegraph.virtualNode"
 	legacyLatencyMetricNamesFeatureGateID = "processor.servicegraph.legacyLatencyMetricNames"
+	legacyLatencyUnitMs                   = "processor.servicegraph.legacyLatencyUnitMs"
 )
 
-var virtualNodeFeatureGate, legacyMetricNamesFeatureGate *featuregate.Gate
+var virtualNodeFeatureGate, legacyMetricNamesFeatureGate, legacyLatencyUnitMsFeatureGate *featuregate.Gate
 
 func init() {
 	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -39,6 +40,12 @@ func init() {
 		featuregate.StageAlpha, // Alpha because we want it disabled by default.
 		featuregate.WithRegisterDescription("When enabled, processor uses legacy latency metric names."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578"),
+	)
+	legacyLatencyUnitMsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		legacyLatencyUnitMs,
+		featuregate.StageAlpha, // Alpha because we want it disabled by default.
+		featuregate.WithRegisterDescription("When enabled, processor reports latency in milliseconds, instead of seconds."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27488"),
 	)
 }
 
@@ -55,16 +62,14 @@ func NewFactory() processor.Factory {
 }
 
 // NewConnectorFactoryFunc creates a function that returns a factory for the servicegraph connector.
-func NewConnectorFactoryFunc(cfgType component.Type, tracesToMetricsStability component.StabilityLevel) func() connector.Factory {
-	return func() connector.Factory {
-		// TODO: Handle this err
-		_ = view.Register(serviceGraphProcessorViews()...)
-		return connector.NewFactory(
-			cfgType,
-			createDefaultConfig,
-			connector.WithTracesToMetrics(createTracesToMetricsConnector, tracesToMetricsStability),
-		)
-	}
+var NewConnectorFactoryFunc = func(cfgType component.Type, tracesToMetricsStability component.StabilityLevel) connector.Factory {
+	// TODO: Handle this err
+	_ = view.Register(serviceGraphProcessorViews()...)
+	return connector.NewFactory(
+		cfgType,
+		createDefaultConfig,
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, tracesToMetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {

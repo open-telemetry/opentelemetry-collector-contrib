@@ -17,20 +17,35 @@ This receiver scrapes Azure Monitor API for resources metrics.
 ## Configuration
 
 The following settings are required:
+
 - `subscription_id`
-- `tenant_id`
-- `client_id`
-- `client_secret`
 
 The following settings are optional:
+
+- `auth` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
 - `cache_resources_definitions` (default = 86400): List of metrics definitions will be cached for the provided amount of time in seconds.
 - `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `cloud` (default = `AzureCloud`): defines which Azure cloud to use. Either `AzureCloud` or `AzureUSGovernment`
 
-### Example Configuration
+Authenticating using service principal requires following additional settings:
+
+- `tenant_id`
+- `client_id`
+- `client_secret`
+
+Authenticating using workload identities requires following additional settings:
+
+- `tenant_id`
+- `client_id`
+- `federate_token_file`
+
+### Example Configurations
+
+Using Service Principal for authentication:
 
 ```yaml
 receivers:
@@ -39,6 +54,7 @@ receivers:
     tenant_id: "${tenant_id}"
     client_id: "${client_id}"
     client_secret: "${env:CLIENT_SECRET}"
+    cloud: AzureUSGovernment
     resource_groups:
       - "${resource_group1}"
       - "${resource_group2}"
@@ -49,7 +65,18 @@ receivers:
     initial_delay: 1s
 ```
 
+Using Azure Workload Identity for authentication:
+
+```yaml
+receivers:
+  azuremonitor:
+    subscription_id: "${subscription_id}"
+    auth: "workload_identity"
+    tenant_id: "${env:AZURE_TENANT_ID}"
+    client_id: "${env:AZURE_CLIENT_ID}"
+    federated_token_file: "${env:AZURE_FEDERATED_TOKEN_FILE}"
+```
+
 ## Metrics
 
 Details about the metrics scraped by this receiver can be found in [Supported metrics with Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported). This receiver adds the prefix "azure_" to all scraped metrics.
-

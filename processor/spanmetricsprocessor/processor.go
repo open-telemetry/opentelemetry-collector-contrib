@@ -258,6 +258,11 @@ func (p *processorImp) exportMetrics(ctx context.Context) {
 		p.metricKeyToDimensions.Purge()
 	} else {
 		p.metricKeyToDimensions.RemoveEvictedItems()
+		for key := range p.histograms {
+			if !p.metricKeyToDimensions.Contains(key) {
+				delete(p.histograms, key)
+			}
+		}
 	}
 
 	// This component no longer needs to read the metrics once built, so it is safe to unlock.

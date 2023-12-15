@@ -11,8 +11,8 @@ import (
 )
 
 type SetArguments[K any] struct {
-	Target ottl.Setter[K] `ottlarg:"0"`
-	Value  ottl.Getter[K] `ottlarg:"1"`
+	Target ottl.Setter[K]
+	Value  ottl.Getter[K]
 }
 
 func NewSetFactory[K any]() ottl.Factory[K] {
@@ -30,7 +30,7 @@ func createSetFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 }
 
 func set[K any](target ottl.Setter[K], value ottl.Getter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := value.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

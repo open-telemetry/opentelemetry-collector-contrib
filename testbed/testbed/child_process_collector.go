@@ -204,6 +204,9 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	}
 	// #nosec
 	cp.cmd = exec.Command(exePath, args...)
+	cp.cmd.Env = append(os.Environ(),
+		"GOMAXPROCS=2",
+	)
 
 	// Capture standard output and standard error.
 	cp.cmd.Stdout = logFile
