@@ -1,6 +1,3 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
 // Go API over pdh syscalls
 //go:build windows
 // +build windows
