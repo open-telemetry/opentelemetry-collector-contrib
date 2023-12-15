@@ -52,7 +52,7 @@ func TestConsumeMetricsNoServer(t *testing.T) {
 
 func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	cs := newCarbonServer(t, addr, "test_0;k0=v0;k1=v1;service.name=test_carbon 0")
+	cs := newCarbonServer(t, addr, "test_0;key_0=value_0;key_1=value_1;key_2=value_2;service.name=carbon 0")
 	// Each metric point will generate one Carbon line, set up the wait
 	// for all of them.
 	cs.start(t, 1)
@@ -166,15 +166,16 @@ func generateMetricsBatch(size int) pmetric.Metrics {
 	ts := time.Now()
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test_carbon")
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "carbon")
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
 	for i := 0; i < size; i++ {
 		m := ms.AppendEmpty()
 		m.SetName("test_" + strconv.Itoa(i))
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp.Attributes().PutStr("k0", "v0")
-		dp.Attributes().PutStr("k1", "v1")
+		dp.Attributes().PutStr("key_0", "value_0")
+		dp.Attributes().PutStr("key_1", "value_1")
+		dp.Attributes().PutStr("key_2", "value_2")
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		dp.SetIntValue(int64(i))
 	}
