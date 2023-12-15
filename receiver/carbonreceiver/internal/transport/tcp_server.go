@@ -1,13 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
+package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/transport"
 
 import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -18,11 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-)
-
-const (
-	// TCPIdleTimeoutDefault is the default timeout for idle TCP connections.
-	TCPIdleTimeoutDefault = 30 * time.Second
 )
 
 type tcpServer struct {
@@ -39,14 +33,6 @@ func NewTCPServer(
 	addr string,
 	idleTimeout time.Duration,
 ) (Server, error) {
-	if idleTimeout < 0 {
-		return nil, fmt.Errorf("invalid idle timeout: %v", idleTimeout)
-	}
-
-	if idleTimeout == 0 {
-		idleTimeout = TCPIdleTimeoutDefault
-	}
-
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@
 package transport
 
 import (
+	"context"
 	"runtime"
 	"sync"
 	"testing"
@@ -14,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
 )
 
 func Test_Server_ListenAndServe(t *testing.T) {
@@ -52,7 +53,8 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			mc := new(consumertest.MetricsSink)
 			p, err := (&protocol.PlaintextConfig{}).BuildParser()
 			require.NoError(t, err)
-			mr := NewMockReporter(1)
+			mr := &mockReporter{}
+			mr.wgMetricsProcessed.Add(1)
 
 			wgListenAndServe := sync.WaitGroup{}
 			wgListenAndServe.Add(1)
@@ -76,7 +78,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			err = gc.Disconnect()
 			assert.NoError(t, err)
 
-			mr.WaitAllOnMetricsProcessedCalls()
+			mr.wgMetricsProcessed.Wait()
 
 			// Keep trying until we're timed out or got a result
 			assert.Eventually(t, func() bool {
@@ -96,3 +98,21 @@ func Test_Server_ListenAndServe(t *testing.T) {
 		})
 	}
 }
+
+// mockReporter provides a Reporter that provides some useful functionalities for
+// tests (eg.: wait for certain number of messages).
+type mockReporter struct {
+	wgMetricsProcessed sync.WaitGroup
+}
+
+func (m *mockReporter) OnDataReceived(ctx context.Context) context.Context {
+	return ctx
+}
+
+func (m *mockReporter) OnTranslationError(context.Context, error) {}
+
+func (m *mockReporter) OnMetricsProcessed(context.Context, int, error) {
+	m.wgMetricsProcessed.Done()
+}
+
+func (m *mockReporter) OnDebugf(string, ...any) {}
