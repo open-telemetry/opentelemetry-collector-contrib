@@ -172,7 +172,7 @@ func TestTargetAPI(t *testing.T) {
 	// with adaptations as required
 	type test struct {
 		query    url.Values
-		response interface{}
+		response any
 	}
 
 	tests := []test{
