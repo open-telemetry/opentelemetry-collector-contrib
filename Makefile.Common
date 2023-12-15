@@ -81,7 +81,7 @@ ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/local/*' \
                                 -type f | sort)
 
-ALL_SRC_AND_SHELL := find . -not -path '**/third_party/*' -not -path '*/local/*' -iname '*.go' -o -iname "*.sh"  -type f | sort
+ALL_SRC_AND_SHELL := find . -type f  \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
 
 # All source code and documents. Used in spell check.
 ALL_SRC_AND_DOC := $(shell find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" \
@@ -102,6 +102,7 @@ all-pkgs:
 
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
+
 all-pkg-dirs:
 	@echo $(ALL_PKG_DIRS) | tr ' ' '\n' | sort
 
@@ -148,7 +149,6 @@ benchmark:
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
 	@ADDLICENSEOUT=$$(for f in $$($(ALL_SRC_AND_SHELL)); do \
-		echo "$$f"; \
 		`$(ADDLICENSE_CMD) "$$f" 2>&1`; \
 	done); \
 	if [ "$$ADDLICENSEOUT" ]; then \
@@ -162,7 +162,6 @@ addlicense: $(ADDLICENSE)
 .PHONY: checklicense
 checklicense: $(ADDLICENSE)
 	@licRes=$$(for f in $$($(ALL_SRC_AND_SHELL)); do \
-		echo "$$f"; \
 		awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 		awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 		$(ADDLICENSE_CMD) -check "$$f" 2>&1 || echo "$$f"; \
