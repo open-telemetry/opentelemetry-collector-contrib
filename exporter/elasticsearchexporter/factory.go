@@ -57,6 +57,11 @@ func createDefaultConfig() component.Config {
 			Dedup: true,
 			Dedot: true,
 		},
+		LogstashFormat: LogstashFormatSettings{
+			Enabled:         false,
+			PrefixSeparator: "-",
+			DateFormat:      "%Y.%m.%d",
+		},
 	}
 }
 
@@ -77,7 +82,7 @@ func createLogsExporter(
 
 	logsExporter, err := newLogsExporter(set.Logger, cf)
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elasticsearch logs exporter: %w", err)
+		return nil, fmt.Errorf("cannot configure Elasticsearch logsExporter: %w", err)
 	}
 
 	return exporterhelper.NewLogsExporter(
@@ -100,7 +105,7 @@ func createTracesExporter(ctx context.Context,
 
 	tracesExporter, err := newTracesExporter(set.Logger, cf)
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elasticsearch traces exporter: %w", err)
+		return nil, fmt.Errorf("cannot configure Elasticsearch tracesExporter: %w", err)
 	}
 	return exporterhelper.NewTracesExporter(
 		ctx,

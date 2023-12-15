@@ -4,6 +4,7 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -17,6 +18,126 @@ type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
+
+func newPath[K any](fields []Field) *basePath[K] {
+	if len(fields) == 0 {
+		return nil
+	}
+	var current *basePath[K]
+	for i := len(fields) - 1; i >= 0; i-- {
+		current = &basePath[K]{
+			name:     fields[i].Name,
+			key:      newKey[K](fields[i].Keys),
+			nextPath: current,
+		}
+	}
+	current.fetched = true
+	return current
+}
+
+type path[K any] interface {
+	Name() string
+	Next() path[K]
+	Key() key[K]
+}
+
+var _ path[any] = &basePath[any]{}
+
+type basePath[K any] struct {
+	name     string
+	key      key[K]
+	nextPath *basePath[K]
+	fetched  bool
+}
+
+func (p *basePath[K]) Name() string {
+	return p.name
+}
+
+func (p *basePath[K]) Next() path[K] {
+	if p.nextPath == nil {
+		return nil
+	}
+	p.nextPath.fetched = true
+	return p.nextPath
+}
+
+func (p *basePath[K]) Key() key[K] {
+	return p.key
+}
+
+func (p *basePath[K]) isComplete() error {
+	if !p.fetched {
+		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
+	}
+	if p.nextPath == nil {
+		return nil
+	}
+	return p.nextPath.isComplete()
+}
+
+func newKey[K any](keys []Key) *baseKey[K] {
+	if len(keys) == 0 {
+		return nil
+	}
+	var current *baseKey[K]
+	for i := len(keys) - 1; i >= 0; i-- {
+		current = &baseKey[K]{
+			s:       keys[i].String,
+			i:       keys[i].Int,
+			nextKey: current,
+		}
+	}
+	current.fetched = true
+	return current
+}
+
+type key[K any] interface {
+	String(context.Context, K) (*string, error)
+	Int(context.Context, K) (*int64, error)
+	Next() key[K]
+}
+
+var _ key[any] = &baseKey[any]{}
+
+type baseKey[K any] struct {
+	s       *string
+	i       *int64
+	nextKey *baseKey[K]
+	fetched bool
+}
+
+func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
+	return k.s, nil
+}
+
+func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
+	return k.i, nil
+}
+
+func (k *baseKey[K]) Next() key[K] {
+	if k.nextKey == nil {
+		return nil
+	}
+	k.nextKey.fetched = true
+	return k.nextKey
+}
+
+func (k *baseKey[K]) isComplete() error {
+	if !k.fetched {
+		var val any
+		if k.s != nil {
+			val = *k.s
+		} else if k.i != nil {
+			val = *k.i
+		}
+		return fmt.Errorf("the key %q was not used by the context during indexing", val)
+	}
+	if k.nextKey == nil {
+		return nil
+	}
+	return k.nextKey.isComplete()
+}
 
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]

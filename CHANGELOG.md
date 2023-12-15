@@ -7,6 +7,52 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.91.0
+
+### 🚀 New components 🚀
+
+- `alertmanagerexporter`: Add Alertmanager exporter implementation and tests (#23569)
+
+### 💡 Enhancements 💡
+
+- `spanmetricsconnector`: Add exemplars to sum metric (#27451)
+- `exporter/datadogexporter`: Add support for nested log attributes. (#29633)
+- `jaegerreceiver,jaegerremotesamplingextension`: mark featuregates to replace Thrift-gen with Proto-gen types for sampling strategies as stable (#27636)
+  The following featuregates are stable:
+    - extension.jaegerremotesampling.replaceThriftWithProto
+    - receiver.jaegerreceiver.replaceThriftWithProto
+  
+- `awsemfexporter/awscloudwatchlogsexporter`: Add component name to user agent header for outgoing put log even requests (#29595)
+- `elasticsearchexporter`: Logstash format compatibility. Traces or Logs data can be written into an index in logstash format. (#29624)
+- `extension/opampextension`: Implement `extension.NotifyConfig` to be notified of the Collector's effective config and report it to the OpAMP server. (#27293)
+- `receiver/influxdbreceiver`: Endpoint `/ping` added to enhance compatibility with third party products (#29594)
+- `kafkareceiver`: Add the ability to consume logs from Azure Diagnostic Settings streamed through Event Hubs using the Kafka API. (#18210)
+- `resourcedetectionprocessor`: Add detection of host.ip to system detector. (#24450)
+- `resourcedetectionprocessor`: Add detection of host.mac to system detector. (#29587)
+- `pkg/ottl`: Add `silent` ErrorMode to allow disabling logging of errors that are ignored. (#29710)
+- `postgresqlreceiver`: Add config property for excluding specific databases from scraping (#29605)
+- `redisreceiver`: Upgrade the redis library dependency to resolve security vulns in v7 (#29600)
+- `signalfxexporter`: Enable HTTP/2 health check by default (#29716)
+- `splunkhecexporter`: Enable HTTP/2 health check by default (#29717)
+- `statsdreceiver`: Add support for 'simple' tags that do not have a defined value, to accommodate DogStatsD metrics that may utilize these. (#29012)
+  This functionality is gated behind a new `enable_simple_tags` config boolean, as it is not part of the StatsD spec.
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/prometheusremotewrite`: prometheusremotewrite exporter fix created metrics missing timestamp (#24915)
+- `connector/spanmetrics`: Fix memory leak when the cumulative temporality is used. (#27654)
+- `awscontainerinsightreceiver`: Filter terminated pods from node request metrics (#27262)
+- `clickhouseexporter`: Fix regression error introduced in #29095 (#29573)
+- `prometheusexporter`: Fix panic when exporter mutates data (#29574)
+- `splunkhecexporter`: Do not send null event field values in HEC events. Replace null values with an empty string. (#29551)
+- `k8sobjectsreceiver`: fix k8sobjects receiver fails when some unrelated Kubernetes API is down (#29706)
+- `resourcedetectionprocessor`: Change type of `host.cpu.model.id` and `host.cpu.model.family` from int to string. (#29025)
+  - Disable the `processor.resourcedetection.hostCPUModelAndFamilyAsString` feature gate to get the old behavior.
+  
+- `Fix problem where checkpoints could be lost when collector is shutdown abruptly`: filelogreceiver (#29609, #29491)
+- `googlecloudspannerreceiver`: Google Cloud Spanner Receiver currently generates an exception and exits if it attempts to read data from a database that doesn't exist. However it's normal for a single receiver to poll multiple databases, so this is not graceful failure. This PR makes a change to gracefully generate an error in case of an unreadable missing database and then continue reading other databases.. (#26732)
+- `pkg/stanza`: Allow `key_value_parser` to parse values that contain the delimiter string. (#29629)
+
 ## v0.90.1
 
 ### 🧰 Bug fixes 🧰
