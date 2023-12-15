@@ -21,8 +21,8 @@ spec:
           command:
             - /otelcontribcol
             - --config=/conf/relay.yaml
-          image: "otelcontribcol:latest"
-          imagePullPolicy: Never
+          image: "otel/opentelemetry-collector-contrib:0.91.0"
+          imagePullPolicy: IfNotPresent
           ports:
             - name: otlp
               containerPort: 4317
