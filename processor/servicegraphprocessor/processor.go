@@ -108,8 +108,7 @@ func newProcessor(set component.TelemetrySettings, config component.Config) *ser
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
 	}
 
-	scopeName := "processor/servicegraphprocessor"
-	meter := set.MeterProvider.Meter(scopeName)
+	meter := metadata.Meter(set)
 
 	droppedSpan, _ := meter.Int64Counter(
 		processorhelper.BuildCustomMetricName(metadata.Type, "dropped_spans"),
