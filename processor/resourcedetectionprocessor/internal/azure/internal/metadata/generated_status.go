@@ -5,3 +5,7 @@ package metadata
 const (
 	Type = "resourcedetectionprocessor/azure"
 )
+
+func Meter(settings component.TelemetrySettings) metric.Meter {
+	return settings.MeterProvider.Meter("otelcol/resourcedetection")
+}

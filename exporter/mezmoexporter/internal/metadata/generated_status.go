@@ -4,9 +4,14 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
 	Type          = "mezmo"
 	LogsStability = component.StabilityLevelBeta
 )
+
+func Meter(settings component.TelemetrySettings) metric.Meter {
+	return settings.MeterProvider.Meter("otelcol/mezmo")
+}

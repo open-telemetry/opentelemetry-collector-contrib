@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
@@ -11,3 +12,7 @@ const (
 	LogsStability   = component.StabilityLevelDevelopment
 	TracesStability = component.StabilityLevelDevelopment
 )
+
+func Meter(settings component.TelemetrySettings) metric.Meter {
+	return settings.MeterProvider.Meter("otelcol/azureblobreceiver")
+}

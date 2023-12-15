@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
@@ -11,3 +12,7 @@ const (
 	TracesStability  = component.StabilityLevelDeprecated
 	MetricsStability = component.StabilityLevelDeprecated
 )
+
+func Meter(settings component.TelemetrySettings) metric.Meter {
+	return settings.MeterProvider.Meter("otelcol/tanzuobservability")
+}

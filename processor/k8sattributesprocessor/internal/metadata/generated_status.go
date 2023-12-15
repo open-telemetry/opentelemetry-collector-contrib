@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
@@ -12,3 +13,7 @@ const (
 	MetricsStability = component.StabilityLevelBeta
 	TracesStability  = component.StabilityLevelBeta
 )
+
+func Meter(settings component.TelemetrySettings) metric.Meter {
+	return settings.MeterProvider.Meter("otelcol/k8sattributes")
+}
