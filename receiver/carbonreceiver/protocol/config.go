@@ -35,12 +35,7 @@ func init() {
 	})
 }
 
-const (
-	// configSection is the name that must be used for the config settings
-	// in the configuration struct. The metadata mapstructure for the parser
-	// should use the same string.
-	configSection = "config"
-)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config is the general configuration for the parser to be used.
 type Config struct {
@@ -57,10 +52,14 @@ type ParserConfig interface {
 	BuildParser() (Parser, error)
 }
 
-// LoadParserConfig is used to load the parser configuration according to the
-// specified parser type. It expects the passed viper to be pointing at the level
-// of the Config reference.
-func LoadParserConfig(cp *confmap.Conf, cfg *Config) error {
+// Unmarshal is used to load the parser configuration according to the
+// specified parser type.
+func (cfg *Config) Unmarshal(cp *confmap.Conf) error {
+	// If type is configured then use that, otherwise use default.
+	if configuredType, ok := cp.Get("type").(string); ok {
+		cfg.Type = configuredType
+	}
+
 	defaultCfgFn, ok := parserMap[cfg.Type]
 	if !ok {
 		return fmt.Errorf(
@@ -71,10 +70,5 @@ func LoadParserConfig(cp *confmap.Conf, cfg *Config) error {
 
 	cfg.Config = defaultCfgFn()
 
-	vParserCfg, errSub := cp.Sub(configSection)
-	if errSub != nil {
-		return errSub
-	}
-
-	return vParserCfg.Unmarshal(cfg.Config, confmap.WithErrorUnused())
+	return cp.Unmarshal(cfg, confmap.WithErrorUnused())
 }
