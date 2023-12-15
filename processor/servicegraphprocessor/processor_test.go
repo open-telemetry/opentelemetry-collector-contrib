@@ -99,7 +99,9 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p := newProcessor(zaptest.NewLogger(t), cfg)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	p := newProcessor(set, cfg)
 	p.tracesConsumer = next
 	err := p.Shutdown(context.Background())
 
@@ -114,7 +116,9 @@ func TestConnectorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.MetricsSink)
-	p := newProcessor(zaptest.NewLogger(t), cfg)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	p := newProcessor(set, cfg)
 	p.metricsConsumer = next
 	err := p.Shutdown(context.Background())
 
@@ -216,7 +220,9 @@ func TestProcessorConsume(t *testing.T) {
 			}
 
 			// Prepare
-			p := newProcessor(zaptest.NewLogger(t), tc.cfg)
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zaptest.NewLogger(t)
+			p := newProcessor(set, tc.cfg)
 			p.tracesConsumer = consumertest.NewNop()
 
 			metricsExporter := newMockMetricsExporter()
@@ -259,7 +265,9 @@ func TestConnectorConsume(t *testing.T) {
 		Store:      StoreConfig{MaxItems: 10},
 	}
 
-	conn := newProcessor(zaptest.NewLogger(t), cfg)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	conn := newProcessor(set, cfg)
 	conn.metricsConsumer = newMockMetricsExporter()
 
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
@@ -281,7 +289,9 @@ func TestConnectorConsume(t *testing.T) {
 
 func TestProcessor_MetricsFlushInterval(t *testing.T) {
 	// Prepare
-	p := newProcessor(zaptest.NewLogger(t), &Config{
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	p := newProcessor(set, &Config{
 		MetricsExporter: "mock",
 		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 		Store: StoreConfig{
@@ -599,7 +609,9 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	mockMetricsExporter := newMockMetricsExporter()
 
-	p := newProcessor(zaptest.NewLogger(t), cfg)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	p := newProcessor(set, cfg)
 	p.tracesConsumer = consumertest.NewNop()
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
