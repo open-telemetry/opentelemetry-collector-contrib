@@ -21,9 +21,9 @@ type Enum int64
 
 type EnumSymbol string
 
-func newPath[K any](fields []field) Path[K] {
+func newPath[K any](fields []field) (*basePath[K], error) {
 	if len(fields) == 0 {
-		return nil
+		return nil, fmt.Errorf("cannot make a path from zero fields")
 	}
 	var current *basePath[K]
 	for i := len(fields) - 1; i >= 0; i-- {
@@ -34,7 +34,7 @@ func newPath[K any](fields []field) Path[K] {
 		}
 	}
 	current.fetched = true
-	return current
+	return current, nil
 }
 
 type Path[K any] interface {
@@ -43,11 +43,18 @@ type Path[K any] interface {
 	Key() Key[K]
 }
 
+//type internalPath[K any] interface {
+//	Path[K]
+//	isComplete() error
+//}
+
 var _ Path[any] = &basePath[any]{}
+
+//var _ internalPath[any] = &basePath[any]{}
 
 type basePath[K any] struct {
 	name     string
-	key      Key[K]
+	key      *baseKey[K]
 	nextPath *basePath[K]
 	fetched  bool
 }
@@ -65,6 +72,10 @@ func (p *basePath[K]) Next() Path[K] {
 }
 
 func (p *basePath[K]) Key() Key[K] {
+	if p.key == nil {
+		return nil
+	}
+	p.key.fetched = true
 	return p.key
 }
 
@@ -72,13 +83,19 @@ func (p *basePath[K]) isComplete() error {
 	if !p.fetched {
 		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
 	}
+	if p.key != nil {
+		err := p.key.isComplete()
+		if err != nil {
+			return err
+		}
+	}
 	if p.nextPath == nil {
 		return nil
 	}
 	return p.nextPath.isComplete()
 }
 
-func newKey[K any](keys []key) Key[K] {
+func newKey[K any](keys []key) *baseKey[K] {
 	if len(keys) == 0 {
 		return nil
 	}
@@ -90,7 +107,6 @@ func newKey[K any](keys []key) Key[K] {
 			nextKey: current,
 		}
 	}
-	current.fetched = true
 	return current
 }
 
@@ -100,7 +116,14 @@ type Key[K any] interface {
 	Next() Key[K]
 }
 
+//type internalKey[K any] interface {
+//	Key[K]
+//	isComplete() error
+//}
+
 var _ Key[any] = &baseKey[any]{}
+
+//var _ internalKey[any] = &baseKey[any]{}
 
 type baseKey[K any] struct {
 	s       *string
@@ -139,6 +162,18 @@ func (k *baseKey[K]) isComplete() error {
 		return nil
 	}
 	return k.nextKey.isComplete()
+}
+
+func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
+	g, err := p.pathParser(ip)
+	if err != nil {
+		return nil, err
+	}
+	err = ip.isComplete()
+	if err != nil {
+		return nil, err
+	}
+	return g, nil
 }
 
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
@@ -366,7 +401,11 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if argVal.Literal == nil || argVal.Literal.Path == nil {
 			return nil, fmt.Errorf("must be a path")
 		}
-		arg, err := p.pathParser(newPath[K](argVal.Literal.Path.Fields))
+		np, err := newPath[K](argVal.Literal.Path.Fields)
+		if err != nil {
+			return nil, err
+		}
+		arg, err := p.parsePath(np)
 		if err != nil {
 			return nil, err
 		}
