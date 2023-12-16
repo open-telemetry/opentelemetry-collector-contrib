@@ -6,8 +6,8 @@ metadata:
 data:
   relay: |
     exporters:
-      otlp:
-        endpoint: {{ .HostEndpoint }}:4317
+      otlphttp:
+        endpoint: http://{{ .HostEndpoint }}:4318
         tls:
           insecure: true
     extensions:
@@ -25,6 +25,6 @@ data:
       pipelines:
         metrics:
           exporters:
-          - otlp
+          - otlphttp
           receivers:
           - k8s_cluster
