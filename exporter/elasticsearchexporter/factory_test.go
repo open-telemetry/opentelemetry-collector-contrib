@@ -5,10 +5,12 @@ package elasticsearchexporter
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
@@ -65,4 +67,12 @@ func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing
 	require.NoError(t, err)
 	require.NotNil(t, tracesExporter)
 	require.NoError(t, tracesExporter.Shutdown(context.TODO()))
+}
+
+func TestSetDefaultUserAgentHeader(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cf := setDefaultUserAgentHeader(cfg.(*Config), component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
+	assert.Equal(t, len(cf.Headers), 1)
+	assert.Equal(t, strings.Contains(cf.Headers[userAgentHeaderKey], "OpenTelemetry Collector"), true)
 }
