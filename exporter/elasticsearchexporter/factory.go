@@ -111,10 +111,13 @@ func createTracesExporter(ctx context.Context,
 		exporterhelper.WithQueue(cf.QueueSettings))
 }
 
-// set default User-Agent header
+// set default User-Agent header if User-Agent is empty
 func setDefaultUserAgentHeader(cf *Config, info component.BuildInfo) {
 	if cf.Headers == nil {
 		cf.Headers = make(map[string]string)
 	}
-	cf.Headers[userAgentHeaderKey] = fmt.Sprintf("%s/%s (%s/%s)", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
+
+	if _, found := cf.Headers[userAgentHeaderKey]; !found {
+		cf.Headers[userAgentHeaderKey] = fmt.Sprintf("%s/%s (%s/%s)", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
+	}
 }
