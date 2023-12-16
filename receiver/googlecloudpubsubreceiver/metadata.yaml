@@ -7,3 +7,7 @@ status:
   distributions: [observiq, sumo]
   codeowners:
     active: [alexvanboxel]
+
+tests:
+  config:
+  skip_lifecycle: true
