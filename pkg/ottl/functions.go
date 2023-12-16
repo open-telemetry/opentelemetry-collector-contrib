@@ -13,13 +13,13 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
+type PathExpressionParser[K any] func(Path[K]) (GetSetter[K], error)
 
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
-func newPath[K any](fields []Field) *basePath[K] {
+func newPath[K any](fields []field) Path[K] {
 	if len(fields) == 0 {
 		return nil
 	}
@@ -35,17 +35,17 @@ func newPath[K any](fields []Field) *basePath[K] {
 	return current
 }
 
-type path[K any] interface {
+type Path[K any] interface {
 	Name() string
-	Next() path[K]
-	Key() key[K]
+	Next() Path[K]
+	Key() Key[K]
 }
 
-var _ path[any] = &basePath[any]{}
+var _ Path[any] = &basePath[any]{}
 
 type basePath[K any] struct {
 	name     string
-	key      key[K]
+	key      Key[K]
 	nextPath *basePath[K]
 	fetched  bool
 }
@@ -54,7 +54,7 @@ func (p *basePath[K]) Name() string {
 	return p.name
 }
 
-func (p *basePath[K]) Next() path[K] {
+func (p *basePath[K]) Next() Path[K] {
 	if p.nextPath == nil {
 		return nil
 	}
@@ -62,7 +62,7 @@ func (p *basePath[K]) Next() path[K] {
 	return p.nextPath
 }
 
-func (p *basePath[K]) Key() key[K] {
+func (p *basePath[K]) Key() Key[K] {
 	return p.key
 }
 
@@ -76,7 +76,7 @@ func (p *basePath[K]) isComplete() error {
 	return p.nextPath.isComplete()
 }
 
-func newKey[K any](keys []Key) *baseKey[K] {
+func newKey[K any](keys []key) Key[K] {
 	if len(keys) == 0 {
 		return nil
 	}
@@ -92,13 +92,13 @@ func newKey[K any](keys []Key) *baseKey[K] {
 	return current
 }
 
-type key[K any] interface {
+type Key[K any] interface {
 	String(context.Context, K) (*string, error)
 	Int(context.Context, K) (*int64, error)
-	Next() key[K]
+	Next() Key[K]
 }
 
-var _ key[any] = &baseKey[any]{}
+var _ Key[any] = &baseKey[any]{}
 
 type baseKey[K any] struct {
 	s       *string
@@ -115,7 +115,7 @@ func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.i, nil
 }
 
-func (k *baseKey[K]) Next() key[K] {
+func (k *baseKey[K]) Next() Key[K] {
 	if k.nextKey == nil {
 		return nil
 	}
@@ -362,9 +362,9 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		fallthrough
 	case strings.HasPrefix(name, "GetSetter"):
 		if argVal.Literal == nil || argVal.Literal.Path == nil {
-			return nil, fmt.Errorf("must be a Path")
+			return nil, fmt.Errorf("must be a path")
 		}
-		arg, err := p.pathParser(argVal.Literal.Path)
+		arg, err := p.pathParser(newPath[K](argVal.Literal.Path.Fields))
 		if err != nil {
 			return nil, err
 		}
