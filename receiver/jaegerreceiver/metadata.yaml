@@ -19,3 +19,5 @@ status:
 
 tests:
   config:
+    protocols:
+      grpc:
