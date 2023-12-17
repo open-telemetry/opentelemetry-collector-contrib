@@ -80,3 +80,6 @@ metrics:
       value_type: int
     attributes: [message.state]
     enabled: true
+
+tests:
+  config:
