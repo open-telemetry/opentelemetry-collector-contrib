@@ -8,6 +8,6 @@ import (
 
 const (
 	Type            = "logzio"
-	TracesStability = component.StabilityLevelBeta
-	LogsStability   = component.StabilityLevelBeta
+	TracesStability = component.StabilityLevelUnmaintained
+	LogsStability   = component.StabilityLevelUnmaintained
 )

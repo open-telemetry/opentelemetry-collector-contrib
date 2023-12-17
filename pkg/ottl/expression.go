@@ -63,7 +63,7 @@ func (l literal[K]) Get(context.Context, K) (any, error) {
 
 type exprGetter[K any] struct {
 	expr Expr[K]
-	keys []Key
+	keys []key
 }
 
 func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
@@ -631,7 +631,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			return &literal[K]{value: *i}, nil
 		}
 		if eL.Path != nil {
-			return p.pathParser(eL.Path)
+			return p.pathParser(newPath[K](eL.Path.Fields))
 		}
 		if eL.Converter != nil {
 			return p.newGetterFromConverter(*eL.Converter)

@@ -31,6 +31,7 @@ type Config struct {
 	Username                                string                         `mapstructure:"username"`
 	Password                                configopaque.String            `mapstructure:"password"`
 	Databases                               []string                       `mapstructure:"databases"`
+	ExcludeDatabases                        []string                       `mapstructure:"exclude_databases"`
 	confignet.NetAddr                       `mapstructure:",squash"`       // provides Endpoint and Transport
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"` // provides SSL details
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`

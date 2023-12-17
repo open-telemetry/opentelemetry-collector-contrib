@@ -18,29 +18,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-func mathParsePath(val *Path) (GetSetter[any], error) {
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "one" {
+func mathParsePath[K any](p Path[K]) (GetSetter[any], error) {
+	if p != nil && p.Name() == "one" {
 		return &StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
 				return int64(1), nil
 			},
 		}, nil
 	}
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "two" {
+	if p != nil && p.Name() == "two" {
 		return &StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
 				return int64(2), nil
 			},
 		}, nil
 	}
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "three" && val.Fields[1].Name == "one" {
+	if p != nil && p.Name() == "three" && p.Next() != nil && p.Next().Name() == "one" {
 		return &StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
 				return 3.1, nil
 			},
 		}, nil
 	}
-	return nil, fmt.Errorf("bad path %v", val)
+	return nil, fmt.Errorf("bad path %v", p)
 }
 
 func one[K any]() (ExprFunc[K], error) {
@@ -234,7 +234,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 
 	p, _ := NewParser[any](
 		functions,
-		mathParsePath,
+		mathParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -556,7 +556,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 
 	p, _ := NewParser[any](
 		functions,
-		mathParsePath,
+		mathParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -606,7 +606,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 
 	p, _ := NewParser(
 		functions,
-		mathParsePath,
+		mathParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)

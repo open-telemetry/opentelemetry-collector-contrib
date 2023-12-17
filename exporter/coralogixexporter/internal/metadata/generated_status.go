@@ -8,7 +8,7 @@ import (
 
 const (
 	Type             = "coralogix"
-	LogsStability    = component.StabilityLevelAlpha
 	TracesStability  = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )
