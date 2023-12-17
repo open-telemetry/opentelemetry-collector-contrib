@@ -7,3 +7,11 @@ status:
   distributions: [contrib, sumo, splunk]
   codeowners:
     active: [djaglowski, mcardy]
+
+tests:
+  config:
+    auth:
+      sasl_plain:
+        username: otel
+        password: otel01$
+  skip_lifecycle: true
