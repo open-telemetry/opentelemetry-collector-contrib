@@ -7,3 +7,8 @@ status:
   distributions: [splunk, observiq, sumo]
   codeowners:
     active: [djaglowski, armstrmi, pjanotti]
+
+tests:
+  config:
+    channel: application
+  skip_lifecycle: true
