@@ -63,6 +63,9 @@ func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
 }
 
 func (ltp *logsTransformProcessor) Shutdown(_ context.Context) error {
+	if ltp.converter == nil {
+		return nil
+	}
 	ltp.logger.Info("Stopping logs transform processor")
 	pipelineErr := ltp.pipe.Stop()
 	ltp.converter.Stop()
