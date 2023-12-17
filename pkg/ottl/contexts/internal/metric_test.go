@@ -26,17 +26,15 @@ func Test_MetricPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     ottl.Path[*metricContext]
 		orig     any
 		newVal   any
 		modified func(metric pmetric.Metric)
 	}{
 		{
 			name: "metric name",
-			path: []ottl.Field{
-				{
-					Name: "name",
-				},
+			path: &TestPath[*metricContext]{
+				N: "name",
 			},
 			orig:   "name",
 			newVal: "new name",
@@ -46,10 +44,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: []ottl.Field{
-				{
-					Name: "description",
-				},
+			path: &TestPath[*metricContext]{
+				N: "description",
 			},
 			orig:   "description",
 			newVal: "new description",
@@ -59,10 +55,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: []ottl.Field{
-				{
-					Name: "unit",
-				},
+			path: &TestPath[*metricContext]{
+				N: "unit",
 			},
 			orig:   "unit",
 			newVal: "new unit",
@@ -72,10 +66,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: []ottl.Field{
-				{
-					Name: "type",
-				},
+			path: &TestPath[*metricContext]{
+				N: "type",
 			},
 			orig:   int64(pmetric.MetricTypeSum),
 			newVal: int64(pmetric.MetricTypeSum),
@@ -84,10 +76,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: []ottl.Field{
-				{
-					Name: "aggregation_temporality",
-				},
+			path: &TestPath[*metricContext]{
+				N: "aggregation_temporality",
 			},
 			orig:   int64(2),
 			newVal: int64(1),
@@ -97,10 +87,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: []ottl.Field{
-				{
-					Name: "is_monotonic",
-				},
+			path: &TestPath[*metricContext]{
+				N: "is_monotonic",
 			},
 			orig:   true,
 			newVal: false,
@@ -110,10 +98,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric data points",
-			path: []ottl.Field{
-				{
-					Name: "data_points",
-				},
+			path: &TestPath[*metricContext]{
+				N: "data_points",
 			},
 			orig:   refMetric.Sum().DataPoints(),
 			newVal: newDataPoints,

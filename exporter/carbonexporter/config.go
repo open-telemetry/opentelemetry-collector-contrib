@@ -10,6 +10,8 @@ import (
 
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // Defaults for not specified configuration settings.
@@ -27,6 +29,9 @@ type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`     // squash ensures fields are correctly decoded in embedded struct.
 	QueueConfig                    exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	RetryConfig                    exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+
+	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
+	ResourceToTelemetryConfig resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 }
 
 func (cfg *Config) Validate() error {
