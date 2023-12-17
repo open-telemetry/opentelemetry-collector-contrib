@@ -112,3 +112,5 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     enabled: true
+tests:
+  config:
