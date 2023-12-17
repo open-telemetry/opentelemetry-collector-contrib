@@ -7,3 +7,5 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [architjugran, varunraiko, kiranmayib]
+tests:
+  config:
