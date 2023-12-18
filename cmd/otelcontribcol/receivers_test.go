@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package main
 
 import (
@@ -41,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 )
 
 func TestDefaultReceivers(t *testing.T) {
@@ -50,13 +47,13 @@ func TestDefaultReceivers(t *testing.T) {
 	rcvrFactories := allFactories.Receivers
 
 	tests := []struct {
-		getConfigFn  getReceiverConfigFn
-		receiver     component.Type
-		skipLifecyle bool
+		getConfigFn   getReceiverConfigFn
+		receiver      component.Type
+		skipLifecycle bool
 	}{
 		{
-			receiver:     "active_directory_ds",
-			skipLifecyle: true, // Requires a running windows service
+			receiver:      "active_directory_ds",
+			skipLifecycle: true, // Requires a running windows service
 		},
 		{
 			receiver: "aerospike",
@@ -79,18 +76,18 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver: "awscontainerinsightreceiver",
 			// TODO: skipped since it will only function in a container environment with procfs in expected location.
-			skipLifecyle: true,
+			skipLifecycle: true,
 		},
 		{
-			receiver:     "awsecscontainermetrics",
-			skipLifecyle: true, // Requires container metaendpoint to be running
+			receiver:      "awsecscontainermetrics",
+			skipLifecycle: true, // Requires container metaendpoint to be running
 		},
 		{
 			receiver: "awsfirehose",
 		},
 		{
-			receiver:     "awsxray",
-			skipLifecyle: true, // Requires AWS endpoint to check identity to run
+			receiver:      "awsxray",
+			skipLifecycle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
 			receiver: "azureblob",
@@ -100,7 +97,7 @@ func TestDefaultReceivers(t *testing.T) {
 				cfg.EventHub.EndPoint = "DefaultEndpointsProtocol=http;SharedAccessKeyName=secret;SharedAccessKey=secret;Endpoint=test.test"
 				return cfg
 			},
-			skipLifecyle: true, // Requires Azure event hub to run
+			skipLifecycle: true, // Requires Azure event hub to run
 		},
 		{
 			receiver: "azureeventhub",
@@ -109,7 +106,7 @@ func TestDefaultReceivers(t *testing.T) {
 				cfg.Connection = "Endpoint=sb://example.com/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 				return cfg
 			},
-			skipLifecyle: true, // Requires Azure event hub to run
+			skipLifecycle: true, // Requires Azure event hub to run
 		},
 		{
 			receiver: "azuremonitor",
@@ -121,7 +118,7 @@ func TestDefaultReceivers(t *testing.T) {
 				cfg.ClientSecret = "client_secret"
 				return cfg
 			},
-			skipLifecyle: true, // Requires Azure event hub to run
+			skipLifecycle: true, // Requires Azure event hub to run
 		},
 		{
 			receiver: "bigip",
@@ -133,15 +130,15 @@ func TestDefaultReceivers(t *testing.T) {
 				cfg.Endpoint = "0.0.0.0:0"
 				return cfg
 			},
-			skipLifecyle: true, // Panics after test have completed, requires a wait group
+			skipLifecycle: true, // Panics after test have completed, requires a wait group
 		},
 		{
-			receiver:     "cloudflare",
-			skipLifecyle: true,
+			receiver:      "cloudflare",
+			skipLifecycle: true,
 		},
 		{
-			receiver:     "cloudfoundry",
-			skipLifecyle: true, // Requires UAA (auth) endpoint to run
+			receiver:      "cloudfoundry",
+			skipLifecycle: true, // Requires UAA (auth) endpoint to run
 		},
 		{
 			receiver: "chrony",
@@ -166,8 +163,8 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "docker_stats",
-			skipLifecyle: true,
+			receiver:      "docker_stats",
+			skipLifecycle: true,
 		},
 		{
 			receiver: "elasticsearch",
@@ -184,8 +181,8 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "file",
-			skipLifecyle: true, // Requires an existing JSONL file
+			receiver:      "file",
+			skipLifecycle: true, // Requires an existing JSONL file
 		},
 		{
 			receiver: "filestats",
@@ -200,8 +197,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "googlecloudspanner",
 		},
 		{
-			receiver:     "googlecloudpubsub",
-			skipLifecyle: true, // Requires a pubsub subscription
+			receiver:      "googlecloudpubsub",
+			skipLifecycle: true, // Requires a pubsub subscription
 		},
 		{
 			receiver: "haproxy",
@@ -216,15 +213,15 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "influxdb",
 		},
 		{
-			receiver:     "iis",
-			skipLifecyle: true, // Requires a running windows process
+			receiver:      "iis",
+			skipLifecycle: true, // Requires a running windows process
 		},
 		{
 			receiver: "jaeger",
 		},
 		{
-			receiver:     "jmx",
-			skipLifecyle: true, // Requires a running instance with JMX
+			receiver:      "jmx",
+			skipLifecycle: true, // Requires a running instance with JMX
 			getConfigFn: func() component.Config {
 				cfg := jmxreceiver.NewFactory().CreateDefaultConfig().(*jmxreceiver.Config)
 				cfg.Endpoint = "localhost:1234"
@@ -233,31 +230,31 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "journald",
-			skipLifecyle: runtime.GOOS != "linux",
+			receiver:      "journald",
+			skipLifecycle: runtime.GOOS != "linux",
 		},
 		{
-			receiver:     "k8s_events",
-			skipLifecyle: true, // need a valid Kubernetes host and port
+			receiver:      "k8s_events",
+			skipLifecycle: true, // need a valid Kubernetes host and port
 		},
 		{
-			receiver:     "k8sobjects",
-			skipLifecyle: true, // need a valid Kubernetes host and port
+			receiver:      "k8sobjects",
+			skipLifecycle: true, // need a valid Kubernetes host and port
 		},
 		{
-			receiver:     "kafka",
-			skipLifecyle: true, // TODO: It needs access to internals to successful start.
+			receiver:      "kafka",
+			skipLifecycle: true, // TODO: It needs access to internals to successful start.
 		},
 		{
 			receiver: "kafkametrics",
 		},
 		{
-			receiver:     "k8s_cluster",
-			skipLifecyle: true, // Requires access to the k8s host and port in order to run
+			receiver:      "k8s_cluster",
+			skipLifecycle: true, // Requires access to the k8s host and port in order to run
 		},
 		{
-			receiver:     "kubeletstats",
-			skipLifecyle: true, // Requires access to certificates to auth against kubelet
+			receiver:      "kubeletstats",
+			skipLifecycle: true, // Requires access to certificates to auth against kubelet
 		},
 		{
 			receiver: "loki",
@@ -266,8 +263,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "memcached",
 		},
 		{
-			receiver:     "mongodb",
-			skipLifecyle: true, // Causes tests to timeout
+			receiver:      "mongodb",
+			skipLifecycle: true, // Causes tests to timeout
 		},
 		{
 			receiver: "mongodbatlas",
@@ -287,8 +284,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "nsxt",
 		},
 		{
-			receiver:     "opencensus",
-			skipLifecyle: true, // TODO: Usage of CMux doesn't allow proper shutdown.
+			receiver:      "opencensus",
+			skipLifecycle: true, // TODO: Usage of CMux doesn't allow proper shutdown.
 		},
 		{
 			receiver: "oracledb",
@@ -305,8 +302,8 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "podman_stats",
-			skipLifecyle: true, // Requires a running podman daemon
+			receiver:      "podman_stats",
+			skipLifecycle: true, // Requires a running podman daemon
 		},
 		{
 			receiver: "postgresql",
@@ -324,8 +321,8 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "pulsar",
-			skipLifecyle: true, // TODO It requires a running pulsar instance to start successfully.
+			receiver:      "pulsar",
+			skipLifecycle: true, // TODO It requires a running pulsar instance to start successfully.
 		},
 		{
 			receiver: "rabbitmq",
@@ -388,19 +385,20 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "sqlquery",
 		},
 		{
-			receiver:     "sqlserver",
-			skipLifecyle: true, // Requires a running windows process
+			receiver:      "sqlserver",
+			skipLifecycle: true, // Requires a running windows process
 		},
 		{
-			receiver: "sshcheck",
+			receiver:      "sshcheck",
+			skipLifecycle: runtime.GOOS == "windows",
 		},
 
 		{
 			receiver: "statsd",
 		},
 		{
-			receiver:     "wavefront",
-			skipLifecyle: true, // Depends on carbon receiver to be running correctly
+			receiver:      "wavefront",
+			skipLifecycle: true, // Depends on carbon receiver to be running correctly
 		},
 		{
 			receiver: "webhookevent",
@@ -411,12 +409,17 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver:     "windowseventlog",
-			skipLifecyle: true, // Requires a running windows process
+			receiver:      "windowseventlog",
+			skipLifecycle: runtime.GOOS != "windows",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["windowseventlog"].CreateDefaultConfig().(*windowseventlogreceiver.WindowsLogConfig)
+				cfg.InputConfig.Channel = "Application"
+				return cfg
+			},
 		},
 		{
-			receiver:     "windowsperfcounters",
-			skipLifecyle: true, // Requires a running windows process
+			receiver:      "windowsperfcounters",
+			skipLifecycle: runtime.GOOS != "windows",
 		},
 		{
 			receiver: "zipkin",
@@ -454,8 +457,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "vcenter",
 		},
 		{
-			receiver:     "solace",
-			skipLifecyle: true, // Requires a solace broker to connect to
+			receiver:      "solace",
+			skipLifecycle: true, // Requires a solace broker to connect to
 		},
 	}
 
@@ -469,7 +472,7 @@ func TestDefaultReceivers(t *testing.T) {
 				verifyReceiverShutdown(t, factory, tt.getConfigFn)
 			})
 			t.Run("lifecycle", func(t *testing.T) {
-				if tt.skipLifecyle {
+				if tt.skipLifecycle {
 					t.SkipNow()
 				}
 				verifyReceiverLifecycle(t, factory, tt.getConfigFn)

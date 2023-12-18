@@ -314,6 +314,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 		},
 		{
 			name: "a-spans-with-two-parent",
+			td:   generateTracesSpanWithTwoParents(),
 			jb: &model.Batch{
 				Process: &model.Process{
 					ServiceName: tracetranslator.ResourceNoServiceName,
@@ -324,7 +325,6 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 					generateProtoTwoParentsSpan(),
 				},
 			},
-			td: generateTracesSpanWithTwoParents(),
 		},
 	}
 
