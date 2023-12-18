@@ -44,7 +44,7 @@ type Path[K any] interface {
 	// Name is the name of this segment of the path.
 	Name() string
 
-	// Next provides a link to the next path segment for this Path.
+	// Next provides the next path segment for this Path.
 	// Will return nil if there is no next path.
 	Next() Path[K]
 
