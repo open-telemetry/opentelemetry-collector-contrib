@@ -139,6 +139,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	if err != nil {
 		return err
 	}
+	// consumerGroup is set in tests.
 	if c.consumerGroup == nil {
 		c.consumerGroup, err = createKafkaClient(c.config)
 		if err != nil {
