@@ -393,6 +393,56 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "non_pointer",
 			},
 		},
+		{
+			name: "path parts not all used",
+			inv: editor{
+				Function: "testing_getsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+										{
+											Name: "not-used",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "path keys not all used",
+			inv: editor{
+				Function: "testing_getsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+											Keys: []key{
+												{
+													String: ottltest.Strp("not-used"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2228,7 +2278,9 @@ func Test_newPath(t *testing.T) {
 			Name: "string",
 		},
 	}
-	p := newPath[any](fields)
+	np, err := newPath[any](fields)
+	assert.NoError(t, err)
+	p := Path[any](np)
 	assert.Equal(t, "body", p.Name())
 	assert.Nil(t, p.Key())
 	p = p.Next()
@@ -2375,7 +2427,7 @@ func Test_newKey(t *testing.T) {
 			String: ottltest.Strp("bar"),
 		},
 	}
-	k := newKey[any](keys)
+	k := Key[any](newKey[any](keys))
 	s, err := k.String(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, s)

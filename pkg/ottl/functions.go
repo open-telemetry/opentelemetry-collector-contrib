@@ -21,9 +21,9 @@ type Enum int64
 
 type EnumSymbol string
 
-func newPath[K any](fields []field) Path[K] {
+func newPath[K any](fields []field) (*basePath[K], error) {
 	if len(fields) == 0 {
-		return nil
+		return nil, fmt.Errorf("cannot make a path from zero fields")
 	}
 	var current *basePath[K]
 	for i := len(fields) - 1; i >= 0; i-- {
@@ -34,12 +34,22 @@ func newPath[K any](fields []field) Path[K] {
 		}
 	}
 	current.fetched = true
-	return current
+	return current, nil
 }
 
+// Path represents a chain of path parts in an OTTL statement, such as `body.string`.
+// A Path has a name, and potentially a set of keys.
+// If the path in the OTTL statement contains multiple parts (separated by a dot (`.`)), then the Path will have a pointer to the next Path.
 type Path[K any] interface {
+	// Name is the name of this segment of the path.
 	Name() string
+
+	// Next provides the next path segment for this Path.
+	// Will return nil if there is no next path.
 	Next() Path[K]
+
+	// Key provides the Key for this Path.
+	// Will return nil if there is no Key.
 	Key() Key[K]
 }
 
@@ -47,7 +57,7 @@ var _ Path[any] = &basePath[any]{}
 
 type basePath[K any] struct {
 	name     string
-	key      Key[K]
+	key      *baseKey[K]
 	nextPath *basePath[K]
 	fetched  bool
 }
@@ -65,6 +75,10 @@ func (p *basePath[K]) Next() Path[K] {
 }
 
 func (p *basePath[K]) Key() Key[K] {
+	if p.key == nil {
+		return nil
+	}
+	p.key.fetched = true
 	return p.key
 }
 
@@ -72,13 +86,19 @@ func (p *basePath[K]) isComplete() error {
 	if !p.fetched {
 		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
 	}
+	if p.key != nil {
+		err := p.key.isComplete()
+		if err != nil {
+			return err
+		}
+	}
 	if p.nextPath == nil {
 		return nil
 	}
 	return p.nextPath.isComplete()
 }
 
-func newKey[K any](keys []key) Key[K] {
+func newKey[K any](keys []key) *baseKey[K] {
 	if len(keys) == 0 {
 		return nil
 	}
@@ -90,13 +110,25 @@ func newKey[K any](keys []key) Key[K] {
 			nextKey: current,
 		}
 	}
-	current.fetched = true
 	return current
 }
 
+// Key represents a chain of keys in an OTTL statement, such as `attributes["foo"]["bar"]`.
+// A Key has a String or Int, and potentially the next Key.
+// If the path in the OTTL statement contains multiple keys, then the Key will have a pointer to the next Key.
 type Key[K any] interface {
+	// String returns a pointer to the Key's string value.
+	// If the Key does not have a string value the returned value is nil.
+	// If Key experiences an error retrieving the value it is returned.
 	String(context.Context, K) (*string, error)
+
+	// Int returns a pointer to the Key's int value.
+	// If the Key does not have a int value the returned value is nil.
+	// If Key experiences an error retrieving the value it is returned.
 	Int(context.Context, K) (*int64, error)
+
+	// Next provides the next Key.
+	// Will return nil if there is no next Key.
 	Next() Key[K]
 }
 
@@ -139,6 +171,18 @@ func (k *baseKey[K]) isComplete() error {
 		return nil
 	}
 	return k.nextKey.isComplete()
+}
+
+func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
+	g, err := p.pathParser(ip)
+	if err != nil {
+		return nil, err
+	}
+	err = ip.isComplete()
+	if err != nil {
+		return nil, err
+	}
+	return g, nil
 }
 
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
@@ -366,7 +410,11 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if argVal.Literal == nil || argVal.Literal.Path == nil {
 			return nil, fmt.Errorf("must be a path")
 		}
-		arg, err := p.pathParser(newPath[K](argVal.Literal.Path.Fields))
+		np, err := newPath[K](argVal.Literal.Path.Fields)
+		if err != nil {
+			return nil, err
+		}
+		arg, err := p.parsePath(np)
 		if err != nil {
 			return nil, err
 		}
