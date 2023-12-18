@@ -4,10 +4,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/servi
 go 1.20
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/config/configgrpc v0.91.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.91.0
+	go.opentelemetry.io/collector/confmap v0.91.0
 	go.opentelemetry.io/collector/connector v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
 	go.opentelemetry.io/collector/exporter v0.91.0
@@ -77,7 +79,6 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.91.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.91.0 // indirect
 	go.opentelemetry.io/collector/extension v0.91.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.91.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.91.0 // indirect
@@ -119,3 +120,11 @@ retract (
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go v0.65.0 => cloud.google.com/go v0.110.10
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
