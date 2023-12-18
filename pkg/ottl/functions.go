@@ -39,7 +39,7 @@ func newPath[K any](fields []field) (*basePath[K], error) {
 
 // Path represents a chain of path parts in an OTTL statement, such as `body.string`.
 // A Path has a name, and potentially a set of keys.
-// If the path in the OTTL statement contains multiple parts (separated by a dot (`.`)), then the Path will have a link to the next Path.
+// If the path in the OTTL statement contains multiple parts (separated by a dot (`.`)), then the Path will have a pointer to the next Path.
 type Path[K any] interface {
 	// Name is the name of this segment of the path.
 	Name() string
@@ -48,7 +48,7 @@ type Path[K any] interface {
 	// Will return nil if there is no next path.
 	Next() Path[K]
 
-	// Key provides a link to the Key for this Path.
+	// Key provides the Key for this Path.
 	// Will return nil if there is no Key.
 	Key() Key[K]
 }
@@ -114,8 +114,8 @@ func newKey[K any](keys []key) *baseKey[K] {
 }
 
 // Key represents a chain of keys in an OTTL statement, such as `attributes["foo"]["bar"]`.
-// A Key has a String or Int, and potentially a link to the next Key.
-// If the path in the OTTL statement contains multiple keys, then the Key will have a link to the next Key.
+// A Key has a String or Int, and potentially the next Key.
+// If the path in the OTTL statement contains multiple keys, then the Key will have a pointer to the next Key.
 type Key[K any] interface {
 	// String returns a pointer to the Key's string value.
 	// If the Key does not have a string value the returned value is nil.
@@ -127,7 +127,7 @@ type Key[K any] interface {
 	// If Key experiences an error retrieving the value it is returned.
 	Int(context.Context, K) (*int64, error)
 
-	// Next provides a link to the next Key.
+	// Next provides the next Key.
 	// Will return nil if there is no next Key.
 	Next() Key[K]
 }
