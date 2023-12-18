@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,6 +19,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
+
+const timeFormatString = "2006-01-02T15:04:05.000Z07:00"
 
 func TestLogsExporter(t *testing.T) {
 	lr := testdata.GenerateLogsOneLogRecord()
@@ -44,7 +45,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -74,7 +75,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              "hello",
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -104,7 +105,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -136,7 +137,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -152,7 +153,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              "something happened",
 					"env":                  "dev",
 					"customer":             "acme",
-					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
 					"status":               "Info",
 					"ddtags":               "tag1:true,otel_source:datadog_exporter",
 					"otel.severity_text":   "Info",
@@ -180,7 +181,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -196,7 +197,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              "something happened",
 					"env":                  "dev",
 					"customer":             "acme",
-					"@timestamp":           testdata.TestLogTime.Format(time.RFC3339),
+					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
 					"status":               "Info",
 					"ddtags":               "tag2:true,otel_source:datadog_exporter",
 					"otel.severity_text":   "Info",

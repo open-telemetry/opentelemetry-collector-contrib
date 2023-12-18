@@ -116,8 +116,8 @@ func Test_newGetter(t *testing.T) {
 			name: "path expression",
 			val: value{
 				Literal: &mathExprLiteral{
-					Path: &Path{
-						Fields: []Field{
+					Path: &path{
+						Fields: []field{
 							{
 								Name: "name",
 							},
@@ -131,11 +131,11 @@ func Test_newGetter(t *testing.T) {
 			name: "complex path expression",
 			val: value{
 				Literal: &mathExprLiteral{
-					Path: &Path{
-						Fields: []Field{
+					Path: &path{
+						Fields: []field{
 							{
 								Name: "attributes",
-								Keys: []Key{
+								Keys: []key{
 									{
 										String: ottltest.Strp("foo"),
 									},
@@ -167,7 +167,7 @@ func Test_newGetter(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "PMap",
-						Keys: []Key{
+						Keys: []key{
 							{
 								String: ottltest.Strp("foo"),
 							},
@@ -186,7 +186,7 @@ func Test_newGetter(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "Map",
-						Keys: []Key{
+						Keys: []key{
 							{
 								String: ottltest.Strp("foo"),
 							},
@@ -205,7 +205,7 @@ func Test_newGetter(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "PSlice",
-						Keys: []Key{
+						Keys: []key{
 							{
 								Int: ottltest.Intp(0),
 							},
@@ -224,7 +224,7 @@ func Test_newGetter(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "Slice",
-						Keys: []Key{
+						Keys: []key{
 							{
 								Int: ottltest.Intp(0),
 							},
@@ -348,8 +348,8 @@ func Test_newGetter(t *testing.T) {
 					Values: []value{
 						{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -426,7 +426,7 @@ func Test_newGetter(t *testing.T) {
 
 	p, _ := NewParser[any](
 		functions,
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -465,7 +465,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "PMap",
-						Keys: []Key{
+						Keys: []key{
 							{
 								String: ottltest.Strp("unknown key"),
 							},
@@ -481,7 +481,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "Map",
-						Keys: []Key{
+						Keys: []key{
 							{
 								String: ottltest.Strp("unknown key"),
 							},
@@ -497,7 +497,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "PSlice",
-						Keys: []Key{
+						Keys: []key{
 							{
 								Int: ottltest.Intp(100),
 							},
@@ -513,7 +513,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "PSlice",
-						Keys: []Key{
+						Keys: []key{
 							{
 								Int: ottltest.Intp(-1),
 							},
@@ -529,7 +529,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "Slice",
-						Keys: []Key{
+						Keys: []key{
 							{
 								Int: ottltest.Intp(100),
 							},
@@ -545,7 +545,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "Slice",
-						Keys: []Key{
+						Keys: []key{
 							{
 								Int: ottltest.Intp(-1),
 							},
@@ -561,7 +561,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "Hello",
-						Keys: []Key{
+						Keys: []key{
 							{
 								Int: ottltest.Intp(-1),
 							},
@@ -577,7 +577,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "Hello",
-						Keys: []Key{
+						Keys: []key{
 							{
 								String: ottltest.Strp("test"),
 							},
@@ -599,7 +599,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 
 	p, _ := NewParser[any](
 		functions,
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)

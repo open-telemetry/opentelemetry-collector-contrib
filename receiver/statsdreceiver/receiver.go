@@ -68,12 +68,13 @@ func newReceiver(
 }
 
 func buildTransportServer(config Config) (transport.Server, error) {
-	// TODO: Add TCP/unix socket transport implementations
-	switch strings.ToLower(config.NetAddr.Transport) {
-	case "", "udp":
-		return transport.NewUDPServer(config.NetAddr.Endpoint)
-	case "tcp":
-		return transport.NewTCPServer(config.NetAddr.Endpoint)
+	// TODO: Add unix socket transport implementations
+	trans := transport.NewTransport(strings.ToLower(config.NetAddr.Transport))
+	switch trans {
+	case transport.UDP, transport.UDP4, transport.UDP6:
+		return transport.NewUDPServer(trans, config.NetAddr.Endpoint)
+	case transport.TCP, transport.TCP4, transport.TCP6:
+		return transport.NewTCPServer(trans, config.NetAddr.Endpoint)
 	}
 
 	return nil, fmt.Errorf("unsupported transport %q", config.NetAddr.Transport)
@@ -91,6 +92,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ticker := time.NewTicker(r.config.AggregationInterval)
 	err = r.parser.Initialize(
 		r.config.EnableMetricType,
+		r.config.EnableSimpleTags,
 		r.config.IsMonotonicCounter,
 		r.config.TimerHistogramMapping,
 	)
@@ -98,7 +100,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	go func() {
-		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan); err != nil {
+		if err := r.server.ListenAndServe(r.nextConsumer, r.reporter, transferChan); err != nil {
 			if !errors.Is(err, net.ErrClosed) {
 				host.ReportFatalError(err)
 			}

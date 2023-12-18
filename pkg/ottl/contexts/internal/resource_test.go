@@ -22,14 +22,14 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     ottl.Path[*resourceContext]
 		orig     any
 		newVal   any
 		modified func(resource pcommon.Resource)
 	}{
 		{
 			name:   "resource",
-			path:   []ottl.Field{},
+			path:   nil,
 			orig:   refResource,
 			newVal: pcommon.NewResource(),
 			modified: func(resource pcommon.Resource) {
@@ -38,10 +38,8 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-				},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
 			},
 			orig:   refResource.Attributes(),
 			newVal: newAttrs,
@@ -51,14 +49,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("str"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("str"),
 				},
 			},
 			orig:   "val",
@@ -69,14 +63,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bool"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("bool"),
 				},
 			},
 			orig:   true,
@@ -87,14 +77,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("int"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("int"),
 				},
 			},
 			orig:   int64(10),
@@ -105,14 +91,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("double"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("double"),
 				},
 			},
 			orig:   1.2,
@@ -123,14 +105,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bytes"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("bytes"),
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -141,14 +119,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array empty",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_empty"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("arr_empty"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -162,14 +136,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_str"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -183,14 +153,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bool"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -204,14 +170,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_int"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -225,14 +187,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_float"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -246,14 +204,10 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bytes"),
-						},
-					},
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -267,18 +221,14 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("slice"),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-						{
-							String: ottltest.Strp("map"),
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("slice"),
+					NextKey: &TestKey[*resourceContext]{
+						I: ottltest.Intp(0),
+						NextKey: &TestKey[*resourceContext]{
+							S: ottltest.Strp("map"),
 						},
 					},
 				},
@@ -295,18 +245,14 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("new"),
-						},
-						{
-							Int: ottltest.Intp(2),
-						},
-						{
-							Int: ottltest.Intp(0),
+			path: &TestPath[*resourceContext]{
+				N: "attributes",
+				Keys: &TestKey[*resourceContext]{
+					S: ottltest.Strp("new"),
+					NextKey: &TestKey[*resourceContext]{
+						I: ottltest.Intp(2),
+						NextKey: &TestKey[*resourceContext]{
+							I: ottltest.Intp(0),
 						},
 					},
 				},
@@ -324,10 +270,8 @@ func TestResourcePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_attributes_count",
-			path: []ottl.Field{
-				{
-					Name: "dropped_attributes_count",
-				},
+			path: &TestPath[*resourceContext]{
+				N: "dropped_attributes_count",
 			},
 			orig:   int64(10),
 			newVal: int64(20),

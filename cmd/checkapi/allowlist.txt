@@ -1,5 +1,1 @@
-connector/servicegraphconnector
-extension/encoding
 extension/observer
-processor/servicegraphprocessor
-receiver/kafkareceiver

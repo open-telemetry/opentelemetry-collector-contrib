@@ -43,17 +43,17 @@ type systemInfo struct {
 
 func getPageSize() uint64 {
 	var sysInfo systemInfo
-	procGetNativeSystemInfo.Call(uintptr(unsafe.Pointer(&sysInfo)))
+	procGetNativeSystemInfo.Call(uintptr(unsafe.Pointer(&sysInfo))) //nolint:errcheck
 	return uint64(sysInfo.dwPageSize)
 }
 
 // system type as defined in https://docs.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-enum_page_file_information
 type enumPageFileInformation struct {
-	cb         uint32
-	reserved   uint32
+	cb         uint32 //nolint:unused
+	reserved   uint32 //nolint:unused
 	totalSize  uint64
 	totalInUse uint64
-	peakUsage  uint64
+	peakUsage  uint64 //nolint:unused
 }
 
 func getPageFileStats() ([]*pageFileStats, error) {

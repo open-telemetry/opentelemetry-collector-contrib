@@ -31,6 +31,8 @@ import (
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 
 func TestE2E(t *testing.T) {
+	t.Skip("skipping flaky test see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29892")
+
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)

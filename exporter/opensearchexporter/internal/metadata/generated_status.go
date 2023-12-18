@@ -8,6 +8,6 @@ import (
 
 const (
 	Type            = "opensearch"
+	TracesStability = component.StabilityLevelAlpha
 	LogsStability   = component.StabilityLevelDevelopment
-	TracesStability = component.StabilityLevelDevelopment
 )
