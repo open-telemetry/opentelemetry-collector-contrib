@@ -39,5 +39,3 @@ integration-coverage.html
 go.work*
 
 /result
-# File copied into mdatagen to be embedded
-cmd/mdatagen/.distributions.yaml
