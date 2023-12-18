@@ -34,11 +34,11 @@ func createDefaultConfig() component.Config {
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	params exporter.CreateSettings,
 	config component.Config,
 ) (exporter.Metrics, error) {
-	exp, err := newCarbonExporter(config.(*Config), params)
+	exp, err := newCarbonExporter(ctx, config.(*Config), params)
 
 	if err != nil {
 		return nil, err

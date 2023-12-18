@@ -200,7 +200,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 				Left: value{
 					Enum: (*enumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 				},
-				Op: EQ,
+				Op: eq,
 				Right: value{
 					String: ottltest.Strp("trash"),
 				},
@@ -488,7 +488,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 							Left: value{
 								String: ottltest.Strp("test"),
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								String: ottltest.Strp("not test"),
 							},

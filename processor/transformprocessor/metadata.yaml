@@ -8,3 +8,6 @@ status:
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
   codeowners:
     active: [TylerHelmuth, kentquirk, bogdandrutu, evan-bradley]
+
+tests:
+  config:

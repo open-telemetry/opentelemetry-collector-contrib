@@ -153,3 +153,6 @@ metrics:
     unit: 1
     gauge:
       value_type: int
+
+tests:
+  config:

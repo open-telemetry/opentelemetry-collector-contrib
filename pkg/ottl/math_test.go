@@ -269,7 +269,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 			input: "1 / 0",
 		},
 		{
-			name: "time DIV time",
+			name: "time div time",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -294,7 +294,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: DIV,
+						Operator: div,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -322,7 +322,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 			errorMsg: "only addition and subtraction supported",
 		},
 		{
-			name: "dur MULT dur",
+			name: "dur mult dur",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -342,7 +342,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: MULT,
+						Operator: mult,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -365,7 +365,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 			errorMsg: "only addition and subtraction supported",
 		},
 		{
-			name: "time ADD int",
+			name: "time add int",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -390,7 +390,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: ADD,
+						Operator: add,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -404,7 +404,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 			errorMsg: "time.Time must be added to time.Duration",
 		},
 		{
-			name: "dur SUB int",
+			name: "dur sub int",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -424,7 +424,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: SUB,
+						Operator: sub,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -438,7 +438,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 			errorMsg: "time.Duration must be subtracted from time.Duration",
 		},
 		{
-			name: "time ADD time",
+			name: "time add time",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -463,7 +463,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: ADD,
+						Operator: add,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -491,7 +491,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 			errorMsg: "time.Time must be added to time.Duration",
 		},
 		{
-			name: "dur SUB time",
+			name: "dur sub time",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -511,7 +511,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: SUB,
+						Operator: sub,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -629,7 +629,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 		expected any
 	}{
 		{
-			name: "time SUB time, no difference",
+			name: "time sub time, no difference",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -654,7 +654,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: SUB,
+						Operator: sub,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -682,7 +682,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: zeroSecs,
 		},
 		{
-			name: "time SUB time",
+			name: "time sub time",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -707,7 +707,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: SUB,
+						Operator: sub,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -735,7 +735,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: -fourtySevenHourseFourtyTwoMinutesTwentySevenSecs,
 		},
 		{
-			name: "dur ADD time",
+			name: "dur add time",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -755,7 +755,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: ADD,
+						Operator: add,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -783,7 +783,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local),
 		},
 		{
-			name: "time ADD dur",
+			name: "time add dur",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -808,7 +808,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: ADD,
+						Operator: add,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -831,7 +831,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: time.Date(2023, 2, 15, 10, 0, 0, 0, time.Local),
 		},
 		{
-			name: "time ADD dur, complex dur",
+			name: "time add dur, complex dur",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -856,7 +856,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: ADD,
+						Operator: add,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -879,7 +879,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: time.Date(2023, 2, 4, 1, 2, 3, 0, time.Local),
 		},
 		{
-			name: "time SUB dur, complex dur",
+			name: "time sub dur, complex dur",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -904,7 +904,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: SUB,
+						Operator: sub,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -927,7 +927,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: time.Date(2023, 3, 14, 6, 0, 1, 0, time.Local),
 		},
 		{
-			name: "time SUB dur, nanosecs",
+			name: "time sub dur, nanosecs",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -952,7 +952,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: SUB,
+						Operator: sub,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -975,7 +975,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: time.Date(2023, 4, 30, 23, 59, 59, 999999900, time.Local),
 		},
 		{
-			name: "dur ADD dur, complex durs",
+			name: "dur add dur, complex durs",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -995,7 +995,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: ADD,
+						Operator: add,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -1018,7 +1018,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: oneHundredOne,
 		},
 		{
-			name: "dur ADD dur, zero dur",
+			name: "dur add dur, zero dur",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -1038,7 +1038,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: ADD,
+						Operator: add,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -1061,7 +1061,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: oneThousandHours,
 		},
 		{
-			name: "dur SUB dur, zero dur",
+			name: "dur sub dur, zero dur",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -1081,7 +1081,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: SUB,
+						Operator: sub,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
@@ -1104,7 +1104,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 			expected: -threeTwentyEightMins,
 		},
 		{
-			name: "dur SUB dur, complex durs",
+			name: "dur sub dur, complex durs",
 			mathExpr: &mathExpression{
 				Left: &addSubTerm{
 					Left: &mathValue{
@@ -1124,7 +1124,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 				Right: []*opAddSubTerm{
 					{
-						Operator: SUB,
+						Operator: sub,
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
