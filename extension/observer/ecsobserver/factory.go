@@ -44,7 +44,6 @@ func createExtensionWithFetcher(params extension.CreateSettings, sdCfg *Config, 
 		return nil, err
 	}
 	return &ecsObserver{
-		logger:            params.Logger,
 		telemetrySettings: params.TelemetrySettings,
 		sd:                sd,
 	}, nil

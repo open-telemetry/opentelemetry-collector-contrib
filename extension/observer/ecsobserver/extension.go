@@ -15,7 +15,6 @@ var _ extension.Extension = (*ecsObserver)(nil)
 
 // ecsObserver implements component.ServiceExtension interface.
 type ecsObserver struct {
-	logger            *zap.Logger
 	telemetrySettings component.TelemetrySettings
 	sd                *serviceDiscovery
 
@@ -25,13 +24,13 @@ type ecsObserver struct {
 
 // Start runs the service discovery in background
 func (e *ecsObserver) Start(_ context.Context, _ component.Host) error {
-	e.logger.Info("Starting ECSDiscovery")
+	e.telemetrySettings.Logger.Info("Starting ECSDiscovery")
 	// Ignore the ctx parameter as it is not for long running operation
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
 	go func() {
 		if err := e.sd.runAndWriteFile(ctx); err != nil {
-			e.logger.Error("ECSDiscovery stopped by error", zap.Error(err))
+			e.telemetrySettings.Logger.Error("ECSDiscovery stopped by error", zap.Error(err))
 			// Stop the collector
 			_ = e.telemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
 		}
@@ -40,7 +39,7 @@ func (e *ecsObserver) Start(_ context.Context, _ component.Host) error {
 }
 
 func (e *ecsObserver) Shutdown(_ context.Context) error {
-	e.logger.Info("Stopping ECSDiscovery")
+	e.telemetrySettings.Logger.Info("Stopping ECSDiscovery")
 	e.cancel()
 	return nil
 }
