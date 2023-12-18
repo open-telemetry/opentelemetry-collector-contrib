@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"os"
 	"time"
 
@@ -175,7 +176,24 @@ func (r *Reader) Read(dst []byte) (int, error) {
 	}
 
 	// for appendCount==0, the following code would add `0` to fingerprint
-	r.Fingerprint.UpdateFingerPrint(r.Offset, dst[:appendCount])
+	if r.Fingerprint.FirstBytes == nil {
+		r.Fingerprint.FirstBytes = dst[:appendCount]
+	} else {
+		r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
+	}
+	if r.Fingerprint.HashInstance == nil || r.Fingerprint.HashInstance != nil {
+		h := fnv.New64()
+		h.Write(r.Fingerprint.FirstBytes)
+		hashed := h.Sum64()
+		r.Fingerprint.HashInstance = h
+		r.Fingerprint.HashBytes = hashed
+	} else {
+		r.Fingerprint.HashInstance.Write(dst[:appendCount])
+		r.Fingerprint.HashBytes = r.Fingerprint.HashInstance.Sum64()
+	}
+	r.Fingerprint.BytesUsed = len(r.Fingerprint.FirstBytes)
+
+	//r.Fingerprint.UpdateFingerPrint(r.Offset, dst[:appendCount])
 	return n, err
 }
 

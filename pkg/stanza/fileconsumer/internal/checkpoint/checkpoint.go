@@ -32,6 +32,7 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 		if rmd != nil {
 			fingerPrint := rmd.Fingerprint.Copy()
 			fingerPrint.FirstBytes = nil
+			fingerPrint.HashInstance = nil
 			meta := &reader.Metadata{
 				Fingerprint:     fingerPrint,
 				Offset:          rmd.Offset,

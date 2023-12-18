@@ -151,7 +151,7 @@ func TestFingerprintCopy(t *testing.T) {
 		h.Write([]byte(tc))
 		hash := h.Sum64()
 
-		fp := &Fingerprint{FirstBytes: []byte(tc), HashBytes: hash, BytesUsed: len([]byte(tc))}
+		fp := &Fingerprint{FirstBytes: []byte(tc), HashBytes: hash, BytesUsed: len([]byte(tc)), HashInstance: h}
 
 		cp := fp.Copy()
 
