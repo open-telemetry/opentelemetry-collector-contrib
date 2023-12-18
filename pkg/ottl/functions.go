@@ -43,14 +43,7 @@ type Path[K any] interface {
 	Key() Key[K]
 }
 
-//type internalPath[K any] interface {
-//	Path[K]
-//	isComplete() error
-//}
-
 var _ Path[any] = &basePath[any]{}
-
-//var _ internalPath[any] = &basePath[any]{}
 
 type basePath[K any] struct {
 	name     string
@@ -116,14 +109,7 @@ type Key[K any] interface {
 	Next() Key[K]
 }
 
-//type internalKey[K any] interface {
-//	Key[K]
-//	isComplete() error
-//}
-
 var _ Key[any] = &baseKey[any]{}
-
-//var _ internalKey[any] = &baseKey[any]{}
 
 type baseKey[K any] struct {
 	s       *string
