@@ -33,6 +33,7 @@ type logsTransformProcessor struct {
 	converter     *adapter.Converter
 	fromConverter *adapter.FromPdataConverter
 	wg            sync.WaitGroup
+	cancelFn      func() error
 }
 
 func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger) (*logsTransformProcessor, error) {
@@ -63,16 +64,11 @@ func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
 }
 
 func (ltp *logsTransformProcessor) Shutdown(_ context.Context) error {
-	if ltp.converter == nil {
-		return nil
+	if ltp.cancelFn != nil {
+		return ltp.cancelFn()
 	}
-	ltp.logger.Info("Stopping logs transform processor")
-	pipelineErr := ltp.pipe.Stop()
-	ltp.converter.Stop()
-	ltp.fromConverter.Stop()
-	ltp.wg.Wait()
 
-	return pipelineErr
+	return nil
 }
 
 func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) error {
@@ -116,6 +112,14 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 	ltp.wg.Add(1)
 	go ltp.consumerLoop(ctx)
 
+	ltp.cancelFn = func() error {
+		ltp.logger.Info("Stopping logs transform processor")
+		pipelineErr := ltp.pipe.Stop()
+		ltp.converter.Stop()
+		ltp.fromConverter.Stop()
+		ltp.wg.Wait()
+		return pipelineErr
+	}
 	return nil
 }
 
