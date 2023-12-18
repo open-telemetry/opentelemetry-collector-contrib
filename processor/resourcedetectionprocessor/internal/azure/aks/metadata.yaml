@@ -14,4 +14,4 @@ resource_attributes:
   k8s.cluster.name:
     description: The k8s.cluster.name parsed from the Azure Instance Metadata Service's infrastructure resource group field
     type: string
-    enabled: true
+    enabled: false
