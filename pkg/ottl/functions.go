@@ -78,19 +78,12 @@ func (p *basePath[K]) Key() Key[K] {
 	if p.key == nil {
 		return nil
 	}
-	p.key.fetched = true
 	return p.key
 }
 
 func (p *basePath[K]) isComplete() error {
 	if !p.fetched {
 		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
-	}
-	if p.key != nil {
-		err := p.key.isComplete()
-		if err != nil {
-			return err
-		}
 	}
 	if p.nextPath == nil {
 		return nil
@@ -138,7 +131,6 @@ type baseKey[K any] struct {
 	s       *string
 	i       *int64
 	nextKey *baseKey[K]
-	fetched bool
 }
 
 func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
@@ -153,24 +145,7 @@ func (k *baseKey[K]) Next() Key[K] {
 	if k.nextKey == nil {
 		return nil
 	}
-	k.nextKey.fetched = true
 	return k.nextKey
-}
-
-func (k *baseKey[K]) isComplete() error {
-	if !k.fetched {
-		var val any
-		if k.s != nil {
-			val = *k.s
-		} else if k.i != nil {
-			val = *k.i
-		}
-		return fmt.Errorf("the key %q was not used by the context during indexing", val)
-	}
-	if k.nextKey == nil {
-		return nil
-	}
-	return k.nextKey.isComplete()
 }
 
 func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {

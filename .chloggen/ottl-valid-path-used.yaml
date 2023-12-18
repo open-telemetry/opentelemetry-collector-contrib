@@ -7,7 +7,7 @@ change_type: breaking
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Now validates against extraneous path segments or keys that a context does not know how to use.
+note: Now validates against extraneous path segments that a context does not know how to use.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [30042]
