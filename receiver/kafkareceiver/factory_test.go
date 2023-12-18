@@ -36,9 +36,8 @@ func TestCreateTracesReceiver(t *testing.T) {
 	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshalers()}
 	r, err := f.createTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
-	require.Error(t, err)
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestCreateTracesReceiver_error(t *testing.T) {
@@ -81,9 +80,8 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	f := kafkaReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
 	r, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
-	require.Error(t, err)
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestCreateMetricsReceiver_error(t *testing.T) {
@@ -126,9 +124,8 @@ func TestCreateLogsReceiver(t *testing.T) {
 	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers("Test Version", zap.NewNop())}
 	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
-	require.Error(t, err)
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestCreateLogsReceiver_error(t *testing.T) {
