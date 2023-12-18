@@ -19,17 +19,17 @@ import (
 type trigger int
 
 const (
-	triggerMetricsDropped trigger = iota
+	triggerMetricDataPointsDropped trigger = iota
 	triggerLogsDropped
 	triggerSpansDropped
 )
 
 var (
-	typeStr             = metadata.Type
-	processorTagKey     = tag.MustNewKey(typeStr)
-	statMetricsFiltered = stats.Int64("metrics.filtered", "Number of metrics dropped by the filter processor", stats.UnitDimensionless)
-	statLogsFiltered    = stats.Int64("logs.filtered", "Number of logs dropped by the filter processor", stats.UnitDimensionless)
-	statSpansFiltered   = stats.Int64("spans.filtered", "Number of spans dropped by the filter processor", stats.UnitDimensionless)
+	typeStr                      = metadata.Type
+	processorTagKey              = tag.MustNewKey(typeStr)
+	statMetricDataPointsFiltered = stats.Int64("metrics.filtered", "Number of metric data points dropped by the filter processor", stats.UnitDimensionless)
+	statLogsFiltered             = stats.Int64("logs.filtered", "Number of logs dropped by the filter processor", stats.UnitDimensionless)
+	statSpansFiltered            = stats.Int64("spans.filtered", "Number of spans dropped by the filter processor", stats.UnitDimensionless)
 )
 
 func init() {
@@ -42,9 +42,9 @@ func metricViews() []*view.View {
 
 	return []*view.View{
 		{
-			Name:        processorhelper.BuildCustomMetricName(typeStr, statMetricsFiltered.Name()),
-			Measure:     statMetricsFiltered,
-			Description: statMetricsFiltered.Description(),
+			Name:        processorhelper.BuildCustomMetricName(typeStr, statMetricDataPointsFiltered.Name()),
+			Measure:     statMetricDataPointsFiltered,
+			Description: statMetricDataPointsFiltered.Description(),
 			Aggregation: view.Sum(),
 			TagKeys:     processorTagKeys,
 		},
@@ -89,8 +89,8 @@ func newfilterProcessorTelemetry(set processor.CreateSettings) (*filterProcessor
 func (fpt *filterProcessorTelemetry) record(trigger trigger, dropped int64) {
 	var triggerMeasure *stats.Int64Measure
 	switch trigger {
-	case triggerMetricsDropped:
-		triggerMeasure = statMetricsFiltered
+	case triggerMetricDataPointsDropped:
+		triggerMeasure = statMetricDataPointsFiltered
 	case triggerLogsDropped:
 		triggerMeasure = statLogsFiltered
 	case triggerSpansDropped:

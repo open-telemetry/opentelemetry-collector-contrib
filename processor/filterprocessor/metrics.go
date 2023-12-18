@@ -116,7 +116,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 		return md, nil
 	}
 
-	metricCountBeforeFilters := md.MetricCount()
+	metricDataPointCountBeforeFilters := md.DataPointCount()
 
 	var errors error
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
@@ -172,8 +172,8 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 		return rmetrics.ScopeMetrics().Len() == 0
 	})
 
-	metricCountAfterFilters := md.MetricCount()
-	fmp.telemetry.record(triggerMetricsDropped, int64(metricCountBeforeFilters-metricCountAfterFilters))
+	metricDataPointCountAfterFilters := md.DataPointCount()
+	fmp.telemetry.record(triggerMetricDataPointsDropped, int64(metricDataPointCountBeforeFilters-metricDataPointCountAfterFilters))
 
 	if errors != nil {
 		fmp.logger.Error("failed processing metrics", zap.Error(errors))
