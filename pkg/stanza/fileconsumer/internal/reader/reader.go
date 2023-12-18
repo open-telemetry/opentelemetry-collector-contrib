@@ -181,19 +181,19 @@ func (r *Reader) Read(dst []byte) (int, error) {
 	} else {
 		r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
 	}
-	if r.Fingerprint.HashInstance == nil || r.Fingerprint.HashInstance != nil {
+	if r.Fingerprint.HashInstance == nil {
 		h := fnv.New64()
 		h.Write(r.Fingerprint.FirstBytes)
 		hashed := h.Sum64()
-		r.Fingerprint.HashInstance = h
+		r.Fingerprint.HashInstance = &h
 		r.Fingerprint.HashBytes = hashed
 	} else {
-		r.Fingerprint.HashInstance.Write(dst[:appendCount])
-		r.Fingerprint.HashBytes = r.Fingerprint.HashInstance.Sum64()
+		hashInstance := *r.Fingerprint.HashInstance
+		hashInstance.Write(r.Fingerprint.FirstBytes[r.Fingerprint.BytesUsed:len(r.Fingerprint.FirstBytes)])
+		r.Fingerprint.HashBytes = hashInstance.Sum64()
 	}
 	r.Fingerprint.BytesUsed = len(r.Fingerprint.FirstBytes)
 
-	//r.Fingerprint.UpdateFingerPrint(r.Offset, dst[:appendCount])
 	return n, err
 }
 

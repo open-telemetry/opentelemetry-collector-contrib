@@ -22,7 +22,7 @@ type Fingerprint struct {
 	FirstBytes   []byte
 	HashBytes    uint64
 	BytesUsed    int
-	HashInstance hash.Hash64
+	HashInstance *hash.Hash64
 }
 
 func (f Fingerprint) AddHash() {
@@ -34,7 +34,7 @@ func (f Fingerprint) AddHash() {
 	hashed := h.Sum64()
 	f.HashBytes = hashed
 	f.BytesUsed = len(f.FirstBytes)
-	f.HashInstance = h
+	f.HashInstance = &h
 }
 
 // New creates a new fingerprint from an open file
@@ -54,7 +54,7 @@ func New(file *os.File, size int) (*Fingerprint, error) {
 		FirstBytes:   fBytes,
 		HashBytes:    hashed,
 		BytesUsed:    len(fBytes),
-		HashInstance: h,
+		HashInstance: &h,
 	}
 
 	return fp, nil
@@ -71,20 +71,6 @@ func (f Fingerprint) Copy() *Fingerprint {
 		HashInstance: f.HashInstance,
 	}
 }
-
-// UpdateFingerPrint will update fingerprint with new bytes
-//func (f *Fingerprint) UpdateFingerPrint(offset int64, appendBytes []byte) {
-//	if f.FirstBytes == nil {
-//		f.FirstBytes = appendBytes
-//	} else {
-//		f.FirstBytes = append(f.FirstBytes[:offset], appendBytes...)
-//	}
-//	h := fnv.New64()
-//	h.Write(f.FirstBytes)
-//	hash := h.Sum64()
-//	f.HashBytes = hash
-//	f.BytesUsed = len(f.FirstBytes)
-//}
 
 // Equal returns true if the fingerprints have the same FirstBytes,
 // false otherwise. This does not compare other aspects of the fingerprints

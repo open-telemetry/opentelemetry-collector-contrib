@@ -151,7 +151,7 @@ func TestFingerprintCopy(t *testing.T) {
 		h.Write([]byte(tc))
 		hash := h.Sum64()
 
-		fp := &Fingerprint{FirstBytes: []byte(tc), HashBytes: hash, BytesUsed: len([]byte(tc)), HashInstance: h}
+		fp := &Fingerprint{FirstBytes: []byte(tc), HashBytes: hash, BytesUsed: len([]byte(tc)), HashInstance: &h}
 
 		cp := fp.Copy()
 
@@ -162,7 +162,10 @@ func TestFingerprintCopy(t *testing.T) {
 		require.Equal(t, hash, cp.HashBytes)
 
 		// Modify copy
-		cp.UpdateFingerPrint(int64(len([]byte(tc))), []byte("also"))
+		cp.FirstBytes = append(cp.FirstBytes, []byte("also")...)
+		h.Write([]byte("also"))
+		cp.HashBytes = h.Sum64()
+		cp.BytesUsed = len(cp.FirstBytes)
 
 		// Still did not change original
 		require.Equal(t, hash, fp.HashBytes)
