@@ -4,6 +4,7 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -12,21 +13,23 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
+type PathExpressionParser[K any] func(Path[K]) (GetSetter[K], error)
 
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
-func newPath(fields []Field) *basePath {
+type EnumSymbol string
+
+func newPath[K any](fields []field) Path[K] {
 	if len(fields) == 0 {
 		return nil
 	}
-	var current *basePath
+	var current *basePath[K]
 	for i := len(fields) - 1; i >= 0; i-- {
-		current = &basePath{
+		current = &basePath[K]{
 			name:     fields[i].Name,
-			key:      newKey(fields[i].Keys),
+			key:      newKey[K](fields[i].Keys),
 			nextPath: current,
 		}
 	}
@@ -34,26 +37,26 @@ func newPath(fields []Field) *basePath {
 	return current
 }
 
-type path interface {
+type Path[K any] interface {
 	Name() string
-	Next() path
-	Key() key
+	Next() Path[K]
+	Key() Key[K]
 }
 
-var _ path = &basePath{}
+var _ Path[any] = &basePath[any]{}
 
-type basePath struct {
+type basePath[K any] struct {
 	name     string
-	key      key
-	nextPath *basePath
+	key      Key[K]
+	nextPath *basePath[K]
 	fetched  bool
 }
 
-func (p *basePath) Name() string {
+func (p *basePath[K]) Name() string {
 	return p.name
 }
 
-func (p *basePath) Next() path {
+func (p *basePath[K]) Next() Path[K] {
 	if p.nextPath == nil {
 		return nil
 	}
@@ -61,11 +64,11 @@ func (p *basePath) Next() path {
 	return p.nextPath
 }
 
-func (p *basePath) Key() key {
+func (p *basePath[K]) Key() Key[K] {
 	return p.key
 }
 
-func (p *basePath) isComplete() error {
+func (p *basePath[K]) isComplete() error {
 	if !p.fetched {
 		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
 	}
@@ -75,13 +78,13 @@ func (p *basePath) isComplete() error {
 	return p.nextPath.isComplete()
 }
 
-func newKey(keys []Key) *baseKey {
+func newKey[K any](keys []key) Key[K] {
 	if len(keys) == 0 {
 		return nil
 	}
-	var current *baseKey
+	var current *baseKey[K]
 	for i := len(keys) - 1; i >= 0; i-- {
-		current = &baseKey{
+		current = &baseKey[K]{
 			s:       keys[i].String,
 			i:       keys[i].Int,
 			nextKey: current,
@@ -91,30 +94,30 @@ func newKey(keys []Key) *baseKey {
 	return current
 }
 
-type key interface {
-	String() *string
-	Int() *int64
-	Next() key
+type Key[K any] interface {
+	String(context.Context, K) (*string, error)
+	Int(context.Context, K) (*int64, error)
+	Next() Key[K]
 }
 
-var _ key = &baseKey{}
+var _ Key[any] = &baseKey[any]{}
 
-type baseKey struct {
+type baseKey[K any] struct {
 	s       *string
 	i       *int64
-	nextKey *baseKey
+	nextKey *baseKey[K]
 	fetched bool
 }
 
-func (k *baseKey) String() *string {
-	return k.s
+func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
+	return k.s, nil
 }
 
-func (k *baseKey) Int() *int64 {
-	return k.i
+func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
+	return k.i, nil
 }
 
-func (k *baseKey) Next() key {
+func (k *baseKey[K]) Next() Key[K] {
 	if k.nextKey == nil {
 		return nil
 	}
@@ -122,7 +125,7 @@ func (k *baseKey) Next() key {
 	return k.nextKey
 }
 
-func (k *baseKey) isComplete() error {
+func (k *baseKey[K]) isComplete() error {
 	if !k.fetched {
 		var val any
 		if k.s != nil {
@@ -361,9 +364,9 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		fallthrough
 	case strings.HasPrefix(name, "GetSetter"):
 		if argVal.Literal == nil || argVal.Literal.Path == nil {
-			return nil, fmt.Errorf("must be a Path")
+			return nil, fmt.Errorf("must be a path")
 		}
-		arg, err := p.pathParser(argVal.Literal.Path)
+		arg, err := p.pathParser(newPath[K](argVal.Literal.Path.Fields))
 		if err != nil {
 			return nil, err
 		}
@@ -429,7 +432,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		}
 		return StandardTimeGetter[K]{Getter: arg.Get}, nil
 	case name == "Enum":
-		arg, err := p.enumParser(argVal.Enum)
+		arg, err := p.enumParser((*EnumSymbol)(argVal.Enum))
 		if err != nil {
 			return nil, fmt.Errorf("must be an Enum")
 		}

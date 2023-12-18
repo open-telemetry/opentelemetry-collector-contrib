@@ -83,7 +83,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	p, _ := NewParser(
 		functions,
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -150,8 +150,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -176,8 +176,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -283,8 +283,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 						Name: "get_setter_arg",
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -323,8 +323,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -368,7 +368,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+							Enum: (*enumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 						},
 					},
 				},
@@ -407,7 +407,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 func Test_NewFunctionCall(t *testing.T) {
 	p, _ := NewParser(
 		defaultFunctionsForTests(),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -542,8 +542,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -568,7 +568,7 @@ func Test_NewFunctionCall(t *testing.T) {
 										Bool: (*boolean)(ottltest.Boolp(true)),
 									},
 									{
-										Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+										Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM")),
 									},
 									{
 										List: &list{
@@ -620,8 +620,8 @@ func Test_NewFunctionCall(t *testing.T) {
 													{
 														Value: value{
 															Literal: &mathExprLiteral{
-																Path: &Path{
-																	Fields: []Field{
+																Path: &path{
+																	Fields: []field{
 																		{
 																			Name: "name",
 																		},
@@ -766,8 +766,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -777,8 +777,8 @@ func Test_NewFunctionCall(t *testing.T) {
 									},
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -877,8 +877,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -899,8 +899,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -921,8 +921,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -979,8 +979,8 @@ func Test_NewFunctionCall(t *testing.T) {
 									},
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -996,8 +996,8 @@ func Test_NewFunctionCall(t *testing.T) {
 													{
 														Value: value{
 															Literal: &mathExprLiteral{
-																Path: &Path{
-																	Fields: []Field{
+																Path: &path{
+																	Fields: []field{
 																		{
 																			Name: "name",
 																		},
@@ -1168,8 +1168,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1264,8 +1264,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1305,8 +1305,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1344,8 +1344,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1384,7 +1384,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+							Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM")),
 						},
 					},
 				},
@@ -1414,7 +1414,7 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 	)
 	p, _ := NewParser(
 		CreateFactoryMap[any](fact),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -1425,8 +1425,8 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 			{
 				Value: value{
 					Literal: &mathExprLiteral{
-						Path: &Path{
-							Fields: []Field{
+						Path: &path{
+							Fields: []field{
 								{
 									Name: "name",
 								},
@@ -1461,8 +1461,8 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 			{
 				Value: value{
 					Literal: &mathExprLiteral{
-						Path: &Path{
-							Fields: []Field{
+						Path: &path{
+							Fields: []field{
 								{
 									Name: "name",
 								},
@@ -2095,15 +2095,16 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 }
 
 func Test_basePath_Name(t *testing.T) {
-	bp := basePath{
+	bp := basePath[any]{
 		name: "test",
 	}
-	assert.Equal(t, "test", bp.Name())
+	n := bp.Name()
+	assert.Equal(t, "test", n)
 }
 
 func Test_basePath_Next(t *testing.T) {
-	bp := basePath{
-		nextPath: &basePath{},
+	bp := basePath[any]{
+		nextPath: &basePath[any]{},
 	}
 	next := bp.Next()
 	assert.NotNil(t, next)
@@ -2111,8 +2112,8 @@ func Test_basePath_Next(t *testing.T) {
 }
 
 func Test_basePath_Key(t *testing.T) {
-	k := &baseKey{}
-	bp := basePath{
+	k := &baseKey[any]{}
+	bp := basePath[any]{
 		key: k,
 	}
 	assert.Equal(t, k, bp.Key())
@@ -2121,36 +2122,36 @@ func Test_basePath_Key(t *testing.T) {
 func Test_basePath_isComplete(t *testing.T) {
 	tests := []struct {
 		name          string
-		p             basePath
+		p             basePath[any]
 		expectedError bool
 	}{
 		{
 			name: "fetched no next",
-			p: basePath{
+			p: basePath[any]{
 				fetched: true,
 			},
 		},
 		{
 			name: "fetched with next",
-			p: basePath{
+			p: basePath[any]{
 				fetched: true,
-				nextPath: &basePath{
+				nextPath: &basePath[any]{
 					fetched: true,
 				},
 			},
 		},
 		{
 			name: "not fetched no next",
-			p: basePath{
+			p: basePath[any]{
 				fetched: false,
 			},
 			expectedError: true,
 		},
 		{
 			name: "not fetched with next",
-			p: basePath{
+			p: basePath[any]{
 				fetched: true,
-				nextPath: &basePath{
+				nextPath: &basePath[any]{
 					fetched: false,
 				},
 			},
@@ -2172,15 +2173,15 @@ func Test_basePath_isComplete(t *testing.T) {
 func Test_basePath_NextWithIsComplete(t *testing.T) {
 	tests := []struct {
 		name          string
-		pathFunc      func() *basePath
+		pathFunc      func() *basePath[any]
 		expectedError bool
 	}{
 		{
 			name: "fetched",
-			pathFunc: func() *basePath {
-				bp := basePath{
+			pathFunc: func() *basePath[any] {
+				bp := basePath[any]{
 					fetched: true,
-					nextPath: &basePath{
+					nextPath: &basePath[any]{
 						fetched: false,
 					},
 				}
@@ -2190,12 +2191,12 @@ func Test_basePath_NextWithIsComplete(t *testing.T) {
 		},
 		{
 			name: "not fetched enough",
-			pathFunc: func() *basePath {
-				bp := basePath{
+			pathFunc: func() *basePath[any] {
+				bp := basePath[any]{
 					fetched: true,
-					nextPath: &basePath{
+					nextPath: &basePath[any]{
 						fetched: false,
-						nextPath: &basePath{
+						nextPath: &basePath[any]{
 							fetched: false,
 						},
 					},
@@ -2219,7 +2220,7 @@ func Test_basePath_NextWithIsComplete(t *testing.T) {
 }
 
 func Test_newPath(t *testing.T) {
-	fields := []Field{
+	fields := []field{
 		{
 			Name: "body",
 		},
@@ -2227,30 +2228,38 @@ func Test_newPath(t *testing.T) {
 			Name: "string",
 		},
 	}
-	p := newPath(fields)
-	assert.Equal(t, "body", p.name)
-	p = p.nextPath
-	assert.Equal(t, "string", p.name)
-	assert.Nil(t, p.nextPath)
+	p := newPath[any](fields)
+	assert.Equal(t, "body", p.Name())
+	assert.Nil(t, p.Key())
+	p = p.Next()
+	assert.Equal(t, "string", p.Name())
+	assert.Nil(t, p.Key())
+	assert.Nil(t, p.Next())
 }
 
 func Test_baseKey_String(t *testing.T) {
-	bp := baseKey{
+	bp := baseKey[any]{
 		s: ottltest.Strp("test"),
 	}
-	assert.Equal(t, "test", *bp.String())
+	s, err := bp.String(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, s)
+	assert.Equal(t, "test", *s)
 }
 
 func Test_baseKey_Int(t *testing.T) {
-	bp := baseKey{
+	bp := baseKey[any]{
 		i: ottltest.Intp(1),
 	}
-	assert.Equal(t, int64(1), *bp.Int())
+	i, err := bp.Int(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, i)
+	assert.Equal(t, int64(1), *i)
 }
 
 func Test_baseKey_Next(t *testing.T) {
-	bp := baseKey{
-		nextKey: &baseKey{},
+	bp := baseKey[any]{
+		nextKey: &baseKey[any]{},
 	}
 	next := bp.Next()
 	assert.NotNil(t, next)
@@ -2260,36 +2269,36 @@ func Test_baseKey_Next(t *testing.T) {
 func Test_baseKey_isComplete(t *testing.T) {
 	tests := []struct {
 		name          string
-		p             baseKey
+		p             baseKey[any]
 		expectedError bool
 	}{
 		{
 			name: "fetched no next",
-			p: baseKey{
+			p: baseKey[any]{
 				fetched: true,
 			},
 		},
 		{
 			name: "fetched with next",
-			p: baseKey{
+			p: baseKey[any]{
 				fetched: true,
-				nextKey: &baseKey{
+				nextKey: &baseKey[any]{
 					fetched: true,
 				},
 			},
 		},
 		{
 			name: "not fetched no next",
-			p: baseKey{
+			p: baseKey[any]{
 				fetched: false,
 			},
 			expectedError: true,
 		},
 		{
 			name: "not fetched with next",
-			p: baseKey{
+			p: baseKey[any]{
 				fetched: true,
-				nextKey: &baseKey{
+				nextKey: &baseKey[any]{
 					fetched: false,
 				},
 			},
@@ -2311,15 +2320,15 @@ func Test_baseKey_isComplete(t *testing.T) {
 func Test_baseKey_NextWithIsComplete(t *testing.T) {
 	tests := []struct {
 		name          string
-		keyFunc       func() *baseKey
+		keyFunc       func() *baseKey[any]
 		expectedError bool
 	}{
 		{
 			name: "fetched",
-			keyFunc: func() *baseKey {
-				bk := baseKey{
+			keyFunc: func() *baseKey[any] {
+				bk := baseKey[any]{
 					fetched: true,
-					nextKey: &baseKey{
+					nextKey: &baseKey[any]{
 						fetched: false,
 					},
 				}
@@ -2329,12 +2338,12 @@ func Test_baseKey_NextWithIsComplete(t *testing.T) {
 		},
 		{
 			name: "not fetched enough",
-			keyFunc: func() *baseKey {
-				bk := baseKey{
+			keyFunc: func() *baseKey[any] {
+				bk := baseKey[any]{
 					fetched: true,
-					nextKey: &baseKey{
+					nextKey: &baseKey[any]{
 						fetched: false,
-						nextKey: &baseKey{
+						nextKey: &baseKey[any]{
 							fetched: false,
 						},
 					},
@@ -2358,7 +2367,7 @@ func Test_baseKey_NextWithIsComplete(t *testing.T) {
 }
 
 func Test_newKey(t *testing.T) {
-	keys := []Key{
+	keys := []key{
 		{
 			String: ottltest.Strp("foo"),
 		},
@@ -2366,9 +2375,15 @@ func Test_newKey(t *testing.T) {
 			String: ottltest.Strp("bar"),
 		},
 	}
-	k := newKey(keys)
-	assert.Equal(t, "foo", *k.s)
-	k = k.nextKey
-	assert.Equal(t, "bar", *k.s)
-	assert.Nil(t, k.nextKey)
+	k := newKey[any](keys)
+	s, err := k.String(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, s)
+	assert.Equal(t, "foo", *s)
+	k = k.Next()
+	s, err = k.String(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, s)
+	assert.Equal(t, "bar", *s)
+	assert.Nil(t, k.Next())
 }

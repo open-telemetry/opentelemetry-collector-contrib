@@ -10,9 +10,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -22,22 +24,27 @@ import (
 
 const (
 	defaultDatasetSlug = "__all__"
+	userAgentHeaderKey = "User-Agent"
+	contentType        = "Content-Type"
+	honeycombTeam      = "X-Honeycomb-Team"
 )
 
 type honeycombLogsExporter struct {
-	set     component.TelemetrySettings
-	markers []Marker
-	client  *http.Client
-	config  *Config
+	set             component.TelemetrySettings
+	markers         []Marker
+	client          *http.Client
+	config          *Config
+	userAgentHeader string
 }
 
-func newHoneycombLogsExporter(set component.TelemetrySettings, config *Config) (*honeycombLogsExporter, error) {
+func newHoneycombLogsExporter(set exporter.CreateSettings, config *Config) (*honeycombLogsExporter, error) {
 	if config == nil {
 		return nil, fmt.Errorf("unable to create honeycombLogsExporter without config")
 	}
 
+	telemetrySettings := set.TelemetrySettings
 	for i, m := range config.Markers {
-		matchLogConditions, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, set)
+		matchLogConditions, err := filterottl.NewBoolExprForLog(m.Rules.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, telemetrySettings)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse log conditions: %w", err)
 		}
@@ -45,9 +52,10 @@ func newHoneycombLogsExporter(set component.TelemetrySettings, config *Config) (
 		config.Markers[i].Rules.logBoolExpr = matchLogConditions
 	}
 	logsExp := &honeycombLogsExporter{
-		set:     set,
-		markers: config.Markers,
-		config:  config,
+		set:             telemetrySettings,
+		markers:         config.Markers,
+		config:          config,
+		userAgentHeader: fmt.Sprintf("%s/%s (%s/%s)", set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH),
 	}
 	return logsExp, nil
 }
@@ -111,8 +119,9 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, marker Marker, l
 		return err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Honeycomb-Team", fmt.Sprint(e.config.APIKey))
+	req.Header.Set(contentType, "application/json")
+	req.Header.Set(honeycombTeam, fmt.Sprint(e.config.APIKey))
+	req.Header.Set(userAgentHeaderKey, e.userAgentHeader)
 
 	resp, err := e.client.Do(req)
 	if err != nil {

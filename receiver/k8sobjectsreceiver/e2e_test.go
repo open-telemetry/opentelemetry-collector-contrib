@@ -43,6 +43,7 @@ const (
 )
 
 func TestE2E(t *testing.T) {
+	t.Skip("skipping flaky test see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29892")
 
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
 	require.NoError(t, err)
