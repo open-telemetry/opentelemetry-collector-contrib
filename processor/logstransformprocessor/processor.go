@@ -33,7 +33,7 @@ type logsTransformProcessor struct {
 	converter     *adapter.Converter
 	fromConverter *adapter.FromPdataConverter
 	wg            sync.WaitGroup
-	cancelFn      func() error
+	shutdownFns   []component.ShutdownFunc
 }
 
 func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger) (*logsTransformProcessor, error) {
@@ -63,10 +63,13 @@ func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (ltp *logsTransformProcessor) Shutdown(_ context.Context) error {
-	if ltp.cancelFn != nil {
-		return ltp.cancelFn()
+func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
+	for _, fn := range ltp.shutdownFns {
+		if err := fn(ctx); err != nil {
+			return err
+		}
 	}
+	ltp.wg.Wait()
 
 	return nil
 }
@@ -78,6 +81,10 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 	if err != nil {
 		return err
 	}
+	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+		ltp.logger.Info("Stopping logs transform processor")
+		return ltp.pipe.Stop()
+	})
 
 	pipelineOperators := ltp.pipe.Operators()
 	if len(pipelineOperators) == 0 {
@@ -89,10 +96,17 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 
 	ltp.converter = adapter.NewConverter(ltp.logger)
 	ltp.converter.Start()
+	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+		ltp.converter.Stop()
+		return nil
+	})
 
 	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
 	ltp.fromConverter.Start()
-
+	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+		ltp.fromConverter.Stop()
+		return nil
+	})
 	// Below we're starting 3 loops:
 	// * first which reads all the logs translated by the fromConverter and then forwards
 	//   them to pipeline
@@ -111,15 +125,6 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 	//   (aggregated by Resource) and then places them on the next consumer
 	ltp.wg.Add(1)
 	go ltp.consumerLoop(ctx)
-
-	ltp.cancelFn = func() error {
-		ltp.logger.Info("Stopping logs transform processor")
-		pipelineErr := ltp.pipe.Stop()
-		ltp.converter.Stop()
-		ltp.fromConverter.Stop()
-		ltp.wg.Wait()
-		return pipelineErr
-	}
 	return nil
 }
 
