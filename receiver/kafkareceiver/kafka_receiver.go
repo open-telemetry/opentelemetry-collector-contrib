@@ -107,20 +107,17 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	saramaConfig.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
-	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
-		saramaConfig.Consumer.Offsets.Initial = initialOffset
-	} else {
+	var err error
+	if saramaConfig.Consumer.Offsets.Initial, err = toSaramaInitialOffset(config.InitialOffset); err != nil {
 		return nil, err
 	}
 	if config.ResolveCanonicalBootstrapServersOnly {
 		saramaConfig.Net.ResolveCanonicalBootstrapServers = true
 	}
 	if config.ProtocolVersion != "" {
-		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
-		if err != nil {
+		if saramaConfig.Version, err = sarama.ParseKafkaVersion(config.ProtocolVersion); err != nil {
 			return nil, err
 		}
-		saramaConfig.Version = version
 	}
 	if err := kafka.ConfigureAuthentication(config.Authentication, saramaConfig); err != nil {
 		return nil, err
@@ -139,10 +136,9 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	if err != nil {
 		return err
 	}
-	// consumerGroup is set in tests.
+	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
-		c.consumerGroup, err = createKafkaClient(c.config)
-		if err != nil {
+		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
 			return err
 		}
 	}
@@ -224,9 +220,9 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	if err != nil {
 		return err
 	}
+	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
-		c.consumerGroup, err = createKafkaClient(c.config)
-		if err != nil {
+		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
 			return err
 		}
 	}
@@ -308,9 +304,9 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	if err != nil {
 		return err
 	}
+	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
-		c.consumerGroup, err = createKafkaClient(c.config)
-		if err != nil {
+		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
 			return err
 		}
 	}
