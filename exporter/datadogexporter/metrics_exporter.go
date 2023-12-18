@@ -51,7 +51,7 @@ type metricsExporter struct {
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
-func translatorFromConfig(set component.TelemetrySettings, cfg *Config, sourceProvider source.Provider) (*otlpmetrics.Translator, error) {
+func translatorFromConfig(set component.TelemetrySettings, cfg *Config, sourceProvider source.Provider, statsOut chan []byte) (*otlpmetrics.Translator, error) {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
@@ -83,6 +83,9 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, sourcePr
 	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
 		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
+	if connectorPerformanceFeatureGate.IsEnabled() {
+		options = append(options, otlpmetrics.WithStatsOut(statsOut))
+	}
 	return otlpmetrics.NewTranslator(set, options...)
 }
 
@@ -94,8 +97,9 @@ func newMetricsExporter(
 	sourceProvider source.Provider,
 	apmStatsProcessor api.StatsProcessor,
 	metadataReporter *inframetadata.Reporter,
+	statsOut chan []byte,
 ) (*metricsExporter, error) {
-	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, sourceProvider)
+	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, sourceProvider, statsOut)
 	if err != nil {
 		return nil, err
 	}
