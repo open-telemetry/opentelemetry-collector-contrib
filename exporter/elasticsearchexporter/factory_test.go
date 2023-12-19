@@ -71,8 +71,8 @@ func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing
 
 func TestSetDefaultUserAgentHeader(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	cf := setDefaultUserAgentHeader(cfg.(*Config), component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
-	assert.Equal(t, len(cf.Headers), 1)
-	assert.Equal(t, strings.Contains(cf.Headers[userAgentHeaderKey], "OpenTelemetry Collector"), true)
+	cfg := factory.CreateDefaultConfig().(*Config)
+	setDefaultUserAgentHeader(cfg, component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
+	assert.Equal(t, len(cfg.Headers), 1)
+	assert.Equal(t, strings.Contains(cfg.Headers[userAgentHeaderKey], "OpenTelemetry Collector"), true)
 }
