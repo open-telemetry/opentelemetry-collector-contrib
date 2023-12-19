@@ -15,11 +15,6 @@ import (
 	"time"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
@@ -41,6 +36,12 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 )
 
 func TestIntegration_optimized(t *testing.T) {
@@ -54,9 +55,10 @@ func TestIntegration_optimized(t *testing.T) {
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
 	app, confFilePath := getIntegrationTestCollector(t, server.URL, factories)
-	featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), true)
+	err := featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), true)
+	assert.NoError(t, err)
 	defer func() {
-		featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), false)
+		_ = featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), false)
 	}()
 	go func() {
 		assert.NoError(t, app.Run(context.Background()))
