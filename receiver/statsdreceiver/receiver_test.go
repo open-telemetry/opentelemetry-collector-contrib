@@ -6,8 +6,6 @@ package statsdreceiver
 import (
 	"context"
 	"errors"
-	"net"
-	"strconv"
 	"testing"
 	"time"
 
@@ -113,19 +111,15 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 }
 
 func Test_statsdreceiver_EndToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	host, portStr, err := net.SplitHostPort(addr)
-	require.NoError(t, err)
-	port, err := strconv.Atoi(portStr)
-	require.NoError(t, err)
-
 	tests := []struct {
 		name     string
+		addr     string
 		configFn func() *Config
-		clientFn func(t *testing.T) *client.StatsD
+		clientFn func(t *testing.T, addr string) *client.StatsD
 	}{
 		{
 			name: "default_config with 4s interval",
+			addr: testutil.GetAvailableLocalNetworkAddress(t, "udp"),
 			configFn: func() *Config {
 				return &Config{
 					NetAddr: confignet.NetAddr{
@@ -135,8 +129,8 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 					AggregationInterval: 4 * time.Second,
 				}
 			},
-			clientFn: func(t *testing.T) *client.StatsD {
-				c, err := client.NewStatsD(client.UDP, host, port)
+			clientFn: func(t *testing.T, addr string) *client.StatsD {
+				c, err := client.NewStatsD("udp", addr)
 				require.NoError(t, err)
 				return c
 			},
@@ -145,7 +139,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
-			cfg.NetAddr.Endpoint = addr
+			cfg.NetAddr.Endpoint = tt.addr
 			sink := new(consumertest.MetricsSink)
 			rcv, err := newReceiver(receivertest.NewNopCreateSettings(), *cfg, sink)
 			require.NoError(t, err)
@@ -159,7 +153,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 				assert.NoError(t, r.Shutdown(context.Background()))
 			}()
 
-			statsdClient := tt.clientFn(t)
+			statsdClient := tt.clientFn(t, tt.addr)
 
 			statsdMetric := client.Metric{
 				Name:  "test.metric",

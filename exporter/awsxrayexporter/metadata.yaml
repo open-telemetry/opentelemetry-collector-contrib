@@ -4,6 +4,6 @@ status:
   class: exporter
   stability:
     beta: [traces]
-  distributions: [contrib, aws, observiq]
+  distributions: [contrib, aws, observiq, liatrio]
   codeowners:
     active: [wangzlei, srprash]

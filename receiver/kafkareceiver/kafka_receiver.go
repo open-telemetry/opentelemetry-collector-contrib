@@ -28,6 +28,7 @@ var errInvalidInitialOffset = fmt.Errorf("invalid initial offset")
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
+	config            Config
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Traces
 	topics            []string
@@ -44,6 +45,7 @@ type kafkaTracesConsumer struct {
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaMetricsConsumer struct {
+	config            Config
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Metrics
 	topics            []string
@@ -60,6 +62,7 @@ type kafkaMetricsConsumer struct {
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaLogsConsumer struct {
+	config            Config
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Logs
 	topics            []string
@@ -83,37 +86,8 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshaler T
 		return nil, errUnrecognizedEncoding
 	}
 
-	c := sarama.NewConfig()
-	c.ClientID = config.ClientID
-	c.Metadata.Full = config.Metadata.Full
-	c.Metadata.Retry.Max = config.Metadata.Retry.Max
-	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
-	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
-	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
-	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
-		c.Consumer.Offsets.Initial = initialOffset
-	} else {
-		return nil, err
-	}
-	if config.ResolveCanonicalBootstrapServersOnly {
-		c.Net.ResolveCanonicalBootstrapServers = true
-	}
-	if config.ProtocolVersion != "" {
-		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
-		if err != nil {
-			return nil, err
-		}
-		c.Version = version
-	}
-	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
-		return nil, err
-	}
-	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
-	if err != nil {
-		return nil, err
-	}
 	return &kafkaTracesConsumer{
-		consumerGroup:     client,
+		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
 		unmarshaler:       unmarshaler,
@@ -123,6 +97,32 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshaler T
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
 	}, nil
+}
+
+func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
+	saramaConfig := sarama.NewConfig()
+	saramaConfig.ClientID = config.ClientID
+	saramaConfig.Metadata.Full = config.Metadata.Full
+	saramaConfig.Metadata.Retry.Max = config.Metadata.Retry.Max
+	saramaConfig.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
+	saramaConfig.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
+	saramaConfig.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
+	var err error
+	if saramaConfig.Consumer.Offsets.Initial, err = toSaramaInitialOffset(config.InitialOffset); err != nil {
+		return nil, err
+	}
+	if config.ResolveCanonicalBootstrapServersOnly {
+		saramaConfig.Net.ResolveCanonicalBootstrapServers = true
+	}
+	if config.ProtocolVersion != "" {
+		if saramaConfig.Version, err = sarama.ParseKafkaVersion(config.ProtocolVersion); err != nil {
+			return nil, err
+		}
+	}
+	if err := kafka.ConfigureAuthentication(config.Authentication, saramaConfig); err != nil {
+		return nil, err
+	}
+	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
 }
 
 func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
@@ -135,6 +135,12 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	})
 	if err != nil {
 		return err
+	}
+	// consumerGroup may be set in tests to inject fake implementation.
+	if c.consumerGroup == nil {
+		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
+			return err
+		}
 	}
 	consumerGroup := &tracesConsumerGroupHandler{
 		logger:            c.settings.Logger,
@@ -178,6 +184,9 @@ func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.Co
 }
 
 func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
+	if c.cancelConsumeLoop == nil {
+		return nil
+	}
 	c.cancelConsumeLoop()
 	return c.consumerGroup.Close()
 }
@@ -187,34 +196,8 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshaler 
 		return nil, errUnrecognizedEncoding
 	}
 
-	c := sarama.NewConfig()
-	c.ClientID = config.ClientID
-	c.Metadata.Full = config.Metadata.Full
-	c.Metadata.Retry.Max = config.Metadata.Retry.Max
-	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
-	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
-	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
-	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
-		c.Consumer.Offsets.Initial = initialOffset
-	} else {
-		return nil, err
-	}
-	if config.ProtocolVersion != "" {
-		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
-		if err != nil {
-			return nil, err
-		}
-		c.Version = version
-	}
-	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
-		return nil, err
-	}
-	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
-	if err != nil {
-		return nil, err
-	}
 	return &kafkaMetricsConsumer{
-		consumerGroup:     client,
+		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
 		unmarshaler:       unmarshaler,
@@ -236,6 +219,12 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	})
 	if err != nil {
 		return err
+	}
+	// consumerGroup may be set in tests to inject fake implementation.
+	if c.consumerGroup == nil {
+		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
+			return err
+		}
 	}
 	metricsConsumerGroup := &metricsConsumerGroupHandler{
 		logger:            c.settings.Logger,
@@ -279,6 +268,9 @@ func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.C
 }
 
 func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
+	if c.cancelConsumeLoop == nil {
+		return nil
+	}
 	c.cancelConsumeLoop()
 	return c.consumerGroup.Close()
 }
@@ -287,35 +279,9 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshaler Log
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	c := sarama.NewConfig()
-	c.ClientID = config.ClientID
-	c.Metadata.Full = config.Metadata.Full
-	c.Metadata.Retry.Max = config.Metadata.Retry.Max
-	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
-	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
-	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
-	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
-		c.Consumer.Offsets.Initial = initialOffset
-	} else {
-		return nil, err
-	}
-	if config.ProtocolVersion != "" {
-		var version sarama.KafkaVersion
-		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
-		if err != nil {
-			return nil, err
-		}
-		c.Version = version
-	}
-	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
-		return nil, err
-	}
-	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
-	if err != nil {
-		return nil, err
-	}
+
 	return &kafkaLogsConsumer{
-		consumerGroup:     client,
+		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
 		unmarshaler:       unmarshaler,
@@ -338,7 +304,12 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	if err != nil {
 		return err
 	}
-
+	// consumerGroup may be set in tests to inject fake implementation.
+	if c.consumerGroup == nil {
+		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
+			return err
+		}
+	}
 	logsConsumerGroup := &logsConsumerGroupHandler{
 		logger:            c.settings.Logger,
 		unmarshaler:       c.unmarshaler,
@@ -381,6 +352,9 @@ func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.Cons
 }
 
 func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
+	if c.cancelConsumeLoop == nil {
+		return nil
+	}
 	c.cancelConsumeLoop()
 	return c.consumerGroup.Close()
 }

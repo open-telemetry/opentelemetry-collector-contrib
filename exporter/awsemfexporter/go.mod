@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemf
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.48.14
-	github.com/google/uuid v1.4.0
+	github.com/aws/aws-sdk-go v1.49.5
+	github.com/google/uuid v1.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.91.0
@@ -18,9 +18,11 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0
 	go.opentelemetry.io/collector/pdata v1.0.0
 	go.opentelemetry.io/collector/semconv v0.91.0
+	go.opentelemetry.io/otel/metric v1.21.0
+	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb
+	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
 )
 
 require (
@@ -47,9 +49,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.91.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.91.0 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
-	go.opentelemetry.io/otel/metric v1.21.0 // indirect
-	go.opentelemetry.io/otel/trace v1.21.0 // indirect
-	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
