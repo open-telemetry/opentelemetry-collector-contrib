@@ -20,17 +20,11 @@ github.com/DataDog/go-sqllexer v0.0.8 h1:vfC8R9PhmJfeOKcFYAX9UOd890A3wu3KrjU9Kr7
 github.com/DataDog/go-sqllexer v0.0.8/go.mod h1:nB4Ea2YNsqMwtbWMc4Fm/oP98IIrSPapqwOwPioMspY=
 github.com/DataDog/go-tuf v1.0.2-0.5.2 h1:EeZr937eKAWPxJ26IykAdWA4A0jQXJgkhUjqEI/w7+I=
 github.com/DataDog/go-tuf v1.0.2-0.5.2/go.mod h1:zBcq6f654iVqmkk8n2Cx81E1JnNTMOAx1UEO/wZR+P0=
-github.com/DataDog/opentelemetry-mapping-go/pkg/internal/sketchtest v0.9.0 h1:oT5B12H+tLtAEEH0YqgmppofM/yRBzyI9+ykS9OQvIs=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.9.0 h1:Y+CllChr2yfE2RLd+c5hvK56DDGVEdDrhAl1OyzuuwU=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.9.0/go.mod h1:naFq9h+fQpgI7AKJ+YkWlAAYDU8/FB8LyfA39bmRNHs=
+github.com/DataDog/opentelemetry-mapping-go/pkg/internal/sketchtest v0.10.0 h1:O2PYvgTQA+31NuepzQqLexEpUX8FWsdNgq+0241OtH0=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.10.0 h1:56vp8vflG6lmhTO+YldUBTe0cIjStOC1neW1dIHYm5s=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.10.0/go.mod h1:naFq9h+fQpgI7AKJ+YkWlAAYDU8/FB8LyfA39bmRNHs=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.9.0 h1:WsCPJS+a34kw1gj46WpJjQBHrLVwh1ubCdHUx9nf1ec=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.9.0/go.mod h1:m61Tq6DA2U+PjNTX6WD3TH2U7QnA49+7IGaYK4bu7fQ=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.10.0 h1:XwGT7/2NnO1RGxS5WD4BTsLWqO+z8234XBccUGhP8tM=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.10.0/go.mod h1:1fYkFs2pUyqBUUVDsjn1cKVEI79R+NluYhqX+pDTkSY=
-github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.9.0 h1:U93rYuk3ChT/I+2r36JI8agi1AwdH8vRiHh+bCSXZeU=
-github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.9.0/go.mod h1:KOzWHRj2AcJPmP1hm4WQUfzEIYRBP4NaTX9Iu+D3UNs=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.10.0 h1:mEao3xEP7iCfCd+teps0oM8U+ZRPVz02W6aE5cfi2Sc=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.10.0/go.mod h1:vPjlCjTrBzzZpVJbbVpox8x9nRYx5giCl/9Zy8oWFw0=
 github.com/DataDog/sketches-go v1.4.3 h1:ZB9nijteJRFUQixkQfatCqASartGNfiolIlMiEv3u/w=
@@ -162,7 +156,6 @@ github.com/vmihailenco/tagparser v0.1.2 h1:gnjoVuB/kljJ5wICEEOpx98oXMWPLj22G67Vb
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 github.com/yusufpapurcu/wmi v1.2.3 h1:E1ctvB7uKFMOJw3fdOW32DwGE9I7t++CRUEMKvFoFiw=
 github.com/yusufpapurcu/wmi v1.2.3/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/collector v0.91.0 h1:C7sGUJDJ5nwm+CkWpAaVP3lNsuYpwSRbkmLncFjkmO8=
