@@ -34,7 +34,7 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	logsExp, err := newHoneycombLogsExporter(set.TelemetrySettings, cf)
+	logsExp, err := newHoneycombLogsExporter(set, cf)
 	if err != nil {
 		return nil, err
 	}

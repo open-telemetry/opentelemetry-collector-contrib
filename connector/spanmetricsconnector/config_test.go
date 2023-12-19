@@ -26,6 +26,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultMethod := "GET"
+	defaultMaxPerDatapoint := 5
 	tests := []struct {
 		id           component.ID
 		expected     component.Config
@@ -96,6 +97,17 @@ func TestLoadConfig(t *testing.T) {
 				MetricsFlushInterval:     15 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
 				Exemplars:                ExemplarsConfig{Enabled: true},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "exemplars_enabled_with_max_per_datapoint"),
+			expected: &Config{
+				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				DimensionsCacheSize:      defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     15 * time.Second,
+				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Exemplars:                ExemplarsConfig{Enabled: true, MaxPerDataPoint: &defaultMaxPerDatapoint},
 			},
 		},
 	}

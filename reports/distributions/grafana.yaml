@@ -1,0 +1,30 @@
+name: grafana
+url: https://github.com/grafana/agent
+maintainers: []
+components:
+    connector:
+        - servicegraph
+        - spanmetrics
+    exporter:
+        - loadbalancing
+        - prometheus
+    extension:
+        - basicauth
+        - bearertokenauth
+        - headers_setter
+        - jaegerremotesampling
+        - oauth2client
+        - sigv4auth
+    processor:
+        - attributes
+        - k8sattributes
+        - probabilistic_sampler
+        - span
+        - tail_sampling
+        - transform
+    receiver:
+        - jaeger
+        - kafka
+        - opencensus
+        - prometheus
+        - zipkin

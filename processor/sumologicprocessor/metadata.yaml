@@ -7,3 +7,6 @@ status:
   distributions: [contrib, sumo]
   codeowners:
     active: [aboguszewski-sumo, astencel-sumo, sumo-drosiek]
+
+tests:
+  config:
