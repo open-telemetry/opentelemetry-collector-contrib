@@ -18,6 +18,8 @@ import (
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 	v3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking"
 )
 
 const (
@@ -97,10 +99,11 @@ func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer c
 	if segment == nil {
 		return nil
 	}
-	ptd := SkywalkingToTraces(segment)
+	ptd := skywalking.ProtoToTraces(segment)
+	count := ptd.SpanCount()
 	obsContext := obsreport.StartTracesOp(ctx)
 	err := consumer.ConsumeTraces(ctx, ptd)
-	obsreport.EndTracesOp(obsContext, format, ptd.SpanCount(), err)
+	obsreport.EndTracesOp(obsContext, format, count, err)
 	return err
 }
 

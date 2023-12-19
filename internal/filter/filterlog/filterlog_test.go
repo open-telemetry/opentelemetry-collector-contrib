@@ -30,17 +30,17 @@ func createConfig(matchType filterset.MatchType) *filterset.Config {
 func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	testcases := []struct {
 		name        string
-		property    filterconfig.MatchProperties
+		property    *filterconfig.MatchProperties
 		errorString string
 	}{
 		{
 			name:        "empty_property",
-			property:    filterconfig.MatchProperties{},
+			property:    &filterconfig.MatchProperties{},
 			errorString: filterconfig.ErrMissingRequiredLogField.Error(),
 		},
 		{
 			name: "empty_log_bodies_and_attributes",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				LogBodies:        []string{},
 				LogSeverityTexts: []string{},
 			},
@@ -48,14 +48,14 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "span_properties",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				SpanNames: []string{"span"},
 			},
 			errorString: filterconfig.ErrInvalidLogField.Error(),
 		},
 		{
 			name: "invalid_match_type",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:     *createConfig("wrong_match_type"),
 				Attributes: []filterconfig.Attribute{{Key: "abc", Value: "def"}},
 			},
@@ -63,14 +63,14 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		},
 		{
 			name: "missing_match_type",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Attributes: []filterconfig.Attribute{{Key: "abc", Value: "def"}},
 			},
 			errorString: "error creating attribute filters: unrecognized match_type: '', valid types are: [regexp strict]",
 		},
 		{
 			name: "invalid_regexp_pattern",
-			property: filterconfig.MatchProperties{
+			property: &filterconfig.MatchProperties{
 				Config:     *createConfig(filterset.Regexp),
 				Attributes: []filterconfig.Attribute{{Key: "abc", Value: "["}},
 			},
@@ -79,7 +79,7 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			expr, err := newExpr(&tc.property)
+			expr, err := newExpr(tc.property)
 			assert.Nil(t, expr)
 			require.NotNil(t, err)
 			println(tc.name)

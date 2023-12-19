@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
@@ -24,8 +25,8 @@ const (
 )
 
 var (
-	_ ptrace.Marshaler   = (*zipkinExtension)(nil)
-	_ ptrace.Unmarshaler = (*zipkinExtension)(nil)
+	_ encoding.TracesMarshalerExtension   = (*zipkinExtension)(nil)
+	_ encoding.TracesUnmarshalerExtension = (*zipkinExtension)(nil)
 )
 
 type zipkinExtension struct {
@@ -50,7 +51,7 @@ func newExtension(config *Config) (*zipkinExtension, error) {
 				unmarshaler: zipkinv2.NewProtobufTracesUnmarshaler(false, false),
 			}
 		default:
-			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
+			err = fmt.Errorf("protocol: %q, unsupported version: %q", protocol, version)
 		}
 	case zipkinJSONEncoding:
 		switch version {
@@ -76,8 +77,10 @@ func newExtension(config *Config) (*zipkinExtension, error) {
 				unmarshaler: zipkinv1.NewThriftTracesUnmarshaler(),
 			}
 		default:
-			err = fmt.Errorf("unsupported version: %q and protocol: %q", version, protocol)
+			err = fmt.Errorf("protocol: %q, unsupported version: %q", protocol, version)
 		}
+	default:
+		err = fmt.Errorf("unsupported protocol: %q", protocol)
 	}
 
 	return ex, err

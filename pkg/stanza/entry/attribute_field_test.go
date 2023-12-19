@@ -17,8 +17,8 @@ func TestAttributeFieldGet(t *testing.T) {
 	cases := []struct {
 		name       string
 		field      Field
-		attributes map[string]interface{}
-		expected   interface{}
+		attributes map[string]any
+		expected   any
 		expectedOK bool
 	}{
 		{
@@ -38,7 +38,7 @@ func TestAttributeFieldGet(t *testing.T) {
 		{
 			"Simple",
 			NewAttributeField("test"),
-			map[string]interface{}{
+			map[string]any{
 				"test": "val",
 			},
 			"val",
@@ -47,7 +47,7 @@ func TestAttributeFieldGet(t *testing.T) {
 		{
 			"NonexistentKey",
 			NewAttributeField("nonexistent"),
-			map[string]interface{}{
+			map[string]any{
 				"test": "val",
 			},
 			nil,
@@ -98,9 +98,9 @@ func TestAttributeFieldDelete(t *testing.T) {
 	cases := []struct {
 		name               string
 		field              Field
-		attributes         map[string]interface{}
-		expectedAttributes map[string]interface{}
-		expectedReturned   interface{}
+		attributes         map[string]any
+		expectedAttributes map[string]any
+		expectedReturned   any
 		expectedOK         bool
 	}{
 		{
@@ -115,7 +115,7 @@ func TestAttributeFieldDelete(t *testing.T) {
 			"SimpleKey",
 			NewAttributeField("simple_key"),
 			testMap(),
-			map[string]interface{}{
+			map[string]any{
 				"map_key": nestedMap(),
 			},
 			"simple_value",
@@ -124,9 +124,9 @@ func TestAttributeFieldDelete(t *testing.T) {
 		{
 			"EmptyAttributesAndField",
 			NewAttributeField(),
-			map[string]interface{}{},
+			map[string]any{},
 			nil,
-			map[string]interface{}{},
+			map[string]any{},
 			true,
 		},
 		{
@@ -149,9 +149,9 @@ func TestAttributeFieldDelete(t *testing.T) {
 			"NestedKey",
 			NewAttributeField("map_key", "nested_key"),
 			testMap(),
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "simple_value",
-				"map_key":    map[string]interface{}{},
+				"map_key":    map[string]any{},
 			},
 			"nested_value",
 			true,
@@ -160,7 +160,7 @@ func TestAttributeFieldDelete(t *testing.T) {
 			"MapKey",
 			NewAttributeField("map_key"),
 			testMap(),
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "simple_value",
 			},
 			nestedMap(),
@@ -192,9 +192,9 @@ func TestAttributeFieldSet(t *testing.T) {
 	cases := []struct {
 		name        string
 		field       Field
-		attributes  map[string]interface{}
-		val         interface{}
-		expected    map[string]interface{}
+		attributes  map[string]any
+		val         any
+		expected    map[string]any
 		expectedErr bool
 	}{
 		{
@@ -202,7 +202,7 @@ func TestAttributeFieldSet(t *testing.T) {
 			NewAttributeField("test"),
 			nil,
 			"val",
-			map[string]interface{}{
+			map[string]any{
 				"test": "val",
 			},
 			false,
@@ -218,7 +218,7 @@ func TestAttributeFieldSet(t *testing.T) {
 		{
 			"OverwriteRootWithMap",
 			NewAttributeField(),
-			map[string]interface{}{},
+			map[string]any{},
 			testMap(),
 			testMap(),
 			false,
@@ -226,12 +226,12 @@ func TestAttributeFieldSet(t *testing.T) {
 		{
 			"MergeOverRoot",
 			NewAttributeField(),
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "clobbered",
 				"hello":      "world",
 			},
 			testMap(),
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "simple_value",
 				"map_key":    nestedMap(),
 				"hello":      "world",
@@ -241,9 +241,9 @@ func TestAttributeFieldSet(t *testing.T) {
 		{
 			"Simple",
 			NewAttributeField("test"),
-			map[string]interface{}{},
+			map[string]any{},
 			"val",
-			map[string]interface{}{
+			map[string]any{
 				"test": "val",
 			},
 			false,
@@ -251,11 +251,11 @@ func TestAttributeFieldSet(t *testing.T) {
 		{
 			"OverwriteString",
 			NewAttributeField("test"),
-			map[string]interface{}{
+			map[string]any{
 				"test": "original",
 			},
 			"val",
-			map[string]interface{}{
+			map[string]any{
 				"test": "val",
 			},
 			false,
@@ -263,9 +263,9 @@ func TestAttributeFieldSet(t *testing.T) {
 		{
 			"NonString",
 			NewAttributeField("test"),
-			map[string]interface{}{},
+			map[string]any{},
 			123,
-			map[string]interface{}{
+			map[string]any{
 				"test": 123,
 			},
 			false,
@@ -273,12 +273,12 @@ func TestAttributeFieldSet(t *testing.T) {
 		{
 			"Map",
 			NewAttributeField("test"),
-			map[string]interface{}{},
-			map[string]interface{}{
+			map[string]any{},
+			map[string]any{
 				"test": 123,
 			},
-			map[string]interface{}{
-				"test": map[string]interface{}{
+			map[string]any{
+				"test": map[string]any{
 					"test": 123,
 				},
 			},
@@ -287,7 +287,7 @@ func TestAttributeFieldSet(t *testing.T) {
 		{
 			"NewMapValue",
 			NewAttributeField(),
-			map[string]interface{}{},
+			map[string]any{},
 			testMap(),
 			testMap(),
 			false,
@@ -295,9 +295,9 @@ func TestAttributeFieldSet(t *testing.T) {
 		{
 			"NewRootField",
 			NewAttributeField("new_key"),
-			map[string]interface{}{},
+			map[string]any{},
 			"new_value",
-			map[string]interface{}{
+			map[string]any{
 				"new_key": "new_value",
 			},
 			false,
@@ -305,10 +305,10 @@ func TestAttributeFieldSet(t *testing.T) {
 		{
 			"NewNestedField",
 			NewAttributeField("new_key", "nested_key"),
-			map[string]interface{}{},
+			map[string]any{},
 			"nested_value",
-			map[string]interface{}{
-				"new_key": map[string]interface{}{
+			map[string]any{
+				"new_key": map[string]any{
 					"nested_key": "nested_value",
 				},
 			},
@@ -319,7 +319,7 @@ func TestAttributeFieldSet(t *testing.T) {
 			NewAttributeField("map_key"),
 			testMap(),
 			"new_value",
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "simple_value",
 				"map_key":    "new_value",
 			},
@@ -329,12 +329,12 @@ func TestAttributeFieldSet(t *testing.T) {
 			"MergedNestedValue",
 			NewAttributeField("map_key"),
 			testMap(),
-			map[string]interface{}{
+			map[string]any{
 				"merged_key": "merged_value",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "simple_value",
-				"map_key": map[string]interface{}{
+				"map_key": map[string]any{
 					"nested_key": "nested_value",
 					"merged_key": "merged_value",
 				},
@@ -377,11 +377,11 @@ func TestAttributeFieldChild(t *testing.T) {
 
 func TestAttributeFieldMerge(t *testing.T) {
 	entry := &Entry{}
-	entry.Attributes = map[string]interface{}{"old": "values"}
+	entry.Attributes = map[string]any{"old": "values"}
 	field := AttributeField{[]string{"embedded"}}
-	values := map[string]interface{}{"new": "values"}
+	values := map[string]any{"new": "values"}
 	field.Merge(entry, values)
-	expected := map[string]interface{}{"embedded": values, "old": "values"}
+	expected := map[string]any{"embedded": values, "old": "values"}
 	require.Equal(t, expected, entry.Attributes)
 }
 

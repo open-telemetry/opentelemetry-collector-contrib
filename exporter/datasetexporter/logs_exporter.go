@@ -43,7 +43,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	cfg := castConfig(config)
 	e, err := newDatasetExporter("logs", cfg, set)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
+		return nil, fmt.Errorf("cannot get DataSetExporter: %w", err)
 	}
 
 	return exporterhelper.NewLogsExporter(
@@ -58,7 +58,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	)
 }
 
-func buildBody(settings LogsSettings, attrs map[string]interface{}, value pcommon.Value) string {
+func buildBody(settings LogsSettings, attrs map[string]any, value pcommon.Value) string {
 	// The message / body is stored as part of the "message" field on the DataSet event.
 	message := value.AsString()
 
@@ -169,7 +169,7 @@ func buildEventFromLog(
 	serverHost string,
 	logSettings LogsSettings,
 ) *add_events.EventBundle {
-	attrs := make(map[string]interface{})
+	attrs := make(map[string]any)
 	event := add_events.Event{}
 
 	observedTs := log.ObservedTimestamp().AsTime()
@@ -231,7 +231,7 @@ func buildEventFromLog(
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TL", Name: "logs"},
-		Log:    &add_events.Log{Id: "LL", Attrs: map[string]interface{}{}},
+		Log:    &add_events.Log{Id: "LL", Attrs: map[string]any{}},
 	}
 }
 

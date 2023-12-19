@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/transport"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 )
 
 var (
@@ -35,8 +35,8 @@ type carbonReceiver struct {
 
 var _ receiver.Metrics = (*carbonReceiver)(nil)
 
-// New creates the Carbon receiver with the given configuration.
-func New(
+// newMetricsReceiver creates the Carbon receiver with the given configuration.
+func newMetricsReceiver(
 	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,

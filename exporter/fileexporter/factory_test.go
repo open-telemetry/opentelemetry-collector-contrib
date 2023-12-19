@@ -43,6 +43,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
+	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
 func TestCreateTracesExporter(t *testing.T) {
@@ -56,6 +57,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
+	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
 func TestCreateTracesExporterError(t *testing.T) {
@@ -80,6 +82,7 @@ func TestCreateLogsExporter(t *testing.T) {
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
+	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
 func TestCreateLogsExporterError(t *testing.T) {
@@ -157,6 +160,9 @@ func TestBuildFileWriter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := buildFileWriter(tt.args.cfg)
+			defer func() {
+				assert.NoError(t, got.Close())
+			}()
 			assert.NoError(t, err)
 			tt.validate(t, got)
 		})

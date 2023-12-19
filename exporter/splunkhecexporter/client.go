@@ -56,7 +56,7 @@ type client struct {
 }
 
 var jsonStreamPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return jsoniter.NewStream(jsoniter.ConfigDefault, nil, 512)
 	},
 }

@@ -348,7 +348,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 
-			groupedMetrics := make(map[interface{}]*groupedMetric)
+			groupedMetrics := make(map[any]*groupedMetric)
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
 			assert.Nil(t, err)
 			assert.NotNil(t, groupedMetrics)
@@ -380,7 +380,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		rm := pmetric.NewResourceMetrics()
 		rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "myServiceName")
 		rm.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
@@ -439,7 +439,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 				logger:                          zap.NewNop(),
 			}
 
-			fields := map[string]interface{}{
+			fields := map[string]any{
 				oTellibDimensionKey: "cloudwatch-otel",
 				"spanName":          "test",
 				"spanCounter":       0,
@@ -505,7 +505,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				timestampMs: timestamp,
-				fields: map[string]interface{}{
+				fields: map[string]any{
 					"label1":  "value1",
 					"metric1": 1,
 				},
@@ -550,7 +550,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				timestampMs: timestamp,
-				fields: map[string]interface{}{
+				fields: map[string]any{
 					"label1":  "value1",
 					"metric1": 1,
 				},
@@ -607,7 +607,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				timestampMs: timestamp,
-				fields: map[string]interface{}{
+				fields: map[string]any{
 					"label1":  "value1",
 					"label2":  "value2",
 					"metric1": 1,
@@ -684,7 +684,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				timestampMs: timestamp,
-				fields: map[string]interface{}{
+				fields: map[string]any{
 					"label1":  "value1",
 					"label2":  "value2",
 					"metric1": 1,
@@ -717,7 +717,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				timestampMs: timestamp,
-				fields: map[string]interface{}{
+				fields: map[string]any{
 					"label1": "value1",
 				},
 			},
@@ -758,7 +758,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				timestampMs: timestamp,
-				fields: map[string]interface{}{
+				fields: map[string]any{
 					"label1":                  "value1",
 					"metric1":                 1,
 					fieldPrometheusMetricType: "gauge",
@@ -1982,7 +1982,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		groupedMetric := make(map[interface{}]*groupedMetric)
+		groupedMetric := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetric, config)
 		assert.Nil(b, err)
 	}
@@ -2005,7 +2005,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
@@ -2028,7 +2028,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
@@ -2051,7 +2051,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
@@ -2069,7 +2069,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		groupedMetrics := make(map[interface{}]*groupedMetric)
+		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
@@ -2162,7 +2162,7 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 		}},
 	}
 	timestamp := int64(1596151098037)
-	fields := make(map[string]interface{})
+	fields := make(map[string]any)
 	fields[oTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = 0
@@ -2183,8 +2183,8 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 type testMetric struct {
 	metricNames          []string
 	metricValues         [][]float64
-	resourceAttributeMap map[string]interface{}
-	attributeMap         map[string]interface{}
+	resourceAttributeMap map[string]any
+	attributeMap         map[string]any
 }
 
 type logGroupStreamTest struct {
@@ -2214,7 +2214,7 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]interface{}{
+				resourceAttributeMap: map[string]any{
 					"ClusterName": "test-cluster",
 					"PodName":     "test-pod",
 				},
@@ -2229,7 +2229,7 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]interface{}{
+				resourceAttributeMap: map[string]any{
 					"ClusterName": "test-cluster",
 					"PodName":     "test-pod",
 				},
@@ -2244,7 +2244,7 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]interface{}{
+				attributeMap: map[string]any{
 					"ClusterName": "test-cluster",
 					"PodName":     "test-pod",
 				},
@@ -2259,7 +2259,7 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]interface{}{
+				attributeMap: map[string]any{
 					"ClusterName": "test-cluster",
 					"PodName":     "test-pod",
 				},
@@ -2274,10 +2274,10 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]interface{}{
+				resourceAttributeMap: map[string]any{
 					"ClusterName": "test-cluster",
 				},
-				attributeMap: map[string]interface{}{
+				attributeMap: map[string]any{
 					"PodName": "test-pod",
 				},
 			}),
@@ -2302,7 +2302,7 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]interface{}{
+				attributeMap: map[string]any{
 					"PodName": "test-pod",
 				},
 			}),
@@ -2328,7 +2328,7 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			translator := newMetricTranslator(*config)
 			defer require.NoError(t, translator.Shutdown())
 
-			groupedMetrics := make(map[interface{}]*groupedMetric)
+			groupedMetrics := make(map[any]*groupedMetric)
 
 			rm := test.inputMetrics.ResourceMetrics().At(0)
 			err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
@@ -2359,7 +2359,7 @@ func TestTranslateOtToGroupedMetricForInitialDeltaValue(t *testing.T) {
 
 			translator := newMetricTranslator(*config)
 
-			groupedMetrics := make(map[interface{}]*groupedMetric)
+			groupedMetrics := make(map[any]*groupedMetric)
 
 			rm := test.inputMetrics.ResourceMetrics().At(0)
 			err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)

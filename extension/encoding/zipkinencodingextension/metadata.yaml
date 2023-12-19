@@ -1,4 +1,4 @@
-type: zipkinencoding
+type: zipkin_encoding
 
 status:
   class: extension

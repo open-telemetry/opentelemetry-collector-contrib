@@ -45,9 +45,10 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
 
 ### Optional Settings
 
+- `debug` (default = false): Adds `session_key` to the server fields. It's useful for debugging throughput issues.
 - `buffer`:
   - `max_lifetime` (default = 5s): The maximum delay between sending batches from the same source.
-  - `group_by` (default = []): The list of attributes based on which events should be grouped.
+  - `group_by` (default = []): The list of attributes based on which events should be grouped. They are moved from the event attributes to the session info and shown as server fields in the UI.
   - `retry_initial_interval` (default = 5s): Time to wait after the first failure before retrying.
   - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
@@ -259,8 +260,6 @@ service:
       exporters: [dataset/traces]
 ```
 
-## Examples
-
 ### Handling `serverHost` Attribute
 
 Based on the given configuration and scenarios, here's the expected behavior:
@@ -280,3 +279,41 @@ Based on the given configuration and scenarios, here's the expected behavior:
 5. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST=''`, Hostname: `ip-172-31-27-19`
    * Since the attribute `container_id` is not set and the environmental variable `SERVER_HOST` is empty, the `hostname` of the node (`ip-172-31-27-19`) will be used as the fallback value for `serverHost`.
    * Used `serverHost` will be `ip-172-31-27-19`.
+
+## Metrics
+
+To enable metrics you have to:
+1. Run collector with enabled feature gate `telemetry.useOtelForInternalMetrics`. This can be done by executing it with one additional parameter - `--feature-gates=telemetry.useOtelForInternalMetrics`.
+2. Enable metrics scraping as part of the configuration and add receiver into services:
+   ```yaml
+   receivers:
+     prometheus:
+       config:
+         scrape_configs:
+           - job_name: 'otel-collector'
+             scrape_interval: 5s
+             static_configs:
+               - targets: ['0.0.0.0:8888']
+   ...
+   service:
+     pipelines:
+       metrics:
+         # add prometheus among metrics receivers
+         receivers: [prometheus]
+         processors: [batch]
+         exporters: [otlphttp/prometheus, debug]
+   ```
+
+### Available Metrics
+
+Available metrics contain `dataset` in their name. There are counters related to the
+number of processed events (`events`), buffers (`buffer`), and transferred bytes (`bytes`).
+There are also histograms related to response times (`responseTime`) and payload size (`payloadSize`).
+
+There are several counters related to events/buffers:
+* `enqueued` - the number of received entities
+* `processed` - the number of entities that were accepted by the next layer
+* `dropped` - the number of entities that were not accepted by the next layer
+* `broken` - the number of entities that were somehow corrupted during processing (should be 0)
+
+The number of entities, that are still in the queue can be computed as `enqueued - (processed + dropped + broken)`.

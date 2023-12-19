@@ -13,7 +13,7 @@ type authData struct {
 	membership []string
 }
 
-func (a *authData) GetAttribute(name string) interface{} {
+func (a *authData) GetAttribute(name string) any {
 	switch name {
 	case "subject":
 		return a.subject

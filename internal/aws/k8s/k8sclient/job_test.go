@@ -44,7 +44,7 @@ func TestJobClient_JobToCronJob(t *testing.T) {
 
 	fakeClientSet := fake.NewSimpleClientset(jobArray...)
 	client, _ := newJobClient(fakeClientSet, zap.NewNop(), setOption)
-	jobs := make([]interface{}, len(jobArray))
+	jobs := make([]any, len(jobArray))
 	for i := range jobArray {
 		jobs[i] = jobArray[i]
 	}

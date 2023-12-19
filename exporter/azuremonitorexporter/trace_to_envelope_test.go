@@ -67,21 +67,21 @@ var (
 	defaultMessagingStatusCodeAsString = strconv.FormatInt(defaultRPCStatusCode, 10)
 
 	// Required attribute for any HTTP Span
-	requiredHTTPAttributes = map[string]interface{}{
+	requiredHTTPAttributes = map[string]any{
 		conventions.AttributeHTTPMethod: defaultHTTPMethod,
 	}
 
 	// Required attribute for any RPC Span
-	requiredRPCAttributes = map[string]interface{}{
+	requiredRPCAttributes = map[string]any{
 		conventions.AttributeRPCSystem: defaultRPCSystem,
 	}
 
-	requiredDatabaseAttributes = map[string]interface{}{
+	requiredDatabaseAttributes = map[string]any{
 		conventions.AttributeDBSystem: defaultDBSystem,
 		conventions.AttributeDBName:   defaultDBName,
 	}
 
-	requiredMessagingAttributes = map[string]interface{}{
+	requiredMessagingAttributes = map[string]any{
 		conventions.AttributeMessagingSystem:      defaultMessagingSystem,
 		conventions.AttributeMessagingDestination: defaultMessagingDestination,
 	}
@@ -494,14 +494,14 @@ func TestUnspecifiedSpanToInProcRemoteDependencyData(t *testing.T) {
 func TestSpanWithEventsToEnvelopes(t *testing.T) {
 	span := getDefaultRPCClientSpan()
 
-	spanEvent := getSpanEvent("foo", map[string]interface{}{"bar": "baz"})
+	spanEvent := getSpanEvent("foo", map[string]any{"bar": "baz"})
 	spanEvent.CopyTo(span.Events().AppendEmpty())
 
 	exceptionType := "foo"
 	exceptionMessage := "bar"
 	exceptionStackTrace := "baz"
 
-	exceptionEvent := getSpanEvent("exception", map[string]interface{}{
+	exceptionEvent := getSpanEvent("exception", map[string]any{
 		conventions.AttributeExceptionType:       exceptionType,
 		conventions.AttributeExceptionMessage:    exceptionMessage,
 		conventions.AttributeExceptionStacktrace: exceptionStackTrace,
@@ -574,6 +574,7 @@ func commonEnvelopeValidations(
 	assert.Equal(t, defaultParentSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 	assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
 	assert.Equal(t, defaultServiceInstance, envelope.Tags[contracts.CloudRoleInstance])
+	assert.Contains(t, envelope.Tags[contracts.InternalSdkVersion], "otelc-")
 	assert.NotNil(t, envelope.Data)
 
 	if expectedEnvelopeName == defaultRequestDataEnvelopeName {
@@ -747,7 +748,7 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 /*
 The remainder of these methods are for building up test assets
 */
-func getSpan(spanName string, spanKind ptrace.SpanKind, initialAttributes map[string]interface{}) ptrace.Span {
+func getSpan(spanName string, spanKind ptrace.SpanKind, initialAttributes map[string]any) ptrace.Span {
 	span := ptrace.NewSpan()
 	span.SetTraceID(defaultTraceID)
 	span.SetSpanID(defaultSpanID)
@@ -762,7 +763,7 @@ func getSpan(spanName string, spanKind ptrace.SpanKind, initialAttributes map[st
 }
 
 // Returns a default span event
-func getSpanEvent(name string, initialAttributes map[string]interface{}) ptrace.SpanEvent {
+func getSpanEvent(name string, initialAttributes map[string]any) ptrace.SpanEvent {
 	spanEvent := ptrace.NewSpanEvent()
 	spanEvent.SetName(name)
 	spanEvent.SetTimestamp(defaultSpanEventTime)
@@ -772,27 +773,27 @@ func getSpanEvent(name string, initialAttributes map[string]interface{}) ptrace.
 }
 
 // Returns a default server span
-func getServerSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getServerSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindServer, initialAttributes)
 }
 
 // Returns a default client span
-func getClientSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getClientSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindClient, initialAttributes)
 }
 
 // Returns a default consumer span
-func getConsumerSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getConsumerSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindConsumer, initialAttributes)
 }
 
 // Returns a default producer span
-func getProducerSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getProducerSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindProducer, initialAttributes)
 }
 
 // Returns a default internal span
-func getInternalSpan(spanName string, initialAttributes map[string]interface{}) ptrace.Span {
+func getInternalSpan(spanName string, initialAttributes map[string]any) ptrace.Span {
 	return getSpan(spanName, ptrace.SpanKindInternal, initialAttributes)
 }
 
@@ -841,7 +842,7 @@ func getDefaultMessagingProducerSpan() ptrace.Span {
 func getDefaultInternalSpan() ptrace.Span {
 	return getInternalSpan(
 		defaultInternalSpanName,
-		map[string]interface{}{})
+		map[string]any{})
 }
 
 // Returns a default Resource

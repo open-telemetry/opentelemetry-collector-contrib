@@ -72,6 +72,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	document.AddString("Name", span.Name())
 	document.AddString("Kind", traceutil.SpanKindStr(span.Kind()))
 	document.AddInt("TraceStatus", int64(span.Status().Code()))
+	document.AddString("TraceStatusDescription", span.Status().Message())
 	document.AddString("Link", spanLinksToString(span.Links()))
 	document.AddAttributes("Attributes", span.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
@@ -91,10 +92,10 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 }
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
-	linkArray := make([]map[string]interface{}, 0, spanLinkSlice.Len())
+	linkArray := make([]map[string]any, 0, spanLinkSlice.Len())
 	for i := 0; i < spanLinkSlice.Len(); i++ {
 		spanLink := spanLinkSlice.At(i)
-		link := map[string]interface{}{}
+		link := map[string]any{}
 		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())
 		link[traceIDField] = traceutil.TraceIDToHexOrEmptyString(spanLink.TraceID())
 		link[attributeField] = spanLink.Attributes().AsRaw()

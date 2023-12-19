@@ -9,29 +9,29 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchutil"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
 )
 
 type traceBulkIndexer struct {
 	dataset     string
 	namespace   string
+	bulkAction  string
+	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newTraceBulkIndexer(dataset string, namespace string) *traceBulkIndexer {
-	return &traceBulkIndexer{dataset, namespace, nil, nil}
+func newTraceBulkIndexer(dataset string, namespace string, bulkAction string, model mappingModel) *traceBulkIndexer {
+	return &traceBulkIndexer{dataset, namespace, bulkAction, model, nil, nil}
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
-	return multierr.Combine(tbi.errs...)
+	return errors.Join(tbi.errs...)
 }
 
 func (tbi *traceBulkIndexer) start(client *opensearch.Client) error {
@@ -63,7 +63,7 @@ func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Trace
 
 func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces) {
 	forEachSpan(td, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) {
-		payload, err := tbi.createJSON(resource, scope, scopeSchemaURL, span)
+		payload, err := tbi.model.encodeTrace(resource, scope, scopeSchemaURL, span)
 		if err != nil {
 			tbi.appendPermanentError(err)
 		} else {
@@ -98,82 +98,6 @@ func makeTrace(resource pcommon.Resource, resourceSchemaURL string, scope pcommo
 	return traces
 }
 
-func (tbi *traceBulkIndexer) createJSON(
-	resource pcommon.Resource,
-	scope pcommon.InstrumentationScope,
-	schemaURL string,
-	span ptrace.Span,
-) ([]byte, error) {
-	sso := ssoSpan{}
-	sso.Attributes = span.Attributes().AsRaw()
-	sso.DroppedAttributesCount = span.DroppedAttributesCount()
-	sso.DroppedEventsCount = span.DroppedEventsCount()
-	sso.DroppedLinksCount = span.DroppedLinksCount()
-	sso.EndTime = span.EndTimestamp().AsTime()
-	sso.Kind = span.Kind().String()
-	sso.Name = span.Name()
-	sso.ParentSpanID = span.ParentSpanID().String()
-	sso.Resource = resource.Attributes().AsRaw()
-	sso.SpanID = span.SpanID().String()
-	sso.StartTime = span.StartTimestamp().AsTime()
-	sso.Status.Code = span.Status().Code().String()
-	sso.Status.Message = span.Status().Message()
-	sso.TraceID = span.TraceID().String()
-	sso.TraceState = span.TraceState().AsRaw()
-
-	if span.Events().Len() > 0 {
-		sso.Events = make([]ssoSpanEvent, span.Events().Len())
-		for i := 0; i < span.Events().Len(); i++ {
-			e := span.Events().At(i)
-			ssoEvent := &sso.Events[i]
-			ssoEvent.Attributes = e.Attributes().AsRaw()
-			ssoEvent.DroppedAttributesCount = e.DroppedAttributesCount()
-			ssoEvent.Name = e.Name()
-			ts := e.Timestamp().AsTime()
-			if ts.Unix() != 0 {
-				ssoEvent.Timestamp = &ts
-			} else {
-				now := time.Now()
-				ssoEvent.ObservedTimestamp = &now
-			}
-		}
-	}
-
-	ds := dataStream{}
-	if tbi.dataset != "" {
-		ds.Dataset = tbi.dataset
-	}
-
-	if tbi.namespace != "" {
-		ds.Namespace = tbi.namespace
-	}
-
-	if ds != (dataStream{}) {
-		ds.Type = "span"
-		sso.Attributes["data_stream"] = ds
-	}
-
-	sso.InstrumentationScope.Name = scope.Name()
-	sso.InstrumentationScope.DroppedAttributesCount = scope.DroppedAttributesCount()
-	sso.InstrumentationScope.Version = scope.Version()
-	sso.InstrumentationScope.SchemaURL = schemaURL
-	sso.InstrumentationScope.Attributes = scope.Attributes().AsRaw()
-
-	if span.Links().Len() > 0 {
-		sso.Links = make([]ssoSpanLinks, span.Links().Len())
-		for i := 0; i < span.Links().Len(); i++ {
-			link := span.Links().At(i)
-			ssoLink := &sso.Links[i]
-			ssoLink.Attributes = link.Attributes().AsRaw()
-			ssoLink.DroppedAttributesCount = link.DroppedAttributesCount()
-			ssoLink.TraceID = link.TraceID().String()
-			ssoLink.TraceState = link.TraceState().AsRaw()
-			ssoLink.SpanID = link.SpanID().String()
-		}
-	}
-	return json.Marshal(sso)
-}
-
 func (tbi *traceBulkIndexer) processItemFailure(resp opensearchutil.BulkIndexerResponseItem, itemErr error, traces ptrace.Traces) {
 	switch {
 	case shouldRetryEvent(resp.Status):
@@ -194,6 +118,15 @@ func responseAsError(item opensearchutil.BulkIndexerResponseItem) error {
 	return errors.New(string(errorJSON))
 }
 
+func attributesToMapString(attributes pcommon.Map) map[string]string {
+	m := make(map[string]string, attributes.Len())
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		m[k] = v.AsString()
+		return true
+	})
+	return m
+}
+
 func shouldRetryEvent(status int) bool {
 	var retryOnStatus = []int{500, 502, 503, 504, 429}
 	for _, retryable := range retryOnStatus {
@@ -206,7 +139,7 @@ func shouldRetryEvent(status int) bool {
 
 func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: "create", Index: tbi.getIndexName(), Body: body}
+	item := opensearchutil.BulkIndexerItem{Action: tbi.bulkAction, Index: tbi.getIndexName(), Body: body}
 	return item
 }
 

@@ -32,7 +32,7 @@ func (f *rootableField) UnmarshalJSON(raw []byte) error {
 }
 
 // UnmarshalYAML will unmarshal a field from YAML
-func (f *rootableField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *rootableField) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	err := unmarshal(&s)
 	if err != nil {
@@ -66,7 +66,7 @@ func (f *rootableField) unmarshalCheckString(s string) error {
 }
 
 // Get gets the value of the field if the flags for 'allAttributes' or 'allResource' isn't set
-func (f *rootableField) Get(entry *entry.Entry) (interface{}, bool) {
+func (f *rootableField) Get(entry *entry.Entry) (any, bool) {
 	if f.allAttributes || f.allResource {
 		return nil, false
 	}

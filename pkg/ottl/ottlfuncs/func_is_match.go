@@ -35,7 +35,7 @@ func isMatch[K any](target ottl.StringLikeGetter[K], pattern string) (ottl.ExprF
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)
 	}
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

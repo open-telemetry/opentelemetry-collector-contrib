@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -288,6 +289,28 @@ func TestReceiverConsumerError(t *testing.T) {
 	require.Equal(t, "\"Internal Server Error\"", req.Body.String())
 }
 
+func TestReceiverConsumerPermanentError(t *testing.T) {
+	body, err := os.ReadFile(zipkinV2Single)
+	require.NoError(t, err)
+
+	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
+	r.Header.Add("content-type", "application/json")
+
+	cfg := &Config{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: "localhost:9411",
+		},
+	}
+	zr, err := newReceiver(cfg, consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer error"))), receivertest.NewNopCreateSettings())
+	require.NoError(t, err)
+
+	req := httptest.NewRecorder()
+	zr.ServeHTTP(req, r)
+
+	require.Equal(t, 400, req.Code)
+	require.Equal(t, "\"Bad Request\"", req.Body.String())
+}
+
 func thriftExample() []byte {
 	now := time.Now().Unix()
 	zSpans := []*zipkincore.Span{
@@ -420,7 +443,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
-	expected := map[string]interface{}{
+	expected := map[string]any{
 		"cache_hit":            true,
 		"ping_count":           int64(25),
 		"timeout":              12.3,

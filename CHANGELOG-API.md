@@ -7,6 +7,46 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.91.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Rename `Statements` to `StatementSequence`. Remove `Eval` function from `StatementSequence`, use `ConditionSequence` instead. (#29598)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ConditionSequence` for evaluating lists of conditions (#29339)
+
+## v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `clickhouseexporter`: Replace `Config.QueueSettings` field with `exporterhelper.QueueSettings` and remove `QueueSettings` struct (#27653)
+- `kafkareceiver`: Do not export the function `WithTracesUnmarshalers`, `WithMetricsUnmarshalers`, `WithLogsUnmarshalers` (#26304)
+
+### 💡 Enhancements 💡
+
+- `datadogreceiver`: The datadogreceiver supports the new datadog protocol that is sent by the datadog agent API/v0.2/traces. (#27045)
+- `pkg/ottl`: Add ability to independently parse OTTL conditions. (#29315)
+
+### 🧰 Bug fixes 🧰
+
+- `cassandraexporter`: Exist check for keyspace and dynamic timeout (#27633)
+
+## v0.89.0
+
+### 🛑 Breaking changes 🛑
+
+- `carbonreceiver`: Do not export function New and pass checkapi. (#26304)
+- `collectdreceiver`: Move to use confighttp.HTTPServerSettings (#28811)
+- `kafkaexporter`: Do not export function WithTracesMarshalers, WithMetricsMarshalers, WithLogsMarshalers and pass checkapi (#26304)
+- `remoteobserverprocessor`: Rename remoteobserverprocessor to remotetapprocessor (#27873)
+
+### 💡 Enhancements 💡
+
+- `extension/encoding`: Introduce interfaces for encoding extensions. (#28686)
+- `exporter/awss3exporter`: This feature allows role assumption for s3 exportation. It is especially useful on Kubernetes clusters that are using IAM roles for service accounts (#28674)
+
 ## v0.88.0
 
 ### 🚩 Deprecations 🚩

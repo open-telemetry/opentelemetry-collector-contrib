@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type               = "zipkinencoding"
+	Type               = "zipkin_encoding"
 	ExtensionStability = component.StabilityLevelDevelopment
 )

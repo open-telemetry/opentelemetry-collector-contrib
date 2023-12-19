@@ -1,0 +1,187 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: foo
+              - key: log.optional
+                value:
+                  stringValue: bar
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: foo
+              - key: log.optional
+                value:
+                  stringValue: notbar
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: notfoo
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+        scope: {}
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: foo
+              - key: log.optional
+                value:
+                  stringValue: bar
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: foo
+              - key: log.optional
+                value:
+                  stringValue: notbar
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: notfoo
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+        scope: {}
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: foo
+              - key: log.optional
+                value:
+                  stringValue: bar
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: foo
+              - key: log.optional
+                value:
+                  stringValue: notbar
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: notfoo
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+        scope: {}
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: foo
+              - key: log.optional
+                value:
+                  stringValue: bar
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: foo
+              - key: log.optional
+                value:
+                  stringValue: notbar
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - attributes:
+              - key: log.required
+                value:
+                  stringValue: notfoo
+            body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+          - body:
+              stringValue: This is a log message
+            spanId: ""
+            timeUnixNano: "1581452773000000789"
+            traceId: ""
+        scope: {}

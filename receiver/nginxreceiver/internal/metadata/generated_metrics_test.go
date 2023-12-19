@@ -71,10 +71,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNginxRequestsDataPoint(ts, 1)
 
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordTempConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
-
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
 
@@ -156,21 +152,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "temp.connections_current":
-					assert.False(t, validatedMetrics["temp.connections_current"], "Found a duplicate in the metrics slice: temp.connections_current")
-					validatedMetrics["temp.connections_current"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Temporary placeholder for old version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.", ms.At(i).Description())
-					assert.Equal(t, "connections", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.EqualValues(t, "active", attrVal.Str())
 				}
 			}
 		})

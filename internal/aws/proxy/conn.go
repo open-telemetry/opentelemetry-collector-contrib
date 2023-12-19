@@ -158,7 +158,7 @@ func getRegionFromECSMetadata() (string, error) {
 			return "", fmt.Errorf("unable to open ECS metadata file, path: %s, error: %w",
 				metadataFilePath, err)
 		}
-		var dat map[string]interface{}
+		var dat map[string]any
 		err = json.Unmarshal(metadata, &dat)
 		if err != nil {
 			return "", fmt.Errorf("invalid json in read ECS metadata file content, path: %s, error: %w",

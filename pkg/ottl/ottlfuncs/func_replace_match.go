@@ -42,7 +42,7 @@ func replaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement o
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
 	}
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		var replacementVal string
 		if err != nil {

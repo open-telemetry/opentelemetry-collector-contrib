@@ -22,8 +22,10 @@ import (
 )
 
 const (
-	defaultHTTPTimeout = time.Second * 5
-	defaultMaxConns    = 100
+	defaultHTTPTimeout          = time.Second * 10
+	defaultHTTP2ReadIdleTimeout = time.Second * 10
+	defaultHTTP2PingTimeout     = time.Second * 10
+	defaultMaxConns             = 100
 
 	defaultDimMaxBuffered         = 10000
 	defaultDimSendDelay           = 10 * time.Second
@@ -52,10 +54,12 @@ func createDefaultConfig() component.Config {
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:             defaultHTTPTimeout,
-			MaxIdleConns:        &maxConnCount,
-			MaxIdleConnsPerHost: &maxConnCount,
-			IdleConnTimeout:     &idleConnTimeout,
+			Timeout:              defaultHTTPTimeout,
+			MaxIdleConns:         &maxConnCount,
+			MaxIdleConnsPerHost:  &maxConnCount,
+			IdleConnTimeout:      &idleConnTimeout,
+			HTTP2ReadIdleTimeout: defaultHTTP2ReadIdleTimeout,
+			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,

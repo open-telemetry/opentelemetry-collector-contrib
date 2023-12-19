@@ -15,14 +15,14 @@ import (
 func Test_split(t *testing.T) {
 	tests := []struct {
 		name      string
-		target    ottl.StringGetter[interface{}]
+		target    ottl.StringGetter[any]
 		delimiter string
-		expected  interface{}
+		expected  any
 	}{
 		{
 			name: "split string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "A|B|C", nil
 				},
 			},
@@ -31,8 +31,8 @@ func Test_split(t *testing.T) {
 		},
 		{
 			name: "split empty string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "", nil
 				},
 			},
@@ -41,8 +41,8 @@ func Test_split(t *testing.T) {
 		},
 		{
 			name: "split empty delimiter",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "A|B|C", nil
 				},
 			},
@@ -51,8 +51,8 @@ func Test_split(t *testing.T) {
 		},
 		{
 			name: "split empty string and empty delimiter",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "", nil
 				},
 			},
@@ -71,12 +71,12 @@ func Test_split(t *testing.T) {
 }
 
 func Test_Split_Error(t *testing.T) {
-	target := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return 1, nil
 		},
 	}
-	exprFunc := split[interface{}](target, ",")
+	exprFunc := split[any](target, ",")
 	_, err := exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }

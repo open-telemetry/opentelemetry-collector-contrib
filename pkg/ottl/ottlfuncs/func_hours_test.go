@@ -16,13 +16,13 @@ import (
 func Test_Hours(t *testing.T) {
 	tests := []struct {
 		name     string
-		duration ottl.DurationGetter[interface{}]
+		duration ottl.DurationGetter[any]
 		expected float64
 	}{
 		{
 			name: "100 hours",
-			duration: &ottl.StandardDurationGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			duration: &ottl.StandardDurationGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return time.ParseDuration("100h")
 				},
 			},
@@ -30,8 +30,8 @@ func Test_Hours(t *testing.T) {
 		},
 		{
 			name: "1 min",
-			duration: &ottl.StandardDurationGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			duration: &ottl.StandardDurationGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return time.ParseDuration("100m")
 				},
 			},
@@ -39,8 +39,8 @@ func Test_Hours(t *testing.T) {
 		},
 		{
 			name: "234 milliseconds",
-			duration: &ottl.StandardDurationGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			duration: &ottl.StandardDurationGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return time.ParseDuration("234ms")
 				},
 			},
@@ -48,8 +48,8 @@ func Test_Hours(t *testing.T) {
 		},
 		{
 			name: "1 hour 40 mins 3 seconds 30 milliseconds 100 microseconds 1 nanosecond",
-			duration: &ottl.StandardDurationGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			duration: &ottl.StandardDurationGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return time.ParseDuration("1h40m3s30ms100us1ns")
 				},
 			},

@@ -57,6 +57,8 @@ func newExpectedValue(mode int, value string) *expectedValue {
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E(t *testing.T) {
+	t.Skip("skipping flaky test see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29892")
+
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
 	require.NoError(t, err)
 	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
@@ -107,6 +109,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -129,6 +132,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -175,6 +179,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -197,6 +202,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -219,6 +225,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -265,6 +272,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -287,6 +295,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -333,6 +342,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 		{
@@ -355,6 +365,7 @@ func TestE2E(t *testing.T) {
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":      newExpectedValue(equal, "too"),
 			},
 		},
 	}

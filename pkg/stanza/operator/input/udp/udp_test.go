@@ -101,7 +101,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		for _, expectedBody := range expected {
 			select {
 			case entry := <-entryChan:
-				expectedAttributes := map[string]interface{}{
+				expectedAttributes := map[string]any{
 					"net.transport": "IP.UDP",
 				}
 				// LocalAddr for udpInput.connection is a server address

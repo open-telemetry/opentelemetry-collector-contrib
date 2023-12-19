@@ -21,7 +21,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -80,13 +80,13 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
 
-	exprFunc, err := deleteMatchingKeys[interface{}](target, "anything")
+	exprFunc, err := deleteMatchingKeys[any](target, "anything")
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -94,28 +94,28 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 }
 
 func Test_deleteMatchingKeys_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
 
-	exprFunc, err := deleteMatchingKeys[interface{}](target, "anything")
+	exprFunc, err := deleteMatchingKeys[any](target, "anything")
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
 }
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
-	target := &ottl.StandardPMapGetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			t.Errorf("nothing should be received in this scenario")
 			return nil, nil
 		},
 	}
 
 	invalidRegexPattern := "*"
-	_, err := deleteMatchingKeys[interface{}](target, invalidRegexPattern)
+	_, err := deleteMatchingKeys[any](target, invalidRegexPattern)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }

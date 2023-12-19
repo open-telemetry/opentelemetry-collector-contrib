@@ -53,6 +53,8 @@ const (
 	defaultSegmentName = "span"
 	// maxSegmentNameLength the maximum length of a Segment name
 	maxSegmentNameLength = 200
+	// rpc.system value for AWS service remotes
+	awsAPIRPCSystem = "aws-api"
 )
 
 const (
@@ -77,6 +79,14 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 	jsonStr := w.String()
 	writers.release(w)
 	return jsonStr, nil
+}
+
+func isAwsSdkSpan(span ptrace.Span) bool {
+	attributes := span.Attributes()
+	if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
+		return rpcSystem.Str() == awsAPIRPCSystem
+	}
+	return false
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
@@ -130,6 +140,10 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
 		if remoteServiceName, ok := attributes.Get(awsRemoteService); ok {
 			name = remoteServiceName.Str()
+			// only strip the prefix for AWS spans
+			if isAwsSdkSpan(span) && strings.HasPrefix(name, "AWS.SDK.") {
+				name = strings.TrimPrefix(name, "AWS.SDK.")
+			}
 		}
 	}
 
@@ -142,10 +156,8 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	if namespace == "" {
-		if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
-			if rpcSystem.Str() == "aws-api" {
-				namespace = conventions.AttributeCloudProviderAWS
-			}
+		if isAwsSdkSpan(span) {
+			namespace = conventions.AttributeCloudProviderAWS
 		}
 	}
 
@@ -357,10 +369,10 @@ func addSpecialAttributes(attributes map[string]pcommon.Value, indexedAttrs []st
 }
 
 func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
-	string, map[string]interface{}, map[string]map[string]interface{}) {
+	string, map[string]any, map[string]map[string]any) {
 	var (
-		annotations = map[string]interface{}{}
-		metadata    = map[string]map[string]interface{}{}
+		annotations = map[string]any{}
+		metadata    = map[string]map[string]any{}
 		user        string
 	)
 	userid, ok := attributes[conventions.AttributeEnduserID]
@@ -373,7 +385,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		return user, nil, nil
 	}
 
-	defaultMetadata := map[string]interface{}{}
+	defaultMetadata := map[string]any{}
 
 	indexedKeys := map[string]bool{}
 	if !indexAllAttrs {
@@ -433,7 +445,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 				}
 			case strings.HasPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix) && value.Type() == pcommon.ValueTypeStr:
 				namespace := strings.TrimPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix)
-				var metaVal map[string]interface{}
+				var metaVal map[string]any
 				err := json.Unmarshal([]byte(value.Str()), &metaVal)
 				switch {
 				case err != nil:
@@ -462,7 +474,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 	return user, annotations, metadata
 }
 
-func annotationValue(value pcommon.Value) interface{} {
+func annotationValue(value pcommon.Value) any {
 	switch value.Type() {
 	case pcommon.ValueTypeStr:
 		return value.Str()
