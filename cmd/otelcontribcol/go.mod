@@ -1170,3 +1170,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/colle
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension => ../../extension/remotetapextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension => ../../extension/opampextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter => ../../testbed/mockdatasenders/mockdatadogagentexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../testbed
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver => ../../testbed/mockdatareceivers/mockawsxrayreceiver
