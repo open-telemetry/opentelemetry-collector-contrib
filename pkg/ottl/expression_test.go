@@ -240,7 +240,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "enum",
 			val: value{
-				Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM_ONE")),
+				Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM_ONE")),
 			},
 			want: int64(1),
 		},

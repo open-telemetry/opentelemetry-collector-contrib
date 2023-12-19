@@ -38,7 +38,7 @@ func valueFor(x any) value {
 			}
 		case strings.Contains(v, "ENUM"):
 			// if the string contains ENUM construct an EnumSymbol from it.
-			val.Enum = (*EnumSymbol)(ottltest.Strp(v))
+			val.Enum = (*enumSymbol)(ottltest.Strp(v))
 		case v == "dur1" || v == "dur2":
 			val.Literal = &mathExprLiteral{
 				Path: &path{
@@ -198,9 +198,9 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 			name: "unknown path",
 			comparison: &comparison{
 				Left: value{
-					Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+					Enum: (*enumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 				},
-				Op: EQ,
+				Op: eq,
 				Right: value{
 					String: ottltest.Strp("trash"),
 				},
@@ -488,7 +488,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 							Left: value{
 								String: ottltest.Strp("test"),
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								String: ottltest.Strp("not test"),
 							},

@@ -55,6 +55,9 @@ func TestIntegration_optimized(t *testing.T) {
 	factories := getIntegrationTestComponents(t)
 	app, confFilePath := getIntegrationTestCollector(t, server.URL, factories)
 	featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), true)
+	defer func() {
+		featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), false)
+	}()
 	go func() {
 		assert.NoError(t, app.Run(context.Background()))
 	}()

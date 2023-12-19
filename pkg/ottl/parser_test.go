@@ -219,7 +219,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
+								Enum: (*enumSymbol)(ottltest.Strp("SHA256")),
 							},
 						},
 					},
@@ -289,7 +289,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								Enum: (*EnumSymbol)(ottltest.Strp("S")),
+								Enum: (*enumSymbol)(ottltest.Strp("S")),
 							},
 						},
 					},
@@ -406,7 +406,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: EQ,
+								Op: eq,
 								Right: value{
 									String: ottltest.Strp("fido"),
 								},
@@ -469,7 +469,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: NE,
+								Op: ne,
 								Right: value{
 									String: ottltest.Strp("fido"),
 								},
@@ -532,7 +532,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: EQ,
+								Op: eq,
 								Right: value{
 									String: ottltest.Strp("fido"),
 								},
@@ -700,7 +700,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+								Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM")),
 							},
 						},
 					},
@@ -971,7 +971,7 @@ func Test_parse(t *testing.T) {
 									},
 									Right: []*opAddSubTerm{
 										{
-											Operator: SUB,
+											Operator: sub,
 											Term: &addSubTerm{
 												Left: &mathValue{
 													Literal: &mathExprLiteral{
@@ -1001,7 +1001,7 @@ func Test_parse(t *testing.T) {
 										},
 										Right: []*opAddSubTerm{
 											{
-												Operator: ADD,
+												Operator: add,
 												Term: &addSubTerm{
 													Left: &mathValue{
 														Literal: &mathExprLiteral{
@@ -1010,7 +1010,7 @@ func Test_parse(t *testing.T) {
 													},
 													Right: []*opMultDivValue{
 														{
-															Operator: MULT,
+															Operator: mult,
 															Value: &mathValue{
 																Literal: &mathExprLiteral{
 																	Int: ottltest.Intp(2),
@@ -1023,7 +1023,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: EQ,
+								Op: eq,
 								Right: value{
 									MathExpression: &mathExpression{
 										Left: &addSubTerm{
@@ -1040,7 +1040,7 @@ func Test_parse(t *testing.T) {
 											},
 											Right: []*opMultDivValue{
 												{
-													Operator: DIV,
+													Operator: div,
 													Value: &mathValue{
 														Literal: &mathExprLiteral{
 															Converter: &converter{
@@ -1112,7 +1112,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 								},
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								String: ottltest.Strp("fido"),
 							},
@@ -1139,7 +1139,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 								},
 							},
-							Op: NE,
+							Op: ne,
 							Right: value{
 								String: ottltest.Strp("fido"),
 							},
@@ -1166,7 +1166,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 									Right: []*opAddSubTerm{
 										{
-											Operator: ADD,
+											Operator: add,
 											Term: &addSubTerm{
 												Left: &mathValue{
 													Literal: &mathExprLiteral{
@@ -1175,7 +1175,7 @@ func Test_parseCondition_full(t *testing.T) {
 												},
 												Right: []*opMultDivValue{
 													{
-														Operator: MULT,
+														Operator: mult,
 														Value: &mathValue{
 															Literal: &mathExprLiteral{
 																Int: ottltest.Intp(2),
@@ -1188,7 +1188,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 								},
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								MathExpression: &mathExpression{
 									Left: &addSubTerm{
@@ -1205,7 +1205,7 @@ func Test_parseCondition_full(t *testing.T) {
 										},
 										Right: []*opMultDivValue{
 											{
-												Operator: DIV,
+												Operator: div,
 												Value: &mathValue{
 													Literal: &mathExprLiteral{
 														Converter: &converter{
@@ -1534,7 +1534,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: NE,
+							Op: ne,
 							Right: value{
 								String: ottltest.Strp("foo"),
 							},
@@ -1556,7 +1556,7 @@ func Test_parseWhere(t *testing.T) {
 											},
 										},
 									},
-									Op: NE,
+									Op: ne,
 									Right: value{
 										String: ottltest.Strp("bar"),
 									},
@@ -1584,7 +1584,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								String: ottltest.Strp("foo"),
 							},
@@ -1608,7 +1608,7 @@ func Test_parseWhere(t *testing.T) {
 											},
 										},
 									},
-									Op: EQ,
+									Op: eq,
 									Right: value{
 										String: ottltest.Strp("bar"),
 									},
@@ -1660,7 +1660,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								String: ottltest.Strp("bar"),
 							},
