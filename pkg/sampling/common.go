@@ -50,15 +50,10 @@ func (cts commonTraceState) ExtraValues() []KV {
 }
 
 // trimOws removes optional whitespace on both ends of a string.
+// this uses the strict definition for optional whitespace tiven
+// in https://www.w3.org/TR/trace-context/#tracestate-header-field-values
 func trimOws(input string) string {
-	// Hard-codes the value of owsCharset
-	for len(input) > 0 && (input[0] == ' ' || input[0] == '\t') {
-		input = input[1:]
-	}
-	for len(input) > 0 && (input[len(input)-1] == ' ' || input[len(input)-1] == '\t') {
-		input = input[:len(input)-1]
-	}
-	return input
+	return strings.Trim(input, " \t")
 }
 
 // scanKeyValues is common code to scan either W3C or OTel tracestate
@@ -98,7 +93,12 @@ func (s keyValueScanner) scanKeyValues(input string, f func(key, value string) e
 
 		eq := strings.IndexByte(member, s.equality)
 		if eq < 0 {
-			// A regexp should have rejected this input.
+			// We expect to find the `s.equality`
+			// character in this string because we have
+			// already validated the whole input syntax
+			// before calling this parser.  I.e., this can
+			// never happen, and if it did, the result
+			// would be to skip malformed entries.
 			continue
 		}
 		if err := f(member[:eq], member[eq+1:]); err != nil {

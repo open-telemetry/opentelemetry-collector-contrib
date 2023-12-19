@@ -57,10 +57,18 @@ var (
 	}
 
 	// ErrInconsistentSampling is returned when a sampler update
-	// is illogical.  It is safe to ignore.  Samplers should avoid
-	// this condition using a ThresholdLessThan() test.
+	// is illogical, indicating that the tracestate was not
+	// modified.  Preferrably Samplers will avoid seeing this
+	// error by using a ThresholdGreater() test, which allows them
+	// to report a more clear error to the user.  For example, if
+	// data arrives sampled at 1/100 and an eqalizing sampler is
+	// configureed for 1/2 sampling, the Sampler should detect the
+	// illogical condition itself and skip the call to
+	// UpdateTValueWithSampling.  This condition should be
+	// avoided, but if it arises it is safe to ignore.  In the example,
+	// the span will continue to indicate it was sampled at 1/100 even
+	// after passing through the 1/2 equalizing sampler.
 	ErrInconsistentSampling = fmt.Errorf("cannot raise existing sampling probability")
-	ErrInconsistentZero     = fmt.Errorf("cannot zero sampling probability")
 )
 
 // NewOTelTraceState returns a parsed reprseentation of the
