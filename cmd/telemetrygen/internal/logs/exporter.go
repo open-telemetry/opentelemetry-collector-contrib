@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 type exporter interface {
@@ -28,24 +29,32 @@ func newExporter(ctx context.Context, cfg *Config) (exporter, error) {
 		}, nil
 	}
 
-	if !cfg.Insecure {
-		return nil, fmt.Errorf("'telemetrygen logs' only supports insecure gRPC")
+	// TODO: Use an otlplogs grpc package in the future
+	var dialOptions []grpc.DialOption
+	if cfg.Insecure {
+		dialOptions = append(dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
-	// only support grpc in insecure mode
-	clientConn, err := grpc.DialContext(ctx, cfg.Endpoint(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	clientConn, err := grpc.DialContext(ctx, cfg.Endpoint(), dialOptions...)
 	if err != nil {
 		return nil, err
 	}
-	return &gRPCClientExporter{client: plogotlp.NewGRPCClient(clientConn)}, nil
+	return &gRPCClientExporter{client: plogotlp.NewGRPCClient(clientConn), cfg: cfg}, nil
 }
 
 type gRPCClientExporter struct {
 	client plogotlp.GRPCClient
+	cfg    *Config
 }
 
 func (e *gRPCClientExporter) export(logs plog.Logs) error {
+	md := metadata.New(map[string]string{})
+	for k, v := range e.cfg.Headers {
+		md.Set(k, v)
+	}
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	req := plogotlp.NewExportRequestFromLogs(logs)
-	if _, err := e.client.Export(context.Background(), req); err != nil {
+	if _, err := e.client.Export(ctx, req); err != nil {
 		return err
 	}
 	return nil
