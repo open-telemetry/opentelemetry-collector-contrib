@@ -271,7 +271,7 @@ jobs:
       - name: Run Unit Tests With Coverage
         if: startsWith( matrix.go-version, '~1.20' ) # only run coverage on one version
         run: make gotest-with-cover GROUP=${{ matrix.group }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: startsWith( matrix.go-version, '~1.20' ) # only run coverage on one version
         with:
           name: coverage-artifacts
@@ -297,7 +297,7 @@ jobs:
     needs: [unittest]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: coverage-artifacts
       - name: Upload coverage report
@@ -453,14 +453,14 @@ jobs:
       - name: Build Collector ${{ matrix.binary }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: collector-binaries
           path: ./bin/*
 
   build-package:
     # Use 20.04.5 until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16450 is resolved
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [cross-compile]
     strategy:
       fail-fast: false
@@ -477,7 +477,7 @@ jobs:
       - name: Install fpm
         run: gem install --no-document fpm -v 1.11.0
       - name: Download Collector Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: collector-binaries
           path: bin/
@@ -501,7 +501,7 @@ jobs:
               ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/demo/otel-collector-config.yaml
           fi
       - name: Upload Packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: collector-packages
           path: ./dist/*
@@ -514,7 +514,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Download Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: collector-binaries
           path: ./bin/
@@ -536,7 +536,7 @@ jobs:
       - name: Validate MSI
         run: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - name: Upload MSI
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: collector-packages
           path: ./dist/*.msi
@@ -547,12 +547,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: collector-binaries
           path: ./bin/
       - name: Download Packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: collector-packages
           path: ./dist/
@@ -588,13 +588,13 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Download Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: collector-binaries
           path: ./bin/
       - run: chmod +x bin/*
       - name: Download Packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: collector-packages
           path: ./dist/
