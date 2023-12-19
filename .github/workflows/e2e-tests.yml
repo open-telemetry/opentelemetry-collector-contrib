@@ -68,6 +68,7 @@ jobs:
         with:
           name: collector-binary
           path: bin/
+      - run: chmod +x bin/*
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol

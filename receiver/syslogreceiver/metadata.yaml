@@ -11,5 +11,5 @@ status:
 tests:
   config:
     tcp:
-      listen_address: "0.0.0.0:0"
+      listen_address: "localhost:0"
     protocol: "rfc5424"
