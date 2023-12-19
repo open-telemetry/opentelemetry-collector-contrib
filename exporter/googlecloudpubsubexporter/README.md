@@ -28,6 +28,11 @@ The following configuration options are supported:
   the smallest timestamp of all the messages.
   * `allow_drift` (Optional): The maximum difference the `ce-time` attribute can be set from the system clock. When the
   drift is set to 0, the maximum drift from the clock is allowed (only applicable to `earliest`).
+* `endpoint` (Optional): Override the default Pubsub Endpoint, useful when connecting to the PubSub emulator instance
+  or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
+* `insecure` (Optional): allows performing “insecure” SSL connections and transfers, useful when connecting to a local
+  emulator instance. Only has effect if Endpoint is not ""
+
 ```yaml
 exporters:
   googlecloudpubsub:

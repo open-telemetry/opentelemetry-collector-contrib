@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -22,19 +23,16 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		path      []ottl.Field
+		path      ottl.Path[TransformContext]
 		orig      any
 		newVal    any
 		modified  func(cache pcommon.Map)
 		valueType pmetric.NumberDataPointValueType
 	}{
-
 		{
 			name: "cache",
-			path: []ottl.Field{
-				{
-					Name: "cache",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "cache",
 			},
 			orig:   pcommon.NewMap(),
 			newVal: newCache,
@@ -44,14 +42,10 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 		},
 		{
 			name: "cache access",
-			path: []ottl.Field{
-				{
-					Name: "cache",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("temp"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "cache",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("temp"),
 				},
 			},
 			orig:   nil,
@@ -63,7 +57,8 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := newPathGetSetter(tt.path)
+			pep := pathExpressionParser{}
+			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
@@ -101,7 +96,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		path      []ottl.Field
+		path      ottl.Path[TransformContext]
 		orig      any
 		newVal    any
 		modified  func(pmetric.NumberDataPoint)
@@ -109,10 +104,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []ottl.Field{
-				{
-					Name: "start_time_unix_nano",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "start_time_unix_nano",
 			},
 			orig:   int64(100_000_000),
 			newVal: int64(200_000_000),
@@ -122,10 +115,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "start_time",
-			path: []ottl.Field{
-				{
-					Name: "start_time",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "start_time",
 			},
 			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
 			newVal: time.Date(1970, 1, 1, 0, 0, 0, 86400000000000, time.UTC),
@@ -135,10 +126,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "time",
-			path: []ottl.Field{
-				{
-					Name: "time",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "time",
 			},
 			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
 			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
@@ -148,10 +137,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
-				{
-					Name: "time_unix_nano",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "time_unix_nano",
 			},
 			orig:   int64(500_000_000),
 			newVal: int64(200_000_000),
@@ -161,10 +148,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "value_double",
-			path: []ottl.Field{
-				{
-					Name: "value_double",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "value_double",
 			},
 			orig:   1.1,
 			newVal: 2.2,
@@ -175,10 +160,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "value_int",
-			path: []ottl.Field{
-				{
-					Name: "value_int",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "value_int",
 			},
 			orig:   int64(1),
 			newVal: int64(2),
@@ -188,10 +171,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
-				{
-					Name: "flags",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "flags",
 			},
 			orig:   int64(0),
 			newVal: int64(1),
@@ -201,10 +182,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "exemplars",
-			path: []ottl.Field{
-				{
-					Name: "exemplars",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "exemplars",
 			},
 			orig:   refNumberDataPoint.Exemplars(),
 			newVal: newExemplars,
@@ -214,10 +193,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
 			},
 			orig:   refNumberDataPoint.Attributes(),
 			newVal: newAttrs,
@@ -227,14 +204,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("str"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("str"),
 				},
 			},
 			orig:   "val",
@@ -245,14 +218,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bool"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("bool"),
 				},
 			},
 			orig:   true,
@@ -263,14 +232,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("int"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("int"),
 				},
 			},
 			orig:   int64(10),
@@ -281,14 +246,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("double"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("double"),
 				},
 			},
 			orig:   float64(1.2),
@@ -299,14 +260,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bytes"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("bytes"),
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -317,14 +274,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_str"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -338,14 +291,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bool"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -359,14 +308,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_int"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -380,14 +325,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_float"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -401,14 +342,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bytes"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -422,14 +359,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("pMap"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("pMap"),
 				},
 			},
 			orig: func() pcommon.Map {
@@ -445,14 +378,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]any",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("map"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("map"),
 				},
 			},
 			orig: func() pcommon.Map {
@@ -468,18 +397,14 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("slice"),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-						{
-							String: ottltest.Strp("map"),
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("slice"),
+					NextKey: &internal.TestKey[TransformContext]{
+						I: ottltest.Intp(0),
+						NextKey: &internal.TestKey[TransformContext]{
+							S: ottltest.Strp("map"),
 						},
 					},
 				},
@@ -496,18 +421,14 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("new"),
-						},
-						{
-							Int: ottltest.Intp(2),
-						},
-						{
-							Int: ottltest.Intp(0),
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("new"),
+					NextKey: &internal.TestKey[TransformContext]{
+						I: ottltest.Intp(2),
+						NextKey: &internal.TestKey[TransformContext]{
+							I: ottltest.Intp(0),
 						},
 					},
 				},
@@ -526,7 +447,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := newPathGetSetter(tt.path)
+			pep := pathExpressionParser{}
+			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
@@ -583,17 +505,15 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     ottl.Path[TransformContext]
 		orig     any
 		newVal   any
 		modified func(pmetric.HistogramDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []ottl.Field{
-				{
-					Name: "start_time_unix_nano",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "start_time_unix_nano",
 			},
 			orig:   int64(100_000_000),
 			newVal: int64(200_000_000),
@@ -603,10 +523,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
-				{
-					Name: "time_unix_nano",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "time_unix_nano",
 			},
 			orig:   int64(500_000_000),
 			newVal: int64(200_000_000),
@@ -616,10 +534,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
-				{
-					Name: "flags",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "flags",
 			},
 			orig:   int64(0),
 			newVal: int64(1),
@@ -629,10 +545,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "count",
-			path: []ottl.Field{
-				{
-					Name: "count",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "count",
 			},
 			orig:   int64(2),
 			newVal: int64(3),
@@ -642,10 +556,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "sum",
-			path: []ottl.Field{
-				{
-					Name: "sum",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "sum",
 			},
 			orig:   10.1,
 			newVal: 10.2,
@@ -655,10 +567,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "bucket_counts",
-			path: []ottl.Field{
-				{
-					Name: "bucket_counts",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "bucket_counts",
 			},
 			orig:   []uint64{1, 1},
 			newVal: []uint64{1, 2},
@@ -668,10 +578,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "explicit_bounds",
-			path: []ottl.Field{
-				{
-					Name: "explicit_bounds",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "explicit_bounds",
 			},
 			orig:   []float64{1, 2},
 			newVal: []float64{1, 2, 3},
@@ -681,10 +589,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "exemplars",
-			path: []ottl.Field{
-				{
-					Name: "exemplars",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "exemplars",
 			},
 			orig:   refHistogramDataPoint.Exemplars(),
 			newVal: newExemplars,
@@ -694,10 +600,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
 			},
 			orig:   refHistogramDataPoint.Attributes(),
 			newVal: newAttrs,
@@ -707,14 +611,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("str"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("str"),
 				},
 			},
 			orig:   "val",
@@ -725,14 +625,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bool"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("bool"),
 				},
 			},
 			orig:   true,
@@ -743,14 +639,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("int"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("int"),
 				},
 			},
 			orig:   int64(10),
@@ -761,14 +653,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("double"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("double"),
 				},
 			},
 			orig:   float64(1.2),
@@ -779,14 +667,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bytes"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("bytes"),
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -797,14 +681,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_str"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -818,14 +698,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bool"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -839,14 +715,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_int"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -860,14 +732,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_float"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -881,14 +749,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bytes"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -902,14 +766,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("pMap"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("pMap"),
 				},
 			},
 			orig: func() pcommon.Map {
@@ -925,14 +785,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]any",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("map"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("map"),
 				},
 			},
 			orig: func() pcommon.Map {
@@ -948,18 +804,14 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("slice"),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-						{
-							String: ottltest.Strp("map"),
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("slice"),
+					NextKey: &internal.TestKey[TransformContext]{
+						I: ottltest.Intp(0),
+						NextKey: &internal.TestKey[TransformContext]{
+							S: ottltest.Strp("map"),
 						},
 					},
 				},
@@ -976,18 +828,14 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("new"),
-						},
-						{
-							Int: ottltest.Intp(2),
-						},
-						{
-							Int: ottltest.Intp(0),
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("new"),
+					NextKey: &internal.TestKey[TransformContext]{
+						I: ottltest.Intp(2),
+						NextKey: &internal.TestKey[TransformContext]{
+							I: ottltest.Intp(0),
 						},
 					},
 				},
@@ -1006,7 +854,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := newPathGetSetter(tt.path)
+			pep := pathExpressionParser{}
+			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
@@ -1068,17 +917,15 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     ottl.Path[TransformContext]
 		orig     any
 		newVal   any
 		modified func(pmetric.ExponentialHistogramDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []ottl.Field{
-				{
-					Name: "start_time_unix_nano",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "start_time_unix_nano",
 			},
 			orig:   int64(100_000_000),
 			newVal: int64(200_000_000),
@@ -1088,10 +935,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
-				{
-					Name: "time_unix_nano",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "time_unix_nano",
 			},
 			orig:   int64(500_000_000),
 			newVal: int64(200_000_000),
@@ -1101,10 +946,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
-				{
-					Name: "flags",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "flags",
 			},
 			orig:   int64(0),
 			newVal: int64(1),
@@ -1114,10 +957,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "count",
-			path: []ottl.Field{
-				{
-					Name: "count",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "count",
 			},
 			orig:   int64(2),
 			newVal: int64(3),
@@ -1127,10 +968,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "sum",
-			path: []ottl.Field{
-				{
-					Name: "sum",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "sum",
 			},
 			orig:   10.1,
 			newVal: 10.2,
@@ -1140,10 +979,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "scale",
-			path: []ottl.Field{
-				{
-					Name: "scale",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "scale",
 			},
 			orig:   int64(1),
 			newVal: int64(2),
@@ -1153,10 +990,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "zero_count",
-			path: []ottl.Field{
-				{
-					Name: "zero_count",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "zero_count",
 			},
 			orig:   int64(1),
 			newVal: int64(2),
@@ -1166,10 +1001,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "positive",
-			path: []ottl.Field{
-				{
-					Name: "positive",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "positive",
 			},
 			orig:   refExpoHistogramDataPoint.Positive(),
 			newVal: newPositive,
@@ -1179,12 +1012,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "positive offset",
-			path: []ottl.Field{
-				{
-					Name: "positive",
-				},
-				{
-					Name: "offset",
+			path: &internal.TestPath[TransformContext]{
+				N: "positive",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "offset",
 				},
 			},
 			orig:   int64(1),
@@ -1195,12 +1026,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "positive bucket_counts",
-			path: []ottl.Field{
-				{
-					Name: "positive",
-				},
-				{
-					Name: "bucket_counts",
+			path: &internal.TestPath[TransformContext]{
+				N: "positive",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "bucket_counts",
 				},
 			},
 			orig:   []uint64{1, 1},
@@ -1211,10 +1040,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "negative",
-			path: []ottl.Field{
-				{
-					Name: "negative",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "negative",
 			},
 			orig:   refExpoHistogramDataPoint.Negative(),
 			newVal: newPositive,
@@ -1224,12 +1051,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "negative offset",
-			path: []ottl.Field{
-				{
-					Name: "negative",
-				},
-				{
-					Name: "offset",
+			path: &internal.TestPath[TransformContext]{
+				N: "negative",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "offset",
 				},
 			},
 			orig:   int64(1),
@@ -1240,12 +1065,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "negative bucket_counts",
-			path: []ottl.Field{
-				{
-					Name: "negative",
-				},
-				{
-					Name: "bucket_counts",
+			path: &internal.TestPath[TransformContext]{
+				N: "negative",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "bucket_counts",
 				},
 			},
 			orig:   []uint64{1, 1},
@@ -1256,10 +1079,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "exemplars",
-			path: []ottl.Field{
-				{
-					Name: "exemplars",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "exemplars",
 			},
 			orig:   refExpoHistogramDataPoint.Exemplars(),
 			newVal: newExemplars,
@@ -1269,10 +1090,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
 			},
 			orig:   refExpoHistogramDataPoint.Attributes(),
 			newVal: newAttrs,
@@ -1282,14 +1101,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("str"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("str"),
 				},
 			},
 			orig:   "val",
@@ -1300,14 +1115,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bool"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("bool"),
 				},
 			},
 			orig:   true,
@@ -1318,14 +1129,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("int"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("int"),
 				},
 			},
 			orig:   int64(10),
@@ -1336,14 +1143,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("double"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("double"),
 				},
 			},
 			orig:   1.2,
@@ -1354,14 +1157,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bytes"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("bytes"),
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -1372,14 +1171,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_str"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1393,14 +1188,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bool"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1414,14 +1205,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_int"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1435,14 +1222,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_float"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1456,14 +1239,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bytes"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1477,14 +1256,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("pMap"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("pMap"),
 				},
 			},
 			orig: func() pcommon.Map {
@@ -1500,14 +1275,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]any",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("map"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("map"),
 				},
 			},
 			orig: func() pcommon.Map {
@@ -1523,18 +1294,14 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("slice"),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-						{
-							String: ottltest.Strp("map"),
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("slice"),
+					NextKey: &internal.TestKey[TransformContext]{
+						I: ottltest.Intp(0),
+						NextKey: &internal.TestKey[TransformContext]{
+							S: ottltest.Strp("map"),
 						},
 					},
 				},
@@ -1551,18 +1318,14 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("new"),
-						},
-						{
-							Int: ottltest.Intp(2),
-						},
-						{
-							Int: ottltest.Intp(0),
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("new"),
+					NextKey: &internal.TestKey[TransformContext]{
+						I: ottltest.Intp(2),
+						NextKey: &internal.TestKey[TransformContext]{
+							I: ottltest.Intp(0),
 						},
 					},
 				},
@@ -1581,7 +1344,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := newPathGetSetter(tt.path)
+			pep := pathExpressionParser{}
+			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
@@ -1644,17 +1408,15 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     ottl.Path[TransformContext]
 		orig     any
 		newVal   any
 		modified func(pmetric.SummaryDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []ottl.Field{
-				{
-					Name: "start_time_unix_nano",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "start_time_unix_nano",
 			},
 			orig:   int64(100_000_000),
 			newVal: int64(200_000_000),
@@ -1664,10 +1426,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
-				{
-					Name: "time_unix_nano",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "time_unix_nano",
 			},
 			orig:   int64(500_000_000),
 			newVal: int64(200_000_000),
@@ -1677,10 +1437,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
-				{
-					Name: "flags",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "flags",
 			},
 			orig:   int64(0),
 			newVal: int64(1),
@@ -1690,10 +1448,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "count",
-			path: []ottl.Field{
-				{
-					Name: "count",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "count",
 			},
 			orig:   int64(2),
 			newVal: int64(3),
@@ -1703,10 +1459,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "sum",
-			path: []ottl.Field{
-				{
-					Name: "sum",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "sum",
 			},
 			orig:   10.1,
 			newVal: 10.2,
@@ -1716,10 +1470,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "quantile_values",
-			path: []ottl.Field{
-				{
-					Name: "quantile_values",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "quantile_values",
 			},
 			orig:   refSummaryDataPoint.QuantileValues(),
 			newVal: newQuartileValues,
@@ -1729,10 +1481,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
 			},
 			orig:   refSummaryDataPoint.Attributes(),
 			newVal: newAttrs,
@@ -1742,14 +1492,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("str"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("str"),
 				},
 			},
 			orig:   "val",
@@ -1760,14 +1506,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bool"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("bool"),
 				},
 			},
 			orig:   true,
@@ -1778,14 +1520,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("int"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("int"),
 				},
 			},
 			orig:   int64(10),
@@ -1796,14 +1534,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("double"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("double"),
 				},
 			},
 			orig:   1.2,
@@ -1814,14 +1548,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bytes"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("bytes"),
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -1832,14 +1562,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_str"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1853,14 +1579,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bool"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1874,14 +1596,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_int"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1895,14 +1613,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_float"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1916,14 +1630,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bytes"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1937,14 +1647,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("pMap"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("pMap"),
 				},
 			},
 			orig: func() pcommon.Map {
@@ -1960,14 +1666,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]any",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("map"),
-						},
-					},
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("map"),
 				},
 			},
 			orig: func() pcommon.Map {
@@ -1983,18 +1685,14 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("slice"),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-						{
-							String: ottltest.Strp("map"),
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("slice"),
+					NextKey: &internal.TestKey[TransformContext]{
+						I: ottltest.Intp(0),
+						NextKey: &internal.TestKey[TransformContext]{
+							S: ottltest.Strp("map"),
 						},
 					},
 				},
@@ -2011,18 +1709,14 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("new"),
-						},
-						{
-							Int: ottltest.Intp(2),
-						},
-						{
-							Int: ottltest.Intp(0),
+			path: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				Keys: &internal.TestKey[TransformContext]{
+					S: ottltest.Strp("new"),
+					NextKey: &internal.TestKey[TransformContext]{
+						I: ottltest.Intp(2),
+						NextKey: &internal.TestKey[TransformContext]{
+							I: ottltest.Intp(0),
 						},
 					},
 				},
@@ -2041,7 +1735,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := newPathGetSetter(tt.path)
+			pep := pathExpressionParser{}
+			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
@@ -2122,17 +1817,15 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     ottl.Path[TransformContext]
 		orig     any
 		newVal   any
 		modified func(metric pmetric.Metric)
 	}{
 		{
 			name: "metric",
-			path: []ottl.Field{
-				{
-					Name: "metric",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "metric",
 			},
 			orig:   refMetric,
 			newVal: newMetric,
@@ -2142,12 +1835,10 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric name",
-			path: []ottl.Field{
-				{
-					Name: "metric",
-				},
-				{
-					Name: "name",
+			path: &internal.TestPath[TransformContext]{
+				N: "metric",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "name",
 				},
 			},
 			orig:   "name",
@@ -2158,12 +1849,10 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: []ottl.Field{
-				{
-					Name: "metric",
-				},
-				{
-					Name: "description",
+			path: &internal.TestPath[TransformContext]{
+				N: "metric",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "description",
 				},
 			},
 			orig:   "description",
@@ -2174,12 +1863,10 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: []ottl.Field{
-				{
-					Name: "metric",
-				},
-				{
-					Name: "unit",
+			path: &internal.TestPath[TransformContext]{
+				N: "metric",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "unit",
 				},
 			},
 			orig:   "unit",
@@ -2190,12 +1877,10 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: []ottl.Field{
-				{
-					Name: "metric",
-				},
-				{
-					Name: "type",
+			path: &internal.TestPath[TransformContext]{
+				N: "metric",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "type",
 				},
 			},
 			orig:   int64(pmetric.MetricTypeSum),
@@ -2205,12 +1890,10 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: []ottl.Field{
-				{
-					Name: "metric",
-				},
-				{
-					Name: "aggregation_temporality",
+			path: &internal.TestPath[TransformContext]{
+				N: "metric",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "aggregation_temporality",
 				},
 			},
 			orig:   int64(2),
@@ -2221,12 +1904,10 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: []ottl.Field{
-				{
-					Name: "metric",
-				},
-				{
-					Name: "is_monotonic",
+			path: &internal.TestPath[TransformContext]{
+				N: "metric",
+				NextPath: &internal.TestPath[TransformContext]{
+					N: "is_monotonic",
 				},
 			},
 			orig:   true,
@@ -2238,7 +1919,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := newPathGetSetter(tt.path)
+			pep := pathExpressionParser{}
+			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			metric := createMetricTelemetry()
