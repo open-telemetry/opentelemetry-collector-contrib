@@ -108,9 +108,9 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 		clusterresourcequota.RecordMetrics(dc.metricsBuilder, o.(*quotav1.ClusterResourceQuota), ts)
 	})
 	dc.metadataStore.ForEach(gvk.HierarchicalResourceQuota, func(o any) {
-		hrq, err := hierarchicalresourcequota.Transform(o.(*unstructured.Unstructured))
+		hrq, err := hierarchicalresourcequota.Parse(o.(*unstructured.Unstructured))
 		if err != nil {
-			dc.settings.Logger.Error("failed to transform to metadate store object", zap.Error(err))
+			dc.settings.Logger.Error("failed to parse hierarchicalresourcequota object", zap.Error(err))
 		} else {
 			hierarchicalresourcequota.RecordMetrics(dc.metricsBuilder, hrq, ts)
 		}

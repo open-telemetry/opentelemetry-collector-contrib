@@ -62,7 +62,7 @@ func TestHierarchicalRequestQuotaMetricsEnabled(t *testing.T) {
 	)
 }
 
-func TestTransform(t *testing.T) {
+func TestParse(t *testing.T) {
 	original := &unstructured.Unstructured{
 		Object: map[string]any{
 			"metadata": map[string]any{
@@ -99,7 +99,7 @@ func TestTransform(t *testing.T) {
 			},
 		},
 	}
-	actual, err := Transform(original)
+	actual, err := Parse(original)
 	assert.NoError(t, err)
 	assert.Equal(t, wantHRQ, actual)
 }

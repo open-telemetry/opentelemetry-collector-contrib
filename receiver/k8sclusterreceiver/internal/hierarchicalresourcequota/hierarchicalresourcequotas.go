@@ -34,7 +34,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, hrq *v1alpha2.HierarchicalResour
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
-func Transform(unstructedHRQ *unstructured.Unstructured) (*v1alpha2.HierarchicalResourceQuota, error) {
+func Parse(unstructedHRQ *unstructured.Unstructured) (*v1alpha2.HierarchicalResourceQuota, error) {
 	name, found, err := unstructured.NestedString(unstructedHRQ.Object, "metadata", "name")
 	if err != nil {
 		return nil, err
