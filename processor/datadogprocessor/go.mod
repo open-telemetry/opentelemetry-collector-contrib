@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.20
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-rc.7
+	github.com/DataDog/datadog-agent/pkg/proto v0.50.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.10.0
 	github.com/DataDog/sketches-go v1.4.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
