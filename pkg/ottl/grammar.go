@@ -123,22 +123,22 @@ type compareOp int
 
 // These are the allowed values of a compareOp
 const (
-	EQ compareOp = iota
-	NE
-	LT
-	LTE
-	GTE
-	GT
+	eq compareOp = iota
+	ne
+	lt
+	lte
+	gte
+	gt
 )
 
 // a fast way to get from a string to a compareOp
 var compareOpTable = map[string]compareOp{
-	"==": EQ,
-	"!=": NE,
-	"<":  LT,
-	"<=": LTE,
-	">":  GT,
-	">=": GTE,
+	"==": eq,
+	"!=": ne,
+	"<":  lt,
+	"<=": lte,
+	">":  gt,
+	">=": gte,
 }
 
 // Capture is how the parser converts an operator string to a compareOp.
@@ -154,18 +154,18 @@ func (c *compareOp) Capture(values []string) error {
 // String() for compareOp gives us more legible test results and error messages.
 func (c *compareOp) String() string {
 	switch *c {
-	case EQ:
-		return "EQ"
-	case NE:
-		return "NE"
-	case LT:
-		return "LT"
-	case LTE:
-		return "LTE"
-	case GTE:
-		return "GTE"
-	case GT:
-		return "GT"
+	case eq:
+		return "eq"
+	case ne:
+		return "ne"
+	case lt:
+		return "lt"
+	case lte:
+		return "lte"
+	case gte:
+		return "gte"
+	case gt:
+		return "gt"
 	default:
 		return "UNKNOWN OP!"
 	}
@@ -235,7 +235,7 @@ type value struct {
 	Bytes          *byteSlice       `parser:"| @Bytes"`
 	String         *string          `parser:"| @String"`
 	Bool           *boolean         `parser:"| @Boolean"`
-	Enum           *EnumSymbol      `parser:"| @Uppercase (?! Lowercase)"`
+	Enum           *enumSymbol      `parser:"| @Uppercase (?! Lowercase)"`
 	FunctionName   *string          `parser:"| @(Uppercase(Uppercase | Lowercase)*)"`
 	List           *list            `parser:"| @@)"`
 }
@@ -386,17 +386,17 @@ func (m *mathExpression) checkForCustomError() error {
 type mathOp int
 
 const (
-	ADD mathOp = iota
-	SUB
-	MULT
-	DIV
+	add mathOp = iota
+	sub
+	mult
+	div
 )
 
 var mathOpTable = map[string]mathOp{
-	"+": ADD,
-	"-": SUB,
-	"*": MULT,
-	"/": DIV,
+	"+": add,
+	"-": sub,
+	"*": mult,
+	"/": div,
 }
 
 func (m *mathOp) Capture(values []string) error {
@@ -410,20 +410,20 @@ func (m *mathOp) Capture(values []string) error {
 
 func (m *mathOp) String() string {
 	switch *m {
-	case ADD:
+	case add:
 		return "+"
-	case SUB:
+	case sub:
 		return "-"
-	case MULT:
+	case mult:
 		return "*"
-	case DIV:
+	case div:
 		return "/"
 	default:
 		return "UNKNOWN OP!"
 	}
 }
 
-type EnumSymbol string
+type enumSymbol string
 
 // buildLexer constructs a SimpleLexer definition.
 // Note that the ordering of these rules matters.
