@@ -25,7 +25,7 @@ func Test_replaceAllMatches(t *testing.T) {
 		FCtx: ottl.FunctionContext{
 			Set: componenttest.NewNopTelemetrySettings(),
 		},
-		Fact: NewTestFactory[pcommon.Map](),
+		Fact: optionalFnTestFactory[pcommon.Map](),
 	}
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Map]](ottlValue)
 

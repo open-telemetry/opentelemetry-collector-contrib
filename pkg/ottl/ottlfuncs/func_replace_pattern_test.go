@@ -16,26 +16,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type TestArguments[K any] struct {
+type optionalFnTestArgs[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
-// For testing Hash values.
-func NewTestFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Test", &TestArguments[K]{}, createTestFunction[K])
+func optionalFnTestFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("Test", &optionalFnTestArgs[K]{}, createTestFunction[K])
 }
 
 func createTestFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*TestArguments[K])
+	args, ok := oArgs.(*optionalFnTestArgs[K])
 
 	if !ok {
-		return nil, fmt.Errorf("TestFactory args must be of type *TestArguments[K]")
+		return nil, fmt.Errorf("TestFactory args must be of type *optionalFnTestArgs[K]")
 	}
 
-	return HashString(args.Target)
+	return hashString(args.Target), nil
 }
 
-func HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func hashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
@@ -43,7 +42,7 @@ func HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 			return nil, err
 		}
 		return fmt.Sprintf("hash(%s)", val), nil
-	}, nil
+	}
 }
 
 func Test_replacePattern(t *testing.T) {
@@ -52,7 +51,7 @@ func Test_replacePattern(t *testing.T) {
 		FCtx: ottl.FunctionContext{
 			Set: componenttest.NewNopTelemetrySettings(),
 		},
-		Fact: NewTestFactory[pcommon.Value](),
+		Fact: optionalFnTestFactory[pcommon.Value](),
 	}
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Value]](ottlValue)
 	target := &ottl.StandardGetSetter[pcommon.Value]{
@@ -88,18 +87,17 @@ func Test_replacePattern(t *testing.T) {
 			},
 		},
 		{
-			name:    "replace regex match (capture group without $1)",
+			name:    "replace regex match (static text)",
 			target:  target,
 			pattern: `passwd\=([^\s]*)`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
 				Getter: func(context.Context, pcommon.Value) (any, error) {
-					return "passwd=$1", nil
+					return "passwd", nil
 				},
 			},
 			function: optionalArg,
 			want: func(expectedValue pcommon.Value) {
-				// TODO: We should expect "application passwd=hash(sensitivedtata) otherarg=notsensitive key1 key2"
-				expectedValue.SetStr("application hash(passwd=$1) otherarg=notsensitive key1 key2") // since we only hash capture groups
+				expectedValue.SetStr("application hash(passwd) otherarg=notsensitive key1 key2")
 			},
 		},
 		{
@@ -113,7 +111,7 @@ func Test_replacePattern(t *testing.T) {
 			},
 			function: optionalArg,
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
+				expectedValue.SetStr("application hash()otherarg=notsensitive key1 key2")
 			},
 		},
 		{
