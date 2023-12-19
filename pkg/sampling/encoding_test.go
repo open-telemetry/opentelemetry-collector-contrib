@@ -15,6 +15,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+// must panics when the error is non-nil and returns the second
+// generic argument.  this does not call require.NoError() in order to
+// use a one-line test calling convention, meaning `must(functionCall())`
+// ensures there is no error and returns the first argument.
+//
+// To do the same with NoError() means rewriting the expression with
+// a two-line statement:
+//
+//	value, err := functionCall()
+//	require.NoError(t, value)
+//
+// and that is why this function exists.
 func must[T any](t T, err error) T {
 	if err != nil {
 		panic(err)
@@ -22,6 +34,18 @@ func must[T any](t T, err error) T {
 	return t
 }
 
+// mustNot panics when the error is nil.  this does not call
+// require.Error() in order to use a one-line test calling
+// convention, meaning `mustNot(functionCall())` ensures there is an
+// error without requiring a separate varaible assignemnt.
+//
+// To do the same with Error() means rewriting the expression with
+// a two-line statement:
+//
+//	_, err := functionCall()
+//	require.Error(t, value)
+//
+// and that is why this function exists.
 func mustNot[T any](_ T, err error) error {
 	if err == nil {
 		return fmt.Errorf("expected an error, got nil")
