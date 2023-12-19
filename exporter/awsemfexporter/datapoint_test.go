@@ -358,7 +358,7 @@ func shutdownEmfCalculators(c *emfCalculators) error {
 
 }
 
-func TestIsStaleOrNaNOrInf_NumberDataPointSlice(t *testing.T) {
+func TestIsStaleNaNInf_NumberDataPointSlice(t *testing.T) {
 	testCases := []struct {
 		name           string
 		metricName     string
@@ -415,8 +415,8 @@ func TestIsStaleOrNaNOrInf_NumberDataPointSlice(t *testing.T) {
 			}
 
 			numberDatapointSlice := numberDataPointSlice{deltaMetricMetadata{}, numberDPS}
-			isStaleOrNanOrInf, _ := numberDatapointSlice.IsStaleOrNaNOrInf(0)
-			tc.expectedAssert(t, isStaleOrNanOrInf)
+			isStaleNanInf, _ := numberDatapointSlice.IsStaleNaNInf(0)
+			tc.expectedAssert(t, isStaleNanInf)
 		})
 	}
 }
@@ -626,7 +626,7 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 
 }
 
-func TestIsStaleOrNaNOrInf_HistogramDataPointSlice(t *testing.T) {
+func TestIsStaleNaNInf_HistogramDataPointSlice(t *testing.T) {
 
 	testCases := []struct {
 		name           string
@@ -787,8 +787,8 @@ func TestIsStaleOrNaNOrInf_HistogramDataPointSlice(t *testing.T) {
 			if tc.setFlagsFunc != nil {
 				tc.setFlagsFunc(histogramDatapointSlice.At(0))
 			}
-			isStaleOrNan, _ := histogramDatapointSlice.IsStaleOrNaNOrInf(0)
-			tc.boolAssertFunc(t, isStaleOrNan)
+			isStaleNanInf, _ := histogramDatapointSlice.IsStaleNaNInf(0)
+			tc.boolAssertFunc(t, isStaleNanInf)
 		})
 	}
 
@@ -895,7 +895,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 
 }
 
-func TestIsStaleOrNaNOrInf_ExponentialHistogramDataPointSlice(t *testing.T) {
+func TestIsStaleNaNInf_ExponentialHistogramDataPointSlice(t *testing.T) {
 
 	testCases := []struct {
 		name           string
@@ -1084,9 +1084,9 @@ func TestIsStaleOrNaNOrInf_ExponentialHistogramDataPointSlice(t *testing.T) {
 			if tc.setFlagsFunc != nil {
 				tc.setFlagsFunc(exponentialHistogramDatapointSlice.At(0))
 			}
-			isStaleOrNaN, _ := exponentialHistogramDatapointSlice.IsStaleOrNaNOrInf(0)
+			isStaleNaNInf, _ := exponentialHistogramDatapointSlice.IsStaleNaNInf(0)
 			// When calculate the delta datapoints for histograms
-			tc.boolAssertFunc(t, isStaleOrNaN)
+			tc.boolAssertFunc(t, isStaleNaNInf)
 		})
 	}
 
@@ -1177,7 +1177,7 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 	}
 }
 
-func TestIsStaleOrNaNOrInf_SummaryDataPointSlice(t *testing.T) {
+func TestIsStaleNaNInf_SummaryDataPointSlice(t *testing.T) {
 	type qMetricObject struct {
 		value    float64
 		quantile float64
@@ -1362,8 +1362,8 @@ func TestIsStaleOrNaNOrInf_SummaryDataPointSlice(t *testing.T) {
 			if tc.setFlagsFunc != nil {
 				tc.setFlagsFunc(summaryDatapointSlice.At(0))
 			}
-			isStaleOrNaN, _ := summaryDatapointSlice.IsStaleOrNaNOrInf(0)
-			tc.expectedBoolAssert(t, isStaleOrNaN)
+			isStaleNaNInf, _ := summaryDatapointSlice.IsStaleNaNInf(0)
+			tc.expectedBoolAssert(t, isStaleNaNInf)
 		})
 	}
 
