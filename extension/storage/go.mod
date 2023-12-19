@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/jackc/pgx/v4 v4.18.1
-	github.com/mattn/go-sqlite3 v1.14.18
+	github.com/mattn/go-sqlite3 v1.14.19
 	github.com/stretchr/testify v1.8.4
 	go.etcd.io/bbolt v1.3.8
 	go.opentelemetry.io/collector/component v0.91.0
