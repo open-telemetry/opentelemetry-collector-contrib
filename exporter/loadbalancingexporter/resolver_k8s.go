@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
@@ -84,12 +84,12 @@ func newK8sResolver(clt kubernetes.Interface,
 	epsListWatcher := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			options.FieldSelector = epsSelector
-			options.TimeoutSeconds = pointer.Int64(1)
+			options.TimeoutSeconds = ptr.To[int64](1)
 			return clt.CoreV1().Endpoints(namespace).List(context.Background(), options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			options.FieldSelector = epsSelector
-			options.TimeoutSeconds = pointer.Int64(1)
+			options.TimeoutSeconds = ptr.To[int64](1)
 			return clt.CoreV1().Endpoints(namespace).Watch(context.Background(), options)
 		},
 	}
