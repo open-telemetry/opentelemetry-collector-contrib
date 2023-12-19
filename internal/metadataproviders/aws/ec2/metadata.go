@@ -24,13 +24,13 @@ type metadataClient struct {
 var _ Provider = (*metadataClient)(nil)
 
 // New Provider returns a new AWS EC2 metadata provider. The provider is established
-// with a custom logger to supress any SDK logs, in order to work around an issue in the AWS SDK Go
+// with a custom logger to suppress any SDK logs, in order to work around an issue in the AWS SDK Go
 // (https://github.com/aws/aws-sdk-go/issues/5116), which causes unwanted output to appear on
 // the stdout. This change can be reverted once the issue is resolved upstream and a new version
 // of the SDK is used in the provider.
 func NewProvider(sess *session.Session) Provider {
 	return &metadataClient{
-		metadata: ec2metadata.New(sess, aws.NewConfig().WithLogger(aws.LoggerFunc(func(args ...interface{}) {}))),
+		metadata: ec2metadata.New(sess, aws.NewConfig().WithLogger(aws.LoggerFunc(func(args ...any) {}))),
 	}
 }
 
