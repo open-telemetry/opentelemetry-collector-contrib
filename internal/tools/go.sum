@@ -390,7 +390,6 @@ github.com/knadh/koanf/v2 v2.0.1 h1:1dYGITt1I23x8cfx8ZnldtezdyaZtfAuRtIFOiRzK7g=
 github.com/knadh/koanf/v2 v2.0.1/go.mod h1:ZeiIlIDXTE7w1lMT6UVcNiRAS2/rCeLn/GdLNvY1Dus=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
-github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
@@ -653,8 +652,6 @@ go.opentelemetry.io/build-tools/crosslink v0.12.0 h1:GNJQURuabE5rAkIbnrqndIKyXrr
 go.opentelemetry.io/build-tools/crosslink v0.12.0/go.mod h1:QE8Kxf4Ygg2ltSHE+Vdys/67jtQM26j7spJLyjNA2DU=
 go.opentelemetry.io/build-tools/issuegenerator v0.12.0 h1:KRP7aSUR9JoqNwv+Pp595vj9NtyTlkgi+vKrYM6ZnhA=
 go.opentelemetry.io/build-tools/issuegenerator v0.12.0/go.mod h1:G71Og7dZJoIC+MjuY1InQ/oeAOkM1S5Nv6CCnlOdqns=
-go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231212150647-815fbfc7b190 h1:tbQ8exrhY+53k1IRy9UOisZZhtNHNGIipUzwyq8w1VU=
-go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231212150647-815fbfc7b190/go.mod h1:qDGDKPq0CcFcqwlBo3EHQJ/uxTE1NIgH9OVZIcgMHf8=
 go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231217163606-bdaa660fddc1 h1:j1WiUrOcMKKsEmgpK1qeeXBff46rkB1/GafRB+JEpx0=
 go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231217163606-bdaa660fddc1/go.mod h1:qDGDKPq0CcFcqwlBo3EHQJ/uxTE1NIgH9OVZIcgMHf8=
 go.opentelemetry.io/collector/cmd/builder v0.91.0 h1:+XleULVc+kfCMIjVBDVru9x5dIjTG1EfDY8nZxBqK/o=
