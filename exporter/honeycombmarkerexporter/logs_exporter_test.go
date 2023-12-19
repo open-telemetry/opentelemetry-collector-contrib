@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -132,8 +133,12 @@ func TestExportMarkers(t *testing.T) {
 				}
 				assert.Contains(t, req.URL.Path, tt.expectedURL)
 
-				apiKey := req.Header.Get("X-Honeycomb-Team")
+				apiKey := req.Header.Get(honeycombTeam)
 				assert.Equal(t, apiKey, string(tt.config.APIKey))
+
+				userAgent := req.Header.Get(userAgentHeaderKey)
+				assert.NotEmpty(t, userAgent)
+				assert.Equal(t, strings.Contains(userAgent, "OpenTelemetry Collector"), true)
 
 				rw.WriteHeader(http.StatusAccepted)
 			}))

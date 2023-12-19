@@ -260,6 +260,7 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // Execute is a function that will execute all the statements in the StatementSequence list.
 // When the ErrorMode of the StatementSequence is `propagate`, errors cause the execution to halt and the error is returned.
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
+// When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
@@ -268,7 +269,9 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
 			}
-			s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
+			if s.errorMode == IgnoreError {
+				s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
+			}
 		}
 	}
 	return nil
@@ -323,7 +326,8 @@ func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings c
 // If using the default OR LogicOperation, if any Condition evaluates to true, then true is returned and if all Conditions evaluate to false, then false is returned.
 // If using the AND LogicOperation, if any Condition evaluates to false, then false is returned and if all Conditions evaluate to true, then true is returned.
 // When the ErrorMode of the ConditionSequence is `propagate`, errors cause the evaluation to be false and an error is returned.
-// When the ErrorMode of the ConditionSequence is `ignore`, errors cause the evaluation to continue to the next condition.
+// When the ErrorMode of the ConditionSequence is `ignore`, errors are logged and cause the evaluation to continue to the next condition.
+// When the ErrorMode of the ConditionSequence is `silent`, errors are not logged and cause the evaluation to continue to the next condition.
 // When using the AND LogicOperation with the `ignore` ErrorMode the sequence will evaluate to false if all conditions error.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
@@ -334,7 +338,9 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
 				return false, err
 			}
-			c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
+			if c.errorMode == IgnoreError {
+				c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
+			}
 			continue
 		}
 		if match {

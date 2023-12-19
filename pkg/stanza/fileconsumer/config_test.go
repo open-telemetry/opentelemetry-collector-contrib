@@ -14,7 +14,9 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -25,17 +27,17 @@ import (
 
 func TestNewConfig(t *testing.T) {
 	cfg := NewConfig()
+	assert.Equal(t, 200*time.Millisecond, cfg.PollInterval)
+	assert.Equal(t, defaultMaxConcurrentFiles, cfg.MaxConcurrentFiles)
+	assert.Equal(t, "end", cfg.StartAt)
+	assert.Equal(t, fingerprint.DefaultSize, int(cfg.FingerprintSize))
+	assert.Equal(t, defaultEncoding, cfg.Encoding)
+	assert.Equal(t, reader.DefaultMaxLogSize, int(cfg.MaxLogSize))
+	assert.Equal(t, reader.DefaultFlushPeriod, cfg.FlushPeriod)
 	assert.True(t, cfg.IncludeFileName)
 	assert.False(t, cfg.IncludeFilePath)
 	assert.False(t, cfg.IncludeFileNameResolved)
 	assert.False(t, cfg.IncludeFilePathResolved)
-	assert.Equal(t, "end", cfg.StartAt)
-	assert.Equal(t, 200*time.Millisecond, cfg.PollInterval)
-	assert.Equal(t, fingerprint.DefaultSize, int(cfg.FingerprintSize))
-	assert.Equal(t, defaultEncoding, cfg.Encoding)
-	assert.Equal(t, defaultMaxLogSize, int(cfg.MaxLogSize))
-	assert.Equal(t, defaultMaxConcurrentFiles, cfg.MaxConcurrentFiles)
-	assert.Equal(t, defaultFlushPeriod, cfg.FlushPeriod)
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -625,7 +627,7 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
+			input, err := cfg.Build(testutil.Logger(t), emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -704,7 +706,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 				return len(data), data, nil
 			}
 
-			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmitFunc, splitNone)
+			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), emittest.Nop, splitNone)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -791,7 +793,7 @@ func TestBuildWithHeader(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
+			input, err := cfg.Build(testutil.Logger(t), emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return

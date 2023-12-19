@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -20,9 +19,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 )
 
@@ -76,10 +78,14 @@ type serviceGraphProcessor struct {
 	metricMutex sync.RWMutex
 	keyToMetric map[string]metricSeries
 
+	statDroppedSpans metric.Int64Counter
+	statTotalEdges   metric.Int64Counter
+	statExpiredEdges metric.Int64Counter
+
 	shutdownCh chan any
 }
 
-func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProcessor {
+func newProcessor(set component.TelemetrySettings, config component.Config) *serviceGraphProcessor {
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBuckets
@@ -102,9 +108,27 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
 	}
 
+	meter := metadata.Meter(set)
+
+	droppedSpan, _ := meter.Int64Counter(
+		processorhelper.BuildCustomMetricName(metadata.Type, "dropped_spans"),
+		metric.WithDescription("Number of spans dropped when trying to add edges"),
+		metric.WithUnit("1"),
+	)
+	totalEdges, _ := meter.Int64Counter(
+		processorhelper.BuildCustomMetricName(metadata.Type, "total_edges"),
+		metric.WithDescription("Total number of unique edges"),
+		metric.WithUnit("1"),
+	)
+	expiredEdges, _ := meter.Int64Counter(
+		processorhelper.BuildCustomMetricName(metadata.Type, "expired_edges"),
+		metric.WithDescription("Number of edges that expired before finding its matching span"),
+		metric.WithUnit("1"),
+	)
+
 	return &serviceGraphProcessor{
 		config:                               pConfig,
-		logger:                               logger,
+		logger:                               set.Logger,
 		startTime:                            time.Now(),
 		reqTotal:                             make(map[string]int64),
 		reqFailedTotal:                       make(map[string]int64),
@@ -117,6 +141,9 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 		reqDurationBounds:                    bounds,
 		keyToMetric:                          make(map[string]metricSeries),
 		shutdownCh:                           make(chan any),
+		statDroppedSpans:                     droppedSpan,
+		statTotalEdges:                       totalEdges,
+		statExpiredEdges:                     expiredEdges,
 	}
 }
 
@@ -299,7 +326,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 
 				if errors.Is(err, store.ErrTooManyItems) {
 					totalDroppedSpans++
-					stats.Record(ctx, statDroppedSpans.M(1))
+					p.statDroppedSpans.Add(ctx, 1)
 					continue
 				}
 
@@ -309,7 +336,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 				}
 
 				if isNew {
-					stats.Record(ctx, statTotalEdges.M(1))
+					p.statTotalEdges.Add(ctx, 1)
 				}
 			}
 		}
@@ -354,7 +381,7 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 		zap.Stringer("trace_id", e.TraceID),
 	)
 
-	stats.Record(context.Background(), statExpiredEdges.M(1))
+	p.statExpiredEdges.Add(context.Background(), 1)
 
 	if virtualNodeFeatureGate.IsEnabled() {
 		e.ConnectionType = store.VirtualNode

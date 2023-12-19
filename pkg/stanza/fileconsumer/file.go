@@ -85,7 +85,10 @@ func (m *Manager) closePreviousFiles() {
 
 // Stop will stop the file monitoring process
 func (m *Manager) Stop() error {
-	m.cancel()
+	if m.cancel != nil {
+		m.cancel()
+		m.cancel = nil
+	}
 	m.wg.Wait()
 	m.closePreviousFiles()
 	if m.persister != nil {
@@ -93,7 +96,6 @@ func (m *Manager) Stop() error {
 			m.Errorw("save offsets", zap.Error(err))
 		}
 	}
-	m.cancel = nil
 	return nil
 }
 
