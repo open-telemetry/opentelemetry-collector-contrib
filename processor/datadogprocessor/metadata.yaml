@@ -7,3 +7,6 @@ status:
   distributions: [contrib]
   codeowners:
     active: [mx-psi, gbbr, dineshg13]
+tests:
+  config:
+  skip_lifecycle: true
