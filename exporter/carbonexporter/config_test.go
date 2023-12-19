@@ -41,6 +41,7 @@ func TestLoadConfig(t *testing.T) {
 				TCPAddr: confignet.TCPAddr{
 					Endpoint: "localhost:8080",
 				},
+				MaxIdleConns: 15,
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
@@ -101,9 +102,18 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "invalid_timeout",
 			config: &Config{
+				TCPAddr: confignet.TCPAddr{Endpoint: defaultEndpoint},
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: -5 * time.Second,
 				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid_max_idle_conns",
+			config: &Config{
+				TCPAddr:      confignet.TCPAddr{Endpoint: defaultEndpoint},
+				MaxIdleConns: -1,
 			},
 			wantErr: true,
 		},
