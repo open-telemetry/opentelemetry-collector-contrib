@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
+	"go.opentelemetry.io/collector/config/configopaque"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
 
@@ -364,12 +365,8 @@ func (s *Supervisor) startOpAMP() error {
 			OnErrorFunc: func(err *protobufs.ServerErrorResponse) {
 				s.logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
 			},
-			OnMessageFunc: s.onMessage,
-			OnOpampConnectionSettingsFunc: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
-				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
-				s.logger.Debug("Received ConnectionSettings request")
-				return nil
-			},
+			OnMessageFunc:                 s.onMessage,
+			OnOpampConnectionSettingsFunc: s.onOpampConnectionSettings,
 			OnOpampConnectionSettingsAcceptedFunc: func(settings *protobufs.OpAMPConnectionSettings) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
 				s.logger.Debug("ConnectionSettings accepted")
@@ -409,6 +406,66 @@ func (s *Supervisor) startOpAMP() error {
 	}
 
 	s.logger.Debug("OpAMP Client started.")
+
+	return nil
+}
+
+func (s *Supervisor) stopOpAMP() error {
+	s.logger.Debug("Stopping OpAMP client...")
+	return s.opampClient.Stop(context.Background())
+}
+
+func (s *Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.Header {
+	var headers http.Header
+	for _, header := range protoHeaders.Headers {
+		headers.Add(header.Key, header.Value)
+	}
+	return headers
+}
+
+func (s *Supervisor) onOpampConnectionSettings(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+	if settings == nil {
+		s.logger.Debug("Received ConnectionSettings request with nil settings")
+		return nil
+	}
+
+	newServerConfig := &config.OpAMPServer{}
+
+	if settings.DestinationEndpoint != "" {
+		newServerConfig.Endpoint = settings.DestinationEndpoint
+	}
+	if settings.Headers != nil {
+		newServerConfig.Headers = s.getHeadersFromSettings(settings.Headers)
+	}
+	if settings.Certificate != nil {
+		if len(settings.Certificate.CaPublicKey) != 0 {
+			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaPublicKey)
+		}
+		if len(settings.Certificate.PublicKey) != 0 {
+			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.PublicKey)
+		}
+		if len(settings.Certificate.PrivateKey) != 0 {
+			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
+		}
+	}
+
+	s.stopOpAMP()
+
+	// take a copy of the current OpAMP server config
+	oldServerConfig := s.config.Server
+	// update the OpAMP server config
+	s.config.Server = newServerConfig
+
+	if err := s.startOpAMP(); err != nil {
+		s.logger.Error("Cannot connect to the OpAMP server using the new settings", zap.Error(err))
+		// revert the OpAMP server config
+		s.config.Server = oldServerConfig
+		// start the OpAMP client with the old settings
+		if err := s.startOpAMP(); err != nil {
+			s.logger.Error("Cannot reconnect to the OpAMP server after restoring old settings", zap.Error(err))
+			return err
+		}
+	}
 
 	return nil
 }

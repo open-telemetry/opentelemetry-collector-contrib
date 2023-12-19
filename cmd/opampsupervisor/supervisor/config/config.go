@@ -4,6 +4,8 @@
 package config
 
 import (
+	"net/http"
+
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -25,6 +27,7 @@ type Capabilities struct {
 
 type OpAMPServer struct {
 	Endpoint   string
+	Headers    http.Header
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 }
 
