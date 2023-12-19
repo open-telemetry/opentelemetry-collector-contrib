@@ -20,10 +20,10 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ~1.20.12
           cache: false
@@ -78,7 +78,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ~1.20.11
           cache: false
@@ -139,7 +139,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ~1.20.12
           cache: false
@@ -162,7 +162,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ~1.20.12
           cache: false
@@ -240,7 +240,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
@@ -314,7 +314,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ~1.20.12
           cache: false
@@ -335,7 +335,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ~1.20.12
           cache: false
@@ -361,7 +361,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ~1.20.12
           cache: false
@@ -430,7 +430,7 @@ jobs:
             arch: s390x
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ~1.20.12
           cache: false
@@ -564,7 +564,7 @@ jobs:
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ~1.20.12
           cache: false

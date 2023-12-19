@@ -244,6 +244,173 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 }
 
+func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
+	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
+	metrics0 := component.NewIDWithName(component.DataTypeMetrics, "0")
+	metrics1 := component.NewIDWithName(component.DataTypeMetrics, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []component.ID{metricsDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 2.5`,
+				Pipelines: []component.ID{metrics0},
+			},
+			{
+				Statement: `route() where attributes["value"] > 3.0`,
+				Pipelines: []component.ID{metrics1},
+			},
+			{
+				Statement: `route() where attributes["value"] == 1.0`,
+				Pipelines: []component.ID{metricsDefault, metrics0},
+			},
+		},
+		MatchOnce: true,
+	}
+
+	var defaultSink, sink0, sink1 consumertest.MetricsSink
+
+	router := connectortest.NewMetricsRouter(
+		connectortest.WithMetricsSink(metricsDefault, &defaultSink),
+		connectortest.WithMetricsSink(metrics0, &sink0),
+		connectortest.WithMetricsSink(metrics1, &sink1),
+	)
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	factory := NewFactory()
+	conn, err := factory.CreateMetricsToMetrics(
+		context.Background(),
+		connectortest.NewNopCreateSettings(),
+		cfg,
+		router.(consumer.Metrics),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, conn.Shutdown(context.Background()))
+	}()
+
+	t.Run("metric matched by no expressions", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 0.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultSink.AllMetrics(), 1)
+		assert.Len(t, sink0.AllMetrics(), 0)
+		assert.Len(t, sink1.AllMetrics(), 0)
+	})
+
+	t.Run("metric matched by one of two expressions", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 2.7)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultSink.AllMetrics(), 0)
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Len(t, sink1.AllMetrics(), 0)
+	})
+
+	t.Run("metric matched by two expressions, but sinks to one", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 5.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		rm = m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 3.1)
+		metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu1")
+
+		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultSink.AllMetrics(), 0)
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Len(t, sink1.AllMetrics(), 0)
+
+		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 2)
+	})
+
+	t.Run("one metric matched by 2 expressions, others matched by none", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 5.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		rm = m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", -1.0)
+		metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu1")
+
+		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultSink.AllMetrics(), 1)
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Len(t, sink1.AllMetrics(), 0)
+
+		rmetric := defaultSink.AllMetrics()[0].ResourceMetrics().At(0)
+		attr, ok := rmetric.Resource().Attributes().Get("value")
+		assert.True(t, ok, "routing attribute must exist")
+		assert.Equal(t, attr.Double(), float64(-1.0))
+	})
+
+	t.Run("metric matched by one expression, multiple pipelines", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 1.0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
+
+		assert.Len(t, defaultSink.AllMetrics(), 1)
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Len(t, sink1.AllMetrics(), 0)
+
+		assert.Equal(t, defaultSink.AllMetrics()[0].MetricCount(), 1)
+		assert.Equal(t, sink0.AllMetrics()[0].MetricCount(), 1)
+		assert.Equal(t, defaultSink.AllMetrics(), sink0.AllMetrics())
+	})
+}
+
 func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 	metricsDefault := component.NewIDWithName(component.DataTypeMetrics, "default")
 	metricsOther := component.NewIDWithName(component.DataTypeMetrics, "other")

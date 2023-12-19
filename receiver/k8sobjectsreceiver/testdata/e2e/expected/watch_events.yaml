@@ -16,7 +16,7 @@ resourceLogs:
                         values:
                           - key: note
                             value:
-                              stringValue: test event
+                              stringValue: test event of type warning
                           - key: eventTime
                             value:
                               stringValue: "2023-01-01T00:00:00.000000Z"
@@ -28,7 +28,7 @@ resourceLogs:
                               stringValue: test
                           - key: reason
                             value:
-                              stringValue: Test event of type warning
+                              stringValue: TestEvent
                           - key: regarding
                             value:
                               kvlistValue:

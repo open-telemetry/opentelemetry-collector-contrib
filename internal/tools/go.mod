@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/Khan/genqlient v0.6.0
 	github.com/client9/misspell v0.3.4
-	github.com/daixiang0/gci v0.11.2
+	github.com/daixiang0/gci v0.12.0
 	github.com/golangci/golangci-lint v1.55.2
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
@@ -14,9 +14,9 @@ require (
 	go.opentelemetry.io/build-tools/chloggen v0.12.0
 	go.opentelemetry.io/build-tools/crosslink v0.12.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.12.0
-	go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231211155609-fa0413b9dbf9
+	go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231212150647-815fbfc7b190
 	go.opentelemetry.io/collector/cmd/builder v0.91.0
-	golang.org/x/tools v0.15.0
+	golang.org/x/tools v0.16.1
 	golang.org/x/vuln v1.0.1
 )
 
@@ -218,7 +218,7 @@ require (
 	go.tmz.dev/musttag v0.7.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/crypto v0.16.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230307190834-24139beb5833 // indirect
 	golang.org/x/mod v0.14.0 // indirect

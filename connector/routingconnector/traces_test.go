@@ -204,6 +204,135 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 }
 
+func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
+	tracesDefault := component.NewIDWithName(component.DataTypeTraces, "default")
+	traces0 := component.NewIDWithName(component.DataTypeTraces, "0")
+	traces1 := component.NewIDWithName(component.DataTypeTraces, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []component.ID{tracesDefault},
+		MatchOnce:        true,
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 0 and attributes["value"] < 4`,
+				Pipelines: []component.ID{traces0},
+			},
+			{
+				Statement: `route() where attributes["value"] > 1 and attributes["value"] < 4`,
+				Pipelines: []component.ID{traces1},
+			},
+			{
+				Statement: `route() where attributes["value"] == 5`,
+				Pipelines: []component.ID{tracesDefault, traces0},
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.TracesSink
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	router := connectortest.NewTracesRouter(
+		connectortest.WithTracesSink(tracesDefault, &defaultSink),
+		connectortest.WithTracesSink(traces0, &sink0),
+		connectortest.WithTracesSink(traces1, &sink1),
+	)
+
+	factory := NewFactory()
+	conn, err := factory.CreateTracesToTraces(
+		context.Background(),
+		connectortest.NewNopCreateSettings(),
+		cfg,
+		router.(consumer.Traces),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, conn.Shutdown(context.Background()))
+	}()
+
+	t.Run("span matched by 0 expressions", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 10)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultSink.AllTraces(), 1)
+		assert.Len(t, sink0.AllTraces(), 0)
+		assert.Len(t, sink1.AllTraces(), 0)
+	})
+
+	t.Run("span matched by one of two expressions", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 1)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultSink.AllTraces(), 0)
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 0)
+	})
+
+	t.Run("span matched by all expressions, but sinks to one", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 2)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		rl = tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 3)
+		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span1")
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultSink.AllTraces(), 0)
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 0)
+
+		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 2)
+	})
+
+	t.Run("span matched by one expression, multiple pipelines", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 5)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultSink.AllTraces(), 1)
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 0)
+
+		assert.Equal(t, defaultSink.AllTraces()[0].SpanCount(), 1)
+		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 1)
+		assert.Equal(t, defaultSink.AllTraces(), sink0.AllTraces())
+	})
+}
+
 func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 	tracesDefault := component.NewIDWithName(component.DataTypeTraces, "default")
 	tracesOther := component.NewIDWithName(component.DataTypeTraces, "other")
