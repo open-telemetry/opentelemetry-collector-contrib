@@ -224,7 +224,7 @@ require (
 	cloud.google.com/go/longrunning v0.5.4 // indirect
 	cloud.google.com/go/monitoring v1.16.3 // indirect
 	cloud.google.com/go/pubsub v1.33.0 // indirect
-	cloud.google.com/go/spanner v1.53.1 // indirect
+	cloud.google.com/go/spanner v1.54.0 // indirect
 	cloud.google.com/go/trace v1.10.4 // indirect
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
@@ -261,14 +261,14 @@ require (
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.16.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.102 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.0-rc.7 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-rc.7 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.0-rc.7 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.0-rc.7 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.0-rc.7 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.50.0-rc.7 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.0-rc.7 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.50.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.50.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.20.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-sqllexer v0.0.8 // indirect
@@ -701,7 +701,7 @@ require (
 	google.golang.org/genproto v0.0.0-20231211222908-989df2bf70f3 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231120223509-83a465c0220f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0 // indirect
-	google.golang.org/grpc v1.60.0 // indirect
+	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
