@@ -18,6 +18,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -83,7 +84,7 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, sourcePr
 	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
 		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
-	if connectorPerformanceFeatureGate.IsEnabled() {
+	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
 		options = append(options, otlpmetrics.WithStatsOut(statsOut))
 	}
 	return otlpmetrics.NewTranslator(set, options...)

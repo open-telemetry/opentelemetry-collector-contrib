@@ -14,6 +14,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -43,13 +44,6 @@ var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.DisableAPMStats",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Datadog Exporter will not compute APM Stats"),
-)
-
-// connectorPerformanceFeatureGate uses optimized code paths for the Datadog Connector.
-var connectorPerformanceFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"connector.datadogconnector.performance",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Datadog Connector will use optimized code"),
 )
 
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
@@ -261,7 +255,6 @@ func (f *factory) createMetricsExporter(
 	c component.Config,
 ) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
-
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
@@ -276,7 +269,7 @@ func (f *factory) createMetricsExporter(
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
 	}
 	var statsOut chan []byte
-	if connectorPerformanceFeatureGate.IsEnabled() {
+	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
 		statsOut = make(chan []byte, 1000)
 		statsv := set.BuildInfo.Command + set.BuildInfo.Version
 		f.consumeStatsPayload(ctx, statsOut, traceagent, statsv, set.Logger)

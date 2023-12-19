@@ -8,12 +8,12 @@ import (
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 // connectorImp is the schema for connector
@@ -105,8 +105,19 @@ func (c *connectorImp) run() {
 			if len(stats.Stats) == 0 {
 				continue
 			}
+			var mx pmetric.Metrics
+			var err error
+			if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
+				c.logger.Debug("Received stats payload", zap.Any("stats", stats))
+				mx, err = c.translator.StatsToMetrics(stats)
+				if err != nil {
+					c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
+					continue
+				}
+			} else {
+				mx = c.translator.StatsPayloadToMetrics(stats)
+			}
 			// APM stats as metrics
-			mx := c.translator.StatsPayloadToMetrics(stats)
 			ctx := context.TODO()
 
 			// send metrics to the consumer or next component in pipeline
