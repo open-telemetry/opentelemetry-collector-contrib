@@ -62,12 +62,13 @@ var (
 	// error by using a ThresholdGreater() test, which allows them
 	// to report a more clear error to the user.  For example, if
 	// data arrives sampled at 1/100 and an eqalizing sampler is
-	// configureed for 1/2 sampling, the Sampler should detect the
-	// illogical condition itself and skip the call to
-	// UpdateTValueWithSampling.  This condition should be
-	// avoided, but if it arises it is safe to ignore.  In the example,
-	// the span will continue to indicate it was sampled at 1/100 even
-	// after passing through the 1/2 equalizing sampler.
+	// configureed for 1/2 sampling, the Sampler may detect the
+	// illogical condition itself using ThresholdGreater and skip
+	// the call to UpdateTValueWithSampling, which will have no
+	// effect and return this error.  How a sampler decides to
+	// handle this condition is up to the sampler: for example the
+	// equalizing sampler can decide to pass through a span
+	// indicating 1/100 sampling or it can reject the span.
 	ErrInconsistentSampling = fmt.Errorf("cannot raise existing sampling probability")
 )
 
