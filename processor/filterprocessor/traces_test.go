@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -264,7 +263,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterSpansProcessor(componenttest.NewNopTelemetrySettings(), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
+			processor, err := newFilterSpansProcessor(processortest.NewNopCreateSettings(), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processTraces(context.Background(), constructTraces())
@@ -279,6 +278,26 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFilterTraceProcessorTelemetry(t *testing.T) {
+	telemetryTest(t, "FilterTraceProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
+		processor, err := newFilterSpansProcessor(processortest.NewNopCreateSettings(), &Config{
+			Traces: TraceFilters{
+				SpanConditions: []string{
+					`name == "operationA"`,
+				},
+			}, ErrorMode: ottl.IgnoreError,
+		})
+		assert.NoError(t, err)
+
+		_, err = processor.processTraces(context.Background(), constructTraces())
+		assert.NoError(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			spansFiltered: 2,
+		})
+	})
 }
 
 func constructTraces() ptrace.Traces {
