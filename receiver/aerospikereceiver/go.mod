@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/aerospike/aerospike-client-go/v6 v6.14.1
-	github.com/aerospike/aerospike-client-go/v7 v7.0.0
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
@@ -60,6 +59,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/onsi/ginkgo/v2 v2.13.0 // indirect
+	github.com/onsi/gomega v1.29.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.91.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.91.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
