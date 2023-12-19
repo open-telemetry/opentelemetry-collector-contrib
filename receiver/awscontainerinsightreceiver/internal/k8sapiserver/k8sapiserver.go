@@ -44,7 +44,7 @@ type eventBroadcaster interface {
 	StartLogging(logf func(format string, args ...any)) watch.Interface
 	// NewRecorder returns an EventRecorder that can be used to send events to this EventBroadcaster
 	// with the event source set to the given event source.
-	NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorder
+	NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorderLogger
 }
 
 type K8sClient interface {

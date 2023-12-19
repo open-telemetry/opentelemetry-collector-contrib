@@ -100,7 +100,7 @@ func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...any)) 
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) record.EventRecorder {
+func (m *mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) record.EventRecorderLogger {
 	return record.NewFakeRecorder(100)
 }
 
