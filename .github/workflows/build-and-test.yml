@@ -297,7 +297,7 @@ jobs:
     needs: [unittest]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v3
         with:
           name: coverage-artifacts
       - name: Upload coverage report
@@ -477,7 +477,7 @@ jobs:
       - name: Install fpm
         run: gem install --no-document fpm -v 1.11.0
       - name: Download Collector Binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: collector-binaries
           path: bin/
@@ -514,7 +514,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Download Binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: collector-binaries
           path: ./bin/
@@ -547,12 +547,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download Binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: collector-binaries
           path: ./bin/
       - name: Download Packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: collector-packages
           path: ./dist/
@@ -588,13 +588,13 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Download Binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: collector-binaries
           path: ./bin/
       - run: chmod +x bin/*
       - name: Download Packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: collector-packages
           path: ./dist/
