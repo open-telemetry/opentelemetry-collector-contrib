@@ -16,3 +16,8 @@ status:
   - liatrio
   codeowners:
     active: [yurishkuro]
+
+tests:
+  config:
+    protocols:
+      grpc:

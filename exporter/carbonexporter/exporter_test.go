@@ -32,13 +32,14 @@ import (
 
 func TestNewWithDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	got, err := newCarbonExporter(cfg, exportertest.NewNopCreateSettings())
+	got, err := newCarbonExporter(context.TODO(), cfg, exportertest.NewNopCreateSettings())
 	assert.NotNil(t, got)
 	assert.NoError(t, err)
 }
 
 func TestConsumeMetricsNoServer(t *testing.T) {
 	exp, err := newCarbonExporter(
+		context.TODO(),
 		&Config{
 			TCPAddr:         confignet.TCPAddr{Endpoint: testutil.GetAvailableLocalAddress(t)},
 			TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
@@ -58,6 +59,7 @@ func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
 	cs.start(t, 1)
 
 	exp, err := newCarbonExporter(
+		context.TODO(),
 		&Config{
 			TCPAddr:                   confignet.TCPAddr{Endpoint: addr},
 			TimeoutSettings:           exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
@@ -122,6 +124,7 @@ func TestConsumeMetrics(t *testing.T) {
 			cs.start(t, tt.numProducers*tt.writesPerProducer*tt.md.DataPointCount())
 
 			exp, err := newCarbonExporter(
+				context.TODO(),
 				&Config{
 					TCPAddr:         confignet.TCPAddr{Endpoint: addr},
 					TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},

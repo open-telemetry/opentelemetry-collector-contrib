@@ -8,8 +8,6 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/consumer"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 var errNilListenAndServeParameters = errors.New("no parameter of ListenAndServe can be nil")
@@ -21,7 +19,6 @@ type Server interface {
 	// on the specific transport, and prepares the message to be processed by
 	// the Parser and passed to the next consumer.
 	ListenAndServe(
-		p protocol.Parser,
 		mc consumer.Metrics,
 		r Reporter,
 		transferChan chan<- Metric,
