@@ -29,6 +29,8 @@ func TestLoadConfig(t *testing.T) {
 	// URL doesn't have a default value so set it directly.
 	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.Endpoint = "http://some.location.org:9411/api/v2/spans"
+	maxIdleConns := 50
+	idleConnTimeout := 5 * time.Second
 
 	tests := []struct {
 		id       component.ID
@@ -61,6 +63,8 @@ func TestLoadConfig(t *testing.T) {
 					TLSSetting: configtls.TLSClientSetting{
 						InsecureSkipVerify: true,
 					},
+					MaxIdleConns:    &maxIdleConns,
+					IdleConnTimeout: &idleConnTimeout,
 				},
 				Format:             "proto",
 				DefaultServiceName: "test_name",
