@@ -49,12 +49,11 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	tc, idx, ok := failoverConnector.failover.getCurrentConsumer()
+	tc, _, ok := failoverConnector.failover.getCurrentConsumer()
 	tc1 := failoverConnector.failover.GetConsumerAtIndex(1)
 	tc2 := failoverConnector.failover.GetConsumerAtIndex(2)
 
 	assert.True(t, ok)
-	require.Equal(t, idx, 0)
 	require.Implements(t, (*consumer.Traces)(nil), tc)
 	require.Implements(t, (*consumer.Traces)(nil), tc1)
 	require.Implements(t, (*consumer.Traces)(nil), tc2)
@@ -93,7 +92,8 @@ func TestTracesWithValidFailover(t *testing.T) {
 	tr := sampleTrace()
 
 	require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
-	_, idx, ok := failoverConnector.failover.getCurrentConsumer()
+	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
+	idx := failoverConnector.failover.pS.ChannelIndex(ch)
 	assert.True(t, ok)
 	require.Equal(t, idx, 1)
 }
@@ -168,7 +168,8 @@ func TestTracesWithFailoverRecovery(t *testing.T) {
 	tr := sampleTrace()
 
 	require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
-	_, idx, ok := failoverConnector.failover.getCurrentConsumer()
+	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
+	idx := failoverConnector.failover.pS.ChannelIndex(ch)
 
 	assert.True(t, ok)
 	require.Equal(t, idx, 1)
@@ -178,7 +179,8 @@ func TestTracesWithFailoverRecovery(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	_, idx, ok = failoverConnector.failover.getCurrentConsumer()
+	_, ch, ok = failoverConnector.failover.getCurrentConsumer()
+	idx = failoverConnector.failover.pS.ChannelIndex(ch)
 	assert.True(t, ok)
 	require.Equal(t, idx, 0)
 }
