@@ -219,6 +219,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		rms := finalOtelMetrics.ResourceMetrics()
 		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
+		// Verify if all metrics are generated, including NaN, Inf values
 		require.Equal(t, 19, metrics.Len(), "mock metric creation failed")
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
