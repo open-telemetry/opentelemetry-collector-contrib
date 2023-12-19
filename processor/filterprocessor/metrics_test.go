@@ -401,7 +401,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		assert.Nil(t, err)
 
 		tel.assertMetrics(t, expectedMetrics{
-			metricsFiltered: float64(0),
+			metricDataPointsFiltered: float64(0),
 		})
 
 		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
@@ -415,7 +415,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		assert.Nil(t, err)
 
 		tel.assertMetrics(t, expectedMetrics{
-			metricsFiltered: float64(1),
+			metricDataPointsFiltered: float64(1),
 		})
 
 		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
@@ -429,7 +429,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		assert.Nil(t, err)
 
 		tel.assertMetrics(t, expectedMetrics{
-			metricsFiltered: float64(2),
+			metricDataPointsFiltered: float64(2),
 		})
 
 		assert.NoError(t, fmp.Shutdown(ctx))

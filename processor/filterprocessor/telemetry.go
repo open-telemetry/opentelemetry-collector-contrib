@@ -27,7 +27,7 @@ const (
 var (
 	typeStr                      = metadata.Type
 	processorTagKey              = tag.MustNewKey(typeStr)
-	statMetricDataPointsFiltered = stats.Int64("metrics.filtered", "Number of metric data points dropped by the filter processor", stats.UnitDimensionless)
+	statMetricDataPointsFiltered = stats.Int64("datapoints.filtered", "Number of metric data points dropped by the filter processor", stats.UnitDimensionless)
 	statLogsFiltered             = stats.Int64("logs.filtered", "Number of logs dropped by the filter processor", stats.UnitDimensionless)
 	statSpansFiltered            = stats.Int64("spans.filtered", "Number of spans dropped by the filter processor", stats.UnitDimensionless)
 )

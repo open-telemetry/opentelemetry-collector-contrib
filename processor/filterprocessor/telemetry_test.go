@@ -27,7 +27,7 @@ import (
 
 func TestFilterProcessorMetrics(t *testing.T) {
 	viewNames := []string{
-		"metrics.filtered",
+		"datapoints.filtered",
 		"logs.filtered",
 		"spans.filtered",
 	}
@@ -45,7 +45,7 @@ type testTelemetry struct {
 
 type expectedMetrics struct {
 	// processor_filter_metrics_filtered
-	metricsFiltered float64
+	metricDataPointsFiltered float64
 	// processor_filter_logs_filtered
 	logsFiltered float64
 	// processor_filter_spans_filtered
@@ -105,11 +105,11 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	metrics, err := parser.TextToMetricFamilies(rr.Body)
 	require.NoError(t, err)
 
-	if expected.metricsFiltered > 0 {
-		name := "processor_filter_metrics_filtered"
+	if expected.metricDataPointsFiltered > 0 {
+		name := "processor_filter_datapoints_filtered"
 		metric := tt.getMetric(t, name, io_prometheus_client.MetricType_COUNTER, metrics)
 
-		assertFloat(t, expected.metricsFiltered, metric.GetCounter().GetValue(), name)
+		assertFloat(t, expected.metricDataPointsFiltered, metric.GetCounter().GetValue(), name)
 	}
 	if expected.logsFiltered > 0 {
 		name := "processor_filter_logs_filtered"
