@@ -8,3 +8,5 @@ status:
   warnings: [Orphaned Telemetry, Other]
   codeowners:
     active: [TylerHelmuth, boostchicken]
+tests:
+  config:

@@ -432,3 +432,6 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ../../internal/collectd
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension => ../../extension/remotetapextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension => ../../extension/opampextension
+  - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter => ../../testbed/mockdatasenders/mockdatadogagentexporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../testbed
+  - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver => ../../testbed/mockdatareceivers/mockawsxrayreceiver

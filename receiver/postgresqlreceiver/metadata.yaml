@@ -307,3 +307,5 @@ metrics:
     extended_documentation: |
       This metric requires WAL to be enabled with at least one replica.
   
+tests:
+  config:

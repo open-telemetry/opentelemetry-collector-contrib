@@ -7,3 +7,5 @@ status:
   distributions: [core, contrib, observiq, splunk, sumo]
   codeowners:
     active: [dmitryax, braydonk]
+tests:
+  config:

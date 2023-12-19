@@ -8,3 +8,5 @@ status:
   warnings: [Statefulness]
   codeowners:
     active: [jpkrohling]
+tests:
+  config:

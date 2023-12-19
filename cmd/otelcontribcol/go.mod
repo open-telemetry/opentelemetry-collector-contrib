@@ -305,7 +305,7 @@ require (
 	github.com/apache/thrift v0.19.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.49.1 // indirect
+	github.com/aws/aws-sdk-go v1.49.5 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.24.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.26.1 // indirect
@@ -684,8 +684,8 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/crypto v0.16.0 // indirect
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
@@ -1170,3 +1170,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/colle
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension => ../../extension/remotetapextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension => ../../extension/opampextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter => ../../testbed/mockdatasenders/mockdatadogagentexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../testbed
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver => ../../testbed/mockdatareceivers/mockawsxrayreceiver
