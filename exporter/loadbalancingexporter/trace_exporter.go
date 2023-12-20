@@ -142,7 +142,8 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 		return nil, errors.New("empty spans")
 	}
 
-	if key == svcRouting {
+	switch key {
+	case svcRouting:
 		for i := 0; i < rs.Len(); i++ {
 			svc, ok := rs.At(i).Resource().Attributes().Get("service.name")
 			if !ok {
@@ -150,10 +151,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 			}
 			ids[svc.Str()] = true
 		}
-		return ids, nil
-	}
-
-	if key == svcOperationRouting {
+	case svcOperationRouting:
 		for i := 0; i < rs.Len(); i++ {
 			svc, ok := rs.At(i).Resource().Attributes().Get("service.name")
 			if !ok {
@@ -164,10 +162,9 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 				ids[fmt.Sprintf("%s|%s", svc.Str(), span.Name())] = true
 			}
 		}
-		return ids, nil
+	default:
+		tid := spans.At(0).TraceID()
+		ids[string(tid[:])] = true
 	}
-
-	tid := spans.At(0).TraceID()
-	ids[string(tid[:])] = true
 	return ids, nil
 }
