@@ -1,29 +1,22 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
+package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/transport"
 
 import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strings"
 	"sync"
 	"time"
 
-	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-)
-
-const (
-	// TCPIdleTimeoutDefault is the default timeout for idle TCP connections.
-	TCPIdleTimeoutDefault = 30 * time.Second
 )
 
 type tcpServer struct {
@@ -40,14 +33,6 @@ func NewTCPServer(
 	addr string,
 	idleTimeout time.Duration,
 ) (Server, error) {
-	if idleTimeout < 0 {
-		return nil, fmt.Errorf("invalid idle timeout: %v", idleTimeout)
-	}
-
-	if idleTimeout == 0 {
-		idleTimeout = TCPIdleTimeoutDefault
-	}
-
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
@@ -134,16 +119,10 @@ func (t *tcpServer) handleConnection(
 	conn net.Conn,
 ) {
 	defer conn.Close()
-	var span *trace.Span
 	reader := bufio.NewReader(conn)
 	reporterActive := false
 	var ctx context.Context
 	for {
-		if span != nil {
-			span.End()
-			span = nil
-		}
-
 		if err := conn.SetDeadline(time.Now().Add(t.idleTimeout)); err != nil {
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - conn.SetDeadLine error: %v",
@@ -188,7 +167,6 @@ func (t *tcpServer) handleConnection(
 				// Since this is a TCP connection it seems reasonable to close the
 				// connection as a way to report "error" back to client and minimize
 				// the effect of a client constantly submitting bad data.
-				span.End()
 				return
 			}
 		}
@@ -201,7 +179,6 @@ func (t *tcpServer) handleConnection(
 				if reporterActive {
 					t.reporter.OnMetricsProcessed(ctx, 0, err)
 				}
-				span.End()
 				return
 			}
 		}
@@ -215,7 +192,6 @@ func (t *tcpServer) handleConnection(
 			if reporterActive {
 				t.reporter.OnMetricsProcessed(ctx, 0, err)
 			}
-			span.End()
 			return
 		}
 	}

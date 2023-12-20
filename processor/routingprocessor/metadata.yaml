@@ -7,3 +7,6 @@ status:
   distributions: [contrib, observiq, splunk, sumo, redhat]
   codeowners:
     active: [jpkrohling]
+
+tests:
+  config:
