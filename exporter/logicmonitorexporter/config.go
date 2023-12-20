@@ -6,6 +6,7 @@ package logicmonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -24,6 +25,8 @@ type Config struct {
 
 	// ApiToken of Logicmonitor Platform
 	APIToken APIToken `mapstructure:"api_token"`
+	// Logs defines the Logs exporter specific configuration
+	Logs LogsConfig `mapstructure:"logs"`
 }
 
 type APIToken struct {
@@ -31,14 +34,38 @@ type APIToken struct {
 	AccessKey configopaque.String `mapstructure:"access_key"`
 }
 
+type MappingOperation string
+
+const (
+	And MappingOperation = "and"
+	Or  MappingOperation = "or"
+)
+
+func (mop *MappingOperation) UnmarshalText(in []byte) error {
+	switch op := MappingOperation(strings.ToLower(string(in))); op {
+	case And, Or:
+		*mop = op
+		return nil
+
+	default:
+		return fmt.Errorf("unsupported mapping operation %q", op)
+	}
+}
+
+// LogsConfig defines the logs exporter specific configuration options
+type LogsConfig struct {
+	// Operation to be performed for resource mapping. Valid values are `and`, `or`.
+	ResourceMappingOperation MappingOperation `mapstructure:"resource_mapping_op"`
+}
+
 func (c *Config) Validate() error {
 	if c.Endpoint == "" {
-		return fmt.Errorf("Endpoint should not be empty")
+		return fmt.Errorf("endpoint should not be empty")
 	}
 
 	u, err := url.Parse(c.Endpoint)
 	if err != nil || u.Scheme == "" || u.Host == "" {
-		return fmt.Errorf("Endpoint must be valid")
+		return fmt.Errorf("endpoint must be valid")
 	}
 	return nil
 }

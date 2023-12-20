@@ -5,7 +5,7 @@ status:
   stability:
     beta: [metrics]
     development: [logs]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib, splunk, observiq, sumo, liatrio]
   codeowners:
     active: [dmitryax, TylerHelmuth, povilasv]
 

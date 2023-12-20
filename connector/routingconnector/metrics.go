@@ -72,7 +72,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		rtx := ottlresource.NewTransformContext(rmetrics.Resource())
 
 		noRoutesMatch := true
-		for _, route := range c.router.routes {
+		for _, route := range c.router.routeSlice {
 			_, isMatch, err := route.statement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
@@ -84,6 +84,9 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 			if isMatch {
 				noRoutesMatch = false
 				c.group(groups, route.consumer, rmetrics)
+				if c.config.MatchOnce {
+					break
+				}
 			}
 
 		}
