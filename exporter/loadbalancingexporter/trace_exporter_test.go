@@ -191,6 +191,42 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestConsumeTracesServiceOperationBased(t *testing.T) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return newNopMockTracesExporter(), nil
+	}
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceOperationBasedRoutingConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), serviceOperationBasedRoutingConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+	assert.Equal(t, p.routingKey, svcOperationRouting)
+
+	// pre-load an exporter here, so that we don't use the actual OTLP exporter
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(ctx context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// test
+	res := p.ConsumeTraces(context.Background(), simpleTracesWithServiceName())
+
+	// verify
+	assert.Nil(t, res)
+}
+
 func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 	b := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	for _, tt := range []struct {
@@ -587,6 +623,15 @@ func serviceBasedRoutingConfig() *Config {
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
 		RoutingKey: "service",
+	}
+}
+
+func serviceOperationBasedRoutingConfig() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+		},
+		RoutingKey: "svcoperation",
 	}
 }
 

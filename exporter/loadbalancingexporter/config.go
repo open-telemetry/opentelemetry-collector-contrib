@@ -16,6 +16,7 @@ const (
 	svcRouting
 	metricNameRouting
 	resourceRouting
+	svcOperationRouting
 )
 
 // Config defines configuration for the exporter.

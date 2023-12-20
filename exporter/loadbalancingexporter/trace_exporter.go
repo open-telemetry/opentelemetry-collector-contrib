@@ -49,6 +49,8 @@ func newTracesExporter(params exporter.CreateSettings, cfg component.Config) (*t
 	switch cfg.(*Config).RoutingKey {
 	case "service":
 		traceExporter.routingKey = svcRouting
+	case "svcoperation":
+		traceExporter.routingKey = svcOperationRouting
 	case "traceID", "":
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
@@ -144,12 +146,27 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 		for i := 0; i < rs.Len(); i++ {
 			svc, ok := rs.At(i).Resource().Attributes().Get("service.name")
 			if !ok {
-				return nil, errors.New("unable to get service name")
+				continue
 			}
 			ids[svc.Str()] = true
 		}
 		return ids, nil
 	}
+
+	if key == svcOperationRouting {
+		for i := 0; i < rs.Len(); i++ {
+			svc, ok := rs.At(i).Resource().Attributes().Get("service.name")
+			if !ok {
+				continue
+			}
+			for j := 0; j < spans.Len(); j++ {
+				span := spans.At(i)
+				ids[fmt.Sprintf("%s|%s", svc.Str(), span.Name())] = true
+			}
+		}
+		return ids, nil
+	}
+
 	tid := spans.At(0).TraceID()
 	ids[string(tid[:])] = true
 	return ids, nil
