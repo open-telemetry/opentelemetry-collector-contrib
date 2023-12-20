@@ -24,9 +24,9 @@ const (
 	draOutboundObjects                     = "DRA Outbound Objects/sec"
 	draInboundProperties                   = "DRA Inbound Properties Total/sec"
 	draOutboundProperties                  = "DRA Outbound Properties/sec"
-	draInboundValuesDNs                    = "DRA Inbound Values (DNs only)/sec"
+	draInboundValuesDNs                    = "DRA Inbound Values (DNs only)/sec" //revive:disable-line:var-naming
 	draInboundValuesTotal                  = "DRA Inbound Values Total/sec"
-	draOutboundValuesDNs                   = "DRA Outbound Values (DNs only)/sec"
+	draOutboundValuesDNs                   = "DRA Outbound Values (DNs only)/sec" //revive:disable-line:var-naming
 	draOutboundValuesTotal                 = "DRA Outbound Values Total/sec"
 	draPendingReplicationOperations        = "DRA Pending Replication Operations"
 	draSyncFailuresSchemaMismatch          = "DRA Sync Failures on Schema Mismatch"
