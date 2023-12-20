@@ -95,9 +95,15 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
 	promConfig := cfg.PrometheusConfig
-	err := cfg.validatePromConfig(promConfig)
-	if err != nil {
-		return err
+	if (promConfig == nil || len(promConfig.ScrapeConfigs) == 0) && cfg.TargetAllocator == nil {
+		return errors.New("no Prometheus scrape_configs or target_allocator set")
+	}
+
+	if promConfig != nil {
+		err := cfg.validatePromConfig(promConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	if cfg.TargetAllocator != nil {
@@ -110,13 +116,6 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
-	if (promConfig == nil || len(promConfig.ScrapeConfigs) == 0) && cfg.TargetAllocator == nil {
-		return errors.New("no Prometheus scrape_configs or target_allocator set")
-	} else if promConfig == nil {
-		// nothing to validate
-		return nil
-	}
-
 	// Reject features that Prometheus supports but that the receiver doesn't support:
 	// See:
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3863
