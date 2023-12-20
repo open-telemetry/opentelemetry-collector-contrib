@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	github.com/tg123/go-htpasswd v1.2.1
+	github.com/tg123/go-htpasswd v1.2.2
 	go.opentelemetry.io/collector v0.91.0
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/config/configopaque v0.91.0
@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.91.0
 	go.opentelemetry.io/otel/metric v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
-	google.golang.org/grpc v1.60.0
+	google.golang.org/grpc v1.60.1
 )
 
 require (

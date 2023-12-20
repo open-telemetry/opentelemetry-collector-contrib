@@ -5,11 +5,11 @@ package carbonexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"io"
 	"net"
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -21,7 +21,8 @@ import (
 // newCarbonExporter returns a new Carbon exporter.
 func newCarbonExporter(ctx context.Context, cfg *Config, set exporter.CreateSettings) (exporter.Metrics, error) {
 	sender := carbonSender{
-		writer: newTCPConnPool(cfg.Endpoint, cfg.Timeout),
+		writeTimeout: cfg.Timeout,
+		conns:        newConnPool(cfg.TCPAddr, cfg.Timeout, cfg.MaxIdleConns),
 	}
 
 	exp, err := exporterhelper.NewMetricsExporter(
@@ -44,79 +45,12 @@ func newCarbonExporter(ctx context.Context, cfg *Config, set exporter.CreateSett
 // connections into an implementations of exporterhelper.PushMetricsData so
 // the exporter can leverage the helper and get consistent observability.
 type carbonSender struct {
-	writer io.WriteCloser
+	writeTimeout time.Duration
+	conns        connPool
 }
 
 func (cs *carbonSender) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
 	lines := metricDataToPlaintext(md)
-
-	if _, err := cs.writer.Write([]byte(lines)); err != nil {
-		// Use the sum of converted and dropped since the write failed for all.
-		return err
-	}
-
-	return nil
-}
-
-func (cs *carbonSender) Shutdown(context.Context) error {
-	return cs.writer.Close()
-}
-
-// connPool is a very simple implementation of a pool of net.TCPConn instances.
-// The implementation hides the pool and exposes a Write and Close methods.
-// It leverages the prior art from SignalFx Gateway (see
-// https://github.com/signalfx/gateway/blob/master/protocol/carbon/conn_pool.go
-// but not its implementation).
-//
-// It keeps an unbounded "stack" of TCPConn instances always "popping" the most
-// recently returned to the pool. There is no accounting to terminating old
-// unused connections as that was the case on the prior art mentioned above.
-type connPool struct {
-	mtx      sync.Mutex
-	conns    []net.Conn
-	endpoint string
-	timeout  time.Duration
-}
-
-func newTCPConnPool(
-	endpoint string,
-	timeout time.Duration,
-) io.WriteCloser {
-	return &connPool{
-		endpoint: endpoint,
-		timeout:  timeout,
-	}
-}
-
-func (cp *connPool) Write(bytes []byte) (int, error) {
-	var conn net.Conn
-	var err error
-
-	start := time.Now()
-	cp.mtx.Lock()
-	lastIdx := len(cp.conns) - 1
-	if lastIdx >= 0 {
-		conn = cp.conns[lastIdx]
-		cp.conns = cp.conns[0:lastIdx]
-	}
-	cp.mtx.Unlock()
-	if conn == nil {
-		if conn, err = cp.createTCPConn(); err != nil {
-			return 0, err
-		}
-	}
-
-	// The deferred function below is what puts back connections on the pool if no error.
-	defer func() {
-		if err != nil {
-			// err already not nil, so will not influence retry logic because of the connection close.
-			err = multierr.Append(err, conn.Close())
-			return
-		}
-		cp.mtx.Lock()
-		cp.conns = append(cp.conns, conn)
-		cp.mtx.Unlock()
-	}()
 
 	// There is no way to do a call equivalent to recvfrom with an empty buffer
 	// to check if the connection was terminated (if the size of the buffer is
@@ -136,17 +70,120 @@ func (cp *connPool) Write(bytes []byte) (int, error) {
 	// facts this "workaround" is not being added at this moment. If it is
 	// needed in some scenarios the workaround should be validated on other
 	// platforms and offered as a configuration setting.
-
-	if err = conn.SetWriteDeadline(start.Add(cp.timeout)); err != nil {
-		return 0, err
+	conn, err := cs.conns.get()
+	if err != nil {
+		return err
 	}
 
-	var n int
-	n, err = conn.Write(bytes)
-	return n, err
+	if err = conn.SetWriteDeadline(time.Now().Add(cs.writeTimeout)); err != nil {
+		// Do not re-enqueue the connection since it failed to set a deadline.
+		return multierr.Append(err, conn.Close())
+	}
+
+	// If we did not write all bytes will get an error, so no need to check for that.
+	_, err = conn.Write([]byte(lines))
+	if err != nil {
+		// Do not re-enqueue the connection since it failed to write.
+		return multierr.Append(err, conn.Close())
+	}
+
+	// Even if we close the connection because of the max idle connections,
+	cs.conns.put(conn)
+	return nil
 }
 
-func (cp *connPool) Close() error {
+func (cs *carbonSender) Shutdown(context.Context) error {
+	return cs.conns.close()
+}
+
+// connPool is a very simple implementation of a pool of net.Conn instances.
+type connPool interface {
+	get() (net.Conn, error)
+	put(conn net.Conn)
+	close() error
+}
+
+func newConnPool(
+	tcpConfig confignet.TCPAddr,
+	timeout time.Duration,
+	maxIdleConns int,
+) connPool {
+	if maxIdleConns == 0 {
+		return &nopConnPool{
+			timeout:   timeout,
+			tcpConfig: tcpConfig,
+		}
+	}
+	return &connPoolWithIdle{
+		timeout:      timeout,
+		tcpConfig:    tcpConfig,
+		maxIdleConns: maxIdleConns,
+	}
+}
+
+// nopConnPool is a very simple implementation that does not cache any net.Conn.
+type nopConnPool struct {
+	timeout   time.Duration
+	tcpConfig confignet.TCPAddr
+}
+
+func (cp *nopConnPool) get() (net.Conn, error) {
+	return createTCPConn(cp.tcpConfig, cp.timeout)
+}
+
+func (cp *nopConnPool) put(conn net.Conn) {
+	_ = conn.Close()
+}
+
+func (cp *nopConnPool) close() error {
+	return nil
+}
+
+// connPool is a very simple implementation of a pool of net.Conn instances.
+//
+// It keeps at most maxIdleConns net.Conn and always "popping" the most
+// recently returned to the pool. There is no accounting to terminating old
+// unused connections.
+type connPoolWithIdle struct {
+	timeout      time.Duration
+	maxIdleConns int
+	mtx          sync.Mutex
+	conns        []net.Conn
+	tcpConfig    confignet.TCPAddr
+}
+
+func (cp *connPoolWithIdle) get() (net.Conn, error) {
+	if conn := cp.getFromCache(); conn != nil {
+		return conn, nil
+	}
+
+	return createTCPConn(cp.tcpConfig, cp.timeout)
+}
+
+func (cp *connPoolWithIdle) put(conn net.Conn) {
+	cp.mtx.Lock()
+	defer cp.mtx.Unlock()
+	// Do not cache if above limit.
+	if len(cp.conns) > cp.maxIdleConns {
+		_ = conn.Close()
+		return
+	}
+	cp.conns = append(cp.conns, conn)
+}
+
+func (cp *connPoolWithIdle) getFromCache() net.Conn {
+	cp.mtx.Lock()
+	defer cp.mtx.Unlock()
+	lastIdx := len(cp.conns) - 1
+	if lastIdx < 0 {
+		return nil
+	}
+	conn := cp.conns[lastIdx]
+	cp.conns = cp.conns[0:lastIdx]
+	return conn
+}
+
+func (cp *connPoolWithIdle) close() error {
 	cp.mtx.Lock()
 	defer cp.mtx.Unlock()
 
@@ -158,8 +195,8 @@ func (cp *connPool) Close() error {
 	return errs
 }
 
-func (cp *connPool) createTCPConn() (net.Conn, error) {
-	c, err := net.DialTimeout("tcp", cp.endpoint, cp.timeout)
+func createTCPConn(tcpConfig confignet.TCPAddr, timeout time.Duration) (net.Conn, error) {
+	c, err := net.DialTimeout("tcp", tcpConfig.Endpoint, timeout)
 	if err != nil {
 		return nil, err
 	}
