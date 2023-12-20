@@ -222,6 +222,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		}
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(db)
+		rb.SetPostgresqlSchemaName(tm.schema)
 		rb.SetPostgresqlTableName(tm.table)
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -247,6 +248,7 @@ func (p *postgreSQLScraper) collectIndexes(
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(database)
 		rb.SetPostgresqlTableName(stat.table)
+		rb.SetPostgresqlSchemaName(stat.schema)
 		rb.SetPostgresqlIndexName(stat.index)
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}

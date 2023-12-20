@@ -305,17 +305,17 @@ func (m *mockClientFactory) getClient(_ *Config, database string) (client, error
 
 func (m *mockClientFactory) initMocks(databases []string) {
 	listClient := new(mockClient)
-	listClient.initMocks("", databases, 0)
+	listClient.initMocks("", "default", databases, 0)
 	m.On("getClient", "").Return(listClient, nil)
 
 	for index, db := range databases {
 		client := new(mockClient)
-		client.initMocks(db, databases, index)
+		client.initMocks(db, "default", databases, index)
 		m.On("getClient", db).Return(client, nil)
 	}
 }
 
-func (m *mockClient) initMocks(database string, databases []string, index int) {
+func (m *mockClient) initMocks(database string, schema string, databases []string, index int) {
 	m.On("Close").Return(nil)
 
 	if database == "" {
@@ -408,8 +408,9 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		table1 := "public.table1"
 		table2 := "public.table2"
 		tableMetrics := map[tableIdentifier]tableStats{
-			tableKey(database, table1): {
+			tableKey(database, schema, table1): {
 				database:    database,
+				schema:      schema,
 				table:       table1,
 				live:        int64(index + 7),
 				dead:        int64(index + 8),
@@ -421,8 +422,9 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				vacuumCount: int64(index + 44),
 				seqScans:    int64(index + 45),
 			},
-			tableKey(database, table2): {
+			tableKey(database, schema, table2): {
 				database:    database,
+				schema:      schema,
 				table:       table2,
 				live:        int64(index + 9),
 				dead:        int64(index + 10),
@@ -437,8 +439,9 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		}
 
 		blocksMetrics := map[tableIdentifier]tableIOStats{
-			tableKey(database, table1): {
+			tableKey(database, schema, table1): {
 				database:  database,
+				schema:    schema,
 				table:     table1,
 				heapRead:  int64(index + 19),
 				heapHit:   int64(index + 20),
@@ -449,8 +452,9 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				tidxRead:  int64(index + 25),
 				tidxHit:   int64(index + 26),
 			},
-			tableKey(database, table2): {
+			tableKey(database, schema, table2): {
 				database:  database,
+				schema:    schema,
 				table:     table2,
 				heapRead:  int64(index + 27),
 				heapHit:   int64(index + 28),
@@ -469,15 +473,17 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		index1 := fmt.Sprintf("%s_test1_pkey", database)
 		index2 := fmt.Sprintf("%s_test2_pkey", database)
 		indexStats := map[indexIdentifer]indexStat{
-			indexKey(database, table1, index1): {
+			indexKey(database, schema, table1, index1): {
 				database: database,
+				schema:   schema,
 				table:    table1,
 				index:    index1,
 				scans:    int64(index + 35),
 				size:     int64(index + 36),
 			},
-			indexKey(index2, table2, index2): {
+			indexKey(index2, schema, table2, index2): {
 				database: database,
+				schema:   schema,
 				table:    table2,
 				index:    index2,
 				scans:    int64(index + 37),
