@@ -123,7 +123,7 @@ func (e *kafkaLogsProducer) Close(context.Context) error {
 func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c := sarama.NewConfig()
 
-	c.ClientID = config.Metadata.ClientID
+	c.ClientID = config.ClientID
 
 	// These setting are required by the sarama.SyncProducer implementation.
 	c.Producer.Return.Successes = true
