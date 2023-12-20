@@ -24,7 +24,7 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := DefaultConfig()
+	cfg := defaultConfig()
 	return &cfg
 }
 
@@ -44,7 +44,7 @@ func createExtensionWithFetcher(params extension.CreateSettings, sdCfg *Config, 
 		return nil, err
 	}
 	return &ecsObserver{
-		logger: params.Logger,
-		sd:     sd,
+		telemetrySettings: params.TelemetrySettings,
+		sd:                sd,
 	}, nil
 }

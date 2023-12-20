@@ -2,9 +2,25 @@
 
 package metadata
 
+import "go.opentelemetry.io/collector/confmap"
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/ecs resource attributes.
@@ -13,6 +29,7 @@ type ResourceAttributesConfig struct {
 	AwsEcsLaunchtype      ResourceAttributeConfig `mapstructure:"aws.ecs.launchtype"`
 	AwsEcsTaskArn         ResourceAttributeConfig `mapstructure:"aws.ecs.task.arn"`
 	AwsEcsTaskFamily      ResourceAttributeConfig `mapstructure:"aws.ecs.task.family"`
+	AwsEcsTaskID          ResourceAttributeConfig `mapstructure:"aws.ecs.task.id"`
 	AwsEcsTaskRevision    ResourceAttributeConfig `mapstructure:"aws.ecs.task.revision"`
 	AwsLogGroupArns       ResourceAttributeConfig `mapstructure:"aws.log.group.arns"`
 	AwsLogGroupNames      ResourceAttributeConfig `mapstructure:"aws.log.group.names"`
@@ -37,6 +54,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		AwsEcsTaskFamily: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		AwsEcsTaskID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		AwsEcsTaskRevision: ResourceAttributeConfig{

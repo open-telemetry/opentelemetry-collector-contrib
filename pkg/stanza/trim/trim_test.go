@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 )
 
 func TestTrim(t *testing.T) {
@@ -75,49 +77,100 @@ func TestTrim(t *testing.T) {
 }
 
 func TestWithFunc(t *testing.T) {
-	scanAndTrimLines := WithFunc(bufio.ScanLines, Config{
-		PreserveLeading:  false,
-		PreserveTrailing: false,
-	}.Func())
+	testCases := []struct {
+		name     string
+		baseFunc bufio.SplitFunc
+		trimFunc Func
+		input    []byte
+		steps    []splittest.Step
+	}{
+		{
+			// nil trim func should return original split func
+			name:     "NilTrimFunc",
+			input:    []byte(" hello \n world \n extra "),
+			baseFunc: bufio.ScanLines,
+			trimFunc: nil,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), " hello "),
+				splittest.ExpectAdvanceToken(len(" world \n"), " world "),
+				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
+			},
+		},
+		{
+			name:     "ScanLinesStrictWithTrim",
+			input:    []byte(" hello \n world \n extra "),
+			baseFunc: bufio.ScanLines,
+			trimFunc: Whitespace,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), "hello"),
+				splittest.ExpectAdvanceToken(len(" world \n"), "world"),
+				splittest.ExpectAdvanceToken(len(" extra "), "extra"),
+			},
+		},
+	}
 
-	input := []byte(" hello \n world \n extra ")
-
-	advance, token, err := scanAndTrimLines(input, false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte("hello"), token)
-
-	advance, token, err = scanAndTrimLines(input[8:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte("world"), token)
-
-	advance, token, err = scanAndTrimLines(input[16:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, advance)
-	assert.Nil(t, token)
+	for _, tc := range testCases {
+		splitFunc := WithFunc(tc.baseFunc, tc.trimFunc)
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+	}
 }
 
-func TestWithNilTrimFunc(t *testing.T) {
-	// Same test as above, but pass nil instead of a trim func
-	// In other words, we should expect exactly the behavior of bufio.ScanLines.
+func TestToLength(t *testing.T) {
+	testCases := []struct {
+		name      string
+		baseFunc  bufio.SplitFunc
+		maxLength int
+		input     []byte
+		steps     []splittest.Step
+	}{
+		{
+			name:      "IgnoreZeroLength",
+			input:     []byte(" hello \n world \n extra "),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 0,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), " hello "),
+				splittest.ExpectAdvanceToken(len(" world \n"), " world "),
+				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
+			},
+		},
+		{
+			name:      "NoLongTokens",
+			input:     []byte(" hello \n world \n extra "),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 100,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), " hello "),
+				splittest.ExpectAdvanceToken(len(" world \n"), " world "),
+				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
+			},
+		},
+		{
+			name:      "LongButNoToken",
+			input:     []byte("This is a long but incomplete token."),
+			baseFunc:  splittest.ScanLinesStrict,
+			maxLength: 10,
+			steps: []splittest.Step{
+				splittest.ExpectToken("This is a "),
+				splittest.ExpectToken("long but i"),
+				splittest.ExpectToken("ncomplete "),
+			},
+		},
+		{
+			name:      "OneLongToken",
+			input:     []byte("This is a very long token."),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 10,
+			steps: []splittest.Step{
+				splittest.ExpectToken("This is a "),
+				splittest.ExpectToken("very long "),
+				splittest.ExpectToken("token."),
+			},
+		},
+	}
 
-	scanLines := WithFunc(bufio.ScanLines, nil)
-
-	input := []byte(" hello \n world \n extra ")
-
-	advance, token, err := scanLines(input, false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte(" hello "), token)
-
-	advance, token, err = scanLines(input[8:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, advance)
-	assert.Equal(t, []byte(" world "), token)
-
-	advance, token, err = scanLines(input[16:], false)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, advance)
-	assert.Nil(t, token)
+	for _, tc := range testCases {
+		splitFunc := ToLength(tc.baseFunc, tc.maxLength)
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+	}
 }

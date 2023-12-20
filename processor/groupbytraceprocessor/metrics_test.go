@@ -21,7 +21,7 @@ func TestProcessorMetrics(t *testing.T) {
 		"processor/groupbytrace/processor_groupbytrace_event_latency",
 	}
 
-	views := MetricViews()
+	views := metricViews()
 	for i, viewName := range expectedViewNames {
 		assert.Equal(t, viewName, views[i].Name)
 	}

@@ -64,6 +64,10 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	return val, ok
 }
 
+func (c *Cache[K, V]) Contains(key K) bool {
+	return c.lru.Contains(key)
+}
+
 // Len returns the number of items in the cache.
 func (c *Cache[K, V]) Len() int {
 	return c.lru.Len()

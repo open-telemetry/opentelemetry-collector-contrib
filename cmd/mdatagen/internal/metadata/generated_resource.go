@@ -63,6 +63,27 @@ func (rb *ResourceBuilder) SetStringResourceAttr(val string) {
 	}
 }
 
+// SetStringResourceAttrDisableWarning sets provided value as "string.resource.attr_disable_warning" attribute.
+func (rb *ResourceBuilder) SetStringResourceAttrDisableWarning(val string) {
+	if rb.config.StringResourceAttrDisableWarning.Enabled {
+		rb.res.Attributes().PutStr("string.resource.attr_disable_warning", val)
+	}
+}
+
+// SetStringResourceAttrRemoveWarning sets provided value as "string.resource.attr_remove_warning" attribute.
+func (rb *ResourceBuilder) SetStringResourceAttrRemoveWarning(val string) {
+	if rb.config.StringResourceAttrRemoveWarning.Enabled {
+		rb.res.Attributes().PutStr("string.resource.attr_remove_warning", val)
+	}
+}
+
+// SetStringResourceAttrToBeRemoved sets provided value as "string.resource.attr_to_be_removed" attribute.
+func (rb *ResourceBuilder) SetStringResourceAttrToBeRemoved(val string) {
+	if rb.config.StringResourceAttrToBeRemoved.Enabled {
+		rb.res.Attributes().PutStr("string.resource.attr_to_be_removed", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

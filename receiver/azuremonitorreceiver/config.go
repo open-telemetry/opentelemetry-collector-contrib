@@ -5,11 +5,17 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
+)
+
+const (
+	azureCloud           = "AzureCloud"
+	azureGovernmentCloud = "AzureUSGovernment"
 )
 
 var (
@@ -18,6 +24,8 @@ var (
 	errMissingSubscriptionID = errors.New(`SubscriptionID" is not specified in config`)
 	errMissingClientID       = errors.New(`ClientID" is not specified in config`)
 	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
+	errMissingFedTokenFile   = errors.New(`FederatedTokenFile is not specified in config`)
+	errInvalidCloud          = errors.New(`Cloud" is invalid`)
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -223,10 +231,13 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Cloud                                   string                        `mapstructure:"cloud"`
 	SubscriptionID                          string                        `mapstructure:"subscription_id"`
+	Authentication                          string                        `mapstructure:"auth"`
 	TenantID                                string                        `mapstructure:"tenant_id"`
 	ClientID                                string                        `mapstructure:"client_id"`
 	ClientSecret                            string                        `mapstructure:"client_secret"`
+	FederatedTokenFile                      string                        `mapstructure:"federated_token_file"`
 	ResourceGroups                          []string                      `mapstructure:"resource_groups"`
 	Services                                []string                      `mapstructure:"services"`
 	CacheResources                          float64                       `mapstructure:"cache_resources"`
@@ -235,22 +246,48 @@ type Config struct {
 	AppendTagsAsAttributes                  bool                          `mapstructure:"append_tags_as_attributes"`
 }
 
+const (
+	servicePrincipal = "service_principal"
+	workloadIdentity = "workload_identity"
+)
+
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
-	if c.TenantID == "" {
-		err = multierr.Append(err, errMissingTenantID)
-	}
-
 	if c.SubscriptionID == "" {
 		err = multierr.Append(err, errMissingSubscriptionID)
 	}
 
-	if c.ClientID == "" {
-		err = multierr.Append(err, errMissingClientID)
+	switch c.Authentication {
+	case servicePrincipal:
+		if c.TenantID == "" {
+			err = multierr.Append(err, errMissingTenantID)
+		}
+
+		if c.ClientID == "" {
+			err = multierr.Append(err, errMissingClientID)
+		}
+
+		if c.ClientSecret == "" {
+			err = multierr.Append(err, errMissingClientSecret)
+		}
+	case workloadIdentity:
+		if c.TenantID == "" {
+			err = multierr.Append(err, errMissingTenantID)
+		}
+
+		if c.ClientID == "" {
+			err = multierr.Append(err, errMissingClientID)
+		}
+
+		if c.FederatedTokenFile == "" {
+			err = multierr.Append(err, errMissingFedTokenFile)
+		}
+	default:
+		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v]", c.Authentication, servicePrincipal, workloadIdentity)
 	}
 
-	if c.ClientSecret == "" {
-		err = multierr.Append(err, errMissingClientSecret)
+	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud {
+		err = multierr.Append(err, errInvalidCloud)
 	}
 
 	return

@@ -12,8 +12,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +32,7 @@ type k8sobjectsreceiver struct {
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
 	consumer        consumer.Logs
-	obsrecv         *obsreport.Receiver
+	obsrecv         *receiverhelper.ObsReport
 	mu              sync.Mutex
 }
 
@@ -43,7 +43,7 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		return nil, err
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: params,
@@ -139,8 +139,9 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 			} else if len(objects.Items) > 0 {
 				logs := pullObjectsToLogData(objects, time.Now(), config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
+				logRecordCount := logs.LogRecordCount()
 				err = kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, logs.LogRecordCount(), err)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, logRecordCount, err)
 			}
 		case <-stopperChan:
 			return

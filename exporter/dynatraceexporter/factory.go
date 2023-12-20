@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	exp "go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
@@ -17,11 +17,11 @@ import (
 )
 
 // NewFactory creates a Dynatrace exporter factory
-func NewFactory() exp.Factory {
-	return exp.NewFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exp.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)
 }
 
@@ -45,9 +45,9 @@ func createDefaultConfig() component.Config {
 // createMetricsExporter creates a metrics exporter based on this
 func createMetricsExporter(
 	ctx context.Context,
-	set exp.CreateSettings,
+	set exporter.CreateSettings,
 	c component.Config,
-) (exp.Metrics, error) {
+) (exporter.Metrics, error) {
 
 	cfg := c.(*dtconfig.Config)
 

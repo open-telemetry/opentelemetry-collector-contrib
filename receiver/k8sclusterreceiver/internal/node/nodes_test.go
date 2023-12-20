@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
@@ -156,6 +156,30 @@ func TestNodeConditionValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNodeMetrics(t *testing.T) {
+	n := testutils.NewNode("1")
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics.K8sNodeCondition.Enabled = true
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, n, ts)
+	m := mb.Emit()
+
+	expectedFile := filepath.Join("testdata", "expected_mdatagen.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	),
+	)
 }
 
 func TestTransform(t *testing.T) {

@@ -18,6 +18,7 @@ import (
 
 const (
 	defaultCollectionInterval = 10 * time.Second
+	defaultCloud              = azureCloud
 )
 
 var errConfigNotAzureMonitor = errors.New("Config was not a Azure Monitor receiver config")
@@ -41,6 +42,8 @@ func createDefaultConfig() component.Config {
 		CacheResourcesDefinitions:     24 * 60 * 60,
 		MaximumNumberOfMetricsInACall: 20,
 		Services:                      monitorServices,
+		Authentication:                servicePrincipal,
+		Cloud:                         defaultCloud,
 	}
 }
 

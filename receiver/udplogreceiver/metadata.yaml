@@ -4,6 +4,10 @@ status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib, observiq, sumo, splunk]
   codeowners:
     active: [djaglowski]
+
+tests:
+  config:
+    listen_address: "localhost:0"

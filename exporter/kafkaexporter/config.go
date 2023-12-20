@@ -10,6 +10,8 @@ import (
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 // Config defines configuration for Kafka exporter.
@@ -20,13 +22,26 @@ type Config struct {
 
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
+
+	// ResolveCanonicalBootstrapServersOnly makes Sarama do a DNS lookup for
+	// each of the provided brokers. It will then do a PTR lookup for each
+	// returned IP, and that set of names becomes the broker list. This can be
+	// required in SASL environments.
+	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
+
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
+
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
+
+	// PartitionTracesByID sets the message key of outgoing trace messages to the trace ID.
+	// Please note: does not have any effect on Jaeger encoding exporters since Jaeger exporters include
+	// trace ID as the message key by default.
+	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
@@ -36,7 +51,7 @@ type Config struct {
 	Producer Producer `mapstructure:"producer"`
 
 	// Authentication defines used authentication mechanism.
-	Authentication Authentication `mapstructure:"auth"`
+	Authentication kafka.Authentication `mapstructure:"auth"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.
@@ -103,7 +118,7 @@ func (cfg *Config) Validate() error {
 	return validateSASLConfig(cfg.Authentication.SASL)
 }
 
-func validateSASLConfig(c *SASLConfig) error {
+func validateSASLConfig(c *kafka.SASLConfig) error {
 	if c == nil {
 		return nil
 	}

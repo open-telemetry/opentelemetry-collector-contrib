@@ -4,33 +4,180 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/iancoleman/strcase"
 )
 
-type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
+type PathExpressionParser[K any] func(Path[K]) (GetSetter[K], error)
 
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
+
+type EnumSymbol string
+
+func newPath[K any](fields []field) (*basePath[K], error) {
+	if len(fields) == 0 {
+		return nil, fmt.Errorf("cannot make a path from zero fields")
+	}
+	var current *basePath[K]
+	for i := len(fields) - 1; i >= 0; i-- {
+		current = &basePath[K]{
+			name:     fields[i].Name,
+			key:      newKey[K](fields[i].Keys),
+			nextPath: current,
+		}
+	}
+	current.fetched = true
+	return current, nil
+}
+
+// Path represents a chain of path parts in an OTTL statement, such as `body.string`.
+// A Path has a name, and potentially a set of keys.
+// If the path in the OTTL statement contains multiple parts (separated by a dot (`.`)), then the Path will have a pointer to the next Path.
+type Path[K any] interface {
+	// Name is the name of this segment of the path.
+	Name() string
+
+	// Next provides the next path segment for this Path.
+	// Will return nil if there is no next path.
+	Next() Path[K]
+
+	// Key provides the Key for this Path.
+	// Will return nil if there is no Key.
+	Key() Key[K]
+}
+
+var _ Path[any] = &basePath[any]{}
+
+type basePath[K any] struct {
+	name     string
+	key      *baseKey[K]
+	nextPath *basePath[K]
+	fetched  bool
+}
+
+func (p *basePath[K]) Name() string {
+	return p.name
+}
+
+func (p *basePath[K]) Next() Path[K] {
+	if p.nextPath == nil {
+		return nil
+	}
+	p.nextPath.fetched = true
+	return p.nextPath
+}
+
+func (p *basePath[K]) Key() Key[K] {
+	if p.key == nil {
+		return nil
+	}
+	return p.key
+}
+
+func (p *basePath[K]) isComplete() error {
+	if !p.fetched {
+		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
+	}
+	if p.nextPath == nil {
+		return nil
+	}
+	return p.nextPath.isComplete()
+}
+
+func newKey[K any](keys []key) *baseKey[K] {
+	if len(keys) == 0 {
+		return nil
+	}
+	var current *baseKey[K]
+	for i := len(keys) - 1; i >= 0; i-- {
+		current = &baseKey[K]{
+			s:       keys[i].String,
+			i:       keys[i].Int,
+			nextKey: current,
+		}
+	}
+	return current
+}
+
+// Key represents a chain of keys in an OTTL statement, such as `attributes["foo"]["bar"]`.
+// A Key has a String or Int, and potentially the next Key.
+// If the path in the OTTL statement contains multiple keys, then the Key will have a pointer to the next Key.
+type Key[K any] interface {
+	// String returns a pointer to the Key's string value.
+	// If the Key does not have a string value the returned value is nil.
+	// If Key experiences an error retrieving the value it is returned.
+	String(context.Context, K) (*string, error)
+
+	// Int returns a pointer to the Key's int value.
+	// If the Key does not have a int value the returned value is nil.
+	// If Key experiences an error retrieving the value it is returned.
+	Int(context.Context, K) (*int64, error)
+
+	// Next provides the next Key.
+	// Will return nil if there is no next Key.
+	Next() Key[K]
+}
+
+var _ Key[any] = &baseKey[any]{}
+
+type baseKey[K any] struct {
+	s       *string
+	i       *int64
+	nextKey *baseKey[K]
+}
+
+func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
+	return k.s, nil
+}
+
+func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
+	return k.i, nil
+}
+
+func (k *baseKey[K]) Next() Key[K] {
+	if k.nextKey == nil {
+		return nil
+	}
+	return k.nextKey
+}
+
+func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
+	g, err := p.pathParser(ip)
+	if err != nil {
+		return nil, err
+	}
+	err = ip.isComplete()
+	if err != nil {
+		return nil, err
+	}
+	return g, nil
+}
 
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {
 		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
 	}
-	args := f.CreateDefaultArguments()
+	defaultArgs := f.CreateDefaultArguments()
+	var args Arguments
 
 	// A nil value indicates the function takes no arguments.
-	if args != nil {
+	if defaultArgs != nil {
 		// Pointer values are necessary to fulfill the Go reflection
 		// settability requirements. Non-pointer values are not
 		// modifiable through reflection.
-		if reflect.TypeOf(args).Kind() != reflect.Pointer {
+		if reflect.TypeOf(defaultArgs).Kind() != reflect.Pointer {
 			return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
 		}
+
+		args = reflect.New(reflect.ValueOf(defaultArgs).Elem().Type()).Interface()
 
 		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
 		if err != nil {
@@ -47,24 +194,70 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 }
 
 func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
-	if len(ed.Arguments) != argsVal.NumField() {
-		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
+	requiredArgs := 0
+	seenNamed := false
+
+	for i := 0; i < len(ed.Arguments); i++ {
+		if !seenNamed && ed.Arguments[i].Name != "" {
+			seenNamed = true
+		} else if seenNamed && ed.Arguments[i].Name == "" {
+			return errors.New("unnamed argument used after named argument")
+		}
 	}
 
 	for i := 0; i < argsVal.NumField(); i++ {
-		field := argsVal.Field(i)
-		fieldType := field.Type()
-		argVal := ed.Arguments[i]
+		if !strings.HasPrefix(argsVal.Field(i).Type().Name(), "Optional") {
+			requiredArgs++
+		}
+	}
+
+	if len(ed.Arguments) < requiredArgs || len(ed.Arguments) > argsVal.NumField() {
+		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
+	}
+
+	for i, edArg := range ed.Arguments {
+		var field reflect.Value
+		var fieldType reflect.Type
+		var isOptional bool
+		var arg argument
+
+		if edArg.Name == "" {
+			field = argsVal.Field(i)
+			fieldType = field.Type()
+			isOptional = strings.HasPrefix(fieldType.Name(), "Optional")
+			arg = ed.Arguments[i]
+		} else {
+			field = argsVal.FieldByName(strcase.ToCamel(edArg.Name))
+			if !field.IsValid() {
+				return fmt.Errorf("no such parameter: %s", edArg.Name)
+			}
+			fieldType = field.Type()
+			isOptional = strings.HasPrefix(fieldType.Name(), "Optional")
+			arg = edArg
+		}
+
 		var val any
+		var manager optionalManager
 		var err error
+		var ok bool
+		if isOptional {
+			manager, ok = field.Interface().(optionalManager)
+
+			if !ok {
+				return errors.New("optional type is not manageable by the OTTL parser. This is an error in the OTTL")
+			}
+
+			fieldType = manager.get().Type()
+		}
+
 		switch {
 		case strings.HasPrefix(fieldType.Name(), "FunctionGetter"):
 			var name string
 			switch {
-			case argVal.Enum != nil:
-				name = string(*argVal.Enum)
-			case argVal.FunctionName != nil:
-				name = *argVal.FunctionName
+			case arg.Value.Enum != nil:
+				name = string(*arg.Value.Enum)
+			case arg.Value.FunctionName != nil:
+				name = *arg.Value.FunctionName
 			default:
 				return fmt.Errorf("invalid function name given")
 			}
@@ -72,16 +265,20 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			if !ok {
 				return fmt.Errorf("undefined function %s", name)
 			}
-			val = StandardFunctionGetter[K]{fCtx: FunctionContext{Set: p.telemetrySettings}, fact: f}
+			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case fieldType.Kind() == reflect.Slice:
-			val, err = p.buildSliceArg(argVal, fieldType)
+			val, err = p.buildSliceArg(arg.Value, fieldType)
 		default:
-			val, err = p.buildArg(argVal, fieldType)
+			val, err = p.buildArg(arg.Value, fieldType)
 		}
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v: %w", i, err)
 		}
-		field.Set(reflect.ValueOf(val))
+		if isOptional {
+			field.Set(manager.set(val))
+		} else {
+			field.Set(reflect.ValueOf(val))
+		}
 	}
 
 	return nil
@@ -186,9 +383,13 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		fallthrough
 	case strings.HasPrefix(name, "GetSetter"):
 		if argVal.Literal == nil || argVal.Literal.Path == nil {
-			return nil, fmt.Errorf("must be a Path")
+			return nil, fmt.Errorf("must be a path")
 		}
-		arg, err := p.pathParser(argVal.Literal.Path)
+		np, err := newPath[K](argVal.Literal.Path.Fields)
+		if err != nil {
+			return nil, err
+		}
+		arg, err := p.parsePath(np)
 		if err != nil {
 			return nil, err
 		}
@@ -254,7 +455,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		}
 		return StandardTimeGetter[K]{Getter: arg.Get}, nil
 	case name == "Enum":
-		arg, err := p.enumParser(argVal.Enum)
+		arg, err := p.enumParser((*EnumSymbol)(argVal.Enum))
 		if err != nil {
 			return nil, fmt.Errorf("must be an Enum")
 		}
@@ -280,7 +481,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		}
 		return bool(*argVal.Bool), nil
 	default:
-		return nil, errors.New("unsupported argument type")
+		return nil, fmt.Errorf("unsupported argument type: %s", name)
 	}
 }
 
@@ -309,4 +510,57 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 	}
 
 	return vals, nil
+}
+
+// optionalManager provides a way for the parser to handle Optional[T] structs
+// without needing to know the concrete type of T, which is inaccessible through
+// the reflect package.
+// Would likely be resolved by https://github.com/golang/go/issues/54393.
+type optionalManager interface {
+	// set takes a non-reflection value and returns a reflect.Value of
+	// an Optional[T] struct with this value set.
+	set(val any) reflect.Value
+
+	// get returns a reflect.Value value of the value contained within
+	// an Optional[T]. This allows obtaining a reflect.Type for T.
+	get() reflect.Value
+}
+
+type Optional[T any] struct {
+	val      T
+	hasValue bool
+}
+
+// This is called only by reflection.
+// nolint:unused
+func (o Optional[T]) set(val any) reflect.Value {
+	return reflect.ValueOf(Optional[T]{
+		val:      val.(T),
+		hasValue: true,
+	})
+}
+
+func (o Optional[T]) IsEmpty() bool {
+	return !o.hasValue
+}
+
+func (o Optional[T]) Get() T {
+	return o.val
+}
+
+func (o Optional[T]) get() reflect.Value {
+	// `(reflect.Value).Call` will create a reflect.Value containing a zero-valued T.
+	// Trying to create a reflect.Value for T by calling reflect.TypeOf or
+	// reflect.ValueOf on an empty T value creates an invalid reflect.Value object,
+	// the `Call` method appears to do extra processing to capture the type.
+	return reflect.ValueOf(o).MethodByName("Get").Call(nil)[0]
+}
+
+// Allows creating an Optional with a value already populated for use in testing
+// OTTL functions.
+func NewTestingOptional[T any](val T) Optional[T] {
+	return Optional[T]{
+		val:      val,
+		hasValue: true,
+	}
 }

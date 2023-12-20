@@ -3,13 +3,15 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |
-| Distributions | [contrib], [observiq], [splunk], [sumo] |
+| Distributions | [contrib], [grafana], [liatrio], [observiq], [splunk], [sumo] |
 | Warnings      | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftransform%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftransform) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftransform%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftransform) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@kentquirk](https://www.github.com/kentquirk), [@bogdandrutu](https://www.github.com/bogdandrutu), [@evan-bradley](https://www.github.com/evan-bradley) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[grafana]: https://github.com/grafana/agent
+[liatrio]: https://github.com/liatrio/liatrio-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
@@ -36,10 +38,11 @@ Each context will be processed in the order specified and each statement for a c
 
 The transform processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing a statement.
 
-| error_mode            | description                                                                                                                |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------|
-| ignore                | The processor ignores errors returned by statements and continues on to the next statement.  This is the recommended mode. |
-| propagate             | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.        |
+| error_mode | description                                                                                                                                 |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| ignore     | The processor ignores errors returned by statements, logs the error, and continues on to the next statement.  This is the recommended mode. |
+| silent     | The processor ignores errors returned by statements, does not log the error, and continues on to the next statement.                        |
+| propagate  | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.                         |
 
 If not specified, `propagate` will be used.
 
@@ -356,7 +359,7 @@ transform:
         - set(attributes["body"], body)
 ``` 
 
-### Comnbine two attributes
+### Combine two attributes
 Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined. 
 ```yaml
 transform:
@@ -403,6 +406,27 @@ transform:
         # To access nested maps you can chain index ([]) operations.
         # If nested or attr3 do no exist in cache then nothing happens.
         - set(attributes["nested.attr3"], cache["nested"]["attr3"])
+```
+
+### Get Severity of an Unstructured Log Body
+
+Given the following unstructured log body
+
+```txt
+[2023-09-22 07:38:22,570] INFO [Something]: some interesting log
+```
+
+You can find the severity using IsMatch:
+
+```yaml
+transform:
+  error_mode: ignore
+  log_statements:
+    - context: log
+      statements:
+        - set(severity_number, SEVERITY_NUMBER_INFO) where IsString(body) and IsMatch(body, "\\sINFO\\s")
+        - set(severity_number, SEVERITY_NUMBER_WARN) where IsString(body) and IsMatch(body, "\\sWARN\\s")
+        - set(severity_number, SEVERITY_NUMBER_ERROR) where IsString(body) and IsMatch(body, "\\sERROR\\s")
 ```
 
 ## Contributing

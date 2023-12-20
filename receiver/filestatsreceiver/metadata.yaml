@@ -3,7 +3,7 @@ type: filestats
 status:
   class: receiver
   stability:
-    alpha: [metrics]
+    beta: [metrics]
   distributions: [contrib, sumo]
   codeowners:
     active: [atoulme]
@@ -57,3 +57,5 @@ metrics:
     gauge:
       value_type: int
     unit: "b"
+tests:
+  config:

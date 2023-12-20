@@ -36,8 +36,8 @@ receivers:
 processors:
 
 exporters:
-  logging:
-    logLevel: debug
+  debug:
+    verbosity: detailed
 
 service:
   extensions: [oidc]
@@ -45,5 +45,5 @@ service:
     traces:
       receivers: [otlp]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
 ```

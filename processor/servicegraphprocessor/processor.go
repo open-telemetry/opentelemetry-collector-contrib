@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -20,9 +19,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 )
 
@@ -33,9 +35,13 @@ const (
 )
 
 var (
-	defaultLatencyHistogramBucketsMs = []float64{
+	legacyDefaultLatencyHistogramBuckets = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 	}
+	defaultLatencyHistogramBuckets = []float64{
+		0.002, 0.004, 0.006, 0.008, 0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 1.4, 2, 5, 10, 15,
+	}
+
 	defaultPeerAttributes = []string{
 		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
 	}
@@ -72,15 +78,22 @@ type serviceGraphProcessor struct {
 	metricMutex sync.RWMutex
 	keyToMetric map[string]metricSeries
 
-	shutdownCh chan interface{}
+	statDroppedSpans metric.Int64Counter
+	statTotalEdges   metric.Int64Counter
+	statExpiredEdges metric.Int64Counter
+
+	shutdownCh chan any
 }
 
-func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProcessor {
+func newProcessor(set component.TelemetrySettings, config component.Config) *serviceGraphProcessor {
 	pConfig := config.(*Config)
 
-	bounds := defaultLatencyHistogramBucketsMs
+	bounds := defaultLatencyHistogramBuckets
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		bounds = legacyDefaultLatencyHistogramBuckets
+	}
 	if pConfig.LatencyHistogramBuckets != nil {
-		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
+		bounds = mapDurationsToFloat(pConfig.LatencyHistogramBuckets)
 	}
 
 	if pConfig.CacheLoop <= 0 {
@@ -95,9 +108,27 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
 	}
 
+	meter := metadata.Meter(set)
+
+	droppedSpan, _ := meter.Int64Counter(
+		processorhelper.BuildCustomMetricName(metadata.Type, "dropped_spans"),
+		metric.WithDescription("Number of spans dropped when trying to add edges"),
+		metric.WithUnit("1"),
+	)
+	totalEdges, _ := meter.Int64Counter(
+		processorhelper.BuildCustomMetricName(metadata.Type, "total_edges"),
+		metric.WithDescription("Total number of unique edges"),
+		metric.WithUnit("1"),
+	)
+	expiredEdges, _ := meter.Int64Counter(
+		processorhelper.BuildCustomMetricName(metadata.Type, "expired_edges"),
+		metric.WithDescription("Number of edges that expired before finding its matching span"),
+		metric.WithUnit("1"),
+	)
+
 	return &serviceGraphProcessor{
 		config:                               pConfig,
-		logger:                               logger,
+		logger:                               set.Logger,
 		startTime:                            time.Now(),
 		reqTotal:                             make(map[string]int64),
 		reqFailedTotal:                       make(map[string]int64),
@@ -109,7 +140,10 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 		reqServerDurationSecondsBucketCounts: make(map[string][]uint64),
 		reqDurationBounds:                    bounds,
 		keyToMetric:                          make(map[string]metricSeries),
-		shutdownCh:                           make(chan interface{}),
+		shutdownCh:                           make(chan any),
+		statDroppedSpans:                     droppedSpan,
+		statTotalEdges:                       totalEdges,
+		statExpiredEdges:                     expiredEdges,
 	}
 }
 
@@ -134,6 +168,8 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 		}
 	}
 
+	go p.metricFlushLoop(p.config.MetricsFlushInterval)
+
 	go p.cacheLoop(p.config.CacheLoop)
 
 	go p.storeExpirationLoop(p.config.StoreExpirationLoop)
@@ -144,6 +180,41 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 		p.logger.Info("Started servicegraphprocessor")
 	}
 	return nil
+}
+
+func (p *serviceGraphProcessor) metricFlushLoop(flushInterval time.Duration) {
+	if flushInterval <= 0 {
+		return
+	}
+
+	ticker := time.NewTicker(flushInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := p.flushMetrics(context.Background()); err != nil {
+				p.logger.Error("failed to flush metrics", zap.Error(err))
+			}
+		case <-p.shutdownCh:
+			return
+		}
+	}
+}
+
+func (p *serviceGraphProcessor) flushMetrics(ctx context.Context) error {
+	md, err := p.buildMetrics()
+	if err != nil {
+		return fmt.Errorf("failed to build metrics: %w", err)
+	}
+
+	// Skip empty metrics.
+	if md.MetricCount() == 0 {
+		return nil
+	}
+
+	// Firstly, export md to avoid being impacted by downstream trace serviceGraphProcessor errors/latency.
+	return p.metricsConsumer.ConsumeMetrics(ctx, md)
 }
 
 func (p *serviceGraphProcessor) Shutdown(_ context.Context) error {
@@ -165,29 +236,17 @@ func (p *serviceGraphProcessor) ConsumeTraces(ctx context.Context, td ptrace.Tra
 		return fmt.Errorf("failed to aggregate metrics: %w", err)
 	}
 
-	md, err := p.buildMetrics()
-	if err != nil {
-		return fmt.Errorf("failed to build metrics: %w", err)
+	// If metricsFlushInterval is not set, flush metrics immediately.
+	if p.config.MetricsFlushInterval <= 0 {
+		if err := p.flushMetrics(ctx); err != nil {
+			// Not return error here to avoid impacting traces.
+			p.logger.Error("failed to flush metrics", zap.Error(err))
+		}
 	}
 
-	// Skip empty metrics.
-	if md.MetricCount() == 0 {
-		if p.tracesConsumer != nil {
-			return p.tracesConsumer.ConsumeTraces(ctx, td)
-		}
+	if p.tracesConsumer == nil { // True if p is a connector
 		return nil
 	}
-
-	// true when p is a connector
-	if p.tracesConsumer == nil {
-		return p.metricsConsumer.ConsumeMetrics(ctx, md)
-	}
-
-	// Firstly, export md to avoid being impacted by downstream trace serviceGraphProcessor errors/latency.
-	if err := p.metricsConsumer.ConsumeMetrics(ctx, md); err != nil {
-		return err
-	}
-
 	return p.tracesConsumer.ConsumeTraces(ctx, td)
 }
 
@@ -229,7 +288,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
 						e.ClientService = serviceName
-						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+						e.ClientLatencySec = spanDuration(span)
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
@@ -242,7 +301,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						if dbName, ok := findAttributeValue(semconv.AttributeDBName, rAttributes, span.Attributes()); ok {
 							e.ConnectionType = store.Database
 							e.ServerService = dbName
-							e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+							e.ServerLatencySec = spanDuration(span)
 						}
 					})
 				case ptrace.SpanKindConsumer:
@@ -256,7 +315,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
 						e.ServerService = serviceName
-						e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+						e.ServerLatencySec = spanDuration(span)
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(serverKind, e.Dimensions, rAttributes, span.Attributes())
 					})
@@ -267,7 +326,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 
 				if errors.Is(err, store.ErrTooManyItems) {
 					totalDroppedSpans++
-					stats.Record(ctx, statDroppedSpans.M(1))
+					p.statDroppedSpans.Add(ctx, 1)
 					continue
 				}
 
@@ -277,7 +336,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 				}
 
 				if isNew {
-					stats.Record(ctx, statTotalEdges.M(1))
+					p.statTotalEdges.Add(ctx, 1)
 				}
 			}
 		}
@@ -322,7 +381,7 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 		zap.Stringer("trace_id", e.TraceID),
 	)
 
-	stats.Record(context.Background(), statExpiredEdges.M(1))
+	p.statExpiredEdges.Add(context.Background(), 1)
 
 	if virtualNodeFeatureGate.IsEnabled() {
 		e.ConnectionType = store.VirtualNode
@@ -630,16 +689,26 @@ func (p *serviceGraphProcessor) cleanCache() {
 	p.seriesMutex.Unlock()
 }
 
-// durationToMillis converts the given duration to the number of milliseconds it represents.
-// Note that this can return sub-millisecond (i.e. < 1ms) values as well.
-func durationToMillis(d time.Duration) float64 {
-	return float64(d.Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
+// spanDuration returns the duration of the given span in seconds (legacy ms).
+func spanDuration(span ptrace.Span) float64 {
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+	}
+	return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Second.Nanoseconds())
 }
 
-func mapDurationsToMillis(vs []time.Duration) []float64 {
+// durationToFloat converts the given duration to the number of seconds (legacy ms) it represents.
+func durationToFloat(d time.Duration) float64 {
+	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
+		return float64(d.Milliseconds())
+	}
+	return d.Seconds()
+}
+
+func mapDurationsToFloat(vs []time.Duration) []float64 {
 	vsm := make([]float64, len(vs))
 	for i, v := range vs {
-		vsm[i] = durationToMillis(v)
+		vsm[i] = durationToFloat(v)
 	}
 	return vsm
 }

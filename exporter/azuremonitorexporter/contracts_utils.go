@@ -40,6 +40,13 @@ func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes p
 	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
 		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
 	}
+
+	envelope.Tags[contracts.InternalSdkVersion] = getCollectorVersion()
+}
+
+// Applies internal sdk version tag on the envelope
+func applyInternalSdkVersionTagToEnvelope(envelope *contracts.Envelope) {
+	envelope.Tags[contracts.InternalSdkVersion] = getCollectorVersion()
 }
 
 // Applies instrumentation values to data properties

@@ -4,16 +4,12 @@ MaxKsyunz
 MitchellGale
 YANG-DB
 agoallikmaa
-alexvanboxel
 architjugran
 asaharn
-avadhut123pisal
 billmeyer
-eedorenko
 emreyalvac
 keep94
 kiranmayib
-kkujawa-sumo
 leonsp-ai
 liqiangz
 oded-dd
@@ -21,3 +17,8 @@ shaochengwang
 svrakitin
 thepeterstone
 yiyang5055
+am-kinetica
+mcube8
+sokoide
+zdaratom
+braydonk

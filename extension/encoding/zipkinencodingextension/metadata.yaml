@@ -1,0 +1,9 @@
+type: zipkin_encoding
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [MovieStoreGuy, dao-jun]

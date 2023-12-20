@@ -20,7 +20,7 @@ The operator applies the [strconv.Unquote]() function to the specified field. Th
 
 Unquote the body
 ```yaml
-- type: remove
+- type: unquote
   field: body
 ```
 

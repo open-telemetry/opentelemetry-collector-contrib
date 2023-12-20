@@ -197,12 +197,12 @@ func TestValidateConfig(t *testing.T) {
 func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 	tests := []struct {
 		name   string
-		config Config
+		config *Config
 		want   Config
 	}{
 		{
 			name: "rewrite routing by resource attribute",
-			config: Config{
+			config: &Config{
 				FromAttribute:   "attr",
 				AttributeSource: resourceAttributeSource,
 				Table: []RoutingTableItem{
@@ -223,7 +223,7 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 		},
 		{
 			name: "rewrite routing by resource attribute multiple entries",
-			config: Config{
+			config: &Config{
 				FromAttribute:   "attr",
 				AttributeSource: resourceAttributeSource,
 				Table: []RoutingTableItem{
@@ -252,7 +252,7 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 		},
 		{
 			name: "rewrite routing by resource attribute with dropping routing key",
-			config: Config{
+			config: &Config{
 				FromAttribute:                "attr",
 				AttributeSource:              resourceAttributeSource,
 				DropRoutingResourceAttribute: true,
@@ -274,7 +274,7 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 		},
 		{
 			name: "rewrite routing with context as attribute source",
-			config: Config{
+			config: &Config{
 				FromAttribute:   "attr",
 				AttributeSource: contextAttributeSource,
 				Table: []RoutingTableItem{
@@ -297,7 +297,7 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 		},
 		{
 			name: "rewrite routing by resource attribute with mixed routing entries",
-			config: Config{
+			config: &Config{
 				FromAttribute:   "attr",
 				AttributeSource: resourceAttributeSource,
 				Table: []RoutingTableItem{
@@ -327,7 +327,7 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, *rewriteRoutingEntriesToOTTL(&tt.config))
+			assert.Equal(t, tt.want, *rewriteRoutingEntriesToOTTL(tt.config))
 		})
 	}
 }

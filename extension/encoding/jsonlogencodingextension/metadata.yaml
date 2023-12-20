@@ -1,0 +1,9 @@
+type: json_log_encoding
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [VihasMakwana, atoulme]

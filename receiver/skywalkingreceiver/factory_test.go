@@ -50,12 +50,14 @@ func TestCreateReceiver(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 	set := receivertest.NewNopCreateSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
-	assert.NoError(t, err, "receiver creation failed")
-	assert.NotNil(t, tReceiver, "receiver creation failed")
+	assert.NoError(t, err, "trace receiver creation failed")
+	assert.NotNil(t, tReceiver, "trace receiver creation failed")
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
-	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
-	assert.Nil(t, mReceiver)
+	metricSink := new(consumertest.MetricsSink)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, metricSink)
+	assert.NoError(t, err, "metric receiver creation failed")
+	assert.NotNil(t, mReceiver, "metric receiver creation failed")
+
 }
 
 func TestCreateReceiverGeneralConfig(t *testing.T) {
@@ -71,12 +73,13 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	set := receivertest.NewNopCreateSettings()
 	traceSink := new(consumertest.TracesSink)
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
-	assert.NoError(t, err, "receiver creation failed")
-	assert.NotNil(t, tReceiver, "receiver creation failed")
+	assert.NoError(t, err, "trace receiver creation failed")
+	assert.NotNil(t, tReceiver, "trace receiver creation failed")
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
-	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
-	assert.Nil(t, mReceiver)
+	metricSink := new(consumertest.MetricsSink)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, metricSink)
+	assert.NoError(t, err, "metric receiver creation failed")
+	assert.NotNil(t, mReceiver, "metric receiver creation failed")
 }
 
 func TestCreateDefaultGRPCEndpoint(t *testing.T) {

@@ -67,6 +67,21 @@ metrics:
 | string_attr | Attribute with any string value. | Any Str |
 | boolean_attr | Attribute with a boolean value. | Any Bool |
 
+### optional.metric.empty_unit
+
+[DEPRECATED] Gauge double metric disabled by default.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+|  | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| boolean_attr | Attribute with a boolean value. | Any Bool |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
@@ -76,3 +91,6 @@ metrics:
 | slice.resource.attr | Resource attribute with a slice value. | Any Slice | true |
 | string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true |
 | string.resource.attr | Resource attribute with any string value. | Any Str | true |
+| string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true |
+| string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false |
+| string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true |

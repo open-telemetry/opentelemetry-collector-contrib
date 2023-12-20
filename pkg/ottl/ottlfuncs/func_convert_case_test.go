@@ -16,15 +16,15 @@ import (
 func Test_convertCase(t *testing.T) {
 	tests := []struct {
 		name     string
-		target   ottl.StringGetter[interface{}]
+		target   ottl.StringGetter[any]
 		toCase   string
-		expected interface{}
+		expected any
 	}{
 		// snake case
 		{
 			name: "snake simple convert",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "simpleString", nil
 				},
 			},
@@ -33,8 +33,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "snake noop already snake case",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "simple_string", nil
 				},
 			},
@@ -43,8 +43,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "snake multiple uppercase",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "CPUUtilizationMetric", nil
 				},
 			},
@@ -53,8 +53,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "snake hyphens",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "simple-string", nil
 				},
 			},
@@ -63,8 +63,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "snake empty string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "", nil
 				},
 			},
@@ -74,8 +74,8 @@ func Test_convertCase(t *testing.T) {
 		// camel case
 		{
 			name: "camel simple convert",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "simple_string", nil
 				},
 			},
@@ -84,8 +84,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "snake noop already snake case",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "SimpleString", nil
 				},
 			},
@@ -94,8 +94,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "snake hyphens",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "simple-string", nil
 				},
 			},
@@ -104,8 +104,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "snake empty string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "", nil
 				},
 			},
@@ -115,8 +115,8 @@ func Test_convertCase(t *testing.T) {
 		// upper case
 		{
 			name: "upper simple",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "simple", nil
 				},
 			},
@@ -125,8 +125,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "upper complex",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "complex_SET-of.WORDS1234", nil
 				},
 			},
@@ -135,8 +135,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "upper empty string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "", nil
 				},
 			},
@@ -146,8 +146,8 @@ func Test_convertCase(t *testing.T) {
 		// lower case
 		{
 			name: "lower simple",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "SIMPLE", nil
 				},
 			},
@@ -156,8 +156,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "lower complex",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "complex_SET-of.WORDS1234", nil
 				},
 			},
@@ -166,8 +166,8 @@ func Test_convertCase(t *testing.T) {
 		},
 		{
 			name: "lower empty string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "", nil
 				},
 			},
@@ -189,13 +189,13 @@ func Test_convertCase(t *testing.T) {
 func Test_convertCaseError(t *testing.T) {
 	tests := []struct {
 		name   string
-		target ottl.StringGetter[interface{}]
+		target ottl.StringGetter[any]
 		toCase string
 	}{
 		{
 			name: "error bad case",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "simpleString", nil
 				},
 			},
@@ -214,14 +214,14 @@ func Test_convertCaseError(t *testing.T) {
 func Test_convertCaseRuntimeError(t *testing.T) {
 	tests := []struct {
 		name          string
-		target        ottl.StringGetter[interface{}]
+		target        ottl.StringGetter[any]
 		toCase        string
 		expectedError string
 	}{
 		{
 			name: "non-string",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return 10, nil
 				},
 			},
@@ -230,8 +230,8 @@ func Test_convertCaseRuntimeError(t *testing.T) {
 		},
 		{
 			name: "nil",
-			target: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return nil, nil
 				},
 			},

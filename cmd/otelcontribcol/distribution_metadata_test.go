@@ -36,15 +36,25 @@ func TestComponentsArePresent(t *testing.T) {
 				return
 			}
 			inDevelopment := true
+			deprecated := true
 			for stability, pipelines := range m.Status.Stability {
 				if stability != "development" && len(pipelines) > 0 {
 					inDevelopment = false
+					break
+				}
+				if stability != "deprecated" && len(pipelines) > 0 {
+					deprecated = false
 					break
 				}
 			}
 
 			if inDevelopment {
 				tt.Skip("component in development, skipping", metadataComponent)
+				return
+			}
+
+			if deprecated {
+				tt.Skip("component deprecated, skipping", metadataComponent)
 				return
 			}
 			switch m.Status.Class {

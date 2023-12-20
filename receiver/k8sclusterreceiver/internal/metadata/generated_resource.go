@@ -168,6 +168,13 @@ func (rb *ResourceBuilder) SetK8sPodName(val string) {
 	}
 }
 
+// SetK8sPodQosClass sets provided value as "k8s.pod.qos_class" attribute.
+func (rb *ResourceBuilder) SetK8sPodQosClass(val string) {
+	if rb.config.K8sPodQosClass.Enabled {
+		rb.res.Attributes().PutStr("k8s.pod.qos_class", val)
+	}
+}
+
 // SetK8sPodUID sets provided value as "k8s.pod.uid" attribute.
 func (rb *ResourceBuilder) SetK8sPodUID(val string) {
 	if rb.config.K8sPodUID.Enabled {
@@ -228,13 +235,6 @@ func (rb *ResourceBuilder) SetK8sStatefulsetName(val string) {
 func (rb *ResourceBuilder) SetK8sStatefulsetUID(val string) {
 	if rb.config.K8sStatefulsetUID.Enabled {
 		rb.res.Attributes().PutStr("k8s.statefulset.uid", val)
-	}
-}
-
-// SetOpencensusResourcetype sets provided value as "opencensus.resourcetype" attribute.
-func (rb *ResourceBuilder) SetOpencensusResourcetype(val string) {
-	if rb.config.OpencensusResourcetype.Enabled {
-		rb.res.Attributes().PutStr("opencensus.resourcetype", val)
 	}
 }
 

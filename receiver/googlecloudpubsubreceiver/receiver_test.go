@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -77,7 +77,7 @@ func TestReceiver(t *testing.T) {
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              reportTransport,
 		LongLivedCtx:           false,

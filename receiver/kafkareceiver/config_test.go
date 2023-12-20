@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -32,13 +33,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				Topic:         "spans",
-				Encoding:      "otlp_proto",
-				Brokers:       []string{"foo:123", "bar:456"},
-				ClientID:      "otel-collector",
-				GroupID:       "otel-collector",
-				InitialOffset: "latest",
-				Authentication: kafkaexporter.Authentication{
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ResolveCanonicalBootstrapServersOnly: true,
+				ClientID:                             "otel-collector",
+				GroupID:                              "otel-collector",
+				InitialOffset:                        "latest",
+				Authentication: kafka.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CAFile:   "ca.pem",
@@ -70,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientID:      "otel-collector",
 				GroupID:       "otel-collector",
 				InitialOffset: "earliest",
-				Authentication: kafkaexporter.Authentication{
+				Authentication: kafka.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
 							CAFile:   "ca.pem",

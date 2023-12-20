@@ -28,29 +28,34 @@ type worker struct {
 	totalDuration    time.Duration   // how long to run the test for (overrides `numTraces`)
 	limitPerSecond   rate.Limit      // how many spans per second to generate
 	wg               *sync.WaitGroup // notify when done
+	loadSize         int             // desired minimum size in MB of string data for each generated trace
+	spanDuration     time.Duration   // duration of generated spans
 	logger           *zap.Logger
-	loadSize         int
 }
 
 const (
 	fakeIP string = "1.2.3.4"
 
-	fakeSpanDuration = 123 * time.Microsecond
-
 	charactersPerMB = 1024 * 1024 // One character takes up one byte of space, so this number comes from the number of bytes in a megabyte
 )
 
-func (w worker) simulateTraces() {
+func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 	tracer := otel.Tracer("telemetrygen")
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int
+
 	for w.running.Load() {
+		spanStart := time.Now()
+		spanEnd := spanStart.Add(w.spanDuration)
+
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("telemetrygen-server"),
 		),
 			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithTimestamp(spanStart),
 		)
+		sp.SetAttributes(telemetryAttributes...)
 		for j := 0; j < w.loadSize; j++ {
 			sp.SetAttributes(attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
 		}
@@ -70,17 +75,19 @@ func (w worker) simulateTraces() {
 			semconv.PeerServiceKey.String("telemetrygen-client"),
 		),
 			trace.WithSpanKind(trace.SpanKindServer),
+			trace.WithTimestamp(spanStart),
 		)
+		child.SetAttributes(telemetryAttributes...)
 
 		if err := limiter.Wait(context.Background()); err != nil {
 			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
 		}
 
-		opt := trace.WithTimestamp(time.Now().Add(fakeSpanDuration))
+		endTimestamp := trace.WithTimestamp(spanEnd)
 		child.SetStatus(w.statusCode, "")
-		child.End(opt)
+		child.End(endTimestamp)
 		sp.SetStatus(w.statusCode, "")
-		sp.End(opt)
+		sp.End(endTimestamp)
 
 		i++
 		if w.numTraces != 0 {

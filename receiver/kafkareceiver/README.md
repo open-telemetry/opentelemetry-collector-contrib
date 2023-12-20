@@ -30,6 +30,7 @@ The following settings are required:
 The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers
+- `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `topic` (default = otlp_spans): The name of the kafka topic to read from
 - `encoding` (default = otlp_proto): The encoding of the payload received from kafka. Available encodings:
   - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`, `ExportLogsServiceRequest` or `ExportMetricsServiceRequest` respectively.
@@ -41,6 +42,7 @@ The following settings can be optionally configured:
   - `raw`: (logs only) the payload's bytes are inserted as the body of a log record.
   - `text`: (logs only) the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior.
   - `json`: (logs only) the payload is decoded as JSON and inserted as the body of a log record.
+  - `azure_resource_logs`: (logs only) the payload is converted from Azure Resource Logs format to OTel format.
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
@@ -56,11 +58,11 @@ The following settings can be optionally configured:
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
   - `tls`
     - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `cert_file`: path to the TLS cert to use for TLS required connections. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `key_file`: path to the TLS key to use for TLS required connections. Should
-      only be used if `insecure` is set to true.
+      only be used if `insecure` is set to false.
     - `insecure` (default = false): Disable verifying the server's certificate
       chain and host name (`InsecureSkipVerify` in the tls config)
     - `server_name_override`: ServerName indicates the name of the server requested by the client
@@ -87,7 +89,10 @@ The following settings can be optionally configured:
   - `after`: (default = false) If true, the messages are marked after the pipeline execution
   - `on_error`: (default = false) If false, only the successfully processed messages are marked
     **Note: this can block the entire partition in case a message processing returns a permanent error**
-
+- `header_extraction`:
+  - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel piepline
+  - `headers` (default = []): List of headers they'd like to extract from kafka record. 
+  **Note: Matching pattern will be `exact`. Regexes are not supported as of now.** 
 Example:
 
 ```yaml
@@ -95,3 +100,40 @@ receivers:
   kafka:
     protocol_version: 2.0.0
 ```
+
+Example of header extraction:
+
+```yaml
+receivers:
+  kafka:
+    topic: test
+    header_extraction: 
+      extract_headers: true
+      headers: ["header1", "header2"]
+```
+
+- If we feed following kafka record to `test` topic and use above configs: 
+```yaml
+{
+  event: Hello,
+  headers: {
+    header1: value1,
+    header2: value2,
+  }
+}
+```
+we will get a log record in collector similar to: 
+```yaml
+{
+  ...
+  body: Hello,
+  resource: {
+    kafka.header.header1: value1,
+    kafka.header.header2: value2,
+  },
+  ...
+}
+```
+
+- Here you can see the kafka record header `header1` and `header2` being added to resource attribute.
+- Every **matching** kafka header key is prefixed with `kafka.header` string and attached to resource attributes.

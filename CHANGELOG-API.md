@@ -7,6 +7,104 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.91.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Rename `Statements` to `StatementSequence`. Remove `Eval` function from `StatementSequence`, use `ConditionSequence` instead. (#29598)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ConditionSequence` for evaluating lists of conditions (#29339)
+
+## v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `clickhouseexporter`: Replace `Config.QueueSettings` field with `exporterhelper.QueueSettings` and remove `QueueSettings` struct (#27653)
+- `kafkareceiver`: Do not export the function `WithTracesUnmarshalers`, `WithMetricsUnmarshalers`, `WithLogsUnmarshalers` (#26304)
+
+### 💡 Enhancements 💡
+
+- `datadogreceiver`: The datadogreceiver supports the new datadog protocol that is sent by the datadog agent API/v0.2/traces. (#27045)
+- `pkg/ottl`: Add ability to independently parse OTTL conditions. (#29315)
+
+### 🧰 Bug fixes 🧰
+
+- `cassandraexporter`: Exist check for keyspace and dynamic timeout (#27633)
+
+## v0.89.0
+
+### 🛑 Breaking changes 🛑
+
+- `carbonreceiver`: Do not export function New and pass checkapi. (#26304)
+- `collectdreceiver`: Move to use confighttp.HTTPServerSettings (#28811)
+- `kafkaexporter`: Do not export function WithTracesMarshalers, WithMetricsMarshalers, WithLogsMarshalers and pass checkapi (#26304)
+- `remoteobserverprocessor`: Rename remoteobserverprocessor to remotetapprocessor (#27873)
+
+### 💡 Enhancements 💡
+
+- `extension/encoding`: Introduce interfaces for encoding extensions. (#28686)
+- `exporter/awss3exporter`: This feature allows role assumption for s3 exportation. It is especially useful on Kubernetes clusters that are using IAM roles for service accounts (#28674)
+
+## v0.88.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate 'flush.WithPeriod'. Use 'flush.WithFunc' instead. (#27843)
+
+## v0.87.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/kafka, receiver/kafka, receiver/kafkametrics`: Move configuration parts to an internal pkg (#27093)
+- `pulsarexporter`: Do not export function WithTracesMarshalers, add test for that and pass checkapi (#26304)
+- `pulsarreceiver`: Do not export the functions `WithLogsUnmarshalers`, `WithMetricsUnmarshalers`, `WithTracesUnmarshalers`, add tests and pass checkapi. (#26304)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: allows adding warning section to resource_attribute configuration (#19174)
+- `mdatagen`: allow setting empty metric units (#27089)
+
+## v0.86.0
+
+### 🛑 Breaking changes 🛑
+
+- `azuremonitorexporter`: Unexport `Accept` to comply with checkapi (#26304)
+- `tailsamplingprocessor`: Unexport `SamplingProcessorMetricViews` to comply with checkapi (#26304)
+- `awskinesisexporter`: Do not export the functions `NewTracesExporter`, `NewMetricsExporter`, `NewLogsExporter` and pass checkapi. (#26304)
+- `dynatraceexporter`: Rename struct to keep expected `exporter.Factory` and pass checkapi. (#26304)
+- `ecsobserver`: Do not export the function `DefaultConfig` and pass checkapi. (#26304)
+- `f5cloudexporter`: Do not export the function `NewFactoryWithTokenSourceGetter` and pass checkapi. (#26304)
+- `fluentforwardreceiver`: rename `Logs` and `DetermineNextEventMode` functions and all usage to lowercase to stop exporting method and pass checkapi (#26304)
+- `groupbyattrsprocessor`: Do not export the function `MetricViews` and pass checkapi. (#26304)
+- `groupbytraceprocessor`: Do not export the function `MetricViews` and pass checkapi. (#26304)
+- `jaegerreceiver`: Do not export the function `DefaultServerConfigUDP` and pass checkapi. (#26304)
+- `lokiexporter`: Do not export the function `MetricViews` and pass checkapi. (#26304)
+- `mongodbatlasreceiver`: Rename struct to pass checkapi. (#26304)
+- `mongodbreceiver`: Do not export the function `NewClient` and pass checkapi. (#26304)
+- `mysqlreceiver`: Do not export the function `Query` (#26304)
+- `pkg/ottl`: Remove support for `ottlarg`. The struct's field order is now the function parameter order. (#25705)
+- `pkg/stanza`: Make trim func composable (#26536)
+  - Adds trim.WithFunc to allow trim funcs to wrap bufio.SplitFuncs.
+  - Removes trim.Func from split.Config.Func. Use trim.WithFunc instead.
+  - Removes trim.Func from flush.WithPeriod. Use trim.WithFunc instead.
+  
+- `pkg/stanza`: Rename syslog and tcp MultilineBuilders (#26631)
+  - Rename syslog.OctetMultiLineBuilder to syslog.OctetSplitFuncBuilder
+  - Rename tc.MultilineBuilder to tcp.SplitFuncBuilder
+  
+- `probabilisticsamplerprocessor`: Do not export the function `SamplingProcessorMetricViews` and pass checkapi. (#26304)
+- `sentryexporter`: Do not export the functions `CreateSentryExporter` and pass checkapi. (#26304)
+- `sumologicexporter`: Do not export the function `CreateDefaultHTTPClientSettings` and pass checkapi. (#26304)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add support for optional parameters (#20879)
+  The new `ottl.Optional` type can now be used in a function's `Arguments` struct
+  to indicate that a parameter is optional.
+  
+
 ## v0.85.0
 
 ### 🛑 Breaking changes 🛑

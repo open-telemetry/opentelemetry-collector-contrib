@@ -28,8 +28,8 @@ const (
 // FactoryOption applies changes to pulsarExporterFactory.
 type FactoryOption func(factory *pulsarExporterFactory)
 
-// WithTracesMarshalers adds tracesMarshalers.
-func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
+// withTracesMarshalers adds tracesMarshalers.
+func withTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	return func(factory *pulsarExporterFactory) {
 		for _, marshaler := range tracesMarshalers {
 			factory.tracesMarshalers[marshaler.Encoding()] = marshaler
