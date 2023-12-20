@@ -70,9 +70,22 @@ func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing
 }
 
 func TestSetDefaultUserAgentHeader(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	setDefaultUserAgentHeader(cfg, component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
-	assert.Equal(t, len(cfg.Headers), 1)
-	assert.Equal(t, strings.Contains(cfg.Headers[userAgentHeaderKey], "OpenTelemetry Collector"), true)
+	t.Run("insert default user agent header into empty", func(t *testing.T) {
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+		setDefaultUserAgentHeader(cfg, component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
+		assert.Equal(t, len(cfg.Headers), 1)
+		assert.Equal(t, strings.Contains(cfg.Headers[userAgentHeaderKey], "OpenTelemetry Collector"), true)
+	})
+
+	t.Run("ignore user agent header if configured", func(t *testing.T) {
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.Headers = map[string]string{
+			userAgentHeaderKey: "mock user agent header",
+		}
+		setDefaultUserAgentHeader(cfg, component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
+		assert.Equal(t, len(cfg.Headers), 1)
+		assert.Equal(t, cfg.Headers[userAgentHeaderKey], "mock user agent header")
+	})
 }
