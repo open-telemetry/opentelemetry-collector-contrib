@@ -346,7 +346,8 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, sink.AllTraces(), 2)
+	assert.Len(t, sink.AllTraces(), 1)
+	assert.Equal(t, sink.AllTraces()[0].SpanCount(), 2)
 }
 
 func TestNoTracesInBatch(t *testing.T) {

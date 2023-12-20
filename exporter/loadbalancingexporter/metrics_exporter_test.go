@@ -729,7 +729,6 @@ func simpleMetricsWithServiceName() pmetric.Metrics {
 }
 
 func simpleMetricsWithResource() pmetric.Metrics {
-
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()

@@ -87,7 +87,6 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
 	exporterSegregatedTraces := make(exporterTraces)
 	endpointSegregatedTraces := make(endpointTraces)
-
 	for _, batch := range batches {
 		routingID, err := routingIdentifiersFromTraces(batch, e.routingKey)
 		if err != nil {
@@ -113,7 +112,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
 			_, ok = exporterSegregatedTraces[exp]
 			if !ok {
-				exporterSegregatedTraces[exp] = endpointSegregatedTraces
+				exporterSegregatedTraces[exp] = endpointTraces{}
 			}
 			exporterSegregatedTraces[exp][endpoint] = endpointSegregatedTraces[endpoint]
 		}
