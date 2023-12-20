@@ -4,7 +4,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 
 import (
-	"fmt"
+	"errors"
 	"io"
 	"regexp"
 	"strconv"
@@ -23,10 +23,10 @@ type OTelTraceState struct {
 }
 
 const (
-	// RName is the OTel tracestate field for R-value
-	RName = "rv"
-	// TName is the OTel tracestate field for T-value
-	TName = "th"
+	// rValueFieldName is the OTel tracestate field for R-value
+	rValueFieldName = "rv"
+	// tValueFieldName is the OTel tracestate field for T-value
+	tValueFieldName = "th"
 
 	// hardMaxOTelLength is the maximum encoded size of an OTel
 	// tracestate value.
@@ -69,7 +69,7 @@ var (
 	// handle this condition is up to the sampler: for example the
 	// equalizing sampler can decide to pass through a span
 	// indicating 1/100 sampling or it can reject the span.
-	ErrInconsistentSampling = fmt.Errorf("cannot raise existing sampling probability")
+	ErrInconsistentSampling = errors.New("cannot raise existing sampling probability")
 )
 
 // NewOTelTraceState returns a parsed reprseentation of the
@@ -93,7 +93,7 @@ func NewOTelTraceState(input string) (OTelTraceState, error) {
 	err := otelSyntax.scanKeyValues(input, func(key, value string) error {
 		var err error
 		switch key {
-		case RName:
+		case rValueFieldName:
 			if otts.rnd, err = RValueToRandomness(value); err == nil {
 				otts.rvalue = value
 			} else {
@@ -103,7 +103,7 @@ func NewOTelTraceState(input string) (OTelTraceState, error) {
 				otts.rvalue = ""
 				otts.rnd = Randomness{}
 			}
-		case TName:
+		case tValueFieldName:
 			if otts.threshold, err = TValueToThreshold(value); err == nil {
 				otts.tvalue = value
 			} else {
@@ -214,13 +214,13 @@ func (otts *OTelTraceState) Serialize(w io.StringWriter) error {
 	}
 	if otts.HasRValue() {
 		sep()
-		ser.write(RName)
+		ser.write(rValueFieldName)
 		ser.write(":")
 		ser.write(otts.RValue())
 	}
 	if otts.HasTValue() {
 		sep()
-		ser.write(TName)
+		ser.write(tValueFieldName)
 		ser.write(":")
 		ser.write(otts.TValue())
 	}

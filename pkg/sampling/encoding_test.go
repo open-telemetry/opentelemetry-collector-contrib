@@ -180,9 +180,9 @@ func TestRValueSyntax(t *testing.T) {
 		{"12341234123412", nil},
 
 		// wrong size
-		{"123412341234120", RValueSizeError("123412341234120")},
-		{"1234123412341", RValueSizeError("1234123412341")},
-		{"", RValueSizeError("")},
+		{"123412341234120", ErrRValueSize},
+		{"1234123412341", ErrRValueSize},
+		{"", ErrRValueSize},
 
 		// bad syntax
 		{"abcdefgabcdefg", strconv.ErrSyntax},

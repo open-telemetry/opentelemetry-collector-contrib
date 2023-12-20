@@ -5,15 +5,11 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
-
-// RValueSizeError indicates the size was not 14 bytes.  This may allow
-// parsing the legacy r-value.
-type RValueSizeError string
 
 // numRandomnessValues equals MaxAdjustedCount--this variable has been
 // introduced to improve readability.  Recall that MaxAdjustedCount is
@@ -21,19 +17,18 @@ type RValueSizeError string
 // ("ffffffffffffff", i.e., "100000000000000").
 const numRandomnessValues = MaxAdjustedCount
 
-// Error indicates that 14 bytes are needed.
-func (r RValueSizeError) Error() string {
-	return fmt.Sprintf("r-value must have 14 hex digits: %q", string(r))
-}
+// ErrRValueSize is returned by RValueToRandomess in case of
+// unexpected size.
+var ErrRValueSize = errors.New("r-value must have 14 hex digits")
 
-// LeastHalfTraceIDThresholdMask is the mask to use on the
+// leastHalfTraceIDThresholdMask is the mask to use on the
 // least-significant half of the TraceID, i.e., bytes 8-15.
 // Because this is a 56 bit mask, the result after masking is
 // the unsigned value of bytes 9 through 15.
 //
 // This helps extract 56 bits of randomness from the second half of
 // the TraceID, as specified in https://www.w3.org/TR/trace-context-2/#randomness-of-trace-id
-const LeastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
+const leastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
 
 // Randomness may be derived from R-value or TraceID.
 //
@@ -52,14 +47,14 @@ func TraceIDToRandomness(id pcommon.TraceID) Randomness {
 	return Randomness{
 		// Then apply the mask to get the least-significant 56 bits / 7 bytes.
 		// Equivalently stated: zero the most-significant 8 bits.
-		unsigned: leastHalf & LeastHalfTraceIDThresholdMask,
+		unsigned: leastHalf & leastHalfTraceIDThresholdMask,
 	}
 }
 
 // RValueToRandomness parses NumHexDigits hex bytes into a Randomness.
 func RValueToRandomness(s string) (Randomness, error) {
 	if len(s) != NumHexDigits {
-		return Randomness{}, RValueSizeError(s)
+		return Randomness{}, ErrRValueSize
 	}
 
 	unsigned, err := strconv.ParseUint(s, hexBase, 64)
@@ -91,5 +86,4 @@ func (rnd Randomness) RValue() string {
 	//   randomness+numRandomnessValues: 100aabbccddeeff
 	//   strip the leading "1":           00aabbccddeeff
 	return strconv.FormatUint(numRandomnessValues+rnd.unsigned, hexBase)[1:]
-
 }

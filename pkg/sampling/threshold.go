@@ -14,12 +14,11 @@ const (
 	MaxAdjustedCount = 1 << 56
 
 	// NumHexDigits is the number of hex digits equalling 56 bits.
+	// This is the limit of sampling precision.
 	NumHexDigits = 56 / hexBits
 
 	hexBits = 4
 	hexBase = 16
-
-	NeverSampleTValue = "0"
 )
 
 // Threshold used to compare with the least-significant 7 bytes of the TraceID.

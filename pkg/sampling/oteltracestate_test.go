@@ -63,7 +63,7 @@ func TestOTelTraceStateRValuePValue(t *testing.T) {
 	const orig = "rv:3;p:2"
 	otts, err := NewOTelTraceState(orig)
 	require.Error(t, err)
-	require.True(t, errors.Is(err, RValueSizeError("3")))
+	require.Equal(t, ErrRValueSize, err)
 	require.False(t, otts.HasRValue())
 
 	// The error is oblivious to the old r-value, but that's ok.
@@ -192,8 +192,8 @@ func TestParseOTelTraceState(t *testing.T) {
 		{"rv:00000000000000", "00000000000000", ns, nil, nil},
 
 		// r-value range error (15 bytes of hex or more)
-		{"rv:100000000000000", ns, ns, nil, RValueSizeError("100000000000000")},
-		{"rv:fffffffffffffffff", ns, ns, nil, RValueSizeError("fffffffffffffffff")},
+		{"rv:100000000000000", ns, ns, nil, ErrRValueSize},
+		{"rv:fffffffffffffffff", ns, ns, nil, ErrRValueSize},
 
 		// no trailing ;
 		{"x:1;", ns, ns, nil, strconv.ErrSyntax},
