@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 
 redis-server /etc/redis-cluster-6379.conf && \
     redis-server /etc/redis-cluster-6380.conf && \
