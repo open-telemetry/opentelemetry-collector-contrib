@@ -84,7 +84,14 @@ func TestClusterIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
-			ExposedPorts: []string{redisPort},
+			ExposedPorts: []string{
+				redisPort,
+				"6380",
+				"6381",
+				"6382",
+				"6383",
+				"6384",
+			},
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context:    filepath.Join("testdata", "integration"),
 				Dockerfile: "Dockerfile.cluster",
@@ -93,7 +100,9 @@ func TestClusterIntegration(t *testing.T) {
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, redisPort))
+				// Strictly speaking this is non-deteministic and may not be the right port for one with repl offset
+				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6384"))
+				rCfg.MetricsBuilderConfig.Metrics.RedisSlaveReplicationOffset.Enabled = true
 			}),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),

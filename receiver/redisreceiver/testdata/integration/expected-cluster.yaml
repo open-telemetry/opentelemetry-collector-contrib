@@ -83,7 +83,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 0.002013
+                - asDouble: 0.004567
                   attributes:
                     - key: state
                       value:
@@ -97,14 +97,14 @@ resourceMetrics:
                         stringValue: sys_children
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 0.002345
+                - asDouble: 0.005023
                   attributes:
                     - key: state
                       value:
                         stringValue: sys_main_thread
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 0.005259
+                - asDouble: 0.003249
                   attributes:
                     - key: state
                       value:
@@ -118,7 +118,7 @@ resourceMetrics:
                         stringValue: user_children
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 0.00469
+                - asDouble: 0.002511
                   attributes:
                     - key: state
                       value:
@@ -178,7 +178,7 @@ resourceMetrics:
           - description: Ratio between used_memory_rss and used_memory
             gauge:
               dataPoints:
-                - asDouble: 4.49
+                - asDouble: 4.52
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.memory.fragmentation_ratio
@@ -194,7 +194,7 @@ resourceMetrics:
           - description: Peak memory consumed by Redis (in bytes)
             gauge:
               dataPoints:
-                - asInt: "1672400"
+                - asInt: "1672432"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.memory.peak
@@ -202,7 +202,7 @@ resourceMetrics:
           - description: Number of bytes that Redis allocated as seen by the operating system
             gauge:
               dataPoints:
-                - asInt: "7110656"
+                - asInt: "7151616"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.memory.rss
@@ -210,7 +210,7 @@ resourceMetrics:
           - description: Total number of bytes allocated by Redis using its allocator
             gauge:
               dataPoints:
-                - asInt: "1672400"
+                - asInt: "1672432"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.memory.used
