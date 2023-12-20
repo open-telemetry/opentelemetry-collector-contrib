@@ -69,6 +69,7 @@ The following settings can be optionally configured:
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
 - `metadata`
+  - `client_id` (default = "sarama"): The client ID to configure the Sarama Kafka client with. This client ID will be for all produce requests.
   - `full` (default = true): Whether to maintain a full set of metadata. When
     disabled, the client does not make the initial request to broker at the
     startup.
