@@ -157,8 +157,14 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 			if !ok {
 				continue
 			}
-			operation := spans.At(0).Name()
-			ids[fmt.Sprintf("%s:%s", svc.Str(), operation)] = true
+			scopespans := rs.At(i).ScopeSpans()
+			for j := 0; j < scopespans.Len(); j++ {
+				sspans := scopespans.At(j).Spans()
+				for k := 0; k < sspans.Len(); k++ {
+					span := sspans.At(k)
+					ids[svc.Str()+"|"+span.Name()] = true
+				}
+			}
 		}
 	default:
 		tid := spans.At(0).TraceID()
