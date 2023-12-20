@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/expr-lang/expr v1.15.7
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.91.0
@@ -42,7 +42,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
