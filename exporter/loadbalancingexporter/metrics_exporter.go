@@ -102,8 +102,12 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 			if err != nil {
 				return err
 			}
+			_, ok := exp.(exporter.Metrics)
+			if !ok {
+				return fmt.Errorf("unable to export metrics, unexpected exporter type: expected exporter.Metrics but got %T", exp)
+			}
 
-			_, ok := endpointSegregatedMetrics[endpoint]
+			_, ok = endpointSegregatedMetrics[endpoint]
 			if !ok {
 				endpointSegregatedMetrics[endpoint] = pmetric.Metrics{}
 			}
@@ -115,21 +119,19 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 			}
 			exporterSegregatedMetrics[exp][endpoint] = endpointSegregatedMetrics[endpoint]
 		}
-
-		errs = multierr.Append(errs, e.consumeMetric(ctx, exporterSegregatedMetrics))
 	}
+
+	errs = multierr.Append(errs, e.consumeMetric(ctx, exporterSegregatedMetrics))
 
 	return errs
 }
 
 func (e *metricExporterImp) consumeMetric(ctx context.Context, exporterSegregatedMetrics exporterMetrics) error {
 	var err error
+
 	for exp, endpointMetrics := range exporterSegregatedMetrics {
 		for endpoint, md := range endpointMetrics {
-			te, ok := exp.(exporter.Metrics)
-			if !ok {
-				return fmt.Errorf("unable to export metrics, unexpected exporter type: expected exporter.Metrics but got %T", exp)
-			}
+			te, _ := exp.(exporter.Metrics)
 
 			start := time.Now()
 			err = te.ConsumeMetrics(ctx, md)

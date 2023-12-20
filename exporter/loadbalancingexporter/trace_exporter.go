@@ -100,8 +100,12 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 			if err != nil {
 				return err
 			}
+			_, ok := exp.(exporter.Traces)
+			if !ok {
+				return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
+			}
 
-			_, ok := endpointSegregatedTraces[endpoint]
+			_, ok = endpointSegregatedTraces[endpoint]
 			if !ok {
 				endpointSegregatedTraces[endpoint] = ptrace.Traces{}
 			}
@@ -125,10 +129,7 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, exporterSegregatedT
 
 	for exp, endpointTraces := range exporterSegregatedTraces {
 		for endpoint, td := range endpointTraces {
-			te, ok := exp.(exporter.Traces)
-			if !ok {
-				return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
-			}
+			te, _ := exp.(exporter.Traces)
 
 			start := time.Now()
 			err = te.ConsumeTraces(ctx, td)
