@@ -91,7 +91,6 @@ ALL_SRC_AND_DOC := $(shell find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o 
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell $(GOCMD) list $(sort $(dir $(ALL_SRC))))
 
-
 ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
 
 pwd:
