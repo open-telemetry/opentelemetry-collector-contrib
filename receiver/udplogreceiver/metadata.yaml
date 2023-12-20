@@ -10,4 +10,4 @@ status:
 
 tests:
   config:
-    listen_address: "0.0.0.0:0"
+    listen_address: "localhost:0"
