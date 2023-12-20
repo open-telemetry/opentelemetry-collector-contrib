@@ -1,4 +1,4 @@
-package solarwindsapmsettingsextension
+package solarwindsapmsettingsextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension"
 
 import (
 	"context"
@@ -41,7 +41,7 @@ func newSolarwindsApmSettingsExtension(extensionCfg *Config, logger *zap.Logger)
 	return settingsExtension, nil
 }
 
-func Refresh(extension *solarwindsapmSettingsExtension) {
+func refresh(extension *solarwindsapmSettingsExtension) {
 	extension.logger.Info("Time to refresh from " + extension.config.Endpoint)
 	if hostname, err := os.Hostname(); err != nil {
 		extension.logger.Error("Unable to call os.Hostname() " + err.Error())
@@ -191,7 +191,7 @@ func (extension *solarwindsapmSettingsExtension) Start(ctx context.Context, _ co
 	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
 
 	// Refresh immediately
-	Refresh(extension)
+	refresh(extension)
 
 	// setup lightweight thread to refresh
 	var interval time.Duration
@@ -204,7 +204,7 @@ func (extension *solarwindsapmSettingsExtension) Start(ctx context.Context, _ co
 			select {
 			case <-ticker.C:
 				// Refresh at each ticker event
-				Refresh(extension)
+				refresh(extension)
 			case <-ctx.Done():
 				extension.logger.Info("Received ctx.Done() from ticker")
 				return

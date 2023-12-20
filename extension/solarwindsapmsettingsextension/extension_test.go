@@ -15,7 +15,7 @@ func TestCreateExtension(t *testing.T) {
 		Interval: "1s",
 	}
 	ex := createAnExtension(conf, t)
-	ex.Shutdown(context.TODO())
+	require.NoError(t, ex.Shutdown(context.TODO()))
 }
 
 func TestCreateExtensionWrongEndpoint(t *testing.T) {
@@ -25,7 +25,7 @@ func TestCreateExtensionWrongEndpoint(t *testing.T) {
 		Interval: "1s",
 	}
 	ex := createAnExtension(conf, t)
-	ex.Shutdown(context.TODO())
+	require.NoError(t, ex.Shutdown(context.TODO()))
 }
 
 func TestCreateExtensionWrongKey(t *testing.T) {
@@ -35,7 +35,7 @@ func TestCreateExtensionWrongKey(t *testing.T) {
 		Interval: "1s",
 	}
 	ex := createAnExtension(conf, t)
-	ex.Shutdown(context.TODO())
+	require.NoError(t, ex.Shutdown(context.TODO()))
 }
 
 // create extension
@@ -43,7 +43,6 @@ func createAnExtension(c *Config, t *testing.T) extension.Extension {
 	logger, err := zap.NewProduction()
 	ex, err := newSolarwindsApmSettingsExtension(c, logger)
 	require.NoError(t, err)
-	err = ex.Start(context.TODO(), nil)
-	require.NoError(t, err)
+	require.NoError(t, ex.Start(context.TODO(), nil))
 	return ex
 }

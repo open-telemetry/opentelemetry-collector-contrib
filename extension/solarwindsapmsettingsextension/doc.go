@@ -1,3 +1,3 @@
 //go:generate mdatagen metadata.yaml
 
-package solarwindsapmsettingsextension
+package solarwindsapmsettingsextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension"

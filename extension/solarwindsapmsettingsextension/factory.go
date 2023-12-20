@@ -1,8 +1,8 @@
-package solarwindsapmsettingsextension
+package solarwindsapmsettingsextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension"
 
 import (
 	"context"
-	"github.com/solarwinds/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 )
