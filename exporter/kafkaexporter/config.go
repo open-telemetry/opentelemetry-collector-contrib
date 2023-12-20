@@ -56,6 +56,10 @@ type Config struct {
 
 // Metadata defines configuration for retrieving metadata from the broker.
 type Metadata struct {
+	// ClientID to configure the Kafka client with. This can be leveraged by
+	// Kafka to enforce ACLs, throttling quotas, and more.
+	ClientID string `mapstructure:client_id`
+
 	// Whether to maintain a full set of metadata for all topics, or just
 	// the minimal set that has been necessary so far. The full set is simpler
 	// and usually more convenient, but can take up a substantial amount of
