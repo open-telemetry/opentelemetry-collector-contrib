@@ -3,6 +3,7 @@ type: servicegraph
 status:
   class: connector
   stability:
+    development: [traces_to_traces]
     alpha: [traces_to_metrics]
   distributions: [contrib, sumo, grafana]
   codeowners:

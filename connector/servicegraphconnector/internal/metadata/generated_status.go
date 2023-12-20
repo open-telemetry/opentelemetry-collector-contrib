@@ -11,6 +11,7 @@ import (
 const (
 	Type                     = "servicegraph"
 	TracesToMetricsStability = component.StabilityLevelAlpha
+	TracesToTracesStability  = component.StabilityLevelDevelopment
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {

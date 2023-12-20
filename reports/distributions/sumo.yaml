@@ -56,7 +56,6 @@ components:
         - resourcedetection
         - routing
         - schema
-        - servicegraph
         - span
         - spanmetrics
         - sumologic
