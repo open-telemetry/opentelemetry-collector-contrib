@@ -39,7 +39,7 @@ The following settings are optional:
   exporter](../../exporter/splunkhecexporter/README.md) to preserve datapoint
   origin.
 * `tls_settings` (no default): This is an optional object used to specify if TLS should be used for
-  incoming connections.
+  incoming connections. Please consult [configtls] for the complete list of options available.
     * `cert_file`: Specifies the certificate file to use for TLS connection.
       Note: Both `key_file` and `cert_file` are required for TLS connection.
     * `key_file`: Specifies the key file to use for TLS connection. Note: Both
@@ -71,3 +71,5 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls

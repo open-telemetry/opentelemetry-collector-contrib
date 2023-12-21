@@ -38,3 +38,5 @@
       - swiatekm-sumo
  - name: liatrio
    url: https://github.com/liatrio/liatrio-otel-collector
+   maintainers:
+      - adrielp
