@@ -6,4 +6,4 @@ status:
     development: [extension]
   distributions: [contrib]
   codeowners:
-    active: [ jerrytfleung, cheempz ]
+    active: [jerrytfleung, cheempz]
