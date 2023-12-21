@@ -97,7 +97,9 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 
 func (f *factory) AttributesTranslator(set component.TelemetrySettings) (*attributes.Translator, error) {
 	f.onceAttributesTranslator.Do(func() {
-		set.MeterProvider = noop.NewMeterProvider() // disable metrics for the exporter
+		// disable metrics for the translator
+		// Metrics are disabled until we figure out the details on how do we want to report the metric.
+		set.MeterProvider = noop.NewMeterProvider()
 		f.attributesTranslator, f.attributesErr = attributes.NewTranslator(set)
 	})
 	return f.attributesTranslator, f.attributesErr
@@ -424,6 +426,12 @@ func (f *factory) createLogsExporter(
 		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
 	}
 
+	attributesTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
 	if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td plog.Logs) error {
@@ -438,7 +446,7 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	} else {
-		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, metadataReporter)
+		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {
 			cancel()
 			f.wg.Wait() // then wait for shutdown
