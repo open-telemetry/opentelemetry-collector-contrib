@@ -1,11 +1,15 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package solarwindsapmsettingsextension
 
 import (
 	"context"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
-	"testing"
 )
 
 func TestCreateExtension(t *testing.T) {
@@ -41,6 +45,7 @@ func TestCreateExtensionWrongKey(t *testing.T) {
 // create extension
 func createAnExtension(c *Config, t *testing.T) extension.Extension {
 	logger, err := zap.NewProduction()
+	require.NoError(t, err)
 	ex, err := newSolarwindsApmSettingsExtension(c, logger)
 	require.NoError(t, err)
 	require.NoError(t, ex.Start(context.TODO(), nil))
