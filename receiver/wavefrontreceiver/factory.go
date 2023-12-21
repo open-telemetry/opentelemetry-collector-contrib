@@ -6,14 +6,19 @@ package wavefrontreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver/internal/metadata"
+)
+
+const (
+	// tcpIdleTimeoutDefault is the default timeout for idle TCP connections.
+	tcpIdleTimeoutDefault = 30 * time.Second
 )
 
 // This file implements factory for the Wavefront receiver.
@@ -31,7 +36,7 @@ func createDefaultConfig() component.Config {
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:2003",
 		},
-		TCPIdleTimeout: transport.TCPIdleTimeoutDefault,
+		TCPIdleTimeout: tcpIdleTimeoutDefault,
 	}
 }
 
