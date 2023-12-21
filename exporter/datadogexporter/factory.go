@@ -11,6 +11,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -22,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
@@ -77,6 +79,10 @@ type factory struct {
 	reporter         *inframetadata.Reporter
 	reporterErr      error
 
+	onceAttributesTranslator sync.Once
+	attributesTranslator     *attributes.Translator
+	attributesErr            error
+
 	wg sync.WaitGroup // waits for agent to exit
 
 	registry *featuregate.Registry
@@ -87,6 +93,16 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 		f.sourceProvider, f.providerErr = hostmetadata.GetSourceProvider(set, configHostname)
 	})
 	return f.sourceProvider, f.providerErr
+}
+
+func (f *factory) AttributesTranslator(set component.TelemetrySettings) (*attributes.Translator, error) {
+	f.onceAttributesTranslator.Do(func() {
+		// disable metrics for the translator
+		// Metrics are disabled until we figure out the details on how do we want to report the metric.
+		set.MeterProvider = noop.NewMeterProvider()
+		f.attributesTranslator, f.attributesErr = attributes.NewTranslator(set)
+	})
+	return f.attributesTranslator, f.attributesErr
 }
 
 // Reporter builds and returns an *inframetadata.Reporter.
@@ -245,6 +261,12 @@ func (f *factory) createMetricsExporter(
 		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
 	}
 
+	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
 	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
@@ -264,7 +286,7 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent, metadataReporter)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, attrsTranslator, hostProvider, traceagent, metadataReporter)
 		if metricsErr != nil {
 			cancel()    // first cancel context
 			f.wg.Wait() // then wait for shutdown
@@ -404,6 +426,12 @@ func (f *factory) createLogsExporter(
 		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
 	}
 
+	attributesTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
 	if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td plog.Logs) error {
@@ -418,7 +446,7 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	} else {
-		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, metadataReporter)
+		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {
 			cancel()
 			f.wg.Wait() // then wait for shutdown

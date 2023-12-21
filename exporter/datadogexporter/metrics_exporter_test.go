@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
@@ -303,12 +304,14 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
-
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
 				&statsRecorder,
 				reporter,
@@ -615,7 +618,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			expectedErr:           nil,
 		},
 		{
-			metrics: createTestMetricsWithStats(),
+			metrics: createTestMetricsWithStats(t),
 			source: source.Source{
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
@@ -692,11 +695,14 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
 				&statsRecorder,
 				reporter,
@@ -745,18 +751,20 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 	}
 }
 
-func createTestMetricsWithStats() pmetric.Metrics {
+func createTestMetricsWithStats(t *testing.T) pmetric.Metrics {
 	md := createTestMetrics(map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
 		"custom_attribute":                         "custom_value",
 	})
 	dest := md.ResourceMetrics()
 	set := componenttest.NewNopTelemetrySettings()
-	set.Logger, _ = zap.NewDevelopment()
-	trans, err := metrics.NewTranslator(set)
-	if err != nil {
-		panic(err)
-	}
+	var err error
+	set.Logger, err = zap.NewDevelopment()
+	require.NoError(t, err)
+	attributesTranslator, err := attributes.NewTranslator(set)
+	require.NoError(t, err)
+	trans, err := metrics.NewTranslator(set, attributesTranslator)
+	require.NoError(t, err)
 	src := trans.
 		StatsPayloadToMetrics(&pb.StatsPayload{Stats: testutil.StatsPayloads}).
 		ResourceMetrics()
