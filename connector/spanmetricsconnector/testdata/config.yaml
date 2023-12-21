@@ -68,3 +68,10 @@ spanmetrics/exemplars_enabled_with_max_per_datapoint:
   exemplars:
     enabled: true
     max_per_data_point: 5
+
+# resource metrics key attributes filter
+spanmetrics/resource_metrics_key_attributes:
+  resource_metrics_key_attributes:
+    - service.name
+    - telemetry.sdk.language
+    - telemetry.sdk.name
