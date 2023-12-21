@@ -3,7 +3,7 @@ type: logzio
 status:
   class: exporter
   stability:
-    unmaintained: [traces, logs]
+    beta: [traces, logs]
   distributions: [contrib, observiq, aws]
   codeowners:
     active: [Doron-Bargo, yotamloe]
