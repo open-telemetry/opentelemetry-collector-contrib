@@ -1,8 +1,8 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 contrib.go.opencensus.io/exporter/prometheus v0.4.2 h1:sqfsYl5GIY/L570iT+l93ehxaWJs2/OwXtiWwew3oAg=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/SAP/go-hdb v1.6.5 h1:MmlBKJPV82HyVGJQr2PIC1g0HK+90qyUPuf7yPNSKZ8=
-github.com/SAP/go-hdb v1.6.5/go.mod h1:RESA/tq6gO9jnSKeXokpnlWOYGmJ2jmCat+rC+AhRCI=
+github.com/SAP/go-hdb v1.6.6 h1:n0uqv+omYcz01sLXQ4bK7vDj76x5ELU0qJ/8PPgri08=
+github.com/SAP/go-hdb v1.6.6/go.mod h1:RESA/tq6gO9jnSKeXokpnlWOYGmJ2jmCat+rC+AhRCI=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=

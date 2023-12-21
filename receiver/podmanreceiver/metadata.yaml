@@ -8,6 +8,3 @@ status:
   codeowners:
     active: [rogercoll]
 
-tests:
-  config:
-  skip_lifecycle: true
