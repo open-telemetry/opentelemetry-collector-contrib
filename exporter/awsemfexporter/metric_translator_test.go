@@ -4,6 +4,7 @@
 package awsemfexporter
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -20,6 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
@@ -576,6 +578,36 @@ func TestTranslateCWMetricToEMFForEnhancedContainerInsights(t *testing.T) {
 		})
 	}
 
+}
+
+func TestTranslateGroupedMetricToEmfForEnhancedContainerInsights(t *testing.T) {
+	tests := map[string]struct {
+		groupedMetric    *groupedMetric
+		config           *Config
+		defaultLogStream string
+		want             *cwlogs.Event
+		expectedErr      error
+	}{
+		"EnhancedContainerInsightsEnabledNoMetrics": {
+			groupedMetric:    &groupedMetric{},
+			config:           &Config{EnhancedContainerInsights: true, DisableMetricExtraction: true},
+			defaultLogStream: "",
+			want:             nil,
+			expectedErr:      errMissingMetricsForEnhancedContainerInsights,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := translateGroupedMetricToEmf(tt.groupedMetric, tt.config, tt.defaultLogStream)
+			if err != nil && !errors.Is(err, tt.expectedErr) {
+				t.Errorf("translateGroupedMetricToEmf() error = %v, expectedErr %v", err, tt.expectedErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("translateGroupedMetricToEmf() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestTranslateGroupedMetricToCWMetric(t *testing.T) {

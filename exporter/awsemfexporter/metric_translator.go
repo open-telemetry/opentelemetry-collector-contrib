@@ -5,6 +5,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -32,6 +33,8 @@ const (
 	attributeReceiver         = "receiver"
 	fieldPrometheusMetricType = "prom_metric_type"
 )
+
+var errMissingMetricsForEnhancedContainerInsights = errors.New("nil event detected with EnhancedContainerInsights enabled")
 
 var fieldPrometheusTypes = map[pmetric.MetricType]string{
 	pmetric.MetricTypeEmpty:     "",
@@ -490,9 +493,12 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, defaultLogStream string) (*cwlogs.Event, error) {
 	cWMetric := translateGroupedMetricToCWMetric(groupedMetric, config)
 	event, err := translateCWMetricToEMF(cWMetric, config)
-
 	if err != nil {
 		return nil, err
+	}
+	// Drop a nil putLogEvent for EnhancedContainerInsights
+	if config.EnhancedContainerInsights && event == nil {
+		return nil, errMissingMetricsForEnhancedContainerInsights
 	}
 
 	logGroup := groupedMetric.metadata.logGroup
