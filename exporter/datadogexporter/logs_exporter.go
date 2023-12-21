@@ -23,8 +23,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
-// otelTag specifies a tag to be added to all logs sent from the Datadog exporter
-const otelTag = "datadog_exporter"
+// otelSource specifies a source to be added to all logs sent from the Datadog exporter
+// The tag has key `otel_source` and the value specified on this constant.
+const otelSource = "datadog_exporter"
 
 type logsExporter struct {
 	params           exporter.CreateSettings
@@ -69,7 +70,7 @@ func newLogsExporter(
 		}
 	}
 
-	translator, err := logsmapping.NewTranslator(params.TelemetrySettings, attributesTranslator, otelTag)
+	translator, err := logsmapping.NewTranslator(params.TelemetrySettings, attributesTranslator, otelSource)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logs translator: %w", err)
 	}
