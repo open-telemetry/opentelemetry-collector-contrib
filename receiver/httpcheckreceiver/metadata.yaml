@@ -65,7 +65,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     unit: 1
-    attributes: [http.url]
+    attributes: [http.url, name]
 
 tests:
   config:
