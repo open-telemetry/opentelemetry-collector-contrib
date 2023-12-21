@@ -9,10 +9,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Test_SetIndexableValue_EmptyValueNoIndex(t *testing.T) {
-	keys := TestKey[any]{}
-	err := setIndexableValue[any](context.Background(), nil, pcommon.NewValueEmpty(), nil, &keys)
+	keys := []ottl.Key[any]{
+		&TestKey[any]{},
+	}
+	err := setIndexableValue[any](context.Background(), nil, pcommon.NewValueEmpty(), nil, keys)
 	assert.Error(t, err)
 }
