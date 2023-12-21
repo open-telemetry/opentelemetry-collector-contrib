@@ -1,4 +1,4 @@
-module github.com/solarwinds/opentelemetry-collector-contrib
+module github.com/open-telemetry/opentelemetry-collector-contrib
 
 go 1.20
 
