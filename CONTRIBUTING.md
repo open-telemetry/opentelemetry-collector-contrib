@@ -232,7 +232,11 @@ The following GitHub users are the currently available sponsors, either by being
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
+* [@fatsheep9146](https://github.com/fatsheep9146)
+* [@astencel-sumo](https://github.com/astencel-sumo)
+* [@songy23](https://github.com/songy23)
 * [@Bryan Aguilar](https://github.com/bryan-aguilar)
+* [@atoulme](https://github.com/atoulme)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
