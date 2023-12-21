@@ -4,5 +4,6 @@ status:
   class: extension
   stability:
     development: [extension]
+  distributions: [contrib]
   codeowners:
     active: [ jerrytfleung, cheempz ]
