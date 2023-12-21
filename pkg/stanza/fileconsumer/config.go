@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -166,16 +167,15 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		HeaderConfig:            hCfg,
 		DeleteAtEOF:             c.DeleteAfterRead,
 	}
+	tracker := tracker.New(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles, readerFactory)
 
 	return &Manager{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
-		readerFactory:     readerFactory,
-		fileMatcher:       fileMatcher,
-		pollInterval:      c.PollInterval,
-		maxBatchFiles:     c.MaxConcurrentFiles / 2,
-		maxBatches:        c.MaxBatches,
-		previousPollFiles: make([]*reader.Reader, 0, c.MaxConcurrentFiles/2),
-		knownFiles:        []*reader.Metadata{},
+		SugaredLogger: logger.With("component", "fileconsumer"),
+		tracker:       tracker,
+		fileMatcher:   fileMatcher,
+		pollInterval:  c.PollInterval,
+		maxBatchFiles: c.MaxConcurrentFiles / 2,
+		maxBatches:    c.MaxBatches,
 	}, nil
 }
 
