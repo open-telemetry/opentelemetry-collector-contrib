@@ -751,19 +751,20 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 	}
 }
 
-func createTestMetricsWithStats() pmetric.Metrics {
+func createTestMetricsWithStats(t *testing.T) pmetric.Metrics {
 	md := createTestMetrics(map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
 		"custom_attribute":                         "custom_value",
 	})
 	dest := md.ResourceMetrics()
 	set := componenttest.NewNopTelemetrySettings()
-	set.Logger, _ = zap.NewDevelopment()
+	var err error
+	set.Logger, err = zap.NewDevelopment()
+	require.NoError(t, err)
 	attributesTranslator, err := attributes.NewTranslator(set)
+	require.NoError(t, err)
 	trans, err := metrics.NewTranslator(set, attributesTranslator)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	src := trans.
 		StatsPayloadToMetrics(&pb.StatsPayload{Stats: testutil.StatsPayloads}).
 		ResourceMetrics()
