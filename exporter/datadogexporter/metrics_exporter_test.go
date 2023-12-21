@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
@@ -303,12 +304,14 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
-
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
 				&statsRecorder,
 				reporter,
@@ -692,11 +695,14 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
 				&statsRecorder,
 				reporter,
@@ -753,7 +759,8 @@ func createTestMetricsWithStats() pmetric.Metrics {
 	dest := md.ResourceMetrics()
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger, _ = zap.NewDevelopment()
-	trans, err := metrics.NewTranslator(set)
+	attributesTranslator, err := attributes.NewTranslator(set)
+	trans, err := metrics.NewTranslator(set, attributesTranslator)
 	if err != nil {
 		panic(err)
 	}
