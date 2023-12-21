@@ -1474,6 +1474,28 @@ func Test_NewFunctionCall(t *testing.T) {
 			},
 			want: nil,
 		},
+		{
+			name: "path that allows keys but dont define any",
+			inv: editor{
+				Function: "testing_getsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
