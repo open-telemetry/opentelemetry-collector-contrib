@@ -226,6 +226,8 @@ type metadata struct {
 	ShortFolderName string `mapstructure:"-"`
 
 	Tests *tests `mapstructure:"tests"`
+
+	GenerateConfig bool `mapstructure:"generate_config"`
 }
 
 func setAttributesFullName(attrs map[attributeName]attribute) {

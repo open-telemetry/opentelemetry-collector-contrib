@@ -80,6 +80,16 @@ func run(ymlPath string) error {
 		}
 	}
 
+	if md.GenerateConfig {
+		if err = os.MkdirAll(filepath.Join(ymlDir, "internal", "gen"), 0700); err != nil {
+			return fmt.Errorf("unable to create config gen directory %q: %w", filepath.Join(ymlDir, "internal", "gen"), err)
+		}
+		if err = generateFile(filepath.Join(tmplDir, "component_config_gen.go.tmpl"),
+			filepath.Join(ymlDir, "internal", "gen", "component_config_gen.go"), md, md.ShortFolderName+md.Status.Class); err != nil {
+			return err
+		}
+	}
+
 	if len(md.Metrics) == 0 && len(md.ResourceAttributes) == 0 {
 		return nil
 	}

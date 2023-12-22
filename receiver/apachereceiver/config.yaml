@@ -1,0 +1,3 @@
+<confighttp.HTTPClientSettings Value>: confighttp.HTTPClientSettings
+<metadata.MetricsBuilderConfig Value>: metadata.MetricsBuilderConfig
+<scraperhelper.ScraperControllerSettings Value>: scraperhelper.ScraperControllerSettings
