@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
+	"strings"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/featuregate"
@@ -69,6 +71,17 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 	}, nil
 }
 
+// toIEEERA converts a MAC address to IEEE RA format.
+// Per the spec: "MAC Addresses MUST be represented in IEEE RA hexadecimal form: as hyphen-separated
+// octets in uppercase hexadecimal form from most to least significant."
+// Golang returns MAC addresses as colon-separated octets in lowercase hexadecimal form from most
+// to least significant, so we need to:
+// - Replace colons with hyphens
+// - Convert to uppercase
+func toIEEERA(mac net.HardwareAddr) string {
+	return strings.ToUpper(strings.ReplaceAll(mac.String(), ":", "-"))
+}
+
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	var hostname string
@@ -91,6 +104,17 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 		for _, ip := range hostIPs {
 			hostIPAttribute = append(hostIPAttribute, ip.String())
+		}
+	}
+
+	var hostMACAttribute []any
+	if d.cfg.ResourceAttributes.HostMac.Enabled {
+		hostMACs, errMACs := d.provider.HostMACs()
+		if errMACs != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get host MAC addresses: %w", errMACs)
+		}
+		for _, mac := range hostMACs {
+			hostMACAttribute = append(hostMACAttribute, toIEEERA(mac))
 		}
 	}
 
@@ -119,6 +143,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			}
 			d.rb.SetHostArch(hostArch)
 			d.rb.SetHostIP(hostIPAttribute)
+			d.rb.SetHostMac(hostMACAttribute)
 			d.rb.SetOsDescription(osDescription)
 			if len(cpuInfo) > 0 {
 				err = setHostCPUInfo(d, cpuInfo[0])

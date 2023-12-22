@@ -6,8 +6,10 @@ package logicmonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
+	lmsdklogs "github.com/logicmonitor/lm-data-sdk-go/api/logs"
 	"github.com/logicmonitor/lm-data-sdk-go/model"
 	"github.com/logicmonitor/lm-data-sdk-go/utils"
 	"github.com/logicmonitor/lm-data-sdk-go/utils/translator"
@@ -48,13 +50,9 @@ func (e *logExporter) start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}
 
-	authParams := utils.AuthParams{
-		AccessID:    e.config.APIToken.AccessID,
-		AccessKey:   string(e.config.APIToken.AccessKey),
-		BearerToken: string(e.config.Headers["Authorization"]),
-	}
+	opts := buildLogIngestOpts(e.config, client)
 
-	e.sender, err = logs.NewSender(ctx, e.config.Endpoint, client, authParams, e.settings.Logger)
+	e.sender, err = logs.NewSender(ctx, e.settings.Logger, opts...)
 	if err != nil {
 		return err
 	}
@@ -95,6 +93,27 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 		}
 	}
 	return e.sender.SendLogs(ctx, payload)
+}
+
+func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option {
+	authParams := utils.AuthParams{
+		AccessID:    config.APIToken.AccessID,
+		AccessKey:   string(config.APIToken.AccessKey),
+		BearerToken: string(config.Headers["Authorization"]),
+	}
+
+	opts := []lmsdklogs.Option{
+		lmsdklogs.WithLogBatchingDisabled(),
+		lmsdklogs.WithAuthentication(authParams),
+		lmsdklogs.WithHTTPClient(client),
+		lmsdklogs.WithEndpoint(config.Endpoint),
+	}
+
+	if config.Logs.ResourceMappingOperation != "" {
+		opts = append(opts, lmsdklogs.WithResourceMappingOperation(string(config.Logs.ResourceMappingOperation)))
+	}
+
+	return opts
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) pcommon.Timestamp {

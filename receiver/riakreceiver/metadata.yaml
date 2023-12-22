@@ -80,3 +80,6 @@ metrics:
       value_type: int
     attributes: [operation]
     enabled: true
+
+tests:
+  config:

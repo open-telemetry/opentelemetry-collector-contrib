@@ -29,6 +29,7 @@ type ResourceAttributesConfig struct {
 	AwsEcsLaunchtype      ResourceAttributeConfig `mapstructure:"aws.ecs.launchtype"`
 	AwsEcsTaskArn         ResourceAttributeConfig `mapstructure:"aws.ecs.task.arn"`
 	AwsEcsTaskFamily      ResourceAttributeConfig `mapstructure:"aws.ecs.task.family"`
+	AwsEcsTaskID          ResourceAttributeConfig `mapstructure:"aws.ecs.task.id"`
 	AwsEcsTaskRevision    ResourceAttributeConfig `mapstructure:"aws.ecs.task.revision"`
 	AwsLogGroupArns       ResourceAttributeConfig `mapstructure:"aws.log.group.arns"`
 	AwsLogGroupNames      ResourceAttributeConfig `mapstructure:"aws.log.group.names"`
@@ -53,6 +54,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		AwsEcsTaskFamily: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		AwsEcsTaskID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		AwsEcsTaskRevision: ResourceAttributeConfig{

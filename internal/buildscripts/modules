@@ -34,10 +34,7 @@ beta_modules=(
   "go.opentelemetry.io/collector/semconv"
 )
 
-rc_modules=(
+stable_modules=(
   "go.opentelemetry.io/collector/featuregate"
   "go.opentelemetry.io/collector/pdata"
 )
-
-# No stable modules currently exist, add pdata here once 1.0.0
-stable_modules=()

@@ -4,7 +4,7 @@ The `regex_parser` operator parses the string-type field selected by `parse_from
 
 #### Regex Syntax
 
-This operator makes use of [Go regular expression](https://github.com/google/re2/wiki/Syntax). When writing a regex, consider using a tool such as (regex101)[https://regex101.com/?flavor=golang].
+This operator makes use of [Go regular expression](https://github.com/google/re2/wiki/Syntax). When writing a regex, consider using a tool such as [regex101](https://regex101.com/?flavor=golang).
 
 ### Configuration Fields
 

@@ -14,14 +14,12 @@ func TestLoadParserConfig(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfgMap  map[string]any
-		cfg     Config
 		want    Config
 		wantErr bool
 	}{
 		{
 			name:    "unknow_type",
-			cfgMap:  map[string]any{"type": "unknow"},
-			cfg:     Config{Type: "unknown"},
+			cfgMap:  map[string]any{"type": "unknown"},
 			want:    Config{Type: "unknown"},
 			wantErr: true,
 		},
@@ -35,7 +33,6 @@ func TestLoadParserConfig(t *testing.T) {
 					"rules": []any{map[string]any{"regexp": "(?<key_test>.*test)"}},
 				},
 			},
-			cfg: Config{Type: "regex"},
 			want: Config{
 				Type: "regex",
 				Config: &RegexParserConfig{
@@ -47,10 +44,17 @@ func TestLoadParserConfig(t *testing.T) {
 		{
 			name:   "default_regex",
 			cfgMap: map[string]any{"type": "regex"},
-			cfg:    Config{Type: "regex"},
 			want: Config{
 				Type:   "regex",
 				Config: &RegexParserConfig{},
+			},
+		},
+		{
+			name:   "plaintext",
+			cfgMap: map[string]any{"type": "plaintext"},
+			want: Config{
+				Type:   "plaintext",
+				Config: &PlaintextConfig{},
 			},
 		},
 	}
@@ -58,8 +62,8 @@ func TestLoadParserConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			v := confmap.NewFromStringMap(tt.cfgMap)
 
-			got := tt.cfg // Not strictly necessary but it makes easier to debug issues.
-			err := LoadParserConfig(v, &got)
+			got := Config{}
+			err := got.Unmarshal(v)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err != nil)
 		})

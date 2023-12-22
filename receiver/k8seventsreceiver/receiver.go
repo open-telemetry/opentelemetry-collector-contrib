@@ -22,7 +22,6 @@ import (
 type k8seventsReceiver struct {
 	config          *Config
 	settings        receiver.CreateSettings
-	client          k8s.Interface
 	logsConsumer    consumer.Logs
 	stopperChanList []chan struct{}
 	startTime       time.Time
@@ -36,7 +35,6 @@ func newReceiver(
 	set receiver.CreateSettings,
 	config *Config,
 	consumer consumer.Logs,
-	client k8s.Interface,
 ) (receiver.Logs, error) {
 	transport := "http"
 
@@ -52,7 +50,6 @@ func newReceiver(
 	return &k8seventsReceiver{
 		settings:     set,
 		config:       config,
-		client:       client,
 		logsConsumer: consumer,
 		startTime:    time.Now(),
 		obsrecv:      obsrecv,
@@ -62,12 +59,17 @@ func newReceiver(
 func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
 
+	k8sInterface, err := kr.config.getK8sClient()
+	if err != nil {
+		return err
+	}
+
 	kr.settings.Logger.Info("starting to watch namespaces for the events.")
 	if len(kr.config.Namespaces) == 0 {
-		kr.startWatch(corev1.NamespaceAll)
+		kr.startWatch(corev1.NamespaceAll, k8sInterface)
 	} else {
 		for _, ns := range kr.config.Namespaces {
-			kr.startWatch(ns)
+			kr.startWatch(ns, k8sInterface)
 		}
 	}
 
@@ -75,6 +77,9 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error 
 }
 
 func (kr *k8seventsReceiver) Shutdown(context.Context) error {
+	if kr.cancel == nil {
+		return nil
+	}
 	// Stop watching all the namespaces by closing all the stopper channels.
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
@@ -86,10 +91,10 @@ func (kr *k8seventsReceiver) Shutdown(context.Context) error {
 // Add the 'Event' handler and trigger the watch for a specific namespace.
 // For new and updated events, the code is relying on the following k8s code implementation:
 // https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/tools/record/events_cache.go#L327
-func (kr *k8seventsReceiver) startWatch(ns string) {
+func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 	stopperChan := make(chan struct{})
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
-	kr.startWatchingNamespace(kr.client, cache.ResourceEventHandlerFuncs{
+	kr.startWatchingNamespace(client, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			ev := obj.(*corev1.Event)
 			kr.handleEvent(ev)

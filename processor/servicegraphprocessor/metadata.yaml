@@ -8,3 +8,7 @@ status:
   warnings: []
   codeowners:
     active: [jpkrohling, mapno]
+
+tests:
+  config:
+  skip_lifecycle: true
