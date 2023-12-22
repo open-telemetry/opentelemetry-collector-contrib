@@ -5,27 +5,23 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/{{ .Package }}"
-	"gopkg.in/yaml.v3"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/{{ .Status.Class }}/{{ .Package }}"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/configschema"
 )
 
 //go:generate go run ./component_config_gen.go
 
 func main() {
-
-	v := reflect.ValueOf({{ .Package }}.Config{})
-	fields := map[string]string{}
-	for i := 0; i < v.NumField(); i++ {
-		f := v.Field(i)
-		fields[f.String()] = f.Type().String()
-	}
-
-	out, err := yaml.Marshal(fields)
-	if err != nil {
+	f := {{ .Package }}.NewFactory()
+	path, err := os.Getwd()
+    if err != nil {
+    	panic(err)
+    }
+	if err := configschema.GenerateConfigDoc(filepath.Join(path, "..", ".."), f); err != nil {
 		panic(err)
 	}
-
-	os.WriteFile(filepath.Join("..", "..", "config.yaml"), out, 0644)
+	if err := configschema.GenerateMetadatada(f, filepath.Join(path, "..", ".."), filepath.Join(path, "..", "..")); err != nil {
+    	panic(err)
+    }
 }

@@ -19,11 +19,7 @@ func commentsForStruct(v reflect.Value, dr DirResolver) (map[string]string, erro
 	if v.Kind() == reflect.Ptr {
 		elem = v.Elem()
 	}
-	packagePath, err := dr.TypeToPackagePath(elem.Type())
-	if err != nil {
-		return nil, err
-	}
-	return searchDirsForComments(packagePath, elem.Type().String())
+	return searchDirsForComments(dr.SrcRoot, elem.Type().String())
 }
 
 func searchDirsForComments(packageDir, typeName string) (map[string]string, error) {

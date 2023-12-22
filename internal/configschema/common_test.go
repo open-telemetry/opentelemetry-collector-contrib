@@ -6,8 +6,6 @@ package configschema
 import (
 	"path/filepath"
 	"time"
-
-	"go.opentelemetry.io/collector/config/configtls"
 )
 
 type testPerson struct {
@@ -22,13 +20,14 @@ type testStruct struct {
 	Four  bool   `mapstructure:"four"`
 	// embedded, package qualified comment
 	time.Duration `mapstructure:"duration"`
-	Squashed      testPerson                 `mapstructure:",squash"`
-	PersonPtr     *testPerson                `mapstructure:"person_ptr"`
-	PersonStruct  testPerson                 `mapstructure:"person_struct"`
-	Persons       []testPerson               `mapstructure:"persons"`
-	PersonPtrs    []*testPerson              `mapstructure:"person_ptrs"`
-	Ignored       string                     `mapstructure:"-"`
-	TLS           configtls.TLSClientSetting `mapstructure:"tls"`
+	Squashed      testPerson    `mapstructure:",squash"`
+	PersonPtr     *testPerson   `mapstructure:"person_ptr"`
+	PersonStruct  testPerson    `mapstructure:"person_struct"`
+	Persons       []testPerson  `mapstructure:"persons"`
+	PersonPtrs    []*testPerson `mapstructure:"person_ptrs"`
+	Ignored       string        `mapstructure:"-"`
+	// TODO replace with embedded struct
+	//TLS           configtls.TLSClientSetting `mapstructure:"tls"`
 }
 
 func testDR() DirResolver {

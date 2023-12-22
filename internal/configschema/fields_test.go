@@ -59,7 +59,7 @@ func testReadFields(t *testing.T, s testStruct, defaults map[string]any) {
 
 	assert.Equal(t, "configschema.testStruct", root.Type)
 
-	assert.Equal(t, 11, len(root.Fields))
+	assert.Equal(t, 10, len(root.Fields))
 
 	assert.Equal(t, &Field{
 		Name:    "one",

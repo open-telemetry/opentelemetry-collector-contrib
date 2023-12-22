@@ -1,18 +1,16 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cfgmetadatagen
+package configschema
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
 type metadataWriter interface {
-	write(cfg configschema.CfgInfo, bytes []byte) error
+	write(cfg CfgInfo, bytes []byte) error
 }
 
 type metadataFileWriter struct {
@@ -27,12 +25,8 @@ func newMetadataFileWriter(dir string) metadataWriter {
 	}
 }
 
-func (w *metadataFileWriter) write(cfg configschema.CfgInfo, yamlBytes []byte) error {
-	groupDir := filepath.Join(w.baseDir, cfg.Group)
-	if err := w.prepDir(groupDir); err != nil {
-		return err
-	}
-	filename := filepath.Join(groupDir, fmt.Sprintf("%s.yaml", cfg.Type))
+func (w *metadataFileWriter) write(cfg CfgInfo, yamlBytes []byte) error {
+	filename := filepath.Join(w.baseDir, fmt.Sprintf("%s.yaml", cfg.Type))
 	fmt.Printf("writing file: %s\n", filename)
 	return os.WriteFile(filename, yamlBytes, 0600)
 }
