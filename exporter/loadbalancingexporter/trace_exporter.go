@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,6 +51,8 @@ func newTracesExporter(params exporter.CreateSettings, cfg component.Config) (*t
 	switch cfg.(*Config).RoutingKey {
 	case "service":
 		traceExporter.routingKey = svcRouting
+	case "routing":
+		traceExporter.routingKey = resourceRouting
 	case "traceID", "":
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
@@ -150,7 +154,31 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 		}
 		return ids, nil
 	}
+
+	if key == resourceRouting {
+		for i := 0; i < rs.Len(); i++ {
+			ss := rs.At(i).ScopeSpans()
+			for j := 0; j < ss.Len(); j++ {
+				ispans := ss.At(j).Spans()
+				for k := 0; k < ispans.Len(); k++ {
+					span := ispans.At(k)
+					rKey := computeResourceRoutingKey(span.Name(), rs.At(i).Resource().Attributes())
+					ids[rKey] = true
+				}
+			}
+		}
+		return ids, nil
+	}
+
 	tid := spans.At(0).TraceID()
 	ids[string(tid[:])] = true
 	return ids, nil
+}
+
+func computeResourceRoutingKey(name string, attrs pcommon.Map) string {
+	attrsHash := sortedMapAttrs(attrs)
+	attrsHash = append(attrsHash, name)
+	routingRef := strings.Join(attrsHash, "")
+
+	return routingRef
 }
