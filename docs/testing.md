@@ -1,7 +1,7 @@
 
 ## Testing your components
 
-- `scraperint` is a wrapper around testcontainers and the golang testing api for use with receivers only (at least, today).  See docs in [`scraperinttest`](./internal/coreinternal/scraperinttest) for information on usage.
+- `scraperint` is a wrapper around testcontainers and the golang testing api for use with receivers only (at least, today).  See docs in [`scraperinttest`](./internal/coreinternal/scraperinttest/README.md) for information on usage.
 - Add the `integration` [build constraint](#constraining-build-targets) for longer-running, comprehensive tests.  These will be run via github actions when submitting a PR.
 
 ## Constraining build targets
