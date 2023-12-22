@@ -53,7 +53,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.91.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.91.0
@@ -330,7 +329,6 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/caio/go-tdigest/v4 v4.0.1 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
@@ -637,7 +635,6 @@ require (
 	github.com/vmware/go-vmware-nsxt v0.0.0-20230223012718-d31b8a1ca05e // indirect
 	github.com/vmware/govmomi v0.34.1 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
-	github.com/wavefronthq/wavefront-sdk-go v0.15.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
@@ -784,8 +781,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsp
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ../../processor/groupbyattrsprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter => ../../exporter/tanzuobservabilityexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter => ../../exporter/skywalkingexporter
 
