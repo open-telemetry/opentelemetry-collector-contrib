@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/api"
 )
 
 const (
@@ -48,6 +50,7 @@ type Config struct {
 	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
 
 	TargetAllocator *targetAllocator `mapstructure:"target_allocator"`
+	APIConfig       *api.Config      `mapstructure:"api"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
