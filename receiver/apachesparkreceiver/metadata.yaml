@@ -688,3 +688,6 @@ metrics:
       value_type: int
     unit: ms
     attributes: [gc_type]
+
+tests:
+  config:

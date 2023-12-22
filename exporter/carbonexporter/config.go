@@ -14,15 +14,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-// Defaults for not specified configuration settings.
-const (
-	defaultEndpoint = "localhost:2003"
-)
-
 // Config defines configuration for Carbon exporter.
 type Config struct {
 	// Specifies the connection endpoint config. The default value is "localhost:2003".
 	confignet.TCPAddr `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	// MaxIdleConns is used to set a limit to the maximum idle TCP connections the client can keep open. Default value is 100.
+	// If `sending_queue` is enabled, it is recommended to use same value as `sending_queue::num_consumers`.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
 
 	// Timeout is the maximum duration allowed to connecting and sending the
 	// data to the Carbon/Graphite backend. The default value is 5s.
@@ -43,7 +41,11 @@ func (cfg *Config) Validate() error {
 
 	// Negative timeouts are not acceptable, since all sends will fail.
 	if cfg.Timeout < 0 {
-		return errors.New("exporter requires a positive timeout")
+		return errors.New("'timeout' must be non-negative")
+	}
+
+	if cfg.MaxIdleConns < 0 {
+		return errors.New("'max_idle_conns' must be non-negative")
 	}
 
 	return nil

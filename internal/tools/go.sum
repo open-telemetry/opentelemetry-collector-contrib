@@ -652,8 +652,8 @@ go.opentelemetry.io/build-tools/crosslink v0.12.0 h1:GNJQURuabE5rAkIbnrqndIKyXrr
 go.opentelemetry.io/build-tools/crosslink v0.12.0/go.mod h1:QE8Kxf4Ygg2ltSHE+Vdys/67jtQM26j7spJLyjNA2DU=
 go.opentelemetry.io/build-tools/issuegenerator v0.12.0 h1:KRP7aSUR9JoqNwv+Pp595vj9NtyTlkgi+vKrYM6ZnhA=
 go.opentelemetry.io/build-tools/issuegenerator v0.12.0/go.mod h1:G71Og7dZJoIC+MjuY1InQ/oeAOkM1S5Nv6CCnlOdqns=
-go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231212150647-815fbfc7b190 h1:tbQ8exrhY+53k1IRy9UOisZZhtNHNGIipUzwyq8w1VU=
-go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231212150647-815fbfc7b190/go.mod h1:qDGDKPq0CcFcqwlBo3EHQJ/uxTE1NIgH9OVZIcgMHf8=
+go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231217163606-bdaa660fddc1 h1:j1WiUrOcMKKsEmgpK1qeeXBff46rkB1/GafRB+JEpx0=
+go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231217163606-bdaa660fddc1/go.mod h1:qDGDKPq0CcFcqwlBo3EHQJ/uxTE1NIgH9OVZIcgMHf8=
 go.opentelemetry.io/collector/cmd/builder v0.91.0 h1:+XleULVc+kfCMIjVBDVru9x5dIjTG1EfDY8nZxBqK/o=
 go.opentelemetry.io/collector/cmd/builder v0.91.0/go.mod h1:wcxXrQyLrzvYKXCG3CqDkFpbL35cBCHke6wk2RFvmZk=
 go.tmz.dev/musttag v0.7.2 h1:1J6S9ipDbalBSODNT5jCep8dhZyMr4ttnjQagmGYR5s=
@@ -674,8 +674,8 @@ golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d/go.mod h1:IxCIyHEi3zRg3s0
 golang.org/x/crypto v0.1.0/go.mod h1:RecgLatLF4+eUMCP1PoPZQb+cVrJcOPbHkTkbkB9sbw=
 golang.org/x/crypto v0.3.1-0.20221117191849-2c476679df9a/go.mod h1:hebNnKkNXi2UzZN1eVRvBB7co0a+JxK6XbPiWVs/3J4=
 golang.org/x/crypto v0.7.0/go.mod h1:pYwdfH91IfpZVANVyUOhSIPZaFoJGxTFbZhFTx+dXZU=
-golang.org/x/crypto v0.16.0 h1:mMMrFzRSCF0GvB7Ne27XVtVAaXLrPmgPC7/v0tkwHaY=
-golang.org/x/crypto v0.16.0/go.mod h1:gCAAfMLgwOJRpTjQ2zCCt2OcSfYMTeZVSRtQlPC7Nq4=
+golang.org/x/crypto v0.17.0 h1:r8bRNjWL3GshPW3gkd+RpvzWrZAwPS49OmTGZ/uhM4k=
+golang.org/x/crypto v0.17.0/go.mod h1:gCAAfMLgwOJRpTjQ2zCCt2OcSfYMTeZVSRtQlPC7Nq4=
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
 golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522/go.mod h1:ZjyILWgesfNpC6sMxTJOJm9Kp84zZh5NQWvqDGG3Qr8=
