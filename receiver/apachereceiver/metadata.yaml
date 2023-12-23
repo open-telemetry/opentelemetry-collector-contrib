@@ -176,3 +176,6 @@ metrics:
 
 tests:
   config:
+
+config:
+  generate: true

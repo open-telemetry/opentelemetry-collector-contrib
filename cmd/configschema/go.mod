@@ -1157,3 +1157,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockda
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../testbed
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter => ../../exporter/syslogexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/configschema => ../../internal/configschema

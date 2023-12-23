@@ -205,6 +205,10 @@ type tests struct {
 	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
 }
 
+type config struct {
+	Generate bool `mapstructure:"generate"`
+}
+
 type metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
@@ -226,6 +230,8 @@ type metadata struct {
 	ShortFolderName string `mapstructure:"-"`
 
 	Tests *tests `mapstructure:"tests"`
+
+	Config *config `mapstructure:"config"`
 }
 
 func setAttributesFullName(attrs map[attributeName]attribute) {

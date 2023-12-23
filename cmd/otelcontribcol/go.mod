@@ -1194,3 +1194,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockda
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../testbed
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/configschema => ../../internal/configschema
