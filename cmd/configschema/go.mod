@@ -1,3 +1,5 @@
+// Deprecated: [v0.92.0] This package is deprecated and will be removed in a future release.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30187
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
 
 go 1.20
