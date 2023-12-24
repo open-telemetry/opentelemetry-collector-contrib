@@ -26,7 +26,7 @@ cmd/telemetrygen/                                        @open-telemetry/collect
 confmap/provider/s3provider/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
 
 connector/countconnector/                                @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
-connector/datadogconnector/                              @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
+connector/datadogconnector/                              @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13
 connector/exceptionsconnector/                           @open-telemetry/collector-contrib-approvers @jpkrohling @marctc
 connector/failoverconnector/                             @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
@@ -48,7 +48,7 @@ exporter/carbonexporter/                                 @open-telemetry/collect
 exporter/cassandraexporter/                              @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/clickhouseexporter/                             @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen
 exporter/coralogixexporter/                              @open-telemetry/collector-contrib-approvers @povilasv @matej-g
-exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13 @liustanley @songy23 @mackjmr
+exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr
 exporter/datasetexporter/                                @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom @tomaz-s1
 exporter/dynatraceexporter/                              @open-telemetry/collector-contrib-approvers @dyladan @arminru @evan-bradley
 exporter/elasticsearchexporter/                          @open-telemetry/collector-contrib-approvers @JaredTan95
@@ -116,7 +116,7 @@ extension/storage/filestorage/                           @open-telemetry/collect
 internal/aws/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 internal/collectd/                                       @open-telemetry/collector-contrib-approvers @atoulme
 internal/coreinternal/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-internal/datadog/                                        @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
+internal/datadog/                                        @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13
 internal/docker/                                         @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
 internal/filter/                                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/k8sconfig/                                      @open-telemetry/collector-contrib-approvers @dmitryax
@@ -150,7 +150,7 @@ pkg/winperfcounters/                                     @open-telemetry/collect
 
 processor/attributesprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                    @open-telemetry/collector-contrib-approvers @TylerHelmuth
-processor/datadogprocessor/                              @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
+processor/datadogprocessor/                              @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13
 processor/deltatorateprocessor/                          @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
 processor/groupbyattrsprocessor/                         @open-telemetry/collector-contrib-approvers @rnishtala-sumo
