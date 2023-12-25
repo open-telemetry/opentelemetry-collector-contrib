@@ -75,6 +75,14 @@ func (t *Tracker) ReadFile(path string) {
 	t.activeFiles.Add(r)
 }
 
+func (t *Tracker) ActiveFiles() []*reader.Reader {
+	return t.activeFiles.readers
+}
+
+func (t *Tracker) FromBeginning() {
+	t.ReaderFactory.FromBeginning = true
+}
+
 func (t *Tracker) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Find a prefix match in previous poll's open fileset
 	if m := t.openFiles.HasPrefix(fp); m != nil {
@@ -113,14 +121,6 @@ func (t *Tracker) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 		return nil, nil
 	}
 	return fp, file
-}
-
-func (t *Tracker) ActiveFiles() []*reader.Reader {
-	return t.activeFiles.readers
-}
-
-func (t *Tracker) FromBeginning() {
-	t.ReaderFactory.FromBeginning = true
 }
 
 func (t *Tracker) Persist(persister operator.Persister) {
