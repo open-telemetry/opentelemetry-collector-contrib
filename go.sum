@@ -574,8 +574,8 @@ github.com/evanphx/json-patch v5.6.0+incompatible h1:jBYDEEiFBPxA0v50tFdvOzQQTCv
 github.com/evanphx/json-patch/v5 v5.6.0 h1:b91NhWfaz02IuVxO9faSllyAtNXHMPkC5J8sJCLunww=
 github.com/expr-lang/expr v1.15.7 h1:BK0JcWUkoW6nrbLBo6xCKhz4BvH5DSOOu1Gx5lucyZo=
 github.com/expr-lang/expr v1.15.7/go.mod h1:uCkhfG+x7fcZ5A5sXHKuQ07jGZRl6J0FCAaf2k4PtVQ=
-github.com/facebook/time v0.0.0-20231206192019-f0661e49c89f h1:KlBXRygcQK/y3tvFEQxw54yAbRsap++bjD0o5wb4FHw=
-github.com/facebook/time v0.0.0-20231206192019-f0661e49c89f/go.mod h1:4Sm1/UrTiOhZF3J3KoLU00mDBOna3NF9pcUrEreHZ1c=
+github.com/facebook/time v0.0.0-20231220110940-184fad01f5a0 h1:BImi+X5niQeFxGPmqjjYtC5+HVZ6oyImQp4oYPUUI2M=
+github.com/facebook/time v0.0.0-20231220110940-184fad01f5a0/go.mod h1:4Sm1/UrTiOhZF3J3KoLU00mDBOna3NF9pcUrEreHZ1c=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
