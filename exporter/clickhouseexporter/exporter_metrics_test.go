@@ -5,6 +5,7 @@ package clickhouseexporter
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"regexp"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"database/sql/driver"
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
