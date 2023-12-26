@@ -54,3 +54,6 @@ metrics:
       monotonic: false
     unit: "{error}"
     attributes: [http.url, error.message]
+
+tests:
+  config:

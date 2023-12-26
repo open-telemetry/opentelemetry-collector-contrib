@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
@@ -15,28 +16,12 @@ import (
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
-
-// TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27293
-const localConfig = `
-exporters:
-  otlp:
-    endpoint: localhost:1111
-receivers:
-  otlp:
-    protocols:
-      grpc: {}
-      http: {}
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: []
-      exporters: [otlp]
-`
 
 type opampAgent struct {
 	cfg    *Config
@@ -47,7 +32,10 @@ type opampAgent struct {
 
 	instanceID ulid.ULID
 
-	effectiveConfig string
+	eclk            sync.RWMutex
+	effectiveConfig *confmap.Conf
+
+	capabilities Capabilities
 
 	agentDescription *protobufs.AgentDescription
 
@@ -88,9 +76,7 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 			},
 			OnMessageFunc: o.onMessage,
 		},
-		// TODO: Include ReportsEffectiveConfig once the extension has access to the
-		// collector's effective configuration.
-		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
+		Capabilities: o.capabilities.toAgentCapabilities(),
 	}
 
 	if err := o.createAgentDescription(); err != nil {
@@ -119,6 +105,21 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	}
 	o.logger.Debug("Stopping OpAMP client...")
 	return o.opampClient.Stop(ctx)
+}
+
+func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
+	if o.capabilities.ReportsEffectiveConfig {
+		o.updateEffectiveConfig(conf)
+		return o.opampClient.UpdateEffectiveConfig(ctx)
+	}
+	return nil
+}
+
+func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
+	o.eclk.Lock()
+	defer o.eclk.Unlock()
+
+	o.effectiveConfig = conf
 }
 
 func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, res pcommon.Resource) (*opampAgent, error) {
@@ -156,12 +157,12 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 	}
 
 	agent := &opampAgent{
-		cfg:             cfg,
-		logger:          logger,
-		agentType:       agentType,
-		agentVersion:    agentVersion,
-		instanceID:      uid,
-		effectiveConfig: localConfig, // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27293
+		cfg:          cfg,
+		logger:       logger,
+		agentType:    agentType,
+		agentVersion: agentVersion,
+		instanceID:   uid,
+		capabilities: cfg.Capabilities,
 	}
 
 	return agent, nil
@@ -210,10 +211,23 @@ func (o *opampAgent) updateAgentIdentity(instanceID ulid.ULID) {
 }
 
 func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
+	o.eclk.RLock()
+	defer o.eclk.RUnlock()
+
+	if !o.capabilities.ReportsEffectiveConfig || o.effectiveConfig == nil {
+		return nil
+	}
+
+	conf, err := yaml.Marshal(o.effectiveConfig.ToStringMap())
+	if err != nil {
+		o.logger.Error("cannot unmarshal effectiveConfig", zap.Any("conf", o.effectiveConfig), zap.Error(err))
+		return nil
+	}
+
 	return &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"": {Body: []byte(o.effectiveConfig)},
+				"": {Body: conf},
 			},
 		},
 	}

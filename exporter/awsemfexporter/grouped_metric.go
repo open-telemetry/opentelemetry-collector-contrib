@@ -36,7 +36,7 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[any]*groupedMetri
 
 	for i := 0; i < dps.Len(); i++ {
 		// Drop stale or NaN metric values
-		if staleOrNan, attrs := dps.IsStaleOrNaN(i); staleOrNan {
+		if isStaleNanInf, attrs := dps.IsStaleNaNInf(i); isStaleNanInf {
 			if config != nil && config.logger != nil {
 				config.logger.Debug("dropped metric with nan value",
 					zap.String("metric.name", pmd.Name()),

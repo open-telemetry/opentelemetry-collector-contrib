@@ -5,10 +5,8 @@ package pipeline // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
-	"time"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -33,17 +31,11 @@ func (c Config) Build(logger *zap.SugaredLogger) (*DirectedPipeline, error) {
 		return nil, errors.NewError("empty pipeline not allowed", "")
 	}
 
-	sampledLogger := logger.Desugar().WithOptions(
-		zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-			return zapcore.NewSamplerWithOptions(core, time.Second, 1, 10000)
-		}),
-	).Sugar()
-
 	dedeplucateIDs(c.Operators)
 
 	ops := make([]operator.Operator, 0, len(c.Operators))
 	for _, opCfg := range c.Operators {
-		op, err := opCfg.Build(sampledLogger)
+		op, err := opCfg.Build(logger)
 		if err != nil {
 			return nil, err
 		}

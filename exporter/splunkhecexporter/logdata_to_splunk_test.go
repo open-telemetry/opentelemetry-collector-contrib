@@ -188,7 +188,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(nil, 0, map[string]any{}, "unknown", "source", "sourcetype"),
+				commonLogSplunkEvent("", 0, map[string]any{}, "unknown", "source", "sourcetype"),
 			},
 		},
 		{
@@ -207,7 +207,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: func() []*splunk.Event {
-				event := commonLogSplunkEvent(nil, 0, map[string]any{}, "unknown", "source", "sourcetype")
+				event := commonLogSplunkEvent("", 0, map[string]any{}, "unknown", "source", "sourcetype")
 				event.Fields["span_id"] = "0000000000000032"
 				event.Fields["trace_id"] = "00000000000000000000000000000064"
 				return []*splunk.Event{event}
@@ -330,7 +330,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(nil, ts, map[string]any{"custom": "custom"},
+				commonLogSplunkEvent("", ts, map[string]any{"custom": "custom"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -454,7 +454,7 @@ func Test_emptyLogRecord(t *testing.T) {
 	assert.Zero(t, event.Source)
 	assert.Zero(t, event.SourceType)
 	assert.Zero(t, event.Index)
-	assert.Nil(t, event.Event)
+	assert.Equal(t, "", event.Event)
 	assert.Empty(t, event.Fields)
 }
 

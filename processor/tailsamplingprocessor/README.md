@@ -48,7 +48,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
-- `num_traces` (default = 50000): Number of traces kept in memory
+- `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
@@ -130,7 +130,7 @@ processors:
               boolean_attribute: {key: key4, value: true}
          },
          {
-              name: test-policy-11,
+              name: test-policy-13,
               type: ottl_condition,
               ottl_condition: {
                    error_mode: ignore,
@@ -427,3 +427,11 @@ As a rule of thumb, if you want to add probabilistic sampling and...
 
 [probabilistic_sampling_processor]: ../probabilisticsamplerprocessor
 [loadbalancing_exporter]: ../../exporter/loadbalancingexporter
+
+## FAQ
+
+**Q. Why am I seeing high values for the error metric `sampling_trace_dropped_too_early`?**
+
+**A.** This is likely a load issue. If the collector is processing more traces in-memory than the `num_traces` configuration
+option allows, some will have to be dropped before they can be sampled. Increasing the value of `num_traces` can
+help resolve this error, at the expense of increased memory usage.

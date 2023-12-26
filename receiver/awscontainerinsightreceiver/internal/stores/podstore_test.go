@@ -624,6 +624,63 @@ func TestPodStore_decorateNode(t *testing.T) {
 	assert.Equal(t, int(1), metric.GetField("node_number_of_running_pods").(int))
 }
 
+func TestPodStore_decorateNode_multiplePodStates(t *testing.T) {
+	podStore := getPodStore()
+	defer require.NoError(t, podStore.Shutdown())
+
+	tags := map[string]string{ci.MetricType: ci.TypeNode}
+	fields := map[string]any{
+		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(100),
+		ci.MetricName(ci.TypeNode, ci.CPULimit):      uint64(4000),
+		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(100 * 1024 * 1024),
+		ci.MetricName(ci.TypeNode, ci.MemLimit):      uint64(400 * 1024 * 1024),
+	}
+	metric := generateMetric(fields, tags)
+
+	// terminated pods should not contribute to requests
+	failedPod := getBaseTestPodInfo()
+	failedPod.Status.Phase = corev1.PodFailed
+	succeededPod := getBaseTestPodInfo()
+	succeededPod.Status.Phase = corev1.PodSucceeded
+	podList := []corev1.Pod{*failedPod, *succeededPod}
+	podStore.refreshInternal(time.Now(), podList)
+	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(0), metric.GetField("node_cpu_request").(uint64))
+	assert.Equal(t, uint64(4000), metric.GetField("node_cpu_limit").(uint64))
+	assert.Equal(t, float64(0), metric.GetField("node_cpu_reserved_capacity").(float64))
+	assert.Equal(t, float64(100), metric.GetField("node_cpu_usage_total").(float64))
+
+	assert.Equal(t, uint64(0), metric.GetField("node_memory_request").(uint64))
+	assert.Equal(t, uint64(400*1024*1024), metric.GetField("node_memory_limit").(uint64))
+	assert.Equal(t, float64(0), metric.GetField("node_memory_reserved_capacity").(float64))
+	assert.Equal(t, float64(100*1024*1024), metric.GetField("node_memory_working_set").(float64))
+
+	// non-terminated pods should contribute to requests
+	pendingPod := getBaseTestPodInfo()
+	pendingPod.Status.Phase = corev1.PodPending
+	podList = append(podList, *pendingPod)
+	podStore.refreshInternal(time.Now(), podList)
+	podStore.decorateNode(metric)
+	assert.Equal(t, uint64(10), metric.GetField("node_cpu_request").(uint64))
+	assert.Equal(t, float64(0.25), metric.GetField("node_cpu_reserved_capacity").(float64))
+
+	assert.Equal(t, uint64(50*1024*1024), metric.GetField("node_memory_request").(uint64))
+	assert.Equal(t, float64(12.5), metric.GetField("node_memory_reserved_capacity").(float64))
+
+	runningPod := getBaseTestPodInfo()
+	runningPod.Status.Phase = corev1.PodRunning
+	podList = append(podList, *runningPod)
+	podStore.refreshInternal(time.Now(), podList)
+	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(20), metric.GetField("node_cpu_request").(uint64))
+	assert.Equal(t, float64(0.5), metric.GetField("node_cpu_reserved_capacity").(float64))
+
+	assert.Equal(t, uint64(100*1024*1024), metric.GetField("node_memory_request").(uint64))
+	assert.Equal(t, float64(25), metric.GetField("node_memory_reserved_capacity").(float64))
+}
+
 func TestPodStore_Decorate(t *testing.T) {
 	// not the metrics for decoration
 	tags := map[string]string{}

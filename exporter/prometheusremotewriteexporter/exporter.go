@@ -226,16 +226,16 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
+	// Uses proto.Marshal to convert the WriteRequest into bytes array
+	data, errMarshal := proto.Marshal(writeReq)
+	if errMarshal != nil {
+		return consumererror.NewPermanent(errMarshal)
+	}
+	buf := make([]byte, len(data), cap(data))
+	compressedData := snappy.Encode(buf, data)
+
 	// executeFunc can be used for backoff and non backoff scenarios.
 	executeFunc := func() error {
-		// Uses proto.Marshal to convert the WriteRequest into bytes array
-		data, err := proto.Marshal(writeReq)
-		if err != nil {
-			return backoff.Permanent(consumererror.NewPermanent(err))
-		}
-		buf := make([]byte, len(data), cap(data))
-		compressedData := snappy.Encode(buf, data)
-
 		// Create the HTTP POST request to send to the endpoint
 		req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {

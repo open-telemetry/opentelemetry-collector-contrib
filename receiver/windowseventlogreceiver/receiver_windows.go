@@ -10,10 +10,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 )
 
@@ -33,13 +31,7 @@ func (f ReceiverType) Type() component.Type {
 
 // CreateDefaultConfig creates a config with type and version
 func (f ReceiverType) CreateDefaultConfig() component.Config {
-	return &WindowsLogConfig{
-		BaseConfig: adapter.BaseConfig{
-			Operators:      []operator.Config{},
-			RetryOnFailure: consumerretry.NewDefaultConfig(),
-		},
-		InputConfig: *windows.NewConfig(),
-	}
+	return createDefaultConfig()
 }
 
 // BaseConfig gets the base config from config, for now
@@ -50,10 +42,4 @@ func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 // InputConfig unmarshals the input operator
 func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*WindowsLogConfig).InputConfig)
-}
-
-// WindowsLogConfig defines configuration for the windowseventlog receiver
-type WindowsLogConfig struct {
-	InputConfig        windows.Config `mapstructure:",squash"`
-	adapter.BaseConfig `mapstructure:",squash"`
 }

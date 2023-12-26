@@ -7,7 +7,8 @@
 |               | [beta]: traces, metrics   |
 | Distributions | [contrib], [aws], [observiq] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fdatadog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fdatadog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fdatadog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fdatadog) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@gbbr](https://www.github.com/gbbr), [@dineshg13](https://www.github.com/dineshg13), [@liustanley](https://www.github.com/liustanley), [@songy23](https://www.github.com/songy23), [@mackjmr](https://www.github.com/mackjmr) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@dineshg13](https://www.github.com/dineshg13), [@liustanley](https://www.github.com/liustanley), [@songy23](https://www.github.com/songy23), [@mackjmr](https://www.github.com/mackjmr) |
+| Emeritus      | [@gbbr](https://www.github.com/gbbr) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
@@ -57,6 +58,12 @@ Since [v0.69.0](https://github.com/open-telemetry/opentelemetry-collector-contri
 otelcol --config=config.yaml --feature-gates=-exporter.datadogexporter.metricexportnativeclient
 ```
 Note that we are currently migrating the Datadog metrics exporter to use the metrics serializer instead. The feature flag `exporter.datadogexporter.metricexportnativeclient` will be deprecated and eventually removed in the future, following the [feature lifecycle](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle).
+
+### Remap OTel’s service.name attribute to service for logs
+
+For Datadog Exporter versions 0.83.0 and later, the `service` field of OTel logs is populated as [OTel semantic convention](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.name`. However, `service.name` is not one of the default [service attributes](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute) in Datadog’s log preprocessing.
+
+To get the service field correctly populated in your logs, you can specify service.name to be the source of a log’s service by setting a [log service remapper processor](https://docs.datadoghq.com/logs/log_configuration/pipelines/?tab=service#service-attribute).
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha

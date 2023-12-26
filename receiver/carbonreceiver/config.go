@@ -4,23 +4,16 @@
 package carbonreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
-const (
-	// parserConfigSection is the name that must be used for the parser settings
-	// in the configuration struct. The metadata mapstructure for the parser
-	// should use the same string.
-	parserConfigSection = "parser"
-)
-
-var _ confmap.Unmarshaler = (*Config)(nil)
+var _ component.ConfigValidator = (*Config)(nil)
 
 // Config defines configuration for the Carbon receiver.
 type Config struct {
@@ -35,29 +28,9 @@ type Config struct {
 	Parser *protocol.Config `mapstructure:"parser"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
-	if componentParser == nil {
-		// The section is empty nothing to do, using the default config.
-		return nil
+func (cfg *Config) Validate() error {
+	if cfg.TCPIdleTimeout < 0 {
+		return errors.New("'tcp_idle_timeout' must be non-negative")
 	}
-
-	// Unmarshal but not exact yet so the different keys under config do not
-	// trigger errors, this is needed so that the types of protocol and transport
-	// are read.
-	if err := componentParser.Unmarshal(cfg); err != nil {
-		return err
-	}
-
-	// Unmarshal the protocol, so the type of config can be properly set.
-	vParserCfg, errSub := componentParser.Sub(parserConfigSection)
-	if errSub != nil {
-		return errSub
-	}
-
-	if err := protocol.LoadParserConfig(vParserCfg, cfg.Parser); err != nil {
-		return fmt.Errorf("error on %q section: %w", parserConfigSection, err)
-	}
-
-	// Unmarshal exact to validate the config keys.
-	return componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
+	return nil
 }
