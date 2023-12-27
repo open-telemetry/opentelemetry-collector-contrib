@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.20
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.0
+	github.com/DataDog/datadog-agent/pkg/proto v0.50.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.11.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.11.0
 	github.com/DataDog/sketches-go v1.4.3
@@ -25,13 +25,13 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.1 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-sqllexer v0.0.8 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect

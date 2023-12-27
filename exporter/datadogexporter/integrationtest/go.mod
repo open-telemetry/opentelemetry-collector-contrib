@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.20
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.0
+	github.com/DataDog/datadog-agent/pkg/proto v0.50.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.91.0
@@ -30,13 +30,13 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.102 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.20.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-sqllexer v0.0.8 // indirect
