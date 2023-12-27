@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/chloggen v0.12.0
 	go.opentelemetry.io/build-tools/crosslink v0.12.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.12.0
-	go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231217163606-bdaa660fddc1
+	go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231219003513-41b2c0540f56
 	go.opentelemetry.io/collector/cmd/builder v0.91.0
 	golang.org/x/tools v0.16.1
 	golang.org/x/vuln v1.0.1
