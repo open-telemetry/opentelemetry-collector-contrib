@@ -1,3 +1,4 @@
+// Deprecated: Use go.opentelemetry.io/collector/cmd/mdatagen instead.
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
 
 go 1.20

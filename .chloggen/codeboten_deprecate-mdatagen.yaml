@@ -1,16 +1,16 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: datadogexporter
+component: mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `datadog.otlp_translator.metrics.missing_source` counter, which counts the number of metrics that are missing a source (e.g. hostname). 
+note: Component is being moved to core to allow it to be used there as well.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [29785]
+issues: [30173]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

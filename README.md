@@ -73,7 +73,6 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Curtis Robert](https://github.com/crobert-1), Splunk
-- [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Matt Wear](https://github.com/mwear), Lightstep
@@ -83,6 +82,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 Emeritus Triagers:
 
 - [Alolita Sharma](https://github.com/alolita), AWS
+- [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Punya Biswal](https://github.com/punya), Google
 - [Steve Flanders](https://github.com/flands), Splunk
 
