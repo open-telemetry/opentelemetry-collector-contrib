@@ -48,7 +48,9 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 	}
 
 	config.logger = set.Logger
-
+	if useConfigCleanMethod.IsEnabled() {
+		config.CleanDeclarationsAndDescriptors()
+	}
 	// create AWS session
 	awsConfig, session, err := awsutil.GetAWSConfigSession(set.Logger, &awsutil.Conn{}, &config.AWSSessionSettings)
 	if err != nil {

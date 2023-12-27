@@ -5,12 +5,19 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
+
+var useConfigCleanMethod = featuregate.GlobalRegistry().MustRegister("awsemf.configvalidation", featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.91.0"),
+	featuregate.WithRegisterDescription("Enabling this feature gate changes the default AWS EMF Exporter Config"+
+		" Validate method to no longer clean metric declaration and desciptor objects. Config.CleanDelcarationsAndDescriptors() "+
+		"must be called in addition to Validate()"))
 
 var (
 	// eMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
@@ -103,8 +110,45 @@ type MetricDescriptor struct {
 
 var _ component.Config = (*Config)(nil)
 
-// Validate filters out invalid metricDeclarations and metricDescriptors
 func (config *Config) Validate() error {
+	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
+		return retErr
+	}
+
+	if !useConfigCleanMethod.IsEnabled() {
+		var validDeclarations []*MetricDeclaration
+		for _, declaration := range config.MetricDeclarations {
+			err := declaration.init(config.logger)
+			if err != nil {
+				config.logger.Warn("Dropped metric declaration.", zap.Error(err))
+			} else {
+				validDeclarations = append(validDeclarations, declaration)
+			}
+		}
+
+		config.MetricDeclarations = validDeclarations
+		var validDescriptors []MetricDescriptor
+		for _, descriptor := range config.MetricDescriptors {
+			if descriptor.MetricName == "" {
+				continue
+			}
+			if _, ok := eMFSupportedUnits[descriptor.Unit]; ok {
+				validDescriptors = append(validDescriptors, descriptor)
+			} else {
+				config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.Unit))
+			}
+		}
+		config.MetricDescriptors = validDescriptors
+	}
+
+	return cwlogs.ValidateTagsInput(config.Tags)
+}
+
+// CleanDeclarationsAndDescriptors removes invalid metric declaration and descriptors
+// from the config.
+// MUST be called at least once after delcarations and descriptors are set.
+// SHOULD be called after a logger is set on the config object.
+func (config *Config) CleanDeclarationsAndDescriptors() {
 	var validDeclarations []*MetricDeclaration
 	for _, declaration := range config.MetricDeclarations {
 		err := declaration.init(config.logger)
@@ -114,8 +158,8 @@ func (config *Config) Validate() error {
 			validDeclarations = append(validDeclarations, declaration)
 		}
 	}
-	config.MetricDeclarations = validDeclarations
 
+	config.MetricDeclarations = validDeclarations
 	var validDescriptors []MetricDescriptor
 	for _, descriptor := range config.MetricDescriptors {
 		if descriptor.MetricName == "" {
@@ -128,13 +172,6 @@ func (config *Config) Validate() error {
 		}
 	}
 	config.MetricDescriptors = validDescriptors
-
-	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
-		return retErr
-	}
-
-	return cwlogs.ValidateTagsInput(config.Tags)
-
 }
 
 func newEMFSupportedUnits() map[string]any {
