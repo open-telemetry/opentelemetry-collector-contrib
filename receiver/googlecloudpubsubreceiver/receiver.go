@@ -111,6 +111,9 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) err
 }
 
 func (receiver *pubsubReceiver) Shutdown(_ context.Context) error {
+	if receiver.handler == nil {
+		return nil
+	}
 	receiver.logger.Info("Stopping Google Pubsub receiver")
 	receiver.handler.CancelNow()
 	receiver.logger.Info("Stopped Google Pubsub receiver")

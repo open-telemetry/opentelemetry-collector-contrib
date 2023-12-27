@@ -55,3 +55,6 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [state]
+
+tests:
+  config:

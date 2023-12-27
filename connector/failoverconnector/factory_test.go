@@ -15,20 +15,23 @@ import (
 )
 
 func TestNewFactory(t *testing.T) {
+	traces0 := component.NewIDWithName(component.DataTypeTraces, "0")
+	traces1 := component.NewIDWithName(component.DataTypeTraces, "1")
+	traces2 := component.NewIDWithName(component.DataTypeTraces, "2")
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{component.NewIDWithName(component.DataTypeTraces, "0"), component.NewIDWithName(component.DataTypeTraces, "1")}, {component.NewIDWithName(component.DataTypeTraces, "2")}},
+		PipelinePriority: [][]component.ID{{traces0, traces1}, {traces2}},
 		RetryInterval:    5 * time.Minute,
 		RetryGap:         10 * time.Second,
 		MaxRetries:       5,
 	}
 
 	router := connectortest.NewTracesRouter(
-		connectortest.WithNopTraces(component.NewIDWithName(component.DataTypeTraces, "0")),
-		connectortest.WithNopTraces(component.NewIDWithName(component.DataTypeTraces, "1")),
+		connectortest.WithNopTraces(traces0),
+		connectortest.WithNopTraces(traces1),
+		connectortest.WithNopTraces(traces2),
 	)
 
-	factory := NewFactory()
-	conn, err := factory.CreateTracesToTraces(context.Background(),
+	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
 
 	assert.NoError(t, err)

@@ -8,3 +8,6 @@ status:
   distributions: [core, contrib, observiq, splunk, sumo, aws, grafana]
   codeowners:
     active: [jpkrohling]
+
+tests:
+  config:

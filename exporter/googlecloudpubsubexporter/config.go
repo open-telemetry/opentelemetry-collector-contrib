@@ -22,10 +22,10 @@ type Config struct {
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service
 	UserAgent string `mapstructure:"user_agent"`
-	// Override of the Pubsub endpoint, for testing only
-	endpoint string
+	// Override of the Pubsub Endpoint, leave empty for the default endpoint
+	Endpoint string `mapstructure:"endpoint"`
 	// Only has effect if Endpoint is not ""
-	insecure bool
+	Insecure bool `mapstructure:"insecure"`
 
 	// The fully qualified resource name of the Pubsub topic
 	Topic string `mapstructure:"topic"`
