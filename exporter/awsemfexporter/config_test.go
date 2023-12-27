@@ -128,23 +128,51 @@ func TestConfigValidate(t *testing.T) {
 		{Unit: "INVALID", MetricName: "404"},
 		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}
-	cfg := &Config{
-		AWSSessionSettings: awsutil.AWSSessionSettings{
-			RequestTimeoutSeconds: 30,
-			MaxRetries:            1,
-		},
-		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-		MetricDescriptors:           incorrectDescriptor,
-		logger:                      zap.NewNop(),
-	}
-	assert.NoError(t, component.ValidateConfig(cfg))
 
-	assert.Equal(t, 2, len(cfg.MetricDescriptors))
-	assert.Equal(t, []MetricDescriptor{
-		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
-		{Unit: "Megabytes", MetricName: "memory_usage"},
-	}, cfg.MetricDescriptors)
+	tests := []struct {
+		Name           string
+		SetFeatureGate func() error
+		Cleanup        func()
+	}{
+		{
+			"feature gate disabled",
+			func() error { return nil },
+			func() {},
+		},
+		{
+			"feature gate enabled",
+			func() error { return featuregate.GlobalRegistry().Set("awsemf.configvalidation", true) },
+			func() { featuregate.GlobalRegistry().Set("awsemf.configvalidation", false) },
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(t.Name(), func(t *testing.T) {
+			cfg := &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            1,
+				},
+				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+				MetricDescriptors:           incorrectDescriptor,
+				logger:                      zap.NewNop(),
+			}
+			assert.NoError(t, test.SetFeatureGate())
+			t.Cleanup(test.Cleanup)
+			if useConfigCleanMethod.IsEnabled() {
+				cfg.CleanDeclarationsAndDescriptors()
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+
+			assert.Equal(t, 2, len(cfg.MetricDescriptors))
+			assert.Equal(t, []MetricDescriptor{
+				{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
+				{Unit: "Megabytes", MetricName: "memory_usage"},
+			}, cfg.MetricDescriptors)
+		})
+	}
+
 }
 
 func TestRetentionValidateCorrect(t *testing.T) {
