@@ -18,4 +18,5 @@ resource_attributes:
 
 tests:
   config:
-  skip_lifecycle: true
+    client_secret: "secret"
+    tenant_id: "id"
