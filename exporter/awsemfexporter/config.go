@@ -116,29 +116,7 @@ func (config *Config) Validate() error {
 	}
 
 	if !useConfigCleanMethod.IsEnabled() {
-		var validDeclarations []*MetricDeclaration
-		for _, declaration := range config.MetricDeclarations {
-			err := declaration.init(config.logger)
-			if err != nil {
-				config.logger.Warn("Dropped metric declaration.", zap.Error(err))
-			} else {
-				validDeclarations = append(validDeclarations, declaration)
-			}
-		}
-
-		config.MetricDeclarations = validDeclarations
-		var validDescriptors []MetricDescriptor
-		for _, descriptor := range config.MetricDescriptors {
-			if descriptor.MetricName == "" {
-				continue
-			}
-			if _, ok := eMFSupportedUnits[descriptor.Unit]; ok {
-				validDescriptors = append(validDescriptors, descriptor)
-			} else {
-				config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.Unit))
-			}
-		}
-		config.MetricDescriptors = validDescriptors
+		config.cleanDeclarationsAndDescriptors()
 	}
 
 	return cwlogs.ValidateTagsInput(config.Tags)
@@ -149,6 +127,10 @@ func (config *Config) Validate() error {
 // MUST be called at least once after delcarations and descriptors are set.
 // SHOULD be called after a logger is set on the config object.
 func (config *Config) CleanDeclarationsAndDescriptors() {
+	config.cleanDeclarationsAndDescriptors()
+}
+
+func (config *Config) cleanDeclarationsAndDescriptors() {
 	var validDeclarations []*MetricDeclaration
 	for _, declaration := range config.MetricDeclarations {
 		err := declaration.init(config.logger)
