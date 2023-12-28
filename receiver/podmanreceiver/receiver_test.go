@@ -63,10 +63,10 @@ func TestScraperLoop(t *testing.T) {
 	assert.NotNil(t, r)
 
 	go func() {
-		sample_stats := genContainerStats()
+		sampleStats := genContainerStats()
 		client <- containerStatsReport{
 			Stats: []containerStats{
-				*sample_stats,
+				*sampleStats,
 			},
 			Error: containerStatsReportError{},
 		}
