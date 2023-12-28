@@ -28,7 +28,7 @@ resource_attributes:
 
 attributes:
   core:
-    description: "The CPU core number when utilizing per-CPU metrics."
+    description: "The CPU core number when utilising per-CPU metrics."
     type: string
 
 metrics:
