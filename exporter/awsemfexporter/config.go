@@ -15,9 +15,9 @@ import (
 
 var useConfigCleanMethod = featuregate.GlobalRegistry().MustRegister("awsemf.configvalidation", featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.91.0"),
-	featuregate.WithRegisterDescription("Enabling this feature gate changes the default AWS EMF Exporter Config"+
-		" Validate method to no longer clean metric declaration and desciptor objects. Config.CleanDelcarationsAndDescriptors() "+
-		"must be called in addition to Validate()"))
+	featuregate.WithRegisterDescription("Enabling this feature gate changes the default awsemfexporter.Config.Validate()"+
+		" method to no longer clean metric declaration and desciptor objects. awsemfexporter.Config.CleanDelcarationsAndDescriptors() "+
+		"must be called in addition to Validate() if feature gate is enabled."))
 
 var (
 	// eMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
