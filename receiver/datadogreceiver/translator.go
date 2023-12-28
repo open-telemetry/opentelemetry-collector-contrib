@@ -273,11 +273,14 @@ func handlePayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
 		if err = decodeRequest(req, &traces); err != nil {
 			return nil, err
 		}
+		traceChunks := traceChunksFromTraces(traces)
+		appVersion := appVersionFromTraceChunks(traceChunks)
 		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
-			Chunks:          traceChunksFromTraces(traces),
+			Chunks:          traceChunks,
+			AppVersion:      appVersion,
 		}
 		tracerPayloads = append(tracerPayloads, tracerPayload)
 	}
