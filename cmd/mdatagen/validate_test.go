@@ -108,9 +108,17 @@ func TestValidate(t *testing.T) {
 
 func TestValidateMetricDuplicates(t *testing.T) {
 	allowedMetrics := map[string][]string{
-		"container.cpu.utilization": {"docker_stats", "kubeletstats"},
-		"container.memory.rss":      {"docker_stats", "kubeletstats"},
-		"container.uptime":          {"docker_stats", "kubeletstats"},
+		"container.cpu.utilization":           {"docker_stats", "kubeletstats", "podman_stats"},
+		"container.cpu.usage.system":          {"docker_stats", "podman_stats"},
+		"container.cpu.usage.percpu":          {"docker_stats", "podman_stats"},
+		"container.cpu.usage.total":           {"docker_stats", "podman_stats"},
+		"container.memory.usage.limit":        {"docker_stats", "podman_stats"},
+		"container.memory.percent":            {"docker_stats", "podman_stats"},
+		"container.memory.usage.total":        {"docker_stats", "podman_stats"},
+		"container.network.io.usage.tx_bytes": {"docker_stats", "podman_stats"},
+		"container.network.io.usage.rx_bytes": {"docker_stats", "podman_stats"},
+		"container.memory.rss":                {"docker_stats", "kubeletstats"},
+		"container.uptime":                    {"docker_stats", "kubeletstats"},
 	}
 	allMetrics := map[string][]string{}
 	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, err error) error {
