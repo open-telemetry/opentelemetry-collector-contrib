@@ -247,6 +247,8 @@ targeting it will have different variables available.
 extensions:
   # Configures the Kubernetes observer to watch for pod start and stop events.
   k8s_observer:
+    observe_nodes: true
+    observe_services: true
   host_observer:
 
 receivers:
