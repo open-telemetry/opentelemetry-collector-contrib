@@ -119,7 +119,8 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 					}
 				}
 			case metric := <-transferChan:
-				if err := r.parser.Aggregate(metric.Raw, metric.Addr); err != nil {
+				addr, _ := net.ResolveIPAddr(r.config.NetAddr.Transport, r.config.NetAddr.Endpoint)
+				if err := r.parser.Aggregate(metric.Raw, addr); err != nil {
 					r.reporter.OnDebugf("Error aggregating metric", zap.Error(err))
 				}
 			case <-ctx.Done():
