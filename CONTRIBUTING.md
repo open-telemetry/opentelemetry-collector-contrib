@@ -356,7 +356,7 @@ To delete a label, prepend the label with `-`. Note that you must make a new com
 Example label comment:
 
 ```
-/label receiver/prometheus help-wanted -exporter/prometheus
+/label receiver/prometheus -help-wanted
 ```
 
 ## Becoming a Code Owner
