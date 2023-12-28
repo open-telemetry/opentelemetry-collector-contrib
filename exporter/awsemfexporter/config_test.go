@@ -132,17 +132,17 @@ func TestConfigValidate(t *testing.T) {
 	tests := []struct {
 		Name           string
 		SetFeatureGate func() error
-		Cleanup        func()
+		Cleanup        func() error
 	}{
 		{
 			"feature gate disabled",
 			func() error { return nil },
-			func() {},
+			func() error { return nil },
 		},
 		{
 			"feature gate enabled",
 			func() error { return featuregate.GlobalRegistry().Set("awsemf.configvalidation", true) },
-			func() { featuregate.GlobalRegistry().Set("awsemf.configvalidation", false) },
+			func() error { return featuregate.GlobalRegistry().Set("awsemf.configvalidation", false) },
 		},
 	}
 
@@ -159,7 +159,6 @@ func TestConfigValidate(t *testing.T) {
 				logger:                      zap.NewNop(),
 			}
 			assert.NoError(t, test.SetFeatureGate())
-			t.Cleanup(test.Cleanup)
 			if useConfigCleanMethod.IsEnabled() {
 				cfg.CleanDeclarationsAndDescriptors()
 			}
@@ -170,6 +169,7 @@ func TestConfigValidate(t *testing.T) {
 				{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
 				{Unit: "Megabytes", MetricName: "memory_usage"},
 			}, cfg.MetricDescriptors)
+			require.NoError(t, test.Cleanup())
 		})
 	}
 
