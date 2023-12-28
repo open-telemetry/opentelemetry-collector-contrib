@@ -88,7 +88,7 @@ extensions:
   sumologic:
     installation_token: <token>
     collector_name: my_collector
-    time_zone: CET
+    time_zone: Europe/Warsaw
 
 receivers:
   hostmetrics:
