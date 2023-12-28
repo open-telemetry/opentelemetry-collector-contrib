@@ -6,6 +6,7 @@ package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -22,6 +23,9 @@ type Config struct {
 	APIVersion    string              `mapstructure:"api_version"`
 	SSHKey        string              `mapstructure:"ssh_key"`
 	SSHPassphrase configopaque.String `mapstructure:"ssh_passphrase"`
+
+	// MetricsBuilderConfig config. Enable or disable stats by name.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {

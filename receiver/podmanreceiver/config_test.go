@@ -36,8 +36,9 @@ func TestLoadConfig(t *testing.T) {
 					InitialDelay:       time.Second,
 					Timeout:            5 * time.Second,
 				},
-				APIVersion: defaultAPIVersion,
-				Endpoint:   "unix:///run/podman/podman.sock",
+				APIVersion:           defaultAPIVersion,
+				Endpoint:             "unix:///run/podman/podman.sock",
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -48,8 +49,9 @@ func TestLoadConfig(t *testing.T) {
 					InitialDelay:       time.Second,
 					Timeout:            20 * time.Second,
 				},
-				APIVersion: defaultAPIVersion,
-				Endpoint:   "http://example.com/",
+				APIVersion:           defaultAPIVersion,
+				Endpoint:             "http://example.com/",
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 	}

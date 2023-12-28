@@ -35,6 +35,7 @@ func createDefaultConfig() *Config {
 		ScraperControllerSettings: cfg,
 		Endpoint:                  "unix:///run/podman/podman.sock",
 		APIVersion:                defaultAPIVersion,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

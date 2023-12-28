@@ -43,7 +43,7 @@ resource_attributes:
 
 attributes:
   core:
-    description: "The CPU core number when utilising per-CPU metrics."
+    description: "The CPU core number when utilizing per-CPU metrics."
     type: string
   device_major:
     description: "Device major number for block IO operations."

@@ -9,17 +9,15 @@ package podmanreceiver
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func TestTranslateStatsToMetrics(t *testing.T) {
-	ts := time.Now()
-	stats := genContainerStats()
-	md := containerStatsToMetrics(ts, container{Image: "localimage"}, stats)
-	assertStatsEqualToMetrics(t, stats, md)
+type point struct {
+	intVal     uint64
+	doubleVal  float64
+	attributes map[string]string
 }
 
 func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pmetric.Metrics) {
@@ -35,7 +33,7 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 	for k, v := range resourceAttrs {
 		attr, exists := rsm.Resource().Attributes().Get(k)
 		assert.True(t, exists)
-		assert.Equal(t, attr.Str(), v)
+		assert.Equal(t, v, attr.Str())
 	}
 
 	assert.Equal(t, rsm.ScopeMetrics().Len(), 1)
@@ -53,9 +51,9 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 		case "container.memory.percent":
 			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{doubleVal: podmanStats.MemPerc}})
 		case "container.network.io.usage.tx_bytes":
-			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.NetInput}})
-		case "container.network.io.usage.rx_bytes":
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.NetOutput}})
+		case "container.network.io.usage.rx_bytes":
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.NetInput}})
 
 		case "container.blockio.io_service_bytes_recursive.write":
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.BlockOutput}})
