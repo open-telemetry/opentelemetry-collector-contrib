@@ -38,4 +38,7 @@ receivers:
   kafka:
     encoding: zipkin_encoding
     # ... other configuration values
+
+service:
+  extensions: [zipkin_encoding]
 ```

@@ -26,6 +26,9 @@ Example:
 
 extensions:
   remoteobserver:
+
+service:
+  extensions: [remoteobserver]
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go).

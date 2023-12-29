@@ -65,6 +65,9 @@ extensions:
       enabled: true
       interval: "5m"
       exporter_failure_threshold: 5
+
+service:
+  extensions: [health_check, health_check/1]
 ```
 
 The full list of settings exposed for this exporter is documented [here](./config.go)

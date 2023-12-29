@@ -34,6 +34,7 @@ The following settings can be optionally configured:
 ### Example
 
 ```yaml
+extensions:
   http_forwarder:
     ingress:
       endpoint: localhost:7070
@@ -42,6 +43,9 @@ The following settings can be optionally configured:
       headers:
         otel_http_forwarder: dev
       timeout: 5s
+
+service:
+  extensions: [http_forwarder]
 ```
 
 The full list of settings exposed for this exporter are documented [here](config.go)

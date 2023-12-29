@@ -35,6 +35,9 @@ extensions:
     role_arn: ""
     aws_endpoint: ""
     local_mode: false
+
+service:
+  extensions: [awsproxy]
 ```
 
 ### endpoint (Optional)

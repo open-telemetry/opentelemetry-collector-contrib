@@ -44,6 +44,9 @@ exporters:
     endpoint: 0.0.0.0:5000
     ca_file: /tmp/certs/ca.pem
     auth:
-      authenticator: asapclient    
+      authenticator: asapclient 
+
+service:
+  extensions: [asapclient]
 ```
 

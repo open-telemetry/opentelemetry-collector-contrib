@@ -45,6 +45,9 @@ extensions:
     source:
       reload_interval: 1s
       file: http://jaeger.example.com/sampling_strategies.json
+
+service:
+  extensions: [jaegerremotesampling, jaegerremotesampling/1, jaegerremotesampling/2]
 ```
 
 A sampling strategy file could look like:

@@ -45,6 +45,9 @@ Example:
 
 extensions:
   pprof:
+
+service:
+  extensions: [pprof]
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)

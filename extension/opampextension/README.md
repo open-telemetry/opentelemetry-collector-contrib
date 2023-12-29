@@ -32,12 +32,15 @@ The following settings are optional:
 
 ### Example
 
-``` yaml
+```yaml
 extensions:
   opamp:
     server:
       ws:
         endpoint: wss://127.0.0.1:4320/v1/opamp
+
+service:
+  extensions: [opamp]
 ```
 
 ## Status
