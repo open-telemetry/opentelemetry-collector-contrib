@@ -16,7 +16,7 @@ metrics:
 
 Number of bytes transferred from the disk by the container
 
-[More docs]i/www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -82,17 +82,17 @@ Percentage of memory used.
 
 Memory limit of the container.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
 
 ### container.memory.usage.total
 
 Memory usage of the container.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
 
 ### container.network.io.usage.rx_bytes
 

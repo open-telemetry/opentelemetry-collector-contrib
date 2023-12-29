@@ -376,15 +376,17 @@ type metricContainerMemoryUsageLimit struct {
 func (m *metricContainerMemoryUsageLimit) init() {
 	m.data.SetName("container.memory.usage.limit")
 	m.data.SetDescription("Memory limit of the container.")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryUsageLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -392,14 +394,14 @@ func (m *metricContainerMemoryUsageLimit) recordDataPoint(start pcommon.Timestam
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricContainerMemoryUsageLimit) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerMemoryUsageLimit) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -425,15 +427,17 @@ type metricContainerMemoryUsageTotal struct {
 func (m *metricContainerMemoryUsageTotal) init() {
 	m.data.SetName("container.memory.usage.total")
 	m.data.SetDescription("Memory usage of the container.")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryUsageTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -441,14 +445,14 @@ func (m *metricContainerMemoryUsageTotal) recordDataPoint(start pcommon.Timestam
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricContainerMemoryUsageTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerMemoryUsageTotal) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()

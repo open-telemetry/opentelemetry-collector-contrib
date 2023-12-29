@@ -45,9 +45,9 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 		m := metrics.At(i)
 		switch m.Name() {
 		case "container.memory.usage.limit":
-			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{intVal: podmanStats.MemLimit}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.MemLimit}})
 		case "container.memory.usage.total":
-			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{intVal: podmanStats.MemUsage}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.MemUsage}})
 		case "container.memory.percent":
 			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{doubleVal: podmanStats.MemPerc}})
 		case "container.network.io.usage.tx_bytes":
