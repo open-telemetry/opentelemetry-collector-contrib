@@ -18,11 +18,12 @@ type Supervisor struct {
 
 // Capabilities is the set of capabilities that the Supervisor supports.
 type Capabilities struct {
-	AcceptsRemoteConfig    *bool `mapstructure:"accepts_remote_config"`
-	ReportsEffectiveConfig *bool `mapstructure:"reports_effective_config"`
-	ReportsOwnMetrics      *bool `mapstructure:"reports_own_metrics"`
-	ReportsHealth          *bool `mapstructure:"reports_health"`
-	ReportsRemoteConfig    *bool `mapstructure:"reports_remote_config"`
+	AcceptsRemoteConfig            *bool `mapstructure:"accepts_remote_config"`
+	AcceptsOpAMPConnectionSettings *bool `mapstructure:"accepts_opamp_connection_settings"`
+	ReportsEffectiveConfig         *bool `mapstructure:"reports_effective_config"`
+	ReportsOwnMetrics              *bool `mapstructure:"reports_own_metrics"`
+	ReportsHealth                  *bool `mapstructure:"reports_health"`
+	ReportsRemoteConfig            *bool `mapstructure:"reports_remote_config"`
 }
 
 type OpAMPServer struct {

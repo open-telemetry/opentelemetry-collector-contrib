@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opamp-go/server"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
 
@@ -339,6 +340,10 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 		}
+
+		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
+		}
 	}
 	return supportedCapabilities
 }
@@ -351,6 +356,7 @@ func (s *Supervisor) startOpAMP() error {
 		return err
 	}
 
+	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint))
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
 		TLSConfig:      tlsConfig,
@@ -412,11 +418,12 @@ func (s *Supervisor) startOpAMP() error {
 
 func (s *Supervisor) stopOpAMP() error {
 	s.logger.Debug("Stopping OpAMP client...")
-	return s.opampClient.Stop(context.Background())
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	return s.opampClient.Stop(ctx)
 }
 
 func (s *Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.Header {
-	var headers http.Header
+	headers := make(http.Header)
 	for _, header := range protoHeaders.Headers {
 		headers.Add(header.Key, header.Value)
 	}
@@ -447,6 +454,8 @@ func (s *Supervisor) onOpampConnectionSettings(ctx context.Context, settings *pr
 		if len(settings.Certificate.PrivateKey) != 0 {
 			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
 		}
+	} else {
+		newServerConfig.TLSSetting = configtls.TLSClientSetting{Insecure: true}
 	}
 
 	s.stopOpAMP()
