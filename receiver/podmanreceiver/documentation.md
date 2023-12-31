@@ -26,7 +26,7 @@ Number of bytes transferred from the disk by the container
 
 Number of bytes transferred to the disk by the container
 
-[More docs]i/www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

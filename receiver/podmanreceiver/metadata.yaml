@@ -118,7 +118,7 @@ metrics:
   container.blockio.io_service_bytes_recursive.write:
     enabled: true
     description: "Number of bytes transferred to the disk by the container"
-    extended_documentation: "[More docs]i/www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
     sum:
       value_type: int
