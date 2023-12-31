@@ -359,6 +359,7 @@ func (s *Supervisor) startOpAMP() error {
 	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint))
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
+		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
 		InstanceUid:    s.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
@@ -418,8 +419,14 @@ func (s *Supervisor) startOpAMP() error {
 
 func (s *Supervisor) stopOpAMP() error {
 	s.logger.Debug("Stopping OpAMP client...")
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	return s.opampClient.Stop(ctx)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	err := s.opampClient.Stop(ctx)
+	cancel()
+	if err != nil {
+		return err
+	}
+	s.logger.Debug("OpAMP client stopped.")
+	return nil
 }
 
 func (s *Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.Header {
