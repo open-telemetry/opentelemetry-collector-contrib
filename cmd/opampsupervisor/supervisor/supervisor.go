@@ -627,7 +627,9 @@ func (s *Supervisor) runAgentProcess() {
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 
 			// Wait 5 seconds before starting again.
-			restartTimer.Stop()
+			if !restartTimer.Stop() {
+				<-restartTimer.C
+			}
 			restartTimer.Reset(5 * time.Second)
 
 		case <-restartTimer.C:
