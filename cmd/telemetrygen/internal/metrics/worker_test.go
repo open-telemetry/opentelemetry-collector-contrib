@@ -51,6 +51,7 @@ func (m *mockExporter) Shutdown(_ context.Context) error {
 }
 
 func TestFixedNumberOfMetrics(t *testing.T) {
+	// arrange
 	cfg := &Config{
 		Config: common.Config{
 			WorkerCount: 1,
@@ -58,20 +59,22 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 		NumMetrics: 5,
 		MetricType: metricTypeSum,
 	}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
-	exp := &mockExporter{}
-
-	// test
+	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
-
+	require.NoError(t, Run(cfg, expFunc, logger))
 	time.Sleep(1 * time.Second)
 
-	// verify
-	require.Len(t, exp.rms, 5)
+	// assert
+	require.Len(t, m.rms, 5)
 }
 
 func TestRateOfMetrics(t *testing.T) {
+	// arrange
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
@@ -80,19 +83,23 @@ func TestRateOfMetrics(t *testing.T) {
 		},
 		MetricType: metricTypeSum,
 	}
-	exp := &mockExporter{}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
-	// test
-	require.NoError(t, Run(cfg, exp, zap.NewNop()))
+	// act
+	require.NoError(t, Run(cfg, expFunc, zap.NewNop()))
 
-	// verify
+	// assert
 	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(exp.rms) >= 6, "there should have been more than 6 metrics, had %d", len(exp.rms))
+	assert.True(t, len(m.rms) >= 6, "there should have been more than 6 metrics, had %d", len(m.rms))
 	// the maximum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(exp.rms) <= 20, "there should have been less than 20 metrics, had %d", len(exp.rms))
+	assert.True(t, len(m.rms) <= 20, "there should have been less than 20 metrics, had %d", len(m.rms))
 }
 
 func TestUnthrottled(t *testing.T) {
+	// arrange
 	cfg := &Config{
 		Config: common.Config{
 			TotalDuration: 1 * time.Second,
@@ -100,31 +107,38 @@ func TestUnthrottled(t *testing.T) {
 		},
 		MetricType: metricTypeSum,
 	}
-	exp := &mockExporter{}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
-	// test
+	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
+	require.NoError(t, Run(cfg, expFunc, logger))
 
-	assert.True(t, len(exp.rms) > 100, "there should have been more than 100 metrics, had %d", len(exp.rms))
+	// assert
+	assert.True(t, len(m.rms) > 100, "there should have been more than 100 metrics, had %d", len(m.rms))
 }
 
 func TestSumNoTelemetryAttrs(t *testing.T) {
 	// arrange
 	qty := 2
 	cfg := configWithNoAttributes(metricTypeSum, qty)
-	exp := &mockExporter{}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
+	require.NoError(t, Run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
 	// asserts
-	require.Len(t, exp.rms, qty)
+	require.Len(t, m.rms, qty)
 
-	rms := exp.rms
+	rms := m.rms
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		// @note update when telemetrygen allow other metric types
@@ -137,18 +151,21 @@ func TestGaugeNoTelemetryAttrs(t *testing.T) {
 	// arrange
 	qty := 2
 	cfg := configWithNoAttributes(metricTypeGauge, qty)
-	exp := &mockExporter{}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
+	require.NoError(t, Run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
 	// asserts
-	require.Len(t, exp.rms, qty)
+	require.Len(t, m.rms, qty)
 
-	rms := exp.rms
+	rms := m.rms
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		// @note update when telemetrygen allow other metric types
@@ -161,18 +178,21 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
 	cfg := configWithOneAttribute(metricTypeSum, qty)
-	exp := &mockExporter{}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
+	require.NoError(t, Run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
 	// asserts
-	require.Len(t, exp.rms, qty)
+	require.Len(t, m.rms, qty)
 
-	rms := exp.rms
+	rms := m.rms
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		// @note update when telemetrygen allow other metric types
@@ -187,18 +207,21 @@ func TestGaugeSingleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
 	cfg := configWithOneAttribute(metricTypeGauge, qty)
-	exp := &mockExporter{}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
+	require.NoError(t, Run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
 	// asserts
-	require.Len(t, exp.rms, qty)
+	require.Len(t, m.rms, qty)
 
-	rms := exp.rms
+	rms := m.rms
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		// @note update when telemetrygen allow other metric types
@@ -213,18 +236,21 @@ func TestSumMultipleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
 	cfg := configWithMultipleAttributes(metricTypeSum, qty)
-	exp := &mockExporter{}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
+	require.NoError(t, Run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
 	// asserts
-	require.Len(t, exp.rms, qty)
+	require.Len(t, m.rms, qty)
 
-	rms := exp.rms
+	rms := m.rms
 	var actualValue attribute.Value
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
@@ -242,18 +268,21 @@ func TestGaugeMultipleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
 	cfg := configWithMultipleAttributes(metricTypeGauge, qty)
-	exp := &mockExporter{}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
+	require.NoError(t, Run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
 	// asserts
-	require.Len(t, exp.rms, qty)
+	require.Len(t, m.rms, qty)
 
-	rms := exp.rms
+	rms := m.rms
 	var actualValue attribute.Value
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]

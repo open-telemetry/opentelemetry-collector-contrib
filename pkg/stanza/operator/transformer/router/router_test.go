@@ -34,7 +34,7 @@ func TestTransformer(t *testing.T) {
 		routes             []*RouteConfig
 		defaultOutput      []string
 		expectedCounts     map[string]int
-		expectedAttributes map[string]interface{}
+		expectedAttributes map[string]any
 	}{
 		{
 			"DefaultRoute",
@@ -67,7 +67,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"SimpleMatch",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -90,7 +90,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchWithAttribute",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -112,14 +112,14 @@ func TestTransformer(t *testing.T) {
 			},
 			nil,
 			map[string]int{"output2": 1},
-			map[string]interface{}{
+			map[string]any{
 				"label-key": "label-value",
 			},
 		},
 		{
 			"MatchEnv",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -142,7 +142,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"UseDefault",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -160,7 +160,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchBeforeDefault",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -187,7 +187,7 @@ func TestTransformer(t *testing.T) {
 			require.NoError(t, err)
 
 			results := map[string]int{}
-			var attributes map[string]interface{}
+			var attributes map[string]any
 
 			mock1 := testutil.NewMockOperator("output1")
 			mock1.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {

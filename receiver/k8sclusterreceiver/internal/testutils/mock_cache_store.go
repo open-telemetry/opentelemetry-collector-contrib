@@ -12,10 +12,10 @@ import (
 type MockStore struct {
 	cache.Store
 	WantErr bool
-	Cache   map[string]interface{}
+	Cache   map[string]any
 }
 
-func (ms *MockStore) GetByKey(id string) (interface{}, bool, error) {
+func (ms *MockStore) GetByKey(id string) (any, bool, error) {
 	if ms.WantErr {
 		return nil, false, errors.New("")
 	}
@@ -23,8 +23,8 @@ func (ms *MockStore) GetByKey(id string) (interface{}, bool, error) {
 	return item, exits, nil
 }
 
-func (ms *MockStore) List() []interface{} {
-	out := make([]interface{}, len(ms.Cache))
+func (ms *MockStore) List() []any {
+	out := make([]any, len(ms.Cache))
 	i := 0
 	for _, item := range ms.Cache {
 		out[i] = item

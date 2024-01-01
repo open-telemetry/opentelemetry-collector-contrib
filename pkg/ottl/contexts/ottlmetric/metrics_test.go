@@ -32,8 +32,8 @@ func Test_newPathGetSetter(t *testing.T) {
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(metric pmetric.Metric, cache pcommon.Map)
 	}{
 		{

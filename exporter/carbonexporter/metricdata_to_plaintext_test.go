@@ -232,7 +232,7 @@ func TestToPlaintext(t *testing.T) {
 				ms.At(0).SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				dp := ms.At(0).SetEmptyHistogram().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				assert.NoError(t, dp.Attributes().FromRaw(map[string]interface{}{"k0": "v0", "k1": "v1"}))
+				assert.NoError(t, dp.Attributes().FromRaw(map[string]any{"k0": "v0", "k1": "v1"}))
 				dp.SetCount(distributionCount)
 				dp.SetSum(distributionSum)
 				dp.ExplicitBounds().FromRaw(distributionBounds)
@@ -255,7 +255,7 @@ func TestToPlaintext(t *testing.T) {
 				ms.AppendEmpty().SetName("summary")
 				dp := ms.At(0).SetEmptySummary().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				assert.NoError(t, dp.Attributes().FromRaw(map[string]interface{}{"k0": "v0", "k1": "v1"}))
+				assert.NoError(t, dp.Attributes().FromRaw(map[string]any{"k0": "v0", "k1": "v1"}))
 				dp.SetCount(summaryCount)
 				dp.SetSum(summarySum)
 				for i := range summaryQuantiles {

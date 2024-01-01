@@ -7,8 +7,10 @@
 package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 
 import (
+	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
@@ -34,4 +36,24 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 	s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtilization.Softirq, cpuUtilization.CPU, metadata.AttributeStateSoftirq)
 	s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtilization.Steal, cpuUtilization.CPU, metadata.AttributeStateSteal)
 	s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtilization.Iowait, cpuUtilization.CPU, metadata.AttributeStateWait)
+}
+
+func (s *scraper) getCPUInfo() ([]cpuInfo, error) {
+	var cpuInfos []cpuInfo
+	fs, err := procfs.NewDefaultFS()
+	if err != nil {
+		return nil, scrapererror.NewPartialScrapeError(err, metricsLen)
+	}
+	cInf, err := fs.CPUInfo()
+	if err != nil {
+		return nil, scrapererror.NewPartialScrapeError(err, metricsLen)
+	}
+	for _, cInfo := range cInf {
+		c := cpuInfo{
+			frequency: cInfo.CPUMHz,
+			processor: cInfo.Processor,
+		}
+		cpuInfos = append(cpuInfos, c)
+	}
+	return cpuInfos, nil
 }

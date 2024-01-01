@@ -18,12 +18,13 @@ The following settings can be optionally configured:
 
 - `dsn` The Cassandra server DSN (Data Source Name), for example `127.0.0.1`.
   reference: [https://pkg.go.dev/github.com/gocql/gocql](https://pkg.go.dev/github.com/gocql/gocql)
-- `port` (default = 9042) The Cassandra server Port 
+- `port` (default = 9042): The Cassandra server port
+- `timeout` (default = 10s): The Cassandra server connection timeout
 - `keyspace` (default = otel): The keyspace name.
 - `trace_table` (default = otel_spans): The table name for traces.
-- `replication` (default = class: SimpleStrategy, replication_factor: 1) The strategy of
+- `replication` (default = class: SimpleStrategy, replication_factor: 1): The strategy of
   replication. https://cassandra.apache.org/doc/4.1/cassandra/architecture/dynamo.html#replication-strategy
-- `compression` (default = LZ4Compressor) https://cassandra.apache.org/doc/latest/cassandra/operating/compression.html
+- `compression` (default = LZ4Compressor): https://cassandra.apache.org/doc/latest/cassandra/operating/compression.html
 
 ## Example
 
@@ -32,6 +33,7 @@ exporters:
   cassandra:
     dsn: 127.0.0.1
     port: 9042
+    timeout: 10s
     keyspace: "otel"
     trace_table: "otel_spans"
     replication:

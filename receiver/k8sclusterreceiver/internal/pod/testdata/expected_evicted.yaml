@@ -10,6 +10,9 @@ resourceMetrics:
         - key: k8s.pod.name
           value:
             stringValue: test-pod-1
+        - key: k8s.pod.qos_class
+          value:
+            stringValue: BestEffort
         - key: k8s.pod.uid
           value:
             stringValue: test-pod-1-uid

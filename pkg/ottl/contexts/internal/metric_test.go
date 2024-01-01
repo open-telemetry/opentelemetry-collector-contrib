@@ -27,8 +27,8 @@ func Test_MetricPathGetSetter(t *testing.T) {
 	tests := []struct {
 		name     string
 		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		orig     any
+		newVal   any
 		modified func(metric pmetric.Metric)
 	}{
 		{

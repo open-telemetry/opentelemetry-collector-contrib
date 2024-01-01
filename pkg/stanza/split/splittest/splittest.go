@@ -12,15 +12,13 @@ import (
 )
 
 type Step struct {
-	waitAtEOF func() bool
-	validate  func(t *testing.T, advance int, token []byte, err error)
+	tick     time.Duration
+	timeout  time.Duration
+	validate func(t *testing.T, advance int, token []byte, err error)
 }
-
-var noWait = func() bool { return false }
 
 func ExpectReadMore() Step {
 	return Step{
-		waitAtEOF: noWait,
 		validate: func(t *testing.T, advance int, token []byte, err error) {
 			assert.True(t, needMoreData(advance, token, err))
 		},
@@ -33,7 +31,6 @@ func ExpectToken(expectToken string) Step {
 
 func ExpectAdvanceToken(expectAdvance int, expectToken string) Step {
 	return Step{
-		waitAtEOF: noWait,
 		validate: func(t *testing.T, advance int, token []byte, err error) {
 			assert.Equal(t, expectAdvance, advance)
 			assert.Equal(t, []byte(expectToken), token)
@@ -44,7 +41,6 @@ func ExpectAdvanceToken(expectAdvance int, expectToken string) Step {
 
 func ExpectAdvanceNil(expectAdvance int) Step {
 	return Step{
-		waitAtEOF: noWait,
 		validate: func(t *testing.T, advance int, token []byte, err error) {
 			assert.Equal(t, expectAdvance, advance)
 			assert.Equal(t, []byte(nil), token)
@@ -55,7 +51,6 @@ func ExpectAdvanceNil(expectAdvance int) Step {
 
 func ExpectError(expectErr string) Step {
 	return Step{
-		waitAtEOF: noWait,
 		validate: func(t *testing.T, advance int, token []byte, err error) {
 			assert.EqualError(t, err, expectErr)
 		},
@@ -63,12 +58,8 @@ func ExpectError(expectErr string) Step {
 }
 
 func Eventually(step Step, maxTime time.Duration, tick time.Duration) Step {
-	var waited time.Duration
-	step.waitAtEOF = func() bool {
-		time.Sleep(tick)
-		waited += tick
-		return waited < maxTime
-	}
+	step.tick = tick
+	step.timeout = maxTime
 	return step
 }
 
@@ -86,7 +77,8 @@ func New(splitFunc bufio.SplitFunc, input []byte, steps ...Step) func(*testing.T
 			var token []byte
 			var err error
 
-			for needMoreData(advance, token, err) && (!atEOF || step.waitAtEOF()) {
+			var waited time.Duration
+			for needMoreData(advance, token, err) {
 				// Grow the buffer at a slow pace to ensure that we're
 				// exercising the split func's ability to ask for more data.
 				bufferSize = 1 + bufferSize + bufferSize/8
@@ -99,6 +91,14 @@ func New(splitFunc bufio.SplitFunc, input []byte, steps ...Step) func(*testing.T
 				}
 				advance, token, err = splitFunc(data, atEOF)
 				// t.Errorf("\nbuffer: %d, advance: %d, token: %q, err: %v", bufferSize, advance, token, err)
+
+				if atEOF {
+					if waited >= step.timeout {
+						break
+					}
+					time.Sleep(step.tick)
+					waited += step.tick
+				}
 			}
 			offset += advance
 			step.validate(t, advance, token, err)

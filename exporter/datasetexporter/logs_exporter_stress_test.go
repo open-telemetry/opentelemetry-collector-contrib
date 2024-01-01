@@ -63,7 +63,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 		}
 
 		wasSuccessful.Store(true)
-		payload, err := json.Marshal(map[string]interface{}{
+		payload, err := json.Marshal(map[string]any{
 			"status":       "success",
 			"bytesCharged": 42,
 		})

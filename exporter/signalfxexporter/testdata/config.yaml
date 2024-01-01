@@ -69,6 +69,7 @@ signalfx/allsettings:
     max_idle_conns_per_host: 10
     max_conns_per_host: 10000
     idle_conn_timeout: 2h
+    timeout: 20s
   exclude_properties:
     - property_name: globbed*
     - property_value: '!globbed*value'

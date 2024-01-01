@@ -108,7 +108,7 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 		log.Fatalln(err)
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 
 	if err = json.Unmarshal(body, &result); err != nil {
 		log.Fatalln(err)
@@ -140,13 +140,13 @@ func (ar *MockAwsXrayReceiver) Shutdown(context.Context) error {
 }
 
 func ToTraces(rawSeg []byte) (ptrace.Traces, error) {
-	var result map[string]interface{}
+	var result map[string]any
 	err := json.Unmarshal(rawSeg, &result)
 	if err != nil {
 		return ptrace.Traces{}, err
 	}
 
-	records, ok := result["TraceSegmentDocuments"].([]interface{})
+	records, ok := result["TraceSegmentDocuments"].([]any)
 	if !ok {
 		panic("Not a slice")
 	}

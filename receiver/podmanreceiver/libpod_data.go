@@ -28,7 +28,7 @@ type container struct {
 	Pid        int
 	Pod        string
 	PodName    string
-	Ports      []map[string]interface{}
+	Ports      []map[string]any
 	Size       map[string]string
 	StartedAt  int
 	State      string

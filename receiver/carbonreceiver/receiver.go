@@ -35,8 +35,8 @@ type carbonReceiver struct {
 
 var _ receiver.Metrics = (*carbonReceiver)(nil)
 
-// New creates the Carbon receiver with the given configuration.
-func New(
+// newMetricsReceiver creates the Carbon receiver with the given configuration.
+func newMetricsReceiver(
 	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,

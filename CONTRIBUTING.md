@@ -111,8 +111,8 @@ providing the following information:
   components, having a sponsor means that your use case has been validated.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
-* The configuration options your component will accept. This will help us understand what it does and have an idea of
-  how the implementation might look like.
+* The configuration options your component will accept. This will give us a better understanding of what it does, and 
+  how it may be implemented.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
@@ -121,7 +121,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Provide the implementation which performs the component operation
 * Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
 
-Familiarize yourself with the interface of the component that you want to write, and use existing implementations as reference.
+Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
 
 *NOTICE:* The Collector is in Beta stage and as such the interfaces may undergo breaking changes. Component creators
@@ -130,8 +130,8 @@ excluded from the default builds.
 
 Generally, maintenance of components is the responsibility of contributors who authored them. If the original author or
 some other contributor does not maintain the component it may be excluded from the default build. The component **will**
-be excluded if it causes build problems, has failing tests or otherwise causes problems to the rest of the repository
-and the rest of contributors.
+be excluded if it causes build problems, has failing tests, or otherwise causes problems to the rest of the repository
+and its contributors.
 
 - Create your component under the proper folder and use Go standard package naming recommendations.
 - Use a boiler-plate Makefile that just references the one at top level, ie.: `include ../../Makefile.Common` - this
@@ -201,7 +201,6 @@ When submitting a component to the community, consider breaking it down into sep
     * `make genotelcontribcol`
     * `make genoteltestbedcol`
     * `make generate`
-    * `make  gendependabot`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
 * **Second PR** should include the concrete implementation of the component. If the
@@ -233,6 +232,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
+* [@Bryan Aguilar](https://github.com/bryan-aguilar)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -313,24 +313,25 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 
 ### Label Definitions
 
-| Label                | When to apply                                                                                                                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bug`                | Something that is advertised or intended to work isn't working as expected.                                                                                                                             |
-| `enhancement`        | Something that isn't an advertised feature that would be useful to users or maintainers.                                                                                                                |
-| `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                    |
-| `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                               |
-| `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                             |
-| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
-| `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work.                                            |
-| `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                            |
-| `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                         |
-| `priority:p1`        | An urgent issue that should be worked on quickly, before most other issues.                                                                                                                             |
-| `priority:p2`        | A standard bug or enhancement.                                                                                                                                                                          |
-| `priority:p3`        | A technical improvement, lower priority bug, or other minor issue. Generally something that is considered a "nice to have."                                                                               |
-| `release:blocker`    | This issue must be resolved before the next Collector version can be released.                                                                                                                          |
-| `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided. |
-| `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                      |
-| `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor. |
+| Label                | When to apply                                                                                                                                                                                                  |
+| -------------------- |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `bug`                | Something that is advertised or intended to work isn't working as expected.                                                                                                                                    |
+| `enhancement`        | Something that isn't an advertised feature that would be useful to users or maintainers.                                                                                                                       |
+| `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                           |
+| `documentation`      | This is a collector usability issue that could likely be resolved by providing relevant documentation. Please consider adding new or improving existing documentation before closing issues with this label.   |
+| `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                                      |
+| `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                                    |
+| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                                      |
+| `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work. See also the [triaging process](#triage-process). |
+| `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                                   |
+| `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                                |
+| `priority:p1`        | An urgent issue that should be worked on quickly, before most other issues.                                                                                                                                    |
+| `priority:p2`        | A standard bug or enhancement.                                                                                                                                                                                 |
+| `priority:p3`        | A technical improvement, lower priority bug, or other minor issue. Generally something that is considered a "nice to have."                                                                                    |
+| `release:blocker`    | This issue must be resolved before the next Collector version can be released.                                                                                                                                 |
+| `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided.        |
+| `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                             |
+| `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor.                                                                                          |
 
 ### Adding Labels via Comments
 
@@ -364,6 +365,9 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
 - The existing Code Owners are actively looking for new Code Owners to help.
 
+
+### Requirements
+
 If you would like to help and become a Code Owner you must meet the following requirements:
 
 1. [Be a member of the OpenTelemetry organization.](https://github.com/open-telemetry/community/blob/main/community-membership.md#member)
@@ -371,9 +375,18 @@ If you would like to help and become a Code Owner you must meet the following re
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
-To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row. Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+### How to become a Code Owner
 
-### Makefile Guidelines
+To become a Code Owner, open a PR with the following changes:
+
+1. Add your GitHub username to the active codeowners entry in the component's `metadata.yaml` file.
+2. Run the command `make update-codeowners`.
+      * Note: A GitHub [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) must be configured for this command to work.
+      * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make generate` to regenerate the component's README header.
+
+Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+
+## Makefile Guidelines
 
 When adding or modifying the `Makefile`'s in this repository, consider the following design guidelines.
 
@@ -382,7 +395,7 @@ The [Makefile](./Makefile) SHOULD contain "repo-level" targets. (i.e. targets th
 Likewise, `Makefile.Common` SHOULD contain "module-level" targets. (i.e. targets that apply to one module at a time.)
 Each module should have a `Makefile` at its root that includes `Makefile.Common`.
 
-#### Module-level targets
+### Module-level targets
 
 Module-level targets SHOULD NOT act on nested modules. For example, running `make lint` at the root of the repo will
 *only* evaluate code that is part of the `go.opentelemetry.io/collector` module. This excludes nested modules such as
@@ -392,7 +405,7 @@ Each module-level target SHOULD have a corresponding repo-level target. For exam
 in each module. In this way, the entire repository is covered. The root `Makefile` contains some "for each module" targets
 that can wrap a module-level target into a repo-level target.
 
-#### Repo-level targets
+### Repo-level targets
 
 Whenever reasonable, targets SHOULD be implemented as module-level targets (and wrapped with a repo-level target).
 However, there are many valid justifications for implementing a standalone repo-level target.
@@ -402,7 +415,7 @@ However, there are many valid justifications for implementing a standalone repo-
 3. A necessary tool does not provide a mechanism for scoping its application. (e.g. `porto` cannot be limited to a specific module.)
 4. The "for each module" pattern would result in incomplete coverage of the codebase. (e.g. A target that scans all file, not just `.go` files.)
 
-#### Default targets
+### Default targets
 
 The default module-level target (i.e. running `make` in the context of an individual module), should run a substantial set of module-level
 targets for an individual module. Ideally, this would include *all* module-level targets, but exceptions should be made if a particular

@@ -19,7 +19,7 @@ import (
 
 func init() {
 	k8sruntime.ReallyCrash = false
-	k8sruntime.PanicHandlers = []func(interface{}){}
+	k8sruntime.PanicHandlers = []func(any){}
 }
 
 // AuthType describes the type of authentication to use for the K8s API

@@ -68,9 +68,10 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Namespace:       "",
-		ExternalLabels:  map[string]string{},
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		Namespace:         "",
+		ExternalLabels:    map[string]string{},
+		MaxBatchSizeBytes: 3000000,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:             true,
 			InitialInterval:     50 * time.Millisecond,
@@ -80,6 +81,7 @@ func createDefaultConfig() component.Config {
 			Multiplier:          backoff.DefaultMultiplier,
 		},
 		AddMetricSuffixes: true,
+		SendMetadata:      false,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.

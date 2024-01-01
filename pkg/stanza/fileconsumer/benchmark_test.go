@@ -4,12 +4,14 @@
 package fileconsumer
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -26,7 +28,7 @@ type benchFile struct {
 }
 
 func simpleTextFile(b *testing.B, file *os.File) *benchFile {
-	line := string(tokenWithLength(49)) + "\n"
+	line := string(filetest.TokenWithLength(49)) + "\n"
 	return &benchFile{
 		File: file,
 		log: func(_ int) {
@@ -127,6 +129,20 @@ func BenchmarkFileInput(b *testing.B) {
 				return cfg
 			},
 		},
+		{
+			name: "NoFlush",
+			paths: []string{
+				"file0.log",
+			},
+			config: func() *Config {
+				cfg := NewConfig()
+				cfg.Include = []string{
+					"file*.log",
+				}
+				cfg.FlushPeriod = 0
+				return cfg
+			},
+		},
 	}
 
 	for _, bench := range cases {
@@ -135,7 +151,7 @@ func BenchmarkFileInput(b *testing.B) {
 
 			var files []*benchFile
 			for _, path := range bench.paths {
-				file := openFile(b, filepath.Join(rootDir, path))
+				file := filetest.OpenFile(b, filepath.Join(rootDir, path))
 				files = append(files, simpleTextFile(b, file))
 			}
 
@@ -146,8 +162,11 @@ func BenchmarkFileInput(b *testing.B) {
 			cfg.StartAt = "beginning"
 
 			received := make(chan []byte)
-
-			op, err := cfg.Build(testutil.Logger(b), emitOnChan(received))
+			callback := func(_ context.Context, token []byte, _ map[string]any) error {
+				received <- token
+				return nil
+			}
+			op, err := cfg.Build(testutil.Logger(b), callback)
 			require.NoError(b, err)
 
 			// write half the lines before starting
@@ -159,7 +178,7 @@ func BenchmarkFileInput(b *testing.B) {
 			}
 
 			b.ResetTimer()
-			err = op.Start(testutil.NewMockPersister("test"))
+			err = op.Start(testutil.NewUnscopedMockPersister())
 			defer func() {
 				require.NoError(b, op.Stop())
 			}()

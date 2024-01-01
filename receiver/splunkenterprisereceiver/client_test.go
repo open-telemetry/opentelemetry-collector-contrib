@@ -5,7 +5,6 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,58 +13,87 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
+// mockHost allows us to create a test host with a no op extension that can be used to satisfy the SDK without having to parse from an
+// actual config.yaml.
+type mockHost struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return m.extensions
+}
+
 func TestClientCreation(t *testing.T) {
-	// create a client from an example config
-	client := newSplunkEntClient(&Config{
-		Username:          "admin",
-		Password:          "securityFirst",
-		MaxSearchWaitTime: 11 * time.Second,
+	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "https://localhost:8089",
+			Auth: &configauth.Authentication{
+				AuthenticatorID: component.NewID("basicauth/client"),
+			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
+			Timeout:            11 * time.Second,
 		},
-	})
+	}
+
+	host := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.NewID("basicauth/client"): auth.NewClient(),
+		},
+	}
+	// create a client from an example config
+	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 
 	testEndpoint, _ := url.Parse("https://localhost:8089")
 
-	authString := fmt.Sprintf("%s:%s", "admin", "securityFirst")
-	auth64 := base64.StdEncoding.EncodeToString([]byte(authString))
-	testBasicAuth := fmt.Sprintf("Basic %s", auth64)
-
 	require.Equal(t, client.endpoint, testEndpoint)
-	require.Equal(t, client.basicAuth, testBasicAuth)
 }
 
 // test functionality of createRequest which is used for building metrics out of
 // ad-hoc searches
 func TestClientCreateRequest(t *testing.T) {
-	// create a client from an example config
-	client := newSplunkEntClient(&Config{
-		Username:          "admin",
-		Password:          "securityFirst",
-		MaxSearchWaitTime: 11 * time.Second,
+	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "https://localhost:8089",
+			Auth: &configauth.Authentication{
+				AuthenticatorID: component.NewID("basicauth/client"),
+			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
+			Timeout:            11 * time.Second,
 		},
-	})
+	}
+
+	host := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.NewID("basicauth/client"): auth.NewClient(),
+		},
+	}
+	// create a client from an example config
+	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+
+	require.NoError(t, err)
 
 	testJobID := "123"
 
 	tests := []struct {
 		desc     string
 		sr       *searchResponse
-		client   splunkEntClient
+		client   *splunkEntClient
 		expected *http.Request
 	}{
 		{
@@ -81,8 +109,6 @@ func TestClientCreateRequest(t *testing.T) {
 				url, _ := url.JoinPath(testEndpoint.String(), path)
 				data := strings.NewReader("example search")
 				req, _ := http.NewRequest(method, url, data)
-				req.Header.Add("Authorization", client.basicAuth)
-				req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 				return req
 			}(),
 		},
@@ -99,8 +125,6 @@ func TestClientCreateRequest(t *testing.T) {
 				testEndpoint, _ := url.Parse("https://localhost:8089")
 				url, _ := url.JoinPath(testEndpoint.String(), path)
 				req, _ := http.NewRequest(method, url, nil)
-				req.Header.Add("Authorization", client.basicAuth)
-				req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 				return req
 			}(),
 		},
@@ -122,27 +146,37 @@ func TestClientCreateRequest(t *testing.T) {
 
 // createAPIRequest creates a request for api calls i.e. to introspection endpoint
 func TestAPIRequestCreate(t *testing.T) {
-	client := newSplunkEntClient(&Config{
-		Username:          "admin",
-		Password:          "securityFirst",
-		MaxSearchWaitTime: 11 * time.Second,
+	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "https://localhost:8089",
+			Auth: &configauth.Authentication{
+				AuthenticatorID: component.NewID("basicauth/client"),
+			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
+			Timeout:            11 * time.Second,
 		},
-	})
+	}
+
+	host := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.NewID("basicauth/client"): auth.NewClient(),
+		},
+	}
+	// create a client from an example config
+	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	req, err := client.createAPIRequest(ctx, "/test/endpoint")
 	require.NoError(t, err)
 
+	// build the expected request
 	expectedURL := client.endpoint.String() + "/test/endpoint"
 	expected, _ := http.NewRequest(http.MethodGet, expectedURL, nil)
-	expected.Header.Add("Authorization", client.basicAuth)
-	expected.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	require.Equal(t, expected.URL, req.URL)
 	require.Equal(t, expected.Method, req.Method)

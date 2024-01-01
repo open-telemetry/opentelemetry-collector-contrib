@@ -57,7 +57,7 @@ func newSourceFormats(cfg *Config) sourceFormats {
 // format converts sourceFormat to string.
 // Takes fields and put into template (%s placeholders) in order defined by matches
 func (s *sourceFormat) format(f fields) string {
-	labels := make([]interface{}, 0, len(s.matches))
+	labels := make([]any, 0, len(s.matches))
 
 	for _, matchset := range s.matches {
 		v, ok := f.orig.Get(matchset)

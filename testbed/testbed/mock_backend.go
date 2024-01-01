@@ -5,17 +5,27 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"log"
+	"math/rand"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+var errNonPermanent = errors.New("non permanent error")
+var errPermanent = errors.New("permanent error")
+
+type decisionFunc func() error
 
 // MockBackend is a backend that allows receiving the data locally.
 type MockBackend struct {
@@ -41,6 +51,13 @@ type MockBackend struct {
 	ReceivedTraces  []ptrace.Traces
 	ReceivedMetrics []pmetric.Metrics
 	ReceivedLogs    []plog.Logs
+
+	DroppedTraces  []ptrace.Traces
+	DroppedMetrics []pmetric.Metrics
+	DroppedLogs    []plog.Logs
+
+	// decision to return permanent/non-permanent errors
+	decision decisionFunc
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
@@ -51,11 +68,16 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 		tc:          &MockTraceConsumer{},
 		mc:          &MockMetricConsumer{},
 		lc:          &MockLogConsumer{},
+		decision:    func() error { return nil },
 	}
 	mb.tc.backend = mb
 	mb.mc.backend = mb
 	mb.lc.backend = mb
 	return mb
+}
+
+func (mb *MockBackend) WithDecisionFunc(decision decisionFunc) {
+	mb.decision = decision
 }
 
 // Start a backend.
@@ -161,6 +183,13 @@ func (tc *MockTraceConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+	if err := tc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && tc.backend.isRecording {
+			tc.backend.DroppedTraces = append(tc.backend.DroppedTraces, td)
+		}
+		return err
+	}
+
 	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
@@ -208,6 +237,13 @@ func (mc *MockMetricConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	if err := mc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && mc.backend.isRecording {
+			mc.backend.DroppedMetrics = append(mc.backend.DroppedMetrics, md)
+		}
+		return err
+	}
+
 	mc.numMetricsReceived.Add(uint64(md.DataPointCount()))
 	mc.backend.ConsumeMetric(md)
 	return nil
@@ -233,8 +269,35 @@ func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+	if err := lc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && lc.backend.isRecording {
+			lc.backend.DroppedLogs = append(lc.backend.DroppedLogs, ld)
+		}
+		return err
+	}
+
 	recordCount := ld.LogRecordCount()
 	lc.numLogRecordsReceived.Add(uint64(recordCount))
 	lc.backend.ConsumeLogs(ld)
+	return nil
+}
+
+// randomNonPermanentError is a decision function that succeeds approximately
+// half of the time and fails with a non-permanent error the rest of the time.
+func RandomNonPermanentError() error {
+	code := codes.Unavailable
+	s := status.New(code, errNonPermanent.Error())
+	if rand.Float32() < 0.5 {
+		return s.Err()
+	}
+	return nil
+}
+
+// randomPermanentError is a decision function that succeeds approximately
+// half of the time and fails with a permanent error the rest of the time.
+func RandomPermanentError() error {
+	if rand.Float32() < 0.5 {
+		return consumererror.NewPermanent(errPermanent)
+	}
 	return nil
 }

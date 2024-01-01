@@ -11,8 +11,8 @@ import (
 
 // TestConfig_HTTPPath verifies that the HTTPPath configuration defaults are correctly set for each sub-command.
 func TestConfig_HTTPPath(t *testing.T) {
-	t.Run("LogsConfigEmptyDefaultUrlPath", func(t *testing.T) {
-		assert.Equal(t, "", logsCfg.HTTPPath)
+	t.Run("LogsConfigValidDefaultUrlPath", func(t *testing.T) {
+		assert.Equal(t, "/v1/logs", logsCfg.HTTPPath)
 	})
 
 	t.Run("MetricsConfigValidDefaultUrlPath", func(t *testing.T) {

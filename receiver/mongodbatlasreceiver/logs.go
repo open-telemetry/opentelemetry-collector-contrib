@@ -148,20 +148,36 @@ func (s *logsReceiver) processClusters(ctx context.Context, projectCfg LogsProje
 	return filterClusters(clusters, projectCfg.ProjectConfig)
 }
 
+type ClusterInfo struct {
+	ClusterName         string
+	RegionName          string
+	ProviderName        string
+	MongoDBMajorVersion string
+}
+
 func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg LogsProjectConfig, pc ProjectContext) {
 	for _, cluster := range clusters {
+		clusterInfo := ClusterInfo{
+			ClusterName:         cluster.Name,
+			RegionName:          cluster.ProviderSettings.RegionName,
+			ProviderName:        cluster.ProviderSettings.ProviderName,
+			MongoDBMajorVersion: cluster.MongoDBMajorVersion,
+		}
+
 		hostnames := parseHostNames(cluster.ConnectionStrings.Standard, s.log)
 		for _, hostname := range hostnames {
 			// Defaults to true if not specified
 			if projectCfg.EnableHostLogs == nil || *projectCfg.EnableHostLogs {
-				s.collectLogs(pc, hostname, "mongodb.gz", cluster.Name, cluster.MongoDBMajorVersion)
-				s.collectLogs(pc, hostname, "mongos.gz", cluster.Name, cluster.MongoDBMajorVersion)
+				s.log.Debug("Collecting logs for host", zap.String("hostname", hostname), zap.String("cluster", cluster.Name))
+				s.collectLogs(pc, hostname, "mongodb.gz", clusterInfo)
+				s.collectLogs(pc, hostname, "mongos.gz", clusterInfo)
 			}
 
 			// Defaults to false if not specified
 			if projectCfg.EnableAuditLogs {
-				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", cluster.Name, cluster.MongoDBMajorVersion)
-				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", cluster.Name, cluster.MongoDBMajorVersion)
+				s.log.Debug("Collecting audit logs for host", zap.String("hostname", hostname), zap.String("cluster", cluster.Name))
+				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", clusterInfo)
+				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", clusterInfo)
 			}
 		}
 	}
@@ -218,15 +234,15 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 	return decodeAuditJSON(s.log, buf)
 }
 
-func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {
-	logs, err := s.getHostLogs(pc.Project.ID, hostname, logName, clusterMajorVersion)
+func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) {
+	logs, err := s.getHostLogs(pc.Project.ID, hostname, logName, clusterInfo.MongoDBMajorVersion)
 	if err != nil && !errors.Is(err, io.EOF) {
-		s.log.Warn("Failed to retrieve host logs", zap.Error(err), zap.String("log", logName))
+		s.log.Warn("Failed to retrieve host logs", zap.Error(err), zap.String("hostname", hostname), zap.String("log", logName), zap.Time("startTime", s.start), zap.Time("endTime", s.end))
 		return
 	}
 
 	if len(logs) == 0 {
-		s.log.Warn("Attempted to retrieve host logs but received 0 logs", zap.Error(err), zap.String("log", logName))
+		s.log.Warn("Attempted to retrieve host logs but received 0 logs", zap.Error(err), zap.String("log", logName), zap.String("hostname", hostname), zap.Time("startTime", s.start), zap.Time("endTime", s.end))
 		return
 	}
 
@@ -235,15 +251,14 @@ func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, cluster
 		pc,
 		hostname,
 		logName,
-		clusterName,
-		clusterMajorVersion)
+		clusterInfo)
 	err = s.consumer.ConsumeLogs(context.Background(), plog)
 	if err != nil {
 		s.log.Error("Failed to consume logs", zap.Error(err))
 	}
 }
 
-func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {
+func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) {
 	logs, err := s.getHostAuditLogs(
 		pc.Project.ID,
 		hostname,
@@ -251,12 +266,12 @@ func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, cl
 	)
 
 	if err != nil && !errors.Is(err, io.EOF) {
-		s.log.Warn("Failed to retrieve audit logs", zap.Error(err), zap.String("log", logName))
+		s.log.Warn("Failed to retrieve audit logs", zap.Error(err), zap.String("hostname", hostname), zap.String("log", logName), zap.Time("startTime", s.start), zap.Time("endTime", s.end))
 		return
 	}
 
 	if len(logs) == 0 {
-		s.log.Warn("Attempted to retrieve audit logs but received 0 logs", zap.Error(err), zap.String("log", logName))
+		s.log.Warn("Attempted to retrieve audit logs but received 0 logs", zap.Error(err), zap.String("hostname", hostname), zap.String("log", logName), zap.Time("startTime", s.start), zap.Time("endTime", s.end))
 		return
 	}
 
@@ -265,8 +280,7 @@ func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, cl
 		pc,
 		hostname,
 		logName,
-		clusterName,
-		clusterMajorVersion)
+		clusterInfo)
 	if err != nil {
 		s.log.Warn("Failed to translate audit logs: "+logName, zap.Error(err))
 		return

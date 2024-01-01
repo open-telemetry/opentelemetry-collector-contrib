@@ -5,7 +5,6 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"errors"
 
 	promconfig "github.com/prometheus/prometheus/config"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
@@ -24,8 +23,6 @@ var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
 		" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
 )
-
-var errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
 
 // NewFactory creates a new Prometheus receiver factory.
 func NewFactory() receiver.Factory {
@@ -49,5 +46,6 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	configWarnings(set.Logger, cfg.(*Config))
 	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer), nil
 }
