@@ -53,7 +53,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.Security = SecuritySettings{
 		OAuthServiceURL: "https://asura.opsramp.net/auth/oauth/token?agent=true",
-		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
+		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 

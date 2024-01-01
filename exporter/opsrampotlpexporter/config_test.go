@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 
 	e := cfg.Exporters[component.NewID(typeStr)]
 
-	//e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
+	// e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	assert.Equal(t, e,
 		&Config{
 			TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -63,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 				QueueSize:    10,
 			},
 			Security: SecuritySettings{
-				ClientId:        "id",
+				ClientID:        "id",
 				ClientSecret:    "secret",
 				OAuthServiceURL: "url",
 			},
