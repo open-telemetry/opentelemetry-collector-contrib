@@ -51,6 +51,15 @@ type Config struct {
 	// Optional. See defaultResourceMetricsCacheSize in connector.go for the default value.
 	ResourceMetricsCacheSize int `mapstructure:"resource_metrics_cache_size"`
 
+	// ResourceMetricsKeyAttributes filters the resource attributes used to create the resource metrics key hash.
+	// This can be used to avoid situations where resource attributes may change across service restarts, causing
+	// metric counters to break (and duplicate). A resource does not need to have all of the attributes. The list
+	// must include enough attributes to properly identify unique resources or risk aggregating data from more
+	// than one service and span.
+	// e.g. ["service.name", "telemetry.sdk.language", "telemetry.sdk.name"]
+	// See https://opentelemetry.io/docs/specs/semconv/resource/ for possible attributes.
+	ResourceMetricsKeyAttributes []string `mapstructure:"resource_metrics_key_attributes"`
+
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
 
 	Histogram HistogramConfig `mapstructure:"histogram"`
