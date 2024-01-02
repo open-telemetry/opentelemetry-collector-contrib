@@ -24,6 +24,7 @@ type postgreSQLScraper struct {
 	config        *Config
 	clientFactory postgreSQLClientFactory
 	mb            *metadata.MetricsBuilder
+	excludes      map[string]struct{}
 }
 type errsMux struct {
 	sync.RWMutex
@@ -69,11 +70,16 @@ func newPostgreSQLScraper(
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
+	excludes := make(map[string]struct{})
+	for _, db := range config.ExcludeDatabases {
+		excludes[db] = struct{}{}
+	}
 	return &postgreSQLScraper{
 		logger:        settings.Logger,
 		config:        config,
 		clientFactory: clientFactory,
 		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		excludes:      excludes,
 	}
 }
 
@@ -102,6 +108,13 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		}
 		databases = dbList
 	}
+	var filteredDatabases []string
+	for _, db := range databases {
+		if _, ok := p.excludes[db]; !ok {
+			filteredDatabases = append(filteredDatabases, db)
+		}
+	}
+	databases = filteredDatabases
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 

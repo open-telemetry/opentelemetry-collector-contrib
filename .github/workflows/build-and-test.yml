@@ -23,9 +23,9 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -78,9 +78,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: "~1.20.6"
+          go-version: ~1.20.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -139,9 +139,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -162,9 +162,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -207,6 +207,10 @@ jobs:
         run: |
           make genoteltestbedcol
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genoteltestbedcol" and commit the changes in this PR.' && exit 1)
+      - name: Gen distributions
+        run: |
+          make gendistributions
+          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
       - name: CodeGen
         run: |
           make -j2 generate
@@ -220,7 +224,7 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        go-version: ["~1.21.4", "~1.20.11"] # 1.20 is interpreted as 1.2 without quotes
+        go-version: ["~1.21.5", "~1.20.12"] # 1.20 is interpreted as 1.2 without quotes
         group:
           - receiver-0
           - receiver-1
@@ -236,7 +240,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
@@ -310,9 +314,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -331,9 +335,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -357,9 +361,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -426,9 +430,9 @@ jobs:
             arch: s390x
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -560,9 +564,9 @@ jobs:
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Mkdir bin and dist
         run: |

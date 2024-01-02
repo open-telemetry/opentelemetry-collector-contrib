@@ -919,6 +919,7 @@ func generateTracesTwoSpansWithFollower() ptrace.Traces {
 	span.SetName("operationC")
 	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetTraceID(spans.At(0).TraceID())
+	span.SetParentSpanID(spans.At(0).SpanID())
 	span.SetStartTimestamp(spans.At(0).EndTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp() + 1000000)
 	span.SetKind(ptrace.SpanKindConsumer)
