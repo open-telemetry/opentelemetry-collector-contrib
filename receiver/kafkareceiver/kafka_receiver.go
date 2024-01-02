@@ -427,7 +427,10 @@ func (c *tracesConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession
 }
 
 func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	c.logger.Info("Starting consumer group", zap.String("topic", claim.Topic()), zap.Int32("partition", claim.Partition()), zap.Int64("initialOffset", claim.InitialOffset()))
+	c.logger.Info("Starting consumer group",
+		zap.String("topic", claim.Topic()),
+		zap.Int32("partition", claim.Partition()),
+		zap.Int64("initialOffset", claim.InitialOffset()))
 	statsTags := []tag.Mutator{
 		tag.Upsert(tagInstanceName, c.id.String()),
 		tag.Upsert(tagInstanceTopic, fmt.Sprint(claim.Topic())),
@@ -511,7 +514,10 @@ func (c *metricsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSessio
 }
 
 func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	c.logger.Info("Starting consumer group", zap.String("topic", claim.Topic()), zap.Int32("partition", claim.Partition()), zap.Int64("initialOffset", claim.InitialOffset()))
+	c.logger.Info("Starting consumer group",
+		zap.String("topic", claim.Topic()),
+		zap.Int32("partition", claim.Partition()),
+		zap.Int64("initialOffset", claim.InitialOffset()))
 	statsTags := []tag.Mutator{
 		tag.Upsert(tagInstanceName, c.id.String()),
 		tag.Upsert(tagInstanceTopic, fmt.Sprint(claim.Topic())),
@@ -599,7 +605,10 @@ func (c *logsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) 
 }
 
 func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	c.logger.Info("Starting consumer group", zap.String("topic", claim.Topic()), zap.Int32("partition", claim.Partition()), zap.Int64("initialOffset", claim.InitialOffset()))
+	c.logger.Info("Starting consumer group",
+		zap.String("topic", claim.Topic()),
+		zap.Int32("partition", claim.Partition()),
+		zap.Int64("initialOffset", claim.InitialOffset()))
 	statsTags := []tag.Mutator{
 		tag.Upsert(tagInstanceName, c.id.String()),
 		tag.Upsert(tagInstanceTopic, fmt.Sprint(claim.Topic())),
