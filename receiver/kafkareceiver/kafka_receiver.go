@@ -6,6 +6,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/IBM/sarama"
@@ -446,7 +447,10 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			}
 
 			ctx := c.obsrecv.StartTracesOp(session.Context())
-			statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())}
+			statsTags := []tag.Mutator{
+				tag.Upsert(tagInstanceName, c.id.String()),
+				tag.Upsert(tagPartition, strconv.Itoa(int(claim.Partition()))),
+			}
 			_ = stats.RecordWithTags(ctx, statsTags,
 				statMessageCount.M(1),
 				statMessageOffset.M(message.Offset),
@@ -526,7 +530,10 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			}
 
 			ctx := c.obsrecv.StartMetricsOp(session.Context())
-			statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())}
+			statsTags := []tag.Mutator{
+				tag.Upsert(tagInstanceName, c.id.String()),
+				tag.Upsert(tagPartition, strconv.Itoa(int(claim.Partition()))),
+			}
 			_ = stats.RecordWithTags(ctx, statsTags,
 				statMessageCount.M(1),
 				statMessageOffset.M(message.Offset),
@@ -610,9 +617,13 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			}
 
 			ctx := c.obsrecv.StartLogsOp(session.Context())
+			statsTags := []tag.Mutator{
+				tag.Upsert(tagInstanceName, c.id.String()),
+				tag.Upsert(tagPartition, strconv.Itoa(int(claim.Partition()))),
+			}
 			_ = stats.RecordWithTags(
 				ctx,
-				[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
+				statsTags,
 				statMessageCount.M(1),
 				statMessageOffset.M(message.Offset),
 				statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))
