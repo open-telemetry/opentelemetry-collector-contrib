@@ -32,7 +32,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.91.0
 	github.com/prometheus/common v0.45.0
 	github.com/prometheus/prometheus v0.48.1
-	github.com/shirou/gopsutil/v3 v3.23.11
+	github.com/shirou/gopsutil/v3 v3.23.12
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/config/configcompression v0.91.0
