@@ -29,6 +29,8 @@ github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.11.0 h1:G5fefqlKYsJX
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.11.0/go.mod h1:4ed2dYa6xQKKfVhJoLpNf89N0pKA8H2R0SyiCcL6PoI=
 github.com/DataDog/sketches-go v1.4.3 h1:ZB9nijteJRFUQixkQfatCqASartGNfiolIlMiEv3u/w=
 github.com/DataDog/sketches-go v1.4.3/go.mod h1:XR0ns2RtEEF09mDKXiKZiQg+nfZStrq1ZuL1eezeZe0=
+github.com/DataDog/sketches-go v1.4.4 h1:dF52vzXRFSPOj2IjXSWLvXq3jubL4CI69kwYjJ1w5Z8=
+github.com/DataDog/sketches-go v1.4.4/go.mod h1:XR0ns2RtEEF09mDKXiKZiQg+nfZStrq1ZuL1eezeZe0=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
@@ -156,6 +158,7 @@ github.com/vmihailenco/tagparser v0.1.2 h1:gnjoVuB/kljJ5wICEEOpx98oXMWPLj22G67Vb
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
+github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 github.com/yusufpapurcu/wmi v1.2.3 h1:E1ctvB7uKFMOJw3fdOW32DwGE9I7t++CRUEMKvFoFiw=
 github.com/yusufpapurcu/wmi v1.2.3/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/collector v0.91.0 h1:C7sGUJDJ5nwm+CkWpAaVP3lNsuYpwSRbkmLncFjkmO8=
