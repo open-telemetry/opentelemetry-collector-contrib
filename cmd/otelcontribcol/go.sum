@@ -194,8 +194,8 @@ github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.11.0 h1:JAFzV1P6
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.11.0/go.mod h1:cP0qZvP+u4jzz2z28KzxFYww4xX2sYv+yPQAMSLoSMU=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.11.0 h1:G5fefqlKYsJX0iqkp5Smdica6J3Ty7Gay8NINjwpdpY=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.11.0/go.mod h1:4ed2dYa6xQKKfVhJoLpNf89N0pKA8H2R0SyiCcL6PoI=
-github.com/DataDog/sketches-go v1.4.3 h1:ZB9nijteJRFUQixkQfatCqASartGNfiolIlMiEv3u/w=
-github.com/DataDog/sketches-go v1.4.3/go.mod h1:XR0ns2RtEEF09mDKXiKZiQg+nfZStrq1ZuL1eezeZe0=
+github.com/DataDog/sketches-go v1.4.4 h1:dF52vzXRFSPOj2IjXSWLvXq3jubL4CI69kwYjJ1w5Z8=
+github.com/DataDog/sketches-go v1.4.4/go.mod h1:XR0ns2RtEEF09mDKXiKZiQg+nfZStrq1ZuL1eezeZe0=
 github.com/DataDog/zstd v1.5.0/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/DataDog/zstd v1.5.2 h1:vUG4lAyuPCXO0TLbXvPv7EB7cNK1QV/luu55UHLrrn8=
 github.com/DataDog/zstd v1.5.2/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
