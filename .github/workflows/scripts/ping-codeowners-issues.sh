@@ -7,8 +7,8 @@
 
 set -euo pipefail
 
-if [[ -z "${COMPONENT:-}" || -z "${ISSUE:-}" || -z "${SENDER:-}" ]]; then
-    echo "At least one of COMPONENT, ISSUE, or SENDER has not been set, please ensure each is set."
+if [[ -z "${COMPONENT:-}" || -z "${ISSUE:-}" ]]; then
+    echo "Either COMPONENT or ISSUE has not been set, please ensure both are set."
     exit 0
 fi
 
@@ -17,11 +17,6 @@ CUR_DIRECTORY=$(dirname "$0")
 OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
 if [[ -z "${OWNERS}" ]]; then
-    exit 0
-fi
-
-if [[ "${OWNERS}" =~ "${SENDER}" ]]; then
-    echo "Label applied by code owner ${SENDER}"
     exit 0
 fi
 

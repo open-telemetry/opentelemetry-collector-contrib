@@ -1,0 +1,6 @@
+change_type: 'bug_fix'
+component: 'prometheusreceiver'
+note: Fix configuration validation to allow specification of Target Allocator configuration without providing scrape configurations
+issues: [30135]
+subtext:
+change_logs: []
