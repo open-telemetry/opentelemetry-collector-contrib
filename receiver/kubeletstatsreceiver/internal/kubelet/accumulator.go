@@ -1,25 +1,18 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package kubelet
+package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 type MetricGroup string
@@ -41,42 +34,39 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []pdata.Metrics
+	m                     []pmetric.Metrics
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
 	time                  time.Time
-	typeStr               string
+	mbs                   *metadata.MetricsBuilders
 }
 
-const (
-	k8sPrefix       = "k8s."
-	nodePrefix      = k8sPrefix + "node."
-	podPrefix       = k8sPrefix + "pod."
-	containerPrefix = "container."
-)
+func addUptimeMetric(mb *metadata.MetricsBuilder, uptimeMetric metadata.RecordIntDataPointFunc, startTime v1.Time, currentTime pcommon.Timestamp) {
+	if !startTime.IsZero() {
+		value := int64(time.Since(startTime.Time).Seconds())
+		uptimeMetric(mb, currentTime, value)
+	}
+}
 
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	if !a.metricGroupsToCollect[NodeMetricGroup] {
 		return
 	}
 
-	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	fillNodeResource(rm.Resource(), s)
-
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
-
-	startTime := pdata.NewTimestampFromTime(s.StartTime.Time)
-	currentTime := pdata.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), nodePrefix, s.CPU, startTime, currentTime)
-	addMemoryMetrics(ilm.Metrics(), nodePrefix, s.Memory, currentTime)
-	addFilesystemMetrics(ilm.Metrics(), nodePrefix, s.Fs, currentTime)
-	addNetworkMetrics(ilm.Metrics(), nodePrefix, s.Network, startTime, currentTime)
+	currentTime := pcommon.NewTimestampFromTime(a.time)
+	addUptimeMetric(a.mbs.NodeMetricsBuilder, metadata.NodeUptimeMetrics.Uptime, s.StartTime, currentTime)
+	addCPUMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeCPUMetrics, s.CPU, currentTime, resources{})
+	addMemoryMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryMetrics, s.Memory, currentTime, resources{})
+	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
+	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime)
 	// todo s.Runtime.ImageFs
-
-	a.m = append(a.m, md)
+	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
+	rb.SetK8sNodeName(s.NodeName)
+	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
+		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
+		metadata.WithResource(rb.Emit()),
+	))
 }
 
 func (a *metricDataAccumulator) podStats(s stats.PodStats) {
@@ -84,21 +74,21 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 		return
 	}
 
-	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	fillPodResource(rm.Resource(), s)
+	currentTime := pcommon.NewTimestampFromTime(a.time)
+	addUptimeMetric(a.mbs.PodMetricsBuilder, metadata.PodUptimeMetrics.Uptime, s.StartTime, currentTime)
+	addCPUMetrics(a.mbs.PodMetricsBuilder, metadata.PodCPUMetrics, s.CPU, currentTime, a.metadata.podResources[s.PodRef.UID])
+	addMemoryMetrics(a.mbs.PodMetricsBuilder, metadata.PodMemoryMetrics, s.Memory, currentTime, a.metadata.podResources[s.PodRef.UID])
+	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
+	addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime)
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
-
-	startTime := pdata.NewTimestampFromTime(s.StartTime.Time)
-	currentTime := pdata.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), podPrefix, s.CPU, startTime, currentTime)
-	addMemoryMetrics(ilm.Metrics(), podPrefix, s.Memory, currentTime)
-	addFilesystemMetrics(ilm.Metrics(), podPrefix, s.EphemeralStorage, currentTime)
-	addNetworkMetrics(ilm.Metrics(), podPrefix, s.Network, startTime, currentTime)
-
-	a.m = append(a.m, md)
+	rb := a.mbs.PodMetricsBuilder.NewResourceBuilder()
+	rb.SetK8sPodUID(s.PodRef.UID)
+	rb.SetK8sPodName(s.PodRef.Name)
+	rb.SetK8sNamespaceName(s.PodRef.Namespace)
+	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
+		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
+		metadata.WithResource(rb.Emit()),
+	))
 }
 
 func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.ContainerStats) {
@@ -106,10 +96,9 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 		return
 	}
 
-	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-
-	if err := fillContainerResource(rm.Resource(), sPod, s, a.metadata); err != nil {
+	rb := a.mbs.ContainerMetricsBuilder.NewResourceBuilder()
+	res, err := getContainerResource(rb, sPod, s, a.metadata)
+	if err != nil {
 		a.logger.Warn(
 			"failed to fetch container metrics",
 			zap.String("pod", sPod.PodRef.Name),
@@ -118,15 +107,17 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 		return
 	}
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	currentTime := pcommon.NewTimestampFromTime(a.time)
+	resourceKey := sPod.PodRef.UID + s.Name
+	addUptimeMetric(a.mbs.ContainerMetricsBuilder, metadata.ContainerUptimeMetrics.Uptime, s.StartTime, currentTime)
+	addCPUMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerCPUMetrics, s.CPU, currentTime, a.metadata.containerResources[resourceKey])
+	addMemoryMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerMemoryMetrics, s.Memory, currentTime, a.metadata.containerResources[resourceKey])
+	addFilesystemMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
 
-	startTime := pdata.NewTimestampFromTime(s.StartTime.Time)
-	currentTime := pdata.NewTimestampFromTime(a.time)
-	addCPUMetrics(ilm.Metrics(), containerPrefix, s.CPU, startTime, currentTime)
-	addMemoryMetrics(ilm.Metrics(), containerPrefix, s.Memory, currentTime)
-	addFilesystemMetrics(ilm.Metrics(), containerPrefix, s.Rootfs, currentTime)
-	a.m = append(a.m, md)
+	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(
+		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
+		metadata.WithResource(res),
+	))
 }
 
 func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeStats) {
@@ -134,10 +125,9 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 		return
 	}
 
-	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-
-	if err := fillVolumeResource(rm.Resource(), sPod, s, a.metadata); err != nil {
+	rb := a.mbs.OtherMetricsBuilder.NewResourceBuilder()
+	res, err := getVolumeResourceOptions(rb, sPod, s, a.metadata)
+	if err != nil {
 		a.logger.Warn(
 			"Failed to gather additional volume metadata. Skipping metric collection.",
 			zap.String("pod", sPod.PodRef.Name),
@@ -146,10 +136,8 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 		return
 	}
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	currentTime := pcommon.NewTimestampFromTime(a.time)
+	addVolumeMetrics(a.mbs.OtherMetricsBuilder, metadata.K8sVolumeMetrics, s, currentTime)
 
-	currentTime := pdata.NewTimestampFromTime(a.time)
-	addVolumeMetrics(ilm.Metrics(), k8sPrefix, s, currentTime)
-	a.m = append(a.m, md)
+	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(metadata.WithResource(res)))
 }

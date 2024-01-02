@@ -1,79 +1,84 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package collectdreceiver
+package collectdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
+	"errors"
+	"io"
 	"net/http"
 	"strings"
-	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
 )
 
-var _ component.MetricsReceiver = (*collectdReceiver)(nil)
+var _ receiver.Metrics = (*collectdReceiver)(nil)
 
-// collectdReceiver implements the component.MetricsReceiver for CollectD protocol.
+// collectdReceiver implements the receiver.Metrics for CollectD protocol.
 type collectdReceiver struct {
 	logger             *zap.Logger
-	addr               string
 	server             *http.Server
 	defaultAttrsPrefix string
 	nextConsumer       consumer.Metrics
+	obsrecv            *receiverhelper.ObsReport
+	createSettings     receiver.CreateSettings
+	config             *Config
 }
 
 // newCollectdReceiver creates the CollectD receiver with the given parameters.
 func newCollectdReceiver(
 	logger *zap.Logger,
-	addr string,
-	timeout time.Duration,
+	cfg *Config,
 	defaultAttrsPrefix string,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics,
+	createSettings receiver.CreateSettings) (receiver.Metrics, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	r := &collectdReceiver{
 		logger:             logger,
-		addr:               addr,
 		nextConsumer:       nextConsumer,
 		defaultAttrsPrefix: defaultAttrsPrefix,
-	}
-	r.server = &http.Server{
-		Addr:         addr,
-		Handler:      r,
-		ReadTimeout:  timeout,
-		WriteTimeout: timeout,
+		config:             cfg,
+		createSettings:     createSettings,
 	}
 	return r, nil
 }
 
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
+	var err error
+	cdr.server, err = cdr.config.HTTPServerSettings.ToServer(host, cdr.createSettings.TelemetrySettings, cdr)
+	if err != nil {
+		return err
+	}
+	cdr.server.ReadTimeout = cdr.config.Timeout
+	cdr.server.WriteTimeout = cdr.config.Timeout
+	cdr.obsrecv, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             cdr.createSettings.ID,
+		Transport:              "http",
+		ReceiverCreateSettings: cdr.createSettings,
+	})
+	if err != nil {
+		return err
+	}
+	l, err := cdr.config.HTTPServerSettings.ToListener()
+	if err != nil {
+		return err
+	}
 	go func() {
-		if err := cdr.server.ListenAndServe(); err != http.ErrServerClosed {
-			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
+		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
+			_ = cdr.createSettings.TelemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
@@ -81,50 +86,63 @@ func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error
 
 // Shutdown stops the CollectD receiver.
 func (cdr *collectdReceiver) Shutdown(context.Context) error {
+	if cdr.server == nil {
+		return nil
+	}
 	return cdr.server.Shutdown(context.Background())
 }
 
 // ServeHTTP acts as the default and only HTTP handler for the CollectD receiver.
 func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	recordRequestReceived()
+	ctx := r.Context()
+	ctx = cdr.obsrecv.StartMetricsOp(ctx)
 
 	if r.Method != "POST" {
-		recordRequestErrors()
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, errors.New("invalid http verb"))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		recordRequestErrors()
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	var records []collectDRecord
 	err = json.Unmarshal(body, &records)
 	if err != nil {
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, err)
 		cdr.handleHTTPErr(w, err, "unable to decode json")
 		return
 	}
 
 	defaultAttrs := cdr.defaultAttributes(r)
 
-	var metrics []*metricspb.Metric
-	ctx := context.Background()
+	metrics := pmetric.NewMetrics()
+	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	for _, record := range records {
-		metrics, err = record.appendToMetrics(metrics, defaultAttrs)
+		err = record.appendToMetrics(cdr.logger, scopeMetrics, defaultAttrs)
 		if err != nil {
+			cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, len(records), err)
 			cdr.handleHTTPErr(w, err, "unable to process metrics")
 			return
 		}
 	}
+	lenDp := metrics.DataPointCount()
 
-	err = cdr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(nil, nil, metrics))
+	err = cdr.nextConsumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
-		cdr.handleHTTPErr(w, err, "unable to process metrics")
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, lenDp, err)
 		return
 	}
-	w.Write([]byte("OK"))
+
+	_, err = w.Write([]byte("OK"))
+	if err != nil {
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, lenDp, err)
+		return
+	}
+	cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, lenDp, nil)
 }
 
 func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]string {
@@ -137,7 +155,7 @@ func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]str
 		if strings.HasPrefix(key, cdr.defaultAttrsPrefix) {
 			value := params.Get(key)
 			if len(value) == 0 {
-				recordDefaultBlankAttrs()
+				cdr.logger.Debug("blank attribute value", zap.String("key", key))
 				continue
 			}
 			key = key[len(cdr.defaultAttrsPrefix):]
@@ -148,7 +166,6 @@ func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]str
 }
 
 func (cdr *collectdReceiver) handleHTTPErr(w http.ResponseWriter, err error, msg string) {
-	recordRequestErrors()
 	w.WriteHeader(http.StatusBadRequest)
 	cdr.logger.Error(msg, zap.Error(err))
 	_, err = w.Write([]byte(msg))

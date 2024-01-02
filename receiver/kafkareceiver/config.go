@@ -1,30 +1,51 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package kafkareceiver
+package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
-	"go.opentelemetry.io/collector/config"
+	"time"
+
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
+
+type AutoCommit struct {
+	// Whether or not to auto-commit updated offsets back to the broker.
+	// (default enabled).
+	Enable bool `mapstructure:"enable"`
+	// How frequently to commit updated offsets. Ineffective unless
+	// auto-commit is enabled (default 1s)
+	Interval time.Duration `mapstructure:"interval"`
+}
+
+type MessageMarking struct {
+	// If true, the messages are marked after the pipeline execution
+	After bool `mapstructure:"after"`
+
+	// If false, only the successfully processed messages are marked, it has no impact if
+	// After is set to false.
+	// Note: this can block the entire partition in case a message processing returns
+	// a permanent error.
+	OnError bool `mapstructure:"on_error"`
+}
+
+type HeaderExtraction struct {
+	ExtractHeaders bool     `mapstructure:"extract_headers"`
+	Headers        []string `mapstructure:"headers"`
+}
 
 // Config defines configuration for Kafka receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
+	// ResolveCanonicalBootstrapServersOnly makes Sarama do a DNS lookup for
+	// each of the provided brokers. It will then do a PTR lookup for each
+	// returned IP, and that set of names becomes the broker list. This can be
+	// required in SASL environments.
+	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
 	// The name of the kafka topic to consume from (default "otlp_spans")
@@ -35,15 +56,32 @@ type Config struct {
 	GroupID string `mapstructure:"group_id"`
 	// The consumer client ID that receiver will use (default "otel-collector")
 	ClientID string `mapstructure:"client_id"`
+	// The initial offset to use if no offset was previously committed.
+	// Must be `latest` or `earliest` (default "latest").
+	InitialOffset string `mapstructure:"initial_offset"`
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
 	Metadata kafkaexporter.Metadata `mapstructure:"metadata"`
 
-	Authentication kafkaexporter.Authentication `mapstructure:"auth"`
+	Authentication kafka.Authentication `mapstructure:"auth"`
+
+	// Controls the auto-commit functionality
+	AutoCommit AutoCommit `mapstructure:"autocommit"`
+
+	// Controls the way the messages are marked as consumed
+	MessageMarking MessageMarking `mapstructure:"message_marking"`
+
+	// Extract headers from kafka records
+	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
 }
 
-var _ config.Receiver = (*Config)(nil)
+const (
+	offsetLatest   string = "latest"
+	offsetEarliest string = "earliest"
+)
+
+var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

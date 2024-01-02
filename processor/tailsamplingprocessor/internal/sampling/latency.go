@@ -1,60 +1,46 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package sampling
+package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"context"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
 type latency struct {
-	logger      *zap.Logger
-	thresholdMs int64
+	logger           *zap.Logger
+	thresholdMs      int64
+	upperThresholdMs int64
 }
 
 var _ PolicyEvaluator = (*latency)(nil)
 
 // NewLatency creates a policy evaluator sampling traces with a duration higher than a configured threshold
-func NewLatency(logger *zap.Logger, thresholdMs int64) PolicyEvaluator {
+func NewLatency(settings component.TelemetrySettings, thresholdMs int64, upperThresholdMs int64) PolicyEvaluator {
 	return &latency{
-		logger:      logger,
-		thresholdMs: thresholdMs,
+		logger:           settings.Logger,
+		thresholdMs:      thresholdMs,
+		upperThresholdMs: upperThresholdMs,
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (l *latency) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	l.logger.Debug("Triggering action for late arriving spans in latency filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (l *latency) Evaluate(_ pdata.TraceID, traceData *TraceData) (Decision, error) {
+func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *TraceData) (Decision, error) {
 	l.logger.Debug("Evaluating spans in latency filter")
 
 	traceData.Lock()
+	defer traceData.Unlock()
 	batches := traceData.ReceivedBatches
-	traceData.Unlock()
 
-	var minTime pdata.Timestamp
-	var maxTime pdata.Timestamp
+	var minTime pcommon.Timestamp
+	var maxTime pcommon.Timestamp
 
-	return hasSpanWithCondition(batches, func(span pdata.Span) bool {
+	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
 		if minTime == 0 || span.StartTimestamp() < minTime {
 			minTime = span.StartTimestamp()
 		}
@@ -63,6 +49,9 @@ func (l *latency) Evaluate(_ pdata.TraceID, traceData *TraceData) (Decision, err
 		}
 
 		duration := maxTime.AsTime().Sub(minTime.AsTime())
-		return duration.Milliseconds() >= l.thresholdMs
+		if l.upperThresholdMs == 0 {
+			return duration.Milliseconds() >= l.thresholdMs
+		}
+		return (l.thresholdMs < duration.Milliseconds() && duration.Milliseconds() <= l.upperThresholdMs)
 	}), nil
 }

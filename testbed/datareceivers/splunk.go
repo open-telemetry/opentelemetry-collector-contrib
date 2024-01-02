@@ -1,27 +1,17 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package datareceivers
+package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 
 import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -30,7 +20,7 @@ import (
 // SplunkHECDataReceiver implements Splunk HEC format receiver.
 type SplunkHECDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.LogsReceiver
+	receiver receiver.Logs
 }
 
 // Ensure SplunkHECDataReceiver implements LogDataSender.
@@ -46,17 +36,17 @@ func NewSplunkHECDataReceiver(port int) *SplunkHECDataReceiver {
 func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc consumer.Logs) error {
 	config := splunkhecreceiver.Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
+			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
 	}
 	var err error
 	f := splunkhecreceiver.NewFactory()
-	sr.receiver, err = f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &config, lc)
+	sr.receiver, err = f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), &config, lc)
 	if err != nil {
 		return err
 	}
 
-	return sr.receiver.Start(context.Background(), sr)
+	return sr.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // Stop the receiver.
@@ -69,7 +59,7 @@ func (sr *SplunkHECDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
     splunk_hec:
-      endpoint: "http://localhost:%d"
+      endpoint: "http://127.0.0.1:%d"
       token: "token"`, sr.Port)
 }
 

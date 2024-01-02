@@ -1,40 +1,25 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package protocol
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestLoadParserConfig(t *testing.T) {
 	tests := []struct {
 		name    string
-		yaml    string
-		cfg     Config
+		cfgMap  map[string]any
 		want    Config
 		wantErr bool
 	}{
 		{
 			name:    "unknow_type",
-			yaml:    `type: unknow`,
-			cfg:     Config{Type: "unknown"},
+			cfgMap:  map[string]any{"type": "unknown"},
 			want:    Config{Type: "unknown"},
 			wantErr: true,
 		},
@@ -42,13 +27,12 @@ func TestLoadParserConfig(t *testing.T) {
 			// Keep this test before the default_regex to ensure that the
 			// default configuration is not being corrupted.
 			name: "custom_delimiter",
-			yaml: `
-type: regex
-config:
-  rules:
-    - regexp: "(?<key_test>.*test)"
-`,
-			cfg: Config{Type: "regex"},
+			cfgMap: map[string]any{
+				"type": "regex",
+				"config": map[string]any{
+					"rules": []any{map[string]any{"regexp": "(?<key_test>.*test)"}},
+				},
+			},
 			want: Config{
 				Type: "regex",
 				Config: &RegexParserConfig{
@@ -58,22 +42,28 @@ config:
 			},
 		},
 		{
-			name: "default_regex",
-			yaml: `type: regex`,
-			cfg:  Config{Type: "regex"},
+			name:   "default_regex",
+			cfgMap: map[string]any{"type": "regex"},
 			want: Config{
 				Type:   "regex",
 				Config: &RegexParserConfig{},
 			},
 		},
+		{
+			name:   "plaintext",
+			cfgMap: map[string]any{"type": "plaintext"},
+			want: Config{
+				Type:   "plaintext",
+				Config: &PlaintextConfig{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v, err := config.NewMapFromBuffer(strings.NewReader(tt.yaml))
-			require.NoError(t, err)
+			v := confmap.NewFromStringMap(tt.cfgMap)
 
-			got := tt.cfg // Not strictly necessary but it makes easier to debug issues.
-			err = LoadParserConfig(v, &got)
+			got := Config{}
+			err := got.Unmarshal(v)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err != nil)
 		})

@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package tests
+package tests // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/tests"
 
 // This file defines parametrized test scenarios and makes them public so that they can be
 // also used by tests in custom builds of Collector (e.g. Collector Contrib).
@@ -190,6 +179,70 @@ func Scenario10kItemsPerSecond(
 	tc.ValidateData()
 }
 
+// Scenario10kItemsPerSecondAlternateBackend runs 10k data items/sec test using specified sender and receiver protocols.
+// The only difference from Scenario10kItemsPerSecond is that this method can be used to specify a different backend. This
+// is useful when testing components for which there is no exporter that emits the same format as the receiver format.
+func Scenario10kItemsPerSecondAlternateBackend(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	backend testbed.DataReceiver,
+	resourceSpec testbed.ResourceSpec,
+	resultsSummary testbed.TestResultsSummary,
+	processors map[string]string,
+	extensions map[string]string,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	options := testbed.LoadOptions{
+		DataItemsPerSecond: 10_000,
+		ItemsPerBatch:      100,
+		Parallel:           1,
+	}
+	agentProc := testbed.NewChildProcessCollector()
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
+	fmt.Println(configStr)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+
+	dataProvider := testbed.NewPerfTestDataProvider(options)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.PerfTestValidator{},
+		resultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
+	)
+	defer tc.Stop()
+
+	// for some scenarios, the mockbackend isn't the same as the receiver
+	// therefore, the backend must be initialized with the correct receiver
+	tc.MockBackend = testbed.NewMockBackend(tc.ComposeTestResultFileName("backend.log"), backend)
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(options)
+
+	tc.Sleep(tc.Duration)
+
+	tc.StopLoad()
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
+		"all data items received")
+
+	tc.StopAgent()
+
+	tc.ValidateData()
+}
+
 // TestCase for Scenario1kSPSWithAttrs func.
 type TestCase struct {
 	attrCount      int
@@ -199,8 +252,8 @@ type TestCase struct {
 	resultsSummary testbed.TestResultsSummary
 }
 
-func genRandByteString(len int) string {
-	b := make([]byte, len)
+func genRandByteString(length int) string {
+	b := make([]byte, length)
 	for i := range b {
 		b[i] = byte(rand.Intn(128))
 	}
@@ -311,7 +364,8 @@ func ScenarioTestTraceNoBackend10kSPS(
 
 	tc.Sleep(tc.Duration)
 
-	rss, _, _ := tc.AgentMemoryInfo()
+	rss, _, err := tc.AgentMemoryInfo()
+	require.NoError(t, err)
 	assert.Less(t, configuration.ExpectedMinFinalRAM, rss)
 }
 

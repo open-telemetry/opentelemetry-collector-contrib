@@ -1,24 +1,13 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package kubelet
+package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 
 import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"runtime"
 )
 
@@ -37,7 +26,7 @@ func systemCertPoolPlusPath(certPath string) (*x509.CertPool, error) {
 }
 
 func certPoolPlusPath(certPool *x509.CertPool, certPath string) (*x509.CertPool, error) {
-	certBytes, err := ioutil.ReadFile(certPath)
+	certBytes, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, fmt.Errorf("cert path %s could not be read: %w", certPath, err)
 	}

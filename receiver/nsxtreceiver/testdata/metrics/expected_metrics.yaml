@@ -1,0 +1,886 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: nsxt.node.id
+          value:
+            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: transport
+    scopeMetrics:
+      - metrics:
+          - description: The average amount of CPU being used by the node.
+            gauge:
+              dataPoints:
+                - asDouble: 0.01
+                  attributes:
+                    - key: class
+                      value:
+                        stringValue: datapath
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.34
+                  attributes:
+                    - key: class
+                      value:
+                        stringValue: services
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: nsxt.node.cpu.utilization
+            unit: '%'
+          - description: The amount of storage space used by the node.
+            name: nsxt.node.filesystem.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The percentage of storage space utilized.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: nsxt.node.filesystem.utilization
+            unit: '%'
+          - description: The size of the node's memory cache.
+            name: nsxt.node.memory.cache.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KBy
+          - description: The memory usage of the node.
+            name: nsxt.node.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "89169108"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KBy
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: nsxt.node.id
+          value:
+            stringValue: b7a79908-9808-4c9e-bb49-b70008993fcb
+        - key: nsxt.node.name
+          value:
+            stringValue: nsxmgr-03
+        - key: nsxt.node.type
+          value:
+            stringValue: manager
+    scopeMetrics:
+      - metrics:
+          - description: The average amount of CPU being used by the node.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: class
+                      value:
+                        stringValue: datapath
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: class
+                      value:
+                        stringValue: services
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: nsxt.node.cpu.utilization
+            unit: '%'
+          - description: The amount of storage space used by the node.
+            name: nsxt.node.filesystem.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "237014124"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "26168032"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The percentage of storage space utilized.
+            gauge:
+              dataPoints:
+                - asDouble: 0.09942935492936687
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: nsxt.node.filesystem.utilization
+            unit: '%'
+          - description: The size of the node's memory cache.
+            name: nsxt.node.memory.cache.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1716556"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KBy
+          - description: The memory usage of the node.
+            name: nsxt.node.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "19636300"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KBy
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: nsxt.node.id
+          value:
+            stringValue: f5045ed2-43ab-4a35-a2c5-d20c30a32292
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: transport
+    scopeMetrics:
+      - metrics:
+          - description: The average amount of CPU being used by the node.
+            gauge:
+              dataPoints:
+                - asDouble: 0.01
+                  attributes:
+                    - key: class
+                      value:
+                        stringValue: datapath
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 4.34
+                  attributes:
+                    - key: class
+                      value:
+                        stringValue: services
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: nsxt.node.cpu.utilization
+            unit: '%'
+          - description: The amount of storage space used by the node.
+            name: nsxt.node.filesystem.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The percentage of storage space utilized.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: nsxt.node.filesystem.utilization
+            unit: '%'
+          - description: The size of the node's memory cache.
+            name: nsxt.node.memory.cache.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "234"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KBy
+          - description: The memory usage of the node.
+            name: nsxt.node.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "143728936"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: KBy
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: eth0
+        - key: nsxt.node.id
+          value:
+            stringValue: b7a79908-9808-4c9e-bb49-b70008993fcb
+        - key: nsxt.node.name
+          value:
+            stringValue: nsxmgr-03
+        - key: nsxt.node.type
+          value:
+            stringValue: ClusterNodeConfig
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2837237037443"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5877910030884"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "288"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "12483778397"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "12313320048"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: lo
+        - key: nsxt.node.id
+          value:
+            stringValue: b7a79908-9808-4c9e-bb49-b70008993fcb
+        - key: nsxt.node.name
+          value:
+            stringValue: nsxmgr-03
+        - key: nsxt.node.type
+          value:
+            stringValue: ClusterNodeConfig
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2837237037443"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5877910030884"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "288"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "12483778397"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "12313320048"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: vmk10
+        - key: nsxt.node.id
+          value:
+            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: TransportNode
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4161088074"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "63594238"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: vmk10
+        - key: nsxt.node.id
+          value:
+            stringValue: f5045ed2-43ab-4a35-a2c5-d20c30a32292
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: TransportNode
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4161088074"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "63594238"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: vmnic0
+        - key: nsxt.node.id
+          value:
+            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: TransportNode
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4161088074"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "63594238"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: vmnic0
+        - key: nsxt.node.id
+          value:
+            stringValue: f5045ed2-43ab-4a35-a2c5-d20c30a32292
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: TransportNode
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4161088074"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "63594238"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: type
+                      value:
+                        stringValue: success
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{packets}'
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest

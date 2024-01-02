@@ -1,6 +1,9 @@
 #!/bin/bash
 
-set -euo pipefail
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+set -euov pipefail
 
 SCRIPT_DIR="$( cd "$( dirname ${BASH_SOURCE[0]} )" && pwd )"
 REPO_DIR="$( cd "$SCRIPT_DIR/../../../../" && pwd )"

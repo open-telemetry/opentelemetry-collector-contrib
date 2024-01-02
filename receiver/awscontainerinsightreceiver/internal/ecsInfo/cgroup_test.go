@@ -1,23 +1,12 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsinfo
 
 import (
 	"context"
 	"errors"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -39,18 +28,18 @@ func TestGetCGroupPathForTask(t *testing.T) {
 		{
 			name:    "Task cgroup path exist",
 			input:   "test1",
-			wantRes: path.Join(cgroupMount, controller, "ecs", "test1"),
+			wantRes: filepath.Join(cgroupMount, controller, "ecs", "test1"),
 		},
 		{
 			name:    "Legacy Task cgroup path exist",
 			input:   "test4",
-			wantRes: path.Join(cgroupMount, controller, "ecs", clusterName, "test4"),
+			wantRes: filepath.Join(cgroupMount, controller, "ecs", clusterName, "test4"),
 		},
 		{
 			name:    "CGroup Path does not exist",
 			input:   "test5",
 			wantRes: "",
-			err:     errors.New("CGroup Path " + path.Join(cgroupMount, controller, "ecs", clusterName, "test5") + " does not exist"),
+			err:     errors.New("CGroup Path " + filepath.Join(cgroupMount, controller, "ecs", clusterName, "test5") + " does not exist"),
 		},
 	}
 
@@ -287,8 +276,8 @@ func TestGetMEMReservedInTask(t *testing.T) {
 
 func TestGetCPUReservedAndMemReserved(t *testing.T) {
 	var ctx, cancel = context.WithCancel(context.Background())
-	tasks := []ECSTask{}
-	containers := []ECSContainer{}
+	var tasks []ECSTask
+	var containers []ECSContainer
 
 	task1 := ECSTask{
 		KnownStatus: "RUNNING",

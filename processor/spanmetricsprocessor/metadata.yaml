@@ -1,0 +1,13 @@
+type: spanmetrics
+
+status:
+  class: processor
+  stability:
+    deprecated: [traces]
+  distributions: [contrib, observiq, splunk, sumo]
+  codeowners:
+    active: [albertteoh]
+
+tests:
+  config:
+  skip_lifecycle: true

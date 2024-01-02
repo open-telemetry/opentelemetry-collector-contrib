@@ -1,24 +1,14 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sumologicexporter
+package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // carbon2TagString returns all attributes as space spearated key=value pairs.
@@ -37,7 +27,7 @@ func carbon2TagString(record metricPair) string {
 	}
 
 	returnValue := make([]string, 0, length)
-	record.attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	record.attributes.Range(func(k string, v pcommon.Value) bool {
 		if k == "name" || k == "unit" {
 			k = fmt.Sprintf("_%s", k)
 		}
@@ -65,20 +55,22 @@ func sanitizeCarbonString(text string) string {
 
 // carbon2NumberRecord converts NumberDataPoint to carbon2 metric string
 // with additional information from metricPair.
-func carbon2NumberRecord(record metricPair, dataPoint pdata.NumberDataPoint) string {
-	switch dataPoint.Type() {
-	case pdata.MetricValueTypeDouble:
+func carbon2NumberRecord(record metricPair, dataPoint pmetric.NumberDataPoint) string {
+	switch dataPoint.ValueType() {
+	case pmetric.NumberDataPointValueTypeDouble:
 		return fmt.Sprintf("%s  %g %d",
 			carbon2TagString(record),
-			dataPoint.DoubleVal(),
+			dataPoint.DoubleValue(),
 			dataPoint.Timestamp()/1e9,
 		)
-	case pdata.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return fmt.Sprintf("%s  %d %d",
 			carbon2TagString(record),
-			dataPoint.IntVal(),
+			dataPoint.IntValue(),
 			dataPoint.Timestamp()/1e9,
 		)
+	case pmetric.NumberDataPointValueTypeEmpty:
+		return ""
 	}
 	return ""
 }
@@ -86,23 +78,25 @@ func carbon2NumberRecord(record metricPair, dataPoint pdata.NumberDataPoint) str
 // carbon2metric2String converts metric to Carbon2 formatted string.
 func carbon2Metric2String(record metricPair) string {
 	var nextLines []string
-
-	switch record.metric.DataType() {
-	case pdata.MetricDataTypeGauge:
+	//exhaustive:enforce
+	switch record.metric.Type() {
+	case pmetric.MetricTypeGauge:
 		dps := record.metric.Gauge().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, carbon2NumberRecord(record, dps.At(i)))
 		}
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, carbon2NumberRecord(record, dps.At(i)))
 		}
 	// Skip complex metrics
-	case pdata.MetricDataTypeHistogram:
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricTypeHistogram:
+	case pmetric.MetricTypeSummary:
+	case pmetric.MetricTypeEmpty:
+	case pmetric.MetricTypeExponentialHistogram:
 	}
 
 	return strings.Join(nextLines, "\n")

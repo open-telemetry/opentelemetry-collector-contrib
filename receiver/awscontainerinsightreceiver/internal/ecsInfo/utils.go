@@ -1,25 +1,13 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package ecsinfo
+package ecsinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -88,18 +76,18 @@ func request(ctx context.Context, endpoint string, client doer) ([]byte, error) 
 	}
 
 	var reader io.Reader
-	//value -1 indicates that the length is unknown, see https://golang.org/src/net/http/response.go
-	//In this case, we read until the limit is reached
-	//This might happen with chunked responses from ECS Introspection API
+	// value -1 indicates that the length is unknown, see https://golang.org/src/net/http/response.go
+	// In this case, we read until the limit is reached
+	// This might happen with chunked responses from ECS Introspection API
 	if resp.ContentLength == -1 {
 		reader = io.LimitReader(resp.Body, maxHTTPResponseLength)
 	} else {
 		reader = resp.Body
 	}
 
-	body, err := ioutil.ReadAll(reader)
+	body, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read response body from %s, error: %v", endpoint, err)
+		return nil, fmt.Errorf("unable to read response body from %s, error: %w", endpoint, err)
 	}
 
 	if len(body) == maxHTTPResponseLength {

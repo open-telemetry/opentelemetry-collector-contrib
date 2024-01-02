@@ -1,22 +1,10 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclient
 
 import (
 	"log"
-	"reflect"
 	"testing"
 	"time"
 
@@ -46,7 +34,6 @@ var endpointsArray = []runtime.Object{
 			Labels: map[string]string{
 				"app": "guestbook",
 			},
-			ClusterName: "",
 		},
 		Subsets: []v1.EndpointSubset{
 			{
@@ -116,7 +103,6 @@ var endpointsArray = []runtime.Object{
 			CreationTimestamp: metav1.Time{
 				Time: time.Now(),
 			},
-			ClusterName: "",
 		},
 		Subsets: []v1.EndpointSubset{
 			{
@@ -156,7 +142,6 @@ var endpointsArray = []runtime.Object{
 				"app":  "redis",
 				"role": "master",
 			},
-			ClusterName: "",
 		},
 		Subsets: []v1.EndpointSubset{
 			{
@@ -202,7 +187,6 @@ var endpointsArray = []runtime.Object{
 				"app":  "redis",
 				"role": "slave",
 			},
-			ClusterName: "",
 		},
 		Subsets: []v1.EndpointSubset{
 			{
@@ -275,7 +259,6 @@ var endpointsArray = []runtime.Object{
 			Annotations: map[string]string{
 				"control-plane.alpha.kubernetes.io/leader": "{\"holderIdentity\":\"ip-10-0-189-120.eu-west-1.compute.internal_89407f85-57e1-11e9-b6ea-02eb484bead6\",\"leaseDurationSeconds\":15,\"acquireTime\":\"2019-04-05T20:34:54Z\",\"renewTime\":\"2019-05-06T20:04:02Z\",\"leaderTransitions\":1}",
 			},
-			ClusterName: "",
 		},
 	},
 	&v1.Endpoints{
@@ -296,7 +279,6 @@ var endpointsArray = []runtime.Object{
 				"kubernetes.io/cluster-service": "true",
 				"kubernetes.io/name":            "CoreDNS",
 			},
-			ClusterName: "",
 		},
 		Subsets: []v1.EndpointSubset{
 			{
@@ -360,7 +342,6 @@ var endpointsArray = []runtime.Object{
 			Annotations: map[string]string{
 				"control-plane.alpha.kubernetes.io/leader": "{\"holderIdentity\":\"ip-10-0-189-120.eu-west-1.compute.internal_949a4400-57e1-11e9-a7bb-02eb484bead6\",\"leaseDurationSeconds\":15,\"acquireTime\":\"2019-04-05T20:34:57Z\",\"renewTime\":\"2019-05-06T20:04:02Z\",\"leaderTransitions\":1}",
 			},
-			ClusterName: "",
 		},
 	},
 }
@@ -378,11 +359,11 @@ func setUpEndpointClient() (*epClient, chan struct{}) {
 func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	client, stopChan := setUpEndpointClient()
 	defer close(stopChan)
-	arrays := make([]interface{}, len(endpointsArray))
+	arrays := make([]any, len(endpointsArray))
 	for i := range arrays {
 		arrays[i] = endpointsArray[i]
 	}
-	client.store.Replace(convertToInterfaceArray(endpointsArray), "")
+	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointsArray), ""))
 
 	expectedMap := map[string][]string{
 		"namespace:default,podName:redis-master-rh2bd":           {"redis-master"},
@@ -396,13 +377,13 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	}
 	resultMap := client.PodKeyToServiceNames()
 	log.Printf("PodKeyToServiceNames (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 }
 
 func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 	client, stopChan := setUpEndpointClient()
 
-	client.store.Replace(convertToInterfaceArray(endpointsArray), "")
+	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointsArray), ""))
 
 	expectedMap := map[Service]int{
 		NewService("redis-slave", "default"):  2,
@@ -412,7 +393,7 @@ func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 	}
 	resultMap := client.ServiceToPodNum()
 	log.Printf("ServiceNameToPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	time.Sleep(2 * time.Millisecond)
 	select {

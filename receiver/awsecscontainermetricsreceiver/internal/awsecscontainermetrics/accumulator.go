@@ -1,43 +1,35 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package awsecscontainermetrics
+package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 // metricDataAccumulator defines the accumulator
 type metricDataAccumulator struct {
-	mds []pdata.Metrics
+	mds []pmetric.Metrics
 }
 
 // getMetricsData generates OT Metrics data from task metadata and docker stats
-func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata TaskMetadata, logger *zap.Logger) {
+func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata ecsutil.TaskMetadata, logger *zap.Logger) {
 
 	taskMetrics := ECSMetrics{}
-	timestamp := pdata.NewTimestampFromTime(time.Now())
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
 
-		containerResource := containerResource(containerMetadata)
-		taskResource.Attributes().Range(func(k string, av pdata.AttributeValue) bool {
-			containerResource.Attributes().Upsert(k, av)
+		containerResource := containerResource(containerMetadata, logger)
+		taskResource.Attributes().Range(func(k string, av pcommon.Value) bool {
+			av.CopyTo(containerResource.Attributes().PutEmpty(k))
 			return true
 		})
 
@@ -65,7 +57,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 	acc.accumulate(convertToOTLPMetrics(taskPrefix, taskMetrics, taskResource, timestamp))
 }
 
-func (acc *metricDataAccumulator) accumulate(md pdata.Metrics) {
+func (acc *metricDataAccumulator) accumulate(md pmetric.Metrics) {
 	acc.mds = append(acc.mds, md)
 }
 
@@ -73,7 +65,7 @@ func isEmptyStats(stats *ContainerStats) bool {
 	return stats == nil || stats.ID == ""
 }
 
-func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ContainerMetadata) ECSMetrics {
+func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ecsutil.ContainerMetadata) ECSMetrics {
 	containerMetrics := getContainerMetrics(stats, logger)
 	if containerMetadata.Limits.Memory != nil {
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
@@ -89,17 +81,15 @@ func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containe
 	return containerMetrics
 }
 
-func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) {
+func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata ecsutil.TaskMetadata) {
 	// Overwrite Memory limit with task level limit
 	if metadata.Limits.Memory != nil {
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory
 	}
 
-	taskMetrics.CPUReserved = taskMetrics.CPUReserved / cpusInVCpu
-
 	// Overwrite CPU limit with task level limit
 	if metadata.Limits.CPU != nil {
-		taskMetrics.CPUReserved = *metadata.Limits.CPU
+		taskMetrics.CPUReserved = *metadata.Limits.CPU * cpusInVCpu
 	}
 
 	// taskMetrics.CPUReserved cannot be zero. In ECS, user needs to set CPU limit
@@ -107,7 +97,7 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) 
 	// task level CPULimit is not present, we calculate it from the summation of
 	// all container CPU limits.
 	if taskMetrics.CPUReserved > 0 {
-		taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
+		taskMetrics.CPUUtilized = taskMetrics.CPUUsageInVCPU * cpusInVCpu
 	}
 }
 

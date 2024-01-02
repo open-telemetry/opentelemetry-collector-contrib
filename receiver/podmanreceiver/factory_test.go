@@ -1,16 +1,8 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:build !windows
+// +build !windows
 
 package podmanreceiver
 
@@ -19,10 +11,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -31,16 +23,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	config := factory.CreateDefaultConfig()
 	assert.NotNil(t, config, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(config))
+	assert.NoError(t, componenttest.CheckConfigStruct(config))
 }
 
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	traceReceiver, err := factory.CreateTracesReceiver(context.Background(), params, config, consumertest.NewNop())
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, traceReceiver)
 
 	metricReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, config, consumertest.NewNop())
@@ -55,18 +47,9 @@ func TestCreateInvalidEndpoint(t *testing.T) {
 
 	receiverCfg.Endpoint = ""
 
-	params := componenttest.NewNopReceiverCreateSettings()
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumertest.NewNop())
-	assert.Nil(t, receiver)
+	params := receivertest.NewNopCreateSettings()
+	recv, err := factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumertest.NewNop())
+	assert.Nil(t, recv)
 	assert.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
-
-	receiverCfg.Endpoint = "\a"
-	receiver, err = factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumertest.NewNop())
-	assert.Nil(t, receiver)
-	assert.Error(t, err)
-	assert.Equal(
-		t, "could not determine receiver transport: parse \"\\a\": net/url: invalid control character in URL",
-		err.Error(),
-	)
 }

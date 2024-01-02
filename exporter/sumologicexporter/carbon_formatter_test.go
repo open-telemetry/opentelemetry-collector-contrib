@@ -1,16 +1,5 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package sumologicexporter
 
@@ -38,7 +27,7 @@ func TestCarbon2TagString(t *testing.T) {
 	assert.Equal(t, "foo=bar metric=gauge_metric_name_double_test", data)
 }
 
-func TestCarbonMetricDataTypeIntGauge(t *testing.T) {
+func TestCarbonMetricTypeIntGauge(t *testing.T) {
 	metric := exampleIntGaugeMetric()
 
 	result := carbon2Metric2String(metric)
@@ -47,7 +36,7 @@ foo=bar metric=gauge_metric_name  245 1608124662`
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeDoubleGauge(t *testing.T) {
+func TestCarbonMetricTypeDoubleGauge(t *testing.T) {
 	metric := exampleDoubleGaugeMetric()
 
 	result := carbon2Metric2String(metric)
@@ -56,7 +45,7 @@ foo=bar metric=gauge_metric_name_double_test  56.8 1608124662`
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeIntSum(t *testing.T) {
+func TestCarbonMetricTypeIntSum(t *testing.T) {
 	metric := exampleIntSumMetric()
 
 	result := carbon2Metric2String(metric)
@@ -65,7 +54,7 @@ foo=bar metric=sum_metric_int_test  1238 1608124699`
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeDoubleSum(t *testing.T) {
+func TestCarbonMetricTypeDoubleSum(t *testing.T) {
 	metric := exampleDoubleSumMetric()
 
 	result := carbon2Metric2String(metric)
@@ -74,18 +63,26 @@ foo=bar metric=sum_metric_double_test  1238.1 1608424699`
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeSummary(t *testing.T) {
+func TestCarbonMetricTypeSummary(t *testing.T) {
 	metric := exampleSummaryMetric()
 
 	result := carbon2Metric2String(metric)
 	expected := ``
 	assert.Equal(t, expected, result)
+
+	metric = buildExampleSummaryMetric(false)
+	result = carbon2Metric2String(metric)
+	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeHistogram(t *testing.T) {
+func TestCarbonMetricTypeHistogram(t *testing.T) {
 	metric := exampleHistogramMetric()
 
 	result := carbon2Metric2String(metric)
 	expected := ``
+	assert.Equal(t, expected, result)
+
+	metric = buildExampleHistogramMetric(false)
+	result = carbon2Metric2String(metric)
 	assert.Equal(t, expected, result)
 }

@@ -6,7 +6,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -24,7 +24,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -42,7 +42,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -60,7 +60,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -78,7 +78,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -96,7 +96,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -114,7 +114,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|le#$#1"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|le#$#1|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -132,7 +132,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|le#$#2"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|le#$#2|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -150,7 +150,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|le#$#+Inf"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|le#$#+Inf|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -168,7 +168,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -186,7 +186,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -204,7 +204,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|quantile#$#0.9"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|quantile#$#0.9|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",
@@ -222,7 +222,7 @@
         },
         {
             "Key": "__labels__",
-            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|quantile#$#0.95"
+            "Value": "a#$#b|innerLabel#$#innerValue|labelA#$#valueA|labelB#$#valueB|quantile#$#0.95|service_name#$#unknown-service"
         },
         {
             "Key": "__time_nano__",

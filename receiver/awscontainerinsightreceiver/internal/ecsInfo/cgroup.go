@@ -1,28 +1,15 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package ecsinfo
+package ecsinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 
 import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -55,7 +42,7 @@ type cgroupScannerProvider interface {
 	getCPUReserved() int64
 	getMemReserved() int64
 
-	//use for test
+	// use for test
 	getCPUReservedInTask(taskID string, clusterName string) int64
 	getMEMReservedInTask(taskID string, clusterName string, containers []ECSContainer) int64
 }
@@ -163,9 +150,9 @@ func (c *cgroupScanner) getMEMReservedInTask(taskID string, clusterName string, 
 	// sum the containers' memory if the task's memory limit is not configured
 	sum := int64(0)
 	for _, container := range containers {
-		containerPath := path.Join(memPath, container.DockerID)
+		containerPath := filepath.Join(memPath, container.DockerID)
 
-		//soft limit first
+		// soft limit first
 		if softLimit, err := readInt64(containerPath, "memory.soft_limit_in_bytes"); err == nil && softLimit != kernelMagicCodeNotSet {
 			sum += softLimit
 			continue
@@ -180,10 +167,10 @@ func (c *cgroupScanner) getMEMReservedInTask(taskID string, clusterName string, 
 }
 
 func readString(dirpath string, file string) (string, error) {
-	cgroupFile := path.Join(dirpath, file)
+	cgroupFile := filepath.Join(dirpath, file)
 
 	// Read
-	out, err := ioutil.ReadFile(cgroupFile)
+	out, err := os.ReadFile(cgroupFile)
 	if err != nil {
 		// Ignore non-existent files
 		log.Printf("W! readString: Failed to read %q: %s", cgroupFile, err)
@@ -203,7 +190,7 @@ func readInt64(dirpath string, file string) (int64, error) {
 
 	val, err := strconv.ParseInt(out, 10, 64)
 	if err != nil {
-		log.Printf("W! readInt64: Failed to parse int %q from file %q: %s", out, path.Join(dirpath, file), err)
+		log.Printf("W! readInt64: Failed to parse int %q from file %q: %s", out, filepath.Join(dirpath, file), err)
 		return 0, err
 	}
 
@@ -245,12 +232,12 @@ func getCGroupMountPoint(mountConfigPath string) (string, error) {
 }
 
 func getCGroupPathForTask(cgroupMount, controller, taskID, clusterName string) (string, error) {
-	taskPath := path.Join(cgroupMount, controller, "ecs", taskID)
+	taskPath := filepath.Join(cgroupMount, controller, "ecs", taskID)
 	if _, err := os.Stat(taskPath); os.IsNotExist(err) {
 		// Task cgroup path does not exist, fallback to try legacy Task cgroup path,
 		// legacy cgroup path of task with new format ARN used to contain cluster name,
 		// before ECS Agent PR https://github.com/aws/amazon-ecs-agent/pull/2497/
-		taskPath = path.Join(cgroupMount, controller, "ecs", clusterName, taskID)
+		taskPath = filepath.Join(cgroupMount, controller, "ecs", clusterName, taskID)
 		if _, err := os.Stat(taskPath); os.IsNotExist(err) {
 			return "", fmt.Errorf("CGroup Path %q does not exist", taskPath)
 		}
@@ -281,11 +268,12 @@ func getTaskCgroupPathFromARN(arn string) (string, error) {
 	}
 
 	result = strings.Split(result[5], "/")
-	if len(result) == 2 {
+	switch len(result) {
+	case 2:
 		return result[1], nil
-	} else if len(result) == 3 {
+	case 3:
 		return result[2], nil
-	} else {
+	default:
 		return "", fmt.Errorf("invalid ecs task arn: %q", arn)
 	}
 }

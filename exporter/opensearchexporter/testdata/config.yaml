@@ -1,0 +1,43 @@
+extensions:
+  basicauth/sample_basic_auth:
+    username: test
+    password: testtoo
+
+opensearch:
+  http:
+    endpoint: https://opensearch.example.com:9200
+
+opensearch/empty_namespace:
+  dataset: ngnix
+  namespace: ""
+  http:
+    endpoint: https://opensearch.example.com:9200
+
+opensearch/empty_dataset:
+  dataset: ""
+  namespace: eu
+  http:
+    endpoint: https://opensearch.example.com:9200
+
+opensearch/invalid_bulk_action:
+  bulk_action: "delete"
+  http:
+    endpoint: https://opensearch.example.com:9200
+
+opensearch/trace:
+  dataset: ngnix
+  namespace: eu
+  http:
+    tls:
+      insecure: false
+    endpoint: https://opensearch.example.com:9200
+    timeout: 2m
+    headers:
+      myheader: test
+    auth:
+      authenticator: sample_basic_auth
+  timeout:
+  retry_on_failure:
+    enabled: true
+    initial_interval: 100000000
+    randomization_factor: 0.5

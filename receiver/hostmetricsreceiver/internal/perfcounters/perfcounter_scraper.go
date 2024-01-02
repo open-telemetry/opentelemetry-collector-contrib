@@ -1,21 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
 // +build windows
 
-package perfcounters
+package perfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 
 import (
 	"fmt"
@@ -24,7 +13,7 @@ import (
 
 	"github.com/leoluk/perflib_exporter/perflib"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 const totalInstanceName = "_Total"
@@ -50,12 +39,15 @@ func (p *PerfLibScraper) Initialize(objects ...string) error {
 	// This is always present regardless of the OS language.
 	nameTable := perflib.QueryNameTable("Counter 009")
 
+	initErr := &PerfCounterInitError{}
+
 	// lookup object indices from name table
 	objectIndicesMap := map[uint32]struct{}{}
 	for _, name := range objects {
 		index := nameTable.LookupIndex(name)
 		if index == 0 {
-			return fmt.Errorf("Failed to retrieve perf counter object %q", name)
+			initErr.AddFailure(name)
+			continue
 		}
 
 		objectIndicesMap[index] = struct{}{}
@@ -67,13 +59,18 @@ func (p *PerfLibScraper) Initialize(objects ...string) error {
 		objectIndicesSlice = append(objectIndicesSlice, strconv.Itoa(int(k)))
 	}
 	p.objectIndices = strings.Join(objectIndicesSlice, " ")
+
+	if len(initErr.FailedObjects) > 0 {
+		return initErr
+	}
+
 	return nil
 }
 
 func (p *PerfLibScraper) Scrape() (PerfDataCollection, error) {
 	objects, err := perflib.QueryPerformanceData(p.objectIndices)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query performance data: %w", err)
 	}
 
 	indexed := make(map[string]*perflib.PerfObject)

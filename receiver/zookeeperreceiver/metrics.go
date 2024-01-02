@@ -1,21 +1,13 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package zookeeperreceiver
+package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
@@ -44,45 +36,97 @@ const (
 
 	serverStateKey = "zk_server_state"
 	zkVersionKey   = "zk_version"
+
+	ruokKey = "ruok"
 )
 
-func getOTLPInitFunc(metric string) func(metric pdata.Metric) {
+// metricCreator handles generation of metric and metric recording
+type metricCreator struct {
+	computedMetricStore map[string]int64
+	mb                  *metadata.MetricsBuilder
+	// Temporary feature gates while transitioning to metrics without a direction attribute
+}
+
+func newMetricCreator(mb *metadata.MetricsBuilder) *metricCreator {
+	return &metricCreator{
+		computedMetricStore: make(map[string]int64),
+		mb:                  mb,
+	}
+}
+
+func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pcommon.Timestamp, val int64) {
 	switch metric {
 	case followersMetricKey:
-		return metadata.Metrics.ZookeeperFollowers.Init
+		return func(ts pcommon.Timestamp, val int64) {
+			m.computedMetricStore[followersMetricKey] = val
+		}
 	case syncedFollowersMetricKey:
-		return metadata.Metrics.ZookeeperSyncedFollowers.Init
+		return func(ts pcommon.Timestamp, val int64) {
+			m.computedMetricStore[syncedFollowersMetricKey] = val
+			m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeStateSynced)
+		}
 	case pendingSyncsMetricKey:
-		return metadata.Metrics.ZookeeperPendingSyncs.Init
+		return m.mb.RecordZookeeperSyncPendingDataPoint
 	case avgLatencyMetricKey:
-		return metadata.Metrics.ZookeeperLatencyAvg.Init
+		return m.mb.RecordZookeeperLatencyAvgDataPoint
 	case maxLatencyMetricKey:
-		return metadata.Metrics.ZookeeperLatencyMax.Init
+		return m.mb.RecordZookeeperLatencyMaxDataPoint
 	case minLatencyMetricKey:
-		return metadata.Metrics.ZookeeperLatencyMin.Init
+		return m.mb.RecordZookeeperLatencyMinDataPoint
 	case numAliveConnectionsMetricKey:
-		return metadata.Metrics.ZookeeperConnectionsAlive.Init
+		return m.mb.RecordZookeeperConnectionActiveDataPoint
 	case outstandingRequestsMetricKey:
-		return metadata.Metrics.ZookeeperOutstandingRequests.Init
+		return m.mb.RecordZookeeperRequestActiveDataPoint
 	case zNodeCountMetricKey:
-		return metadata.Metrics.ZookeeperZnodes.Init
+		return m.mb.RecordZookeeperZnodeCountDataPoint
 	case watchCountMetricKey:
-		return metadata.Metrics.ZookeeperWatches.Init
+		return m.mb.RecordZookeeperWatchCountDataPoint
 	case ephemeralsCountMetricKey:
-		return metadata.Metrics.ZookeeperEphemeralNodes.Init
+		return m.mb.RecordZookeeperDataTreeEphemeralNodeCountDataPoint
 	case approximateDataSizeMetricKey:
-		return metadata.Metrics.ZookeeperApproximateDateSize.Init
+		return m.mb.RecordZookeeperDataTreeSizeDataPoint
 	case openFileDescriptorCountMetricKey:
-		return metadata.Metrics.ZookeeperOpenFileDescriptors.Init
+		return m.mb.RecordZookeeperFileDescriptorOpenDataPoint
 	case maxFileDescriptorCountMetricKey:
-		return metadata.Metrics.ZookeeperMaxFileDescriptors.Init
+		return m.mb.RecordZookeeperFileDescriptorLimitDataPoint
 	case fSyncThresholdExceedCountMetricKey:
-		return metadata.Metrics.ZookeeperFsyncThresholdExceeds.Init
+		return m.mb.RecordZookeeperFsyncExceededThresholdCountDataPoint
+	case ruokKey:
+		return m.mb.RecordZookeeperRuokDataPoint
 	case packetsReceivedMetricKey:
-		return metadata.Metrics.ZookeeperPacketsReceived.Init
+		return func(ts pcommon.Timestamp, val int64) {
+			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionReceived)
+		}
 	case packetsSentMetricKey:
-		return metadata.Metrics.ZookeeperPacketsSent.Init
+		return func(ts pcommon.Timestamp, val int64) {
+			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionSent)
+		}
 	}
+
+	return nil
+}
+
+func (m *metricCreator) generateComputedMetrics(logger *zap.Logger, ts pcommon.Timestamp) {
+	// not_synced Followers Count
+	if err := m.computeNotSyncedFollowersMetric(ts); err != nil {
+		logger.Debug("metric computation failed", zap.Error(err))
+	}
+
+}
+
+func (m *metricCreator) computeNotSyncedFollowersMetric(ts pcommon.Timestamp) error {
+	followersTotal, ok := m.computedMetricStore[followersMetricKey]
+	if !ok {
+		return fmt.Errorf("could not compute not_synced follower.count, missing %s", followersMetricKey)
+	}
+
+	syncedFollowers, ok := m.computedMetricStore[syncedFollowersMetricKey]
+	if !ok {
+		return fmt.Errorf("could not compute not_synced follower.count, missing %s", syncedFollowersMetricKey)
+	}
+
+	val := followersTotal - syncedFollowers
+	m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeStateUnsynced)
 
 	return nil
 }

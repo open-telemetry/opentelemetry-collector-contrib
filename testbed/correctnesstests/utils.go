@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package correctnesstests
+package correctnesstests // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
 
 import (
 	"bufio"
@@ -106,7 +95,7 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 		}
 	}()
 
-	defs := make([]PipelineDef, 0)
+	var defs []PipelineDef
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		s := strings.Split(scanner.Text(), "\t")
@@ -114,9 +103,7 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 			continue
 		}
 
-		var aDef PipelineDef
-		aDef.Receiver, aDef.Exporter = s[0], s[1]
-		defs = append(defs, aDef)
+		defs = append(defs, PipelineDef{Receiver: s[0], Exporter: s[1]})
 	}
 
 	return defs, err

@@ -1,92 +1,119 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+func TestLoadingConfig(t *testing.T) {
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
-
-	p0 := cfg.Processors[config.NewComponentIDWithName("span", "custom")]
-	assert.Equal(t, p0, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "custom")),
-		Rename: Name{
-			FromAttributes: []string{"db.svc", "operation", "id"},
-			Separator:      "::",
-		},
-	})
-
-	p1 := cfg.Processors[config.NewComponentIDWithName("span", "no-separator")]
-	assert.Equal(t, p1, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "no-separator")),
-		Rename: Name{
-			FromAttributes: []string{"db.svc", "operation", "id"},
-			Separator:      "",
-		},
-	})
-
-	p2 := cfg.Processors[config.NewComponentIDWithName("span", "to_attributes")]
-	assert.Equal(t, p2, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "to_attributes")),
-		Rename: Name{
-			ToAttributes: &ToAttributes{
-				Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id: component.NewIDWithName("span", "custom"),
+			expected: &Config{
+				Rename: Name{
+					FromAttributes: []string{"db.svc", "operation", "id"},
+					Separator:      "::",
+				},
 			},
 		},
-	})
+		{
+			id: component.NewIDWithName("span", "no-separator"),
+			expected: &Config{
+				Rename: Name{
+					FromAttributes: []string{"db.svc", "operation", "id"},
+					Separator:      "",
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName("span", "to_attributes"),
+			expected: &Config{
+				Rename: Name{
+					ToAttributes: &ToAttributes{
+						Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName("span", "includeexclude"),
+			expected: &Config{
+				MatchConfig: filterconfig.MatchConfig{
+					Include: &filterconfig.MatchProperties{
+						Config:    *createMatchConfig(filterset.Regexp),
+						Services:  []string{`banks`},
+						SpanNames: []string{"^(.*?)/(.*?)$"},
+					},
+					Exclude: &filterconfig.MatchProperties{
+						Config:    *createMatchConfig(filterset.Strict),
+						SpanNames: []string{`donot/change`},
+					},
+				},
+				Rename: Name{
+					ToAttributes: &ToAttributes{
+						Rules: []string{`(?P<operation_website>.*?)$`},
+					},
+				},
+			},
+		},
+		{
+			// Set name
+			id: component.NewIDWithName("span", "set_status_err"),
+			expected: &Config{
+				SetStatus: &Status{
+					Code:        "Error",
+					Description: "some additional error description",
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName("span", "set_status_ok"),
+			expected: &Config{
+				MatchConfig: filterconfig.MatchConfig{
+					Include: &filterconfig.MatchProperties{
+						Attributes: []filterconfig.Attribute{
+							{Key: "http.status_code", Value: 400},
+						},
+					},
+				},
+				SetStatus: &Status{
+					Code: "Ok",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
 
-	p3 := cfg.Processors[config.NewComponentIDWithName("span", "includeexclude")]
-	assert.Equal(t, p3, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "includeexclude")),
-		MatchConfig: filterconfig.MatchConfig{
-			Include: &filterconfig.MatchProperties{
-				Config:    *createMatchConfig(filterset.Regexp),
-				Services:  []string{`banks`},
-				SpanNames: []string{"^(.*?)/(.*?)$"},
-			},
-			Exclude: &filterconfig.MatchProperties{
-				Config:    *createMatchConfig(filterset.Strict),
-				SpanNames: []string{`donot/change`},
-			},
-		},
-		Rename: Name{
-			ToAttributes: &ToAttributes{
-				Rules: []string{`(?P<operation_website>.*?)$`},
-			},
-		},
-	})
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func createMatchConfig(matchType filterset.MatchType) *filterset.Config {

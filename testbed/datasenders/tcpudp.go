@@ -1,18 +1,7 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package datasenders
+package datasenders // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 
 import (
 	"bytes"
@@ -23,8 +12,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -75,12 +66,12 @@ func (f *TCPUDPWriter) Start() (err error) {
 	return err
 }
 
-func (f *TCPUDPWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (f *TCPUDPWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
-			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
-			for k := 0; k < ills.Logs().Len(); k++ {
-				err := f.Send(ills.Logs().At(k))
+		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
+			for k := 0; k < ills.LogRecords().Len(); k++ {
+				err := f.Send(ills.LogRecords().At(k))
 				if err != nil {
 					return err
 				}
@@ -96,17 +87,17 @@ func (f *TCPUDPWriter) GenConfigYAMLStr() string {
     listen_address: "%s"
 `, f.network, f.GetEndpoint())
 }
-func (f *TCPUDPWriter) Send(lr pdata.LogRecord) error {
+func (f *TCPUDPWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1000000000), int64(lr.Timestamp()%100000000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
-	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID().HexString()))
-	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID().HexString()))
+	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", traceutil.TraceIDToHexOrEmptyString(lr.TraceID())))
+	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", traceutil.SpanIDToHexOrEmptyString(lr.SpanID())))
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.StringVal()))
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))
 		return true
 	})
-	msg := fmt.Sprintf("<166> %s localhost %s - - [%s] %s\n", ts, lr.Name(), sdid.String(), lr.Body().StringVal())
+	msg := fmt.Sprintf("<166> %s 127.0.0.1 - - - [%s] %s\n", ts, sdid.String(), lr.Body().Str())
 
 	f.buf = append(f.buf, msg)
 	return f.SendCheck()

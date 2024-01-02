@@ -1,90 +1,57 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package k8sclusterreceiver
+package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
 import (
-	"context"
-	"fmt"
 	"time"
 
-	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
-	// Value of "type" key in configuration.
-	typeStr = "k8s_cluster"
-
 	// supported distributions
 	distributionKubernetes = "kubernetes"
 	distributionOpenShift  = "openshift"
 
 	// Default config values.
-	defaultCollectionInterval = 10 * time.Second
-	defaultDistribution       = distributionKubernetes
+	defaultCollectionInterval         = 10 * time.Second
+	defaultDistribution               = distributionKubernetes
+	defaultMetadataCollectionInterval = 5 * time.Minute
 )
 
 var defaultNodeConditionsToReport = []string{"Ready"}
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Distribution:               defaultDistribution,
 		CollectionInterval:         defaultCollectionInterval,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		MetadataCollectionInterval: defaultMetadataCollectionInterval,
+		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}
-}
-
-func createMetricsReceiver(
-	_ context.Context, params component.ReceiverCreateSettings, cfg config.Receiver,
-	consumer consumer.Metrics) (component.MetricsReceiver, error) {
-	rCfg := cfg.(*Config)
-
-	k8sClient, err := rCfg.getK8sClient()
-	if err != nil {
-		return nil, err
-	}
-
-	var osQuotaClient quotaclientset.Interface
-	switch rCfg.Distribution {
-	case distributionOpenShift:
-		osQuotaClient, err = rCfg.getOpenShiftQuotaClient()
-		if err != nil {
-			return nil, err
-		}
-	case distributionKubernetes:
-		// default case, nothing to initialize
-	default:
-		return nil, fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", rCfg.Distribution)
-	}
-
-	return newReceiver(params.Logger, rCfg, consumer, k8sClient, osQuotaClient)
 }
 
 // NewFactory creates a factory for k8s_cluster receiver.
-func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
-		typeStr,
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		receiver.WithMetrics(newMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(newLogsReceiver, metadata.MetricsStability),
+	)
 }
+
+// This is the map of already created k8scluster receivers for particular configurations.
+// We maintain this map because the Factory is asked log and metric receivers separately
+// when it gets CreateLogsReceiver() and CreateMetricsReceiver() but they must not
+// create separate objects, they must use one receiver object per configuration.
+var receivers = sharedcomponent.NewSharedComponents()

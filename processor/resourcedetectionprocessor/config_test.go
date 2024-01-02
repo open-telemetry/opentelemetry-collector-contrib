@@ -1,96 +1,170 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package resourcedetectionprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+	cfg := confighttp.NewDefaultHTTPClientSettings()
+	cfg.Timeout = 2 * time.Second
+	openshiftConfig := detectorCreateDefaultConfig()
+	openshiftConfig.OpenShiftConfig = openshift.Config{
+		Address: "127.0.0.1:4444",
+		Token:   "some_token",
+		TLSSettings: configtls.TLSClientSetting{
+			Insecure: true,
+		},
+		ResourceAttributes: openshift.CreateDefaultConfig().ResourceAttributes,
+	}
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
+	ec2Config := detectorCreateDefaultConfig()
+	ec2Config.EC2Config = ec2.Config{
+		Tags:               []string{"^tag1$", "^tag2$"},
+		ResourceAttributes: ec2.CreateDefaultConfig().ResourceAttributes,
+	}
 
-	p1 := cfg.Processors[config.NewComponentID(typeStr)]
-	assert.Equal(t, p1, factory.CreateDefaultConfig())
+	systemConfig := detectorCreateDefaultConfig()
+	systemConfig.SystemConfig = system.Config{
+		HostnameSources:    []string{"os"},
+		ResourceAttributes: system.CreateDefaultConfig().ResourceAttributes,
+	}
 
-	p2 := cfg.Processors[config.NewComponentIDWithName(typeStr, "gce")]
-	assert.Equal(t, p2, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "gce")),
-		Detectors:         []string{"env", "gce"},
-		Timeout:           2 * time.Second,
-		Override:          false,
-	})
+	resourceAttributesConfig := detectorCreateDefaultConfig()
+	ec2ResourceAttributesConfig := ec2.CreateDefaultConfig()
+	ec2ResourceAttributesConfig.ResourceAttributes.HostName.Enabled = false
+	ec2ResourceAttributesConfig.ResourceAttributes.HostID.Enabled = false
+	ec2ResourceAttributesConfig.ResourceAttributes.HostType.Enabled = false
+	systemResourceAttributesConfig := system.CreateDefaultConfig()
+	systemResourceAttributesConfig.ResourceAttributes.OsType.Enabled = false
+	resourceAttributesConfig.EC2Config = ec2ResourceAttributesConfig
+	resourceAttributesConfig.SystemConfig = systemResourceAttributesConfig
 
-	p3 := cfg.Processors[config.NewComponentIDWithName(typeStr, "ec2")]
-	assert.Equal(t, p3, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "ec2")),
-		Detectors:         []string{"env", "ec2"},
-		DetectorConfig: DetectorConfig{
-			EC2Config: ec2.Config{
-				Tags: []string{"^tag1$", "^tag2$"},
+	tests := []struct {
+		id           component.ID
+		expected     component.Config
+		errorMessage string
+	}{
+		{
+			id: component.NewIDWithName(metadata.Type, "openshift"),
+			expected: &Config{
+				Detectors:          []string{"openshift"},
+				DetectorConfig:     openshiftConfig,
+				HTTPClientSettings: cfg,
+				Override:           false,
 			},
 		},
-		Timeout:  2 * time.Second,
-		Override: false,
-	})
-
-	p4 := cfg.Processors[config.NewComponentIDWithName(typeStr, "system")]
-	assert.Equal(t, p4, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "system")),
-		Detectors:         []string{"env", "system"},
-		DetectorConfig: DetectorConfig{
-			SystemConfig: system.Config{
-				HostnameSources: []string{"os"},
+		{
+			id: component.NewIDWithName(metadata.Type, "gcp"),
+			expected: &Config{
+				Detectors:          []string{"env", "gcp"},
+				HTTPClientSettings: cfg,
+				Override:           false,
+				DetectorConfig:     detectorCreateDefaultConfig(),
 			},
 		},
-		Timeout:  2 * time.Second,
-		Override: false,
-	})
-}
+		{
+			id: component.NewIDWithName(metadata.Type, "ec2"),
+			expected: &Config{
+				Detectors:          []string{"env", "ec2"},
+				DetectorConfig:     ec2Config,
+				HTTPClientSettings: cfg,
+				Override:           false,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "system"),
+			expected: &Config{
+				Detectors:          []string{"env", "system"},
+				DetectorConfig:     systemConfig,
+				HTTPClientSettings: cfg,
+				Override:           false,
+				Attributes:         []string{"a", "b"},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "heroku"),
+			expected: &Config{
+				Detectors:          []string{"env", "heroku"},
+				HTTPClientSettings: cfg,
+				Override:           false,
+				DetectorConfig:     detectorCreateDefaultConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "lambda"),
+			expected: &Config{
+				Detectors:          []string{"env", "lambda"},
+				HTTPClientSettings: cfg,
+				Override:           false,
+				DetectorConfig:     detectorCreateDefaultConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resourceattributes"),
+			expected: &Config{
+				Detectors:          []string{"system", "ec2"},
+				HTTPClientSettings: cfg,
+				Override:           false,
+				DetectorConfig:     resourceAttributesConfig,
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid"),
+			errorMessage: "hostname_sources contains invalid value: \"invalid_source\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
 
-func TestLoadInvalidConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_config.yaml"), factories)
-	assert.Error(t, err)
-	assert.NotNil(t, cfg)
+			if tt.expected == nil {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.EqualExportedValues(t, *tt.expected.(*Config), *cfg.(*Config))
+		})
+	}
 }
 
 func TestGetConfigFromType(t *testing.T) {
+	herokuDetectorConfig := DetectorConfig{HerokuConfig: heroku.CreateDefaultConfig()}
+	lambdaDetectorConfig := DetectorConfig{LambdaConfig: lambda.CreateDefaultConfig()}
+	ec2DetectorConfig := DetectorConfig{
+		EC2Config: ec2.Config{
+			Tags: []string{"tag1", "tag2"},
+		},
+	}
 	tests := []struct {
 		name                string
 		detectorType        internal.DetectorType
@@ -98,26 +172,16 @@ func TestGetConfigFromType(t *testing.T) {
 		expectedConfig      internal.DetectorConfig
 	}{
 		{
-			name:         "Get EC2 Config",
-			detectorType: ec2.TypeStr,
-			inputDetectorConfig: DetectorConfig{
-				EC2Config: ec2.Config{
-					Tags: []string{"tag1", "tag2"},
-				},
-			},
-			expectedConfig: ec2.Config{
-				Tags: []string{"tag1", "tag2"},
-			},
+			name:                "Get EC2 Config",
+			detectorType:        ec2.TypeStr,
+			inputDetectorConfig: ec2DetectorConfig,
+			expectedConfig:      ec2DetectorConfig.EC2Config,
 		},
 		{
-			name:         "Get Nil Config",
-			detectorType: internal.DetectorType("invalid input"),
-			inputDetectorConfig: DetectorConfig{
-				EC2Config: ec2.Config{
-					Tags: []string{"tag1", "tag2"},
-				},
-			},
-			expectedConfig: nil,
+			name:                "Get Nil Config",
+			detectorType:        internal.DetectorType("invalid input"),
+			inputDetectorConfig: ec2DetectorConfig,
+			expectedConfig:      nil,
 		},
 		{
 			name:         "Get System Config",
@@ -130,6 +194,18 @@ func TestGetConfigFromType(t *testing.T) {
 			expectedConfig: system.Config{
 				HostnameSources: []string{"os"},
 			},
+		},
+		{
+			name:                "Get Heroku Config",
+			detectorType:        heroku.TypeStr,
+			inputDetectorConfig: herokuDetectorConfig,
+			expectedConfig:      herokuDetectorConfig.HerokuConfig,
+		},
+		{
+			name:                "Get AWS Lambda Config",
+			detectorType:        lambda.TypeStr,
+			inputDetectorConfig: lambdaDetectorConfig,
+			expectedConfig:      lambdaDetectorConfig.LambdaConfig,
 		},
 	}
 

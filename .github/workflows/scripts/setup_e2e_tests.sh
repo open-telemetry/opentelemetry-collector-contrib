@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 TESTS="$(make -s -C testbed list-tests | xargs echo|sed 's/ /|/g')"
 TESTS=(${TESTS//|/ })
 MATRIX="{\"include\":["
@@ -15,4 +20,4 @@ else
 fi
 done
 MATRIX+=",{\"test\":\"$curr\"}]}"
-echo "::set-output name=loadtest_matrix::$MATRIX"
+echo "loadtest_matrix=$MATRIX" >> $GITHUB_OUTPUT

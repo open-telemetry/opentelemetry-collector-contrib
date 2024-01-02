@@ -1,61 +1,53 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
 // +build linux
 
-package processscraper
+package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
-	"github.com/shirou/gopsutil/cpu"
-	"go.opentelemetry.io/collector/model/pdata"
+	"context"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
 
-const cpuStatesLen = 3
-
-func appendCPUTimeStateDataPoints(ddps pdata.NumberDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.User, metadata.LabelState.User)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.System, metadata.LabelState.System)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.Iowait, metadata.LabelState.Wait)
+func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesStat) {
+	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.User, metadata.AttributeStateUser)
+	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.System, metadata.AttributeStateSystem)
+	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.Iowait, metadata.AttributeStateWait)
 }
 
-func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, value float64, stateLabel string) {
-	dataPoint.Attributes().InsertString(metadata.Labels.State, stateLabel)
-	dataPoint.SetStartTimestamp(startTime)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetDoubleVal(value)
+func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization ucal.CPUUtilization) {
+	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.User, metadata.AttributeStateUser)
+	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.System, metadata.AttributeStateSystem)
+	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.Iowait, metadata.AttributeStateWait)
 }
 
-func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
-	name, err := proc.Name()
+func getProcessName(ctx context.Context, proc processHandle, _ string) (string, error) {
+	name, err := proc.NameWithContext(ctx)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	exe, err := proc.Exe()
-	if err != nil {
-		return nil, err
-	}
-
-	executable := &executableMetadata{name: name, path: exe}
-	return executable, nil
+	return name, err
 }
 
-func getProcessCommand(proc processHandle) (*commandMetadata, error) {
-	cmdline, err := proc.CmdlineSlice()
+func getProcessExecutable(ctx context.Context, proc processHandle) (string, error) {
+	exe, err := proc.ExeWithContext(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return exe, nil
+}
+
+func getProcessCommand(ctx context.Context, proc processHandle) (*commandMetadata, error) {
+	cmdline, err := proc.CmdlineSliceWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}

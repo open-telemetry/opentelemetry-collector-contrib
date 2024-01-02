@@ -1,31 +1,19 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package googlecloudpubsubexporter
+package googlecloudpubsubexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 
 import (
 	"fmt"
 	"regexp"
+	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var topicMatcher = regexp.MustCompile(`^projects/[a-z][a-z0-9\-]*/topics/`)
 
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
@@ -34,18 +22,66 @@ type Config struct {
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service
 	UserAgent string `mapstructure:"user_agent"`
-	// Override of the Pubsub endpoint
+	// Override of the Pubsub Endpoint, leave empty for the default endpoint
 	Endpoint string `mapstructure:"endpoint"`
 	// Only has effect if Endpoint is not ""
 	Insecure bool `mapstructure:"insecure"`
 
 	// The fully qualified resource name of the Pubsub topic
 	Topic string `mapstructure:"topic"`
+	// Compression of the payload (only gzip or is supported, no compression is the default)
+	Compression string `mapstructure:"compression"`
+	// Watermark defines the watermark (the ce-time attribute on the message) behavior
+	Watermark WatermarkConfig `mapstructure:"watermark"`
 }
 
-func (config *Config) validate() error {
+// WatermarkConfig customizes the behavior of the watermark
+type WatermarkConfig struct {
+	// Behavior of the watermark. Currently, only  of the message (none, earliest and current, current being the default)
+	// will set the timestamp on pubsub based on timestamps of the events inside the message
+	Behavior string `mapstructure:"behavior"`
+	// Indication on how much the timestamp can drift from the current time, the timestamp will be capped to the allowed
+	// maximum. A duration of 0 is the same as maximum duration
+	AllowedDrift time.Duration `mapstructure:"allowed_drift"`
+}
+
+func (config *Config) Validate() error {
 	if !topicMatcher.MatchString(config.Topic) {
-		return fmt.Errorf("topic '%s' is not a valide  format, use 'projects/<project_id>/topics/<name>'", config.Topic)
+		return fmt.Errorf("topic '%s' is not a valid format, use 'projects/<project_id>/topics/<name>'", config.Topic)
 	}
-	return nil
+	_, err := config.parseCompression()
+	if err != nil {
+		return err
+	}
+	return config.Watermark.validate()
+}
+
+func (config *WatermarkConfig) validate() error {
+	if config.AllowedDrift == 0 {
+		config.AllowedDrift = 1<<63 - 1
+	}
+	_, err := config.parseWatermarkBehavior()
+	return err
+}
+
+func (config *Config) parseCompression() (compression, error) {
+	switch config.Compression {
+	case "gzip":
+		return gZip, nil
+	case "":
+		return uncompressed, nil
+	}
+	return uncompressed, fmt.Errorf("compression %v is not supported.  supported compression formats include [gzip]", config.Compression)
+}
+
+func (config *WatermarkConfig) parseWatermarkBehavior() (WatermarkBehavior, error) {
+	switch config.Behavior {
+	case "earliest":
+		return earliest, nil
+	case "current":
+		return current, nil
+	case "":
+		return current, nil
+	}
+	return current, fmt.Errorf("behavior %v is not supported.  supported compression formats include [current,earliest]", config.Behavior)
 }

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 # This script is used to create the CA, server and client's certificates and keys required by unit tests.
 # These certificates use the Subject Alternative Name extension rather than the Common Name, which will be unsupported from Go 1.15.
 
@@ -95,7 +98,6 @@ openssl x509 -req \
              -sha256 \
              -days 3650 \
              -in "$tmp_dir/server.csr" \
-             -signkey "$tmp_dir/server.key" \
              -out "$tmp_dir/server.crt" \
              -extensions req_ext \
              -CA "$tmp_dir/ca.crt" \
@@ -106,7 +108,6 @@ openssl x509 -req \
              -sha256 \
              -days 3650 \
              -in "$tmp_dir/client.csr" \
-             -signkey "$tmp_dir/client.key" \
              -out "$tmp_dir/client.crt" \
              -extensions req_ext \
              -CA "$tmp_dir/ca.crt" \

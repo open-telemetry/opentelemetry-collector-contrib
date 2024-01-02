@@ -1,0 +1,12 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - histogram:
+              dataPoints:
+                - bucketCounts:
+                    - "3"
+                    - "2"
+                    - "1"
+            name: histogram.one
+        scope: {}

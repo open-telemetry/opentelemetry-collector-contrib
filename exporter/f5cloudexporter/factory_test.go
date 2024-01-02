@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package f5cloudexporter
 
@@ -23,23 +12,24 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"golang.org/x/oauth2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestFactory_TestType(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, f.Type(), config.Type(typeStr))
+	assert.Equal(t, f.Type(), component.Type(metadata.Type))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
 	assert.Equal(t, ocfg.HTTPClientSettings.Endpoint, "")
@@ -52,7 +42,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactory_CreateMetricsExporter(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
@@ -61,7 +51,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams := exportertest.NewNopCreateSettings()
 	creationParams.BuildInfo = component.BuildInfo{
 		Version: "0.0.0",
 	}
@@ -69,21 +59,21 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 
-	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
+	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
 }
 
 func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
 }
 
 func TestFactory_CreateTracesExporter(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
@@ -92,7 +82,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams := exportertest.NewNopCreateSettings()
 	creationParams.BuildInfo = component.BuildInfo{
 		Version: "0.0.0",
 	}
@@ -100,21 +90,21 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 
-	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
+	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
 }
 
 func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
 }
 
 func TestFactory_CreateLogsExporter(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
@@ -123,7 +113,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams := exportertest.NewNopCreateSettings()
 	creationParams.BuildInfo = component.BuildInfo{
 		Version: "0.0.0",
 	}
@@ -131,21 +121,21 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 
-	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
+	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
 }
 
 func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
 }
 
 func TestFactory_getTokenSourceFromConfig(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"

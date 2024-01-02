@@ -1,71 +1,66 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package memcachedreceiver
-
-//go:generate mdatagen metadata.yaml
+package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 
 import (
 	"context"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
 
 const (
-	typeStr = "memcached"
+	defaultEndpoint           = "localhost:11211"
+	defaultTimeout            = 10 * time.Second
+	defaultCollectionInterval = 10 * time.Second
 )
 
 // NewFactory creates a factory for memcached receiver.
-func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
-		typeStr,
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultCollectionInterval
+	cfg.Timeout = defaultTimeout
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: 10 * time.Second,
+		ScraperControllerSettings: cfg,
+		NetAddr: confignet.NetAddr{
+			Endpoint: defaultEndpoint,
 		},
-		Timeout: 10 * time.Second,
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "localhost:11211",
-		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	params receiver.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 
-	scraper := newMemcachedScraper(params.Logger, cfg)
+	ms := newMemcachedScraper(params, cfg)
+
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape)
+	if err != nil {
+		return nil, err
+	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params.Logger, consumer,
+		&cfg.ScraperControllerSettings, params, consumer,
 		scraperhelper.AddScraper(scraper),
 	)
 }

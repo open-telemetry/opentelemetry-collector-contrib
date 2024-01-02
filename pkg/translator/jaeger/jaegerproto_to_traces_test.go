@@ -1,22 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package jaeger
 
 import (
 	"encoding/binary"
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -24,8 +12,9 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -35,62 +24,55 @@ import (
 // Use timespamp with microsecond granularity to work well with jaeger thrift translation
 var (
 	testSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321000, time.UTC)
-	testSpanStartTimestamp = pdata.NewTimestampFromTime(testSpanStartTime)
+	testSpanStartTimestamp = pcommon.NewTimestampFromTime(testSpanStartTime)
 	testSpanEventTime      = time.Date(2020, 2, 11, 20, 26, 13, 123000, time.UTC)
-	testSpanEventTimestamp = pdata.NewTimestampFromTime(testSpanEventTime)
+	testSpanEventTimestamp = pcommon.NewTimestampFromTime(testSpanEventTime)
 	testSpanEndTime        = time.Date(2020, 2, 11, 20, 26, 13, 789000, time.UTC)
-	testSpanEndTimestamp   = pdata.NewTimestampFromTime(testSpanEndTime)
+	testSpanEndTimestamp   = pcommon.NewTimestampFromTime(testSpanEndTime)
 )
 
-func TestGetStatusCodeValFromAttr(t *testing.T) {
-	_, invalidNumErr := strconv.Atoi("inf")
-
+func TestCodeFromAttr(t *testing.T) {
 	tests := []struct {
 		name string
-		attr pdata.AttributeValue
-		code int
+		attr pcommon.Value
+		code int64
 		err  error
 	}{
 		{
 			name: "ok-string",
-			attr: pdata.NewAttributeValueString("0"),
+			attr: pcommon.NewValueStr("0"),
 			code: 0,
-			err:  nil,
 		},
 
 		{
 			name: "ok-int",
-			attr: pdata.NewAttributeValueInt(1),
+			attr: pcommon.NewValueInt(1),
 			code: 1,
-			err:  nil,
 		},
 
 		{
 			name: "wrong-type",
-			attr: pdata.NewAttributeValueBool(true),
+			attr: pcommon.NewValueBool(true),
 			code: 0,
-			err:  fmt.Errorf("invalid status code attribute type: BOOL"),
+			err:  errType,
 		},
 
 		{
 			name: "invalid-string",
-			attr: pdata.NewAttributeValueString("inf"),
+			attr: pcommon.NewValueStr("inf"),
 			code: 0,
-			err:  invalidNumErr,
-		},
-
-		{
-			name: "invalid-int",
-			attr: pdata.NewAttributeValueInt(1844674407370955),
-			code: 0,
-			err:  fmt.Errorf("invalid status code value: 1844674407370955"),
+			err:  strconv.ErrSyntax,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			code, err := getStatusCodeValFromAttr(test.attr)
-			assert.EqualValues(t, test.err, err)
+			code, err := codeFromAttr(test.attr)
+			if test.err != nil {
+				assert.ErrorIs(t, err, test.err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, test.code, code)
 		})
 	}
@@ -99,42 +81,53 @@ func TestGetStatusCodeValFromAttr(t *testing.T) {
 func TestGetStatusCodeFromHTTPStatusAttr(t *testing.T) {
 	tests := []struct {
 		name string
-		attr pdata.AttributeValue
-		code pdata.StatusCode
+		attr pcommon.Value
+		kind ptrace.SpanKind
+		code ptrace.StatusCode
 	}{
 		{
 			name: "string-unknown",
-			attr: pdata.NewAttributeValueString("10"),
-			code: pdata.StatusCodeError,
+			attr: pcommon.NewValueStr("10"),
+			kind: ptrace.SpanKindClient,
+			code: ptrace.StatusCodeError,
 		},
 
 		{
 			name: "string-ok",
-			attr: pdata.NewAttributeValueString("101"),
-			code: pdata.StatusCodeUnset,
+			attr: pcommon.NewValueStr("101"),
+			kind: ptrace.SpanKindClient,
+			code: ptrace.StatusCodeUnset,
 		},
 
 		{
 			name: "int-not-found",
-			attr: pdata.NewAttributeValueInt(404),
-			code: pdata.StatusCodeError,
+			attr: pcommon.NewValueInt(404),
+			kind: ptrace.SpanKindClient,
+			code: ptrace.StatusCodeError,
+		},
+		{
+			name: "int-not-found-client-span",
+			attr: pcommon.NewValueInt(404),
+			kind: ptrace.SpanKindServer,
+			code: ptrace.StatusCodeUnset,
 		},
 		{
 			name: "int-invalid-arg",
-			attr: pdata.NewAttributeValueInt(408),
-			code: pdata.StatusCodeError,
+			attr: pcommon.NewValueInt(408),
+			kind: ptrace.SpanKindClient,
+			code: ptrace.StatusCodeError,
 		},
-
 		{
 			name: "int-internal",
-			attr: pdata.NewAttributeValueInt(500),
-			code: pdata.StatusCodeError,
+			attr: pcommon.NewValueInt(500),
+			kind: ptrace.SpanKindClient,
+			code: ptrace.StatusCodeError,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			code, err := getStatusCodeFromHTTPStatusAttr(test.attr)
+			code, err := getStatusCodeFromHTTPStatusAttr(test.attr, test.kind)
 			assert.NoError(t, err)
 			assert.Equal(t, test.code, code)
 		})
@@ -170,101 +163,160 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 		},
 	}
 
-	expected := pdata.NewAttributeMap()
-	expected.InsertBool("bool-val", true)
-	expected.InsertInt("int-val", 123)
-	expected.InsertString("string-val", "abc")
-	expected.InsertDouble("double-val", 1.23)
-	expected.InsertString("binary-val", "AAAAAABkfZg=")
+	expected := pcommon.NewMap()
+	expected.PutBool("bool-val", true)
+	expected.PutInt("int-val", 123)
+	expected.PutStr("string-val", "abc")
+	expected.PutDouble("double-val", 1.23)
+	expected.PutStr("binary-val", "AAAAAABkfZg=")
 
-	got := pdata.NewAttributeMap()
+	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
 
 	require.EqualValues(t, expected, got)
 }
 
-func TestProtoBatchToInternalTraces(t *testing.T) {
+func TestProtoToTraces(t *testing.T) {
 
 	tests := []struct {
 		name string
-		jb   model.Batch
-		td   pdata.Traces
+		jb   []*model.Batch
+		td   ptrace.Traces
 	}{
 		{
 			name: "empty",
-			jb:   model.Batch{},
-			td:   pdata.NewTraces(),
+			jb:   []*model.Batch{},
+			td:   ptrace.NewTraces(),
 		},
 
 		{
 			name: "no-spans",
-			jb: model.Batch{
-				Process: generateProtoProcess(),
-			},
+			jb: []*model.Batch{
+				{
+					Process: generateProtoProcess(),
+				}},
 			td: generateTracesResourceOnly(),
 		},
 
 		{
 			name: "no-resource-attrs",
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoServiceName,
-				},
-			},
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+				}},
 			td: generateTracesResourceOnlyWithNoAttrs(),
 		},
 
 		{
 			name: "one-span-no-resources",
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoServiceName,
-				},
-				Spans: []*model.Span{
-					generateProtoSpanWithTraceState(),
-				},
-			},
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						generateProtoSpanWithTraceState(),
+					},
+				}},
 			td: generateTracesOneSpanNoResourceWithTraceState(),
 		},
 		{
 			name: "two-spans-child-parent",
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoServiceName,
-				},
-				Spans: []*model.Span{
-					generateProtoSpan(),
-					generateProtoChildSpan(),
-				},
-			},
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						generateProtoSpan(),
+						generateProtoChildSpan(),
+					},
+				}},
 			td: generateTracesTwoSpansChildParent(),
 		},
 
 		{
 			name: "two-spans-with-follower",
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoServiceName,
-				},
-				Spans: []*model.Span{
-					generateProtoSpan(),
-					generateProtoFollowerSpan(),
-				},
-			},
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						generateProtoSpan(),
+						generateProtoFollowerSpan(),
+					},
+				}},
 			td: generateTracesTwoSpansWithFollower(),
+		},
+		{
+			name: "a-spans-with-two-parent",
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						generateProtoSpan(),
+						generateProtoFollowerSpan(),
+						generateProtoTwoParentsSpan(),
+					},
+				}},
+			td: generateTracesSpanWithTwoParents(),
+		},
+		{
+			name: "no-error-from-server-span-with-4xx-http-code",
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						{
+							StartTime: testSpanStartTime,
+							Duration:  testSpanEndTime.Sub(testSpanStartTime),
+							Tags: []model.KeyValue{
+								{
+									Key:   tracetranslator.TagSpanKind,
+									VType: model.ValueType_STRING,
+									VStr:  string(tracetranslator.OpenTracingSpanKindServer),
+								},
+								{
+									Key:   conventions.AttributeHTTPStatusCode,
+									VType: model.ValueType_STRING,
+									VStr:  "404",
+								},
+							},
+						},
+					},
+				}},
+			td: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetStartTimestamp(testSpanStartTimestamp)
+				span.SetEndTimestamp(testSpanEndTimestamp)
+				span.SetKind(ptrace.SpanKindClient)
+				span.SetKind(ptrace.SpanKindServer)
+				span.Status().SetCode(ptrace.StatusCodeUnset)
+				span.Attributes().PutStr(conventions.AttributeHTTPStatusCode, "404")
+				return traces
+			}(),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			td := ProtoBatchToInternalTraces(test.jb)
+			td, err := ProtoToTraces(test.jb)
+			assert.NoError(t, err)
 			assert.EqualValues(t, test.td, td)
 		})
 	}
 }
 
 func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
-	jb := model.Batch{
+	jb := &model.Batch{
 		Process: &model.Process{
 			ServiceName: tracetranslator.ResourceNoServiceName,
 		},
@@ -275,11 +327,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation2",
 				Tags: []model.KeyValue{
 					{
-						Key:   conventions.InstrumentationLibraryName,
+						Key:   conventions.OtelLibraryName,
 						VType: model.ValueType_STRING,
 						VStr:  "library2",
 					}, {
-						Key:   conventions.InstrumentationLibraryVersion,
+						Key:   conventions.OtelLibraryVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -292,11 +344,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation1",
 				Tags: []model.KeyValue{
 					{
-						Key:   conventions.InstrumentationLibraryName,
+						Key:   conventions.OtelLibraryName,
 						VType: model.ValueType_STRING,
 						VStr:  "library1",
 					}, {
-						Key:   conventions.InstrumentationLibraryVersion,
+						Key:   conventions.OtelLibraryVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -305,17 +357,18 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 		},
 	}
 	expected := generateTracesTwoSpansFromTwoLibraries()
-	library1Span := expected.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	library2Span := expected.ResourceSpans().At(0).InstrumentationLibrarySpans().At(1)
+	library1Span := expected.ResourceSpans().At(0).ScopeSpans().At(0)
+	library2Span := expected.ResourceSpans().At(0).ScopeSpans().At(1)
 
-	actual := ProtoBatchToInternalTraces(jb)
+	actual, err := ProtoToTraces([]*model.Batch{jb})
+	assert.NoError(t, err)
 
 	assert.Equal(t, actual.ResourceSpans().Len(), 1)
-	assert.Equal(t, actual.ResourceSpans().At(0).InstrumentationLibrarySpans().Len(), 2)
+	assert.Equal(t, actual.ResourceSpans().At(0).ScopeSpans().Len(), 2)
 
-	ils0 := actual.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	ils1 := actual.ResourceSpans().At(0).InstrumentationLibrarySpans().At(1)
-	if ils0.InstrumentationLibrary().Name() == "library1" {
+	ils0 := actual.ResourceSpans().At(0).ScopeSpans().At(0)
+	ils1 := actual.ResourceSpans().At(0).ScopeSpans().At(1)
+	if ils0.Scope().Name() == "library1" {
 		assert.EqualValues(t, library1Span, ils0)
 		assert.EqualValues(t, library2Span, ils1)
 	} else {
@@ -326,105 +379,119 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 
 func TestSetInternalSpanStatus(t *testing.T) {
 
-	emptyStatus := pdata.NewSpanStatus()
+	emptyStatus := ptrace.NewStatus()
 
-	okStatus := pdata.NewSpanStatus()
-	okStatus.SetCode(pdata.StatusCodeOk)
+	okStatus := ptrace.NewStatus()
+	okStatus.SetCode(ptrace.StatusCodeOk)
 
-	errorStatus := pdata.NewSpanStatus()
-	errorStatus.SetCode(pdata.StatusCodeError)
+	errorStatus := ptrace.NewStatus()
+	errorStatus.SetCode(ptrace.StatusCodeError)
 
-	errorStatusWithMessage := pdata.NewSpanStatus()
-	errorStatusWithMessage.SetCode(pdata.StatusCodeError)
+	errorStatusWithMessage := ptrace.NewStatus()
+	errorStatusWithMessage.SetCode(ptrace.StatusCodeError)
 	errorStatusWithMessage.SetMessage("Error: Invalid argument")
 
-	errorStatusWith404Message := pdata.NewSpanStatus()
-	errorStatusWith404Message.SetCode(pdata.StatusCodeError)
+	errorStatusWith404Message := ptrace.NewStatus()
+	errorStatusWith404Message.SetCode(ptrace.StatusCodeError)
 	errorStatusWith404Message.SetMessage("HTTP 404: Not Found")
 
 	tests := []struct {
 		name             string
-		attrs            pdata.AttributeMap
-		status           pdata.SpanStatus
+		attrs            map[string]any
+		status           ptrace.Status
+		kind             ptrace.SpanKind
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
 	}{
 		{
 			name:             "No tags set -> OK status",
-			attrs:            pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{}),
 			status:           emptyStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "error tag set -> Error status",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagError: pdata.NewAttributeValueBool(true),
-			}),
+			attrs: map[string]any{
+				tracetranslator.TagError: true,
+			},
 			status:           errorStatus,
 			attrsModifiedLen: 0,
 		},
 		{
-			name: "status.code is set as int",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.OtelStatusCode: pdata.NewAttributeValueInt(1),
-			}),
+			name: "status.code is set as string",
+			attrs: map[string]any{
+				conventions.OtelStatusCode: statusOk,
+			},
 			status:           okStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "status.code, status.message and error tags are set",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
-				conventions.OtelStatusCode:        pdata.NewAttributeValueInt(int64(pdata.StatusCodeError)),
-				conventions.OtelStatusDescription: pdata.NewAttributeValueString("Error: Invalid argument"),
-			}),
+			attrs: map[string]any{
+				tracetranslator.TagError:          true,
+				conventions.OtelStatusCode:        statusError,
+				conventions.OtelStatusDescription: "Error: Invalid argument",
+			},
 			status:           errorStatusWithMessage,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "http.status_code tag is set as string",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueString("404"),
-			}),
+			attrs: map[string]any{
+				conventions.AttributeHTTPStatusCode: "404",
+			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,
 		},
 		{
 			name: "http.status_code, http.status_message and error tags are set",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagError:            pdata.NewAttributeValueBool(true),
-				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(404),
-				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("HTTP 404: Not Found"),
-			}),
+			attrs: map[string]any{
+				tracetranslator.TagError:            true,
+				conventions.AttributeHTTPStatusCode: 404,
+				tracetranslator.TagHTTPStatusMsg:    "HTTP 404: Not Found",
+			},
 			status:           errorStatusWith404Message,
 			attrsModifiedLen: 2,
 		},
 		{
 			name: "status.code has precedence over http.status_code.",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.OtelStatusCode:          pdata.NewAttributeValueInt(1),
-				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(500),
-				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("Server Error"),
-			}),
+			attrs: map[string]any{
+				conventions.OtelStatusCode:          statusOk,
+				conventions.AttributeHTTPStatusCode: 500,
+				tracetranslator.TagHTTPStatusMsg:    "Server Error",
+			},
 			status:           okStatus,
 			attrsModifiedLen: 2,
 		},
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				tracetranslator.TagError:            pdata.NewAttributeValueBool(true),
-				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(200),
-			}),
+			attrs: map[string]any{
+				tracetranslator.TagError:            true,
+				conventions.AttributeHTTPStatusCode: 200,
+			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,
+		},
+		{
+			name: "the 4xx range span status MUST be left unset in case of SpanKind.SERVER",
+			kind: ptrace.SpanKindServer,
+			attrs: map[string]any{
+				tracetranslator.TagError:            false,
+				conventions.AttributeHTTPStatusCode: 404,
+			},
+			status:           emptyStatus,
+			attrsModifiedLen: 2,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			status := pdata.NewSpanStatus()
-			setInternalSpanStatus(test.attrs, status)
+			span := ptrace.NewSpan()
+			span.SetKind(test.kind)
+			status := span.Status()
+			attrs := pcommon.NewMap()
+			assert.NoError(t, attrs.FromRaw(test.attrs))
+			setInternalSpanStatus(attrs, span)
 			assert.EqualValues(t, test.status, status)
-			assert.Equal(t, test.attrsModifiedLen, test.attrs.Len())
+			assert.Equal(t, test.attrsModifiedLen, attrs.Len())
 		})
 	}
 }
@@ -456,38 +523,60 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	twoSpans := generateTracesTwoSpansChildParent().ResourceSpans().At(0)
 	twoSpans.CopyTo(tgt)
 
-	got := ProtoBatchesToInternalTraces(batches)
-	assert.EqualValues(t, expected, got)
+	got, err := ProtoToTraces(batches)
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, expected.ResourceSpans().Len(), got.ResourceSpans().Len())
+	assert.Equal(t, expected.SpanCount(), got.SpanCount())
+
+	lenbatches := expected.ResourceSpans().Len()
+	found := 0
+
+	for i := 0; i < lenbatches; i++ {
+		rsExpected := expected.ResourceSpans().At(i)
+		for j := 0; j < lenbatches; j++ {
+			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
+				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
+				if nameExpected == nameGot {
+					assert.Equal(t, nameGot, found)
+					assert.Equal(t, got.SpanCount(), found)
+				}
+				return nameExpected == nameGot
+			})
+		}
+	}
 }
 
 func TestJSpanKindToInternal(t *testing.T) {
 	tests := []struct {
 		jSpanKind    string
-		otlpSpanKind pdata.SpanKind
+		otlpSpanKind ptrace.SpanKind
 	}{
 		{
 			jSpanKind:    "client",
-			otlpSpanKind: pdata.SpanKindClient,
+			otlpSpanKind: ptrace.SpanKindClient,
 		},
 		{
 			jSpanKind:    "server",
-			otlpSpanKind: pdata.SpanKindServer,
+			otlpSpanKind: ptrace.SpanKindServer,
 		},
 		{
 			jSpanKind:    "producer",
-			otlpSpanKind: pdata.SpanKindProducer,
+			otlpSpanKind: ptrace.SpanKindProducer,
 		},
 		{
 			jSpanKind:    "consumer",
-			otlpSpanKind: pdata.SpanKindConsumer,
+			otlpSpanKind: ptrace.SpanKindConsumer,
 		},
 		{
 			jSpanKind:    "internal",
-			otlpSpanKind: pdata.SpanKindInternal,
+			otlpSpanKind: ptrace.SpanKindInternal,
 		},
 		{
 			jSpanKind:    "all-others",
-			otlpSpanKind: pdata.SpanKindUnspecified,
+			otlpSpanKind: ptrace.SpanKindUnspecified,
 		},
 	}
 
@@ -498,18 +587,82 @@ func TestJSpanKindToInternal(t *testing.T) {
 	}
 }
 
-func generateTracesResourceOnly() pdata.Traces {
+func TestRegroup(t *testing.T) {
+	// prepare
+	process := &model.Process{
+		ServiceName: "batch-process",
+	}
+	spanWithoutProcess := &model.Span{
+		OperationName: "span-without-process",
+	}
+	spanWithProcess := &model.Span{
+		Process: &model.Process{
+			ServiceName: "custom-service-name",
+		},
+	}
+
+	originalBatches := []*model.Batch{
+		{
+			Process: process,
+			Spans:   []*model.Span{spanWithProcess, spanWithoutProcess},
+		},
+	}
+
+	expected := []*model.Batch{
+		{
+			Process: process,
+			Spans:   []*model.Span{spanWithoutProcess},
+		},
+		{
+			Process: spanWithProcess.Process,
+			Spans:   []*model.Span{spanWithProcess},
+		},
+	}
+
+	// test
+	result := regroup(originalBatches)
+
+	// verify
+	assert.ElementsMatch(t, expected, result)
+}
+
+func TestChecksum(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		input    *model.Process
+		expected uint64
+	}{
+		{
+			desc: "valid process",
+			input: &model.Process{
+				ServiceName: "some-service-name",
+			},
+			expected: 0x974574e8529af5dd, // acquired by running it once
+		},
+		{
+			desc:     "nil process",
+			input:    nil,
+			expected: 0xcbf29ce484222325, // acquired by running it once
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			out := checksum(tC.input)
+			assert.Equal(t, tC.expected, out)
+		})
+	}
+}
+
+func generateTracesResourceOnly() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
-	rs.Attributes().InsertString(conventions.AttributeServiceName, "service-1")
-	rs.Attributes().InsertInt("int-attr-1", 123)
+	rs.Attributes().PutStr(conventions.AttributeServiceName, "service-1")
+	rs.Attributes().PutInt("int-attr-1", 123)
 	return td
 }
 
-func generateTracesResourceOnlyWithNoAttrs() pdata.Traces {
-	td := testdata.GenerateTracesOneEmptyResourceSpans()
-	td.ResourceSpans().At(0).Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{})
-	return td
+func generateTracesResourceOnlyWithNoAttrs() ptrace.Traces {
+	return testdata.GenerateTracesOneEmptyResourceSpans()
 }
 
 func generateProtoProcess() *model.Process {
@@ -525,40 +678,41 @@ func generateProtoProcess() *model.Process {
 	}
 }
 
-func generateTracesOneSpanNoResource() pdata.Traces {
+func generateTracesOneSpanNoResource() ptrace.Traces {
 	td := testdata.GenerateTracesOneSpanNoResource()
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
-	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
-	span.SetTraceID(pdata.NewTraceID(
-		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+	span.SetTraceID(
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
 	span.SetDroppedAttributesCount(0)
 	span.SetDroppedEventsCount(0)
 	span.SetStartTimestamp(testSpanStartTimestamp)
 	span.SetEndTimestamp(testSpanEndTimestamp)
-	span.SetKind(pdata.SpanKindClient)
+	span.SetKind(ptrace.SpanKindClient)
+	span.Status().SetCode(ptrace.StatusCodeError)
 	span.Events().At(0).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(0).SetDroppedAttributesCount(0)
 	span.Events().At(0).SetName("event-with-attr")
 	span.Events().At(1).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(1).SetDroppedAttributesCount(0)
 	span.Events().At(1).SetName("")
-	span.Events().At(1).Attributes().InsertInt("attr-int", 123)
+	span.Events().At(1).Attributes().PutInt("attr-int", 123)
 	return td
 }
 
-func generateTracesWithLibraryInfo() pdata.Traces {
+func generateTracesWithLibraryInfo() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
 	rs0 := td.ResourceSpans().At(0)
-	rs0ils0 := rs0.InstrumentationLibrarySpans().At(0)
-	rs0ils0.InstrumentationLibrary().SetName("io.opentelemetry.test")
-	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
+	rs0ils0 := rs0.ScopeSpans().At(0)
+	rs0ils0.Scope().SetName("io.opentelemetry.test")
+	rs0ils0.Scope().SetVersion("0.42.0")
 	return td
 }
 
-func generateTracesOneSpanNoResourceWithTraceState() pdata.Traces {
+func generateTracesOneSpanNoResourceWithTraceState() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
-	span.SetTraceState("lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955")
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	span.TraceState().FromRaw("lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955")
 	return td
 }
 
@@ -577,7 +731,7 @@ func generateProtoSpan() *model.Span {
 				Timestamp: testSpanEventTime,
 				Fields: []model.KeyValue{
 					{
-						Key:   tracetranslator.TagMessage,
+						Key:   eventNameAttr,
 						VType: model.ValueType_STRING,
 						VStr:  "event-with-attr",
 					},
@@ -606,9 +760,9 @@ func generateProtoSpan() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
 			},
 			{
-				Key:    conventions.OtelStatusCode,
-				VType:  model.ValueType_INT64,
-				VInt64: int64(pdata.StatusCodeError),
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusError,
 			},
 			{
 				Key:   tracetranslator.TagError,
@@ -628,11 +782,11 @@ func generateProtoSpanWithLibraryInfo(libraryName string) *model.Span {
 	span := generateProtoSpan()
 	span.Tags = append([]model.KeyValue{
 		{
-			Key:   conventions.InstrumentationLibraryName,
+			Key:   conventions.OtelLibraryName,
 			VType: model.ValueType_STRING,
 			VStr:  libraryName,
 		}, {
-			Key:   conventions.InstrumentationLibraryVersion,
+			Key:   conventions.OtelLibraryVersion,
 			VType: model.ValueType_STRING,
 			VStr:  "0.42.0",
 		},
@@ -655,7 +809,7 @@ func generateProtoSpanWithTraceState() *model.Span {
 				Timestamp: testSpanEventTime,
 				Fields: []model.KeyValue{
 					{
-						Key:   tracetranslator.TagMessage,
+						Key:   eventNameAttr,
 						VType: model.ValueType_STRING,
 						VStr:  "event-with-attr",
 					},
@@ -684,9 +838,9 @@ func generateProtoSpanWithTraceState() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
 			},
 			{
-				Key:    conventions.OtelStatusCode,
-				VType:  model.ValueType_INT64,
-				VInt64: int64(pdata.StatusCodeError),
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusError,
 			},
 			{
 				Key:   tracetranslator.TagError,
@@ -707,23 +861,20 @@ func generateProtoSpanWithTraceState() *model.Span {
 	}
 }
 
-func generateTracesTwoSpansChildParent() pdata.Traces {
+func generateTracesTwoSpansChildParent() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
-	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 
 	span := spans.AppendEmpty()
 	span.SetName("operationB")
-	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
+	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetParentSpanID(spans.At(0).SpanID())
-	span.SetKind(pdata.SpanKindServer)
+	span.SetKind(ptrace.SpanKindServer)
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
-	span.Status().SetCode(pdata.StatusCodeError)
-	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(404),
-	})
-
+	span.Status().SetCode(ptrace.StatusCodeUnset)
+	span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
 	return td
 }
 
@@ -760,22 +911,27 @@ func generateProtoChildSpan() *model.Span {
 	}
 }
 
-func generateTracesTwoSpansWithFollower() pdata.Traces {
+func generateTracesTwoSpansWithFollower() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
-	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 
 	span := spans.AppendEmpty()
 	span.SetName("operationC")
-	span.SetSpanID(pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
+	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetTraceID(spans.At(0).TraceID())
+	span.SetParentSpanID(spans.At(0).SpanID())
 	span.SetStartTimestamp(spans.At(0).EndTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp() + 1000000)
-	span.SetKind(pdata.SpanKindConsumer)
-	span.Status().SetCode(pdata.StatusCodeOk)
+	span.SetKind(ptrace.SpanKindConsumer)
+	span.Status().SetCode(ptrace.StatusCodeOk)
 	span.Status().SetMessage("status-ok")
 	link := span.Links().AppendEmpty()
 	link.SetTraceID(span.TraceID())
 	link.SetSpanID(spans.At(0).SpanID())
+	link.Attributes().PutStr(
+		conventions.AttributeOpentracingRefType,
+		conventions.AttributeOpentracingRefTypeFollowsFrom,
+	)
 	return td
 }
 
@@ -797,9 +953,9 @@ func generateProtoFollowerSpan() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
 			},
 			{
-				Key:    conventions.OtelStatusCode,
-				VType:  model.ValueType_INT64,
-				VInt64: int64(pdata.StatusCodeOk),
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusOk,
 			},
 			{
 				Key:   conventions.OtelStatusDescription,
@@ -817,30 +973,101 @@ func generateProtoFollowerSpan() *model.Span {
 	}
 }
 
-func BenchmarkProtoBatchToInternalTraces(b *testing.B) {
-	jb := model.Batch{
-		Process: generateProtoProcess(),
-		Spans: []*model.Span{
-			generateProtoSpan(),
-			generateProtoChildSpan(),
-		},
-	}
+func generateTracesSpanWithTwoParents() ptrace.Traces {
+	td := generateTracesTwoSpansWithFollower()
+	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+	parent := spans.At(0)
+	parent2 := spans.At(1)
+	span := spans.AppendEmpty()
+	span.SetName("operationD")
+	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x20})
+	span.SetTraceID(parent.TraceID())
+	span.SetStartTimestamp(parent.StartTimestamp())
+	span.SetEndTimestamp(parent.EndTimestamp())
+	span.SetParentSpanID(parent.SpanID())
+	span.SetKind(ptrace.SpanKindConsumer)
+	span.Status().SetCode(ptrace.StatusCodeOk)
+	span.Status().SetMessage("status-ok")
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		ProtoBatchToInternalTraces(jb)
+	link := span.Links().AppendEmpty()
+	link.SetTraceID(parent2.TraceID())
+	link.SetSpanID(parent2.SpanID())
+	link.Attributes().PutStr(
+		conventions.AttributeOpentracingRefType,
+		conventions.AttributeOpentracingRefTypeChildOf,
+	)
+	return td
+}
+
+func generateProtoTwoParentsSpan() *model.Span {
+	traceID := model.NewTraceID(
+		binary.BigEndian.Uint64([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}),
+		binary.BigEndian.Uint64([]byte{0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}),
+	)
+	return &model.Span{
+		TraceID:       traceID,
+		SpanID:        model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x20})),
+		OperationName: "operationD",
+		StartTime:     testSpanStartTime,
+		Duration:      testSpanEndTime.Sub(testSpanStartTime),
+		Tags: []model.KeyValue{
+			{
+				Key:   tracetranslator.TagSpanKind,
+				VType: model.ValueType_STRING,
+				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
+			},
+			{
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusOk,
+			},
+			{
+				Key:   conventions.OtelStatusDescription,
+				VType: model.ValueType_STRING,
+				VStr:  "status-ok",
+			},
+		},
+		References: []model.SpanRef{
+			{
+				TraceID: traceID,
+				SpanID:  model.NewSpanID(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})),
+				RefType: model.SpanRefType_CHILD_OF,
+			},
+			{
+				TraceID: traceID,
+				SpanID:  model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})),
+				RefType: model.SpanRefType_CHILD_OF,
+			},
+		},
 	}
 }
 
-func generateTracesTwoSpansFromTwoLibraries() pdata.Traces {
+func BenchmarkProtoBatchToInternalTraces(b *testing.B) {
+	jb := []*model.Batch{
+		{
+			Process: generateProtoProcess(),
+			Spans: []*model.Span{
+				generateProtoSpan(),
+				generateProtoChildSpan(),
+			},
+		}}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		_, err := ProtoToTraces(jb)
+		assert.NoError(b, err)
+	}
+}
+
+func generateTracesTwoSpansFromTwoLibraries() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 
 	rs0 := td.ResourceSpans().At(0)
-	rs0.InstrumentationLibrarySpans().EnsureCapacity(2)
+	rs0.ScopeSpans().EnsureCapacity(2)
 
-	rs0ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
-	rs0ils0.InstrumentationLibrary().SetName("library1")
-	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
+	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils0.Scope().SetName("library1")
+	rs0ils0.Scope().SetVersion("0.42.0")
 	span1 := rs0ils0.Spans().AppendEmpty()
 	span1.SetTraceID(idutils.UInt64ToTraceID(0, 0))
 	span1.SetSpanID(idutils.UInt64ToSpanID(0))
@@ -848,9 +1075,9 @@ func generateTracesTwoSpansFromTwoLibraries() pdata.Traces {
 	span1.SetStartTimestamp(testSpanStartTimestamp)
 	span1.SetEndTimestamp(testSpanEndTimestamp)
 
-	rs0ils1 := rs0.InstrumentationLibrarySpans().AppendEmpty()
-	rs0ils1.InstrumentationLibrary().SetName("library2")
-	rs0ils1.InstrumentationLibrary().SetVersion("0.42.0")
+	rs0ils1 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils1.Scope().SetName("library2")
+	rs0ils1.Scope().SetVersion("0.42.0")
 	span2 := rs0ils1.Spans().AppendEmpty()
 	span2.SetTraceID(span1.TraceID())
 	span2.SetSpanID(span1.SpanID())

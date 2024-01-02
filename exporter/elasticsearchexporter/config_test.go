@@ -1,55 +1,44 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-use-deprecated-index_option.yaml"))
 	require.NoError(t, err)
-
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "log").String())
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	assert.Equal(t, len(cfg.Exporters), 2)
-
-	defaultCfg := factory.CreateDefaultConfig()
-	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, r0, defaultCfg)
-
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, r1, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
-		Endpoints:        []string{"https://elastic.example.com:9200"},
-		CloudID:          "TRNMxjXlNJEt",
-		Index:            "myindex",
-		Pipeline:         "mypipeline",
+	assert.Equal(t, cfg, &Config{
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      false,
+			NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+		},
+		Endpoints:   []string{"http://localhost:9200"},
+		CloudID:     "TRNMxjXlNJEt",
+		Index:       "my_log_index",
+		LogsIndex:   "logs-generic-default",
+		TracesIndex: "traces-generic-default",
+		Pipeline:    "mypipeline",
 		HTTPClientSettings: HTTPClientSettings{
 			Authentication: AuthenticationSettings{
 				User:     "elastic",
@@ -78,7 +67,157 @@ func TestLoadConfig(t *testing.T) {
 			Dedup: true,
 			Dedot: true,
 		},
+		LogstashFormat: LogstashFormatSettings{
+			Enabled:         false,
+			PrefixSeparator: "-",
+			DateFormat:      "%Y.%m.%d",
+		},
 	})
+}
+
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
+	defaultCfg := createDefaultConfig()
+	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
+
+	defaultLogstashFormatCfg := createDefaultConfig()
+	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
+	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
+
+	tests := []struct {
+		configFile string
+		id         component.ID
+		expected   component.Config
+	}{
+		{
+			id:         component.NewIDWithName(metadata.Type, ""),
+			configFile: "config.yaml",
+			expected:   defaultCfg,
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "trace"),
+			configFile: "config.yaml",
+			expected: &Config{
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      false,
+					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+				},
+				Endpoints:   []string{"https://elastic.example.com:9200"},
+				CloudID:     "TRNMxjXlNJEt",
+				Index:       "",
+				LogsIndex:   "logs-generic-default",
+				TracesIndex: "trace_index",
+				Pipeline:    "mypipeline",
+				HTTPClientSettings: HTTPClientSettings{
+					Authentication: AuthenticationSettings{
+						User:     "elastic",
+						Password: "search",
+						APIKey:   "AvFsEiPs==",
+					},
+					Timeout: 2 * time.Minute,
+					Headers: map[string]string{
+						"myheader": "test",
+					},
+				},
+				Discovery: DiscoverySettings{
+					OnStart: true,
+				},
+				Flush: FlushSettings{
+					Bytes: 10485760,
+				},
+				Retry: RetrySettings{
+					Enabled:         true,
+					MaxRequests:     5,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Minute,
+				},
+				Mapping: MappingsSettings{
+					Mode:  "ecs",
+					Dedup: true,
+					Dedot: true,
+				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
+				},
+			},
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "log"),
+			configFile: "config.yaml",
+			expected: &Config{
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+				},
+				Endpoints:   []string{"http://localhost:9200"},
+				CloudID:     "TRNMxjXlNJEt",
+				Index:       "",
+				LogsIndex:   "my_log_index",
+				TracesIndex: "traces-generic-default",
+				Pipeline:    "mypipeline",
+				HTTPClientSettings: HTTPClientSettings{
+					Authentication: AuthenticationSettings{
+						User:     "elastic",
+						Password: "search",
+						APIKey:   "AvFsEiPs==",
+					},
+					Timeout: 2 * time.Minute,
+					Headers: map[string]string{
+						"myheader": "test",
+					},
+				},
+				Discovery: DiscoverySettings{
+					OnStart: true,
+				},
+				Flush: FlushSettings{
+					Bytes: 10485760,
+				},
+				Retry: RetrySettings{
+					Enabled:         true,
+					MaxRequests:     5,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Minute,
+				},
+				Mapping: MappingsSettings{
+					Mode:  "ecs",
+					Dedup: true,
+					Dedot: true,
+				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
+				},
+			},
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "logstash_format"),
+			configFile: "config.yaml",
+			expected:   defaultLogstashFormatCfg,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configFile))
+			require.NoError(t, err)
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func withDefaultConfig(fns ...func(*Config)) *Config {

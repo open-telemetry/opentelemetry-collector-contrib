@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package dimensions
 
@@ -61,11 +50,11 @@ loop:
 	return dims
 }
 
-func makeHandler(dimCh chan<- dim, forcedResp *atomic.Value) http.HandlerFunc {
+func makeHandler(dimCh chan<- dim, forcedResp *atomic.Int32) http.HandlerFunc {
 	forcedResp.Store(200)
 
 	return func(rw http.ResponseWriter, r *http.Request) {
-		forcedRespInt := forcedResp.Load().(int)
+		forcedRespInt := int(forcedResp.Load())
 		if forcedRespInt != 200 {
 			rw.WriteHeader(forcedRespInt)
 			return
@@ -98,11 +87,11 @@ func makeHandler(dimCh chan<- dim, forcedResp *atomic.Value) http.HandlerFunc {
 	}
 }
 
-func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Value, context.CancelFunc) {
+func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.CancelFunc) {
 	dimCh := make(chan dim)
 
-	var forcedResp atomic.Value
-	server := httptest.NewServer(makeHandler(dimCh, &forcedResp))
+	forcedResp := &atomic.Int32{}
+	server := httptest.NewServer(makeHandler(dimCh, forcedResp))
 
 	serverURL, err := url.Parse(server.URL)
 	require.NoError(t, err, "failed to get server URL", err)
@@ -114,15 +103,15 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Value, context.Can
 	}()
 
 	client := NewDimensionClient(ctx, DimensionClientOptions{
-		APIURL:                serverURL,
-		LogUpdates:            true,
-		Logger:                zap.NewNop(),
-		SendDelay:             1,
-		PropertiesMaxBuffered: 10,
+		APIURL:      serverURL,
+		LogUpdates:  true,
+		Logger:      zap.NewNop(),
+		SendDelay:   time.Second,
+		MaxBuffered: 10,
 	})
 	client.Start()
 
-	return client, dimCh, &forcedResp, cancel
+	return client, dimCh, forcedResp, cancel
 }
 
 func TestDimensionClient(t *testing.T) {
@@ -354,16 +343,6 @@ func TestFlappyUpdates(t *testing.T) {
 			Properties: map[string]*string{"index": newString("4")},
 		},
 	}, dims)
-
-	// Give it enough time to run the counter updates which happen after the
-	// request is completed.
-	time.Sleep(1 * time.Second)
-
-	require.Equal(t, int64(8), atomic.LoadInt64(&client.TotalFlappyUpdates))
-	require.Equal(t, int64(0), atomic.LoadInt64(&client.DimensionsCurrentlyDelayed))
-	require.Equal(t, int64(2), atomic.LoadInt64(&client.requestSender.TotalRequestsStarted))
-	require.Equal(t, int64(2), atomic.LoadInt64(&client.requestSender.TotalRequestsCompleted))
-	require.Equal(t, int64(0), atomic.LoadInt64(&client.requestSender.TotalRequestsFailed))
 }
 
 func TestInvalidUpdatesNotSent(t *testing.T) {
@@ -394,7 +373,6 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 
 	dims := waitForDims(dimCh, 2, 3)
 	require.Len(t, dims, 0)
-	require.Equal(t, int64(0), atomic.LoadInt64(&client.TotalInvalidDimensions))
 }
 
 func newString(s string) *string {

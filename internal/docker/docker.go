@@ -1,22 +1,12 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package docker
+package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -24,6 +14,7 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
+	devents "github.com/docker/docker/api/types/events"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	"go.uber.org/zap"
@@ -50,21 +41,23 @@ type Client struct {
 	config               *Config
 	containers           map[string]Container
 	containersLock       sync.Mutex
-	excludedImageMatcher *StringMatcher
+	excludedImageMatcher *stringMatcher
 	logger               *zap.Logger
 }
 
-func NewDockerClient(config *Config, logger *zap.Logger) (*Client, error) {
+func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
 	client, err := docker.NewClientWithOpts(
-		docker.WithHost(config.Endpoint),
-		docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
-		docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
+		append([]docker.Opt{
+			docker.WithHost(config.Endpoint),
+			docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
+			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
+		}, opts...)...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create docker client: %w", err)
 	}
 
-	excludedImageMatcher, err := NewStringMatcher(config.ExcludedImages)
+	excludedImageMatcher, err := newStringMatcher(config.ExcludedImages)
 	if err != nil {
 		return nil, fmt.Errorf("could not determine docker client excluded images: %w", err)
 	}
@@ -115,9 +108,7 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 		wg.Add(1)
 		go func(container dtypes.Container) {
 			if !dc.shouldBeExcluded(container.Image) {
-				if cnt, ok := dc.inspectedContainerIsOfInterest(ctx, container.ID); ok {
-					dc.persistContainer(cnt)
-				}
+				dc.InspectAndPersistContainer(ctx, container.ID)
 			} else {
 				dc.logger.Debug(
 					"Not monitoring container per ExcludedImages",
@@ -167,7 +158,7 @@ func (dc *Client) FetchContainerStats(
 				"Daemon reported container doesn't exist. Will no longer monitor.",
 				zap.String("id", container.ID),
 			)
-			dc.removeContainer(container.ID)
+			dc.RemoveContainer(container.ID)
 		} else {
 			dc.logger.Warn(
 				"Could not fetch docker containerStats for container",
@@ -189,7 +180,7 @@ func (dc *Client) toStatsJSON(
 	containerStats.Body.Close()
 	if err != nil {
 		// EOF means there aren't any containerStats, perhaps because the container has been removed.
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			// It isn't indicative of actual error.
 			return nil, err
 		}
@@ -203,12 +194,20 @@ func (dc *Client) toStatsJSON(
 	return &statsJSON, nil
 }
 
+// Events exposes the underlying Docker clients Events channel.
+// Caller should close the events channel by canceling the context.
+// If an error occurs, processing stops and caller must reinvoke this method.
+func (dc *Client) Events(ctx context.Context, options dtypes.EventsOptions) (<-chan devents.Message, <-chan error) {
+	return dc.client.Events(ctx, options)
+}
+
 func (dc *Client) ContainerEventLoop(ctx context.Context) {
 	filters := dfilters.NewArgs([]dfilters.KeyValuePair{
 		{Key: "type", Value: "container"},
 		{Key: "event", Value: "destroy"},
 		{Key: "event", Value: "die"},
 		{Key: "event", Value: "pause"},
+		{Key: "event", Value: "rename"},
 		{Key: "event", Value: "stop"},
 		{Key: "event", Value: "start"},
 		{Key: "event", Value: "unpause"},
@@ -222,7 +221,7 @@ EVENT_LOOP:
 			Filters: filters,
 			Since:   lastTime.Format(time.RFC3339Nano),
 		}
-		eventCh, errCh := dc.client.Events(ctx, options)
+		eventCh, errCh := dc.Events(ctx, options)
 
 		for {
 			select {
@@ -232,7 +231,7 @@ EVENT_LOOP:
 				switch event.Action {
 				case "destroy":
 					dc.logger.Debug("Docker container was destroyed:", zap.String("id", event.ID))
-					dc.removeContainer(event.ID)
+					dc.RemoveContainer(event.ID)
 				default:
 					dc.logger.Debug(
 						"Docker container update:",
@@ -240,9 +239,7 @@ EVENT_LOOP:
 						zap.String("action", event.Action),
 					)
 
-					if container, ok := dc.inspectedContainerIsOfInterest(ctx, event.ID); ok {
-						dc.persistContainer(container)
-					}
+					dc.InspectAndPersistContainer(ctx, event.ID)
 				}
 
 				if event.TimeNano > lastTime.UnixNano() {
@@ -267,6 +264,17 @@ EVENT_LOOP:
 			}
 		}
 	}
+}
+
+// InspectAndPersistContainer queries inspect api and returns *ContainerJSON and true when container should be queried for stats,
+// nil and false otherwise. Persists the container in the cache if container is
+// running and not excluded.
+func (dc *Client) InspectAndPersistContainer(ctx context.Context, cid string) (*dtypes.ContainerJSON, bool) {
+	if container, ok := dc.inspectedContainerIsOfInterest(ctx, cid); ok {
+		dc.persistContainer(container)
+		return container, ok
+	}
+	return nil, false
 }
 
 // Queries inspect api and returns *ContainerJSON and true when container should be queried for stats,
@@ -295,7 +303,7 @@ func (dc *Client) persistContainer(containerJSON *dtypes.ContainerJSON) {
 	cid := containerJSON.ID
 	if !containerJSON.State.Running || containerJSON.State.Paused {
 		dc.logger.Debug("Docker container not running.  Will not persist.", zap.String("id", cid))
-		dc.removeContainer(cid)
+		dc.RemoveContainer(cid)
 		return
 	}
 
@@ -308,7 +316,7 @@ func (dc *Client) persistContainer(containerJSON *dtypes.ContainerJSON) {
 	}
 }
 
-func (dc *Client) removeContainer(cid string) {
+func (dc *Client) RemoveContainer(cid string) {
 	dc.containersLock.Lock()
 	defer dc.containersLock.Unlock()
 	delete(dc.containers, cid)
@@ -316,7 +324,7 @@ func (dc *Client) removeContainer(cid string) {
 }
 
 func (dc *Client) shouldBeExcluded(image string) bool {
-	return dc.excludedImageMatcher != nil && dc.excludedImageMatcher.Matches(image)
+	return dc.excludedImageMatcher != nil && dc.excludedImageMatcher.matches(image)
 }
 
 func ContainerEnvToMap(env []string) map[string]string {

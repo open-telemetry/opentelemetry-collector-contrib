@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ec2
 
@@ -25,11 +14,15 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor/processortest"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/internal/metadata"
 )
+
+var errUnavailable = errors.New("ec2metadata unavailable")
 
 type mockMetadata struct {
 	retIDDoc    ec2metadata.EC2InstanceIdentityDocument
@@ -41,20 +34,23 @@ type mockMetadata struct {
 	isAvailable bool
 }
 
-var _ metadataProvider = (*mockMetadata)(nil)
+var _ ec2provider.Provider = (*mockMetadata)(nil)
 
-func (mm mockMetadata) available(ctx context.Context) bool {
-	return mm.isAvailable
+func (mm mockMetadata) InstanceID(_ context.Context) (string, error) {
+	if !mm.isAvailable {
+		return "", errUnavailable
+	}
+	return "", nil
 }
 
-func (mm mockMetadata) get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
+func (mm mockMetadata) Get(_ context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
 	if mm.retErrIDDoc != nil {
 		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
 	return mm.retIDDoc, nil
 }
 
-func (mm mockMetadata) hostname(ctx context.Context) (string, error) {
+func (mm mockMetadata) Hostname(_ context.Context) (string, error) {
 	if mm.retErrHostname != nil {
 		return "", mm.retErrHostname
 	}
@@ -89,7 +85,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), tt.cfg)
+			detector, err := NewDetector(processortest.NewNopCreateSettings(), tt.cfg)
 			if tt.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, detector)
@@ -103,7 +99,7 @@ func TestNewDetector(t *testing.T) {
 
 func TestDetector_Detect(t *testing.T) {
 	type fields struct {
-		metadataProvider metadataProvider
+		metadataProvider ec2provider.Provider
 	}
 	type args struct {
 		ctx context.Context
@@ -112,7 +108,7 @@ func TestDetector_Detect(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    pdata.Resource
+		want    pcommon.Resource
 		wantErr bool
 	}{
 		{
@@ -129,18 +125,18 @@ func TestDetector_Detect(t *testing.T) {
 				retHostname: "example-hostname",
 				isAvailable: true}},
 			args: args{ctx: context.Background()},
-			want: func() pdata.Resource {
-				res := pdata.NewResource()
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
 				attr := res.Attributes()
-				attr.InsertString("cloud.account.id", "account1234")
-				attr.InsertString("cloud.provider", "aws")
-				attr.InsertString("cloud.platform", "aws_ec2")
-				attr.InsertString("cloud.region", "us-west-2")
-				attr.InsertString("cloud.availability_zone", "us-west-2a")
-				attr.InsertString("host.id", "i-abcd1234")
-				attr.InsertString("host.image.id", "abcdef")
-				attr.InsertString("host.type", "c4.xlarge")
-				attr.InsertString("host.name", "example-hostname")
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("host.name", "example-hostname")
 				return res
 			}()},
 		{
@@ -150,10 +146,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pdata.Resource {
-				return pdata.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: false},
 		{
 			name: "get fails",
@@ -162,10 +156,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("get failed"),
 				isAvailable: true,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pdata.Resource {
-				return pdata.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: true},
 		{
 			name: "hostname fails",
@@ -175,16 +167,16 @@ func TestDetector_Detect(t *testing.T) {
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pdata.Resource {
-				return pdata.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &Detector{
 				metadataProvider: tt.fields.metadataProvider,
+				logger:           zap.NewNop(),
+				rb:               metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 			}
 			got, _, err := d.Detect(tt.args.ctx)
 
@@ -193,7 +185,7 @@ func TestDetector_Detect(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
-				assert.Equal(t, internal.AttributesToMap(tt.want.Attributes()), internal.AttributesToMap(got.Attributes()))
+				assert.Equal(t, tt.want.Attributes().AsRaw(), got.Attributes().AsRaw())
 			}
 		})
 	}

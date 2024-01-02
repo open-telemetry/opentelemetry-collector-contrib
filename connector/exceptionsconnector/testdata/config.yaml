@@ -1,0 +1,13 @@
+# default configuration
+exceptions/default:
+
+# configuration with all possible parameters
+exceptions/full:
+  # Additional list of dimensions on top of:
+  # - service.name
+  # - span.name
+  # - span.kind
+  # - status.code
+  dimensions:
+    - name: exception.type
+    - name: exception.message

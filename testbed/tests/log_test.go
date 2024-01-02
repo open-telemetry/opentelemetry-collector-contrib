@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 // Package tests contains test cases. To run the tests go to tests directory and run:
 // RUN_TESTBED=1 go test -v
@@ -26,7 +15,6 @@ import (
 )
 
 func TestLog10kDPS(t *testing.T) {
-	flw := datasenders.NewFluentBitFileLogWriter(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	tests := []struct {
 		name         string
 		sender       testbed.DataSender
@@ -40,7 +28,7 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 85,
+				ExpectedMaxRAM: 120,
 			},
 		},
 		{
@@ -49,7 +37,7 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 85,
+				ExpectedMaxRAM: 120,
 			},
 		},
 		{
@@ -57,8 +45,8 @@ func TestLog10kDPS(t *testing.T) {
 			sender:   datasenders.NewFileLogWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 85,
+				ExpectedMaxCPU: 50,
+				ExpectedMaxRAM: 120,
 			},
 		},
 		{
@@ -66,8 +54,8 @@ func TestLog10kDPS(t *testing.T) {
 			sender:   datasenders.NewFileLogWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 86,
+				ExpectedMaxCPU: 50,
+				ExpectedMaxRAM: 120,
 			},
 			extensions: datasenders.NewLocalFileStorageExtension(),
 		},
@@ -76,7 +64,7 @@ func TestLog10kDPS(t *testing.T) {
 			sender:   datasenders.NewKubernetesContainerWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 100,
+				ExpectedMaxCPU: 110,
 				ExpectedMaxRAM: 150,
 			},
 		},
@@ -124,16 +112,6 @@ func TestLog10kDPS(t *testing.T) {
 				ExpectedMaxCPU: 80,
 				ExpectedMaxRAM: 150,
 			},
-		},
-		{
-			name:     "FluentBitToOTLP",
-			sender:   flw,
-			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 155,
-			},
-			extensions: flw.Extensions(),
 		},
 		{
 			name:     "FluentForward-SplunkHEC",

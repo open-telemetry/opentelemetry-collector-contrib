@@ -1,0 +1,11 @@
+type: influxdb
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [jacobmarble]
+tests:
+  config:

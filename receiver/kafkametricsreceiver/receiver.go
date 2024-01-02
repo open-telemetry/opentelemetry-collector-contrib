@@ -1,40 +1,27 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package kafkametricsreceiver
+package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/component"
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 const (
-	instrumentationLibName = "otelcol/kafkametrics"
-	brokersScraperName     = "brokers"
-	topicsScraperName      = "topics"
-	consumersScraperName   = "consumers"
+	brokersScraperName   = "brokers"
+	topicsScraperName    = "topics"
+	consumersScraperName = "consumers"
 )
 
-type createKafkaScraper func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error)
+type createKafkaScraper func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error)
 
 var (
 	allScrapers = map[string]createKafkaScraper{
@@ -47,11 +34,14 @@ var (
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	sc := sarama.NewConfig()
 	sc.ClientID = config.ClientID
+	if config.ResolveCanonicalBootstrapServersOnly {
+		sc.Net.ResolveCanonicalBootstrapServers = true
+	}
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -59,13 +49,13 @@ var newMetricsReceiver = func(
 		}
 		sc.Version = version
 	}
-	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, sc); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, sc); err != nil {
 		return nil, err
 	}
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 	for _, scraper := range config.Scrapers {
 		if s, ok := allScrapers[scraper]; ok {
-			s, err := s(ctx, config, sc, params.Logger)
+			s, err := s(ctx, config, sc, params)
 			if err != nil {
 				return nil, err
 			}
@@ -77,7 +67,7 @@ var newMetricsReceiver = func(
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&config.ScraperControllerSettings,
-		params.Logger,
+		params,
 		consumer,
 		scraperControllerOptions...,
 	)

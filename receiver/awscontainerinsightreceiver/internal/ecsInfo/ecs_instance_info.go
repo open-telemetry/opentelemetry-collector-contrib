@@ -1,18 +1,7 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package ecsinfo
+package ecsinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 
 import (
 	"context"
@@ -62,7 +51,7 @@ func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProv
 	}
 
 	shouldRefresh := func() bool {
-		//stop the refresh once we get instance ID and cluster name successfully
+		// stop the refresh once we get instance ID and cluster name successfully
 		return cii.GetClusterName() == "" || cii.GetContainerInstanceID() == ""
 	}
 
@@ -97,7 +86,7 @@ func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 	cii.containerInstanceID = instanceID
 	defer cii.Unlock()
 
-	//notify cgroups that the clustername and instanceID is ready
+	// notify cgroups that the clustername and instanceID is ready
 	if cii.clusterName != "" && cii.containerInstanceID != "" && !isClosed(cii.readyC) {
 		close(cii.readyC)
 	}

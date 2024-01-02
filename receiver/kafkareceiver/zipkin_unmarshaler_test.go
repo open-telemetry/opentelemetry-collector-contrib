@@ -1,16 +1,5 @@
-// Copyright 2020 The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkareceiver
 
@@ -24,8 +13,9 @@ import (
 	zipkinreporter "github.com/openzipkin/zipkin-go/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
@@ -33,17 +23,16 @@ import (
 var v2FromTranslator zipkinv2.FromTranslator
 
 func TestUnmarshalZipkin(t *testing.T) {
-	td := pdata.NewTraces()
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InitFromMap(
-		map[string]pdata.AttributeValue{conventions.AttributeServiceName: pdata.NewAttributeValueString("my_service")})
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "my_service")
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
-	span.SetStartTimestamp(pdata.Timestamp(1597759000))
-	span.SetEndTimestamp(pdata.Timestamp(1597769000))
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	span.SetParentSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0}))
+	span.SetStartTimestamp(pcommon.Timestamp(1597759000))
+	span.SetEndTimestamp(pcommon.Timestamp(1597769000))
+	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	span.SetParentSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0})
 	spans, err := v2FromTranslator.FromTraces(td)
 	require.NoError(t, err)
 
@@ -69,7 +58,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 		unmarshaler TracesUnmarshaler
 		encoding    string
 		bytes       []byte
-		expected    pdata.Traces
+		expected    ptrace.Traces
 	}{
 		{
 			unmarshaler: newZipkinProtobufUnmarshaler(),

@@ -1,28 +1,19 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package testbed
+package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // TestCaseValidator defines the interface for validating and reporting test results.
@@ -83,20 +74,19 @@ func NewCorrectTestValidator(senderName string, receiverName string, provider Da
 	// TODO: Fix Jaeger span links attributes and tracestate.
 	return &CorrectnessTestValidator{
 		dataProvider:         provider,
-		assertionFailures:    make([]*TraceAssertionFailure, 0),
 		ignoreSpanLinksAttrs: senderName == "jaeger" || receiverName == "jaeger",
 	}
 }
 
 func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 	if assert.EqualValues(tc.t,
-		int64(tc.LoadGenerator.DataItemsSent()),
+		int64(tc.LoadGenerator.DataItemsSent())-int64(tc.LoadGenerator.PermanentErrors()),
 		int64(tc.MockBackend.DataItemsReceived()),
 		"Received and sent counters do not match.") {
 		log.Printf("Sent and received data counters match.")
 	}
 	if len(tc.MockBackend.ReceivedTraces) > 0 {
-		v.assertSentRecdTracingDataEqual(tc.MockBackend.ReceivedTraces)
+		v.assertSentRecdTracingDataEqual(append(tc.MockBackend.ReceivedTraces, tc.MockBackend.DroppedTraces...))
 	}
 	assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
 }
@@ -122,8 +112,8 @@ func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {
 	})
 }
 
-func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []pdata.Traces) {
-	spansMap := make(map[string]pdata.Span)
+func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []ptrace.Traces) {
+	spansMap := make(map[string]ptrace.Span)
 	// TODO: Remove this hack, and add a way to retrieve all sent data.
 	if val, ok := v.dataProvider.(*goldenDataProvider); ok {
 		populateSpansMap(spansMap, val.tracesGenerated)
@@ -132,7 +122,7 @@ func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []p
 	for _, td := range tracesList {
 		rss := td.ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
-			ilss := rss.At(i).InstrumentationLibrarySpans()
+			ilss := rss.At(i).ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				spans := ilss.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
@@ -145,7 +135,7 @@ func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []p
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpan(sentSpan pdata.Span, recdSpan pdata.Span) {
+func (v *CorrectnessTestValidator) diffSpan(sentSpan ptrace.Span, recdSpan ptrace.Span) {
 	v.diffSpanTraceID(sentSpan, recdSpan)
 	v.diffSpanSpanID(sentSpan, recdSpan)
 	v.diffSpanTraceState(sentSpan, recdSpan)
@@ -159,59 +149,59 @@ func (v *CorrectnessTestValidator) diffSpan(sentSpan pdata.Span, recdSpan pdata.
 	v.diffSpanStatus(sentSpan, recdSpan)
 }
 
-func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan pdata.Span, recdSpan pdata.Span) {
-	if sentSpan.TraceID().HexString() != recdSpan.TraceID().HexString() {
+func (v *CorrectnessTestValidator) diffSpanTraceID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+	if sentSpan.TraceID() != recdSpan.TraceID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "TraceId",
-			expectedValue: sentSpan.TraceID().HexString(),
-			actualValue:   recdSpan.TraceID().HexString(),
+			expectedValue: sentSpan.TraceID(),
+			actualValue:   recdSpan.TraceID(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan pdata.Span, recdSpan pdata.Span) {
-	if sentSpan.SpanID().HexString() != recdSpan.SpanID().HexString() {
+func (v *CorrectnessTestValidator) diffSpanSpanID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+	if sentSpan.SpanID() != recdSpan.SpanID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "SpanId",
-			expectedValue: sentSpan.SpanID().HexString(),
-			actualValue:   recdSpan.SpanID().HexString(),
+			expectedValue: sentSpan.SpanID(),
+			actualValue:   recdSpan.SpanID(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan pdata.Span, recdSpan pdata.Span) {
-	if sentSpan.TraceState() != recdSpan.TraceState() {
+func (v *CorrectnessTestValidator) diffSpanTraceState(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+	if sentSpan.TraceState().AsRaw() != recdSpan.TraceState().AsRaw() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "TraceState",
-			expectedValue: sentSpan.TraceState,
-			actualValue:   recdSpan.TraceState,
+			expectedValue: sentSpan.TraceState().AsRaw(),
+			actualValue:   recdSpan.TraceState().AsRaw(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan pdata.Span, recdSpan pdata.Span) {
-	if sentSpan.ParentSpanID().HexString() != recdSpan.ParentSpanID().HexString() {
+func (v *CorrectnessTestValidator) diffSpanParentSpanID(sentSpan ptrace.Span, recdSpan ptrace.Span) {
+	if sentSpan.ParentSpanID() != recdSpan.ParentSpanID() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
 			dataComboName: sentSpan.Name(),
 			fieldPath:     "ParentSpanId",
-			expectedValue: sentSpan.ParentSpanID().HexString(),
-			actualValue:   recdSpan.ParentSpanID().HexString(),
+			expectedValue: sentSpan.ParentSpanID(),
+			actualValue:   recdSpan.ParentSpanID(),
 		}
 		v.assertionFailures = append(v.assertionFailures, af)
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanName(sentSpan pdata.Span, recdSpan pdata.Span) {
+func (v *CorrectnessTestValidator) diffSpanName(sentSpan ptrace.Span, recdSpan ptrace.Span) {
 	// Because of https://github.com/openzipkin/zipkin-go/pull/166 compare lower cases.
 	if !strings.EqualFold(sentSpan.Name(), recdSpan.Name()) {
 		af := &TraceAssertionFailure{
@@ -225,7 +215,7 @@ func (v *CorrectnessTestValidator) diffSpanName(sentSpan pdata.Span, recdSpan pd
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanKind(sentSpan pdata.Span, recdSpan pdata.Span) {
+func (v *CorrectnessTestValidator) diffSpanKind(sentSpan ptrace.Span, recdSpan ptrace.Span) {
 	if sentSpan.Kind() != recdSpan.Kind() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -238,7 +228,7 @@ func (v *CorrectnessTestValidator) diffSpanKind(sentSpan pdata.Span, recdSpan pd
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan pdata.Span, recdSpan pdata.Span) {
+func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan ptrace.Span, recdSpan ptrace.Span) {
 	if notWithinOneMillisecond(sentSpan.StartTimestamp(), recdSpan.StartTimestamp()) {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -261,7 +251,7 @@ func (v *CorrectnessTestValidator) diffSpanTimestamps(sentSpan pdata.Span, recdS
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanAttributes(sentSpan pdata.Span, recdSpan pdata.Span) {
+func (v *CorrectnessTestValidator) diffSpanAttributes(sentSpan ptrace.Span, recdSpan ptrace.Span) {
 	if sentSpan.Attributes().Len() != recdSpan.Attributes().Len() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -286,7 +276,7 @@ func (v *CorrectnessTestValidator) diffSpanAttributes(sentSpan pdata.Span, recdS
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan pdata.Span, recdSpan pdata.Span) {
+func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan ptrace.Span, recdSpan ptrace.Span) {
 	if sentSpan.Events().Len() != recdSpan.Events().Len() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -344,7 +334,7 @@ func (v *CorrectnessTestValidator) diffSpanEvents(sentSpan pdata.Span, recdSpan 
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan pdata.Span, recdSpan pdata.Span) {
+func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan ptrace.Span, recdSpan ptrace.Span) {
 	if sentSpan.Links().Len() != recdSpan.Links().Len() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -364,7 +354,7 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan pdata.Span, recdSpan p
 				if v.ignoreSpanLinksAttrs {
 					return
 				}
-				if sentLink.TraceState() != recdLink.TraceState() {
+				if sentLink.TraceState().AsRaw() != recdLink.TraceState().AsRaw() {
 					af := &TraceAssertionFailure{
 						typeName:      "Span",
 						dataComboName: sentSpan.Name(),
@@ -401,7 +391,7 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan pdata.Span, recdSpan p
 	}
 }
 
-func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan pdata.Span, recdSpan pdata.Span) {
+func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan ptrace.Span, recdSpan ptrace.Span) {
 	if sentSpan.Status().Code() != recdSpan.Status().Code() {
 		af := &TraceAssertionFailure{
 			typeName:      "Span",
@@ -415,8 +405,8 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan pdata.Span, recdSpan 
 }
 
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
-	sentAttrs pdata.AttributeMap, recdAttrs pdata.AttributeMap, fmtStr string) {
-	sentAttrs.Range(func(sentKey string, sentVal pdata.AttributeValue) bool {
+	sentAttrs pcommon.Map, recdAttrs pcommon.Map, fmtStr string) {
+	sentAttrs.Range(func(sentKey string, sentVal pcommon.Value) bool {
 		recdVal, ok := recdAttrs.Get(sentKey)
 		if !ok {
 			af := &TraceAssertionFailure{
@@ -430,7 +420,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 			return true
 		}
 		switch sentVal.Type() {
-		case pdata.AttributeValueTypeMap:
+		case pcommon.ValueTypeMap:
 			v.compareKeyValueList(spanName, sentVal, recdVal, fmtStr, sentKey)
 		default:
 			v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, sentKey)
@@ -439,9 +429,9 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 	})
 }
 
-func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pdata.AttributeValue, recdVal pdata.AttributeValue,
+func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pcommon.Value, recdVal pcommon.Value,
 	fmtStr string, attrKey string) {
-	if !sentVal.Equal(recdVal) {
+	if reflect.DeepEqual(sentVal.AsRaw(), recdVal.AsRaw()) {
 		sentStr := sentVal.AsString()
 		recdStr := recdVal.AsString()
 		if !strings.EqualFold(sentStr, recdStr) {
@@ -458,11 +448,11 @@ func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal 
 }
 
 func (v *CorrectnessTestValidator) compareKeyValueList(
-	spanName string, sentVal pdata.AttributeValue, recdVal pdata.AttributeValue, fmtStr string, attrKey string) {
+	spanName string, sentVal pcommon.Value, recdVal pcommon.Value, fmtStr string, attrKey string) {
 	switch recdVal.Type() {
-	case pdata.AttributeValueTypeMap:
-		v.diffAttributeMap(spanName, sentVal.MapVal(), recdVal.MapVal(), fmtStr)
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeMap:
+		v.diffAttributeMap(spanName, sentVal.Map(), recdVal.Map(), fmtStr)
+	case pcommon.ValueTypeStr:
 		v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, attrKey)
 	default:
 		af := &TraceAssertionFailure{
@@ -476,8 +466,8 @@ func (v *CorrectnessTestValidator) compareKeyValueList(
 	}
 }
 
-func convertEventsSliceToMap(events pdata.SpanEventSlice) map[string][]pdata.SpanEvent {
-	eventMap := make(map[string][]pdata.SpanEvent)
+func convertEventsSliceToMap(events ptrace.SpanEventSlice) map[string][]ptrace.SpanEvent {
+	eventMap := make(map[string][]ptrace.SpanEvent)
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		eventMap[event.Name()] = append(eventMap[event.Name()], event)
@@ -488,12 +478,12 @@ func convertEventsSliceToMap(events pdata.SpanEventSlice) map[string][]pdata.Spa
 	return eventMap
 }
 
-func sortEventsByTimestamp(eventList []pdata.SpanEvent) {
+func sortEventsByTimestamp(eventList []ptrace.SpanEvent) {
 	sort.SliceStable(eventList, func(i, j int) bool { return eventList[i].Timestamp() < eventList[j].Timestamp() })
 }
 
-func convertLinksSliceToMap(links pdata.SpanLinkSlice) map[string]pdata.SpanLink {
-	linkMap := make(map[string]pdata.SpanLink)
+func convertLinksSliceToMap(links ptrace.SpanLinkSlice) map[string]ptrace.SpanLink {
+	linkMap := make(map[string]ptrace.SpanLink)
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		linkMap[traceIDAndSpanIDToString(link.TraceID(), link.SpanID())] = link
@@ -501,8 +491,8 @@ func convertLinksSliceToMap(links pdata.SpanLinkSlice) map[string]pdata.SpanLink
 	return linkMap
 }
 
-func notWithinOneMillisecond(sentNs pdata.Timestamp, recdNs pdata.Timestamp) bool {
-	var diff pdata.Timestamp
+func notWithinOneMillisecond(sentNs pcommon.Timestamp, recdNs pcommon.Timestamp) bool {
+	var diff pcommon.Timestamp
 	if sentNs > recdNs {
 		diff = sentNs - recdNs
 	} else {
@@ -511,11 +501,11 @@ func notWithinOneMillisecond(sentNs pdata.Timestamp, recdNs pdata.Timestamp) boo
 	return diff > 1100000
 }
 
-func populateSpansMap(spansMap map[string]pdata.Span, tds []pdata.Traces) {
+func populateSpansMap(spansMap map[string]ptrace.Span, tds []ptrace.Traces) {
 	for _, td := range tds {
 		rss := td.ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
-			ilss := rss.At(i).InstrumentationLibrarySpans()
+			ilss := rss.At(i).ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				spans := ilss.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
@@ -528,6 +518,6 @@ func populateSpansMap(spansMap map[string]pdata.Span, tds []pdata.Traces) {
 	}
 }
 
-func traceIDAndSpanIDToString(traceID pdata.TraceID, spanID pdata.SpanID) string {
-	return fmt.Sprintf("%s-%s", traceID.HexString(), spanID.HexString())
+func traceIDAndSpanIDToString(traceID pcommon.TraceID, spanID pcommon.SpanID) string {
+	return fmt.Sprintf("%s-%s", traceID, spanID)
 }

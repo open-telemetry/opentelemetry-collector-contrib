@@ -1,25 +1,13 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package proxy
+package proxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 
 import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -93,13 +81,14 @@ func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.S
 		regionEnv = os.Getenv(awsRegionEnvVar)
 	}
 
-	if c.Region == "" && regionEnv != "" {
+	switch {
+	case c.Region == "" && regionEnv != "":
 		awsRegion = regionEnv
 		logger.Debug("Fetched region from environment variables", zap.String("region", awsRegion))
-	} else if c.Region != "" {
+	case c.Region != "":
 		awsRegion = c.Region
 		logger.Debug("Fetched region from config file", zap.String("region", awsRegion))
-	} else if !c.LocalMode {
+	case !c.LocalMode:
 		awsRegion, err = getRegionFromECSMetadata()
 		if err != nil {
 			logger.Debug("Unable to fetch region from ECS metadata", zap.Error(err))
@@ -116,8 +105,8 @@ func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.S
 		} else {
 			logger.Debug("Fetched region from ECS metadata file", zap.String("region", awsRegion))
 		}
-
 	}
+
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not fetch region from config file, environment variables, ecs metadata, or ec2 metadata: %w", err)
 	}
@@ -164,12 +153,12 @@ func getRegionFromECSMetadata() (string, error) {
 	ecsMetadataEnabled = strings.ToLower(ecsMetadataEnabled)
 	if ecsMetadataEnabled == "true" {
 		metadataFilePath := os.Getenv(ecsMetadataFileEnvVar)
-		metadata, err := ioutil.ReadFile(metadataFilePath)
+		metadata, err := os.ReadFile(metadataFilePath)
 		if err != nil {
 			return "", fmt.Errorf("unable to open ECS metadata file, path: %s, error: %w",
 				metadataFilePath, err)
 		}
-		var dat map[string]interface{}
+		var dat map[string]any
 		err = json.Unmarshal(metadata, &dat)
 		if err != nil {
 			return "", fmt.Errorf("invalid json in read ECS metadata file content, path: %s, error: %w",
@@ -228,14 +217,15 @@ func (s *stsCalls) getCreds(region string, roleArn string) (*credentials.Credent
 	// Make explicit call to fetch credentials.
 	_, err = stsCred.Get()
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
+		var awsErr awserr.Error
+		if errors.As(err, &awsErr) {
+			switch awsErr.Code() {
 			case sts.ErrCodeRegionDisabledException:
 				s.log.Warn("STS regional endpoint disabled. Credentials for provided RoleARN will be fetched from STS primary region endpoint instead",
-					zap.String("region", region), zap.Error(aerr))
+					zap.String("region", region), zap.Error(awsErr))
 				stsCred, err = s.getSTSCredsFromPrimaryRegionEndpoint(sess, roleArn, region)
 			default:
-				return nil, fmt.Errorf("unable to handle AWS error: %w", aerr)
+				return nil, fmt.Errorf("unable to handle AWS error: %w", awsErr)
 			}
 		}
 	}

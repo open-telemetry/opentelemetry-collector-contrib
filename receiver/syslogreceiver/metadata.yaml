@@ -1,0 +1,15 @@
+type: syslog
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
+
+tests:
+  config:
+    tcp:
+      listen_address: "localhost:0"
+    protocol: "rfc5424"

@@ -1,25 +1,16 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package sampling
+package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"hash/fnv"
 	"math"
 	"math/big"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -37,34 +28,24 @@ var _ PolicyEvaluator = (*probabilisticSampler)(nil)
 
 // NewProbabilisticSampler creates a policy evaluator that samples a percentage of
 // traces.
-func NewProbabilisticSampler(logger *zap.Logger, hashSalt string, samplingPercentage float64) PolicyEvaluator {
+func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt string, samplingPercentage float64) PolicyEvaluator {
 	if hashSalt == "" {
 		hashSalt = defaultHashSalt
 	}
 
 	return &probabilisticSampler{
-		logger: logger,
+		logger: settings.Logger,
 		// calculate threshold once
 		threshold: calculateThreshold(samplingPercentage / 100),
 		hashSalt:  hashSalt,
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (s *probabilisticSampler) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	s.logger.Debug("Triggering action for late arriving spans in probabilistic filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (s *probabilisticSampler) Evaluate(traceID pdata.TraceID, _ *TraceData) (Decision, error) {
+func (s *probabilisticSampler) Evaluate(_ context.Context, traceID pcommon.TraceID, _ *TraceData) (Decision, error) {
 	s.logger.Debug("Evaluating spans in probabilistic filter")
 
-	traceIDBytes := traceID.Bytes()
-	if hashTraceID(s.hashSalt, traceIDBytes[:]) <= s.threshold {
+	if hashTraceID(s.hashSalt, traceID[:]) <= s.threshold {
 		return Sampled, nil
 	}
 

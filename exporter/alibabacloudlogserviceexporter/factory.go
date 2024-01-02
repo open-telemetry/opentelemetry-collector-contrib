@@ -1,69 +1,54 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package alibabacloudlogserviceexporter
+//go:generate mdatagen metadata.yaml
+
+package alibabacloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
+	"go.opentelemetry.io/collector/exporter"
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "alibabacloud_logservice"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for AlibabaCloud LogService exporter.
-func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
-		typeStr,
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithLogs(createLogsExporter))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() config.Exporter {
-	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createTracesExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	return newTracesExporter(set, cfg)
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (exp component.MetricsExporter, err error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exp exporter.Metrics, err error) {
 	return newMetricsExporter(set, cfg)
 }
 
 func createLogsExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (exp component.LogsExporter, err error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exp exporter.Logs, err error) {
 	return newLogsExporter(set, cfg)
 }

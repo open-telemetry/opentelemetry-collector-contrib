@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package metrics
+package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests/metrics"
 
 import (
 	"context"
@@ -20,8 +9,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -33,14 +23,14 @@ type testHarness struct {
 	metricSupplier     *metricSupplier
 	metricIndex        *metricsReceivedIndex
 	sender             testbed.MetricDataSender
-	currPDM            pdata.Metrics
+	currPDM            pmetric.Metrics
 	diffConsumer       diffConsumer
 	outOfMetrics       bool
 	allMetricsReceived chan struct{}
 }
 
 type diffConsumer interface {
-	accept(string, []*MetricDiff)
+	accept(string, []*metricstestutil.MetricDiff)
 }
 
 func newTestHarness(
@@ -64,7 +54,7 @@ func (h *testHarness) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pdata.Metrics) error {
+func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pmetric.Metrics) error {
 	h.compare(pdm)
 	if h.metricIndex.allReceived() {
 		close(h.allMetricsReceived)
@@ -75,15 +65,15 @@ func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pdata.Metrics) error
 	return nil
 }
 
-func (h *testHarness) compare(pdm pdata.Metrics) {
-	pdms := pdm.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	var diffs []*MetricDiff
+func (h *testHarness) compare(pdm pmetric.Metrics) {
+	pdms := pdm.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	var diffs []*metricstestutil.MetricDiff
 	for i := 0; i < pdms.Len(); i++ {
 		pdmRecd := pdms.At(i)
 		metricName := pdmRecd.Name()
 		metric, found := h.metricIndex.lookup(metricName)
 		if !found {
-			h.diffConsumer.accept(metricName, []*MetricDiff{{
+			h.diffConsumer.accept(metricName, []*metricstestutil.MetricDiff{{
 				ExpectedValue: metricName,
 				Msg:           "Metric name not found in index",
 			}})
@@ -91,8 +81,8 @@ func (h *testHarness) compare(pdm pdata.Metrics) {
 		if !metric.received {
 			metric.received = true
 			sent := metric.pdm
-			pdmExpected := sent.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
-			diffs = DiffMetric(
+			pdmExpected := sent.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+			diffs = metricstestutil.DiffMetric(
 				diffs,
 				pdmExpected,
 				pdmRecd,

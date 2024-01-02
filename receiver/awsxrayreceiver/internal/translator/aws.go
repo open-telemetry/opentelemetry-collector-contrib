@@ -1,38 +1,27 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package translator
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 
 import (
 	"strconv"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
+func addAWSToResource(aws *awsxray.AWSData, attrs pcommon.Map) {
 	if aws == nil {
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/aws.go#L121
 		// this implies that the current segment being processed is not generated
 		// by an AWS entity.
-		attrs.UpsertString(conventions.AttributeCloudProvider, "unknown")
+		attrs.PutStr(conventions.AttributeCloudProvider, "unknown")
 		return
 	}
 
-	attrs.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	addString(aws.AccountID, conventions.AttributeCloudAccountID, attrs)
 
 	// based on https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-aws
@@ -53,7 +42,7 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 	if bs := aws.Beanstalk; bs != nil {
 		addString(bs.Environment, conventions.AttributeServiceNamespace, attrs)
 		if bs.DeploymentID != nil {
-			attrs.UpsertString(conventions.AttributeServiceInstanceID, strconv.FormatInt(*bs.DeploymentID, 10))
+			attrs.PutStr(conventions.AttributeServiceInstanceID, strconv.FormatInt(*bs.DeploymentID, 10))
 		}
 		addString(bs.VersionLabel, conventions.AttributeServiceVersion, attrs)
 	}
@@ -66,7 +55,7 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 	}
 }
 
-func addAWSToSpan(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
+func addAWSToSpan(aws *awsxray.AWSData, attrs pcommon.Map) {
 	if aws != nil {
 		addString(aws.AccountID, awsxray.AWSAccountAttribute, attrs)
 		addString(aws.Operation, awsxray.AWSOperationAttribute, attrs)

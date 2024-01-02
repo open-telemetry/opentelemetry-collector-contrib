@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package extractors
 
@@ -18,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
@@ -37,7 +27,7 @@ func TestNetStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result2[0], nil, containerType)
 	}
 
-	expectedFields := []map[string]interface{}{
+	expectedFields := []map[string]any{
 		{
 			"node_interface_network_rx_bytes":    float64(382.28706877648807),
 			"node_interface_network_rx_dropped":  float64(0),
@@ -166,4 +156,5 @@ func TestNetStats(t *testing.T) {
 	for i := range expectedFields {
 		AssertContainsTaggedField(t, cMetrics[i], expectedFields[i], expectedTags[i])
 	}
+	require.NoError(t, extractor.Shutdown())
 }

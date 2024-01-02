@@ -1,18 +1,7 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package awsemfexporter
+package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
 	"bytes"
@@ -160,9 +149,6 @@ func (m *MetricDeclaration) MatchesLabels(labels map[string]string) bool {
 // returns dimensions that only contains labels from in the given label set.
 func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensions [][]string) {
 	for _, dimensionSet := range m.Dimensions {
-		if len(dimensionSet) == 0 {
-			continue
-		}
 		includeSet := true
 		for _, dim := range dimensionSet {
 			if _, ok := labels[dim]; !ok {
@@ -189,8 +175,9 @@ func (lm *LabelMatcher) init() (err error) {
 	if len(lm.Separator) == 0 {
 		lm.Separator = ";"
 	}
-	lm.compiledRegex = regexp.MustCompile(lm.Regex)
-	return
+
+	lm.compiledRegex, err = regexp.Compile(lm.Regex)
+	return err
 }
 
 // Matches returns true if given set of labels matches the LabelMatcher's rules.

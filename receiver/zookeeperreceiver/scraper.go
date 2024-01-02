@@ -1,18 +1,7 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package zookeeperreceiver
+package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
 import (
 	"bufio"
@@ -24,7 +13,9 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -34,12 +25,15 @@ var zookeeperFormatRE = regexp.MustCompile(`(^zk_\w+)\s+([\w\.\-]+)`)
 
 const (
 	mntrCommand = "mntr"
+	ruokCommand = "ruok"
 )
 
 type zookeeperMetricsScraper struct {
 	logger *zap.Logger
 	config *Config
 	cancel context.CancelFunc
+	rb     *metadata.ResourceBuilder
+	mb     *metadata.MetricsBuilder
 
 	// For mocking.
 	closeConnection       func(net.Conn) error
@@ -48,10 +42,10 @@ type zookeeperMetricsScraper struct {
 }
 
 func (z *zookeeperMetricsScraper) Name() string {
-	return typeStr
+	return metadata.Type
 }
 
-func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperMetricsScraper, error) {
+func newZookeeperMetricsScraper(settings receiver.CreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
 	_, _, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	if err != nil {
 		return nil, err
@@ -61,31 +55,53 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 		return nil, errors.New("timeout must be a positive duration")
 	}
 
-	return &zookeeperMetricsScraper{
-		logger:                logger,
+	z := &zookeeperMetricsScraper{
+		logger:                settings.Logger,
 		config:                config,
+		rb:                    metadata.NewResourceBuilder(config.ResourceAttributes),
+		mb:                    metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,
 		sendCmd:               sendCmd,
-	}, nil
+	}
+
+	return z, nil
 }
 
 func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
-	z.cancel()
+	if z.cancel != nil {
+		z.cancel()
+		z.cancel = nil
+	}
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
-	var ctxWithTimeout context.Context
-	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
+func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	responseMntr, err := z.runCommand(ctx, "mntr")
+	if err != nil {
+		return pmetric.NewMetrics(), err
+	}
 
+	responseRuok, err := z.runCommand(ctx, "ruok")
+	if err != nil {
+		return pmetric.NewMetrics(), err
+	}
+
+	z.processMntr(responseMntr)
+	z.processRuok(responseRuok)
+
+	return z.mb.Emit(metadata.WithResource(z.rb.Emit())), nil
+}
+
+func (z *zookeeperMetricsScraper) runCommand(ctx context.Context, command string) ([]string, error) {
 	conn, err := z.config.Dial()
+
 	if err != nil {
 		z.logger.Error("failed to establish connection",
 			zap.String("endpoint", z.config.Endpoint),
 			zap.Error(err),
 		)
-		return pdata.NewResourceMetricsSlice(), err
+		return nil, err
 	}
 	defer func() {
 		if closeErr := z.closeConnection(conn); closeErr != nil {
@@ -93,39 +109,33 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMet
 		}
 	}()
 
-	deadline, ok := ctxWithTimeout.Deadline()
+	deadline, ok := ctx.Deadline()
 	if ok {
-		if err := z.setConnectionDeadline(conn, deadline); err != nil {
+		if err = z.setConnectionDeadline(conn, deadline); err != nil {
 			z.logger.Warn("failed to set deadline on connection", zap.Error(err))
 		}
 	}
 
-	return z.getResourceMetrics(conn)
-}
-
-func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.ResourceMetricsSlice, error) {
-	scanner, err := z.sendCmd(conn, mntrCommand)
+	scanner, err := z.sendCmd(conn, command)
 	if err != nil {
 		z.logger.Error("failed to send command",
 			zap.Error(err),
-			zap.String("command", mntrCommand),
+			zap.String("command", command),
 		)
-		return pdata.NewResourceMetricsSlice(), err
+		return nil, err
 	}
 
-	md := pdata.NewMetrics()
-	z.appendMetrics(scanner, md.ResourceMetrics())
-	return md.ResourceMetrics(), nil
+	var response []string
+	for scanner.Scan() {
+		response = append(response, scanner.Text())
+	}
+	return response, nil
 }
 
-func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
-	now := pdata.NewTimestampFromTime(time.Now())
-	rm := pdata.NewResourceMetrics()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
-	keepRM := false
-	for scanner.Scan() {
-		line := scanner.Text()
+func (z *zookeeperMetricsScraper) processMntr(response []string) {
+	creator := newMetricCreator(z.mb)
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for _, line := range response {
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
 		if len(parts) != 3 {
 			z.logger.Warn("unexpected line in response",
@@ -139,15 +149,15 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			rm.Resource().Attributes().UpsertString(metadata.Labels.ZkVersion, metricValue)
+			z.rb.SetZkVersion(metricValue)
 			continue
 		case serverStateKey:
-			rm.Resource().Attributes().UpsertString(metadata.Labels.ServerState, metricValue)
+			z.rb.SetServerState(metricValue)
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
-			initMetric := getOTLPInitFunc(metricKey)
-			if initMetric == nil {
+			recordDataPoints := creator.recordDataPointsFunc(metricKey)
+			if recordDataPoints == nil {
 				// Unexported metric, just move to the next line.
 				continue
 			}
@@ -159,24 +169,34 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 				)
 				continue
 			}
-			metric := ilm.Metrics().AppendEmpty()
-			initMetric(metric)
-			switch metric.DataType() {
-			case pdata.MetricDataTypeGauge:
-				dp := metric.Gauge().DataPoints().AppendEmpty()
-				dp.SetTimestamp(now)
-				dp.SetIntVal(int64Val)
-			case pdata.MetricDataTypeSum:
-				dp := metric.Sum().DataPoints().AppendEmpty()
-				dp.SetTimestamp(now)
-				dp.SetIntVal(int64Val)
-			}
-			keepRM = true
+			recordDataPoints(now, int64Val)
 		}
 	}
-	if keepRM {
-		rm.CopyTo(rms.AppendEmpty())
+
+	// Generate computed metrics
+	creator.generateComputedMetrics(z.logger, now)
+}
+
+func (z *zookeeperMetricsScraper) processRuok(response []string) {
+	creator := newMetricCreator(z.mb)
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	metricKey := "ruok"
+	metricValue := int64(0)
+
+	if len(response) > 0 {
+		if response[0] == "imok" {
+			metricValue = int64(1)
+		} else {
+			z.logger.Error("invalid response from ruok",
+				zap.String("command", ruokCommand),
+			)
+			return
+		}
 	}
+
+	recordDataPoints := creator.recordDataPointsFunc(metricKey)
+	recordDataPoints(now, metricValue)
 }
 
 func closeConnection(conn net.Conn) error {

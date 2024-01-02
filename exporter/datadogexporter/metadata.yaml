@@ -1,0 +1,11 @@
+type: datadog
+
+status:
+  class: exporter
+  stability:
+    alpha: [logs]
+    beta: [traces, metrics]
+  distributions: [contrib, aws, observiq]
+  codeowners:
+    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr]
+    emeritus: [gbbr]

@@ -1,0 +1,177 @@
+name: e2e-tests
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  pull_request:
+env:
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+jobs:
+  collector-build:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ~1.20.12
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Build Collector
+        run: make otelcontribcol
+      - name: Upload Collector Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: collector-binary
+          path: ./bin/*
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: collector-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ~1.20.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Download Collector Binary
+        uses: actions/download-artifact@v3
+        with:
+          name: collector-binary
+          path: bin/
+      - run: chmod +x bin/*
+      - name: Build Docker Image
+        run: |
+          make docker-otelcontribcol
+      - name: export image to tar
+        run: |
+          docker save otelcontribcol:latest > /tmp/otelcontribcol.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: otelcontribcol
+          path: /tmp/otelcontribcol.tar
+  kubernetes-test:
+    env:
+      KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
+    strategy:
+      matrix:
+        k8s-version: ["v1.26.0", "v1.25.3", "v1.24.7", "v1.23.13"]
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ~1.20.12
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }} 
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          node_image: kindest/node:${{ matrix.k8s-version }}
+          kubectl_version: ${{ matrix.k8s-version }}
+          cluster_name: kind
+          config: ./.github/workflows/configs/e2e-kind-config.yaml
+      - name: Fix kubelet TLS server certificates
+        run: |
+          kubectl get csr -o=jsonpath='{range.items[?(@.spec.signerName=="kubernetes.io/kubelet-serving")]}{.metadata.name}{" "}{end}' | xargs kubectl certificate approve
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: otelcontribcol
+          path: /tmp
+      - name: Load Docker image
+        run: |
+          docker load --input /tmp/otelcontribcol.tar
+      - name: Kind load image
+        run: |
+          kind load docker-image otelcontribcol:latest --name kind
+      - name: run k8sclusterreceiver e2e tests
+        run: |
+          cd receiver/k8sclusterreceiver
+          go test -v --tags=e2e
+      - name: run k8sattributesprocessor e2e tests
+        run: |    
+          cd processor/k8sattributesprocessor
+          go test -v --tags=e2e
+      - name: run receiver/kubeletstatsreceiver e2e tests
+        run: |
+          cd receiver/kubeletstatsreceiver
+          go test -v --tags=e2e
+      - name: run receiver/k8sobjectsreceiver e2e tests
+        run: |
+          cd receiver/k8sobjectsreceiver
+          go test -v --tags=e2e
+  supervisor-test:
+    runs-on: ubuntu-latest
+    needs: collector-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ~1.20.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }} 
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Download Collector Binary
+        uses: actions/download-artifact@v3
+        with:
+          name: collector-binary
+          path: bin/
+      - run: chmod +x bin/*
+      - name: Run opampsupervisor e2e tests
+        run: |    
+          cd cmd/opampsupervisor
+          go test -v --tags=e2e
+

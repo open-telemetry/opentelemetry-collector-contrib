@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubelet
 
@@ -18,11 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 type pod struct {
@@ -38,8 +28,8 @@ func TestDetailedPVCLabels(t *testing.T) {
 		volumeName                      string
 		volumeSource                    v1.VolumeSource
 		pod                             pod
-		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string, labels map[string]string) error
-		want                            map[string]pdata.AttributeValue
+		detailedPVCLabelsSetterOverride func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
+		want                            map[string]any
 	}{
 		{
 			name:       "persistentVolumeClaim - with detailed PVC labels (AWS)",
@@ -50,26 +40,26 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
-				GetPersistentVolumeLabels(v1.PersistentVolumeSource{
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
 					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
 						VolumeID:  "volume_id",
 						FSType:    "fs_type",
 						Partition: 10,
 					},
-				}, labels)
+				})
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("awsElasticBlockStore"),
-				"aws.volume.id":                  pdata.NewAttributeValueString("volume_id"),
-				"fs.type":                        pdata.NewAttributeValueString("fs_type"),
-				"partition":                      pdata.NewAttributeValueString("10"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]any{
+				"k8s.volume.name":                "volume0",
+				"k8s.volume.type":                "awsElasticBlockStore",
+				"aws.volume.id":                  "volume_id",
+				"fs.type":                        "fs_type",
+				"partition":                      "10",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+				"k8s.pod.uid":                    "uid-1234",
+				"k8s.pod.name":                   "pod-name",
+				"k8s.namespace.name":             "pod-namespace",
 			},
 		},
 		{
@@ -81,26 +71,26 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
-				GetPersistentVolumeLabels(v1.PersistentVolumeSource{
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
 					GCEPersistentDisk: &v1.GCEPersistentDiskVolumeSource{
 						PDName:    "pd_name",
 						FSType:    "fs_type",
 						Partition: 10,
 					},
-				}, labels)
+				})
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("gcePersistentDisk"),
-				"gce.pd.name":                    pdata.NewAttributeValueString("pd_name"),
-				"fs.type":                        pdata.NewAttributeValueString("fs_type"),
-				"partition":                      pdata.NewAttributeValueString("10"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]any{
+				"k8s.volume.name":                "volume0",
+				"k8s.volume.type":                "gcePersistentDisk",
+				"gce.pd.name":                    "pd_name",
+				"fs.type":                        "fs_type",
+				"partition":                      "10",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+				"k8s.pod.uid":                    "uid-1234",
+				"k8s.pod.name":                   "pod-name",
+				"k8s.namespace.name":             "pod-namespace",
 			},
 		},
 		{
@@ -112,24 +102,24 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
-				GetPersistentVolumeLabels(v1.PersistentVolumeSource{
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
 					Glusterfs: &v1.GlusterfsPersistentVolumeSource{
 						EndpointsName: "endpoints_name",
 						Path:          "path",
 					},
-				}, labels)
+				})
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("glusterfs"),
-				"glusterfs.endpoints.name":       pdata.NewAttributeValueString("endpoints_name"),
-				"glusterfs.path":                 pdata.NewAttributeValueString("path"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]any{
+				"k8s.volume.name":                "volume0",
+				"k8s.volume.type":                "glusterfs",
+				"glusterfs.endpoints.name":       "endpoints_name",
+				"glusterfs.path":                 "path",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+				"k8s.pod.uid":                    "uid-1234",
+				"k8s.pod.name":                   "pod-name",
+				"k8s.namespace.name":             "pod-namespace",
 			},
 		},
 		{
@@ -141,21 +131,21 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
-				GetPersistentVolumeLabels(v1.PersistentVolumeSource{
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
 					Local: &v1.LocalVolumeSource{
 						Path: "path",
 					},
-				}, labels)
+				})
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("local"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]any{
+				"k8s.volume.name":                "volume0",
+				"k8s.volume.type":                "local",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+				"k8s.pod.uid":                    "uid-1234",
+				"k8s.pod.name":                   "pod-name",
+				"k8s.namespace.name":             "pod-namespace",
 			},
 		},
 	}
@@ -168,6 +158,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 					Namespace: tt.pod.namespace,
 				},
 			}
+			rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -187,12 +178,12 @@ func TestDetailedPVCLabels(t *testing.T) {
 					},
 				},
 			}, nil)
-			metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
+			metadata.DetailedPVCResourceSetter = tt.detailedPVCLabelsSetterOverride
 
-			volumeResource := pdata.NewResource()
-			err := fillVolumeResource(volumeResource, podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)
+			res, err := getVolumeResourceOptions(rb, podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)
 			require.NoError(t, err)
-			require.Equal(t, pdata.NewAttributeMapFromMap(tt.want).Sort(), volumeResource.Attributes().Sort())
+
+			require.Equal(t, tt.want, res.Attributes().AsRaw())
 		})
 	}
 }

@@ -1,16 +1,5 @@
-// Copyright 2021 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package syslogreceiver
 
@@ -18,23 +7,29 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 )
 
 func TestSyslogWithTcp(t *testing.T) {
-	testSyslog(t, testdataConfigYamlAsMap())
+	testSyslog(t, testdataConfigYaml())
 }
 
 func TestSyslogWithUdp(t *testing.T) {
@@ -46,16 +41,16 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	if cfg.Input["tcp"] != nil {
-		conn, err = net.Dial("tcp", "0.0.0.0:29018")
+	if cfg.InputConfig.TCP != nil {
+		conn, err = net.Dial("tcp", "127.0.0.1:29018")
 		require.NoError(t, err)
 	} else {
-		conn, err = net.Dial("udp", "0.0.0.0:29018")
+		conn, err = net.Dial("udp", "127.0.0.1:29018")
 		require.NoError(t, err)
 	}
 
@@ -71,67 +66,60 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.Len(t, sink.AllLogs(), 1)
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
-	logs := resourceLogs.InstrumentationLibraryLogs().At(0).Logs()
+	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
 
 	for i := 0; i < numLogs; i++ {
 		log := logs.At(i)
 
-		require.Equal(t, log.Timestamp(), pdata.Timestamp(1614470402003000000+i*60*1000*1000*1000))
-		msg, ok := log.Body().MapVal().Get("message")
+		require.Equal(t, log.Timestamp(), pcommon.Timestamp(1614470402003000000+i*60*1000*1000*1000))
+		msg, ok := log.Attributes().AsRaw()["message"]
 		require.True(t, ok)
-		require.Equal(t, msg.StringVal(), fmt.Sprintf("test msg %d", i))
+		require.Equal(t, msg, fmt.Sprintf("test msg %d", i))
 	}
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID(typeStr)])
+	sub, err := cm.Sub("syslog")
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
-func testdataConfigYamlAsMap() *SysLogConfig {
+func testdataConfigYaml() *SysLogConfig {
 	return &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
-				FlushInterval: 100 * time.Millisecond,
-				WorkerCount:   1,
-			},
+		BaseConfig: adapter.BaseConfig{
+			Operators:      []operator.Config{},
+			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
-		Input: stanza.InputConfig{
-			"tcp": map[string]interface{}{
-				"listen_address": "0.0.0.0:29018",
-			},
-			"protocol": "rfc5424",
-		},
+		InputConfig: func() syslog.Config {
+			c := syslog.NewConfig()
+			c.TCP = &tcp.NewConfig().BaseConfig
+			c.TCP.ListenAddress = "127.0.0.1:29018"
+			c.Protocol = "rfc5424"
+			return *c
+		}(),
 	}
 }
 
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
-				FlushInterval: 100 * time.Millisecond,
-				WorkerCount:   1,
-			},
+		BaseConfig: adapter.BaseConfig{
+			Operators: []operator.Config{},
 		},
-		Input: stanza.InputConfig{
-			"udp": map[string]interface{}{
-				"listen_address": "0.0.0.0:29018",
-			},
-			"protocol": "rfc5424",
-		},
+		InputConfig: func() syslog.Config {
+			c := syslog.NewConfig()
+			c.UDP = &udp.NewConfig().BaseConfig
+			c.UDP.ListenAddress = "127.0.0.1:29018"
+			c.Protocol = "rfc5424"
+			return *c
+		}(),
 	}
 }
 
@@ -139,18 +127,17 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+		BaseConfig: adapter.BaseConfig{
+			Operators: []operator.Config{},
 		},
-		Input: stanza.InputConfig{
-			"tcp": map[string]interface{}{
-				"max_buffer_size": "0.1.0.1-",
-			},
-			"protocol": "rfc5424",
-		},
+		InputConfig: func() syslog.Config {
+			c := syslog.NewConfig()
+			c.TCP = &tcp.NewConfig().BaseConfig
+			c.Protocol = "fake"
+			return *c
+		}(),
 	}
-	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, sink)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }

@@ -1,30 +1,31 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package testbed
+package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"context"
+	"errors"
 	"log"
+	"math/rand"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/atomic"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+var errNonPermanent = errors.New("non permanent error")
+var errPermanent = errors.New("permanent error")
+
+type decisionFunc func() error
 
 // MockBackend is a backend that allows receiving the data locally.
 type MockBackend struct {
@@ -47,9 +48,16 @@ type MockBackend struct {
 	// Recording fields.
 	isRecording     bool
 	recordMutex     sync.Mutex
-	ReceivedTraces  []pdata.Traces
-	ReceivedMetrics []pdata.Metrics
-	ReceivedLogs    []pdata.Logs
+	ReceivedTraces  []ptrace.Traces
+	ReceivedMetrics []pmetric.Metrics
+	ReceivedLogs    []plog.Logs
+
+	DroppedTraces  []ptrace.Traces
+	DroppedMetrics []pmetric.Metrics
+	DroppedLogs    []plog.Logs
+
+	// decision to return permanent/non-permanent errors
+	decision decisionFunc
 }
 
 // NewMockBackend creates a new mock backend that receives data using specified receiver.
@@ -60,11 +68,16 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 		tc:          &MockTraceConsumer{},
 		mc:          &MockMetricConsumer{},
 		lc:          &MockLogConsumer{},
+		decision:    func() error { return nil },
 	}
 	mb.tc.backend = mb
 	mb.mc.backend = mb
 	mb.lc.backend = mb
 	return mb
+}
+
+func (mb *MockBackend) WithDecisionFunc(decision decisionFunc) {
+	mb.decision = decision
 }
 
 // Start a backend.
@@ -134,7 +147,7 @@ func (mb *MockBackend) ClearReceivedItems() {
 	mb.ReceivedLogs = nil
 }
 
-func (mb *MockBackend) ConsumeTrace(td pdata.Traces) {
+func (mb *MockBackend) ConsumeTrace(td ptrace.Traces) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -142,7 +155,7 @@ func (mb *MockBackend) ConsumeTrace(td pdata.Traces) {
 	}
 }
 
-func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
+func (mb *MockBackend) ConsumeMetric(md pmetric.Metrics) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -152,7 +165,7 @@ func (mb *MockBackend) ConsumeMetric(md pdata.Metrics) {
 
 var _ consumer.Traces = (*MockTraceConsumer)(nil)
 
-func (mb *MockBackend) ConsumeLogs(ld pdata.Logs) {
+func (mb *MockBackend) ConsumeLogs(ld plog.Logs) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
@@ -169,12 +182,19 @@ func (tc *MockTraceConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+	if err := tc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && tc.backend.isRecording {
+			tc.backend.DroppedTraces = append(tc.backend.DroppedTraces, td)
+		}
+		return err
+	}
+
 	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
-		ils := rs.At(i).InstrumentationLibrarySpans()
+		ils := rs.At(i).ScopeSpans()
 		for j := 0; j < ils.Len(); j++ {
 			spans := ils.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
@@ -184,12 +204,12 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) e
 
 				seqnumAttr, ok := span.Attributes().Get("load_generator.span_seq_num")
 				if ok {
-					spanSeqnum = seqnumAttr.IntVal()
+					spanSeqnum = seqnumAttr.Int()
 				}
 
 				seqnumAttr, ok = span.Attributes().Get("load_generator.trace_seq_num")
 				if ok {
-					traceSeqnum = seqnumAttr.IntVal()
+					traceSeqnum = seqnumAttr.Int()
 				}
 
 				// Ignore the seqnums for now. We will use them later.
@@ -216,7 +236,14 @@ func (mc *MockMetricConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pdata.Metrics) error {
+func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	if err := mc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && mc.backend.isRecording {
+			mc.backend.DroppedMetrics = append(mc.backend.DroppedMetrics, md)
+		}
+		return err
+	}
+
 	mc.numMetricsReceived.Add(uint64(md.DataPointCount()))
 	mc.backend.ConsumeMetric(md)
 	return nil
@@ -241,9 +268,36 @@ func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld pdata.Logs) error {
+func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+	if err := lc.backend.decision(); err != nil {
+		if consumererror.IsPermanent(err) && lc.backend.isRecording {
+			lc.backend.DroppedLogs = append(lc.backend.DroppedLogs, ld)
+		}
+		return err
+	}
+
 	recordCount := ld.LogRecordCount()
 	lc.numLogRecordsReceived.Add(uint64(recordCount))
 	lc.backend.ConsumeLogs(ld)
+	return nil
+}
+
+// randomNonPermanentError is a decision function that succeeds approximately
+// half of the time and fails with a non-permanent error the rest of the time.
+func RandomNonPermanentError() error {
+	code := codes.Unavailable
+	s := status.New(code, errNonPermanent.Error())
+	if rand.Float32() < 0.5 {
+		return s.Err()
+	}
+	return nil
+}
+
+// randomPermanentError is a decision function that succeeds approximately
+// half of the time and fails with a permanent error the rest of the time.
+func RandomPermanentError() error {
+	if rand.Float32() < 0.5 {
+		return consumererror.NewPermanent(errPermanent)
+	}
 	return nil
 }

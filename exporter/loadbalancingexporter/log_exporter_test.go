@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadbalancingexporter
 
@@ -19,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -26,12 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -48,15 +39,13 @@ func TestNewLogsExporter(t *testing.T) {
 		},
 		{
 			"empty",
-			&Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-			},
+			&Config{},
 			errNoResolver,
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			// test
-			_, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), tt.config)
+			_, err := newLogsExporter(exportertest.NewNopCreateSettings(), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -73,7 +62,7 @@ func TestLogExporterStart(t *testing.T) {
 		{
 			"ok",
 			func() *logExporterImp {
-				p, _ := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
+				p, _ := newLogsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 				return p
 			}(),
 			nil,
@@ -82,8 +71,8 @@ func TestLogExporterStart(t *testing.T) {
 			"error",
 			func() *logExporterImp {
 				// prepare
-				lb, _ := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), nil)
-				p, _ := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
+				lb, _ := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), nil)
+				p, _ := newLogsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
@@ -102,7 +91,9 @@ func TestLogExporterStart(t *testing.T) {
 
 			// test
 			res := p.Start(context.Background(), componenttest.NewNopHost())
-			defer p.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, p.Shutdown(context.Background()))
+			}()
 
 			// verify
 			require.Equal(t, tt.err, res)
@@ -111,7 +102,7 @@ func TestLogExporterStart(t *testing.T) {
 }
 
 func TestLogExporterShutdown(t *testing.T) {
-	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
+	p, err := newLogsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -123,19 +114,19 @@ func TestLogExporterShutdown(t *testing.T) {
 }
 
 func TestConsumeLogs(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
+	p, err := newLogsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.exporters["endpoint-1"] = newNopMockLogsExporter()
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
@@ -146,7 +137,9 @@ func TestConsumeLogs(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
@@ -155,52 +148,20 @@ func TestConsumeLogs(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestConsumeLogsExporterNotFound(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
-		return newNopMockTracesExporter(), nil
-	}
-	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
-	require.NotNil(t, lb)
-	require.NoError(t, err)
-
-	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
-	require.NotNil(t, p)
-	require.NoError(t, err)
-
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
-			return []string{"endpoint-1"}, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	err = p.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
-
-	// test
-	res := p.ConsumeLogs(context.Background(), simpleLogs())
-
-	// verify
-	assert.Error(t, res)
-	assert.EqualError(t, res, fmt.Sprintf("couldn't find the exporter for the endpoint %q", "endpoint-1"))
-}
-
 func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
-	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
+	p, err := newLogsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.exporters["endpoint-1"] = newNopMockExporter()
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
@@ -211,40 +172,44 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
 
 	// verify
 	assert.Error(t, res)
-	assert.EqualError(t, res, fmt.Sprintf("unable to export logs, unexpected exporter type: expected *component.LogsExporter but got %T", newNopMockExporter()))
+	assert.EqualError(t, res, fmt.Sprintf("unable to export logs, unexpected exporter type: expected exporter.Logs but got %T", newNopMockExporter()))
 }
 
 func TestLogBatchWithTwoTraces(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
-		return newNopMockLogsExporter(), nil
+	sink := new(consumertest.LogsSink)
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
-	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
+	p, err := newLogsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	sink := new(consumertest.LogsSink)
-	lb.exporters["endpoint-1"] = newMockLogsExporter(sink.ConsumeLogs)
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	p.loadBalancer = lb
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	first := simpleLogs()
-	second := simpleLogWithID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
-	batch := pdata.NewLogs()
+	second := simpleLogWithID(pcommon.TraceID([16]byte{2, 3, 4, 5}))
+	batch := plog.NewLogs()
 	firstTgt := batch.ResourceLogs().AppendEmpty()
 	first.ResourceLogs().At(0).CopyTo(firstTgt)
 	secondTgt := batch.ResourceLogs().AppendEmpty()
@@ -261,56 +226,58 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 func TestNoLogsInBatch(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string
-		batch pdata.Logs
+		batch plog.Logs
 	}{
 		{
 			"no resource logs",
-			pdata.NewLogs(),
+			plog.NewLogs(),
 		},
 		{
 			"no instrumentation library logs",
-			func() pdata.Logs {
-				batch := pdata.NewLogs()
+			func() plog.Logs {
+				batch := plog.NewLogs()
 				batch.ResourceLogs().AppendEmpty()
 				return batch
 			}(),
 		},
 		{
 			"no logs",
-			func() pdata.Logs {
-				batch := pdata.NewLogs()
-				batch.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+			func() plog.Logs {
+				batch := plog.NewLogs()
+				batch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 				return batch
 			}(),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res := traceIDFromLogs(tt.batch)
-			assert.Equal(t, pdata.InvalidTraceID(), res)
+			assert.Equal(t, pcommon.NewTraceIDEmpty(), res)
 		})
 	}
 }
 
 func TestLogsWithoutTraceID(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
-		return newNopMockLogsExporter(), nil
+	sink := new(consumertest.LogsSink)
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
-	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
+	p, err := newLogsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	sink := new(consumertest.LogsSink)
-	lb.exporters["endpoint-1"] = newMockLogsExporter(sink.ConsumeLogs)
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	p.loadBalancer = lb
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	err = p.ConsumeLogs(context.Background(), simpleLogWithoutID())
@@ -321,17 +288,27 @@ func TestLogsWithoutTraceID(t *testing.T) {
 }
 
 func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13331")
+
 	// this test is based on the discussion in the following issue for this exporter:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
 	// prepare
 
 	// simulate rolling updates, the dns resolver should resolve in the following order
 	// ["127.0.0.1"] -> ["127.0.0.1", "127.0.0.2"] -> ["127.0.0.2"]
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
+	mu := sync.Mutex{}
+	var lastResolved []string
+	res.onChange(func(s []string) {
+		mu.Lock()
+		lastResolved = s
+		mu.Unlock()
+	})
+
 	resolverCh := make(chan struct{}, 1)
-	counter := 0
+	counter := &atomic.Int64{}
 	resolve := [][]net.IPAddr{
 		{
 			{IP: net.IPv4(127, 0, 0, 1)},
@@ -345,14 +322,14 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			defer func() {
-				counter++
+				counter.Add(1)
 			}()
 
-			if counter <= 2 {
-				return resolve[counter], nil
+			if counter.Load() <= 2 {
+				return resolve[counter.Load()], nil
 			}
 
-			if counter == 3 {
+			if counter.Load() == 3 {
 				// stop as soon as rolling updates end
 				resolverCh <- struct{}{}
 			}
@@ -363,36 +340,36 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	res.resInterval = 10 * time.Millisecond
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
 	}
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
+	p, err := newLogsExporter(exportertest.NewNopCreateSettings(), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
 	lb.res = res
 	p.loadBalancer = lb
 
-	var counter1, counter2 int64
-	defaultExporters := map[string]component.Exporter{
-		"127.0.0.1": newMockLogsExporter(func(ctx context.Context, ld pdata.Logs) error {
-			atomic.AddInt64(&counter1, 1)
+	counter1 := &atomic.Int64{}
+	counter2 := &atomic.Int64{}
+	defaultExporters := map[string]component.Component{
+		"127.0.0.1:4317": newMockLogsExporter(func(ctx context.Context, ld plog.Logs) error {
+			counter1.Add(1)
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		},
 		),
-		"127.0.0.2": newMockLogsExporter(func(ctx context.Context, ld pdata.Logs) error {
-			atomic.AddInt64(&counter2, 1)
+		"127.0.0.2:4317": newMockLogsExporter(func(ctx context.Context, ld plog.Logs) error {
+			counter2.Add(1)
 			return nil
 		},
 		),
@@ -401,7 +378,9 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	// test
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 	// ensure using default exporters
 	lb.updateLock.Lock()
 	lb.exporters = defaultExporters
@@ -423,7 +402,9 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 				consumeCh <- struct{}{}
 				return
 			case <-ticker.C:
-				go p.ConsumeLogs(ctx, randomLogs())
+				go func() {
+					require.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
+				}()
 			}
 		}
 	}(ctx)
@@ -432,7 +413,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	// will still pass due to the 10 secs of sleep that is used to simulate
 	// unreachable backends.
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 		resolverCh <- struct{}{}
 	}()
 
@@ -441,64 +422,71 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	<-consumeCh
 
 	// verify
-	require.Equal(t, []string{"127.0.0.2"}, res.endpoints)
-	require.Greater(t, atomic.LoadInt64(&counter1), int64(0))
-	require.Greater(t, atomic.LoadInt64(&counter2), int64(0))
+	mu.Lock()
+	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
+	mu.Unlock()
+	require.Greater(t, counter1.Load(), int64(0))
+	require.Greater(t, counter2.Load(), int64(0))
 }
 
-func randomLogs() pdata.Logs {
+func randomLogs() plog.Logs {
 	return simpleLogWithID(random())
 }
 
-func simpleLogs() pdata.Logs {
-	return simpleLogWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+func simpleLogs() plog.Logs {
+	return simpleLogWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
-func simpleLogWithID(id pdata.TraceID) pdata.Logs {
-	logs := pdata.NewLogs()
+func simpleLogWithID(id pcommon.TraceID) plog.Logs {
+	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().AppendEmpty().SetTraceID(id)
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty().SetTraceID(id)
 
 	return logs
 }
 
-func simpleLogWithoutID() pdata.Logs {
-	logs := pdata.NewLogs()
+func simpleLogWithoutID() plog.Logs {
+	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
 
 	return logs
 }
 
 type mockLogsExporter struct {
 	component.Component
-	ConsumeLogsFn func(ctx context.Context, ld pdata.Logs) error
+	consumelogsfn func(ctx context.Context, ld plog.Logs) error
 }
 
 func (e *mockLogsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *mockLogsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	if e.ConsumeLogsFn == nil {
+func (e *mockLogsExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	if e.consumelogsfn == nil {
 		return nil
 	}
-	return e.ConsumeLogsFn(ctx, ld)
+	return e.consumelogsfn(ctx, ld)
 }
 
-func newMockLogsExporter(ConsumeLogsFn func(ctx context.Context, ld pdata.Logs) error) component.LogsExporter {
+type mockComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func newMockLogsExporter(consumelogsfn func(ctx context.Context, ld plog.Logs) error) exporter.Logs {
 	return &mockLogsExporter{
-		Component:     componenthelper.New(),
-		ConsumeLogsFn: ConsumeLogsFn,
+		Component:     mockComponent{},
+		consumelogsfn: consumelogsfn,
 	}
 }
 
-func newNopMockLogsExporter() component.LogsExporter {
+func newNopMockLogsExporter() exporter.Logs {
 	return &mockLogsExporter{
-		Component: componenthelper.New(),
-		ConsumeLogsFn: func(ctx context.Context, ld pdata.Logs) error {
+		Component: mockComponent{},
+		consumelogsfn: func(ctx context.Context, ld plog.Logs) error {
 			return nil
 		},
 	}

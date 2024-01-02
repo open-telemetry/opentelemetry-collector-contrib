@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opencensus
 
@@ -21,8 +10,8 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -613,20 +602,18 @@ func generateOCTestMetricDoubleSummary() *ocmetrics.Metric {
 	}
 }
 
-func generateResourceWithOcNodeAndResource() pdata.Resource {
-	resource := pdata.NewResource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		occonventions.AttributeProcessStartTime:   pdata.NewAttributeValueString("2020-02-11T20:26:00Z"),
-		conventions.AttributeHostName:             pdata.NewAttributeValueString("host1"),
-		conventions.AttributeProcessPID:           pdata.NewAttributeValueInt(123),
-		conventions.AttributeTelemetrySDKVersion:  pdata.NewAttributeValueString("v2.0.1"),
-		occonventions.AttributeExporterVersion:    pdata.NewAttributeValueString("v1.2.0"),
-		conventions.AttributeTelemetrySDKLanguage: pdata.NewAttributeValueString("cpp"),
-		occonventions.AttributeResourceType:       pdata.NewAttributeValueString("good-resource"),
-		"node-str-attr":                           pdata.NewAttributeValueString("node-str-attr-val"),
-		"resource-str-attr":                       pdata.NewAttributeValueString("resource-str-attr-val"),
-		"resource-int-attr":                       pdata.NewAttributeValueInt(123),
-	})
+func generateResourceWithOcNodeAndResource() pcommon.Resource {
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
+	resource.Attributes().PutStr(conventions.AttributeHostName, "host1")
+	resource.Attributes().PutInt(conventions.AttributeProcessPID, 123)
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "v2.0.1")
+	resource.Attributes().PutStr(occonventions.AttributeExporterVersion, "v1.2.0")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "cpp")
+	resource.Attributes().PutStr(occonventions.AttributeResourceType, "good-resource")
+	resource.Attributes().PutStr("node-str-attr", "node-str-attr-val")
+	resource.Attributes().PutStr("resource-str-attr", "resource-str-attr-val")
+	resource.Attributes().PutInt("resource-int-attr", 123)
 	return resource
 }
 

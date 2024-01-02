@@ -1,24 +1,15 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package oauth2clientauthextension
+package oauth2clientauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 
 import (
 	"errors"
+	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -30,15 +21,23 @@ var (
 
 // Config stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
 
 	// ClientID is the application's ID.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2
 	ClientID string `mapstructure:"client_id"`
 
+	// ClientIDFile is the file path to read the application's ID from.
+	ClientIDFile string `mapstructure:"client_id_file"`
+
 	// ClientSecret is the application's secret.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
-	ClientSecret string `mapstructure:"client_secret"`
+	ClientSecret configopaque.String `mapstructure:"client_secret"`
+
+	// ClientSecretFile is the file pathg to read the application's secret from.
+	ClientSecretFile string `mapstructure:"client_secret_file"`
+
+	// EndpointParams specifies additional parameters for requests to the token endpoint.
+	EndpointParams url.Values `mapstructure:"endpoint_params"`
 
 	// TokenURL is the resource server's token endpoint
 	// URL. This is a constant specific to each server.
@@ -57,14 +56,14 @@ type Config struct {
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 }
 
-var _ config.Extension = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.ClientID == "" {
+	if cfg.ClientID == "" && cfg.ClientIDFile == "" {
 		return errNoClientIDProvided
 	}
-	if cfg.ClientSecret == "" {
+	if cfg.ClientSecret == "" && cfg.ClientSecretFile == "" {
 		return errNoClientSecretProvided
 	}
 	if cfg.TokenURL == "" {

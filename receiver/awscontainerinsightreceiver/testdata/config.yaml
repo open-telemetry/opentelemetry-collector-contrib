@@ -1,14 +1,4 @@
-receivers:
-  awscontainerinsightreceiver:
-    container_orchestrator: eks
-  awscontainerinsightreceiver/collection_interval_settings:
-    collection_interval: 60s
-    
-exporters:
-  nop:
-  
-service:
-  pipelines:
-    metrics:
-      receivers: [awscontainerinsightreceiver]
-      exporters: [nop]
+awscontainerinsightreceiver:
+  container_orchestrator: eks
+awscontainerinsightreceiver/collection_interval_settings:
+  collection_interval: 60s

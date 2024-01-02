@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadbalancingexporter
 
@@ -19,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestNewHashRing(t *testing.T) {
@@ -39,16 +27,18 @@ func TestEndpointFor(t *testing.T) {
 	ring := newHashRing(endpoints)
 
 	for _, tt := range []struct {
-		traceID  pdata.TraceID
+		id       []byte
 		expected string
 	}{
 		// check that we are indeed alternating endpoints for different inputs
-		{pdata.NewTraceID([16]byte{1, 2, 0, 0}), "endpoint-1"},
-		{pdata.NewTraceID([16]byte{128, 128, 0, 0}), "endpoint-2"},
+		{[]byte{1, 2, 0, 0}, "endpoint-1"},
+		{[]byte{128, 128, 0, 0}, "endpoint-2"},
+		{[]byte("ad-service-7"), "endpoint-1"},
+		{[]byte("get-recommendations-1"), "endpoint-2"},
 	} {
-		t.Run(fmt.Sprintf("Endpoint for traceID %s", tt.traceID.HexString()), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Endpoint for id %s", string(tt.id)), func(t *testing.T) {
 			// test
-			endpoint := ring.endpointFor(tt.traceID)
+			endpoint := ring.endpointFor(tt.id)
 
 			// verify
 			assert.Equal(t, tt.expected, endpoint)

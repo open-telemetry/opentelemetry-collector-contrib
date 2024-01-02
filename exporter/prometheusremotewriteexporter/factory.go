@@ -1,54 +1,41 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package prometheusremotewriteexporter
+package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
 import (
 	"context"
 	"errors"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "prometheusremotewrite"
-)
-
 // NewFactory creates a new Prometheus Remote Write exporter.
-func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
-		typeStr,
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter))
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
 }
 
-func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings,
-	cfg config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
+	cfg component.Config) (exporter.Metrics, error) {
 
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration")
 	}
 
-	prwe, err := NewPRWExporter(prwCfg, set.BuildInfo)
+	prwe, err := newPRWExporter(prwCfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -60,16 +47,16 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 	// without considering this limitation, we experience
 	// "out of order samples" errors.
 	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
-			Enabled:      true,
+			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
 		}),
-		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithStart(prwe.Start),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
@@ -79,30 +66,41 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 	return resourcetotelemetry.WrapMetricsExporter(prwCfg.ResourceToTelemetrySettings, exporter), nil
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Namespace:        "",
-		ExternalLabels:   map[string]string{},
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		Namespace:         "",
+		ExternalLabels:    map[string]string{},
+		MaxBatchSizeBytes: 3000000,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 50 * time.Millisecond,
-			MaxInterval:     200 * time.Millisecond,
-			MaxElapsedTime:  1 * time.Minute,
+			Enabled:             true,
+			InitialInterval:     50 * time.Millisecond,
+			MaxInterval:         200 * time.Millisecond,
+			MaxElapsedTime:      1 * time.Minute,
+			RandomizationFactor: backoff.DefaultRandomizationFactor,
+			Multiplier:          backoff.DefaultMultiplier,
 		},
+		AddMetricSuffixes: true,
+		SendMetadata:      false,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.DefaultTimeoutSettings().Timeout,
-			Headers:         map[string]string{},
+			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
+			Headers:         map[string]configopaque.String{},
 		},
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
+			Enabled:      true,
 			QueueSize:    10000,
 			NumConsumers: 5,
+		},
+		TargetInfo: &TargetInfo{
+			Enabled: true,
+		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
 		},
 	}
 }

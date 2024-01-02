@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsecscontainermetrics
 
@@ -19,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 var (
@@ -88,15 +79,15 @@ var (
 		CPU:         &cpuStats,
 	}
 
-	tm = TaskMetadata{
+	tm = ecsutil.TaskMetadata{
 		Cluster:  "cluster-1",
 		TaskARN:  "arn:aws:some-value/001",
 		Family:   "task-def-family-1",
 		Revision: "task-def-version",
-		Containers: []ContainerMetadata{
-			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
+		Containers: []ecsutil.ContainerMetadata{
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 		},
-		Limits: Limit{CPU: &f, Memory: &v},
+		Limits: ecsutil.Limits{CPU: &f, Memory: &v},
 	}
 
 	cstats = map[string]*ContainerStats{"001": &containerStats}
@@ -111,8 +102,8 @@ func TestGetMetricsDataAllValid(t *testing.T) {
 }
 
 func TestGetMetricsDataMissingContainerStats(t *testing.T) {
-	tm.Containers = []ContainerMetadata{
-		{ContainerName: "container-1", DockerID: "001-Missing", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
+	tm.Containers = []ecsutil.ContainerMetadata{
+		{ContainerName: "container-1", DockerID: "001-Missing", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 	}
 	acc.getMetricsData(cstats, tm, logger)
 	require.Less(t, 0, len(acc.mds))
@@ -120,8 +111,8 @@ func TestGetMetricsDataMissingContainerStats(t *testing.T) {
 
 func TestGetMetricsDataForStoppedContainer(t *testing.T) {
 	cstats = map[string]*ContainerStats{"001": nil}
-	tm.Containers = []ContainerMetadata{
-		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", CreatedAt: "2020-07-30T22:12:29.842610987Z", StartedAt: "2020-07-30T22:12:31.842610987Z", FinishedAt: "2020-07-31T22:10:29.842610987Z", KnownStatus: "STOPPED", Limits: Limit{CPU: &f, Memory: &v}},
+	tm.Containers = []ecsutil.ContainerMetadata{
+		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", CreatedAt: "2020-07-30T22:12:29.842610987Z", StartedAt: "2020-07-30T22:12:31.842610987Z", FinishedAt: "2020-07-31T22:10:29.842610987Z", KnownStatus: "STOPPED", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 	}
 	acc.getMetricsData(cstats, tm, logger)
 	require.Less(t, 0, len(acc.mds))
@@ -129,15 +120,15 @@ func TestGetMetricsDataForStoppedContainer(t *testing.T) {
 
 func TestWrongFormatTimeDataForStoppedContainer(t *testing.T) {
 	cstats = map[string]*ContainerStats{"001": nil}
-	tm.Containers = []ContainerMetadata{
-		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", CreatedAt: "2020-07-30T22:12:29.842610987Z", StartedAt: "2020-07-30T22:12:31.842610987Z", FinishedAt: "2020-07-31 22:10:29", KnownStatus: "STOPPED", Limits: Limit{CPU: &f, Memory: &v}},
+	tm.Containers = []ecsutil.ContainerMetadata{
+		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", CreatedAt: "2020-07-30T22:12:29.842610987Z", StartedAt: "2020-07-30T22:12:31.842610987Z", FinishedAt: "2020-07-31 22:10:29", KnownStatus: "STOPPED", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 	}
 	acc.getMetricsData(cstats, tm, logger)
 	require.Less(t, 0, len(acc.mds))
 }
 
 func TestGetMetricsDataMissingContainerLimit(t *testing.T) {
-	tm.Containers = []ContainerMetadata{
+	tm.Containers = []ecsutil.ContainerMetadata{
 		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1"},
 	}
 
@@ -146,8 +137,8 @@ func TestGetMetricsDataMissingContainerLimit(t *testing.T) {
 }
 
 func TestGetMetricsDataContainerLimitCpuNil(t *testing.T) {
-	tm.Containers = []ContainerMetadata{
-		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: nil, Memory: &v}},
+	tm.Containers = []ecsutil.ContainerMetadata{
+		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: nil, Memory: &v}},
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
@@ -155,8 +146,8 @@ func TestGetMetricsDataContainerLimitCpuNil(t *testing.T) {
 }
 
 func TestGetMetricsDataContainerLimitMemoryNil(t *testing.T) {
-	tm.Containers = []ContainerMetadata{
-		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: nil}},
+	tm.Containers = []ecsutil.ContainerMetadata{
+		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: &f, Memory: nil}},
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
@@ -164,13 +155,13 @@ func TestGetMetricsDataContainerLimitMemoryNil(t *testing.T) {
 }
 
 func TestGetMetricsDataMissingTaskLimit(t *testing.T) {
-	tm = TaskMetadata{
+	tm = ecsutil.TaskMetadata{
 		Cluster:  "cluster-1",
 		TaskARN:  "arn:aws:some-value/001",
 		Family:   "task-def-family-1",
 		Revision: "task-def-version",
-		Containers: []ContainerMetadata{
-			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
+		Containers: []ecsutil.ContainerMetadata{
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 		},
 	}
 
@@ -179,15 +170,15 @@ func TestGetMetricsDataMissingTaskLimit(t *testing.T) {
 }
 
 func TestGetMetricsDataTaskLimitCpuNil(t *testing.T) {
-	tm = TaskMetadata{
+	tm = ecsutil.TaskMetadata{
 		Cluster:  "cluster-1",
 		TaskARN:  "arn:aws:some-value/001",
 		Family:   "task-def-family-1",
 		Revision: "task-def-version",
-		Containers: []ContainerMetadata{
-			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
+		Containers: []ecsutil.ContainerMetadata{
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 		},
-		Limits: Limit{CPU: nil, Memory: &v},
+		Limits: ecsutil.Limits{CPU: nil, Memory: &v},
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
@@ -195,15 +186,15 @@ func TestGetMetricsDataTaskLimitCpuNil(t *testing.T) {
 }
 
 func TestGetMetricsDataTaskLimitMemoryNil(t *testing.T) {
-	tm = TaskMetadata{
+	tm = ecsutil.TaskMetadata{
 		Cluster:  "cluster-1",
 		TaskARN:  "arn:aws:some-value/001",
 		Family:   "task-def-family-1",
 		Revision: "task-def-version",
-		Containers: []ContainerMetadata{
-			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
+		Containers: []ecsutil.ContainerMetadata{
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 		},
-		Limits: Limit{CPU: &f, Memory: nil},
+		Limits: ecsutil.Limits{CPU: &f, Memory: nil},
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
@@ -211,15 +202,15 @@ func TestGetMetricsDataTaskLimitMemoryNil(t *testing.T) {
 }
 
 func TestGetMetricsDataCpuReservedZero(t *testing.T) {
-	tm = TaskMetadata{
+	tm = ecsutil.TaskMetadata{
 		Cluster:  "cluster-1",
 		TaskARN:  "arn:aws:some-value/001",
 		Family:   "task-def-family-1",
 		Revision: "task-def-version",
-		Containers: []ContainerMetadata{
-			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &floatZero, Memory: nil}},
+		Containers: []ecsutil.ContainerMetadata{
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: &floatZero, Memory: nil}},
 		},
-		Limits: Limit{CPU: &floatZero, Memory: &v},
+		Limits: ecsutil.Limits{CPU: &floatZero, Memory: &v},
 	}
 
 	acc.getMetricsData(cstats, tm, logger)

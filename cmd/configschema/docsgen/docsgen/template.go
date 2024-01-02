@@ -1,29 +1,19 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package docsgen
+package docsgen // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 )
 
 func tableTemplate() (*template.Template, error) {
-	return template.New("table").Funcs(
+	return template.New("table").Option("missingkey=zero").Funcs(
 		template.FuncMap{
 			"join":            join,
-			"cleanType":       cleanType,
+			"mkAnchor":        mkAnchor,
 			"isCompoundField": isCompoundField,
 			"isDuration":      isDuration,
 		},
@@ -38,32 +28,44 @@ func join(s string) string {
 	return strings.ReplaceAll(s, "\n", " ")
 }
 
-func cleanType(s string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(s, "*", ""), ".", "-")
+// mkAnchor takes a name and a type (e.g. "configtls.TLSClientSetting") and
+// returns a string suitable for use as a markdown anchor.
+func mkAnchor(name, typ string) string {
+	if isDuration(typ) {
+		return "time-Duration"
+	}
+	idx := strings.IndexRune(typ, '.')
+	// strip "configtls." from e.g. "configtls.TLSClientSetting"
+	typeStripped := typ[idx+1:]
+	concat := fmt.Sprintf("%s-%s", name, typeStripped)
+	asterisksRemoved := strings.ReplaceAll(concat, "*", "")
+	dotsToDashes := strings.ReplaceAll(asterisksRemoved, ".", "-")
+	return strings.ReplaceAll(dotsToDashes, "_", "-")
 }
 
 func isDuration(s string) bool {
 	return s == "time.Duration"
 }
 
-const tableTemplateStr = `### {{ cleanType .Type }}
+const tableTemplateStr = `### {{ mkAnchor .Name .Type }}
 
-| Name | Type | Default | Docs |
-| ---- | ---- | ------- | ---- |
+| Name | Field Info | Default | Docs |
+| ---- | --------- | ------- | ---- |
 {{ range .Fields -}}
 | {{ .Name }} |
 {{- if .Type -}}
-    {{- if isCompoundField .Kind -}}
-        [{{ cleanType .Type }}](#{{ cleanType .Type }})
-    {{- else -}}
+	{{- $anchor := mkAnchor .Name .Type -}}
+	{{- if isCompoundField .Kind -}}
+			[{{ $anchor }}](#{{ $anchor }})
+	{{- else -}}
 		{{- if isDuration .Type -}}
-			[{{ cleanType .Type }}](#{{ cleanType .Type }})
-        {{- else -}}
-            {{ .Type }}
-        {{- end -}}
-    {{- end -}}
+			[{{ $anchor }}](#{{ $anchor }})
+		{{- else -}}
+			{{ .Type }}
+		{{- end -}}
+	{{- end -}}
 {{- else -}}
-    {{ .Kind }}
+	{{ .Kind }}
 {{- end -}}
 | {{ .Default }} | {{ join .Doc }} |
 {{ end }}

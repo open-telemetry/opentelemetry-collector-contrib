@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translator
 
@@ -20,8 +9,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -35,11 +26,9 @@ func TestWriterPoolBasic(t *testing.T) {
 	assert.NotNil(t, w.encoder)
 	assert.Equal(t, size, w.buffer.Cap())
 	assert.Equal(t, 0, w.buffer.Len())
-	resource := pdata.NewResource()
-	segment, _ := MakeSegment(span, resource, nil, false)
-	if err := w.Encode(*segment); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	resource := pcommon.NewResource()
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+	require.NoError(t, w.Encode(*segment))
 	jsonStr := w.String()
 	assert.Equal(t, len(jsonStr), w.buffer.Len())
 	wp.release(w)
@@ -53,8 +42,9 @@ func BenchmarkWithoutPool(b *testing.B) {
 		b.StartTimer()
 		buffer := bytes.NewBuffer(make([]byte, 0, 2048))
 		encoder := json.NewEncoder(buffer)
-		segment, _ := MakeSegment(span, pdata.NewResource(), nil, false)
-		encoder.Encode(*segment)
+		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false, nil, false)
+		err := encoder.Encode(*segment)
+		assert.NoError(b, err)
 		logger.Info(buffer.String())
 	}
 }
@@ -67,14 +57,15 @@ func BenchmarkWithPool(b *testing.B) {
 		span := constructWriterPoolSpan()
 		b.StartTimer()
 		w := wp.borrow()
-		segment, _ := MakeSegment(span, pdata.NewResource(), nil, false)
-		w.Encode(*segment)
+		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false, nil, false)
+		err := w.Encode(*segment)
+		assert.Nil(b, err)
 		logger.Info(w.String())
 	}
 }
 
-func constructWriterPoolSpan() pdata.Span {
-	attributes := make(map[string]interface{})
+func constructWriterPoolSpan() ptrace.Span {
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"

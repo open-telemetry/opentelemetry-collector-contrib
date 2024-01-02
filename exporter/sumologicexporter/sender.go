@@ -1,18 +1,7 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sumologicexporter
+package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
 	"bytes"
@@ -24,8 +13,9 @@ import (
 	"net/http"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type appendResponse struct {
@@ -37,12 +27,12 @@ type appendResponse struct {
 
 // metricPair represents information required to send one metric to the Sumo Logic
 type metricPair struct {
-	attributes pdata.AttributeMap
-	metric     pdata.Metric
+	attributes pcommon.Map
+	metric     pmetric.Metric
 }
 
 type sender struct {
-	logBuffer           []pdata.LogRecord
+	logBuffer           []plog.LogRecord
 	metricBuffer        []metricPair
 	config              *Config
 	client              *http.Client
@@ -55,7 +45,7 @@ type sender struct {
 
 const (
 	logKey string = "log"
-	// maxBufferSize defines size of the logBuffer (maximum number of pdata.LogRecord entries)
+	// maxBufferSize defines size of the logBuffer (maximum number of plog.LogRecord entries)
 	maxBufferSize int = 1024 * 1024
 
 	headerContentType     string = "Content-Type"
@@ -167,14 +157,14 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 }
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
-func (s *sender) logToText(record pdata.LogRecord) string {
+func (s *sender) logToText(record plog.LogRecord) string {
 	return record.Body().AsString()
 }
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually
-func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
+func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
 	data := s.filter.filterOut(record.Attributes())
-	data.orig.Upsert(logKey, record.Body())
+	record.Body().CopyTo(data.orig.PutEmpty(logKey))
 
 	nextLine, err := json.Marshal(data.orig.AsRaw())
 	if err != nil {
@@ -187,12 +177,12 @@ func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 // sendLogs sends log records from the logBuffer formatted according
 // to configured LogFormat and as the result of execution
 // returns array of records which has not been sent correctly and error
-func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, error) {
+func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, error) {
 	var (
 		body           strings.Builder
-		errs           error
-		droppedRecords []pdata.LogRecord
-		currentRecords []pdata.LogRecord
+		errs           []error
+		droppedRecords []plog.LogRecord
+		currentRecords []plog.LogRecord
 	)
 
 	for _, record := range s.logBuffer {
@@ -210,13 +200,13 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 
 		if err != nil {
 			droppedRecords = append(droppedRecords, record)
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		ar, err := s.appendAndSend(ctx, formattedLine, LogsPipeline, &body, flds)
 		if err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			if ar.sent {
 				droppedRecords = append(droppedRecords, currentRecords...)
 			}
@@ -239,19 +229,19 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 
 	if body.Len() > 0 {
 		if err := s.send(ctx, LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			droppedRecords = append(droppedRecords, currentRecords...)
 		}
 	}
 
-	return droppedRecords, errs
+	return droppedRecords, errors.Join(errs...)
 }
 
 // sendMetrics sends metrics in right format basing on the s.config.MetricFormat
 func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, error) {
 	var (
 		body           strings.Builder
-		errs           error
+		errs           []error
 		droppedRecords []metricPair
 		currentRecords []metricPair
 	)
@@ -273,13 +263,13 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 
 		if err != nil {
 			droppedRecords = append(droppedRecords, record)
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			continue
 		}
 
 		ar, err := s.appendAndSend(ctx, formattedLine, MetricsPipeline, &body, flds)
 		if err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			if ar.sent {
 				droppedRecords = append(droppedRecords, currentRecords...)
 			}
@@ -302,12 +292,12 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 
 	if body.Len() > 0 {
 		if err := s.send(ctx, MetricsPipeline, strings.NewReader(body.String()), flds); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			droppedRecords = append(droppedRecords, currentRecords...)
 		}
 	}
 
-	return droppedRecords, errs
+	return droppedRecords, errors.Join(errs...)
 }
 
 // appendAndSend appends line to the request body that will be sent and sends
@@ -320,19 +310,19 @@ func (s *sender) appendAndSend(
 	body *strings.Builder,
 	flds fields,
 ) (appendResponse, error) {
-	var errs error
+	var errs []error
 	ar := newAppendResponse()
 
 	if body.Len() > 0 && body.Len()+len(line) >= s.config.MaxRequestBodySize {
 		ar.sent = true
-		errs = multierr.Append(errs, s.send(ctx, pipeline, strings.NewReader(body.String()), flds))
+		errs = append(errs, s.send(ctx, pipeline, strings.NewReader(body.String()), flds))
 		body.Reset()
 	}
 
 	if body.Len() > 0 {
 		// Do not add newline if the body is empty
 		if _, err := body.WriteString("\n"); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			ar.appended = false
 		}
 	}
@@ -340,12 +330,12 @@ func (s *sender) appendAndSend(
 	if ar.appended {
 		// Do not append new line if separator was not appended
 		if _, err := body.WriteString(line); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 			ar.appended = false
 		}
 	}
 
-	return ar, errs
+	return ar, errors.Join(errs...)
 }
 
 // cleanLogsBuffer zeroes logBuffer
@@ -355,7 +345,7 @@ func (s *sender) cleanLogsBuffer() {
 
 // batchLog adds log to the logBuffer and flushes them if logBuffer is full to avoid overflow
 // returns list of log records which were not sent successfully
-func (s *sender) batchLog(ctx context.Context, log pdata.LogRecord, metadata fields) ([]pdata.LogRecord, error) {
+func (s *sender) batchLog(ctx context.Context, log plog.LogRecord, metadata fields) ([]plog.LogRecord, error) {
 	s.logBuffer = append(s.logBuffer, log)
 
 	if s.countLogs() >= maxBufferSize {

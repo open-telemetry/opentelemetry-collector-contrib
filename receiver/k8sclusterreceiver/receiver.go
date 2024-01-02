@@ -1,31 +1,20 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package k8sclusterreceiver
+package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
-	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
-	"go.uber.org/zap"
-	"k8s.io/client-go/kubernetes"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
@@ -34,29 +23,34 @@ const (
 	defaultInitialSyncTimeout = 10 * time.Minute
 )
 
-var _ component.MetricsReceiver = (*kubernetesReceiver)(nil)
+var _ receiver.Metrics = (*kubernetesReceiver)(nil)
 
 type kubernetesReceiver struct {
+	dataCollector   *collection.DataCollector
 	resourceWatcher *resourceWatcher
 
-	config   *Config
-	logger   *zap.Logger
-	consumer consumer.Metrics
-	cancel   context.CancelFunc
-	obsrecv  *obsreport.Receiver
+	config          *Config
+	settings        receiver.CreateSettings
+	metricsConsumer consumer.Metrics
+	cancel          context.CancelFunc
+	obsrecv         *receiverhelper.ObsReport
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, kr.cancel = context.WithCancel(ctx)
 
-	exporters := host.GetExporters()
+	if err := kr.resourceWatcher.initialize(); err != nil {
+		return err
+	}
+
+	exporters := host.GetExporters() //nolint:staticcheck
 	if err := kr.resourceWatcher.setupMetadataExporters(
-		exporters[config.MetricsDataType], kr.config.MetadataExporters); err != nil {
+		exporters[component.DataTypeMetrics], kr.config.MetadataExporters); err != nil {
 		return err
 	}
 
 	go func() {
-		kr.logger.Info("Starting shared informers and wait for initial cache sync.")
+		kr.settings.Logger.Info("Starting shared informers and wait for initial cache sync.")
 		for _, informer := range kr.resourceWatcher.informerFactories {
 			if informer == nil {
 				continue
@@ -69,15 +63,15 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 			// If the context times out, set initialSyncTimedOut and report a fatal error. Currently
 			// this timeout is 10 minutes, which appears to be long enough.
-			if timedContextForInitialSync.Err() == context.DeadlineExceeded {
+			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
-				kr.logger.Error("Timed out waiting for initial cache sync.")
-				host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
+				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
+				host.ReportFatalError(errors.New("failed to start receiver"))
 				return
 			}
 		}
 
-		kr.logger.Info("Completed syncing shared informer caches.")
+		kr.settings.Logger.Info("Completed syncing shared informer caches.")
 		kr.resourceWatcher.initialSyncDone.Store(true)
 
 		ticker := time.NewTicker(kr.config.CollectionInterval)
@@ -97,32 +91,86 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
+	if kr.cancel == nil {
+		return nil
+	}
 	kr.cancel()
 	return nil
 }
 
 func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
-	now := time.Now()
-	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
+	if kr.metricsConsumer == nil {
+		// Metric collection is not enabled.
+		return
+	}
+
+	mds := kr.dataCollector.CollectMetricData(time.Now())
 
 	c := kr.obsrecv.StartMetricsOp(ctx)
 
 	numPoints := mds.DataPointCount()
-	err := kr.consumer.ConsumeMetrics(c, mds)
-	kr.obsrecv.EndMetricsOp(c, typeStr, numPoints, err)
+	err := kr.metricsConsumer.ConsumeMetrics(c, mds)
+	kr.obsrecv.EndMetricsOp(c, metadata.Type, numPoints, err)
 }
 
-// newReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(
-	logger *zap.Logger, config *Config, consumer consumer.Metrics,
-	client kubernetes.Interface, osQuotaClient quotaclientset.Interface) (component.MetricsReceiver, error) {
-	resourceWatcher := newResourceWatcher(logger, client, osQuotaClient, config.NodeConditionTypesToReport, defaultInitialSyncTimeout)
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newMetricsReceiver(
+	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	var err error
+	r := receivers.GetOrAdd(
+		cfg, func() component.Component {
+			var rcv component.Component
+			rcv, err = newReceiver(ctx, set, cfg)
+			return rcv
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	r.Unwrap().(*kubernetesReceiver).metricsConsumer = consumer
+	return r, nil
+}
 
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newLogsReceiver(
+	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Logs,
+) (receiver.Logs, error) {
+	var err error
+	r := receivers.GetOrAdd(
+		cfg, func() component.Component {
+			var rcv component.Component
+			rcv, err = newReceiver(ctx, set, cfg)
+			return rcv
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	r.Unwrap().(*kubernetesReceiver).resourceWatcher.entityLogConsumer = consumer
+	return r, nil
+}
+
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+	rCfg := cfg.(*Config)
+	obsrecv, err := receiverhelper.NewObsReport(
+		receiverhelper.ObsReportSettings{
+			ReceiverID:             set.ID,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	ms := metadata.NewStore()
 	return &kubernetesReceiver{
-		resourceWatcher: resourceWatcher,
-		logger:          logger,
-		config:          config,
-		consumer:        consumer,
-		obsrecv:         obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		dataCollector: collection.NewDataCollector(set, ms, rCfg.MetricsBuilderConfig,
+			rCfg.NodeConditionTypesToReport, rCfg.AllocatableTypesToReport),
+		resourceWatcher: newResourceWatcher(set, rCfg, ms),
+		settings:        set,
+		config:          rCfg,
+		obsrecv:         obsrecv,
 	}, nil
 }

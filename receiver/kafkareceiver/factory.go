@@ -1,39 +1,30 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package kafkareceiver
+package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
 const (
-	typeStr = "kafka"
-
-	defaultTopic    = "otlp_spans"
-	defaultEncoding = "otlp_proto"
-	defaultBroker   = "localhost:9092"
-	defaultClientID = "otel-collector"
-	defaultGroupID  = defaultClientID
+	defaultTopic         = "otlp_spans"
+	defaultEncoding      = "otlp_proto"
+	defaultBroker        = "localhost:9092"
+	defaultClientID      = "otel-collector"
+	defaultGroupID       = defaultClientID
+	defaultInitialOffset = offsetLatest
 
 	// default from sarama.NewConfig()
 	defaultMetadataRetryMax = 3
@@ -41,13 +32,20 @@ const (
 	defaultMetadataRetryBackoff = time.Millisecond * 250
 	// default from sarama.NewConfig()
 	defaultMetadataFull = true
+
+	// default from sarama.NewConfig()
+	defaultAutoCommitEnable = true
+	// default from sarama.NewConfig()
+	defaultAutoCommitInterval = 1 * time.Second
 )
+
+var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaReceiverFactory)
 
-// WithTracesUnmarshalers adds Unmarshalers.
-func WithTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
+// withTracesUnmarshalers adds Unmarshalers.
+func withTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
 		for _, unmarshaler := range tracesUnmarshalers {
 			factory.tracesUnmarshalers[unmarshaler.Encoding()] = unmarshaler
@@ -55,8 +53,8 @@ func WithTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOpti
 	}
 }
 
-// WithMetricsUnmarshalers adds MetricsUnmarshalers.
-func WithMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryOption {
+// withMetricsUnmarshalers adds MetricsUnmarshalers.
+func withMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
 		for _, unmarshaler := range metricsUnmarshalers {
 			factory.metricsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
@@ -64,8 +62,8 @@ func WithMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryO
 	}
 }
 
-// WithLogsUnmarshalers adds LogsUnmarshalers.
-func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
+// withLogsUnmarshalers adds LogsUnmarshalers.
+func withLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 	return func(factory *kafkaReceiverFactory) {
 		for _, unmarshaler := range logsUnmarshalers {
 			factory.logsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
@@ -74,38 +72,51 @@ func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 }
 
 // NewFactory creates Kafka receiver factory.
-func NewFactory(options ...FactoryOption) component.ReceiverFactory {
+func NewFactory(options ...FactoryOption) receiver.Factory {
+	_ = view.Register(metricViews()...)
+
 	f := &kafkaReceiverFactory{
-		tracesUnmarshalers:  defaultTracesUnmarshalers(),
-		metricsUnmarshalers: defaultMetricsUnmarshalers(),
-		logsUnmarshalers:    defaultLogsUnmarshalers(),
+		tracesUnmarshalers:  map[string]TracesUnmarshaler{},
+		metricsUnmarshalers: map[string]MetricsUnmarshaler{},
+		logsUnmarshalers:    map[string]LogsUnmarshaler{},
 	}
 	for _, o := range options {
 		o(f)
 	}
-	return receiverhelper.NewFactory(
-		typeStr,
+	return receiver.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		receiverhelper.WithTraces(f.createTracesReceiver),
-		receiverhelper.WithMetrics(f.createMetricsReceiver),
-		receiverhelper.WithLogs(f.createLogsReceiver),
+		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
 	)
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Topic:            defaultTopic,
-		Encoding:         defaultEncoding,
-		Brokers:          []string{defaultBroker},
-		ClientID:         defaultClientID,
-		GroupID:          defaultGroupID,
+		Topic:         defaultTopic,
+		Encoding:      defaultEncoding,
+		Brokers:       []string{defaultBroker},
+		ClientID:      defaultClientID,
+		GroupID:       defaultGroupID,
+		InitialOffset: defaultInitialOffset,
 		Metadata: kafkaexporter.Metadata{
 			Full: defaultMetadataFull,
 			Retry: kafkaexporter.MetadataRetry{
 				Max:     defaultMetadataRetryMax,
 				Backoff: defaultMetadataRetryBackoff,
 			},
+		},
+		AutoCommit: AutoCommit{
+			Enable:   defaultAutoCommitEnable,
+			Interval: defaultAutoCommitInterval,
+		},
+		MessageMarking: MessageMarking{
+			After:   false,
+			OnError: false,
+		},
+		HeaderExtraction: HeaderExtraction{
+			ExtractHeaders: false,
 		},
 	}
 }
@@ -118,12 +129,21 @@ type kafkaReceiverFactory struct {
 
 func (f *kafkaReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
+	for encoding, unmarshal := range defaultTracesUnmarshalers() {
+		f.tracesUnmarshalers[encoding] = unmarshal
+	}
+
 	c := cfg.(*Config)
-	r, err := newTracesReceiver(*c, set, f.tracesUnmarshalers, nextConsumer)
+	unmarshaler := f.tracesUnmarshalers[c.Encoding]
+	if unmarshaler == nil {
+		return nil, errUnrecognizedEncoding
+	}
+
+	r, err := newTracesReceiver(*c, set, unmarshaler, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -132,12 +152,21 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 
 func (f *kafkaReceiverFactory) createMetricsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
+	for encoding, unmarshal := range defaultMetricsUnmarshalers() {
+		f.metricsUnmarshalers[encoding] = unmarshal
+	}
+
 	c := cfg.(*Config)
-	r, err := newMetricsReceiver(*c, set, f.metricsUnmarshalers, nextConsumer)
+	unmarshaler := f.metricsUnmarshalers[c.Encoding]
+	if unmarshaler == nil {
+		return nil, errUnrecognizedEncoding
+	}
+
+	r, err := newMetricsReceiver(*c, set, unmarshaler, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -146,14 +175,50 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 
 func (f *kafkaReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
+	for encoding, unmarshaler := range defaultLogsUnmarshalers(set.BuildInfo.Version, set.Logger) {
+		f.logsUnmarshalers[encoding] = unmarshaler
+	}
+
 	c := cfg.(*Config)
-	r, err := newLogsReceiver(*c, set, f.logsUnmarshalers, nextConsumer)
+	unmarshaler, err := getLogsUnmarshaler(c.Encoding, f.logsUnmarshalers)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := newLogsReceiver(*c, set, unmarshaler, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
 	return r, nil
+}
+
+func getLogsUnmarshaler(encoding string, unmarshalers map[string]LogsUnmarshaler) (LogsUnmarshaler, error) {
+	var enc string
+	unmarshaler, ok := unmarshalers[encoding]
+	if !ok {
+		split := strings.SplitN(encoding, "_", 2)
+		prefix := split[0]
+		if len(split) > 1 {
+			enc = split[1]
+		}
+		unmarshaler, ok = unmarshalers[prefix].(LogsUnmarshalerWithEnc)
+		if !ok {
+			return nil, errUnrecognizedEncoding
+		}
+	}
+
+	if unmarshalerWithEnc, ok := unmarshaler.(LogsUnmarshalerWithEnc); ok {
+		// This should be called even when enc is an empty string to initialize the encoding.
+		unmarshaler, err := unmarshalerWithEnc.WithEnc(enc)
+		if err != nil {
+			return nil, err
+		}
+		return unmarshaler, nil
+	}
+
+	return unmarshaler, nil
 }

@@ -1,80 +1,70 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package configschema
 
 import (
-	"fmt"
-	"go/build"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 )
 
-func TestPackageDirLocal(t *testing.T) {
-	pkg := resourcetotelemetry.Settings{}
-	pkgValue := reflect.ValueOf(pkg)
-	dr := testDR("../..")
-	output, err := dr.PackageDir(pkgValue.Type())
-	assert.NoError(t, err)
-	assert.Equal(t, "../../pkg/resourcetotelemetry", output)
+const gcpCollectorPath = "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
+
+func TestTokensToPartialPath(t *testing.T) {
+	path, err := requireTokensToPartialPath([]string{gcpCollectorPath, "42"})
+	require.NoError(t, err)
+	assert.Equal(t, "github.com/!google!cloud!platform/opentelemetry-operations-go/exporter/collector@42", path)
 }
 
-func TestPackageDirError(t *testing.T) {
-	pkg := pdata.NewSum()
-	pkgType := reflect.ValueOf(pkg).Type()
-	srcRoot := "test/fail"
-	dr := NewDirResolver(srcRoot, DefaultModule)
-	output, err := dr.PackageDir(pkgType)
-	assert.Error(t, err)
-	assert.Equal(t, "", output)
+func TestPackagePathToGoPath(t *testing.T) {
+	dr := testDR()
+	dir, err := dr.packagePathToGoPath(gcpCollectorPath)
+	require.NoError(t, err)
+	_, err = os.ReadDir(dir)
+	require.NoError(t, err)
 }
 
-func TestExternalPkgDirErr(t *testing.T) {
-	pkg := "random/test"
-	pkgPath, err := testDR("../..").externalPackageDir(pkg)
-	if assert.Error(t, err) {
-		expected := fmt.Sprintf("could not find package: \"%s\"", pkg)
-		assert.EqualErrorf(t, err, expected, "")
-	}
-	assert.Equal(t, pkgPath, "")
+func TestPackagePathToGoPath_Error(t *testing.T) {
+	_, err := testDR().packagePathToGoPath("foo/bar")
+	require.Error(t, err)
 }
 
-func TestExternalPkgDir(t *testing.T) {
-	dr := testDR("../..")
-	testPkg := "github.com/grpc-ecosystem/grpc-gateway/runtime"
-	pkgPath, err := dr.externalPackageDir(testPkg)
-	assert.NoError(t, err)
-	goPath := os.Getenv("GOPATH")
-	if goPath == "" {
-		goPath = build.Default.GOPATH
-	}
-	testLine, testVers, err := grepMod(path.Join(dr.SrcRoot, "go.mod"), testPkg)
-	assert.NoError(t, err)
-	expected := fmt.Sprint(path.Join(goPath, "pkg", "mod", testLine+"@"+testVers, "runtime"))
-	assert.Equal(t, expected, pkgPath)
+func TestTypeToPackagePath_Local(t *testing.T) {
+	packageDir := testTypeToPackagePath(t, redisreceiver.Config{})
+	assert.Equal(t, filepath.Join("..", "..", "receiver", "redisreceiver"), packageDir)
 }
 
-func TestExternalPkgDirReplace(t *testing.T) {
-	pkg := DefaultModule + "/pkg/resourcetotelemetry"
-	pkgPath, err := testDR("../..").externalPackageDir(pkg)
-	assert.NoError(t, err)
-	assert.Equal(t, "../../pkg/resourcetotelemetry", pkgPath)
+func TestTypeToPackagePath_External(t *testing.T) {
+	packageDir := testTypeToPackagePath(t, otlpreceiver.Config{})
+	assert.Contains(t, packageDir, filepath.Join("pkg", "mod", "go.opentelemetry.io", "collector", "receiver@"))
+}
+
+func TestTypeToPackagePath_Error(t *testing.T) {
+	dr := NewDirResolver("foo/bar", DefaultModule)
+	_, err := dr.TypeToPackagePath(reflect.ValueOf(redisreceiver.Config{}).Type())
+	require.Error(t, err)
+}
+
+func TestTypeToProjectPath(t *testing.T) {
+	dir := testDR().ReflectValueToProjectPath(reflect.ValueOf(&redisreceiver.Config{}))
+	assert.Equal(t, filepath.Join("..", "..", "receiver", "redisreceiver"), dir)
+}
+
+func TestTypetoProjectPath_External(t *testing.T) {
+	dir := testDR().ReflectValueToProjectPath(reflect.ValueOf(&otlpreceiver.Config{}))
+	assert.Equal(t, "", dir)
+}
+
+func testTypeToPackagePath(t *testing.T, v any) string {
+	packageDir, err := testDR().TypeToPackagePath(reflect.ValueOf(v).Type())
+	require.NoError(t, err)
+	return packageDir
 }

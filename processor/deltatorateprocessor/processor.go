@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package deltatorateprocessor
+package deltatorateprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 
 import (
 	"context"
@@ -20,7 +9,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -47,12 +37,12 @@ func (dtrp *deltaToRateProcessor) Start(context.Context, component.Host) error {
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
-func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		rm := resourceMetricsSlice.At(i)
-		ilms := rm.InstrumentationLibraryMetrics()
+		ilms := rm.ScopeMetrics()
 		for i := 0; i < ilms.Len(); i++ {
 			ilm := ilms.At(i)
 			metricSlice := ilm.Metrics()
@@ -61,11 +51,11 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 				if _, ok := dtrp.ConfiguredMetrics[metric.Name()]; !ok {
 					continue
 				}
-				if metric.DataType() != pdata.MetricDataTypeSum || metric.Sum().AggregationTemporality() != pdata.MetricAggregationTemporalityDelta {
+				if metric.Type() != pmetric.MetricTypeSum || metric.Sum().AggregationTemporality() != pmetric.AggregationTemporalityDelta {
 					dtrp.logger.Info(fmt.Sprintf("Configured metric for rate calculation %s is not a delta sum\n", metric.Name()))
 					continue
 				}
-				newDoubleDataPointSlice := pdata.NewNumberDataPointSlice()
+				newDoubleDataPointSlice := pmetric.NewNumberDataPointSlice()
 				dataPoints := metric.Sum().DataPoints()
 
 				for i := 0; i < dataPoints.Len(); i++ {
@@ -74,13 +64,22 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 					fromDataPoint.CopyTo(newDp)
 
 					durationNanos := time.Duration(fromDataPoint.Timestamp() - fromDataPoint.StartTimestamp())
-					rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos)
-					newDp.SetDoubleVal(rate)
+					var rate float64
+					switch fromDataPoint.ValueType() {
+					case pmetric.NumberDataPointValueTypeDouble:
+						rate = calculateRate(fromDataPoint.DoubleValue(), durationNanos)
+					case pmetric.NumberDataPointValueTypeInt:
+						rate = calculateRate(float64(fromDataPoint.IntValue()), durationNanos)
+					default:
+						return md, consumererror.NewPermanent(fmt.Errorf("invalid data point type:%d", fromDataPoint.ValueType()))
+					}
+					newDp.SetDoubleValue(rate)
 				}
 
-				metric.SetDataType(pdata.MetricDataTypeGauge)
+				dps := metric.SetEmptyGauge().DataPoints()
+				dps.EnsureCapacity(newDoubleDataPointSlice.Len())
 				for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
-					dp := metric.Gauge().DataPoints().AppendEmpty()
+					dp := dps.AppendEmpty()
 					newDoubleDataPointSlice.At(d).CopyTo(dp)
 				}
 			}

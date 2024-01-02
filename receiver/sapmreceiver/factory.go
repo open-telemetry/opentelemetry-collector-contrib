@@ -1,18 +1,7 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sapmreceiver
+package sapmreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 
 // This file implements factory for SAPM receiver.
 
@@ -23,31 +12,28 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "sapm"
-
 	// Default endpoints to bind to.
 	defaultEndpoint = ":7276"
 )
 
 // NewFactory creates a factory for SAPM receiver.
-func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
-		typeStr,
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTracesReceiver))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -60,11 +46,11 @@ func createDefaultConfig() config.Receiver {
 func extractPortFromEndpoint(endpoint string) (int, error) {
 	_, portStr, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		return 0, fmt.Errorf("endpoint is not formatted correctly: %s", err.Error())
+		return 0, fmt.Errorf("endpoint is not formatted correctly: %w", err)
 	}
 	port, err := strconv.ParseInt(portStr, 10, 0)
 	if err != nil {
-		return 0, fmt.Errorf("endpoint port is not a number: %s", err.Error())
+		return 0, fmt.Errorf("endpoint port is not a number: %w", err)
 	}
 	if port < 1 || port > 65535 {
 		return 0, fmt.Errorf("port number must be between 1 and 65535")
@@ -84,10 +70,10 @@ func (rCfg *Config) validate() error {
 // CreateTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 	// assert config is SAPM config
 	rCfg := cfg.(*Config)
 

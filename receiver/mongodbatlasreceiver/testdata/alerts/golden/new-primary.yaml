@@ -1,0 +1,94 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: mongodbatlas.group.id
+          value:
+            stringValue: REDACTED-group
+        - key: mongodbatlas.alert.config.id
+          value:
+            stringValue: REDACTED-alert
+        - key: mongodbatlas.cluster.name
+          value:
+            stringValue: Cluster0
+        - key: mongodbatlas.replica_set.name
+          value:
+            stringValue: REDACTED-shard-0
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: event.domain
+                value:
+                  stringValue: mongodbatlas
+              - key: event.name
+                value:
+                  stringValue: PRIMARY_ELECTED
+              - key: message
+                value:
+                  stringValue: |+
+                    Project: Project 0
+
+                    Organization: REDACTED&#x27;s Org - 2022-05-31
+
+                    ----------------------------------------
+
+                    INFORMATIONAL
+                    Replica set elected a new primary
+                    REDACTED-shard-0
+                    Created: 2022/06/03 22:30 GMT
+                    Replica Set: REDACTED-shard-0
+                    Current Member State
+                    DOWN: 1 member
+                    SECONDARY: 1 member
+                    PRIMARY: 1 member
+
+                    ----------------------------------------
+
+              - key: status
+                value:
+                  stringValue: INFORMATIONAL
+              - key: created
+                value:
+                  stringValue: "2022-06-03T22:30:31Z"
+              - key: updated
+                value:
+                  stringValue: "2022-06-03T22:30:31Z"
+              - key: id
+                value:
+                  stringValue: 629a8b871dfc48492150a766
+              - key: type_name
+                value:
+                  stringValue: REPLICA_SET
+              - key: net.peer.name
+                value:
+                  stringValue: REDACTED-shard-00-02.f1eir.mongodb.net
+              - key: net.peer.port
+                value:
+                  intValue: "27017"
+            body:
+              stringValue: |
+                {
+                    "replicaSetName": "REDACTED-shard-0",
+                    "created": "2022-06-03T22:30:31Z",
+                    "groupId": "REDACTED-group",
+                    "typeName": "REPLICA_SET",
+                    "hostnameAndPort": "REDACTED-shard-00-02.f1eir.mongodb.net:27017",
+                    "humanReadable": "Project: Project 0\n\nOrganization: REDACTED&#x27;s Org - 2022-05-31\n\n----------------------------------------\n\nINFORMATIONAL\nReplica set elected a new primary\nREDACTED-shard-0\nCreated: 2022/06/03 22:30 GMT\nReplica Set: REDACTED-shard-0\nCurrent Member State\nDOWN: 1 member\nSECONDARY: 1 member\nPRIMARY: 1 member\n\n----------------------------------------\n\n",
+                    "alertConfigId": "REDACTED-alert",
+                    "clusterName": "Cluster0",
+                    "eventTypeName": "PRIMARY_ELECTED",
+                    "links": [
+                        {
+                            "rel": "self",
+                            "href": "https://cloud.mongodb.com/api/atlas/v1.0/groups/REDACTED-group/alerts/629a8b871dfc48492150a766"
+                        }
+                    ],
+                    "id": "629a8b871dfc48492150a766",
+                    "updated": "2022-06-03T22:30:31Z",
+                    "status": "INFORMATIONAL"
+                }
+            observedTimeUnixNano: "1654883723716283000"
+            severityNumber: 9
+            spanId: ""
+            timeUnixNano: "1654295431000000000"
+            traceId: ""
+        scope: {}

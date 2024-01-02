@@ -1,0 +1,12 @@
+type: groupbytrace
+
+status:
+  class: processor
+  stability:
+    beta: [traces]
+  distributions: [contrib, observiq, sumo, aws]
+  warnings: [Statefulness]
+  codeowners:
+    active: [jpkrohling]
+tests:
+  config:

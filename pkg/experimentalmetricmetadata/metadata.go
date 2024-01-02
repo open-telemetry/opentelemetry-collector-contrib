@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package experimentalmetricmetadata
+package experimentalmetricmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 
 // MetadataExporter provides an interface to implement
 // ConsumeMetadata in Exporters that support metadata.
@@ -37,9 +26,11 @@ type ResourceID string
 // {"env": "test", "team": "otel", "user": "bob"}. The k8sclusterreceiver
 // upon receiving the event corresponding to the labels updates will
 // generate a MetadataDelta with the following values -
-// 					MetadataToAdd: {"user": "bob"}
-// 					MetadataToRemove: {"usser": "bob"}
-// 					MetadataToUpdate: {"team": "otel"}
+//
+//	MetadataToAdd: {"user": "bob"}
+//	MetadataToRemove: {"usser": "bob"}
+//	MetadataToUpdate: {"team": "otel"}
+//
 // Apart from Kubernetes labels, the other metadata collected by this
 // receiver are also handled in the same manner.
 // Type, functionality, and fields not guaranteed to be stable or permanent.

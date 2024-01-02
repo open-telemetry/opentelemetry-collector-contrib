@@ -1,0 +1,9 @@
+type: opensearch
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces]
+    development: [logs]
+  codeowners:
+    active: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]

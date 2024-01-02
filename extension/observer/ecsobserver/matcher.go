@@ -1,20 +1,10 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package ecsobserver
+package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -168,7 +158,7 @@ func matchContainers(tasks []*taskAnnotated, matcher targetMatcher, matcherIndex
 			// NOTE: we don't stop when there is an error because it could be one task having invalid docker label.
 			if err != nil {
 				// Keep track of unexpected error
-				if err != errNotMatched {
+				if !errors.Is(err, errNotMatched) {
 					multierr.AppendInto(&merr, err)
 				}
 				continue

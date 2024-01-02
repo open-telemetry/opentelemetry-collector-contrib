@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package goldendataset
+package goldendataset // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 
 // Start of PICT inputs for generating golden dataset metrics (pict_input_metrics.txt)
 
@@ -21,25 +10,25 @@ type PICTMetricInputs struct {
 	// Specifies the number of points on each metric.
 	NumPtsPerMetric PICTNumPtsPerMetric
 	// Specifies the types of metrics that can be generated.
-	MetricType PICTMetricDataType
+	MetricType PICTMetricType
 	// Specifies the number of labels on each datapoint.
 	NumPtLabels PICTNumPtLabels
 	// Specifies the number of attributes on each resource.
 	NumResourceAttrs PICTNumResourceAttrs
 }
 
-// PICTMetricDataType enumerates the types of metrics that can be generated.
-type PICTMetricDataType string
+// PICTMetricType enumerates the types of metrics that can be generated.
+type PICTMetricType string
 
 const (
-	MetricTypeIntGauge                 PICTMetricDataType = "IntGauge"
-	MetricTypeMonotonicIntSum          PICTMetricDataType = "MonotonicIntSum"
-	MetricTypeNonMonotonicIntSum       PICTMetricDataType = "NonMonotonicIntSum"
-	MetricTypeDoubleGauge              PICTMetricDataType = "DoubleGauge"
-	MetricTypeMonotonicDoubleSum       PICTMetricDataType = "MonotonicDoubleSum"
-	MetricTypeNonMonotonicDoubleSum    PICTMetricDataType = "NonMonotonicDoubleSum"
-	MetricTypeDoubleExemplarsHistogram PICTMetricDataType = "DoubleExemplarsHistogram"
-	MetricTypeIntExemplarsHistogram    PICTMetricDataType = "IntExemplarsHistogram"
+	MetricTypeIntGauge                 PICTMetricType = "IntGauge"
+	MetricTypeMonotonicIntSum          PICTMetricType = "MonotonicIntSum"
+	MetricTypeNonMonotonicIntSum       PICTMetricType = "NonMonotonicIntSum"
+	MetricTypeDoubleGauge              PICTMetricType = "DoubleGauge"
+	MetricTypeMonotonicDoubleSum       PICTMetricType = "MonotonicDoubleSum"
+	MetricTypeNonMonotonicDoubleSum    PICTMetricType = "NonMonotonicDoubleSum"
+	MetricTypeDoubleExemplarsHistogram PICTMetricType = "DoubleExemplarsHistogram"
+	MetricTypeIntExemplarsHistogram    PICTMetricType = "IntExemplarsHistogram"
 )
 
 // PICTNumPtLabels enumerates the number of labels on each datapoint.

@@ -1,23 +1,7 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-// Package items contains common filtering logic that can be used to items
-// datapoints or various resources within other agent components, such as
-// monitors.  Filter instances have a Matches function which takes an instance
-// of the type that they items and return whether that instance matches the
-// items.
-package docker
+package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 
 import (
 	"fmt"
@@ -27,11 +11,7 @@ import (
 	"github.com/gobwas/glob"
 )
 
-type Matcher interface {
-	Matches(string) bool
-}
-
-type StringMatcher struct {
+type stringMatcher struct {
 	standardItems       map[string]bool
 	anyNegatedStandards bool
 	regexItems          []regexItem
@@ -60,9 +40,7 @@ func isGlobbed(s string) bool {
 	return strings.ContainsAny(s, "*?[]{}!")
 }
 
-var _ Matcher = (*StringMatcher)(nil)
-
-func NewStringMatcher(items []string) (*StringMatcher, error) {
+func newStringMatcher(items []string) (*stringMatcher, error) {
 	standards := make(map[string]bool)
 	var regexes []regexItem
 	var globs []globbedItem
@@ -99,7 +77,7 @@ func NewStringMatcher(items []string) (*StringMatcher, error) {
 		}
 	}
 
-	return &StringMatcher{
+	return &stringMatcher{
 		standardItems:       standards,
 		regexItems:          regexes,
 		globItems:           globs,
@@ -117,7 +95,7 @@ func isNegatedItem(value string) (string, bool) {
 	return value, false
 }
 
-func (f *StringMatcher) Matches(s string) bool {
+func (f *stringMatcher) matches(s string) bool {
 	negated, matched := f.standardItems[s]
 	if matched {
 		return !negated

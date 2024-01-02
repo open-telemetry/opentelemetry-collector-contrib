@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opencensus
 
@@ -23,8 +12,8 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -34,16 +23,16 @@ import (
 func TestMetricsToOC(t *testing.T) {
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
-	attrs.Upsert(conventions.AttributeHostName, pdata.NewAttributeValueString("host1"))
-	attrs.Upsert(conventions.AttributeProcessPID, pdata.NewAttributeValueInt(123))
-	attrs.Upsert(occonventions.AttributeProcessStartTime, pdata.NewAttributeValueString("2020-02-11T20:26:00Z"))
-	attrs.Upsert(conventions.AttributeTelemetrySDKLanguage, pdata.NewAttributeValueString("cpp"))
-	attrs.Upsert(conventions.AttributeTelemetrySDKVersion, pdata.NewAttributeValueString("v2.0.1"))
-	attrs.Upsert(occonventions.AttributeExporterVersion, pdata.NewAttributeValueString("v1.2.0"))
+	attrs.PutStr(conventions.AttributeHostName, "host1")
+	attrs.PutInt(conventions.AttributeProcessPID, 123)
+	attrs.PutStr(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
+	attrs.PutStr(conventions.AttributeTelemetrySDKLanguage, "cpp")
+	attrs.PutStr(conventions.AttributeTelemetrySDKVersion, "v2.0.1")
+	attrs.PutStr(occonventions.AttributeExporterVersion, "v1.2.0")
 
 	tests := []struct {
 		name     string
-		internal pdata.Metrics
+		internal pmetric.Metrics
 		oc       *agentmetricspb.ExportMetricsServiceRequest
 	}{
 		{
@@ -170,121 +159,111 @@ func generateOCTestData() *agentmetricspb.ExportMetricsServiceRequest {
 func TestMetricsType(t *testing.T) {
 	tests := []struct {
 		name     string
-		internal func() pdata.Metric
+		internal func() pmetric.Metric
 		descType ocmetrics.MetricDescriptor_Type
 	}{
 		{
 			name: "int-gauge",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeGauge)
-				m.Gauge().DataPoints().AppendEmpty().SetIntVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_INT64,
 		},
 		{
 			name: "double-gauge",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeGauge)
-				m.Gauge().DataPoints().AppendEmpty().SetDoubleVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
 		},
 		{
 			name: "int-non-monotonic-delta-sum",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptySum().SetIsMonotonic(false)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_INT64,
 		},
 		{
 			name: "int-non-monotonic-cumulative-sum",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptySum().SetIsMonotonic(false)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_INT64,
 		},
 		{
 			name: "int-monotonic-delta-sum",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_INT64,
 		},
 		{
 			name: "int-monotonic-cumulative-sum",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetIntValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_CUMULATIVE_INT64,
 		},
 		{
 			name: "double-non-monotonic-delta-sum",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptySum().SetIsMonotonic(false)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
 		},
 		{
 			name: "double-non-monotonic-cumulative-sum",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(false)
-				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptySum().SetIsMonotonic(false)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
 		},
 		{
 			name: "double-monotonic-delta-sum",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
 		},
 		{
 			name: "double-monotonic-cumulative-sum",
-			internal: func() pdata.Metric {
-				m := pdata.NewMetric()
-				m.SetDataType(pdata.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(true)
-				m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
+			internal: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE,

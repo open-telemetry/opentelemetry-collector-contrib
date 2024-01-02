@@ -1,59 +1,74 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package eks
 
 import (
 	"context"
-	"os"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/processor/processortest"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
 )
 
+const (
+	clusterName = "my-cluster"
+)
+
+type MockDetectorUtils struct {
+	mock.Mock
+}
+
+func (detectorUtils *MockDetectorUtils) getConfigMap(_ context.Context, namespace string, name string) (map[string]string, error) {
+	args := detectorUtils.Called(namespace, name)
+	return args.Get(0).(map[string]string), args.Error(1)
+}
+
+func (detectorUtils *MockDetectorUtils) getClusterName(_ context.Context, _ *zap.Logger) string {
+	var reservations []*ec2.Reservation
+	return detectorUtils.getClusterNameTagFromReservations(reservations)
+}
+
+func (detectorUtils *MockDetectorUtils) getClusterNameTagFromReservations(_ []*ec2.Reservation) string {
+	return clusterName
+}
+
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	dcfg := CreateDefaultConfig()
+	detector, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 }
 
 // Tests EKS resource detector running in EKS environment
 func TestEKS(t *testing.T) {
+	detectorUtils := new(MockDetectorUtils)
 	ctx := context.Background()
 
-	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", "localhost"))
-
+	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
+	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{conventions.AttributeK8SClusterName: clusterName}, nil)
 	// Call EKS Resource detector to detect resources
-	eksResourceDetector := &Detector{}
+	eksResourceDetector := &detector{utils: detectorUtils, err: nil, ra: metadata.DefaultResourceAttributesConfig(), rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, map[string]any{
 		"cloud.provider": "aws",
 		"cloud.platform": "aws_eks",
-	}, internal.AttributesToMap(res.Attributes()), "Resource object returned is incorrect")
+	}, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 }
 
-// Tests EKS resource detector not running in EKS environment
+// Tests EKS resource detector not running in EKS environment by verifying resource is not running on k8s
 func TestNotEKS(t *testing.T) {
-	detector := Detector{}
-	require.NoError(t, os.Unsetenv("KUBERNETES_SERVICE_HOST"))
-	r, _, err := detector.Detect(context.Background())
+	eksResourceDetector := detector{logger: zap.NewNop()}
+	r, _, err := eksResourceDetector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, r.Attributes().Len(), "Resource object should be empty")
 }

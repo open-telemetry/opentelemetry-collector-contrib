@@ -1,35 +1,19 @@
-receivers:
-  nop:
-
-processors:
-  routing:
-    default_exporters:
-    - otlp
-    from_attribute: X-Tenant
-    table:
+routing:
+  default_exporters:
+    - jaeger
+  attribute_source: resource
+  from_attribute: X-Tenant
+  error_mode: ignore
+  table:
     - value: acme
-      exporters: 
-      - jaeger/acme
-      - otlp/acme
-    - value: globex
       exporters:
-      - otlp/globex
+        - otlp/traces
 
-exporters:
-  otlp:
-  otlp/acme:
-  otlp/globex:
-  jaeger/acme:
-    endpoint: localhost:14250
-
-service:
-  pipelines:
-    traces:
-      receivers:
-      - nop
-      processors:
-      - routing
-      exporters:
-      - jaeger/acme
-      - otlp/acme
-      - otlp/globex
+routing/ottl:
+  default_exporters:
+    - jaeger
+  table:
+    - statement: route() where resource.attributes["X-Tenant"] == "acme"
+      exporters: [jaeger/acme]
+    - statement: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*corp")
+      exporters: [jaeger/ecorp]

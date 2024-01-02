@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package loadbalancingexporter
+package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
 	"go.opencensus.io/stats"
@@ -24,10 +13,14 @@ var (
 	mNumResolutions = stats.Int64("loadbalancer_num_resolutions", "Number of times the resolver triggered a new resolutions", stats.UnitDimensionless)
 	mNumBackends    = stats.Int64("loadbalancer_num_backends", "Current number of backends in use", stats.UnitDimensionless)
 	mBackendLatency = stats.Int64("loadbalancer_backend_latency", "Response latency in ms for the backends", stats.UnitMilliseconds)
+
+	endpointTagKey      = tag.MustNewKey("endpoint")
+	successTrueMutator  = tag.Upsert(tag.MustNewKey("success"), "true")
+	successFalseMutator = tag.Upsert(tag.MustNewKey("success"), "false")
 )
 
-// MetricViews return the metrics views according to given telemetry level.
-func MetricViews() []*view.View {
+// metricViews return the metrics views according to given telemetry level.
+func metricViews() []*view.View {
 	return []*view.View{
 		{
 			Name:        mNumResolutions.Name(),

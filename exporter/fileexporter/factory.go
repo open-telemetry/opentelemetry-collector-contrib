@@ -1,99 +1,154 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package fileexporter
+package fileexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 
 import (
 	"context"
+	"io"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "file"
+	// the number of old log files to retain
+	defaultMaxBackups = 100
+
+	// the format of encoded telemetry data
+	formatTypeJSON  = "json"
+	formatTypeProto = "proto"
+
+	// the type of compression codec
+	compressionZSTD = "zstd"
 )
 
 // NewFactory creates a factory for OTLP exporter.
-func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
-		typeStr,
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithLogs(createLogsExporter))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		FormatType: formatTypeJSON,
+		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
 	}
 }
 
 func createTracesExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
+	conf := cfg.(*Config)
+	writer, err := buildFileWriter(conf)
+	if err != nil {
+		return nil, err
+	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
-		fe.Unwrap().(*fileExporter).ConsumeTraces,
+		cfg,
+		fe.Unwrap().(*fileExporter).consumeTraces,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 }
 
 func createMetricsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.MetricsExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	conf := cfg.(*Config)
+	writer, err := buildFileWriter(conf)
+	if err != nil {
+		return nil, err
+	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
-		fe.Unwrap().(*fileExporter).ConsumeMetrics,
+		cfg,
+		fe.Unwrap().(*fileExporter).consumeMetrics,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 }
 
 func createLogsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Logs, error) {
+	conf := cfg.(*Config)
+	writer, err := buildFileWriter(conf)
+	if err != nil {
+		return nil, err
+	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
-		fe.Unwrap().(*fileExporter).ConsumeLogs,
+		cfg,
+		fe.Unwrap().(*fileExporter).consumeLogs,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
+}
+
+func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
+	return &fileExporter{
+		path:             conf.Path,
+		formatType:       conf.FormatType,
+		file:             writer,
+		tracesMarshaler:  tracesMarshalers[conf.FormatType],
+		metricsMarshaler: metricsMarshalers[conf.FormatType],
+		logsMarshaler:    logsMarshalers[conf.FormatType],
+		exporter:         buildExportFunc(conf),
+		compression:      conf.Compression,
+		compressor:       buildCompressor(conf.Compression),
+		flushInterval:    conf.FlushInterval,
+	}
+}
+
+func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
+	if cfg.Rotation == nil {
+		f, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			return nil, err
+		}
+		return newBufferedWriteCloser(f), nil
+	}
+	return &lumberjack.Logger{
+		Filename:   cfg.Path,
+		MaxSize:    cfg.Rotation.MaxMegabytes,
+		MaxAge:     cfg.Rotation.MaxDays,
+		MaxBackups: cfg.Rotation.MaxBackups,
+		LocalTime:  cfg.Rotation.LocalTime,
+	}, nil
 }
 
 // This is the map of already created File exporters for particular configurations.

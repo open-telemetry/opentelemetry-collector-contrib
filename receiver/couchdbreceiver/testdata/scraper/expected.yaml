@@ -1,0 +1,320 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: couchdb.node.name
+          value:
+            stringValue: http://localhost:5984
+    scopeMetrics:
+      - metrics:
+          - description: The average duration of a served request.
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: couchdb.average_request_time
+            unit: ms
+          - description: The number of open databases.
+            name: couchdb.database.open
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "36"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{databases}'
+          - description: The number of database operations.
+            name: couchdb.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "38"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: reads
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "39"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: writes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+          - description: The number of open file descriptors.
+            name: couchdb.file_descriptor.open
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "37"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{files}'
+          - description: The number of bulk requests.
+            name: couchdb.httpd.bulk_requests
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: The number of HTTP requests by method.
+            name: couchdb.httpd.requests
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: COPY
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: DELETE
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "6"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: HEAD
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "7"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: OPTIONS
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "8"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: POST
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "9"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: PUT
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: The number of each HTTP status code.
+            name: couchdb.httpd.responses
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "10"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "200"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "201"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "12"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "202"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "13"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "204"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "14"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "206"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "15"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "301"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "302"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "17"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "304"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "18"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "400"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "19"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "401"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "20"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "403"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "21"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "404"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "22"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "405"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "23"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "406"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "24"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "409"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "25"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "412"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "26"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "413"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "27"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "414"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "28"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "415"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "29"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "416"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "30"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "417"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "31"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "500"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "32"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "501"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "33"
+                  attributes:
+                    - key: http.status_code
+                      value:
+                        stringValue: "503"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{responses}'
+          - description: The number of views read.
+            name: couchdb.httpd.views
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "34"
+                  attributes:
+                    - key: view
+                      value:
+                        stringValue: temporary_view_reads
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "35"
+                  attributes:
+                    - key: view
+                      value:
+                        stringValue: view_reads
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{views}'
+        scope:
+          name: otelcol/couchdbreceiver
+          version: latest

@@ -1,24 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package loadbalancingexporter
+package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
 	"hash/crc32"
 	"sort"
-
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const maxPositions uint32 = 36000 // 360 degrees with two decimal places
@@ -49,19 +36,25 @@ func newHashRing(endpoints []string) *hashRing {
 }
 
 // endpointFor calculates which backend is responsible for the given traceID
-func (h *hashRing) endpointFor(traceID pdata.TraceID) string {
-	b := traceID.Bytes()
+func (h *hashRing) endpointFor(identifier []byte) string {
+	if h == nil {
+		// perhaps the ring itself couldn't get initialized yet?
+		return ""
+	}
 	hasher := crc32.NewIEEE()
-	hasher.Write(b[:])
+	hasher.Write(identifier)
 	hash := hasher.Sum32()
 	pos := hash % maxPositions
 
 	return h.findEndpoint(position(pos))
 }
 
-// findEndpoint returns the "next" endpoint starting from the given position
+// findEndpoint returns the "next" endpoint starting from the given position, or an empty string in case no endpoints are available
 func (h *hashRing) findEndpoint(pos position) string {
 	ringSize := len(h.items)
+	if ringSize == 0 {
+		return ""
+	}
 	left, right := h.items[:ringSize/2], h.items[ringSize/2:]
 	found := bsearch(pos, left, right)
 	return found.endpoint

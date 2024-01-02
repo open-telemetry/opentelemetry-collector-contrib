@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package stores
 
@@ -26,18 +15,18 @@ import (
 
 type mockCIMetric struct {
 	tags   map[string]string
-	fields map[string]interface{}
+	fields map[string]any
 }
 
 func (m *mockCIMetric) HasField(key string) bool {
 	return m.fields[key] != nil
 }
 
-func (m *mockCIMetric) AddField(key string, val interface{}) {
+func (m *mockCIMetric) AddField(key string, val any) {
 	m.fields[key] = val
 }
 
-func (m *mockCIMetric) GetField(key string) interface{} {
+func (m *mockCIMetric) GetField(key string) any {
 	return m.fields[key]
 }
 
@@ -69,7 +58,7 @@ func TestUtils_parseCronJobFromJob(t *testing.T) {
 }
 
 func TestUtils_addKubernetesInfo(t *testing.T) {
-	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	tags := map[string]string{
 		ci.ContainerNamekey: "testContainer",
 		ci.K8sPodNameKey:    "testPod",
@@ -85,7 +74,7 @@ func TestUtils_addKubernetesInfo(t *testing.T) {
 		fields: fields,
 	}
 
-	kubernetesBlob := map[string]interface{}{}
+	kubernetesBlob := map[string]any{}
 	AddKubernetesInfo(metric, kubernetesBlob)
 	assert.Equal(t, "", metric.GetTag(ci.ContainerNamekey))
 	assert.Equal(t, "", metric.GetTag(ci.K8sPodNameKey))
@@ -94,7 +83,7 @@ func TestUtils_addKubernetesInfo(t *testing.T) {
 	assert.Equal(t, "testService", metric.GetTag(ci.TypeService))
 	assert.Equal(t, "testNode", metric.GetTag(ci.NodeNameKey))
 
-	expectedKubeBlob := map[string]interface{}{"container_name": "testContainer", "host": "testNode", "namespace_name": "testNamespace", "pod_id": "123", "pod_name": "testPod", "service_name": "testService"}
+	expectedKubeBlob := map[string]any{"container_name": "testContainer", "host": "testNode", "namespace_name": "testNamespace", "pod_id": "123", "pod_name": "testPod", "service_name": "testService"}
 	assert.Equal(t, expectedKubeBlob, kubernetesBlob)
 }
 

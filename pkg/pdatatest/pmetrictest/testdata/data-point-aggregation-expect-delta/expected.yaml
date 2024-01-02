@@ -1,0 +1,8 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - name: delta.one
+            sum:
+              aggregationTemporality: 1
+        scope: {}

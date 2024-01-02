@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package loadbalancingexporter
+package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
 	"context"
@@ -22,8 +11,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
 
@@ -38,12 +26,12 @@ var (
 
 var _ loadBalancer = (*loadBalancerImp)(nil)
 
-type componentFactory func(ctx context.Context, endpoint string) (component.Exporter, error)
+type componentFactory func(ctx context.Context, endpoint string) (component.Component, error)
 
 type loadBalancer interface {
 	component.Component
-	Endpoint(traceID pdata.TraceID) string
-	Exporter(endpoint string) (component.Exporter, error)
+	Endpoint(identifier []byte) string
+	Exporter(endpoint string) (component.Component, error)
 }
 
 type loadBalancerImp struct {
@@ -54,14 +42,14 @@ type loadBalancerImp struct {
 	ring *hashRing
 
 	componentFactory componentFactory
-	exporters        map[string]component.Exporter
+	exporters        map[string]component.Component
 
 	stopped    bool
 	updateLock sync.RWMutex
 }
 
 // Create new load balancer
-func newLoadBalancer(params component.ExporterCreateSettings, cfg config.Exporter, factory componentFactory) (*loadBalancerImp, error) {
+func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, factory componentFactory) (*loadBalancerImp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Resolver.DNS != nil && oCfg.Resolver.Static != nil {
@@ -80,7 +68,19 @@ func newLoadBalancer(params component.ExporterCreateSettings, cfg config.Exporte
 		dnsLogger := params.Logger.With(zap.String("resolver", "dns"))
 
 		var err error
-		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port)
+		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port, oCfg.Resolver.DNS.Interval, oCfg.Resolver.DNS.Timeout)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if oCfg.Resolver.K8sSvc != nil {
+		k8sLogger := params.Logger.With(zap.String("resolver", "k8s service"))
+
+		clt, err := newInClusterClient()
+		if err != nil {
+			return nil, err
+		}
+		res, err = newK8sResolver(clt, k8sLogger, oCfg.Resolver.K8sSvc.Service, oCfg.Resolver.K8sSvc.Ports)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +94,7 @@ func newLoadBalancer(params component.ExporterCreateSettings, cfg config.Exporte
 		logger:           params.Logger,
 		res:              res,
 		componentFactory: factory,
-		exporters:        map[string]component.Exporter{},
+		exporters:        map[string]component.Component{},
 	}, nil
 }
 
@@ -150,9 +150,13 @@ func endpointWithPort(endpoint string) string {
 }
 
 func (lb *loadBalancerImp) removeExtraExporters(ctx context.Context, endpoints []string) {
+	endpointsWithPort := make([]string, len(endpoints))
+	for i, e := range endpoints {
+		endpointsWithPort[i] = endpointWithPort(e)
+	}
 	for existing := range lb.exporters {
-		if !endpointFound(existing, endpoints) {
-			lb.exporters[existing].Shutdown(ctx)
+		if !endpointFound(existing, endpointsWithPort) {
+			_ = lb.exporters[existing].Shutdown(ctx)
 			delete(lb.exporters, existing)
 		}
 	}
@@ -173,19 +177,19 @@ func (lb *loadBalancerImp) Shutdown(context.Context) error {
 	return nil
 }
 
-func (lb *loadBalancerImp) Endpoint(traceID pdata.TraceID) string {
+func (lb *loadBalancerImp) Endpoint(identifier []byte) string {
 	lb.updateLock.RLock()
 	defer lb.updateLock.RUnlock()
 
-	return lb.ring.endpointFor(traceID)
+	return lb.ring.endpointFor(identifier)
 }
 
-func (lb *loadBalancerImp) Exporter(endpoint string) (component.Exporter, error) {
-	// NOTE: make rolling updates of next tier of collectors work. currently this may cause
+func (lb *loadBalancerImp) Exporter(endpoint string) (component.Component, error) {
+	// NOTE: make rolling updates of next tier of collectors work. currently, this may cause
 	// data loss because the latest batches sent to outdated backend will never find their way out.
 	// for details: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
 	lb.updateLock.RLock()
-	exp, found := lb.exporters[endpoint]
+	exp, found := lb.exporters[endpointWithPort(endpoint)]
 	lb.updateLock.RUnlock()
 	if !found {
 		// something is really wrong... how come we couldn't find the exporter??

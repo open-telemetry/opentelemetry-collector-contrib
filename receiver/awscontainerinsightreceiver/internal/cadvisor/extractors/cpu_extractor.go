@@ -1,18 +1,7 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package extractors
+package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
 	cInfo "github.com/google/cadvisor/info/v1"
@@ -37,13 +26,15 @@ func (c *CPUMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
 
 func (c *CPUMetricExtractor) GetValue(info *cInfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
-	if info.Spec.Labels[containerNameLable] == infraContainerName {
+	// Skip infra container and handle node, pod, other containers in pod
+	if containerType == ci.TypeInfraContainer {
 		return metrics
 	}
 
 	// When there is more than one stats point, always use the last one
 	curStats := GetStats(info)
 	metric := newCadvisorMetric(containerType, c.logger)
+	metric.cgroupPath = info.Name
 	multiplier := float64(decimalToMillicores)
 	assignRateValueToField(&c.rateCalculator, metric.fields, ci.MetricName(containerType, ci.CPUTotal), info.Name, float64(curStats.Cpu.Usage.Total), curStats.Timestamp, multiplier)
 	assignRateValueToField(&c.rateCalculator, metric.fields, ci.MetricName(containerType, ci.CPUUser), info.Name, float64(curStats.Cpu.Usage.User), curStats.Timestamp, multiplier)
@@ -60,6 +51,10 @@ func (c *CPUMetricExtractor) GetValue(info *cInfo.ContainerInfo, mInfo CPUMemInf
 
 	metrics = append(metrics, metric)
 	return metrics
+}
+
+func (c *CPUMetricExtractor) Shutdown() error {
+	return c.rateCalculator.Shutdown()
 }
 
 func NewCPUMetricExtractor(logger *zap.Logger) *CPUMetricExtractor {

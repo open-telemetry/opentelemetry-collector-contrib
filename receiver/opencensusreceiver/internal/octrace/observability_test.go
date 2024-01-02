@@ -1,21 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package octrace
 
 import (
 	"context"
+	"runtime"
 	"testing"
 	"time"
 
@@ -24,14 +14,16 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.opentelemetry.io/otel/trace"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 )
+
+var receiverID = component.NewID("opencensus")
 
 // Ensure that if we add a metrics exporter that our target metrics
 // will be recorded but also with the proper tag keys and values.
@@ -41,11 +33,16 @@ import (
 // test is to ensure exactness, but with the mentioned views registered, the
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17574")
+	}
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
-	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
+	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneReceiverFn()
 
 	n := 20
@@ -59,15 +56,17 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentID("opencensus"), "grpc", int64(n), 0))
+	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(n), 0))
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	n := 20
@@ -80,16 +79,20 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	require.NoError(t, obsreporttest.CheckReceiverTraces(config.NewComponentID("opencensus"), "grpc", 0, 0))
+	require.NoError(t, tt.CheckReceiverTraces("grpc", 0, 0))
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
-	sr := new(tracetest.SpanRecorder)
-	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
-	otel.SetTracerProvider(tp)
-	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop())
+	otel.SetTracerProvider(tt.TracerProvider)
+	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
+
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
@@ -105,7 +108,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	flush(traceSvcDoneFn)
 
 	// Inspection time!
-	gotSpanData := sr.Ended()
+	gotSpanData := tt.SpanRecorder.Ended()
 	assert.Equal(t, n+1, len(gotSpanData))
 
 	receiverSpanData := gotSpanData[0]

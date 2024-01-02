@@ -1,35 +1,33 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package kubelet
+package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addMemoryMetrics(dest pdata.MetricSlice, prefix string, s *stats.MemoryStats, currentTime pdata.Timestamp) {
+func addMemoryMetrics(mb *metadata.MetricsBuilder, memoryMetrics metadata.MemoryMetrics, s *stats.MemoryStats, currentTime pcommon.Timestamp, r resources) {
 	if s == nil {
 		return
 	}
 
-	addIntGauge(dest, prefix, metadata.M.MemoryAvailable, s.AvailableBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryUsage, s.UsageBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryRss, s.RSSBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryWorkingSet, s.WorkingSetBytes, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryPageFaults, s.PageFaults, currentTime)
-	addIntGauge(dest, prefix, metadata.M.MemoryMajorPageFaults, s.MajorPageFaults, currentTime)
+	recordIntDataPoint(mb, memoryMetrics.Available, s.AvailableBytes, currentTime)
+	recordIntDataPoint(mb, memoryMetrics.Usage, s.UsageBytes, currentTime)
+	recordIntDataPoint(mb, memoryMetrics.Rss, s.RSSBytes, currentTime)
+	recordIntDataPoint(mb, memoryMetrics.WorkingSet, s.WorkingSetBytes, currentTime)
+	recordIntDataPoint(mb, memoryMetrics.PageFaults, s.PageFaults, currentTime)
+	recordIntDataPoint(mb, memoryMetrics.MajorPageFaults, s.MajorPageFaults, currentTime)
+
+	if s.UsageBytes != nil {
+		if r.memoryLimit > 0 {
+			memoryMetrics.LimitUtilization(mb, currentTime, float64(*s.UsageBytes)/float64(r.memoryLimit))
+		}
+		if r.memoryRequest > 0 {
+			memoryMetrics.RequestUtilization(mb, currentTime, float64(*s.UsageBytes)/float64(r.memoryRequest))
+		}
+	}
 }

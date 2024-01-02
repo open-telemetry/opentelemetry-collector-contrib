@@ -1,0 +1,12 @@
+type: awscloudwatchmetrics
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [jpkrohling]
+
+tests:
+  config:

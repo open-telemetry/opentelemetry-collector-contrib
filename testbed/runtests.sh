@@ -1,6 +1,11 @@
 #!/bin/bash
 
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 set -e
+
+GOJUNITREPORTCMD=${GOJUNIT:-go-junit-report}
 
 TESTS_DIR=${TESTS_DIR:-tests}
 
@@ -18,7 +23,7 @@ RUN_TESTBED=1 go test -v ${TEST_ARGS} 2>&1 | tee results/testoutput.log | bash -
 
 testStatus=${PIPESTATUS[0]}
 
-go-junit-report < results/testoutput.log > results/junit/results.xml
+${GOJUNITREPORTCMD} < results/testoutput.log > results/junit/results.xml
 
 bash -c "cat results/TESTRESULTS.md | ${TEST_COLORIZE}"
 

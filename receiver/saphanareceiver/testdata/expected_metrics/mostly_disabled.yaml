@@ -1,0 +1,107 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: db.system
+          value:
+            stringValue: saphana
+        - key: saphana.host
+          value:
+            stringValue: host1
+    scopeMetrics:
+      - metrics:
+          - description: The number of services in a given status.
+            name: saphana.service.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: inactive
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: '{services}'
+          - description: The number of service threads in a given status.
+            name: saphana.service.thread.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "101"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "11"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: inactive
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: '{threads}'
+        scope:
+          name: otelcol/saphanareceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: db.system
+          value:
+            stringValue: saphana
+        - key: saphana.host
+          value:
+            stringValue: host2
+    scopeMetrics:
+      - metrics:
+          - description: The number of services in a given status.
+            name: saphana.service.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "8"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: inactive
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: '{services}'
+          - description: The number of service threads in a given status.
+            name: saphana.service.thread.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "12"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: "1111"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: inactive
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: '{threads}'
+        scope:
+          name: otelcol/saphanareceiver
+          version: latest

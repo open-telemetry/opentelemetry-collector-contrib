@@ -1,162 +1,157 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package splunkhecexporter
+package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+// allow monkey patching for injecting pushLogData function in test
+var getPushLogFn = func(c *client) func(ctx context.Context, ld plog.Logs) error {
+	return c.pushLogData
+}
+
+// iterState captures a state of iteration over the pdata Logs/Metrics/Traces instances.
+type iterState struct {
+	resource int // index in ResourceLogs/ResourceMetrics/ResourceSpans list
+	library  int // index in ScopeLogs/ScopeMetrics/ScopeSpans list
+	record   int // index in Logs/Metrics/Spans list
+	done     bool
+}
+
+func (s iterState) empty() bool {
+	return s.resource == 0 && s.library == 0 && s.record == 0
+}
+
 // client sends the data to the splunk backend.
 type client struct {
-	config  *Config
-	url     *url.URL
-	client  *http.Client
-	logger  *zap.Logger
-	zippers sync.Pool
-	wg      sync.WaitGroup
-	headers map[string]string
+	config            *Config
+	logger            *zap.Logger
+	wg                sync.WaitGroup
+	telemetrySettings component.TelemetrySettings
+	hecWorker         hecWorker
+	buildInfo         component.BuildInfo
+	heartbeater       *heartbeater
+	bufferPool        bufferPool
+	exporterName      string
 }
 
-// bufferState encapsulates intermediate buffer state when pushing log data
-type bufferState struct {
-	buf      *bytes.Buffer
-	encoder  *json.Encoder
-	tmpBuf   *bytes.Buffer
-	bufFront *logIndex
-	bufLen   int
-	resource int
-	library  int
+var jsonStreamPool = sync.Pool{
+	New: func() any {
+		return jsoniter.NewStream(jsoniter.ConfigDefault, nil, 512)
+	},
 }
 
-// Minimum number of bytes to compress. 1500 is the MTU of an ethernet frame.
-const minCompressionLen = 1500
+func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) *client {
+	return &client{
+		config:            cfg,
+		logger:            set.Logger,
+		telemetrySettings: set.TelemetrySettings,
+		buildInfo:         set.BuildInfo,
+		bufferPool:        newBufferPool(maxContentLength, !cfg.DisableCompression),
+		exporterName:      set.ID.String(),
+	}
+}
+
+func newLogsClient(set exporter.CreateSettings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthLogs)
+}
+
+func newTracesClient(set exporter.CreateSettings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthTraces)
+}
+
+func newMetricsClient(set exporter.CreateSettings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
+}
 
 func (c *client) pushMetricsData(
 	ctx context.Context,
-	md pdata.Metrics,
+	md pmetric.Metrics,
 ) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	splunkDataPoints, _ := metricDataToSplunk(c.logger, md, c.config)
-	if len(splunkDataPoints) == 0 {
-		return nil
+	localHeaders := map[string]string{}
+	if md.ResourceMetrics().Len() != 0 {
+		accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
+		if found {
+			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+		}
 	}
 
-	body, compressed, err := encodeBodyEvents(&c.zippers, splunkDataPoints, c.config.DisableCompression)
-	if err != nil {
-		return consumererror.NewPermanent(err)
+	if c.config.UseMultiMetricFormat {
+		return c.pushMultiMetricsDataInBatches(ctx, md, localHeaders)
 	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), body)
-	if err != nil {
-		return consumererror.NewPermanent(err)
-	}
-
-	for k, v := range c.headers {
-		req.Header.Set(k, v)
-	}
-
-	if compressed {
-		req.Header.Set("Content-Encoding", "gzip")
-	}
-
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	io.Copy(ioutil.Discard, resp.Body)
-	resp.Body.Close()
-
-	return splunk.HandleHTTPCode(resp)
+	return c.pushMetricsDataInBatches(ctx, md, localHeaders)
 }
 
 func (c *client) pushTraceData(
 	ctx context.Context,
-	td pdata.Traces,
+	td ptrace.Traces,
 ) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	splunkEvents, _ := traceDataToSplunk(c.logger, td, c.config)
-	if len(splunkEvents) == 0 {
-		return nil
+	localHeaders := map[string]string{}
+	if td.ResourceSpans().Len() != 0 {
+		accessToken, found := td.ResourceSpans().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
+		if found {
+			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+		}
 	}
 
-	return c.sendSplunkEvents(ctx, splunkEvents)
+	return c.pushTracesDataInBatches(ctx, td, localHeaders)
 }
 
-func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Event) error {
-	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression)
-	if err != nil {
-		return consumererror.NewPermanent(err)
-	}
-	return c.postEvents(ctx, body, nil, compressed)
-}
-
-func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
+func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	gzipWriter := c.zippers.Get().(*gzip.Writer)
-	defer c.zippers.Put(gzipWriter)
-
-	gzipBuffer := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs))
-	gzipWriter.Reset(gzipBuffer)
-
-	// Callback when each batch is to be sent.
-	send := func(ctx context.Context, buf *bytes.Buffer, headers map[string]string) (err error) {
-		shouldCompress := buf.Len() >= minCompressionLen && !c.config.DisableCompression
-
-		if shouldCompress {
-			gzipBuffer.Reset()
-			gzipWriter.Reset(gzipBuffer)
-
-			if _, err = io.Copy(gzipWriter, buf); err != nil {
-				return fmt.Errorf("failed copying buffer to gzip writer: %v", err)
-			}
-
-			if err = gzipWriter.Close(); err != nil {
-				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
-			}
-
-			return c.postEvents(ctx, gzipBuffer, headers, shouldCompress)
-		}
-
-		return c.postEvents(ctx, buf, headers, shouldCompress)
+	if ld.ResourceLogs().Len() == 0 {
+		return nil
 	}
 
-	return c.pushLogDataInBatches(ctx, ld, send)
+	localHeaders := map[string]string{}
+
+	// All logs in a batch have the same access token after batchperresourceattr, so we can just check the first one.
+	accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
+	if found {
+		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+	}
+
+	// All logs in a batch have only one type (regular or profiling logs) after perScopeBatcher,
+	// so we can just check the first one.
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		sls := ld.ResourceLogs().At(i).ScopeLogs()
+		if sls.Len() > 0 {
+			if isProfilingData(sls.At(0)) {
+				localHeaders[libraryHeaderName] = profilingLibraryName
+			}
+			break
+		}
+	}
+
+	return c.pushLogDataInBatches(ctx, ld, localHeaders)
 }
 
 // A guesstimated value > length of bytes of a single event.
@@ -165,277 +160,539 @@ const bufCapPadding = uint(4096)
 const libraryHeaderName = "X-Splunk-Instrumentation-Library"
 const profilingLibraryName = "otel.profiling"
 
-var profilingHeaders = map[string]string{
-	libraryHeaderName: profilingLibraryName,
-}
-
-func isProfilingData(ill pdata.InstrumentationLibraryLogs) bool {
-	return ill.InstrumentationLibrary().Name() == profilingLibraryName
-}
-
-func makeBlankBufferState(bufCap uint) bufferState {
-	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
-	var buf = bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
-	var encoder = json.NewEncoder(buf)
-
-	// Buffer for overflown records that do not fit in the main buffer
-	var tmpBuf = bytes.NewBuffer(make([]byte, 0, bufCapPadding))
-
-	return bufferState{
-		buf:      buf,
-		encoder:  encoder,
-		tmpBuf:   tmpBuf,
-		bufFront: nil, // Index of the log record of the first unsent event in buffer.
-		bufLen:   0,   // Length of data in buffer excluding the last record if it overflows bufCap
-		resource: 0,   // Index of currently processed Resource
-		library:  0,   // Index of currently processed Library
-	}
+func isProfilingData(sl plog.ScopeLogs) bool {
+	return sl.Scope().Name() == profilingLibraryName
 }
 
 // pushLogDataInBatches sends batches of Splunk events in JSON format.
 // The batch content length is restricted to MaxContentLengthLogs.
 // ld log records are parsed to Splunk events.
-// The input data may contain both logs and profiling data.
-// They are batched separately and sent with different HTTP headers
-func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer, map[string]string) error) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs)
-	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs)
+func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers map[string]string) error {
+	buf := c.bufferPool.get()
+	defer c.bufferPool.put(buf)
+	is := iterState{}
 	var permanentErrors []error
 
-	var rls = ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		ills := rls.At(i).InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			var err error
-			var newPermanentErrors []error
-
-			if isProfilingData(ills.At(j)) {
-				profilingBufState.resource, profilingBufState.library = i, j
-				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &profilingBufState, profilingHeaders, send)
-			} else {
-				bufState.resource, bufState.library = i, j
-				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &bufState, nil, send)
+	for !is.done {
+		buf.Reset()
+		latestIterState, batchPermanentErrors := c.fillLogsBuffer(ld, buf, is)
+		permanentErrors = append(permanentErrors, batchPermanentErrors...)
+		if !buf.Empty() {
+			if err := c.postEvents(ctx, buf, headers); err != nil {
+				return consumererror.NewLogs(err, subLogs(ld, is))
 			}
-
-			if err != nil {
-				return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
-			}
-
-			permanentErrors = append(permanentErrors, newPermanentErrors...)
 		}
-	}
-
-	// There's some leftover unsent non-profiling data
-	if bufState.buf.Len() > 0 {
-		if err := send(ctx, bufState.buf, nil); err != nil {
-			return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
-		}
-	}
-
-	// There's some leftover unsent profiling data
-	if profilingBufState.buf.Len() > 0 {
-		if err := send(ctx, profilingBufState.buf, profilingHeaders); err != nil {
-			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
-			return consumererror.NewLogs(err, *subLogs(&ld, nil, profilingBufState.bufFront))
-		}
+		is = latestIterState
 	}
 
 	return multierr.Combine(permanentErrors...)
 }
 
-func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (permanentErrors []error, sendingError error) {
-	res := lds.At(state.resource)
-	logs := res.InstrumentationLibraryLogs().At(state.library).Logs()
-	bufCap := int(c.config.MaxContentLengthLogs)
+// fillLogsBuffer fills the buffer with Splunk events until the buffer is full or all logs are processed.
+func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterState, []error) {
+	var b []byte
+	var permanentErrors []error
+	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
+	defer jsonStreamPool.Put(jsonStream)
 
-	for k := 0; k < logs.Len(); k++ {
-		if state.bufFront == nil {
-			state.bufFront = &logIndex{resource: state.resource, library: state.library, record: k}
-		}
+	for i := is.resource; i < logs.ResourceLogs().Len(); i++ {
+		rl := logs.ResourceLogs().At(i)
+		for j := is.library; j < rl.ScopeLogs().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
+			sl := rl.ScopeLogs().At(j)
+			for k := is.record; k < sl.LogRecords().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
+				logRecord := sl.LogRecords().At(k)
 
-		// Parsing log record to Splunk event.
-		event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config, c.logger)
-		// JSON encoding event and writing to buffer.
-		if err := state.encoder.Encode(event); err != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
-			continue
-		}
+				if c.config.ExportRaw {
+					b = []byte(logRecord.Body().AsString() + "\n")
+				} else {
+					// Parsing log record to Splunk event.
+					event := mapLogRecordToSplunkEvent(rl.Resource(), logRecord, c.config)
 
-		// Continue adding events to buffer up to capacity.
-		// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
-		if state.buf.Len() <= bufCap || bufCap == 0 {
-			// Tracking length of event bytes below capacity in buffer.
-			state.bufLen = state.buf.Len()
-			continue
-		}
+					// JSON encoding event and writing to buffer.
+					var err error
+					b, err = marshalEvent(event, c.config.MaxEventSize, jsonStream)
+					if err != nil {
+						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+							"dropped log event: %v, error: %w", event, err)))
+						continue
+					}
+				}
 
-		state.tmpBuf.Reset()
-		// Storing event bytes over capacity in buffer before truncating.
-		if bufCap > 0 {
-			if over := state.buf.Len() - state.bufLen; over <= bufCap {
-				state.tmpBuf.Write(state.buf.Bytes()[state.bufLen:state.buf.Len()])
-			} else {
-				permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-					fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(state.buf.Bytes()[state.bufLen:state.buf.Len()]), over, bufCap)))
+				// Continue adding events to buffer up to capacity.
+				_, err := buf.Write(b)
+				if err == nil {
+					continue
+				}
+				if errors.Is(err, errOverCapacity) {
+					if !buf.Empty() {
+						return iterState{i, j, k, false}, permanentErrors
+					}
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+						fmt.Errorf("dropped log event: error: event size %d bytes larger than configured max"+
+							" content length %d bytes", len(b), c.config.MaxContentLengthLogs)))
+					return iterState{i, j, k + 1, false}, permanentErrors
+				}
+				permanentErrors = append(permanentErrors,
+					consumererror.NewPermanent(fmt.Errorf("error writing the event: %w", err)))
 			}
 		}
-
-		// Truncating buffer at tracked length below capacity and sending.
-		state.buf.Truncate(state.bufLen)
-		if state.buf.Len() > 0 {
-			if err := send(ctx, state.buf, headers); err != nil {
-				return permanentErrors, err
-			}
-		}
-		state.buf.Reset()
-
-		// Writing truncated bytes back to buffer.
-		state.tmpBuf.WriteTo(state.buf)
-
-		if state.buf.Len() > 0 {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &logIndex{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
-		state.bufLen = state.buf.Len()
 	}
 
-	return permanentErrors, nil
+	return iterState{done: true}, permanentErrors
 }
 
-func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[string]string, compressed bool) error {
-	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), events)
+func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterState) (iterState, []error) {
+	var permanentErrors []error
+	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
+	defer jsonStreamPool.Put(jsonStream)
+
+	tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
+	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := is.library; j < rm.ScopeMetrics().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
+			sm := rm.ScopeMetrics().At(j)
+			for k := is.record; k < sm.Metrics().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
+				metric := sm.Metrics().At(k)
+
+				// Parsing metric record to Splunk event.
+				events := mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)
+				tempBuf.Reset()
+				for _, event := range events {
+					// JSON encoding event and writing to buffer.
+					b, err := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+					if err != nil {
+						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
+						continue
+					}
+					tempBuf.Write(b)
+				}
+
+				// Continue adding events to buffer up to capacity.
+				b := tempBuf.Bytes()
+				_, err := buf.Write(b)
+				if err == nil {
+					continue
+				}
+				if errors.Is(err, errOverCapacity) {
+					if !buf.Empty() {
+						return iterState{i, j, k, false}, permanentErrors
+					}
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+						fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
+							" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
+					return iterState{i, j, k + 1, false}, permanentErrors
+				}
+				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+					"error writing the event: %w", err)))
+			}
+		}
+	}
+
+	return iterState{done: true}, permanentErrors
+}
+
+func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffer, is iterState) (iterState, []error) {
+	var permanentErrors []error
+	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
+	defer jsonStreamPool.Put(jsonStream)
+
+	for i := is.record; i < len(events); i++ {
+		event := events[i]
+		// JSON encoding event and writing to buffer.
+		b, jsonErr := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+		if jsonErr != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, jsonErr)))
+			continue
+		}
+		_, err := buf.Write(b)
+		if errors.Is(err, errOverCapacity) {
+			if !buf.Empty() {
+				return iterState{
+					record: i,
+					done:   false,
+				}, permanentErrors
+			}
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
+					" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
+			return iterState{
+				record: i + 1,
+				done:   i+1 != len(events),
+			}, permanentErrors
+		} else if err != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+				"error writing the event: %w", err)))
+		}
+	}
+
+	return iterState{done: true}, permanentErrors
+}
+
+func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState) (iterState, []error) {
+	var permanentErrors []error
+	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
+	defer jsonStreamPool.Put(jsonStream)
+
+	for i := is.resource; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := is.library; j < rs.ScopeSpans().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
+			ss := rs.ScopeSpans().At(j)
+			for k := is.record; k < ss.Spans().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
+				span := ss.Spans().At(k)
+
+				// Parsing span record to Splunk event.
+				event := mapSpanToSplunkEvent(rs.Resource(), span, c.config)
+
+				// JSON encoding event and writing to buffer.
+				b, err := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+				if err != nil {
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
+					continue
+				}
+
+				// Continue adding events to buffer up to capacity.
+				_, err = buf.Write(b)
+				if err == nil {
+					continue
+				}
+				if errors.Is(err, errOverCapacity) {
+					if !buf.Empty() {
+						return iterState{i, j, k, false}, permanentErrors
+					}
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+						fmt.Errorf("dropped span event: error: event size %d bytes larger than configured max"+
+							" content length %d bytes", len(b), c.config.MaxContentLengthTraces)))
+					return iterState{i, j, k + 1, false}, permanentErrors
+				}
+				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+					"error writing the event: %w", err)))
+			}
+		}
+	}
+
+	return iterState{done: true}, permanentErrors
+}
+
+// pushMultiMetricsDataInBatches sends batches of Splunk multi-metric events in JSON format.
+// The batch content length is restricted to MaxContentLengthMetrics.
+// md metrics are parsed to Splunk events.
+func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
+	buf := c.bufferPool.get()
+	defer c.bufferPool.put(buf)
+	is := iterState{}
+
+	var permanentErrors []error
+	var events []*splunk.Event
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+
+				// Parsing metric record to Splunk event.
+				events = append(events, mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)...)
+			}
+		}
+	}
+
+	merged, err := mergeEventsToMultiMetricFormat(events)
+	if err != nil {
+		return consumererror.NewPermanent(fmt.Errorf("error merging events: %w", err))
+	}
+
+	for !is.done {
+		buf.Reset()
+
+		latestIterState, batchPermanentErrors := c.fillMetricsBufferMultiMetrics(merged, buf, is)
+		permanentErrors = append(permanentErrors, batchPermanentErrors...)
+		if !buf.Empty() {
+			if err := c.postEvents(ctx, buf, headers); err != nil {
+				return consumererror.NewMetrics(err, md)
+			}
+		}
+
+		is = latestIterState
+	}
+
+	return multierr.Combine(permanentErrors...)
+}
+
+// pushMetricsDataInBatches sends batches of Splunk events in JSON format.
+// The batch content length is restricted to MaxContentLengthMetrics.
+// md metrics are parsed to Splunk events.
+func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
+	buf := c.bufferPool.get()
+	defer c.bufferPool.put(buf)
+	is := iterState{}
+	var permanentErrors []error
+
+	for !is.done {
+		buf.Reset()
+		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, buf, is)
+		permanentErrors = append(permanentErrors, batchPermanentErrors...)
+		if !buf.Empty() {
+			if err := c.postEvents(ctx, buf, headers); err != nil {
+				return consumererror.NewMetrics(err, subMetrics(md, is))
+			}
+		}
+
+		is = latestIterState
+	}
+
+	return multierr.Combine(permanentErrors...)
+}
+
+// pushTracesDataInBatches sends batches of Splunk events in JSON format.
+// The batch content length is restricted to MaxContentLengthMetrics.
+// td traces are parsed to Splunk events.
+func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, headers map[string]string) error {
+	buf := c.bufferPool.get()
+	defer c.bufferPool.put(buf)
+	is := iterState{}
+	var permanentErrors []error
+
+	for !is.done {
+		buf.Reset()
+		latestIterState, batchPermanentErrors := c.fillTracesBuffer(td, buf, is)
+		permanentErrors = append(permanentErrors, batchPermanentErrors...)
+		if !buf.Empty() {
+			if err := c.postEvents(ctx, buf, headers); err != nil {
+				return consumererror.NewTraces(err, subTraces(td, is))
+			}
+		}
+		is = latestIterState
+	}
+
+	return multierr.Combine(permanentErrors...)
+}
+
+func (c *client) postEvents(ctx context.Context, buf buffer, headers map[string]string) error {
+	if err := buf.Close(); err != nil {
+		return err
+	}
+	return c.hecWorker.send(ctx, buf, headers)
+}
+
+// subLogs returns a subset of logs starting from the state.
+func subLogs(src plog.Logs, state iterState) plog.Logs {
+	if state.empty() {
+		return src
+	}
+
+	dst := plog.NewLogs()
+	resources := src.ResourceLogs()
+	resourcesSub := dst.ResourceLogs()
+
+	for i := state.resource; i < resources.Len(); i++ {
+		newSub := resourcesSub.AppendEmpty()
+		resources.At(i).Resource().CopyTo(newSub.Resource())
+
+		libraries := resources.At(i).ScopeLogs()
+		librariesSub := newSub.ScopeLogs()
+
+		j := 0
+		if i == state.resource {
+			j = state.library
+		}
+		for ; j < libraries.Len(); j++ {
+			lib := libraries.At(j)
+
+			newLibSub := librariesSub.AppendEmpty()
+			lib.Scope().CopyTo(newLibSub.Scope())
+
+			logs := lib.LogRecords()
+			logsSub := newLibSub.LogRecords()
+
+			k := 0
+			if i == state.resource && j == state.library {
+				k = state.record
+			}
+			for ; k < logs.Len(); k++ {
+				logs.At(k).CopyTo(logsSub.AppendEmpty())
+			}
+		}
+	}
+
+	return dst
+}
+
+// subMetrics returns a subset of metrics starting from the state.
+func subMetrics(src pmetric.Metrics, state iterState) pmetric.Metrics {
+	if state.empty() {
+		return src
+	}
+
+	dst := pmetric.NewMetrics()
+	resources := src.ResourceMetrics()
+	resourcesSub := dst.ResourceMetrics()
+
+	for i := state.resource; i < resources.Len(); i++ {
+		newSub := resourcesSub.AppendEmpty()
+		resources.At(i).Resource().CopyTo(newSub.Resource())
+
+		libraries := resources.At(i).ScopeMetrics()
+		librariesSub := newSub.ScopeMetrics()
+
+		j := 0
+		if i == state.resource {
+			j = state.library
+		}
+		for ; j < libraries.Len(); j++ {
+			lib := libraries.At(j)
+
+			newLibSub := librariesSub.AppendEmpty()
+			lib.Scope().CopyTo(newLibSub.Scope())
+
+			metrics := lib.Metrics()
+			metricsSub := newLibSub.Metrics()
+
+			k := 0
+			if i == state.resource && j == state.library {
+				k = state.record
+			}
+			for ; k < metrics.Len(); k++ {
+				metrics.At(k).CopyTo(metricsSub.AppendEmpty())
+			}
+		}
+	}
+
+	return dst
+}
+
+func subTraces(src ptrace.Traces, state iterState) ptrace.Traces {
+	if state.empty() {
+		return src
+	}
+
+	dst := ptrace.NewTraces()
+	resources := src.ResourceSpans()
+	resourcesSub := dst.ResourceSpans()
+
+	for i := state.resource; i < resources.Len(); i++ {
+		newSub := resourcesSub.AppendEmpty()
+		resources.At(i).Resource().CopyTo(newSub.Resource())
+
+		libraries := resources.At(i).ScopeSpans()
+		librariesSub := newSub.ScopeSpans()
+
+		j := 0
+		if i == state.resource {
+			j = state.library
+		}
+		for ; j < libraries.Len(); j++ {
+			lib := libraries.At(j)
+
+			newLibSub := librariesSub.AppendEmpty()
+			lib.Scope().CopyTo(newLibSub.Scope())
+
+			traces := lib.Spans()
+			tracesSub := newLibSub.Spans()
+
+			k := 0
+			if i == state.resource && j == state.library {
+				k = state.record
+			}
+			for ; k < traces.Len(); k++ {
+				traces.At(k).CopyTo(tracesSub.AppendEmpty())
+			}
+		}
+	}
+
+	return dst
+}
+
+func (c *client) stop(context.Context) error {
+	c.wg.Wait()
+	if c.heartbeater != nil {
+		c.heartbeater.shutdown()
+	}
+	return nil
+}
+
+func (c *client) start(ctx context.Context, host component.Host) (err error) {
+
+	httpClient, err := buildHTTPClient(c.config, host, c.telemetrySettings)
+	if err != nil {
+		return err
+	}
+
+	if c.config.HecHealthCheckEnabled {
+		healthCheckURL, _ := c.config.getURL()
+		healthCheckURL.Path = c.config.HealthPath
+		if err := checkHecHealth(ctx, httpClient, healthCheckURL); err != nil {
+			return fmt.Errorf("%s: health check failed: %w", c.exporterName, err)
+		}
+	}
+	url, _ := c.config.getURL()
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
+	if c.config.Heartbeat.Startup {
+		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
+			return fmt.Errorf("%s: heartbeat on startup failed: %w", c.exporterName, err)
+		}
+	}
+	return nil
+}
+
+func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *url.URL) error {
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), nil)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
 
-	// Set the headers configured for the client
-	for k, v := range c.headers {
-		req.Header.Set(k, v)
-	}
-
-	// Set extra headers passed by the caller
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
-
-	if compressed {
-		req.Header.Set("Content-Encoding", "gzip")
-	}
-
-	resp, err := c.client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	err = splunk.HandleHTTPCode(resp)
-
-	io.Copy(ioutil.Discard, resp.Body)
-
-	return err
-}
-
-// subLogs returns a subset of `ld` starting from `profilingBufFront` for profiling data
-// plus starting from `bufFront` for non-profiling data. Both can be nil, in which case they are ignored
-func subLogs(ld *pdata.Logs, bufFront *logIndex, profilingBufFront *logIndex) *pdata.Logs {
-	if ld == nil {
-		return ld
+	if err != nil {
+		return err
 	}
 
-	subset := pdata.NewLogs()
-	subLogsByType(ld, bufFront, &subset, false)
-	subLogsByType(ld, profilingBufFront, &subset, true)
-
-	return &subset
-}
-
-func subLogsByType(src *pdata.Logs, from *logIndex, dst *pdata.Logs, profiling bool) {
-	if from == nil {
-		return // All the data of this type was sent successfully
-	}
-
-	resources := src.ResourceLogs()
-	resourcesSub := dst.ResourceLogs()
-
-	for i := from.resource; i < resources.Len(); i++ {
-		newSub := resourcesSub.AppendEmpty()
-		resources.At(i).Resource().CopyTo(newSub.Resource())
-
-		libraries := resources.At(i).InstrumentationLibraryLogs()
-		librariesSub := newSub.InstrumentationLibraryLogs()
-
-		j := 0
-		if i == from.resource {
-			j = from.library
-		}
-		for jSub := 0; j < libraries.Len(); j++ {
-			lib := libraries.At(j)
-
-			// Only copy profiling data if requested. If not requested, only copy non-profiling data
-			if profiling != isProfilingData(lib) {
-				continue
-			}
-
-			newLibSub := librariesSub.AppendEmpty()
-			lib.InstrumentationLibrary().CopyTo(newLibSub.InstrumentationLibrary())
-
-			logs := lib.Logs()
-			logsSub := newLibSub.Logs()
-			jSub++
-
-			k := 0
-			if i == from.resource && j == from.library {
-				k = from.record
-			}
-
-			for kSub := 0; k < logs.Len(); k++ { //revive:disable-line:var-naming
-				logs.At(k).CopyTo(logsSub.AppendEmpty())
-				kSub++
-			}
-		}
-	}
-}
-
-func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
-	buf := new(bytes.Buffer)
-	encoder := json.NewEncoder(buf)
-	for _, e := range evs {
-		err := encoder.Encode(e)
-		if err != nil {
-			return nil, false, err
-		}
-	}
-	return getReader(zippers, buf, disableCompression)
-}
-
-// avoid attempting to compress things that fit into a single ethernet frame
-func getReader(zippers *sync.Pool, b *bytes.Buffer, disableCompression bool) (io.Reader, bool, error) {
-	var err error
-	if !disableCompression && b.Len() > minCompressionLen {
-		buf := new(bytes.Buffer)
-		w := zippers.Get().(*gzip.Writer)
-		defer zippers.Put(w)
-		w.Reset(buf)
-		_, err = w.Write(b.Bytes())
-		if err == nil {
-			err = w.Close()
-			if err == nil {
-				return buf, true, nil
-			}
-		}
-	}
-	return b, false, err
-}
-
-func (c *client) stop(context.Context) error {
-	c.wg.Wait()
 	return nil
 }
 
-func (c *client) start(context.Context, component.Host) (err error) {
-	return nil
+func buildHTTPClient(config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
+	// we handle compression explicitly.
+	config.HTTPClientSettings.Compression = ""
+	return config.ToClient(host, telemetrySettings)
+}
+
+func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]string {
+	appVersion := config.SplunkAppVersion
+	if appVersion == "" {
+		appVersion = buildInfo.Version
+	}
+	return map[string]string{
+		"Connection":           "keep-alive",
+		"Content-Type":         "application/json",
+		"User-Agent":           config.SplunkAppName + "/" + appVersion,
+		"Authorization":        splunk.HECTokenHeader + " " + string(config.Token),
+		"__splunk_app_name":    config.SplunkAppName,
+		"__splunk_app_version": config.SplunkAppVersion,
+	}
+}
+
+// marshalEvent marshals an event to JSON using a reusable jsoniter stream.
+func marshalEvent(event *splunk.Event, sizeLimit uint, stream *jsoniter.Stream) ([]byte, error) {
+	stream.Reset(nil)
+	stream.Error = nil
+	stream.WriteVal(event)
+	if stream.Error != nil {
+		return nil, stream.Error
+	}
+	if uint(stream.Buffered()) > sizeLimit {
+		return nil, fmt.Errorf("event size %d exceeds limit %d", stream.Buffered(), sizeLimit)
+	}
+	return stream.Buffer(), nil
 }

@@ -1,0 +1,155 @@
+default:
+all_set:
+  metrics:
+    redis.clients.blocked:
+      enabled: true
+    redis.clients.connected:
+      enabled: true
+    redis.clients.max_input_buffer:
+      enabled: true
+    redis.clients.max_output_buffer:
+      enabled: true
+    redis.cmd.calls:
+      enabled: true
+    redis.cmd.latency:
+      enabled: true
+    redis.cmd.usec:
+      enabled: true
+    redis.commands:
+      enabled: true
+    redis.commands.processed:
+      enabled: true
+    redis.connections.received:
+      enabled: true
+    redis.connections.rejected:
+      enabled: true
+    redis.cpu.time:
+      enabled: true
+    redis.db.avg_ttl:
+      enabled: true
+    redis.db.expires:
+      enabled: true
+    redis.db.keys:
+      enabled: true
+    redis.keys.evicted:
+      enabled: true
+    redis.keys.expired:
+      enabled: true
+    redis.keyspace.hits:
+      enabled: true
+    redis.keyspace.misses:
+      enabled: true
+    redis.latest_fork:
+      enabled: true
+    redis.maxmemory:
+      enabled: true
+    redis.memory.fragmentation_ratio:
+      enabled: true
+    redis.memory.lua:
+      enabled: true
+    redis.memory.peak:
+      enabled: true
+    redis.memory.rss:
+      enabled: true
+    redis.memory.used:
+      enabled: true
+    redis.net.input:
+      enabled: true
+    redis.net.output:
+      enabled: true
+    redis.rdb.changes_since_last_save:
+      enabled: true
+    redis.replication.backlog_first_byte_offset:
+      enabled: true
+    redis.replication.offset:
+      enabled: true
+    redis.role:
+      enabled: true
+    redis.slaves.connected:
+      enabled: true
+    redis.uptime:
+      enabled: true
+  resource_attributes:
+    redis.version:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
+      enabled: true
+none_set:
+  metrics:
+    redis.clients.blocked:
+      enabled: false
+    redis.clients.connected:
+      enabled: false
+    redis.clients.max_input_buffer:
+      enabled: false
+    redis.clients.max_output_buffer:
+      enabled: false
+    redis.cmd.calls:
+      enabled: false
+    redis.cmd.latency:
+      enabled: false
+    redis.cmd.usec:
+      enabled: false
+    redis.commands:
+      enabled: false
+    redis.commands.processed:
+      enabled: false
+    redis.connections.received:
+      enabled: false
+    redis.connections.rejected:
+      enabled: false
+    redis.cpu.time:
+      enabled: false
+    redis.db.avg_ttl:
+      enabled: false
+    redis.db.expires:
+      enabled: false
+    redis.db.keys:
+      enabled: false
+    redis.keys.evicted:
+      enabled: false
+    redis.keys.expired:
+      enabled: false
+    redis.keyspace.hits:
+      enabled: false
+    redis.keyspace.misses:
+      enabled: false
+    redis.latest_fork:
+      enabled: false
+    redis.maxmemory:
+      enabled: false
+    redis.memory.fragmentation_ratio:
+      enabled: false
+    redis.memory.lua:
+      enabled: false
+    redis.memory.peak:
+      enabled: false
+    redis.memory.rss:
+      enabled: false
+    redis.memory.used:
+      enabled: false
+    redis.net.input:
+      enabled: false
+    redis.net.output:
+      enabled: false
+    redis.rdb.changes_since_last_save:
+      enabled: false
+    redis.replication.backlog_first_byte_offset:
+      enabled: false
+    redis.replication.offset:
+      enabled: false
+    redis.role:
+      enabled: false
+    redis.slaves.connected:
+      enabled: false
+    redis.uptime:
+      enabled: false
+  resource_attributes:
+    redis.version:
+      enabled: false
+    server.address:
+      enabled: false
+    server.port:
+      enabled: false

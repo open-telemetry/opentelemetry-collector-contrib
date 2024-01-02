@@ -1,52 +1,71 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package receivercreator
+package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
 import (
 	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var _ component.MetricsReceiver = (*receiverCreator)(nil)
+var _ receiver.Metrics = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
-	params          component.ReceiverCreateSettings
-	cfg             *Config
-	nextConsumer    consumer.Metrics
-	observerHandler observerHandler
+	params              receiver.CreateSettings
+	cfg                 *Config
+	nextLogsConsumer    consumer.Logs
+	nextMetricsConsumer consumer.Metrics
+	nextTracesConsumer  consumer.Traces
+	observerHandler     *observerHandler
+	observables         []observer.Observable
 }
 
-// newReceiverCreator creates the receiver_creator with the given parameters.
-func newReceiverCreator(params component.ReceiverCreateSettings, cfg *Config, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+// newLogsReceiverCreator creates the receiver_creator with the given parameters.
+func newLogsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	r := &receiverCreator{
-		params:       params,
-		cfg:          cfg,
-		nextConsumer: nextConsumer,
+		params:           params,
+		cfg:              cfg,
+		nextLogsConsumer: nextConsumer,
+	}
+	return r, nil
+}
+
+// newMetricsReceiverCreator creates the receiver_creator with the given parameters.
+func newMetricsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+	if nextConsumer == nil {
+		return nil, component.ErrNilNextConsumer
+	}
+
+	r := &receiverCreator{
+		params:              params,
+		cfg:                 cfg,
+		nextMetricsConsumer: nextConsumer,
+	}
+	return r, nil
+}
+
+// newTracesReceiverCreator creates the receiver_creator with the given parameters.
+func newTracesReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (receiver.Traces, error) {
+	if nextConsumer == nil {
+		return nil, component.ErrNilNextConsumer
+	}
+
+	r := &receiverCreator{
+		params:             params,
+		cfg:                cfg,
+		nextTracesConsumer: nextConsumer,
 	}
 	return r, nil
 }
@@ -66,38 +85,37 @@ var _ component.Host = (*loggingHost)(nil)
 
 // Start receiver_creator.
 func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
-	rc.observerHandler = observerHandler{
+	rc.observerHandler = &observerHandler{
 		config:                rc.cfg,
-		logger:                rc.params.Logger,
+		params:                rc.params,
 		receiversByEndpointID: receiverMap{},
-		nextConsumer:          rc.nextConsumer,
-		runner: &receiverRunner{
-			params:      rc.params,
-			idNamespace: rc.cfg.ID(),
-			host:        &loggingHost{host, rc.params.Logger},
-		}}
+		nextLogsConsumer:      rc.nextLogsConsumer,
+		nextMetricsConsumer:   rc.nextMetricsConsumer,
+		nextTracesConsumer:    rc.nextTracesConsumer,
+		runner:                newReceiverRunner(rc.params, &loggingHost{host, rc.params.Logger}),
+	}
 
-	observers := map[config.Type]observer.Observable{}
+	observers := map[component.ID]observer.Observable{}
 
-	// Match all configured observers to the extensions that are running.
+	// Match all configured observables to the extensions that are running.
 	for _, watchObserver := range rc.cfg.WatchObservers {
-		for cfg, ext := range host.GetExtensions() {
-			if cfg.Type() != watchObserver {
+		for cid, ext := range host.GetExtensions() {
+			if cid != watchObserver {
 				continue
 			}
 
 			obs, ok := ext.(observer.Observable)
 			if !ok {
-				return fmt.Errorf("extension %q in watch_observers is not an observer", watchObserver)
+				return fmt.Errorf("extension %q in watch_observers is not an observer", watchObserver.String())
 			}
 			observers[watchObserver] = obs
 		}
 	}
 
-	// Make sure all observers are present before starting any.
+	// Make sure all observables are present before starting any.
 	for _, watchObserver := range rc.cfg.WatchObservers {
 		if observers[watchObserver] == nil {
-			return fmt.Errorf("failed to find observer %q in the extensions list", watchObserver)
+			return fmt.Errorf("failed to find observer %q in the extensions list", watchObserver.String())
 		}
 	}
 
@@ -107,7 +125,8 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 
 	// Start all configured watchers.
 	for _, observable := range observers {
-		observable.ListAndWatch(&rc.observerHandler)
+		rc.observables = append(rc.observables, observable)
+		observable.ListAndWatch(rc.observerHandler)
 	}
 
 	return nil
@@ -115,5 +134,11 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 
 // Shutdown stops the receiver_creator and all its receivers started at runtime.
 func (rc *receiverCreator) Shutdown(context.Context) error {
+	for _, observable := range rc.observables {
+		observable.Unsubscribe(rc.observerHandler)
+	}
+	if rc.observerHandler == nil {
+		return nil
+	}
 	return rc.observerHandler.shutdown()
 }

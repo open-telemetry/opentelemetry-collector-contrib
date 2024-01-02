@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package httpforwarder
+package httpforwarder // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 
 import (
 	"context"
@@ -23,6 +12,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +24,7 @@ type httpForwarder struct {
 	config     *Config
 }
 
-var _ component.Extension = (*httpForwarder)(nil)
+var _ extension.Extension = (*httpForwarder)(nil)
 
 func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 	listener, err := h.config.Ingress.ToListener()
@@ -42,7 +32,7 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.Endpoint, err)
 	}
 
-	httpClient, err := h.config.Egress.ToClient(host.GetExtensions())
+	httpClient, err := h.config.Egress.ToClient(host, h.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -51,10 +41,14 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", h.forwardRequest)
 
-	h.server = h.config.Ingress.ToServer(handler, h.settings)
+	h.server, err = h.config.Ingress.ToServer(host, h.settings, handler)
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP Client: %w", err)
+	}
+
 	go func() {
-		if err := h.server.Serve(listener); err != http.ErrServerClosed {
-			host.ReportFatalError(err)
+		if errHTTP := h.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+			host.ReportFatalError(errHTTP)
 		}
 	}()
 
@@ -62,6 +56,9 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 }
 
 func (h *httpForwarder) Shutdown(_ context.Context) error {
+	if h.server == nil {
+		return nil
+	}
 	return h.server.Close()
 }
 
@@ -75,7 +72,7 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 
 	// Add additional headers.
 	for k, v := range h.config.Egress.Headers {
-		forwarderRequest.Header.Add(k, v)
+		forwarderRequest.Header.Add(k, string(v))
 	}
 
 	// Add "Via" header for tracking purposes on both the outgoing requests and responses.
@@ -113,7 +110,7 @@ func addViaHeader(header http.Header, protocol string, host string) {
 	header.Add("Via", fmt.Sprintf("%s %s", protocol, host))
 }
 
-func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (component.Extension, error) {
+func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (extension.Extension, error) {
 	if config.Egress.Endpoint == "" {
 		return nil, errors.New("'egress.endpoint' config option cannot be empty")
 	}

@@ -1,26 +1,15 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package idbatcher defines a pipeline of fixed size in which the
 // elements are batches of ids.
-package idbatcher
+package idbatcher // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 
 import (
 	"errors"
 	"sync"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var (
@@ -31,7 +20,7 @@ var (
 )
 
 // Batch is the type of batches held by the Batcher.
-type Batch []pdata.TraceID
+type Batch []pcommon.TraceID
 
 // Batcher behaves like a pipeline of batches that has a fixed number of batches in the pipe
 // and a new batch being built outside of the pipe. Items can be concurrently added to the batch
@@ -44,7 +33,7 @@ type Batcher interface {
 	// of limiting the growth of the current batch if appropriate for its scenario. It can
 	// either call CloseCurrentAndTakeFirstBatch earlier or stop adding new items depending on what is
 	// required by the scenario.
-	AddToCurrentBatch(id pdata.TraceID)
+	AddToCurrentBatch(id pcommon.TraceID)
 	// CloseCurrentAndTakeFirstBatch takes the batch at the front of the pipe, and moves the current
 	// batch to the end of the pipe, creating a new batch to receive new items. This operation should
 	// be atomic.
@@ -59,8 +48,8 @@ type Batcher interface {
 var _ Batcher = (*batcher)(nil)
 
 type batcher struct {
-	pendingIds chan pdata.TraceID // Channel for the ids to be added to the next batch.
-	batches    chan Batch         // Channel with already captured batches.
+	pendingIds chan pcommon.TraceID // Channel for the ids to be added to the next batch.
+	batches    chan Batch           // Channel with already captured batches.
 
 	// cbMutex protects the currentBatch storing ids.
 	cbMutex      sync.Mutex
@@ -69,6 +58,7 @@ type batcher struct {
 	newBatchesInitialCapacity uint64
 	stopchan                  chan bool
 	stopped                   bool
+	stopLock                  sync.RWMutex
 }
 
 // New creates a Batcher that will hold numBatches in its pipeline, having a channel with
@@ -92,7 +82,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	}
 
 	batcher := &batcher{
-		pendingIds:                make(chan pdata.TraceID, batchChannelSize),
+		pendingIds:                make(chan pcommon.TraceID, batchChannelSize),
 		batches:                   batches,
 		currentBatch:              make(Batch, 0, newBatchesInitialCapacity),
 		newBatchesInitialCapacity: newBatchesInitialCapacity,
@@ -113,12 +103,13 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	return batcher, nil
 }
 
-func (b *batcher) AddToCurrentBatch(id pdata.TraceID) {
+func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) {
 	b.pendingIds <- id
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 	if readBatch, ok := <-b.batches; ok {
+		b.stopLock.RLock()
 		if !b.stopped {
 			nextBatch := make(Batch, 0, b.newBatchesInitialCapacity)
 			b.cbMutex.Lock()
@@ -126,6 +117,7 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 			b.currentBatch = nextBatch
 			b.cbMutex.Unlock()
 		}
+		b.stopLock.RUnlock()
 		return readBatch, true
 	}
 
@@ -136,6 +128,8 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 
 func (b *batcher) Stop() {
 	close(b.pendingIds)
+	b.stopLock.Lock()
 	b.stopped = <-b.stopchan
+	b.stopLock.Unlock()
 	close(b.batches)
 }

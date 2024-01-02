@@ -1,18 +1,7 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package metricstransformprocessor
+package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
 	"context"
@@ -21,50 +10,47 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "metricstransform"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/metadata"
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
-// NewFactory returns a new factory for the Metrics Transform processor.
-func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
-		typeStr,
+// NewFactory returns a new factory for the Metrics transform processor.
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		processorhelper.WithMetrics(createMetricsProcessor))
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
 }
 
-func createDefaultConfig() config.Processor {
-	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
-	cfg config.Processor,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 	if err := validateConfiguration(oCfg); err != nil {
 		return nil, err
 	}
 
-	hCfg, err := buildHelperConfig(oCfg, params.BuildInfo.Version)
+	hCfg, err := buildHelperConfig(oCfg, set.BuildInfo.Version)
 	if err != nil {
 		return nil, err
 	}
-	metricsProcessor := newMetricsTransformProcessor(params.Logger, hCfg)
+	metricsProcessor := newMetricsTransformProcessor(set.Logger, hCfg)
 
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
@@ -75,65 +61,61 @@ func createMetricsProcessor(
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
 	for _, transform := range config.Transforms {
-		if transform.MetricIncludeFilter.Include == "" && transform.MetricName == "" {
-			return fmt.Errorf("missing required field %q", IncludeFieldName)
-		}
-
-		if transform.MetricIncludeFilter.Include != "" && transform.MetricName != "" {
-			return fmt.Errorf("cannot supply both %q and %q, use %q with %q match type", IncludeFieldName, MetricNameFieldName, IncludeFieldName, StrictMatchType)
+		if transform.MetricIncludeFilter.Include == "" {
+			return fmt.Errorf("missing required field %q", includeFieldName)
 		}
 
 		if transform.MetricIncludeFilter.MatchType != "" && !transform.MetricIncludeFilter.MatchType.isValid() {
-			return fmt.Errorf("%q must be in %q", MatchTypeFieldName, matchTypes)
+			return fmt.Errorf("%q must be in %q", matchTypeFieldName, matchTypes)
 		}
 
-		if transform.MetricIncludeFilter.MatchType == RegexpMatchType {
+		if transform.MetricIncludeFilter.MatchType == regexpMatchType {
 			_, err := regexp.Compile(transform.MetricIncludeFilter.Include)
 			if err != nil {
-				return fmt.Errorf("%q, %w", IncludeFieldName, err)
+				return fmt.Errorf("%q, %w", includeFieldName, err)
 			}
 		}
 
 		if !transform.Action.isValid() {
-			return fmt.Errorf("%q must be in %q", ActionFieldName, actions)
+			return fmt.Errorf("%q must be in %q", actionFieldName, actions)
 		}
 
 		if transform.Action == Insert && transform.NewName == "" {
-			return fmt.Errorf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert)
+			return fmt.Errorf("missing required field %q while %q is %v", newNameFieldName, actionFieldName, Insert)
 		}
 
 		if transform.Action == Group && transform.GroupResourceLabels == nil {
-			return fmt.Errorf("missing required field %q while %q is %v", GroupResourceLabelsFieldName, ActionFieldName, Group)
+			return fmt.Errorf("missing required field %q while %q is %v", groupResourceLabelsFieldName, actionFieldName, Group)
 		}
 
 		if transform.AggregationType != "" && !transform.AggregationType.isValid() {
-			return fmt.Errorf("%q must be in %q", AggregationTypeFieldName, aggregationTypes)
+			return fmt.Errorf("%q must be in %q", aggregationTypeFieldName, aggregationTypes)
 		}
 
 		if transform.SubmatchCase != "" && !transform.SubmatchCase.isValid() {
-			return fmt.Errorf("%q must be in %q", SubmatchCaseFieldName, submatchCases)
+			return fmt.Errorf("%q must be in %q", submatchCaseFieldName, submatchCases)
 		}
 
 		for i, op := range transform.Operations {
 			if !op.Action.isValid() {
-				return fmt.Errorf("operation %v: %q must be in %q", i+1, ActionFieldName, operationActions)
+				return fmt.Errorf("operation %v: %q must be in %q", i+1, actionFieldName, operationActions)
 			}
 
-			if op.Action == UpdateLabel && op.Label == "" {
-				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, LabelFieldName, ActionFieldName, UpdateLabel)
+			if op.Action == updateLabel && op.Label == "" {
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, labelFieldName, actionFieldName, updateLabel)
 			}
-			if op.Action == AddLabel && op.NewLabel == "" {
-				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, NewLabelFieldName, ActionFieldName, AddLabel)
+			if op.Action == addLabel && op.NewLabel == "" {
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, newLabelFieldName, actionFieldName, addLabel)
 			}
-			if op.Action == AddLabel && op.NewValue == "" {
-				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, NewValueFieldName, ActionFieldName, AddLabel)
+			if op.Action == addLabel && op.NewValue == "" {
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, newValueFieldName, actionFieldName, addLabel)
 			}
-			if op.Action == ScaleValue && op.Scale == 0 {
-				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, ScaleFieldName, ActionFieldName, ScaleValue)
+			if op.Action == scaleValue && op.Scale == 0 {
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, scaleFieldName, actionFieldName, scaleValue)
 			}
 
 			if op.AggregationType != "" && !op.AggregationType.isValid() {
-				return fmt.Errorf("operation %v: %q must be in %q", i+1, AggregationTypeFieldName, aggregationTypes)
+				return fmt.Errorf("operation %v: %q must be in %q", i+1, aggregationTypeFieldName, aggregationTypes)
 			}
 		}
 	}
@@ -145,13 +127,8 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
 
-		// for backwards compatibility, convert metric name to an include filter
-		if t.MetricName != "" {
-			t.MetricIncludeFilter = FilterConfig{Include: t.MetricName}
-			t.MetricName = ""
-		}
 		if t.MetricIncludeFilter.MatchType == "" {
-			t.MetricIncludeFilter.MatchType = StrictMatchType
+			t.MetricIncludeFilter.MatchType = strictMatchType
 		}
 
 		filter, err := createFilter(t.MetricIncludeFilter)
@@ -177,9 +154,9 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 			if len(op.ValueActions) > 0 {
 				mtpOp.valueActionsMapping = createLabelValueMapping(op.ValueActions, version)
 			}
-			if op.Action == AggregateLabels {
+			if op.Action == aggregateLabels {
 				mtpOp.labelSetMap = sliceToSet(op.LabelSet)
-			} else if op.Action == AggregateLabelValues {
+			} else if op.Action == aggregateLabelValues {
 				mtpOp.aggregatedValuesSet = sliceToSet(op.AggregatedValues)
 			}
 			helperT.Operations[j] = mtpOp
@@ -191,18 +168,18 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 
 func createFilter(filterConfig FilterConfig) (internalFilter, error) {
 	switch filterConfig.MatchType {
-	case StrictMatchType:
+	case strictMatchType:
 		matchers, err := getMatcherMap(filterConfig.MatchLabels, func(str string) (StringMatcher, error) { return strictMatcher(str), nil })
 		if err != nil {
 			return nil, err
 		}
-		return internalFilterStrict{include: filterConfig.Include, matchLabels: matchers}, nil
-	case RegexpMatchType:
+		return internalFilterStrict{include: filterConfig.Include, attrMatchers: matchers}, nil
+	case regexpMatchType:
 		matchers, err := getMatcherMap(filterConfig.MatchLabels, func(str string) (StringMatcher, error) { return regexp.Compile(str) })
 		if err != nil {
 			return nil, err
 		}
-		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: matchers}, nil
+		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), attrMatchers: matchers}, nil
 	}
 
 	return nil, fmt.Errorf("invalid match type: %v", filterConfig.MatchType)

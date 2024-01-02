@@ -1,0 +1,57 @@
+type: resourcedetectionprocessor/system
+
+parent: resourcedetection
+
+resource_attributes:
+  host.name:
+    description: The host.name
+    type: string
+    enabled: true
+  host.id:
+    description: The host.id
+    type: string
+    enabled: false
+  os.description:
+    description: Human readable OS version information.
+    type: string
+    enabled: false
+  os.type:
+    description: The os.type
+    type: string
+    enabled: true
+  host.arch:
+    description: The host.arch
+    type: string
+    enabled: false
+  host.ip:
+    description: IP addresses for the host
+    type: slice
+    enabled: false
+  host.mac:
+    description: MAC addresses for the host
+    type: slice
+    enabled: false
+  host.cpu.vendor.id:
+    description: The host.cpu.vendor.id
+    type: string
+    enabled: false
+  host.cpu.family:
+    description: The host.cpu.family
+    type: string
+    enabled: false
+  host.cpu.model.id:
+    description: The host.cpu.model.id
+    type: string
+    enabled: false
+  host.cpu.model.name:
+    description: The host.cpu.model.name
+    type: string
+    enabled: false
+  host.cpu.stepping:
+    description: The host.cpu.stepping
+    type: int
+    enabled: false
+  host.cpu.cache.l2.size:
+    description: The host.cpu.cache.l2.size
+    type: int
+    enabled: false

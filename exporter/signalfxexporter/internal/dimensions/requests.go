@@ -1,37 +1,15 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package dimensions
+package dimensions // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync/atomic"
 )
@@ -44,11 +22,7 @@ type ReqSender struct {
 	workerCount          uint
 	ctx                  context.Context
 	additionalDimensions map[string]string
-
-	RunningWorkers         int64
-	TotalRequestsStarted   int64
-	TotalRequestsCompleted int64
-	TotalRequestsFailed    int64
+	runningWorkers       *atomic.Int64
 }
 
 func NewReqSender(ctx context.Context, client *http.Client,
@@ -57,9 +31,10 @@ func NewReqSender(ctx context.Context, client *http.Client,
 		client:               client,
 		additionalDimensions: diagnosticDimensions,
 		// Unbuffered so that it blocks clients
-		requests:    make(chan *http.Request),
-		workerCount: workerCount,
-		ctx:         ctx,
+		requests:       make(chan *http.Request),
+		workerCount:    workerCount,
+		ctx:            ctx,
+		runningWorkers: &atomic.Int64{},
 	}
 }
 
@@ -72,7 +47,7 @@ func (rs *ReqSender) Send(req *http.Request) {
 	case rs.requests <- req:
 		return
 	default:
-		if atomic.LoadInt64(&rs.RunningWorkers) < int64(rs.workerCount) {
+		if rs.runningWorkers.Load() < int64(rs.workerCount) {
 			go rs.processRequests()
 		}
 
@@ -82,20 +57,17 @@ func (rs *ReqSender) Send(req *http.Request) {
 }
 
 func (rs *ReqSender) processRequests() {
-	atomic.AddInt64(&rs.RunningWorkers, int64(1))
-	defer atomic.AddInt64(&rs.RunningWorkers, int64(-1))
+	rs.runningWorkers.Add(1)
+	defer rs.runningWorkers.Add(-1)
 
 	for {
 		select {
 		case <-rs.ctx.Done():
 			return
 		case req := <-rs.requests:
-			atomic.AddInt64(&rs.TotalRequestsStarted, int64(1))
 			if err := rs.sendRequest(req); err != nil {
-				atomic.AddInt64(&rs.TotalRequestsFailed, int64(1))
 				continue
 			}
-			atomic.AddInt64(&rs.TotalRequestsCompleted, int64(1))
 		}
 	}
 }
@@ -109,7 +81,7 @@ func (rs *ReqSender) sendRequest(req *http.Request) error {
 	}
 
 	if err != nil {
-		err = fmt.Errorf("error making HTTP request to %s: %v", req.URL.String(), err)
+		err = fmt.Errorf("error making HTTP request to %s: %w", req.URL.String(), err)
 	} else {
 		err = fmt.Errorf("unexpected status code %d on response for request to %s: %s", statusCode, req.URL.String(), string(body))
 	}
@@ -152,6 +124,6 @@ func sendRequest(client *http.Client, req *http.Request) ([]byte, int, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	return body, resp.StatusCode, err
 }

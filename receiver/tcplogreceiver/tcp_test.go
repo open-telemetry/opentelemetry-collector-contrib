@@ -1,16 +1,5 @@
-// Copyright 2021 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package tcplogreceiver
 
@@ -18,22 +7,25 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 )
 
 func TestTcp(t *testing.T) {
-	testTCP(t, testdataConfigYamlAsMap())
+	testTCP(t, testdataConfigYaml())
 }
 
 func testTCP(t *testing.T, cfg *TCPLogConfig) {
@@ -41,12 +33,12 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	conn, err = net.Dial("tcp", "0.0.0.0:29018")
+	conn, err = net.Dial("tcp", "127.0.0.1:29018")
 	require.NoError(t, err)
 
 	for i := 0; i < numLogs; i++ {
@@ -61,57 +53,56 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 	require.Len(t, sink.AllLogs(), 1)
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
-	logs := resourceLogs.InstrumentationLibraryLogs().At(0).Logs()
+	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
 
 	for i := 0; i < numLogs; i++ {
 		log := logs.At(i)
 
 		msg := log.Body()
-		require.Equal(t, msg.StringVal(), fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d", i, i))
+		require.Equal(t, msg.Str(), fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d", i, i))
 	}
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID(typeStr)])
+	sub, err := cm.Sub("tcplog")
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
-func testdataConfigYamlAsMap() *TCPLogConfig {
+func testdataConfigYaml() *TCPLogConfig {
 	return &TCPLogConfig{
-		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
-				WorkerCount: 1,
-			},
+		BaseConfig: adapter.BaseConfig{
+			Operators: []operator.Config{},
 		},
-		Input: stanza.InputConfig{
-			"listen_address": "0.0.0.0:29018",
-		},
+		InputConfig: func() tcp.Config {
+			c := tcp.NewConfig()
+			c.ListenAddress = "127.0.0.1:29018"
+			return *c
+		}(),
 	}
 }
 
 func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &TCPLogConfig{
-		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+		BaseConfig: adapter.BaseConfig{
+			Operators: []operator.Config{},
 		},
-		Input: stanza.InputConfig{
-			"max_buffer_size": "0.1.0.1-",
-		},
+		InputConfig: func() tcp.Config {
+			c := tcp.NewConfig()
+			c.Encoding = "fake"
+			return *c
+		}(),
 	}
-	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, consumertest.NewNop())
+	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), badCfg, consumertest.NewNop())
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }

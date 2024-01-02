@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filelogreceiver
 
@@ -24,8 +13,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
@@ -37,21 +26,22 @@ func TestStorage(t *testing.T) {
 
 	ctx := context.Background()
 
-	logsDir := newTempDir(t)
-	storageDir := newTempDir(t)
+	logsDir := t.TempDir()
+	storageDir := t.TempDir()
+	extID := storagetest.NewFileBackedStorageExtension("test", storageDir).ID
 
 	f := NewFactory()
 
-	cfg := testdataRotateTestYamlAsMap(logsDir)
-	cfg.Converter.MaxFlushCount = 1
-	cfg.Converter.FlushInterval = time.Millisecond
+	cfg := rotationTestConfig(logsDir)
 	cfg.Operators = nil // not testing processing, just read the lines
+	cfg.StorageID = &extID
 
 	logger := newRecallLogger(t, logsDir)
 
-	host := storagetest.NewStorageHost(t, storageDir, "test")
+	ext := storagetest.NewFileBackedStorageExtension("test", storageDir)
+	host := storagetest.NewStorageHost().WithExtension(ext.ID, ext)
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 
@@ -62,7 +52,7 @@ func TestStorage(t *testing.T) {
 	// Expect them now, since the receiver is running
 	require.Eventually(t,
 		expectLogs(sink, logger.recall()),
-		time.Second,
+		5*time.Second,
 		10*time.Millisecond,
 		"expected 2 but got %d logs",
 		sink.LogRecordCount(),
@@ -80,8 +70,9 @@ func TestStorage(t *testing.T) {
 	logger.log(fmt.Sprintf(baseLog, 4))
 
 	// Start the components again
-	host = storagetest.NewStorageHost(t, storageDir, "test")
-	rcvr, err = f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	ext = storagetest.NewFileBackedStorageExtension("test", storageDir)
+	host = storagetest.NewStorageHost().WithExtension(ext.ID, ext)
+	rcvr, err = f.CreateLogsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 	sink.Reset()
@@ -124,8 +115,9 @@ func TestStorage(t *testing.T) {
 	logger.log(fmt.Sprintf(baseLog, 9))
 
 	// Start the components again
-	host = storagetest.NewStorageHost(t, storageDir, "test")
-	rcvr, err = f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	ext = storagetest.NewFileBackedStorageExtension("test", storageDir)
+	host = storagetest.NewStorageHost().WithExtension(ext.ID, ext)
+	rcvr, err = f.CreateLogsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 	sink.Reset()
@@ -144,9 +136,11 @@ func TestStorage(t *testing.T) {
 	for _, e := range host.GetExtensions() {
 		require.NoError(t, e.Shutdown(ctx))
 	}
+	require.NoError(t, logger.close())
 }
 
 type recallLogger struct {
+	logFile *os.File
 	*log.Logger
 	written []string
 }
@@ -157,6 +151,7 @@ func newRecallLogger(t *testing.T, tempDir string) *recallLogger {
 	require.NoError(t, err)
 
 	return &recallLogger{
+		logFile: logFile,
 		Logger:  log.New(logFile, "", 0),
 		written: []string{},
 	}
@@ -172,8 +167,10 @@ func (l *recallLogger) recall() []string {
 	return l.written
 }
 
-// TODO use stateless Convert() from #3125 to generate exact pdata.Logs
-// for now, just validate body
+func (l *recallLogger) close() error {
+	return l.logFile.Close()
+}
+
 func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
 	return func() bool {
 
@@ -187,13 +184,17 @@ func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
 		}
 
 		for _, logs := range sink.AllLogs() {
-			body := logs.ResourceLogs().
-				At(0).InstrumentationLibraryLogs().
-				At(0).Logs().
-				At(0).Body().
-				StringVal()
-
-			found[body] = true
+			rl := logs.ResourceLogs()
+			for i := 0; i < rl.Len(); i++ {
+				sl := rl.At(i).ScopeLogs()
+				for j := 0; j < sl.Len(); j++ {
+					lrs := sl.At(j).LogRecords()
+					for k := 0; k < lrs.Len(); k++ {
+						body := lrs.At(k).Body().Str()
+						found[body] = true
+					}
+				}
+			}
 		}
 
 		for _, v := range found {

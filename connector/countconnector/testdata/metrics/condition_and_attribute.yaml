@@ -1,0 +1,61 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: Data point count by attribute if ...
+            name: datapoint.count.if.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "12"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678391923823222000"
+                - asInt: "6"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678391923823222000"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: Data point count by attribute if ...
+            name: datapoint.count.if.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "6"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678391923823233000"
+                - asInt: "12"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678391923823233000"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector

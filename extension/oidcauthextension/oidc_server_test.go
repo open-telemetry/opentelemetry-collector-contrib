@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package oidcauthextension
 
@@ -42,14 +31,14 @@ type oidcServer struct {
 }
 
 func newOIDCServer() (*oidcServer, error) {
-	jwks := map[string]interface{}{}
+	jwks := map[string]any{}
 
 	mux := http.NewServeMux()
 	server := httptest.NewUnstartedServer(mux)
 
 	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		err := json.NewEncoder(w).Encode(map[string]interface{}{
+		err := json.NewEncoder(w).Encode(map[string]any{
 			"issuer":   server.URL,
 			"jwks_uri": fmt.Sprintf("%s/.well-known/jwks.json", server.URL),
 		})
@@ -82,7 +71,7 @@ func newOIDCServer() (*oidcServer, error) {
 
 	// #nosec
 	sum := sha1.Sum(x509Cert)
-	jwks["keys"] = []map[string]interface{}{{
+	jwks["keys"] = []map[string]any{{
 		"alg": "RS256",
 		"kty": "RSA",
 		"use": "sig",
@@ -97,10 +86,13 @@ func newOIDCServer() (*oidcServer, error) {
 }
 
 func (s *oidcServer) token(jsonPayload []byte) (string, error) {
-	jsonHeader, _ := json.Marshal(map[string]interface{}{
+	jsonHeader, err := json.Marshal(map[string]any{
 		"alg": "RS256",
 		"typ": "JWT",
 	})
+	if err != nil {
+		return "", err
+	}
 
 	header := base64.RawURLEncoding.EncodeToString(jsonHeader)
 	payload := base64.RawURLEncoding.EncodeToString(jsonPayload)

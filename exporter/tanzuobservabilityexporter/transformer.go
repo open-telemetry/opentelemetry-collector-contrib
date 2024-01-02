@@ -1,37 +1,27 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package tanzuobservabilityexporter
+package tanzuobservabilityexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 type traceTransformer struct {
-	resAttrs pdata.AttributeMap
+	resAttrs pcommon.Map
 }
 
-func newTraceTransformer(resource pdata.Resource) *traceTransformer {
+func newTraceTransformer(resource pcommon.Resource) *traceTransformer {
 	t := &traceTransformer{
 		resAttrs: resource.Attributes(),
 	}
@@ -43,6 +33,8 @@ var (
 	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
+var appResAttrsKeys = []string{labelApplication, conventions.AttributeServiceName, labelService, labelShard, labelCluster}
+
 type span struct {
 	Name           string
 	TraceID        uuid.UUID
@@ -52,9 +44,10 @@ type span struct {
 	StartMillis    int64
 	DurationMillis int64
 	SpanLogs       []senders.SpanLog
+	Source         string
 }
 
-func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
+func (t *traceTransformer) Span(orig ptrace.Span) (span, error) {
 	traceID, err := traceIDtoUUID(orig.TraceID())
 	if err != nil {
 		return span{}, errInvalidTraceID
@@ -67,18 +60,34 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 
 	startMillis, durationMillis := calculateTimes(orig)
 
-	tags := attributesToTags(t.resAttrs, orig.Attributes())
+	source, attributesWithoutSource := getSourceAndResourceTags(t.resAttrs)
+	tags := attributesToTagsReplaceSource(
+		newMap(attributesWithoutSource), orig.Attributes())
+	fixServiceTag(tags)
 	t.setRequiredTags(tags)
 
 	tags[labelSpanKind] = spanKind(orig)
+
+	if droppedEventsCount := orig.DroppedEventsCount(); droppedEventsCount > 0 {
+		tags[labelDroppedEventsCount] = strconv.FormatUint(uint64(droppedEventsCount), 10)
+	}
+
+	if droppedLinksCount := orig.DroppedLinksCount(); droppedLinksCount > 0 {
+		tags[labelDroppedLinksCount] = strconv.FormatUint(uint64(droppedLinksCount), 10)
+	}
+
+	if droppedAttrsCount := orig.DroppedAttributesCount(); droppedAttrsCount > 0 {
+		tags[labelDroppedAttrsCount] = strconv.FormatUint(uint64(droppedAttrsCount), 10)
+	}
 
 	errorTags := errorTagsFromStatus(orig.Status())
 	for k, v := range errorTags {
 		tags[k] = v
 	}
 
-	if len(orig.TraceState()) > 0 {
-		tags[tracetranslator.TagW3CTraceState] = string(orig.TraceState())
+	traceState := orig.TraceState().AsRaw()
+	if orig.TraceState().AsRaw() != "" {
+		tags[tracetranslator.TagW3CTraceState] = traceState
 	}
 
 	return span{
@@ -87,25 +96,59 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 		SpanID:         spanID,
 		ParentSpanID:   parentSpanIDtoUUID(orig.ParentSpanID()),
 		Tags:           tags,
+		Source:         source,
 		StartMillis:    startMillis,
 		DurationMillis: durationMillis,
 		SpanLogs:       eventsToLogs(orig.Events()),
 	}, nil
 }
 
-func spanKind(span pdata.Span) string {
+func getSourceAndResourceTagsAndSourceKey(attributes pcommon.Map) (
+	string, map[string]string, string) {
+	attributesWithoutSource := map[string]string{}
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		attributesWithoutSource[k] = v.AsString()
+		return true
+	})
+	candidateKeys := []string{labelSource, conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
+	var source string
+	var sourceKey string
+	for _, key := range candidateKeys {
+		if value, isFound := attributesWithoutSource[key]; isFound {
+			source = value
+			sourceKey = key
+			delete(attributesWithoutSource, key)
+			break
+		}
+	}
+
+	// returning an empty source is fine as wavefront.go.sdk will set it up to a default value(os.hostname())
+	return source, attributesWithoutSource, sourceKey
+}
+
+func getSourceAndResourceTags(attributes pcommon.Map) (string, map[string]string) {
+	source, attributesWithoutSource, _ := getSourceAndResourceTagsAndSourceKey(attributes)
+	return source, attributesWithoutSource
+}
+
+func getSourceAndKey(attributes pcommon.Map) (string, string) {
+	source, _, sourceKey := getSourceAndResourceTagsAndSourceKey(attributes)
+	return source, sourceKey
+}
+
+func spanKind(span ptrace.Span) string {
 	switch span.Kind() {
-	case pdata.SpanKindClient:
+	case ptrace.SpanKindClient:
 		return "client"
-	case pdata.SpanKindServer:
+	case ptrace.SpanKindServer:
 		return "server"
-	case pdata.SpanKindProducer:
+	case ptrace.SpanKindProducer:
 		return "producer"
-	case pdata.SpanKindConsumer:
+	case ptrace.SpanKindConsumer:
 		return "consumer"
-	case pdata.SpanKindInternal:
+	case ptrace.SpanKindInternal:
 		return "internal"
-	case pdata.SpanKindUnspecified:
+	case ptrace.SpanKindUnspecified:
 		return "unspecified"
 	default:
 		return "unknown"
@@ -114,23 +157,19 @@ func spanKind(span pdata.Span) string {
 
 func (t *traceTransformer) setRequiredTags(tags map[string]string) {
 	if _, ok := tags[labelService]; !ok {
-		if svcName, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
-			tags[labelService] = svcName
-			delete(tags, conventions.AttributeServiceName)
-		} else {
-			tags[labelService] = defaultServiceName
-		}
+		tags[labelService] = defaultServiceName
 	}
+
 	if _, ok := tags[labelApplication]; !ok {
 		tags[labelApplication] = defaultApplicationName
 	}
 }
 
-func eventsToLogs(events pdata.SpanEventSlice) []senders.SpanLog {
+func eventsToLogs(events ptrace.SpanEventSlice) []senders.SpanLog {
 	var result []senders.SpanLog
 	for i := 0; i < events.Len(); i++ {
 		e := events.At(i)
-		fields := attributesToTags(e.Attributes())
+		fields := attributesToTagsReplaceSource(e.Attributes())
 		fields[labelEventName] = e.Name()
 		result = append(result, senders.SpanLog{
 			Timestamp: int64(e.Timestamp()) / time.Microsecond.Nanoseconds(), // Timestamp is in microseconds
@@ -141,7 +180,7 @@ func eventsToLogs(events pdata.SpanEventSlice) []senders.SpanLog {
 	return result
 }
 
-func calculateTimes(span pdata.Span) (int64, int64) {
+func calculateTimes(span ptrace.Span) (int64, int64) {
 	startMillis := int64(span.StartTimestamp()) / time.Millisecond.Nanoseconds()
 	endMillis := int64(span.EndTimestamp()) / time.Millisecond.Nanoseconds()
 	durationMillis := endMillis - startMillis
@@ -152,64 +191,113 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
-func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
-	tags := map[string]string{}
-
-	extractTag := func(k string, v pdata.AttributeValue) bool {
-		tags[k] = v.AsString()
-		return true
+func fixServiceTag(tags map[string]string) {
+	// tag `service` will take preference over `service.name` if both are provided
+	if _, ok := tags[labelService]; !ok {
+		if svcName, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
+			tags[labelService] = svcName
+			delete(tags, conventions.AttributeServiceName)
+		}
 	}
+}
 
-	// Since AttributeMaps are processed in the order received, later values overwrite earlier ones
+func fixSourceKey(sourceKey string, tags map[string]string) {
+	delete(tags, sourceKey)
+	replaceSource(tags)
+}
+
+func attributesToTags(attributes ...pcommon.Map) map[string]string {
+	tags := map[string]string{}
 	for _, att := range attributes {
-		att.Range(extractTag)
+		att.Range(func(k string, v pcommon.Value) bool {
+			tags[k] = v.AsString()
+			return true
+		})
+	}
+	return tags
+}
+
+func appAttributesToTags(attributes pcommon.Map) map[string]string {
+	tags := map[string]string{}
+	for _, resAttrsKey := range appResAttrsKeys {
+		if resAttrVal, ok := attributes.Get(resAttrsKey); ok {
+			tags[resAttrsKey] = resAttrVal.AsString()
+		}
 	}
 
 	return tags
 }
 
-func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {
-	tags := map[string]string{
-		labelStatusCode: fmt.Sprintf("%d", status.Code()),
+func replaceSource(tags map[string]string) {
+	if value, isFound := tags[labelSource]; isFound {
+		delete(tags, labelSource)
+		tags["_source"] = value
 	}
-	if status.Code() != pdata.StatusCodeError {
+}
+
+func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string {
+	tags := attributesToTags(attributes...)
+	replaceSource(tags)
+	return tags
+}
+
+func pointAndResAttrsToTagsAndFixSource(sourceKey string, attributes ...pcommon.Map) map[string]string {
+	tags := attributesToTags(attributes...)
+	fixServiceTag(tags)
+	fixSourceKey(sourceKey, tags)
+	return tags
+}
+
+func newMap(tags map[string]string) pcommon.Map {
+	m := pcommon.NewMap()
+	for key, value := range tags {
+		m.PutStr(key, value)
+	}
+	return m
+}
+
+func errorTagsFromStatus(status ptrace.Status) map[string]string {
+	tags := make(map[string]string)
+
+	if status.Code() != ptrace.StatusCodeError {
 		return tags
 	}
 
 	tags[labelError] = "true"
+
 	if status.Message() != "" {
 		msg := status.Message()
-		const maxLength = 255 - len(labelStatusMessage+"=")
+		const maxLength = 255 - len(conventions.OtelStatusDescription+"=")
 		if len(msg) > maxLength {
 			msg = msg[:maxLength]
 		}
-		tags[labelStatusMessage] = msg
+		tags[conventions.OtelStatusDescription] = msg
 	}
 	return tags
 }
 
-func traceIDtoUUID(id pdata.TraceID) (uuid.UUID, error) {
-	formatted, err := uuid.Parse(id.HexString())
+func traceIDtoUUID(id pcommon.TraceID) (uuid.UUID, error) {
+	formatted, err := uuid.FromBytes(id[:])
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidTraceID
 	}
 	return formatted, nil
 }
 
-func spanIDtoUUID(id pdata.SpanID) (uuid.UUID, error) {
-	formatted, err := uuid.FromBytes(padTo16Bytes(id.Bytes()))
+func spanIDtoUUID(id pcommon.SpanID) (uuid.UUID, error) {
+	formatted, err := uuid.FromBytes(padTo16Bytes(id))
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidSpanID
 	}
 	return formatted, nil
 }
 
-func parentSpanIDtoUUID(id pdata.SpanID) uuid.UUID {
+func parentSpanIDtoUUID(id pcommon.SpanID) uuid.UUID {
 	if id.IsEmpty() {
 		return uuid.Nil
 	}
 	// FromBytes only returns an error if the length is not 16 bytes, so the error case is unreachable
-	formatted, _ := uuid.FromBytes(padTo16Bytes(id.Bytes()))
+	formatted, _ := uuid.FromBytes(padTo16Bytes(id))
 	return formatted
 }
 

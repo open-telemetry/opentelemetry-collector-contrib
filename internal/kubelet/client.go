@@ -1,34 +1,32 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package kubelet
+package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 
 import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/transport"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-const svcAcctCACertPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-const svcAcctTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec
+const (
+	svcAcctCACertPath   = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	svcAcctTokenPath    = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec
+	defaultSecurePort   = "10250"
+	defaultReadOnlyPort = "10255"
+)
 
 type Client interface {
 	Get(path string) ([]byte, error)
@@ -44,10 +42,22 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 		}, nil
 	case k8sconfig.AuthTypeServiceAccount:
 		return &saClientProvider{
-			endpoint:   endpoint,
-			caCertPath: svcAcctCACertPath,
-			tokenPath:  svcAcctTokenPath,
-			logger:     logger,
+			endpoint:           endpoint,
+			caCertPath:         svcAcctCACertPath,
+			tokenPath:          svcAcctTokenPath,
+			insecureSkipVerify: cfg.InsecureSkipVerify,
+			logger:             logger,
+		}, nil
+	case k8sconfig.AuthTypeNone:
+		return &readOnlyClientProvider{
+			endpoint: endpoint,
+			logger:   logger,
+		}, nil
+	case k8sconfig.AuthTypeKubeConfig:
+		return &kubeConfigClientProvider{
+			endpoint: endpoint,
+			cfg:      cfg,
+			logger:   logger,
 		}, nil
 	default:
 		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
@@ -56,6 +66,62 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 
 type ClientProvider interface {
 	BuildClient() (Client, error)
+}
+
+type kubeConfigClientProvider struct {
+	endpoint string
+	cfg      *ClientConfig
+	logger   *zap.Logger
+}
+
+func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
+	authConf, err := k8sconfig.CreateRestConfig(p.cfg.APIConfig)
+	if err != nil {
+		return nil, err
+	}
+	if p.cfg.InsecureSkipVerify {
+		// Override InsecureSkipVerify from kubeconfig
+		authConf.TLSClientConfig.CAFile = ""
+		authConf.TLSClientConfig.CAData = nil
+		authConf.TLSClientConfig.Insecure = true
+	}
+
+	client, err := rest.HTTPClientFor(authConf)
+	if err != nil {
+		return nil, err
+	}
+
+	joinPath, err := url.JoinPath(authConf.Host, "/api/v1/nodes/", p.endpoint, "/proxy/")
+	if err != nil {
+		return nil, err
+	}
+	return &clientImpl{
+		baseURL:    joinPath,
+		httpClient: *client,
+		tok:        nil,
+		logger:     p.logger,
+	}, nil
+
+}
+
+type readOnlyClientProvider struct {
+	endpoint string
+	logger   *zap.Logger
+}
+
+func (p *readOnlyClientProvider) BuildClient() (Client, error) {
+	tr := defaultTransport()
+	endpoint, err := buildEndpoint(p.endpoint, false, p.logger)
+	if err != nil {
+		return nil, err
+	}
+	return &clientImpl{
+		baseURL:    endpoint,
+		httpClient: http.Client{Transport: tr},
+		tok:        nil,
+		logger:     p.logger,
+	}, nil
+
 }
 
 type tlsClientProvider struct {
@@ -84,10 +150,11 @@ func (p *tlsClientProvider) BuildClient() (Client, error) {
 }
 
 type saClientProvider struct {
-	endpoint   string
-	caCertPath string
-	tokenPath  string
-	logger     *zap.Logger
+	endpoint           string
+	caCertPath         string
+	tokenPath          string
+	insecureSkipVerify bool
+	logger             *zap.Logger
 }
 
 func (p *saClientProvider) BuildClient() (Client, error) {
@@ -95,15 +162,32 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	tok, err := ioutil.ReadFile(p.tokenPath)
+	tok, err := os.ReadFile(p.tokenPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read token file %s: %w", p.tokenPath, err)
 	}
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
-		RootCAs: rootCAs,
+		RootCAs:            rootCAs,
+		InsecureSkipVerify: p.insecureSkipVerify,
 	}
-	return defaultTLSClient(p.endpoint, true, rootCAs, nil, tok, p.logger)
+	endpoint, err := buildEndpoint(p.endpoint, true, p.logger)
+	if err != nil {
+		return nil, err
+	}
+	rt, err := transport.NewBearerAuthWithRefreshRoundTripper(string(tok), p.tokenPath, tr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientImpl{
+		baseURL: endpoint,
+		httpClient: http.Client{
+			Transport: rt,
+		},
+		tok:    nil,
+		logger: p.logger,
+	}, nil
 }
 
 func defaultTLSClient(
@@ -120,32 +204,47 @@ func defaultTLSClient(
 		Certificates:       certificates,
 		InsecureSkipVerify: insecureSkipVerify,
 	}
-	if endpoint == "" {
-		var err error
-		endpoint, err = defaultEndpoint()
-		if err != nil {
-			return nil, err
-		}
-		logger.Warn("Kubelet endpoint not defined, using default endpoint " + endpoint)
+	endpoint, err := buildEndpoint(endpoint, true, logger)
+	if err != nil {
+		return nil, err
 	}
 	return &clientImpl{
-		baseURL:    "https://" + endpoint,
+		baseURL:    endpoint,
 		httpClient: http.Client{Transport: tr},
 		tok:        tok,
 		logger:     logger,
 	}, nil
 }
 
-// This will work if hostNetwork is turned on, in which case the pod has access
-// to the node's loopback device.
-// https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces
-func defaultEndpoint() (string, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "", fmt.Errorf("unable to get hostname for default endpoint: %w", err)
+// buildEndpoint builds a kubelet endpoint based on value provided by user and whether secure or read-only endpoint
+// should be used.
+func buildEndpoint(endpoint string, useSecurePort bool, logger *zap.Logger) (string, error) {
+	if endpoint == "" {
+		// This will work if hostNetwork is turned on, in which case the pod has access
+		// to the node's loopback device.
+		// https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces
+		host, err := os.Hostname()
+		if err != nil {
+			return "", fmt.Errorf("unable to get hostname for default endpoint: %w", err)
+		}
+
+		if useSecurePort {
+			endpoint = fmt.Sprintf("https://%s:%s", host, defaultSecurePort)
+		} else {
+			endpoint = fmt.Sprintf("http://%s:%s", host, defaultReadOnlyPort)
+		}
+		logger.Warn("Kubelet endpoint not defined, using default endpoint " + endpoint)
+		return endpoint, nil
 	}
-	const kubeletPort = "10250"
-	return hostname + ":" + kubeletPort, nil
+
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		if useSecurePort {
+			return "https://" + endpoint, nil
+		}
+		return "http://" + endpoint, nil
+	}
+
+	return endpoint, nil
 }
 
 func defaultTransport() *http.Transport {
@@ -179,22 +278,25 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 		}
 	}()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Kubelet response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("kubelet request GET %s failed - %q, response: %q",
-			req.URL.String(), resp.Status, string(body))
+			sanitize.URL(req.URL), resp.Status, string(body))
 	}
 
 	return body, nil
 }
 
-func (c *clientImpl) buildReq(path string) (*http.Request, error) {
-	url := c.baseURL + path
-	req, err := http.NewRequest("GET", url, nil)
+func (c *clientImpl) buildReq(p string) (*http.Request, error) {
+	reqURL, err := url.JoinPath(c.baseURL, p)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		return nil, err
 	}

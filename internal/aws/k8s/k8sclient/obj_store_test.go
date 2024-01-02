@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclient
 
@@ -26,11 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var transformFunc = func(v interface{}) (interface{}, error) {
+var transformFunc = func(v any) (any, error) {
 	return v, nil
 }
 
-var transformFuncWithError = func(v interface{}) (interface{}, error) {
+var transformFuncWithError = func(v any) (any, error) {
 	return v, errors.New("an error")
 }
 
@@ -57,7 +46,7 @@ func TestGetByKey(t *testing.T) {
 
 func TestGetListKeys(t *testing.T) {
 	o := NewObjStore(transformFunc, zap.NewNop())
-	o.objs = map[types.UID]interface{}{
+	o.objs = map[types.UID]any{
 		"20036b33-cb03-489b-b778-e516b4dae519": "a",
 		"7966452b-d896-4f5b-84a1-afbd4febc366": "b",
 		"55f4f8dd-c4ae-4c18-947c-c0880bb0e05e": "c",
@@ -75,7 +64,7 @@ func TestGetListKeys(t *testing.T) {
 
 func TestGetList(t *testing.T) {
 	o := NewObjStore(transformFunc, zap.NewNop())
-	o.objs = map[types.UID]interface{}{
+	o.objs = map[types.UID]any{
 		"20036b33-cb03-489b-b778-e516b4dae519": "a",
 	}
 	val := o.List()
@@ -89,7 +78,7 @@ func TestDelete(t *testing.T) {
 	err := o.Delete(nil)
 	assert.NotNil(t, err)
 
-	o.objs = map[types.UID]interface{}{
+	o.objs = map[types.UID]any{
 		"bc5f5839-f62e-44b9-a79e-af250d92dcb1": &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
@@ -157,7 +146,7 @@ func TestAdd(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	o := NewObjStore(transformFunc, zap.NewNop())
-	o.objs = map[types.UID]interface{}{
+	o.objs = map[types.UID]any{
 		"bc5f5839-f62e-44b9-a79e-af250d92dcb1": &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
@@ -195,7 +184,7 @@ func TestUpdate(t *testing.T) {
 
 func TestReplace(t *testing.T) {
 	o := NewObjStore(transformFuncWithError, zap.NewNop())
-	objArray := []interface{}{
+	objArray := []any{
 		&v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",

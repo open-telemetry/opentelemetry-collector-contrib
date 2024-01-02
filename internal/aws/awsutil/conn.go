@@ -1,22 +1,12 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 // Portions of this file Copyright 2018-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package awsutil
+package awsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 
 import (
 	"crypto/tls"
+	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -77,7 +67,11 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 
 	// is not enabled by default as we configure TLSClientConfig for supporting SSL to data plane.
 	// http2.ConfigureTransport will setup transport layer to use HTTP2
-	http2.ConfigureTransport(transport)
+	if err = http2.ConfigureTransport(transport); err != nil {
+		logger.Error("unable to configure http2 transport", zap.Error(err))
+		return nil, err
+	}
+
 	http := &http.Client{
 		Transport: transport,
 		Timeout:   time.Second * time.Duration(requestTimeout),
@@ -87,11 +81,13 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 
 func getProxyAddress(proxyAddress string) string {
 	var finalProxyAddress string
-	if proxyAddress != "" {
+	switch {
+	case proxyAddress != "":
 		finalProxyAddress = proxyAddress
-	} else if proxyAddress == "" && os.Getenv("HTTPS_PROXY") != "" {
+
+	case proxyAddress == "" && os.Getenv("HTTPS_PROXY") != "":
 		finalProxyAddress = os.Getenv("HTTPS_PROXY")
-	} else {
+	default:
 		finalProxyAddress = ""
 	}
 	return finalProxyAddress
@@ -120,13 +116,15 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 		return nil, nil, err
 	}
 	regionEnv := os.Getenv("AWS_REGION")
-	if cfg.Region == "" && regionEnv != "" {
+
+	switch {
+	case cfg.Region == "" && regionEnv != "":
 		awsRegion = regionEnv
 		logger.Debug("Fetch region from environment variables", zap.String("region", awsRegion))
-	} else if cfg.Region != "" {
+	case cfg.Region != "":
 		awsRegion = cfg.Region
 		logger.Debug("Fetch region from commandline/config file", zap.String("region", awsRegion))
-	} else if !cfg.NoVerifySSL {
+	case !cfg.NoVerifySSL:
 		var es *session.Session
 		es, err = GetDefaultSession(logger)
 		if err != nil {
@@ -139,7 +137,9 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 				logger.Debug("Fetch region from ec2 metadata", zap.String("region", awsRegion))
 			}
 		}
+
 	}
+
 	if awsRegion == "" {
 		msg := "Cannot fetch region variable from config file, environment variables and ec2 metadata."
 		logger.Error(msg)
@@ -229,11 +229,12 @@ func getSTSCreds(logger *zap.Logger, region string, roleArn string) (*credential
 	// Make explicit call to fetch credentials.
 	_, err = stsCred.Get()
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
+		var awsErr awserr.Error
+		if errors.As(err, &awsErr) {
 			err = nil
-			switch aerr.Code() {
-			case sts.ErrCodeRegionDisabledException:
-				logger.Error("Region ", zap.String("region", region), zap.String("error", aerr.Error()))
+
+			if awsErr.Code() == sts.ErrCodeRegionDisabledException {
+				logger.Error("Region ", zap.String("region", region), zap.Error(awsErr))
 				stsCred = getSTSCredsFromPrimaryRegionEndpoint(logger, t, roleArn, region)
 			}
 		}
@@ -262,11 +263,12 @@ func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t *session.Session
 	region string) *credentials.Credentials {
 	logger.Info("Credentials for provided RoleARN being fetched from STS primary region endpoint.")
 	partitionID := getPartition(region)
-	if partitionID == endpoints.AwsPartitionID {
+	switch partitionID {
+	case endpoints.AwsPartitionID:
 		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsEast1RegionID, roleArn)
-	} else if partitionID == endpoints.AwsCnPartitionID {
+	case endpoints.AwsCnPartitionID:
 		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.CnNorth1RegionID, roleArn)
-	} else if partitionID == endpoints.AwsUsGovPartitionID {
+	case endpoints.AwsUsGovPartitionID:
 		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsGovWest1RegionID, roleArn)
 	}
 

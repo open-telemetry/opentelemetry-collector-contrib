@@ -1,0 +1,12 @@
+type: routing
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, observiq, splunk, sumo, redhat]
+  codeowners:
+    active: [jpkrohling]
+
+tests:
+  config:

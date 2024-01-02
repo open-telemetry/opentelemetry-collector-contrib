@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package opencensusreceiver
+package opencensusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 
 import (
 	"context"
@@ -21,17 +10,19 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
-	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/ocmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/octrace"
@@ -56,30 +47,27 @@ type ocReceiver struct {
 	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
-	id       config.ComponentID
-	settings component.TelemetrySettings
+	settings receiver.CreateSettings
 }
 
 // newOpenCensusReceiver just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOpenCensusReceiver(
-	id config.ComponentID,
 	transport string,
 	addr string,
 	tc consumer.Traces,
 	mc consumer.Metrics,
-	settings component.TelemetrySettings,
+	settings receiver.CreateSettings,
 	opts ...ocOption,
 ) (*ocReceiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
 	ln, err := net.Listen(transport, addr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to bind to address %q: %v", addr, err)
+		return nil, fmt.Errorf("failed to bind to address %q: %w", addr, err)
 	}
 
 	ocr := &ocReceiver{
-		id:              id,
 		ln:              ln,
 		corsOrigins:     []string{}, // Disable CORS by default.
 		gatewayMux:      gatewayruntime.NewServeMux(),
@@ -130,7 +118,7 @@ func (ocr *ocReceiver) registerTraceConsumer(host component.Host) error {
 	var err error
 
 	ocr.startTracesReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer)
+		ocr.traceReceiver, err = octrace.New(ocr.traceConsumer, ocr.settings)
 		if err != nil {
 			return
 		}
@@ -152,7 +140,7 @@ func (ocr *ocReceiver) registerMetricsConsumer(host component.Host) error {
 	var err error
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.id, ocr.metricsConsumer)
+		ocr.metricsReceiver, err = ocmetrics.New(ocr.metricsConsumer, ocr.settings)
 		if err != nil {
 			return
 		}
@@ -173,11 +161,11 @@ func (ocr *ocReceiver) grpcServer(host component.Host) (*grpc.Server, error) {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		opts, err := ocr.grpcServerSettings.ToServerOption(host, ocr.settings)
+		var err error
+		ocr.serverGRPC, err = ocr.grpcServerSettings.ToServer(host, ocr.settings.TelemetrySettings)
 		if err != nil {
 			return nil, err
 		}
-		ocr.serverGRPC = grpc.NewServer(opts...)
 	}
 
 	return ocr.serverGRPC, nil
@@ -217,7 +205,7 @@ func (ocr *ocReceiver) httpServer() *http.Server {
 			co := cors.Options{AllowedOrigins: ocr.corsOrigins}
 			mux = cors.New(co).Handler(mux)
 		}
-		ocr.serverHTTP = &http.Server{Handler: mux}
+		ocr.serverHTTP = &http.Server{Handler: mux, ReadHeaderTimeout: 20 * time.Second}
 	}
 
 	return ocr.serverHTTP
@@ -226,7 +214,7 @@ func (ocr *ocReceiver) httpServer() *http.Server {
 func (ocr *ocReceiver) startServer(host component.Host) error {
 	// Register the grpc-gateway on the HTTP server mux
 	c := context.Background()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	endpoint := ocr.ln.Addr().String()
 
 	_, ok := ocr.ln.(*net.UnixListener)
@@ -250,18 +238,20 @@ func (ocr *ocReceiver) startServer(host component.Host) error {
 
 	httpL := m.Match(cmux.Any())
 	go func() {
-		if errGrpc := ocr.serverGRPC.Serve(grpcL); errGrpc != nil {
-			host.ReportFatalError(errGrpc)
+		// Check for cmux.ErrServerClosed, because during the shutdown this is not properly close before closing the cmux,
+		// see TODO in Shutdown.
+		if err := ocr.serverGRPC.Serve(grpcL); !errors.Is(err, grpc.ErrServerStopped) && !errors.Is(err, cmux.ErrServerClosed) && err != nil {
+			host.ReportFatalError(err)
 		}
 	}()
 	go func() {
-		if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != nil && errHTTP != http.ErrServerClosed {
-			host.ReportFatalError(errHTTP)
+		if err := ocr.httpServer().Serve(httpL); !errors.Is(err, http.ErrServerClosed) && err != nil {
+			host.ReportFatalError(err)
 		}
 	}()
 	go func() {
-		if errServe := m.Serve(); errServe != nil && errServe != cmux.ErrServerClosed {
-			host.ReportFatalError(errServe)
+		if err := m.Serve(); !errors.Is(err, cmux.ErrServerClosed) && err != nil {
+			host.ReportFatalError(err)
 		}
 	}()
 	return nil

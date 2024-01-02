@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
@@ -26,12 +15,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -47,7 +37,7 @@ func TestType(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	factory := NewFactory()
-	err := configtest.CheckConfigStruct(factory.CreateDefaultConfig())
+	err := componenttest.CheckConfigStruct(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 }
 
@@ -55,11 +45,11 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	traceReceiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		factory.CreateDefaultConfig(),
 		nil,
 	)
-	require.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	require.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 	require.Nil(t, traceReceiver)
 }
 
@@ -67,7 +57,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		tlsConfig(),
 		consumertest.NewNop(),
 	)
@@ -82,7 +72,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 	}
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		&cfg,
 		consumertest.NewNop(),
 	)
@@ -102,7 +92,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 	}
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -123,6 +113,10 @@ func TestRestClientErr(t *testing.T) {
 
 func tlsConfig() *Config {
 	return &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 10 * time.Second,
+			InitialDelay:       time.Second,
+		},
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
@@ -138,7 +132,7 @@ func tlsConfig() *Config {
 
 func TestCustomUnmarshaller(t *testing.T) {
 	type args struct {
-		componentParser *config.Map
+		componentParser *confmap.Conf
 		intoCfg         *Config
 	}
 	tests := []struct {
@@ -146,7 +140,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		args                  args
 		result                *Config
 		mockUnmarshallFailure bool
-		configOverride        map[string]interface{}
+		configOverride        map[string]any
 		wantErr               bool
 	}{
 		{
@@ -156,14 +150,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "Fail initial unmarshal",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 			},
 			wantErr: true,
 		},
 		{
 			name: "metric_group unset",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 				intoCfg:         &Config{},
 			},
 			result: &Config{
@@ -173,7 +167,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "fail to unmarshall metric_groups",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 				intoCfg:         &Config{},
 			},
 			mockUnmarshallFailure: true,
@@ -182,17 +176,23 @@ func TestCustomUnmarshaller(t *testing.T) {
 		{
 			name: "successfully override metric_group",
 			args: args{
-				componentParser: config.NewMap(),
+				componentParser: confmap.New(),
 				intoCfg: &Config{
-					CollectionInterval: 10 * time.Second,
+					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
 				},
 			},
-			configOverride: map[string]interface{}{
-				"metric_groups":       []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
+			configOverride: map[string]any{
+				"metric_groups":       []string{string(kubelet.ContainerMetricGroup)},
 				"collection_interval": 20 * time.Second,
 			},
 			result: &Config{
-				CollectionInterval:    20 * time.Second,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 20 * time.Second,
+					InitialDelay:       time.Second,
+				},
 				MetricGroupsToCollect: []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
 			},
 		},
@@ -201,14 +201,14 @@ func TestCustomUnmarshaller(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockUnmarshallFailure {
 				// some arbitrary failure.
-				tt.args.componentParser.Set(metricGroupsConfig, map[string]string{})
+				err := tt.args.componentParser.Merge(confmap.NewFromStringMap(map[string]any{metricGroupsConfig: map[string]string{"foo": "bar"}}))
+				require.NoError(t, err)
 			}
 
 			// Mock some config overrides.
 			if tt.configOverride != nil {
-				for k, v := range tt.configOverride {
-					tt.args.componentParser.Set(k, v)
-				}
+				err := tt.args.componentParser.Merge(confmap.NewFromStringMap(tt.configOverride))
+				require.NoError(t, err)
 			}
 
 			if err := tt.args.intoCfg.Unmarshal(tt.args.componentParser); (err != nil) != tt.wantErr {

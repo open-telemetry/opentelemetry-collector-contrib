@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -18,432 +7,675 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	semconv "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 )
 
-func Test_gauge(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"Gauge: round 1 - gauge not adjusted",
-		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
-		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
-		0,
-	}, {
-		"Gauge: round 2 - gauge not adjusted",
-		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66)))},
-		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66)))},
-		0,
-	}, {
-		"Gauge: round 3 - value less than previous value - gauge is not adjusted",
-		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55)))},
-		[]*metricspb.Metric{metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55)))},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
-}
+var (
+	tUnknown = timestampFromMs(0)
+	t1       = timestampFromMs(1)
+	t2       = timestampFromMs(2)
+	t3       = timestampFromMs(3)
+	t4       = timestampFromMs(4)
+	t5       = timestampFromMs(5)
 
-func Test_gaugeDistribution(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"GaugeDist: round 1 - gauge distribution not adjusted",
-		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
-		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
-		0,
-	}, {
-		"GaugeDist: round 2 - gauge distribution not adjusted",
-		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11})))},
-		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11})))},
-		0,
-	}, {
-		"GaugeDist: round 3 - count/sum less than previous - gauge distribution not adjusted",
-		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
-		[]*metricspb.Metric{metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5})))},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
-}
+	bounds0  = []float64{1, 2, 4}
+	percent0 = []float64{10, 50, 90}
 
-func Test_cumulative(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"Cumulative: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
-		1,
-	}, {
-		"Cumulative: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t2Ms, 66)))},
-		0,
-	}, {
-		"Cumulative: round 3 - instance reset (value less than previous value), start time is reset",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55)))},
-		1,
-	}, {
-		"Cumulative: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 72)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t4Ms, 72)))},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
-}
+	sum1       = "sum1"
+	gauge1     = "gauge1"
+	histogram1 = "histogram1"
+	summary1   = "summary1"
 
-func Test_cumulativeDistribution(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"CumulativeDist: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
-		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})))},
-		1,
-	}, {
-		"CumulativeDist: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8})))},
-		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8})))},
-		0,
-	}, {
-		"CumulativeDist: round 3 - instance reset (value less than previous value), start time is reset",
-		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7})))},
-		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7})))},
-		1,
-	}, {
-		"CumulativeDist: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12})))},
-		[]*metricspb.Metric{metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12})))},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
-}
-
-func Test_summary_no_count(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"Summary No Count: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		1,
-	}, {
-		"Summary No Count: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		0,
-	}, {
-		"Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		1,
-	}, {
-		"Summary No Count: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
-		0,
-	}}
-
-	for _, test := range script {
-		test.metrics[0].GetTimeseries()[0].Points[0].GetSummaryValue().Count = nil
-		test.adjusted[0].GetTimeseries()[0].Points[0].GetSummaryValue().Count = nil
+	k1v1k2v2 = []*kv{
+		{"k1", "v1"},
+		{"k2", "v2"},
 	}
 
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	k1v10k2v20 = []*kv{
+		{"k1", "v10"},
+		{"k2", "v20"},
+	}
+
+	k1v100k2v200 = []*kv{
+		{"k1", "v100"},
+		{"k2", "v200"},
+	}
+
+	emptyLabels              []*kv
+	k1vEmpty                 = []*kv{{"k1", ""}}
+	k1vEmptyk2vEmptyk3vEmpty = []*kv{{"k1", ""}, {"k2", ""}, {"k3", ""}}
+)
+
+func TestGauge(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Gauge: round 1 - gauge not adjusted",
+			metrics:     metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44))),
+		},
+		{
+			description: "Gauge: round 2 - gauge not adjusted",
+			metrics:     metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66))),
+		},
+		{
+			description: "Gauge: round 3 - value less than previous value - gauge is not adjusted",
+			metrics:     metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
+		},
+	}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
-func Test_summary(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"Summary: round 1 - initial instance, start time is established",
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8})))},
-		1,
-	}, {
-		"Summary: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9})))},
-		0,
-	}, {
-		"Summary: round 3 - instance reset (count less than previous), start time is reset",
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5})))},
-		1,
-	}, {
-		"Summary: round 4 - instance adjusted based on round 3",
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
-		[]*metricspb.Metric{metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8})))},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+func TestSum(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Sum: round 1 - initial instance, start time is established",
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+		},
+		{
+			description: "Sum: round 2 - instance adjusted based on round 1",
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66))),
+		},
+		{
+			description: "Sum: round 3 - instance reset (value less than previous value), start time is reset",
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55))),
+		},
+		{
+			description: "Sum: round 4 - instance adjusted based on round 3",
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 72))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t4, 72))),
+		},
+		{
+			description: "Sum: round 5 - instance adjusted based on round 4",
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t5, t5, 72))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))),
+		},
+	}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
-func Test_multiMetrics(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"MultiMetrics: round 1 - combined round 1 of individual metrics",
-		[]*metricspb.Metric{
-			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44))),
-			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
-			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8}))),
+func TestSummaryNoCount(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Summary No Count: round 1 - initial instance, start time is established",
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
 		},
-		[]*metricspb.Metric{
-			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44))),
-			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7}))),
-			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t1Ms, 10, 40, percent0, []float64{1, 5, 8}))),
+		{
+			description: "Summary No Count: round 2 - instance adjusted based on round 1",
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 0, 70, percent0, []float64{7, 44, 9}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 0, 70, percent0, []float64{7, 44, 9}))),
 		},
-		3,
-	}, {
-		"MultiMetrics: round 2 - combined round 2 of individual metrics",
-		[]*metricspb.Metric{
-			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66))),
-			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11}))),
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8}))),
-			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9}))),
+		{
+			description: "Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 0, 66, percent0, []float64{3, 22, 5}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 0, 66, percent0, []float64{3, 22, 5}))),
 		},
-		[]*metricspb.Metric{
-			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66))),
-			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 5, 8, 11}))),
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t2Ms, 66))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{6, 3, 4, 8}))),
-			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.SummPt(t2Ms, 15, 70, percent0, []float64{7, 44, 9}))),
+		{
+			description: "Summary No Count: round 4 - instance adjusted based on round 3",
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t4, t4, 0, 96, percent0, []float64{9, 47, 8}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t4, 0, 96, percent0, []float64{9, 47, 8}))),
 		},
-		0,
-	}, {
-		"MultiMetrics: round 3 - combined round 3 of individual metrics",
-		[]*metricspb.Metric{
-			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55))),
-			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5}))),
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7}))),
-			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5}))),
-		},
-		[]*metricspb.Metric{
-			metricstestutil.Gauge(g1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55))),
-			metricstestutil.GaugeDist(gd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{2, 0, 1, 5}))),
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 55))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{5, 3, 2, 7}))),
-			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t3Ms, 12, 66, percent0, []float64{3, 22, 5}))),
-		},
-		3,
-	}, {
-		"MultiMetrics: round 4 - combined round 4 of individual metrics",
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 72))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12}))),
-			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8}))),
-		},
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t4Ms, 72))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{7, 4, 2, 12}))),
-			metricstestutil.Summary(s1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.SummPt(t4Ms, 14, 96, percent0, []float64{9, 47, 8}))),
-		},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	}
+
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
-func Test_multiTimeseries(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"MultiTimeseries: round 1 - initial first instance, start time is established",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)))},
-		1,
-	}, {
-		"MultiTimeseries: round 2 - first instance adjusted based on round 1, initial second instance",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 66)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t2Ms, 20)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t2Ms, 66)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t2Ms, 20)))},
-		1,
-	}, {
-		"MultiTimeseries: round 3 - first instance adjusted based on round 1, second based on round 2",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 88)), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.Double(t3Ms, 49)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t3Ms, 88)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t3Ms, 49)))},
-		0,
-	}, {
-		"MultiTimeseries: round 4 - first instance reset, second instance adjusted based on round 2, initial third instance",
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 87)), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.Double(t4Ms, 57)), metricstestutil.Timeseries(t4Ms, v100v200, metricstestutil.Double(t4Ms, 10)))},
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 87)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t4Ms, 57)), metricstestutil.Timeseries(t4Ms, v100v200, metricstestutil.Double(t4Ms, 10)))},
-		2,
-	}, {
-		"MultiTimeseries: round 5 - first instance adjusted based on round 4, second on round 2, third on round 4",
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t5Ms, v1v2, metricstestutil.Double(t5Ms, 90)), metricstestutil.Timeseries(t5Ms, v10v20, metricstestutil.Double(t5Ms, 65)), metricstestutil.Timeseries(t5Ms, v100v200, metricstestutil.Double(t5Ms, 22)))},
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t5Ms, 90)), metricstestutil.Timeseries(t2Ms, v10v20, metricstestutil.Double(t5Ms, 65)), metricstestutil.Timeseries(t4Ms, v100v200, metricstestutil.Double(t5Ms, 22)))},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+func TestSummaryFlagNoRecordedValue(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Summary No Count: round 1 - initial instance, start time is established",
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+		},
+		{
+			description: "Summary Flag NoRecordedValue: round 2 - instance adjusted based on round 1",
+			metrics:     metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, t2, t2))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, t1, t2))),
+		},
+	}
+
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
-func Test_emptyLabels(t *testing.T) {
-	script := []*metricsAdjusterTest{{
-		"EmptyLabels: round 1 - initial instance, implicitly empty labels, start time is established",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, []string{}, metricstestutil.Timeseries(t1Ms, []string{}, metricstestutil.Double(t1Ms, 44)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, []string{}, metricstestutil.Timeseries(t1Ms, []string{}, metricstestutil.Double(t1Ms, 44)))},
-		1,
-	}, {
-		"EmptyLabels: round 2 - instance adjusted based on round 1",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, []string{}, metricstestutil.Timeseries(t2Ms, []string{}, metricstestutil.Double(t2Ms, 66)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, []string{}, metricstestutil.Timeseries(t1Ms, []string{}, metricstestutil.Double(t2Ms, 66)))},
-		0,
-	}, {
-		"EmptyLabels: round 3 - one explicitly empty label, instance adjusted based on round 1",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1, metricstestutil.Timeseries(t3Ms, []string{""}, metricstestutil.Double(t3Ms, 77)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1, metricstestutil.Timeseries(t1Ms, []string{""}, metricstestutil.Double(t3Ms, 77)))},
-		0,
-	}, {
-		"EmptyLabels: round 4 - three explicitly empty labels, instance adjusted based on round 1",
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2k3, metricstestutil.Timeseries(t3Ms, []string{"", "", ""}, metricstestutil.Double(t3Ms, 88)))},
-		[]*metricspb.Metric{metricstestutil.Cumulative(c1, k1k2k3, metricstestutil.Timeseries(t1Ms, []string{"", "", ""}, metricstestutil.Double(t3Ms, 88)))},
-		0,
-	}}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+func TestSummary(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Summary: round 1 - initial instance, start time is established",
+			metrics: metrics(
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+			adjusted: metrics(
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+		},
+		{
+			description: "Summary: round 2 - instance adjusted based on round 1",
+			metrics: metrics(
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 15, 70, percent0, []float64{7, 44, 9})),
+			),
+			adjusted: metrics(
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 15, 70, percent0, []float64{7, 44, 9})),
+			),
+		},
+		{
+			description: "Summary: round 3 - instance reset (count less than previous), start time is reset",
+			metrics: metrics(
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 12, 66, percent0, []float64{3, 22, 5})),
+			),
+			adjusted: metrics(
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 12, 66, percent0, []float64{3, 22, 5})),
+			),
+		},
+		{
+			description: "Summary: round 4 - instance adjusted based on round 3",
+			metrics: metrics(
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t4, t4, 14, 96, percent0, []float64{9, 47, 8})),
+			),
+			adjusted: metrics(
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t4, 14, 96, percent0, []float64{9, 47, 8})),
+			),
+		},
+	}
+
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
-func Test_tsGC(t *testing.T) {
-	script1 := []*metricsAdjusterTest{{
-		"TsGC: round 1 - initial instances, start time is established",
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.Double(t1Ms, 20))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
+func TestHistogram(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Histogram: round 1 - initial instance, start time is established",
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
+		}, {
+			description: "Histogram: round 2 - instance adjusted based on round 1",
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{6, 3, 4, 8}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{6, 3, 4, 8}))),
+		}, {
+			description: "Histogram: round 3 - instance reset (value less than previous value), start time is reset",
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7}))),
+		}, {
+			description: "Histogram: round 4 - instance adjusted based on round 3",
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{7, 4, 2, 12}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t4, bounds0, []uint64{7, 4, 2, 12}))),
 		},
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.Double(t1Ms, 20))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
-		},
-		4,
-	}}
+	}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
 
-	script2 := []*metricsAdjusterTest{{
-		"TsGC: round 2 - metrics first timeseries adjusted based on round 2, second timeseries not updated",
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.Double(t2Ms, 88))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t2Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{8, 7, 9, 14}))),
+func TestHistogramFlagNoRecordedValue(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Histogram: round 1 - initial instance, start time is established",
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{7, 4, 2, 12}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{7, 4, 2, 12}))),
 		},
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t2Ms, 88))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t2Ms, bounds0, []int64{8, 7, 9, 14}))),
+		{
+			description: "Histogram: round 2 - instance adjusted based on round 1",
+			metrics:     metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, t1, t2))),
 		},
-		0,
-	}}
+	}
 
-	script3 := []*metricsAdjusterTest{{
-		"TsGC: round 3 - metrics first timeseries adjusted based on round 2, second timeseries empty due to timeseries gc()",
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.Double(t3Ms, 99)), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.Double(t3Ms, 80))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t3Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{9, 8, 10, 15})), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.DistPt(t3Ms, bounds0, []int64{55, 66, 33, 77}))),
-		},
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t3Ms, 99)), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.Double(t3Ms, 80))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t3Ms, bounds0, []int64{9, 8, 10, 15})), metricstestutil.Timeseries(t3Ms, v10v20, metricstestutil.DistPt(t3Ms, bounds0, []int64{55, 66, 33, 77}))),
-		},
-		2,
-	}}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
 
-	jobsMap := NewJobsMap(time.Minute)
+func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Histogram: round 1 - initial instance, start time is unknown",
+			metrics:     metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+		},
+		{
+			description: "Histogram: round 2 - instance unchanged",
+			metrics:     metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+		},
+	}
+
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Summary: round 1 - initial instance, start time is unknown",
+			metrics:     metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t1))),
+		},
+		{
+			description: "Summary: round 2 - instance unchanged",
+			metrics:     metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t2))),
+		},
+	}
+
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestGaugeFlagNoRecordedValueFirstObservation(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Gauge: round 1 - initial instance, start time is unknown",
+			metrics:     metrics(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t1))),
+		},
+		{
+			description: "Gauge: round 2 - instance unchanged",
+			metrics:     metrics(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t2))),
+		},
+	}
+
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Sum: round 1 - initial instance, start time is unknown",
+			metrics:     metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t1))),
+		},
+		{
+			description: "Sum: round 2 - instance unchanged",
+			metrics:     metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t2))),
+		},
+	}
+
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestMultiMetrics(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "MultiMetrics: round 1 - combined round 1 of individual metrics",
+			metrics: metrics(
+				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44)),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+			adjusted: metrics(
+				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44)),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+		},
+		{
+			description: "MultiMetrics: round 2 - combined round 2 of individual metrics",
+			metrics: metrics(
+				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66)),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{6, 3, 4, 8})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 15, 70, percent0, []float64{7, 44, 9})),
+			),
+			adjusted: metrics(
+				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66)),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{6, 3, 4, 8})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 15, 70, percent0, []float64{7, 44, 9})),
+			),
+		},
+		{
+			description: "MultiMetrics: round 3 - combined round 3 of individual metrics",
+			metrics: metrics(
+				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55)),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 12, 66, percent0, []float64{3, 22, 5})),
+			),
+			adjusted: metrics(
+				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55)),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 12, 66, percent0, []float64{3, 22, 5})),
+			),
+		},
+		{
+			description: "MultiMetrics: round 4 - combined round 4 of individual metrics",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 72)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{7, 4, 2, 12})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t4, t4, 14, 96, percent0, []float64{9, 47, 8})),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t4, 72)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t4, bounds0, []uint64{7, 4, 2, 12})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t4, 14, 96, percent0, []float64{9, 47, 8})),
+			),
+		},
+	}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestNewDataPointsAdded(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "New Datapoints: round 1 - two datapoints each",
+			metrics: metrics(
+				sumMetric(sum1,
+					doublePoint(k1v1k2v2, t1, t1, 44),
+					doublePoint(k1v100k2v200, t1, t1, 44)),
+				histogramMetric(histogram1,
+					histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}),
+					histogramPoint(k1v100k2v200, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
+				summaryMetric(summary1,
+					summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8}),
+					summaryPoint(k1v100k2v200, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+			adjusted: metrics(
+				sumMetric(sum1,
+					doublePoint(k1v1k2v2, t1, t1, 44),
+					doublePoint(k1v100k2v200, t1, t1, 44)),
+				histogramMetric(histogram1,
+					histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}),
+					histogramPoint(k1v100k2v200, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
+				summaryMetric(summary1,
+					summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8}),
+					summaryPoint(k1v100k2v200, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+		},
+		{
+			description: "New Datapoints: round 2 - new datapoints unchanged, old datapoints adjusted",
+			metrics: metrics(
+				sumMetric(sum1,
+					doublePoint(k1v1k2v2, t2, t2, 44),
+					doublePoint(k1v10k2v20, t2, t2, 44),
+					doublePoint(k1v100k2v200, t2, t2, 44)),
+				histogramMetric(histogram1,
+					histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{4, 2, 3, 7}),
+					histogramPoint(k1v10k2v20, t2, t2, bounds0, []uint64{4, 2, 3, 7}),
+					histogramPoint(k1v100k2v200, t2, t2, bounds0, []uint64{4, 2, 3, 7})),
+				summaryMetric(summary1,
+					summaryPoint(k1v1k2v2, t2, t2, 10, 40, percent0, []float64{1, 5, 8}),
+					summaryPoint(k1v10k2v20, t2, t2, 10, 40, percent0, []float64{1, 5, 8}),
+					summaryPoint(k1v100k2v200, t2, t2, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+			adjusted: metrics(
+				sumMetric(sum1,
+					doublePoint(k1v1k2v2, t1, t2, 44),
+					doublePoint(k1v10k2v20, t2, t2, 44),
+					doublePoint(k1v100k2v200, t1, t2, 44)),
+				histogramMetric(histogram1,
+					histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{4, 2, 3, 7}),
+					histogramPoint(k1v10k2v20, t2, t2, bounds0, []uint64{4, 2, 3, 7}),
+					histogramPoint(k1v100k2v200, t1, t2, bounds0, []uint64{4, 2, 3, 7})),
+				summaryMetric(summary1,
+					summaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8}),
+					summaryPoint(k1v10k2v20, t2, t2, 10, 40, percent0, []float64{1, 5, 8}),
+					summaryPoint(k1v100k2v200, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+		},
+	}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestMultiTimeseries(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "MultiTimeseries: round 1 - initial first instance, start time is established",
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+		},
+		{
+			description: "MultiTimeseries: round 2 - first instance adjusted based on round 1, initial second instance",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t2, 20.0)),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t2, 20.0)),
+			),
+		},
+		{
+			description: "MultiTimeseries: round 3 - first instance adjusted based on round 1, second based on round 2",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 88.0)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t3, t3, 49.0)),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t3, 88.0)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t3, 49.0)),
+			),
+		},
+		{
+			description: "MultiTimeseries: round 4 - first instance reset, second instance adjusted based on round 2, initial third instance",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 87.0)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t4, t4, 57.0)),
+				sumMetric(sum1, doublePoint(k1v100k2v200, t4, t4, 10.0)),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 87.0)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t4, 57.0)),
+				sumMetric(sum1, doublePoint(k1v100k2v200, t4, t4, 10.0)),
+			),
+		},
+		{
+			description: "MultiTimeseries: round 5 - first instance adjusted based on round 4, second on round 2, third on round 4",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t5, t5, 90.0)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t5, t5, 65.0)),
+				sumMetric(sum1, doublePoint(k1v100k2v200, t5, t5, 22.0)),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t5, 90.0)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t5, 65.0)),
+				sumMetric(sum1, doublePoint(k1v100k2v200, t4, t5, 22.0)),
+			),
+		},
+	}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestEmptyLabels(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "EmptyLabels: round 1 - initial instance, implicitly empty labels, start time is established",
+			metrics:     metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t1, 44))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t1, 44))),
+		},
+		{
+			description: "EmptyLabels: round 2 - instance adjusted based on round 1",
+			metrics:     metrics(sumMetric(sum1, doublePoint(emptyLabels, t2, t2, 66))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t2, 66))),
+		},
+		{
+			description: "EmptyLabels: round 3 - one explicitly empty label, instance adjusted based on round 1",
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1vEmpty, t3, t3, 77))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmpty, t1, t3, 77))),
+		},
+		{
+			description: "EmptyLabels: round 4 - three explicitly empty labels, instance adjusted based on round 1",
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t3, t3, 88))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 88))),
+		},
+	}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestTsGC(t *testing.T) {
+	script1 := []*metricsAdjusterTest{
+		{
+			description: "TsGC: round 1 - initial instances, start time is established",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
+				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
+				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
+			),
+		},
+	}
+
+	script2 := []*metricsAdjusterTest{
+		{
+			description: "TsGC: round 2 - metrics first timeseries adjusted based on round 2, second timeseries not updated",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 88)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{8, 7, 9, 14})),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 88)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{8, 7, 9, 14})),
+			),
+		},
+	}
+
+	script3 := []*metricsAdjusterTest{
+		{
+			description: "TsGC: round 3 - metrics first timeseries adjusted based on round 2, second timeseries empty due to timeseries gc()",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 99)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t3, t3, 80)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{9, 8, 10, 15})),
+				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t3, t3, bounds0, []uint64{55, 66, 33, 77})),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t3, 99)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t3, t3, 80)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t3, bounds0, []uint64{9, 8, 10, 15})),
+				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t3, t3, bounds0, []uint64{55, 66, 33, 77})),
+			),
+		},
+	}
+
+	ma := NewInitialPointAdjuster(zap.NewNop(), time.Minute, true)
 
 	// run round 1
-	runScript(t, jobsMap.get("job", "0"), script1)
+	runScript(t, ma, "job", "0", script1)
 	// gc the tsmap, unmarking all entries
-	jobsMap.get("job", "0").gc()
+	ma.(*initialPointAdjuster).jobsMap.get("job", "0").gc()
 	// run round 2 - update metrics first timeseries only
-	runScript(t, jobsMap.get("job", "0"), script2)
+	runScript(t, ma, "job", "0", script2)
 	// gc the tsmap, collecting umarked entries
-	jobsMap.get("job", "0").gc()
+	ma.(*initialPointAdjuster).jobsMap.get("job", "0").gc()
 	// run round 3 - verify that metrics second timeseries have been gc'd
-	runScript(t, jobsMap.get("job", "0"), script3)
+	runScript(t, ma, "job", "0", script3)
 }
 
-func Test_jobGC(t *testing.T) {
-	job1Script1 := []*metricsAdjusterTest{{
-		"JobGC: job 1, round 1 - initial instances, adjusted should be empty",
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.Double(t1Ms, 20))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
+func TestJobGC(t *testing.T) {
+	job1Script1 := []*metricsAdjusterTest{
+		{
+			description: "JobGC: job 1, round 1 - initial instances, adjusted should be empty",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
+				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
+				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
+			),
 		},
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.Double(t1Ms, 44)), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.Double(t1Ms, 20))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t1Ms, v1v2, metricstestutil.DistPt(t1Ms, bounds0, []int64{4, 2, 3, 7})), metricstestutil.Timeseries(t1Ms, v10v20, metricstestutil.DistPt(t1Ms, bounds0, []int64{40, 20, 30, 70}))),
-		},
-		4,
-	}}
+	}
 
-	job2Script1 := []*metricsAdjusterTest{{
-		"JobGC: job2, round 1 - no metrics adjusted, just trigger gc",
-		[]*metricspb.Metric{},
-		[]*metricspb.Metric{},
-		0,
-	}}
+	job2Script1 := []*metricsAdjusterTest{
+		{
+			description: "JobGC: job2, round 1 - no metrics adjusted, just trigger gc",
+			metrics:     metrics(),
+			adjusted:    metrics(),
+		},
+	}
 
-	job1Script2 := []*metricsAdjusterTest{{
-		"JobGC: job 1, round 2 - metrics timeseries empty due to job-level gc",
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 99)), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.Double(t4Ms, 80))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{9, 8, 10, 15})), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.DistPt(t4Ms, bounds0, []int64{55, 66, 33, 77}))),
+	job1Script2 := []*metricsAdjusterTest{
+		{
+			description: "JobGC: job 1, round 2 - metrics timeseries empty due to job-level gc",
+			metrics: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 99)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t4, t4, 80)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{9, 8, 10, 15})),
+				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t4, t4, bounds0, []uint64{55, 66, 33, 77})),
+			),
+			adjusted: metrics(
+				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 99)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t4, t4, 80)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{9, 8, 10, 15})),
+				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t4, t4, bounds0, []uint64{55, 66, 33, 77})),
+			),
 		},
-		[]*metricspb.Metric{
-			metricstestutil.Cumulative(c1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.Double(t4Ms, 99)), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.Double(t4Ms, 80))),
-			metricstestutil.CumulativeDist(cd1, k1k2, metricstestutil.Timeseries(t4Ms, v1v2, metricstestutil.DistPt(t4Ms, bounds0, []int64{9, 8, 10, 15})), metricstestutil.Timeseries(t4Ms, v10v20, metricstestutil.DistPt(t4Ms, bounds0, []int64{55, 66, 33, 77}))),
-		},
-		4,
-	}}
+	}
 
 	gcInterval := 10 * time.Millisecond
-	jobsMap := NewJobsMap(gcInterval)
+	ma := NewInitialPointAdjuster(zap.NewNop(), gcInterval, true)
 
 	// run job 1, round 1 - all entries marked
-	runScript(t, jobsMap.get("job", "0"), job1Script1)
+	runScript(t, ma, "job1", "0", job1Script1)
 	// sleep longer than gcInterval to enable job gc in the next run
 	time.Sleep(2 * gcInterval)
 	// run job 2, round1 - trigger job gc, unmarking all entries
-	runScript(t, jobsMap.get("job", "1"), job2Script1)
+	runScript(t, ma, "job1", "1", job2Script1)
 	// sleep longer than gcInterval to enable job gc in the next run
 	time.Sleep(2 * gcInterval)
 	// re-run job 2, round1 - trigger job gc, removing unmarked entries
-	runScript(t, jobsMap.get("job", "1"), job2Script1)
+	runScript(t, ma, "job1", "1", job2Script1)
 	// ensure that at least one jobsMap.gc() completed
-	jobsMap.gc()
+	ma.(*initialPointAdjuster).jobsMap.gc()
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
-	runScript(t, jobsMap.get("job", "0"), job1Script2)
+	runScript(t, ma, "job1", "0", job1Script2)
 }
-
-var (
-	g1       = "gauge1"
-	gd1      = "gaugedist1"
-	c1       = "cumulative1"
-	cd1      = "cumulativedist1"
-	s1       = "summary1"
-	k1       = []string{"k1"}
-	k1k2     = []string{"k1", "k2"}
-	k1k2k3   = []string{"k1", "k2", "k3"}
-	v1v2     = []string{"v1", "v2"}
-	v10v20   = []string{"v10", "v20"}
-	v100v200 = []string{"v100", "v200"}
-	bounds0  = []float64{1, 2, 4}
-	percent0 = []float64{10, 50, 90}
-	t1Ms     = time.Unix(0, 1000000)
-	t2Ms     = time.Unix(0, 2000000)
-	t3Ms     = time.Unix(0, 3000000)
-	t4Ms     = time.Unix(0, 5000000)
-	t5Ms     = time.Unix(0, 5000000)
-)
 
 type metricsAdjusterTest struct {
 	description string
-	metrics     []*metricspb.Metric
-	adjusted    []*metricspb.Metric
-	resets      int
+	metrics     pmetric.Metrics
+	adjusted    pmetric.Metrics
 }
 
-func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) {
-	l := zap.NewNop()
-	t.Cleanup(func() { require.NoError(t, l.Sync()) }) // flushes buffer, if any
-	ma := NewMetricsAdjuster(tsm, l)
+func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*metricsAdjusterTest) {
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			adjusted := pmetric.NewMetrics()
+			test.metrics.CopyTo(adjusted)
+			// Add the instance/job to the input metrics.
+			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
+			assert.NoError(t, ma.AdjustMetrics(adjusted))
 
-	for _, test := range script {
-		expectedResets := test.resets
-		adjusted, resets := ma.AdjustMetrics(test.metrics)
-		assert.EqualValuesf(t, test.adjusted, adjusted, "Test: %v - expected: %v, actual: %v", test.description, test.adjusted, adjusted)
-		assert.Equalf(t, expectedResets, resets, "Test: %v", test.description)
+			// Add the instance/job to the expected metrics as well.
+			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
+			assert.EqualValues(t, test.adjusted, adjusted)
+		})
+	}
+}
+
+func BenchmarkGetAttributesSignature(b *testing.B) {
+	attrs := pcommon.NewMap()
+	attrs.PutStr("key1", "some-random-test-value-1")
+	attrs.PutStr("key2", "some-random-test-value-2")
+	attrs.PutStr("key6", "some-random-test-value-6")
+	attrs.PutStr("key3", "some-random-test-value-3")
+	attrs.PutStr("key4", "some-random-test-value-4")
+	attrs.PutStr("key5", "some-random-test-value-5")
+	attrs.PutStr("key7", "some-random-test-value-7")
+	attrs.PutStr("key8", "some-random-test-value-8")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		getAttributesSignature(attrs)
 	}
 }

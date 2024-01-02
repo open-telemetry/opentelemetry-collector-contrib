@@ -1,144 +1,115 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
 
-package podmanreceiver
+package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
 import (
 	"context"
 	"fmt"
-	"net/url"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/interval"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
 )
 
-var _ component.MetricsReceiver = (*receiver)(nil)
-var _ interval.Runnable = (*receiver)(nil)
-
-type receiver struct {
+type metricsReceiver struct {
 	config        *Config
-	logger        *zap.Logger
-	nextConsumer  consumer.Metrics
+	set           receiver.CreateSettings
 	clientFactory clientFactory
-
-	client       client
-	runner       *interval.Runner
-	runnerCtx    context.Context
-	runnerCancel context.CancelFunc
-
-	obsrecv *obsreport.Receiver
+	scraper       *ContainerScraper
 }
 
-func newReceiver(
+func newMetricsReceiver(
 	_ context.Context,
-	logger *zap.Logger,
+	set receiver.CreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 	clientFactory clientFactory,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	err := config.Validate()
 	if err != nil {
 		return nil, err
 	}
 
-	parsed, err := url.Parse(config.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("could not determine receiver transport: %w", err)
-	}
-
 	if clientFactory == nil {
-		clientFactory = newPodmanClient
+		clientFactory = newLibpodClient
 	}
 
-	return &receiver{
+	recv := &metricsReceiver{
 		config:        config,
-		nextConsumer:  nextConsumer,
 		clientFactory: clientFactory,
-		logger:        logger,
-		obsrecv:       obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: parsed.Scheme}),
-	}, nil
-}
-
-func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	r.runnerCtx, r.runnerCancel = context.WithCancel(context.Background())
-	r.runner = interval.NewRunner(r.config.CollectionInterval, r)
-	go func() {
-		if err := r.runner.Start(); err != nil {
-			host.ReportFatalError(err)
-		}
-	}()
-	return nil
-}
-
-func (r *receiver) Shutdown(ctx context.Context) error {
-	r.runnerCancel()
-	r.runner.Stop()
-	return nil
-}
-
-func (r *receiver) Setup() error {
-	c, err := r.clientFactory(r.logger, r.config)
-	if err == nil {
-		r.client = c
+		set:           set,
 	}
-	return err
-}
 
-func (r *receiver) Run() error {
-	var numPoints int
-	var err error
-	ctx := r.obsrecv.StartMetricsOp(context.Background())
-	defer func() {
-		if err != nil {
-			r.logger.Error("error fetching/processing metrics", zap.Error(err))
-		}
-		r.obsrecv.EndMetricsOp(ctx, typeStr, numPoints, err)
-	}()
-
-	stats, err := r.client.stats()
+	scrp, err := scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithStart(recv.start))
 	if err != nil {
-		// if we return an error, interval will stop the Run and never try again
-		// so we never return from this functio and instead log errors and keep
-		// retrying.
-		r.logger.Error("error fetching stats", zap.Error(err))
-		return nil
+		return nil, err
+	}
+	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
+}
+
+func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
+	var err error
+	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
+	if err != nil {
+		return err
 	}
 
-	numPoints, err = r.consumeStats(ctx, stats)
+	r.scraper = newContainerScraper(podmanClient, r.set.Logger, r.config)
+	if err = r.scraper.loadContainerList(ctx); err != nil {
+		return err
+	}
+	go r.scraper.containerEventLoop(ctx)
 	return nil
 }
 
-func (r *receiver) consumeStats(ctx context.Context, stats []containerStats) (int, error) {
-	numPoints := 0
-	var lastErr error
+type result struct {
+	md  pmetric.Metrics
+	err error
+}
 
-	for i := range stats {
-		md := translateStatsToMetrics(&stats[i], time.Now())
-		numPoints += md.DataPointCount()
-		err := r.nextConsumer.ConsumeMetrics(ctx, md)
-		if err != nil {
-			lastErr = fmt.Errorf("failed to consume stats: %w", err)
+func (r *metricsReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	containers := r.scraper.getContainers()
+	results := make(chan result, len(containers))
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(containers))
+	for _, c := range containers {
+		go func(c container) {
+			defer wg.Done()
+			stats, err := r.scraper.fetchContainerStats(ctx, c)
+			if err != nil {
+				results <- result{md: pmetric.Metrics{}, err: err}
+				return
+			}
+			results <- result{md: containerStatsToMetrics(time.Now(), c, &stats), err: nil}
+		}(c)
+	}
+
+	wg.Wait()
+	close(results)
+
+	var errs error
+	md := pmetric.NewMetrics()
+	for res := range results {
+		if res.err != nil {
+			// Don't know the number of failed metrics, but one container fetch is a partial error.
+			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
+			fmt.Println("No stats found!")
 			continue
 		}
+		res.md.ResourceMetrics().CopyTo(md.ResourceMetrics())
 	}
-	return numPoints, lastErr
+	return md, nil
 }

@@ -1,0 +1,13 @@
+type: jaegerremotesampling
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions:
+  - contrib
+  - grafana
+  - redhat
+  - sumo
+  codeowners:
+    active: [yurishkuro, frzifus]

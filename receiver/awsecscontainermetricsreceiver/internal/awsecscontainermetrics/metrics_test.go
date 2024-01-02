@@ -1,31 +1,15 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 package awsecscontainermetrics
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-)
 
-func TestMetricSampleFile(t *testing.T) {
-	data, err := ioutil.ReadFile("../../testdata/task_stats.json")
-	require.NoError(t, err)
-	require.NotNil(t, data)
-}
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+)
 
 func TestMetricData(t *testing.T) {
 	v := uint64(1)
@@ -93,15 +77,15 @@ func TestMetricData(t *testing.T) {
 		CPU:         &cpuStats,
 	}
 
-	tm := TaskMetadata{
+	tm := ecsutil.TaskMetadata{
 		Cluster:  "cluster-1",
 		TaskARN:  "arn:aws:some-value/001",
 		Family:   "task-def-family-1",
 		Revision: "task-def-version",
-		Containers: []ContainerMetadata{
-			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
+		Containers: []ecsutil.ContainerMetadata{
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 		},
-		Limits: Limit{CPU: &f, Memory: &v},
+		Limits: ecsutil.Limits{CPU: &f, Memory: &v},
 	}
 
 	cstats := make(map[string]*ContainerStats)

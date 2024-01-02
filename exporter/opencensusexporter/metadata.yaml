@@ -1,0 +1,9 @@
+type: opencensus
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics]
+  distributions: [contrib, observiq]
+  codeowners:
+    active: [open-telemetry/collector-approvers]

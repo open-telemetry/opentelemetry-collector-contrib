@@ -1,30 +1,25 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package filesystemscraper
+package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
 // Config relating to FileSystem Metric Scraper.
 type Config struct {
-	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// MetricsBuilderConfig allows to customize scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	internal.ScraperConfig
+
+	// IncludeVirtualFS will also capture filesystems such as tmpfs, ramfs
+	// and other filesystem types that do no have an associated physical device.
+	IncludeVirtualFS bool `mapstructure:"include_virtual_filesystems"`
 
 	// IncludeDevices specifies a filter on the devices that should be included in the generated metrics.
 	IncludeDevices DeviceMatchConfig `mapstructure:"include_devices"`
@@ -37,8 +32,10 @@ type Config struct {
 	ExcludeFSTypes FSTypeMatchConfig `mapstructure:"exclude_fs_types"`
 
 	// IncludeMountPoints specifies a filter on the mount points that should be included in the generated metrics.
+	// When `root_path` is set, the mount points must be from the host's perspective.
 	IncludeMountPoints MountPointMatchConfig `mapstructure:"include_mount_points"`
 	// ExcludeMountPoints specifies a filter on the mount points that should be excluded from the generated metrics.
+	// When `root_path` is set, the mount points must be from the host's perspective.
 	ExcludeMountPoints MountPointMatchConfig `mapstructure:"exclude_mount_points"`
 }
 
@@ -74,34 +71,47 @@ func (cfg *Config) createFilter() (*fsFilter, error) {
 	var err error
 	filter := fsFilter{}
 
-	filter.includeDeviceFilter, err = newIncludeFilterHelper(cfg.IncludeDevices.Devices, &cfg.IncludeDevices.Config, metadata.Labels.Device)
-	if err != nil {
-		return nil, err
+	if len(cfg.IncludeDevices.Devices) > 0 {
+		filter.includeDeviceFilter, err = filterset.CreateFilterSet(cfg.IncludeDevices.Devices, &cfg.IncludeDevices.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating include_devices filter: %w", err)
+		}
 	}
 
-	filter.excludeDeviceFilter, err = newExcludeFilterHelper(cfg.ExcludeDevices.Devices, &cfg.ExcludeDevices.Config, metadata.Labels.Device)
-	if err != nil {
-		return nil, err
+	if len(cfg.ExcludeDevices.Devices) > 0 {
+		filter.excludeDeviceFilter, err = filterset.CreateFilterSet(cfg.ExcludeDevices.Devices, &cfg.ExcludeDevices.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating exclude_devices filter: %w", err)
+		}
 	}
 
-	filter.includeFSTypeFilter, err = newIncludeFilterHelper(cfg.IncludeFSTypes.FSTypes, &cfg.IncludeFSTypes.Config, metadata.Labels.Type)
-	if err != nil {
-		return nil, err
+	if len(cfg.IncludeFSTypes.FSTypes) > 0 {
+		filter.includeFSTypeFilter, err = filterset.CreateFilterSet(cfg.IncludeFSTypes.FSTypes,
+			&cfg.IncludeFSTypes.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating include_fs_types filter: %w", err)
+		}
 	}
 
-	filter.excludeFSTypeFilter, err = newExcludeFilterHelper(cfg.ExcludeFSTypes.FSTypes, &cfg.ExcludeFSTypes.Config, metadata.Labels.Type)
-	if err != nil {
-		return nil, err
+	if len(cfg.ExcludeFSTypes.FSTypes) > 0 {
+		filter.excludeFSTypeFilter, err = filterset.CreateFilterSet(cfg.ExcludeFSTypes.FSTypes, &cfg.ExcludeFSTypes.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating exclude_fs_types filter: %w", err)
+		}
 	}
 
-	filter.includeMountPointFilter, err = newIncludeFilterHelper(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config, metadata.Labels.Mountpoint)
-	if err != nil {
-		return nil, err
+	if len(cfg.IncludeMountPoints.MountPoints) > 0 {
+		filter.includeMountPointFilter, err = filterset.CreateFilterSet(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating include_mount_points filter: %w", err)
+		}
 	}
 
-	filter.excludeMountPointFilter, err = newExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, metadata.Labels.Mountpoint)
-	if err != nil {
-		return nil, err
+	if len(cfg.ExcludeMountPoints.MountPoints) > 0 {
+		filter.excludeMountPointFilter, err = filterset.CreateFilterSet(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating exclude_mount_points filter: %w", err)
+		}
 	}
 
 	filter.setFiltersExist()
@@ -112,30 +122,4 @@ func (f *fsFilter) setFiltersExist() {
 	f.filtersExist = f.includeMountPointFilter != nil || f.excludeMountPointFilter != nil ||
 		f.includeFSTypeFilter != nil || f.excludeFSTypeFilter != nil ||
 		f.includeDeviceFilter != nil || f.excludeDeviceFilter != nil
-}
-
-const (
-	excludeKey = "exclude"
-	includeKey = "include"
-)
-
-func newIncludeFilterHelper(items []string, filterSet *filterset.Config, typ string) (filterset.FilterSet, error) {
-	return newFilterHelper(items, filterSet, includeKey, typ)
-}
-
-func newExcludeFilterHelper(items []string, filterSet *filterset.Config, typ string) (filterset.FilterSet, error) {
-	return newFilterHelper(items, filterSet, excludeKey, typ)
-}
-
-func newFilterHelper(items []string, filterSet *filterset.Config, typ string, filterType string) (filterset.FilterSet, error) {
-	var err error
-	var filter filterset.FilterSet
-
-	if len(items) > 0 {
-		filter, err = filterset.CreateFilterSet(items, filterSet)
-		if err != nil {
-			return nil, fmt.Errorf("error creating %s %s filters: %w", filterType, typ, err)
-		}
-	}
-	return filter, nil
 }

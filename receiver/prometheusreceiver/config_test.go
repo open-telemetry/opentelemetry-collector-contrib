@@ -1,156 +1,197 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver
 
 import (
-	"fmt"
-	"os"
-	"path"
+	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/prometheus/prometheus/discovery/kubernetes"
+	promConfig "github.com/prometheus/common/config"
+	promModel "github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
+	r0 := cfg.(*Config)
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
-	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")))
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "customname").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	r1 := cfg.(*Config)
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
+	assert.Equal(t, r1.TrimMetricSuffixes, true)
+	assert.Equal(t, r1.EnableProtobufNegotiation, true)
 	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
+	assert.True(t, r1.ReportExtraScrapeMetrics)
+
+	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)
+	assert.Equal(t, 30*time.Second, r1.TargetAllocator.Interval)
+	assert.Equal(t, "collector-1", r1.TargetAllocator.CollectorID)
+	assert.Equal(t, promModel.Duration(60*time.Second), r1.TargetAllocator.HTTPSDConfig.RefreshInterval)
+	assert.Equal(t, "prometheus", r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Username)
+	assert.Equal(t, promConfig.Secret("changeme"), r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Password)
 }
 
-func TestLoadConfigWithEnvVar(t *testing.T) {
-	const jobname = "JobName"
-	const jobnamevar = "JOBNAME"
-	os.Setenv(jobnamevar, jobname)
-
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_env.yaml"), factories)
+func TestLoadTargetAllocatorConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_target_allocator.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
-	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewComponentID(typeStr)))
-	assert.Equal(t, jobname, r.PrometheusConfig.ScrapeConfigs[0].JobName)
-	os.Unsetenv(jobnamevar)
-}
-
-func TestLoadConfigK8s(t *testing.T) {
-	const node = "node1"
-	const nodenamevar = "NODE_NAME"
-	os.Setenv(nodenamevar, node)
-	defer os.Unsetenv(nodenamevar)
-
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_k8s.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
 
-	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
-	assert.Equal(t, r.ReceiverSettings, config.NewReceiverSettings(config.NewComponentID(typeStr)))
+	r0 := cfg.(*Config)
+	assert.NotNil(t, r0.PrometheusConfig)
+	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
+	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
+	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
 
-	scrapeConfig := r.PrometheusConfig.ScrapeConfigs[0]
-	kubeSDConfig := scrapeConfig.ServiceDiscoveryConfigs[0].(*kubernetes.SDConfig)
-	assert.Equal(t,
-		fmt.Sprintf("spec.nodeName=%s", node),
-		kubeSDConfig.Selectors[0].Field)
-	assert.Equal(t,
-		"$1:$2",
-		scrapeConfig.RelabelConfigs[1].Replacement)
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withScrape").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	r1 := cfg.(*Config)
+	assert.NotNil(t, r0.PrometheusConfig)
+	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
+	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
+	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
+
+	assert.Equal(t, 1, len(r1.PrometheusConfig.ScrapeConfigs))
+	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
+	assert.Equal(t, promModel.Duration(5*time.Second), r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyScrape").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	r2 := cfg.(*Config)
+	assert.Equal(t, 1, len(r2.PrometheusConfig.ScrapeConfigs))
+	assert.Equal(t, "demo", r2.PrometheusConfig.ScrapeConfigs[0].JobName)
+	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-section.yaml"))
+	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-section.yaml"), factories)
-	assert.Error(t, err)
-	assert.Nil(t, cfg)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.Error(t, component.UnmarshalConfig(sub, cfg))
+}
+
+func TestLoadConfigFailsOnNoPrometheusOrTAConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-scrape-config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.ErrorContains(t, component.ValidateConfig(cfg), "no Prometheus scrape_configs or target_allocator set")
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withConfigAndTA").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyTA").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyScrape").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 // As one of the config parameters is consuming prometheus
 // configuration as a subkey, ensure that invalid configuration
 // within the subkey will also raise an error.
 func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-section.yaml"))
+	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-section.yaml"), factories)
-	assert.Error(t, err)
-	assert.Nil(t, cfg)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.Error(t, component.UnmarshalConfig(sub, cfg))
 }
 
-// Renaming is not allowed
-func TestLoadConfigFailsOnRenameDisallowed(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
+// Renaming emits a warning
+func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
+	// Construct the config that should emit a warning
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "warning-config-prometheus-relabel.yaml"))
+	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid-config-prometheus-relabel.yaml"), factories)
-	assert.Error(t, err)
-	assert.NotNil(t, cfg)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	// Use a fake logger
+	creationSet := receivertest.NewNopCreateSettings()
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	creationSet.Logger = zap.New(observedZapCore)
+	_, err = createMetricsReceiver(context.Background(), creationSet, cfg, nil)
+	require.NoError(t, err)
+	// We should have received a warning
+	assert.Equal(t, 1, observedLogs.Len())
 }
 
 func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-unsupported-features.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-unsupported-features.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	err = cfg.Validate()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: unsupported features:
+	wantErrMsg := `unsupported features:
         alert_config.alertmanagers
         alert_config.relabel_configs
         remote_read
@@ -163,145 +204,144 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 }
 
 func TestNonExistentAuthCredentialsFile(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-auth-credentials-file.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-auth-credentials-file.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	err = cfg.Validate()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking authorization credentials file "/nonexistentauthcredentialsfile" - stat /nonexistentauthcredentialsfile: no such file or directory`
+	wantErrMsg := `error checking authorization credentials file "/nonexistentauthcredentialsfile"`
 
 	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.True(t, strings.HasPrefix(gotErrMsg, wantErrMsg))
 }
 
 func TestTLSConfigNonExistentCertFile(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-cert-file.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-cert-file.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	err = cfg.Validate()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking client cert file "/nonexistentcertfile" - stat /nonexistentcertfile: no such file or directory`
+	wantErrMsg := `error checking client cert file "/nonexistentcertfile"`
 
 	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.True(t, strings.HasPrefix(gotErrMsg, wantErrMsg))
 }
 
 func TestTLSConfigNonExistentKeyFile(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-key-file.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-key-file.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	err = cfg.Validate()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking client key file "/nonexistentkeyfile" - stat /nonexistentkeyfile: no such file or directory`
+	wantErrMsg := `error checking client key file "/nonexistentkeyfile"`
 
 	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.True(t, strings.HasPrefix(gotErrMsg, wantErrMsg))
 }
 
 func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-cert-file-without-key-file.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-cert-file-without-key-file.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	err = cfg.Validate()
-	require.NotNil(t, err, "Expected a non-nil error")
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
 
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
+	}
 }
 
 func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-key-file-without-cert-file.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-key-file-without-cert-file.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	err = cfg.Validate()
-	require.NotNil(t, err, "Expected a non-nil error")
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: client key file "./testdata/dummy-tls-key-file" specified without client cert file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of cert or cert_file must be configured when a client key is configured")
+	}
 }
 
 func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-kubernetes-sd-config.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-kubernetes-sd-config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	err = cfg.Validate()
-	require.NotNil(t, err, "Expected a non-nil error")
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
 
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
+	}
 }
 
 func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-json.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-file-sd-config-json.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	err = cfg.Validate()
-	require.NotNil(t, err, "Expected a non-nil error")
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/sd-config-with-null-target-group.json": nil target group item found (index 1)`
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.ValidateConfig(cfg)
+	require.NoError(t, err)
 }
 
 func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-yaml.yaml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-file-sd-config-yaml.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-	err = cfg.Validate()
-	require.NotNil(t, err, "Expected a non-nil error")
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: checking SD file "./testdata/sd-config-with-null-target-group.yaml": nil target group item found (index 1)`
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.ValidateConfig(cfg)
+	require.NoError(t, err)
+}
+
+func TestFileSDConfigWithoutSDFile(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "non-existent-prometheus-sd-file-config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	err = component.ValidateConfig(cfg)
+	require.NoError(t, err)
 }

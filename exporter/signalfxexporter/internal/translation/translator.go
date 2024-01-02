@@ -1,18 +1,7 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package translation
+package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
 	"fmt"
@@ -46,11 +35,12 @@ const (
 	// Rule.ScaleFactorsInt key/values as metric_name/divisor
 	ActionDivideInt Action = "divide_int"
 
-	// ActionMultiplyFloat scales integer metric by dividing their values using
+	// ActionMultiplyFloat scales integer metric by multiplying their values using
 	// Rule.ScaleFactorsFloat key/values as metric_name/multiplying_factor
+	// This rule can only be applied to metrics that are a float value
 	ActionMultiplyFloat Action = "multiply_float"
 
-	// ActionConvertValues converts float metrics values to integer values using
+	// ActionConvertValues converts metric values from int to float or float to int
 	// Rule.TypesMapping key/values as metric_name/new_type.
 	ActionConvertValues Action = "convert_values"
 
@@ -448,7 +438,7 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				if multiplier, ok := tr.ScaleFactorsInt[dp.Metric]; ok {
 					v := dp.GetValue().IntValue
 					if v != nil {
-						*v = *v * multiplier
+						*v *= multiplier
 					}
 				}
 			}
@@ -457,7 +447,7 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				if divisor, ok := tr.ScaleFactorsInt[dp.Metric]; ok {
 					v := dp.GetValue().IntValue
 					if v != nil {
-						*v = *v / divisor
+						*v /= divisor
 					}
 				}
 			}
@@ -466,7 +456,7 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				if multiplier, ok := tr.ScaleFactorsFloat[dp.Metric]; ok {
 					v := dp.GetValue().DoubleValue
 					if v != nil {
-						*v = *v * multiplier
+						*v *= multiplier
 					}
 				}
 			}
@@ -522,7 +512,8 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				}
 			}
 			aggregatedDps := aggregateDatapoints(dpsToAggregate, tr.WithoutDimensions, tr.AggregationMethod)
-			processedDataPoints = append(otherDps, aggregatedDps...)
+			processedDataPoints = otherDps
+			processedDataPoints = append(processedDataPoints, aggregatedDps...)
 
 		case ActionDropMetrics:
 			resultSliceLen := 0
@@ -620,7 +611,10 @@ func calculateNewMetric(
 	}
 
 	if tr.Operator == MetricOperatorDivision && *v2 == 0 {
-		logger.Warn(
+		// We can get here if, for example, in the denominator we get multiple
+		// datapoints that have the same counter value, which will yield a delta of
+		// zero.
+		logger.Debug(
 			"calculate_new_metric: attempt to divide by zero, skipping",
 			zap.String("tr.Operand2Metric", tr.Operand2Metric),
 			zap.String("tr.MetricName", tr.MetricName),
@@ -648,11 +642,12 @@ func ptToFloatVal(pt *sfxpb.DataPoint) *float64 {
 		return nil
 	}
 	var f float64
-	if pt.Value.IntValue != nil {
+	switch {
+	case pt.Value.IntValue != nil:
 		f = float64(*pt.Value.IntValue)
-	} else if pt.Value.DoubleValue != nil {
+	case pt.Value.DoubleValue != nil:
 		f = *pt.Value.DoubleValue
-	} else {
+	default:
 		return nil
 	}
 	return &f

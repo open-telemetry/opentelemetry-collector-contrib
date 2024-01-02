@@ -1,31 +1,20 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package datareceivers
+package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 
 import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -34,7 +23,7 @@ import (
 // MockAwsXrayDataReceiver implements AwsXray format receiver.
 type MockAwsXrayDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.TracesReceiver
+	receiver receiver.Traces
 }
 
 // NewMockAwsXrayDataReceiver creates a new  MockDataReceiver
@@ -42,7 +31,7 @@ func NewMockAwsXrayDataReceiver(port int) *MockAwsXrayDataReceiver {
 	return &MockAwsXrayDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}}
 }
 
-//Start listening on the specified port
+// Start listening on the specified port
 func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	var err error
 	os.Setenv("AWS_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID")
@@ -52,7 +41,7 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 	if rootCAs == nil {
 		rootCAs = x509.NewCertPool()
 	}
-	certs, err := ioutil.ReadFile("../mockdatareceivers/mockawsxrayreceiver/server.crt")
+	certs, err := os.ReadFile("../mockdatareceivers/mockawsxrayreceiver/server.crt")
 
 	if err != nil {
 		log.Fatalf("Failed to append %q to RootCAs: %v", "../mockdatareceivers/mockawsxrayreceiver/server.crt", err)
@@ -64,24 +53,23 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 	}
 
 	mockDatareceiverCFG := mockawsxrayreceiver.Config{
-		Endpoint: fmt.Sprintf("localhost:%d", ar.Port),
+		Endpoint: fmt.Sprintf("127.0.0.1:%d", ar.Port),
 		TLSCredentials: &configtls.TLSSetting{
 			CertFile: "../mockdatareceivers/mockawsxrayreceiver/server.crt",
 			KeyFile:  "../mockdatareceivers/mockawsxrayreceiver/server.key",
 		},
 	}
-	ar.receiver, err = mockawsxrayreceiver.New(tc, componenttest.NewNopReceiverCreateSettings(), &mockDatareceiverCFG)
+	ar.receiver, err = mockawsxrayreceiver.New(tc, receivertest.NewNopCreateSettings(), &mockDatareceiverCFG)
 
 	if err != nil {
 		return err
 	}
 
-	return ar.receiver.Start(context.Background(), ar)
+	return ar.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (ar *MockAwsXrayDataReceiver) Stop() error {
-	ar.receiver.Shutdown(context.Background())
-	return nil
+	return ar.receiver.Shutdown(context.Background())
 }
 
 func (ar *MockAwsXrayDataReceiver) GenConfigYAMLStr() string {
@@ -89,7 +77,7 @@ func (ar *MockAwsXrayDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   awsxray:
     local_mode: true
-    endpoint: localhost:%d
+    endpoint: 127.0.0.1:%d
     no_verify_ssl: true
     region: us-west-2`, ar.Port)
 }

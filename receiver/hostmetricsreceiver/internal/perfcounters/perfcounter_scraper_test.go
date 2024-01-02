@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
 // +build windows
@@ -24,16 +13,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 func Test_PerfCounterScraper(t *testing.T) {
 	type testCase struct {
 		name string
 		// NewPerfCounter
-		objects       []string
-		newErr        string
-		expectIndices []string
+		objects         []string
+		expectIndices   []string
+		newErr          string
+		newErrIsPartial bool
 		// Filter
 		includeFS    filterset.FilterSet
 		excludeFS    filterset.FilterSet
@@ -81,9 +71,19 @@ func Test_PerfCounterScraper(t *testing.T) {
 			excludedInstanceNames: excludedCommonDrives,
 		},
 		{
-			name:    "New Error",
-			objects: []string{"Memory", "Invalid Object 1", "Invalid Object 2"},
-			newErr:  `Failed to retrieve perf counter object "Invalid Object 1"`,
+			name:                  "Initialize partially fails",
+			objects:               []string{"Memory", "Invalid Object 1", "Invalid Object 2"},
+			newErr:                `failed to init counters: Invalid Object 1; Invalid Object 2`,
+			newErrIsPartial:       true,
+			expectIndices:         []string{"4"},
+			getObject:             "Memory",
+			getCounters:           []string{"Committed Bytes"},
+			expectedInstanceNames: []string{""},
+		},
+		{
+			name:    "Initialize fully fails",
+			objects: []string{"Invalid Object 1", "Invalid Object 2"},
+			newErr:  "failed to init counters: Invalid Object 1; Invalid Object 2",
 		},
 		{
 			name:          "Get Object Error",
@@ -108,9 +108,12 @@ func Test_PerfCounterScraper(t *testing.T) {
 			err := s.Initialize(test.objects...)
 			if test.newErr != "" {
 				assert.EqualError(t, err, test.newErr)
-				return
+				if !test.newErrIsPartial {
+					return
+				}
+			} else {
+				require.NoError(t, err, "Failed to create new perf counter scraper: %v", err)
 			}
-			require.NoError(t, err, "Failed to create new perf counter scraper: %v", err)
 
 			assert.ElementsMatch(t, test.expectIndices, strings.Split(s.objectIndices, " "))
 
@@ -151,10 +154,7 @@ func Test_PerfCounterScraper(t *testing.T) {
 			if len(test.excludedInstanceNames) > 0 {
 				for _, excludedName := range test.excludedInstanceNames {
 					for _, cv := range counterValues {
-						if cv.InstanceName == excludedName {
-							assert.Fail(t, "", "Excluded Instance %q was returned", excludedName)
-							break
-						}
+						require.NotEqual(t, excludedName, cv.InstanceName)
 					}
 				}
 			}

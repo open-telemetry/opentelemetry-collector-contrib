@@ -1,0 +1,17 @@
+type: resourcedetectionprocessor/eks
+
+parent: resourcedetection
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true
+  k8s.cluster.name:
+    description: The EKS cluster name. This attribute is currently only available when running on EC2 instances, and requires permission to run the EC2:DescribeInstances action.
+    type: string
+    enabled: false

@@ -1,29 +1,20 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package docker
+package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 
 import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker/internal/metadata"
 )
 
 const (
@@ -35,37 +26,39 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider dockerMetadata
+	provider docker.Provider
 	logger   *zap.Logger
+	rb       *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
-	dockerProvider, err := newDockerMetadata()
+func NewDetector(p processor.CreateSettings, cfg internal.DetectorConfig) (internal.Detector, error) {
+	dockerProvider, err := docker.NewProvider()
 	if err != nil {
 		return nil, fmt.Errorf("failed creating detector: %w", err)
 	}
 
-	return &Detector{provider: dockerProvider, logger: p.Logger}, nil
+	return &Detector{
+		provider: dockerProvider,
+		logger:   p.Logger,
+		rb:       metadata.NewResourceBuilder(cfg.(Config).ResourceAttributes),
+	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
-	attrs := res.Attributes()
-
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	osType, err := d.provider.OSType(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting OS type: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
 	hostname, err := d.provider.Hostname(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting OS hostname: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 
-	attrs.InsertString(conventions.AttributeHostName, hostname)
-	attrs.InsertString(conventions.AttributeOSType, osType)
+	d.rb.SetHostName(hostname)
+	d.rb.SetOsType(osType)
 
-	return res, conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }

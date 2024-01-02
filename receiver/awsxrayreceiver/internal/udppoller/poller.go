@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package udppoller
+package udppoller // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 
 import (
 	"context"
@@ -21,12 +10,12 @@ import (
 	"net"
 	"sync"
 
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/socketconn"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
@@ -65,14 +54,12 @@ type RawSegment struct {
 // Config represents the configurations needed to
 // start the UDP poller
 type Config struct {
-	ReceiverID         config.ComponentID
 	Transport          string
 	Endpoint           string
 	NumOfPollerToStart int
 }
 
 type poller struct {
-	receiverID           config.ComponentID
 	udpSock              socketconn.SocketConn
 	logger               *zap.Logger
 	wg                   sync.WaitGroup
@@ -85,11 +72,11 @@ type poller struct {
 	// all segments read by the poller will be sent to this channel
 	segChan chan RawSegment
 
-	obsrecv *obsreport.Receiver
+	obsrecv *receiverhelper.ObsReport
 }
 
 // New creates a new UDP poller
-func New(cfg *Config, logger *zap.Logger) (Poller, error) {
+func New(cfg *Config, set receiver.CreateSettings) (Poller, error) {
 	if cfg.Transport != Transport {
 		return nil, fmt.Errorf(
 			"X-Ray receiver only supports ingesting spans through UDP, provided: %s",
@@ -105,17 +92,26 @@ func New(cfg *Config, logger *zap.Logger) (Poller, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("Listening on endpoint for X-Ray segments",
+	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(Transport, addr.String()))
 
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              cfg.Transport,
+		LongLivedCtx:           true,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &poller{
-		receiverID:     cfg.ReceiverID,
 		udpSock:        sock,
-		logger:         logger,
+		logger:         set.Logger,
 		maxPollerCount: cfg.NumOfPollerToStart,
 		shutDown:       make(chan struct{}),
 		segChan:        make(chan RawSegment, segChanSize),
-		obsrecv:        obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: cfg.ReceiverID, Transport: cfg.Transport, LongLivedCtx: true}),
+		obsrecv:        obsrecv,
 	}, nil
 }
 
@@ -147,14 +143,13 @@ func (p *poller) read(buf *[]byte) (int, error) {
 	if err == nil {
 		return rlen, nil
 	}
-	switch err := err.(type) {
-	case net.Error:
-		if !err.Temporary() {
-			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: err})
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		if !netErr.Timeout() {
+			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: netErr})
 		}
-	default:
-		return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: err})
 	}
+
 	return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: err})
 }
 
@@ -179,11 +174,11 @@ func (p *poller) poll() {
 				// TODO: We may want to attempt to shutdown/clean the broken socket and open a new one
 				// with the same address
 				p.logger.Error("Irrecoverable socket read error. Exiting poller", zap.Error(err))
-				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, err)
+				p.obsrecv.EndTracesOp(ctx, metadata.Type, 1, err)
 				return
 			} else if errors.As(err, &errRecv) {
 				p.logger.Error("Recoverable socket read error", zap.Error(err))
-				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, err)
+				p.obsrecv.EndTracesOp(ctx, metadata.Type, 1, err)
 				continue
 			}
 
@@ -195,7 +190,7 @@ func (p *poller) poll() {
 			if errors.As(err, &errRecv) {
 				p.logger.Error("Failed to split segment header and body",
 					zap.Error(err))
-				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, err)
+				p.obsrecv.EndTracesOp(ctx, metadata.Type, 1, err)
 				continue
 			}
 
@@ -204,7 +199,7 @@ func (p *poller) poll() {
 					zap.String("header format", header.Format),
 					zap.Int("header version", header.Version),
 				)
-				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1,
+				p.obsrecv.EndTracesOp(ctx, metadata.Type, 1,
 					errors.New("dropped span due to missing body that contains segment"))
 				continue
 			}
@@ -215,6 +210,7 @@ func (p *poller) poll() {
 				Payload: copybody,
 				Ctx:     ctx,
 			}
+			p.obsrecv.EndTracesOp(ctx, metadata.Type, 1, nil)
 		}
 	}
 }

@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package pprofextension
+package pprofextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 
 import (
 	"context"
@@ -24,18 +13,12 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"sync/atomic"
-	"unsafe"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
 
-// Tracks that only a single instance is active per process.
-// See comment on Start method for the reasons for that.
-var activeInstance *pprofExtension
-
-// #nosec G103
-var activeInstancePtr = (*unsafe.Pointer)(unsafe.Pointer(&activeInstance))
+var running = &atomic.Bool{}
 
 type pprofExtension struct {
 	config Config
@@ -51,8 +34,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// the settings of the last started instance will prevail. In order to avoid
 	// this issue we will allow the start of a single instance once per process
 	// Summary: only a single instance can be running in the same process.
-	// #nosec G103
-	if !atomic.CompareAndSwapPointer(activeInstancePtr, nil, unsafe.Pointer(p)) {
+	if !running.CompareAndSwap(false, true) {
 		return errors.New("only a single pprof extension instance can be running per process")
 	}
 
@@ -60,7 +42,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	var startErr error
 	defer func() {
 		if startErr != nil {
-			atomic.StorePointer(activeInstancePtr, nil)
+			running.Store(false)
 		}
 	}()
 
@@ -78,13 +60,14 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	p.logger.Info("Starting net/http/pprof server", zap.Any("config", p.config))
 	p.stopCh = make(chan struct{})
 	go func() {
-		defer close(p.stopCh)
+		defer func() {
+			running.Store(false)
+			close(p.stopCh)
+		}()
 
 		// The listener ownership goes to the server.
-		err := p.server.Serve(ln)
-		atomic.StorePointer(activeInstancePtr, nil)
-		if err != nil && err != http.ErrServerClosed {
-			host.ReportFatalError(err)
+		if errHTTP := p.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+			host.ReportFatalError(errHTTP)
 		}
 	}()
 
@@ -102,7 +85,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 }
 
 func (p *pprofExtension) Shutdown(context.Context) error {
-	defer atomic.StorePointer(activeInstancePtr, nil)
+	defer running.Store(false)
 	if p.file != nil {
 		pprof.StopCPUProfile()
 		_ = p.file.Close() // ignore the error

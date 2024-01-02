@@ -1,18 +1,7 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package protocol
+package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 
 import (
 	"errors"
@@ -21,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -39,24 +28,23 @@ const (
 // Examples:
 //
 // 1. Rule:
-//        - regexp: "(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds"
-//          name_prefix: cpu_seconds
-//          labels:
-//            k: v
-//    Metric path: "service_name.host00.cpu.seconds"
-//    Resulting metric:
-//        name: cpu_seconds
-//        label keys: {"svc", "host", "k"}
-//        label values: {"service_name", "host00", "k"}
+//   - regexp: "(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds"
+//     name_prefix: cpu_seconds
+//     labels:
+//     k: v
+//     Metric path: "service_name.host00.cpu.seconds"
+//     Resulting metric:
+//     name: cpu_seconds
+//     label keys: {"svc", "host", "k"}
+//     label values: {"service_name", "host00", "k"}
 //
 // 2. Rule:
-//        - regexp: "^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$"
-//    Metric path: "svc_02.host02.avg.duration"
-//    Resulting metric:
-//        name: avgduration
-//        label keys: {"svc", "host"}
-//        label values: {"svc_02", "host02"}
-//
+//   - regexp: "^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$"
+//     Metric path: "svc_02.host02.avg.duration"
+//     Resulting metric:
+//     name: avgduration
+//     label keys: {"svc", "host"}
+//     label values: {"svc_02", "host02"}
 type RegexParserConfig struct {
 	// Rules contains the regular expression rules to be used by the parser.
 	// The first rule that matches and applies the transformations configured in
@@ -76,7 +64,7 @@ type RegexParserConfig struct {
 type RegexRule struct {
 	// Regular expression from which named matches are used to extract label
 	// keys and values from Carbon metric paths.
-	Regexp string `mapstrucutre:"regexp"`
+	Regexp string `mapstructure:"regexp"`
 
 	// NamePrefix is the prefix added to the metric name after extracting the
 	// parts that will form labels and final metric name.
@@ -123,7 +111,7 @@ func compileRegexRules(rules []*RegexRule) error {
 	for i, r := range rules {
 		regex, err := regexp.Compile(r.Regexp)
 		if err != nil {
-			return fmt.Errorf("error compiling %d-th rule: %v", i, err)
+			return fmt.Errorf("error compiling %d-th rule: %w", i, err)
 		}
 
 		switch TargetMetricType(r.MetricType) {
@@ -177,27 +165,18 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 			ms := rule.compRegexp.FindStringSubmatch(path)
 			nms := rule.compRegexp.SubexpNames() // regexp pre-computes this slice.
 			metricNameLookup := map[string]string{}
+			attributes := pcommon.NewMap()
 
-			keys := make([]*metricspb.LabelKey, 0, len(nms)+len(rule.Labels))
-			values := make([]*metricspb.LabelValue, 0, len(nms)+len(rule.Labels))
 			for i := 1; i < len(ms); i++ {
 				if strings.HasPrefix(nms[i], metricNameCapturePrefix) {
 					metricNameLookup[nms[i]] = ms[i]
 				} else {
-					keys = append(keys, &metricspb.LabelKey{Key: nms[i][len(keyCapturePrefix):]})
-					values = append(values, &metricspb.LabelValue{
-						Value:    ms[i],
-						HasValue: true,
-					})
+					attributes.PutStr(nms[i][len(keyCapturePrefix):], ms[i])
 				}
 			}
 
 			for k, v := range rule.Labels {
-				keys = append(keys, &metricspb.LabelKey{Key: k})
-				values = append(values, &metricspb.LabelValue{
-					Value:    v,
-					HasValue: true,
-				})
+				attributes.PutStr(k, v)
 			}
 
 			var actualMetricName string
@@ -218,8 +197,7 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 			}
 
 			parsedPath.MetricName = actualMetricName
-			parsedPath.LabelKeys = keys
-			parsedPath.LabelValues = values
+			parsedPath.Attributes = attributes
 			parsedPath.MetricType = TargetMetricType(rule.MetricType)
 			return nil
 		}

@@ -1,33 +1,21 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package hostmetadata
 
 import (
 	"context"
 	"errors"
-	"os"
 	"sync"
 	"testing"
 
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -46,7 +34,7 @@ func TestSyncMetadata(t *testing.T) {
 		hostStat           host.InfoStat
 		hostStatErr        error
 		pushFail           bool
-		metricsData        pdata.Metrics
+		metricsData        pmetric.Metrics
 		wantMetadataUpdate []*metadata.MetadataUpdate
 		wantLogs           []string
 	}{
@@ -238,7 +226,7 @@ func TestSyncMetadata(t *testing.T) {
 		{
 			name:               "empty_metrics_data",
 			pushFail:           false,
-			metricsData:        pdata.NewMetrics(),
+			metricsData:        pmetric.NewMetrics(),
 			wantMetadataUpdate: nil,
 			wantLogs:           []string{},
 		},
@@ -251,8 +239,7 @@ func TestSyncMetadata(t *testing.T) {
 			syncer := NewSyncer(logger, dimClient)
 
 			// mock system stats calls.
-			os.Setenv("HOST_ETC", ".")
-			defer os.Unsetenv("HOST_ETC")
+			t.Setenv("HOST_ETC", ".")
 			cpuInfo = func(context.Context) ([]cpu.InfoStat, error) {
 				return []cpu.InfoStat{tt.cpuStat}, tt.cpuStatErr
 			}
@@ -305,12 +292,12 @@ func (dc *fakeDimClient) getMetadataUpdates() [][]*metadata.MetadataUpdate {
 	return dc.metadataUpdates
 }
 
-func generateSampleMetricsData(attrs map[string]string) pdata.Metrics {
-	m := pdata.NewMetrics()
+func generateSampleMetricsData(attrs map[string]string) pmetric.Metrics {
+	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics()
 	res := rm.AppendEmpty().Resource()
 	for k, v := range attrs {
-		res.Attributes().InsertString(k, v)
+		res.Attributes().PutStr(k, v)
 	}
 	return m
 }

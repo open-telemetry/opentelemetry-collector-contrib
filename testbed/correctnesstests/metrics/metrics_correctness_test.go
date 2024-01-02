@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics
 
@@ -20,9 +9,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -90,7 +80,7 @@ func testWithMetricsGoldenDataset(
 	return r
 }
 
-func getTestMetrics(t *testing.T) []pdata.Metrics {
+func getTestMetrics(t *testing.T) []pmetric.Metrics {
 	const file = "../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_metrics.txt"
 	mds, err := goldendataset.GenerateMetrics(file)
 	require.NoError(t, err)
@@ -107,7 +97,7 @@ func newDiffAccumulator() *diffAccumulator {
 	return &diffAccumulator{}
 }
 
-func (d *diffAccumulator) accept(metricName string, diffs []*MetricDiff) {
+func (d *diffAccumulator) accept(metricName string, diffs []*metricstestutil.MetricDiff) {
 	if len(diffs) > 0 {
 		d.numDiffs++
 		log.Printf("Found diffs for [%v]\n%v", metricName, diffs)

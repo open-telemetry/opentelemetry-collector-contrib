@@ -1,0 +1,34 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.deployment.name
+          value:
+            stringValue: test-deployment-1
+        - key: k8s.deployment.uid
+          value:
+            stringValue: test-deployment-1-uid
+        - key: k8s.namespace.name
+          value:
+            stringValue: test-namespace
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
+    scopeMetrics:
+      - metrics:
+          - description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
+            gauge:
+              dataPoints:
+                - asInt: "3"
+                  startTimeUnixNano: "1686869619745174000"
+                  timeUnixNano: "1686869619745178000"
+            name: k8s.deployment.available
+            unit: "{pod}"
+          - description: Number of desired pods in this deployment
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  startTimeUnixNano: "1686869619745174000"
+                  timeUnixNano: "1686869619745178000"
+            name: k8s.deployment.desired
+            unit: "{pod}"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

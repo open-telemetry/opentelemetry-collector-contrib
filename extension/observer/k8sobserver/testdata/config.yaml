@@ -1,21 +1,15 @@
-extensions:
-  k8s_observer:
-  k8s_observer/1:
-    node: node-1
-    auth_type: kubeConfig
-
-service:
-  extensions: [k8s_observer, k8s_observer/1]
-  pipelines:
-    traces:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [nop]
-
-# Data pipeline is required to load the config.
-receivers:
-  nop:
-processors:
-  nop:
-exporters:
-  nop:
+k8s_observer:
+k8s_observer/own-node-only:
+  node: node-1
+  auth_type: kubeConfig
+k8s_observer/observe-all:
+  auth_type: none
+  observe_nodes: true
+  observe_pods: true
+  observe_services: true
+k8s_observer/invalid_auth:
+  auth_type: not a real auth type
+k8s_observer/invalid_no_observing:
+  observe_nodes: false
+  observe_pods: false
+  observe_services: false

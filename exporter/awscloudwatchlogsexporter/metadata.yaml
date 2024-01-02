@@ -1,0 +1,9 @@
+type: awscloudwatchlogs
+
+status:
+  class: exporter
+  stability:
+    beta: [logs]
+  distributions: [contrib, observiq, liatrio]
+  codeowners:
+    active: [boostchicken, bryan-aguilar, rapphil]

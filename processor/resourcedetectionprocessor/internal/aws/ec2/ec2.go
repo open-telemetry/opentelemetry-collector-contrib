@@ -1,33 +1,26 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package ec2
+package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 
+	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/internal/metadata"
 )
 
 const (
@@ -39,11 +32,13 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	metadataProvider metadataProvider
+	metadataProvider ec2provider.Provider
 	tagKeyRegexes    []*regexp.Regexp
+	logger           *zap.Logger
+	rb               *metadata.ResourceBuilder
 }
 
-func NewDetector(_ component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {
@@ -53,52 +48,69 @@ func NewDetector(_ component.ProcessorCreateSettings, dcfg internal.DetectorConf
 	if err != nil {
 		return nil, err
 	}
-	return &Detector{metadataProvider: newMetadataClient(sess), tagKeyRegexes: tagKeyRegexes}, nil
+
+	return &Detector{
+		metadataProvider: ec2provider.NewProvider(sess),
+		tagKeyRegexes:    tagKeyRegexes,
+		logger:           set.Logger,
+		rb:               metadata.NewResourceBuilder(cfg.ResourceAttributes),
+	}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
-	if !d.metadataProvider.available(ctx) {
-		return res, "", nil
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
+		d.logger.Debug("EC2 metadata unavailable", zap.Error(err))
+		return pcommon.NewResource(), "", nil
 	}
 
-	meta, err := d.metadataProvider.get(ctx)
+	meta, err := d.metadataProvider.Get(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting identity document: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting identity document: %w", err)
 	}
 
-	hostname, err := d.metadataProvider.hostname(ctx)
+	hostname, err := d.metadataProvider.Hostname(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting hostname: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
 	}
 
-	attr := res.Attributes()
-	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
-	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
-	attr.InsertString(conventions.AttributeCloudAccountID, meta.AccountID)
-	attr.InsertString(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
-	attr.InsertString(conventions.AttributeHostID, meta.InstanceID)
-	attr.InsertString(conventions.AttributeHostImageID, meta.ImageID)
-	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)
-	attr.InsertString(conventions.AttributeHostName, hostname)
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEC2)
+	d.rb.SetCloudRegion(meta.Region)
+	d.rb.SetCloudAccountID(meta.AccountID)
+	d.rb.SetCloudAvailabilityZone(meta.AvailabilityZone)
+	d.rb.SetHostID(meta.InstanceID)
+	d.rb.SetHostImageID(meta.ImageID)
+	d.rb.SetHostType(meta.InstanceType)
+	d.rb.SetHostName(hostname)
+	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
-		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes)
+		client := getHTTPClientSettings(ctx, d.logger)
+		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes, client)
 		if err != nil {
 			return res, "", fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 		}
 		for key, val := range tags {
-			attr.InsertString(tagPrefix+key, val)
+			res.Attributes().PutStr(tagPrefix+key, val)
 		}
 	}
 
 	return res, conventions.SchemaURL, nil
 }
 
-func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+func getHTTPClientSettings(ctx context.Context, logger *zap.Logger) *http.Client {
+	client, err := internal.ClientFromContext(ctx)
+	if err != nil {
+		client = http.DefaultClient
+		logger.Debug("Error retrieving client from context thus creating default", zap.Error(err))
+	}
+	return client
+}
+
+func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp, client *http.Client) (map[string]string, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region)},
+		Region:     aws.String(region),
+		HTTPClient: client},
 	)
 	if err != nil {
 		return nil, err

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package zipkinv1
 
@@ -19,67 +8,56 @@ import (
 	"strconv"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestAttribToStatusCode(t *testing.T) {
-	_, atoiError := strconv.Atoi("nan")
+	_, atoiError := strconv.ParseInt("nan", 10, 64)
 
 	tests := []struct {
 		name string
-		attr *tracepb.AttributeValue
+		attr pcommon.Value
 		code int32
 		err  error
 	}{
 		{
 			name: "nil",
-			attr: nil,
+			attr: pcommon.NewValueEmpty(),
 			code: 0,
 			err:  fmt.Errorf("nil attribute"),
 		},
 
 		{
 			name: "valid-int-code",
-			attr: &tracepb.AttributeValue{
-				Value: &tracepb.AttributeValue_IntValue{IntValue: int64(0)},
-			},
+			attr: pcommon.NewValueInt(0),
 			code: 0,
-			err:  nil,
 		},
 
 		{
 			name: "invalid-int-code",
-			attr: &tracepb.AttributeValue{
-				Value: &tracepb.AttributeValue_IntValue{IntValue: int64(1 << 32)},
-			},
+			attr: pcommon.NewValueInt(int64(1 << 32)),
 			code: 0,
 			err:  fmt.Errorf("outside of the int32 range"),
 		},
 
 		{
 			name: "valid-string-code",
-			attr: &tracepb.AttributeValue{
-				Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "200"}},
-			},
+			attr: pcommon.NewValueStr("200"),
 			code: 200,
-			err:  nil,
 		},
 
 		{
 			name: "invalid-string-code",
-			attr: &tracepb.AttributeValue{
-				Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "nan"}},
-			},
+			attr: pcommon.NewValueStr("nan"),
 			code: 0,
 			err:  atoiError,
 		},
 
 		{
 			name: "bool-code",
-			attr: &tracepb.AttributeValue{
-				Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-			},
+			attr: pcommon.NewValueBool(true),
 			code: 0,
 			err:  fmt.Errorf("invalid attribute type"),
 		},
@@ -97,20 +75,24 @@ func TestAttribToStatusCode(t *testing.T) {
 func TestStatusCodeMapperCases(t *testing.T) {
 	tests := []struct {
 		name       string
-		expected   *tracepb.Status
+		expected   ptrace.Status
 		attributes map[string]string
 	}{
 		{
 			name:     "no relevant attributes",
-			expected: nil,
+			expected: ptrace.NewStatus(),
 			attributes: map[string]string{
 				"not.relevant": "data",
 			},
 		},
 
 		{
-			name:     "http: 500",
-			expected: &tracepb.Status{Code: 13},
+			name: "http: 500",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"http.status_code": "500",
 			},
@@ -118,15 +100,20 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name:     "http: message only, nil",
-			expected: nil,
+			expected: ptrace.NewStatus(),
 			attributes: map[string]string{
 				"http.status_message": "something",
 			},
 		},
 
 		{
-			name:     "http: 500",
-			expected: &tracepb.Status{Code: 13, Message: "a message"},
+			name: "http: 500",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("a message")
+				return ret
+			}(),
 			attributes: map[string]string{
 				"http.status_code":    "500",
 				"http.status_message": "a message",
@@ -134,8 +121,12 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
-			name:     "http: 500, with error attribute",
-			expected: &tracepb.Status{Code: 13},
+			name: "http: 500, with error attribute",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"http.status_code": "500",
 				"error":            "an error occurred",
@@ -143,8 +134,13 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
-			name:     "oc: internal",
-			expected: &tracepb.Status{Code: 13, Message: "a description"},
+			name: "oc: internal",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("a description")
+				return ret
+			}(),
 			attributes: map[string]string{
 				"census.status_code":        "13",
 				"census.status_description": "a description",
@@ -152,8 +148,13 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
-			name:     "oc: description and error",
-			expected: &tracepb.Status{Code: 13, Message: "a description"},
+			name: "oc: description and error",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("a description")
+				return ret
+			}(),
 			attributes: map[string]string{
 				"opencensus.status_description": "a description",
 				"error":                         "INTERNAL",
@@ -161,16 +162,24 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
-			name:     "oc: error only",
-			expected: &tracepb.Status{Code: 13, Message: ""},
+			name: "oc: error only",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"error": "INTERNAL",
 			},
 		},
 
 		{
-			name:     "oc: empty error tag",
-			expected: nil,
+			name: "oc: empty error tag",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"error": "",
 			},
@@ -178,15 +187,20 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name:     "oc: description only, no status",
-			expected: nil,
+			expected: ptrace.NewStatus(),
 			attributes: map[string]string{
 				"opencensus.status_description": "a description",
 			},
 		},
 
 		{
-			name:     "oc: priority over http",
-			expected: &tracepb.Status{Code: 4, Message: "deadline expired"},
+			name: "oc: priority over http",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("deadline expired")
+				return ret
+			}(),
 			attributes: map[string]string{
 				"census.status_description": "deadline expired",
 				"census.status_code":        "4",
@@ -197,8 +211,12 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
-			name:     "error: valid oc status priority over http",
-			expected: &tracepb.Status{Code: 4},
+			name: "error: valid oc status priority over http",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"error": "DEADLINE_EXCEEDED",
 
@@ -208,8 +226,12 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
-			name:     "error: invalid oc status uses http",
-			expected: &tracepb.Status{Code: 13, Message: "a description"},
+			name: "error: invalid oc status uses http",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"error": "123",
 
@@ -219,32 +241,48 @@ func TestStatusCodeMapperCases(t *testing.T) {
 		},
 
 		{
-			name:     "error only: string description",
-			expected: &tracepb.Status{Code: 2},
+			name: "error only: string description",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"error": "a description",
 			},
 		},
 
 		{
-			name:     "error only: true",
-			expected: &tracepb.Status{Code: 2},
+			name: "error only: true",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"error": "true",
 			},
 		},
 
 		{
-			name:     "error only: false",
-			expected: &tracepb.Status{Code: 2},
+			name: "error only: false",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"error": "false",
 			},
 		},
 
 		{
-			name:     "error only: 1",
-			expected: &tracepb.Status{Code: 2},
+			name: "error only: 1",
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				return ret
+			}(),
 			attributes: map[string]string{
 				"error": "1",
 			},
@@ -253,25 +291,26 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			attributes := attributesFromMap(test.attributes)
-
 			sMapper := &statusMapper{}
-			for k, v := range attributes {
-				sMapper.fromAttribute(k, v)
+			for k, v := range test.attributes {
+				sMapper.fromAttribute(k, pcommon.NewValueStr(v))
 			}
 
-			got := sMapper.ocStatus()
-			assert.EqualValues(t, test.expected, got)
+			spanStatus := ptrace.NewStatus()
+			sMapper.status(spanStatus)
+			assert.EqualValues(t, test.expected, spanStatus)
 		})
 	}
 }
 
-func attributesFromMap(mapValues map[string]string) map[string]*tracepb.AttributeValue {
-	res := map[string]*tracepb.AttributeValue{}
-
-	for k, v := range mapValues {
-		pbAttrib := parseAnnotationValue(v, false)
-		res[k] = pbAttrib
+func TestOTStatusFromHTTPStatus(t *testing.T) {
+	for httpStatus := int32(100); httpStatus < 400; httpStatus++ {
+		otelStatus := statusCodeFromHTTP(httpStatus)
+		assert.Equal(t, ptrace.StatusCodeUnset, otelStatus)
 	}
-	return res
+
+	for httpStatus := int32(400); httpStatus <= 604; httpStatus++ {
+		otelStatus := statusCodeFromHTTP(httpStatus)
+		assert.Equal(t, ptrace.StatusCodeError, otelStatus)
+	}
 }

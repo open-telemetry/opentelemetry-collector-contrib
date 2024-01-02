@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package groupbyattrsprocessor
 
@@ -20,33 +9,36 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func simpleResource() pdata.Resource {
-	rs := pdata.NewResource()
-	rs.Attributes().Insert("somekey1", pdata.NewAttributeValueString("some-string-value"))
-	rs.Attributes().Insert("somekey2", pdata.NewAttributeValueInt(123))
+func simpleResource() pcommon.Resource {
+	rs := pcommon.NewResource()
+	rs.Attributes().PutStr("somekey1", "some-string-value")
+	rs.Attributes().PutInt("somekey2", 123)
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("random-", i)
 		v := fmt.Sprint("value-", rand.Intn(100))
-		rs.Attributes().Insert(k, pdata.NewAttributeValueString(v))
+		rs.Attributes().PutStr(k, v)
 	}
 	return rs
 }
 
-func randomAttributeMap() pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func randomAttributeMap() pcommon.Map {
+	attrs := pcommon.NewMap()
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("key-", i)
 		v := fmt.Sprint("value-", rand.Intn(500000))
-		attrs.InsertString(k, v)
+		attrs.PutStr(k, v)
 	}
 	return attrs
 }
 
-func randomGroups(count int) []pdata.AttributeMap {
-	entries := make([]pdata.AttributeMap, count)
+func randomGroups(count int) []pcommon.Map {
+	entries := make([]pcommon.Map, count)
 	for i := 0; i < count; i++ {
 		entries[i] = randomAttributeMap()
 	}
@@ -54,99 +46,110 @@ func randomGroups(count int) []pdata.AttributeMap {
 }
 
 var (
-	count    = 1000
-	groups   = randomGroups(count)
-	res      = simpleResource()
-	lagAttrs = newLogsGroupedByAttrs()
+	count  = 1000
+	groups = randomGroups(count)
+	res    = simpleResource()
 )
 
 func TestResourceAttributeScenarios(t *testing.T) {
 	tests := []struct {
 		name                    string
-		baseResource            pdata.Resource
-		fillRecordAttributesFun func(attributeMap pdata.AttributeMap)
-		fillExpectedResourceFun func(baseResource pdata.Resource, expectedResource pdata.Resource)
+		baseResource            pcommon.Resource
+		fillRecordAttributesFun func(attributeMap pcommon.Map)
+		fillExpectedResourceFun func(baseResource pcommon.Resource, expectedResource pcommon.Resource)
 	}{
 		{
 			name:         "When the same key is present at Resource and Record level, the latter value should be used",
 			baseResource: simpleResource(),
-			fillRecordAttributesFun: func(attributeMap pdata.AttributeMap) {
-				attributeMap.InsertString("somekey1", "replaced-value")
+			fillRecordAttributesFun: func(attributeMap pcommon.Map) {
+				attributeMap.PutStr("somekey1", "replaced-value")
 			},
-			fillExpectedResourceFun: func(baseResource pdata.Resource, expectedResource pdata.Resource) {
+			fillExpectedResourceFun: func(baseResource pcommon.Resource, expectedResource pcommon.Resource) {
 				baseResource.CopyTo(expectedResource)
-				expectedResource.Attributes().UpdateString("somekey1", "replaced-value")
+				expectedResource.Attributes().PutStr("somekey1", "replaced-value")
 			},
 		},
 		{
 			name:                    "Empty Resource and attributes",
-			baseResource:            pdata.NewResource(),
+			baseResource:            pcommon.NewResource(),
 			fillRecordAttributesFun: nil,
 			fillExpectedResourceFun: nil,
 		},
 		{
 			name:         "Empty Resource",
-			baseResource: pdata.NewResource(),
-			fillRecordAttributesFun: func(attributeMap pdata.AttributeMap) {
-				attributeMap.InsertString("somekey1", "some-value")
+			baseResource: pcommon.NewResource(),
+			fillRecordAttributesFun: func(attributeMap pcommon.Map) {
+				attributeMap.PutStr("somekey1", "some-value")
 			},
-			fillExpectedResourceFun: func(_ pdata.Resource, expectedResource pdata.Resource) {
-				expectedResource.Attributes().InsertString("somekey1", "some-value")
+			fillExpectedResourceFun: func(_ pcommon.Resource, expectedResource pcommon.Resource) {
+				expectedResource.Attributes().PutStr("somekey1", "some-value")
 			},
 		},
 		{
 			name:                    "Empty Attributes",
 			baseResource:            simpleResource(),
 			fillRecordAttributesFun: nil,
-			fillExpectedResourceFun: func(baseResource pdata.Resource, expectedResource pdata.Resource) {
+			fillExpectedResourceFun: func(baseResource pcommon.Resource, expectedResource pcommon.Resource) {
 				baseResource.CopyTo(expectedResource)
 			},
 		},
 	}
 
+	lg := newLogsGroup()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recordAttributeMap := pdata.NewAttributeMap()
+			recordAttributeMap := pcommon.NewMap()
 			if tt.fillRecordAttributesFun != nil {
 				tt.fillRecordAttributesFun(recordAttributeMap)
 			}
 
-			expectedResource := pdata.NewResource()
+			expectedResource := pcommon.NewResource()
 			if tt.fillExpectedResourceFun != nil {
 				tt.fillExpectedResourceFun(tt.baseResource, expectedResource)
 			}
 
-			rl := lagAttrs.attributeGroup(tt.baseResource, recordAttributeMap)
-			assert.EqualValues(t, expectedResource.Attributes(), rl.Resource().Attributes())
+			rl := lg.findOrCreateResourceLogs(tt.baseResource, recordAttributeMap)
+			assert.Equal(t, expectedResource.Attributes().AsRaw(), rl.Resource().Attributes().AsRaw())
 		})
 	}
 }
 
 func TestInstrumentationLibraryMatching(t *testing.T) {
-	rl := pdata.NewResourceLogs()
-	rs := pdata.NewResourceSpans()
+	rl := plog.NewResourceLogs()
+	rs := ptrace.NewResourceSpans()
+	rm := pmetric.NewResourceMetrics()
 
-	il1 := pdata.NewInstrumentationLibrary()
+	il1 := pcommon.NewInstrumentationScope()
 	il1.SetName("Name1")
-	il2 := pdata.NewInstrumentationLibrary()
+	il2 := pcommon.NewInstrumentationScope()
 	il2.SetName("Name2")
 
-	ill1 := matchingInstrumentationLibraryLogs(rl, il1)
-	ils1 := matchingInstrumentationLibrarySpans(rs, il1)
-	assert.EqualValues(t, il1, ill1.InstrumentationLibrary())
-	assert.EqualValues(t, il1, ils1.InstrumentationLibrary())
+	ill1 := matchingScopeLogs(rl, il1)
+	ils1 := matchingScopeSpans(rs, il1)
+	ilm1 := matchingScopeMetrics(rm, il1)
+	assert.EqualValues(t, il1, ill1.Scope())
+	assert.EqualValues(t, il1, ils1.Scope())
+	assert.EqualValues(t, il1, ilm1.Scope())
 
-	ill2 := matchingInstrumentationLibraryLogs(rl, il2)
-	ils2 := matchingInstrumentationLibrarySpans(rs, il2)
-	assert.EqualValues(t, il2, ill2.InstrumentationLibrary())
-	assert.EqualValues(t, il2, ils2.InstrumentationLibrary())
+	ill2 := matchingScopeLogs(rl, il2)
+	ils2 := matchingScopeSpans(rs, il2)
+	ilm2 := matchingScopeMetrics(rm, il2)
+	assert.EqualValues(t, il2, ill2.Scope())
+	assert.EqualValues(t, il2, ils2.Scope())
+	assert.EqualValues(t, il2, ilm2.Scope())
 
-	ill1 = matchingInstrumentationLibraryLogs(rl, il1)
-	ils1 = matchingInstrumentationLibrarySpans(rs, il1)
-	assert.EqualValues(t, il1, ill1.InstrumentationLibrary())
-	assert.EqualValues(t, il1, ils1.InstrumentationLibrary())
+	ill1 = matchingScopeLogs(rl, il1)
+	ils1 = matchingScopeSpans(rs, il1)
+	ilm1 = matchingScopeMetrics(rm, il1)
+	assert.EqualValues(t, il1, ill1.Scope())
+	assert.EqualValues(t, il1, ils1.Scope())
+	assert.EqualValues(t, il1, ilm1.Scope())
 }
 
 func BenchmarkAttrGrouping(b *testing.B) {
-	lagAttrs.attributeGroup(res, groups[rand.Intn(count)])
+	lg := newLogsGroup()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		lg.findOrCreateResourceLogs(res, groups[rand.Intn(count)])
+	}
 }

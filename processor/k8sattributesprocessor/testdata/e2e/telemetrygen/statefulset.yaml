@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: 
+  name: {{ .Name }}-{{ .DataType }}-statefulset
+  namespace: default
+spec:
+  serviceName: {{ .Name }}-{{ .DataType }}-statefulset
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}-{{ .DataType }}-statefulset
+  template:
+    metadata:
+      annotations:
+        workload: statefulset
+      labels:
+        app: {{ .Name }}-{{ .DataType }}-statefulset
+    spec:
+      containers:
+      - command:
+        - /telemetrygen
+        - {{ .DataType }}
+        - --otlp-insecure
+        - --otlp-endpoint={{ .OTLPEndpoint }}
+        - --duration=36000s
+        - --rate=1
+        - --otlp-attributes=service.name="test-{{ .DataType }}-statefulset"
+        - --otlp-attributes=k8s.container.name="telemetrygen"
+{{- if eq .DataType "traces" }}
+        - --status-code=
+{{- end }}
+        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+        name: telemetrygen
+      restartPolicy: Always

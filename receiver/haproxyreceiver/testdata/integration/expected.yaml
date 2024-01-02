@@ -1,0 +1,148 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: haproxy.addr
+          value:
+            stringValue: http://localhost:63810/stats
+        - key: haproxy.proxy_name
+          value:
+            stringValue: stats
+        - key: haproxy.service_name
+          value:
+            stringValue: FRONTEND
+    scopeMetrics:
+      - metrics:
+          - description: Bytes in. Corresponds to HAProxy's `bin` metric.
+            name: haproxy.bytes.input
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+              isMonotonic: true
+            unit: by
+          - description: Bytes out. Corresponds to HAProxy's `bout` metric.
+            name: haproxy.bytes.output
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+              isMonotonic: true
+            unit: by
+          - description: Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+            name: haproxy.connections.rate
+            unit: '{connections}'
+          - description: Requests denied because of security concerns. Corresponds to HAProxy's `dreq` metric
+            name: haproxy.requests.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Cumulative number of request errors. Corresponds to HAProxy's `ereq` metric.
+            name: haproxy.requests.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: HTTP requests per second over last elapsed second. Corresponds to HAProxy's `req_rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+            name: haproxy.requests.rate
+            unit: '{requests}'
+          - description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
+            name: haproxy.requests.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 1xx
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 2xx
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 3xx
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 4xx
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 5xx
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
+            name: haproxy.responses.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+              isMonotonic: true
+            unit: '{responses}'
+          - description: Current sessions. Corresponds to HAProxy's `scur` metric.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+            name: haproxy.sessions.count
+            unit: '{sessions}'
+          - description: Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 1
+                  startTimeUnixNano: "1691479578831831000"
+                  timeUnixNano: "1691479579855985000"
+            name: haproxy.sessions.rate
+            unit: '{sessions}'
+        scope:
+          name: otelcol/haproxyreceiver
+          version: latest

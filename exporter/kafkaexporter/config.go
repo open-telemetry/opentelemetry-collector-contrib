@@ -1,42 +1,51 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package kafkaexporter
+package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
+	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
+
+	// ResolveCanonicalBootstrapServersOnly makes Sarama do a DNS lookup for
+	// each of the provided brokers. It will then do a PTR lookup for each
+	// returned IP, and that set of names becomes the broker list. This can be
+	// required in SASL environments.
+	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
+
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
+
+	// ClientID to configure the Kafka client with. This can be leveraged by
+	// Kafka to enforce ACLs, throttling quotas, and more.
+	ClientID string `mapstructure:"client_id"`
+
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
+
+	// PartitionTracesByID sets the message key of outgoing trace messages to the trace ID.
+	// Please note: does not have any effect on Jaeger encoding exporters since Jaeger exporters include
+	// trace ID as the message key by default.
+	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
@@ -46,7 +55,7 @@ type Config struct {
 	Producer Producer `mapstructure:"producer"`
 
 	// Authentication defines used authentication mechanism.
-	Authentication Authentication `mapstructure:"auth"`
+	Authentication kafka.Authentication `mapstructure:"auth"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.
@@ -67,6 +76,24 @@ type Metadata struct {
 type Producer struct {
 	// Maximum message bytes the producer will accept to produce.
 	MaxMessageBytes int `mapstructure:"max_message_bytes"`
+
+	// RequiredAcks Number of acknowledgements required to assume that a message has been sent.
+	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#RequiredAcks
+	// The options are:
+	//   0 -> NoResponse.  doesn't send any response
+	//   1 -> WaitForLocal. waits for only the local commit to succeed before responding ( default )
+	//   -1 -> WaitForAll. waits for all in-sync replicas to commit before responding.
+	RequiredAcks sarama.RequiredAcks `mapstructure:"required_acks"`
+
+	// Compression Codec used to produce messages
+	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
+	// The options are: 'none', 'gzip', 'snappy', 'lz4', and 'zstd'
+	Compression string `mapstructure:"compression"`
+
+	// The maximum number of messages the producer will send in a single
+	// broker request. Defaults to 0 for unlimited. Similar to
+	// `queue.buffering.max.messages` in the JVM producer.
+	FlushMaxMessages int `mapstructure:"flush_max_messages"`
 }
 
 // MetadataRetry defines retry configuration for Metadata.
@@ -79,9 +106,62 @@ type MetadataRetry struct {
 	Backoff time.Duration `mapstructure:"backoff"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.Producer.RequiredAcks < -1 || cfg.Producer.RequiredAcks > 1 {
+		return fmt.Errorf("producer.required_acks has to be between -1 and 1. configured value %v", cfg.Producer.RequiredAcks)
+	}
+
+	_, err := saramaProducerCompressionCodec(cfg.Producer.Compression)
+	if err != nil {
+		return err
+	}
+
+	return validateSASLConfig(cfg.Authentication.SASL)
+}
+
+func validateSASLConfig(c *kafka.SASLConfig) error {
+	if c == nil {
+		return nil
+	}
+
+	if c.Username == "" {
+		return fmt.Errorf("auth.sasl.username is required")
+	}
+
+	if c.Password == "" {
+		return fmt.Errorf("auth.sasl.password is required")
+	}
+
+	switch c.Mechanism {
+	case "PLAIN", "AWS_MSK_IAM", "SCRAM-SHA-256", "SCRAM-SHA-512":
+		// Do nothing, valid mechanism
+	default:
+		return fmt.Errorf("auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v", c.Mechanism)
+	}
+
+	if c.Version < 0 || c.Version > 1 {
+		return fmt.Errorf("auth.sasl.version has to be either 0 or 1. configured value %v", c.Version)
+	}
+
 	return nil
+}
+
+func saramaProducerCompressionCodec(compression string) (sarama.CompressionCodec, error) {
+	switch compression {
+	case "none":
+		return sarama.CompressionNone, nil
+	case "gzip":
+		return sarama.CompressionGZIP, nil
+	case "snappy":
+		return sarama.CompressionSnappy, nil
+	case "lz4":
+		return sarama.CompressionLZ4, nil
+	case "zstd":
+		return sarama.CompressionZSTD, nil
+	default:
+		return sarama.CompressionNone, fmt.Errorf("producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value %v", compression)
+	}
 }

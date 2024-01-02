@@ -1,29 +1,18 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package processscraper
+package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
 	"context"
 	"errors"
 	"runtime"
 
-	"go.opentelemetry.io/collector/config"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
 // This file implements Factory for Process scraper.
@@ -39,29 +28,29 @@ type Factory struct {
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
-	return &Config{}
+	return &Config{
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
 }
 
-// CreateResourceMetricsScraper creates a resource scraper based on provided config.
-func (f *Factory) CreateResourceMetricsScraper(
+// CreateMetricsScraper creates a resource scraper based on provided config.
+func (f *Factory) CreateMetricsScraper(
 	_ context.Context,
-	_ *zap.Logger,
+	settings receiver.CreateSettings,
 	cfg internal.Config,
 ) (scraperhelper.Scraper, error) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
-		return nil, errors.New("process scraper only available on Linux or Windows")
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
+		return nil, errors.New("process scraper only available on Linux, Windows, or MacOS")
 	}
 
-	s, err := newProcessScraper(cfg.(*Config))
+	s, err := newProcessScraper(settings, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
 
-	ms := scraperhelper.NewResourceMetricsScraper(
-		config.NewComponentID(TypeStr),
+	return scraperhelper.NewScraper(
+		TypeStr,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)
-
-	return ms, nil
 }

@@ -1,28 +1,14 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package awscontainerinsightreceiver
+package awscontainerinsightreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 
 import (
 	"time"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for aws ecs container metrics receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
 
 	// CollectionInterval is the interval at which metrics should be collected. The default is 60 second.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
@@ -37,4 +23,9 @@ type Config struct {
 	// If it can not be set that way and PrefFullPodName is true, the "PodName" attribute is set to the pod's own name.
 	// The default value is false
 	PrefFullPodName bool `mapstructure:"prefer_full_pod_name"`
+
+	// The "FullPodName" attribute is the pod name including suffix
+	// If false FullPodName label is not added
+	// The default value is false
+	AddFullPodNameMetricLabel bool `mapstructure:"add_full_pod_name_metric_label"`
 }

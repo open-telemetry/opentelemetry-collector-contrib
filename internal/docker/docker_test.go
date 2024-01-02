@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
@@ -23,7 +12,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -61,12 +49,12 @@ func TestInvalidExclude(t *testing.T) {
 }
 
 func tmpSock(t *testing.T) (net.Listener, string) {
-	f, err := ioutil.TempFile(os.TempDir(), "testsock")
+	f, err := os.CreateTemp(os.TempDir(), "testsock")
 	if err != nil {
 		t.Fatal(err)
 	}
 	addr := f.Name()
-	os.Remove(addr)
+	assert.NoError(t, os.Remove(addr))
 
 	listener, err := net.Listen("unix", addr)
 	if err != nil {
@@ -78,8 +66,13 @@ func tmpSock(t *testing.T) (net.Listener, string) {
 
 func TestWatchingTimeouts(t *testing.T) {
 	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	defer func() {
+		assert.NoError(t, os.Remove(addr))
+	}()
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
@@ -97,7 +90,6 @@ func TestWatchingTimeouts(t *testing.T) {
 	err = cli.LoadContainerList(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expectedError)
-
 	observed, logs := observer.New(zapcore.WarnLevel)
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
@@ -119,8 +111,13 @@ func TestWatchingTimeouts(t *testing.T) {
 
 func TestFetchingTimeouts(t *testing.T) {
 	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
+
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+	defer func() {
+		assert.NoError(t, os.Remove(addr))
+	}()
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
@@ -170,8 +167,13 @@ func TestFetchingTimeouts(t *testing.T) {
 
 func TestToStatsJSONErrorHandling(t *testing.T) {
 	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	defer func() {
+		assert.NoError(t, os.Remove(addr))
+	}()
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
@@ -192,7 +194,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 
 	statsJSON, err := cli.toStatsJSON(
 		dtypes.ContainerStats{
-			Body: ioutil.NopCloser(strings.NewReader("")),
+			Body: io.NopCloser(strings.NewReader("")),
 		}, dc,
 	)
 	assert.Nil(t, statsJSON)
@@ -200,7 +202,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 
 	statsJSON, err = cli.toStatsJSON(
 		dtypes.ContainerStats{
-			Body: ioutil.NopCloser(strings.NewReader("{\"Networks\": 123}")),
+			Body: io.NopCloser(strings.NewReader("{\"Networks\": 123}")),
 		}, dc,
 	)
 	assert.Nil(t, statsJSON)
@@ -214,7 +216,8 @@ func TestEventLoopHandlesError(t *testing.T) {
 		if strings.Contains(r.URL.Path, "/events") {
 			wg.Done()
 		}
-		w.Write([]byte{})
+		_, err := w.Write([]byte{})
+		require.NoError(t, err)
 	}))
 	defer srv.Close()
 

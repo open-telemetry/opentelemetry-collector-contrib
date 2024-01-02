@@ -1,0 +1,13 @@
+type: cloudfoundry
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [agoallikmaa, pellared, crobert-1]
+
+tests:
+  config:
+  skip_lifecycle: true

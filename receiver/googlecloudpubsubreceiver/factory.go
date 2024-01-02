@@ -1,121 +1,129 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package googlecloudpubsubreceiver
+package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 
 import (
 	"context"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
 const (
-	typeStr         = "googlecloudpubsub"
-	reportTransport = "pubsub"
+	reportTransport      = "pubsub"
+	reportFormatProtobuf = "protobuf"
 )
 
-func NewFactory() component.ReceiverFactory {
-	return &PubsubReceiverFactory{
+func NewFactory() receiver.Factory {
+	f := &pubsubReceiverFactory{
 		receivers: make(map[*Config]*pubsubReceiver),
 	}
+	return receiver.NewFactory(
+		metadata.Type,
+		f.CreateDefaultConfig,
+		receiver.WithTraces(f.CreateTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(f.CreateMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(f.CreateLogsReceiver, metadata.LogsStability),
+	)
 }
 
-type PubsubReceiverFactory struct {
+type pubsubReceiverFactory struct {
 	receivers map[*Config]*pubsubReceiver
 }
 
-func (factory *PubsubReceiverFactory) Type() config.Type {
-	return typeStr
+func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.Config {
+	return &Config{}
 }
 
-func (factory *PubsubReceiverFactory) CreateDefaultConfig() config.Receiver {
-	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-	}
-}
-
-func (factory *PubsubReceiverFactory) ensureReceiver(params component.ReceiverCreateSettings, config config.Receiver) *pubsubReceiver {
+func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSettings, config component.Config) (*pubsubReceiver, error) {
 	receiver := factory.receivers[config.(*Config)]
 	if receiver != nil {
-		return receiver
+		return receiver, nil
 	}
 	rconfig := config.(*Config)
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             params.ID,
+		Transport:              reportTransport,
+		ReceiverCreateSettings: params,
+	})
+	if err != nil {
+		return nil, err
+	}
 	receiver = &pubsubReceiver{
 		logger:    params.Logger,
-		obsrecv:   obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: reportTransport}),
+		obsrecv:   obsrecv,
 		userAgent: strings.ReplaceAll(rconfig.UserAgent, "{{version}}", params.BuildInfo.Version),
 		config:    rconfig,
 	}
 	factory.receivers[config.(*Config)] = receiver
-	return receiver
+	return receiver, nil
 }
 
-func (factory *PubsubReceiverFactory) CreateTracesReceiver(
+func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
-	consumer consumer.Traces) (component.TracesReceiver, error) {
+	params receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Traces) (receiver.Traces, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 	err := cfg.(*Config).validateForTrace()
 	if err != nil {
 		return nil, err
 	}
-	receiver := factory.ensureReceiver(params, cfg)
+	receiver, err := factory.ensureReceiver(params, cfg)
+	if err != nil {
+		return nil, err
+	}
 	receiver.tracesConsumer = consumer
 	return receiver, nil
 }
 
-func (factory *PubsubReceiverFactory) CreateMetricsReceiver(
+func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
-	consumer consumer.Metrics) (component.MetricsReceiver, error) {
+	params receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Metrics) (receiver.Metrics, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 	err := cfg.(*Config).validateForMetric()
 	if err != nil {
 		return nil, err
 	}
-	receiver := factory.ensureReceiver(params, cfg)
+	receiver, err := factory.ensureReceiver(params, cfg)
+	if err != nil {
+		return nil, err
+	}
 	receiver.metricsConsumer = consumer
 	return receiver, nil
 }
 
-func (factory *PubsubReceiverFactory) CreateLogsReceiver(
+func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
-	consumer consumer.Logs) (component.LogsReceiver, error) {
+	params receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Logs) (receiver.Logs, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 	err := cfg.(*Config).validateForLog()
 	if err != nil {
 		return nil, err
 	}
-	receiver := factory.ensureReceiver(params, cfg)
+	receiver, err := factory.ensureReceiver(params, cfg)
+	if err != nil {
+		return nil, err
+	}
 	receiver.logsConsumer = consumer
 	return receiver, nil
 }

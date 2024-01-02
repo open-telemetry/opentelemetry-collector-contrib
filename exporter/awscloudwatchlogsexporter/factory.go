@@ -1,63 +1,48 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
 
 // Package awscloudwatchlogsexporter provides a logging exporter for the OpenTelemetry collector.
 // This package is subject to change and may break configuration settings and behavior.
-package awscloudwatchlogsexporter
+package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
 import (
 	"context"
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
-const typeStr = "awscloudwatchlogs"
-
-func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
-		typeStr,
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		exporterhelper.WithLogs(createLogsExporter))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
+	queueSettings := exporterhelper.NewDefaultQueueSettings()
+	// For backwards compatibilitiy, we default to 1 consumer
+	queueSettings.NumConsumers = 1
+
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
-		},
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+		QueueSettings:      queueSettings,
 	}
 }
 
-func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
-	oCfg, ok := cfg.(*Config)
+func createLogsExporter(_ context.Context, params exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
+	expConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")
 	}
+	return newCwLogsExporter(expConfig, params)
 
-	exporter := &exporter{config: oCfg, logger: set.Logger}
-	return exporterhelper.NewLogsExporter(
-		oCfg,
-		set,
-		exporter.PushLogs,
-		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
-		exporterhelper.WithQueue(oCfg.enforcedQueueSettings()),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
-	)
 }

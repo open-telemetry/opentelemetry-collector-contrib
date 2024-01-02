@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package goldendataset
+package goldendataset // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 
 // Start of PICT inputs for generating golden dataset ResourceSpans (pict_input_traces.txt)
 
@@ -59,9 +48,9 @@ const (
 type PICTTracingInputs struct {
 	// Specifies the category of attributes to populate the Resource field with
 	Resource PICTInputResource
-	// Specifies the number and library categories to populte the InstrumentationLibrarySpans field with
+	// Specifies the number and library categories to populte the ScopeSpans field with
 	InstrumentationLibrary PICTInputInstrumentationLibrary
-	// Specifies the relative number of spans to populate the InstrumentationLibrarySpans' Spans field with
+	// Specifies the relative number of spans to populate the ScopeSpans' Spans field with
 	Spans PICTInputSpans
 }
 

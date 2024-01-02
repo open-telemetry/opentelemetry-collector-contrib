@@ -1,18 +1,7 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package host
+package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 
 import (
 	"context"
@@ -81,14 +70,14 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 
 	nodeCapacity, err := mInfo.nodeCapacityCreator(logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize NodeCapacity: %v", err)
+		return nil, fmt.Errorf("failed to initialize NodeCapacity: %w", err)
 	}
 	mInfo.nodeCapacity = nodeCapacity
 
 	defaultSessionConfig := awsutil.CreateDefaultSessionConfig()
 	_, session, err := mInfo.awsSessionCreator(logger, &awsutil.Conn{}, &defaultSessionConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create aws session: %v", err)
+		return nil, fmt.Errorf("failed to create aws session: %w", err)
 	}
 	mInfo.awsSession = session
 
@@ -100,16 +89,16 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 }
 
 func (m *Info) lazyInitEBSVolume(ctx context.Context) {
-	//wait until the instance id is ready
+	// wait until the instance id is ready
 	<-m.instanceIDReadyC
-	//Because ebs volumes only change occasionally, we refresh every 5 collection intervals to reduce ec2 api calls
+	// Because ebs volumes only change occasionally, we refresh every 5 collection intervals to reduce ec2 api calls
 	m.ebsVolume = m.ebsVolumeCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(),
 		5*m.refreshInterval, m.logger)
 	close(m.ebsVolumeReadyC)
 }
 
 func (m *Info) lazyInitEC2Tags(ctx context.Context) {
-	//wait until the instance id is ready
+	// wait until the instance id is ready
 	<-m.instanceIDReadyC
 	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(), m.containerOrchestrator, m.refreshInterval, m.logger)
 	close(m.ec2TagsReadyC)
@@ -130,7 +119,7 @@ func (m *Info) GetRegion() string {
 	return m.ec2Metadata.getRegion()
 }
 
-//GetInstanceIP returns the IP address of the host
+// GetInstanceIP returns the IP address of the host
 func (m *Info) GetInstanceIP() string {
 	return m.ec2Metadata.getInstanceIP()
 }
@@ -163,7 +152,7 @@ func (m *Info) GetClusterName() string {
 	return ""
 }
 
-//GetInstanceIPReadyC returns the channel to show the status of host IP
+// GetInstanceIPReadyC returns the channel to show the status of host IP
 func (m *Info) GetInstanceIPReadyC() chan bool {
 	return m.instanceIPReadyC
 }

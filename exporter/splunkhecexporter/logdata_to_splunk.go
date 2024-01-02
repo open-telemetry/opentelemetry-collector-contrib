@@ -1,25 +1,16 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package splunkhecexporter
+package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"encoding/hex"
+	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"go.uber.org/zap"
+	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -32,133 +23,130 @@ const (
 	traceIDFieldKey = "trace_id"
 )
 
-// Composite index of a log record in pdata.Logs.
-type logIndex struct {
-	// Index in orig list (i.e. root parent index).
-	resource int
-	// Index in InstrumentationLibraryLogs list (i.e. immediate parent index).
-	library int
-	// Index in Logs list (i.e. the log record index).
-	record int
-}
-
-func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
+func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
 	index := config.Index
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	sourceKey := config.HecToOtelAttrs.Source
 	sourceTypeKey := config.HecToOtelAttrs.SourceType
 	indexKey := config.HecToOtelAttrs.Index
 	hostKey := config.HecToOtelAttrs.Host
-	nameKey := config.HecFields.Name
 	severityTextKey := config.HecFields.SeverityText
 	severityNumberKey := config.HecFields.SeverityNumber
-	if lr.Name() != "" {
-		fields[nameKey] = lr.Name()
+	if spanID := lr.SpanID(); !spanID.IsEmpty() {
+		fields[spanIDFieldKey] = hex.EncodeToString(spanID[:])
 	}
-	if spanID := lr.SpanID().HexString(); spanID != "" {
-		fields[spanIDFieldKey] = spanID
-	}
-	if traceID := lr.TraceID().HexString(); traceID != "" {
-		fields[traceIDFieldKey] = traceID
+	if traceID := lr.TraceID(); !traceID.IsEmpty() {
+		fields[traceIDFieldKey] = hex.EncodeToString(traceID[:])
 	}
 	if lr.SeverityText() != "" {
 		fields[severityTextKey] = lr.SeverityText()
 	}
-	if lr.SeverityNumber() != pdata.SeverityNumberUNDEFINED {
+	if lr.SeverityNumber() != plog.SeverityNumberUnspecified {
 		fields[severityNumberKey] = lr.SeverityNumber()
 	}
 
-	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	res.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
-			fields[conventions.AttributeHostName] = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourcetype = v.StringVal()
+			sourcetype = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
+		case splunk.HecTokenLabel:
+			// ignore
 		default:
-			fields[k] = convertAttributeValue(v, logger)
+			mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
-			fields[conventions.AttributeHostName] = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourcetype = v.StringVal()
+			sourcetype = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
+		case splunk.HecTokenLabel:
+			// ignore
 		default:
-			fields[k] = convertAttributeValue(v, logger)
+			mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
 
-	eventValue := convertAttributeValue(lr.Body(), logger)
+	body := lr.Body().AsRaw()
+	if body == nil {
+		body = ""
+	}
+
 	return &splunk.Event{
 		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),
 		Host:       host,
 		Source:     source,
 		SourceType: sourcetype,
 		Index:      index,
-		Event:      eventValue,
+		Event:      body,
 		Fields:     fields,
 	}
 }
 
-func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) interface{} {
-	switch value.Type() {
-	case pdata.AttributeValueTypeInt:
-		return value.IntVal()
-	case pdata.AttributeValueTypeBool:
-		return value.BoolVal()
-	case pdata.AttributeValueTypeDouble:
-		return value.DoubleVal()
-	case pdata.AttributeValueTypeString:
-		return value.StringVal()
-	case pdata.AttributeValueTypeMap:
-		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
-			values[k] = convertAttributeValue(v, logger)
-			return true
-		})
-		return values
-	case pdata.AttributeValueTypeArray:
-		arrayVal := value.ArrayVal()
-		values := make([]interface{}, arrayVal.Len())
-		for i := 0; i < arrayVal.Len(); i++ {
-			values[i] = convertAttributeValue(arrayVal.At(i), logger)
-		}
-		return values
-	case pdata.AttributeValueTypeEmpty:
-		return nil
-	default:
-		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))
-		return value
-	}
+// nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
+func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) float64 {
+	return time.Duration(ts).Round(time.Millisecond).Seconds()
 }
 
-// nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
-func nanoTimestampToEpochMilliseconds(ts pdata.Timestamp) *float64 {
-	duration := time.Duration(ts)
-	if duration == 0 {
-		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
-		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
-		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
-		// at indexing time, which will be much more useful than a 0-epoch-time value.
-		return nil
+func mergeValue(dst map[string]any, k string, v any) {
+	switch element := v.(type) {
+	case []any:
+		if isArrayFlat(element) {
+			dst[k] = v
+		} else {
+			jsonStr, _ := jsoniter.MarshalToString(element)
+			dst[k] = jsonStr
+		}
+	case map[string]any:
+		flattenAndMergeMap(element, dst, k)
+	default:
+		dst[k] = v
 	}
 
-	val := duration.Round(time.Millisecond).Seconds()
-	return &val
+}
+
+func isArrayFlat(array []any) bool {
+	for _, v := range array {
+		switch v.(type) {
+		case []any, map[string]any:
+			return false
+		}
+	}
+	return true
+}
+
+func flattenAndMergeMap(src, dst map[string]any, key string) {
+	for k, v := range src {
+		current := fmt.Sprintf("%s.%s", key, k)
+		switch element := v.(type) {
+		case map[string]any:
+			flattenAndMergeMap(element, dst, current)
+		case []any:
+			if isArrayFlat(element) {
+				dst[current] = element
+			} else {
+				jsonStr, _ := jsoniter.MarshalToString(element)
+				dst[current] = jsonStr
+			}
+
+		default:
+			dst[current] = element
+		}
+	}
 }

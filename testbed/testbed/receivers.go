@@ -1,30 +1,18 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package testbed
+package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"context"
 	"fmt"
-	"log"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 // DataReceiver allows to receive traces or metrics. This is an interface that must
@@ -52,51 +40,35 @@ type DataReceiverBase struct {
 
 // TODO: Move these constants.
 const (
-	DefaultHost       = "127.0.0.1"
-	DefaultOTLPPort   = 4317
-	DefaultOCPort     = 56565
-	DefaultJaegerPort = 14250
+	DefaultHost     = "127.0.0.1"
+	DefaultOTLPPort = 4317
 )
-
-func (mb *DataReceiverBase) ReportFatalError(err error) {
-	log.Printf("Fatal error reported: %v", err)
-}
-
-func (mb *DataReceiverBase) GetFactory(_ component.Kind, _ config.Type) component.Factory {
-	return nil
-}
-
-func (mb *DataReceiverBase) GetExtensions() map[config.ComponentID]component.Extension {
-	return nil
-}
-
-func (mb *DataReceiverBase) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
-	return nil
-}
 
 // BaseOTLPDataReceiver implements the OTLP format receiver.
 type BaseOTLPDataReceiver struct {
 	DataReceiverBase
 	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
 	exporterType    string
-	traceReceiver   component.TracesReceiver
-	metricsReceiver component.MetricsReceiver
-	logReceiver     component.LogsReceiver
+	traceReceiver   receiver.Traces
+	metricsReceiver receiver.Metrics
+	logReceiver     receiver.Logs
 	compression     string
+	retry           string
+	sendingQueue    string
 }
 
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	if bor.exporterType == "otlp" {
-		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", bor.Port), Transport: "tcp"}
+		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: "tcp"}
 		cfg.HTTP = nil
 	} else {
-		cfg.HTTP.Endpoint = fmt.Sprintf("localhost:%d", bor.Port)
+		cfg.HTTP.Endpoint = fmt.Sprintf("127.0.0.1:%d", bor.Port)
 		cfg.GRPC = nil
 	}
 	var err error
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
@@ -107,17 +79,27 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		return err
 	}
 
-	if err = bor.traceReceiver.Start(context.Background(), bor); err != nil {
+	if err = bor.traceReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
-	if err = bor.metricsReceiver.Start(context.Background(), bor); err != nil {
+	if err = bor.metricsReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
 		return err
 	}
-	return bor.logReceiver.Start(context.Background(), bor)
+	return bor.logReceiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (bor *BaseOTLPDataReceiver) WithCompression(compression string) *BaseOTLPDataReceiver {
 	bor.compression = compression
+	return bor
+}
+
+func (bor *BaseOTLPDataReceiver) WithRetry(retry string) *BaseOTLPDataReceiver {
+	bor.retry = retry
+	return bor
+}
+
+func (bor *BaseOTLPDataReceiver) WithQueue(sendingQueue string) *BaseOTLPDataReceiver {
+	bor.sendingQueue = sendingQueue
 	return bor
 }
 
@@ -136,7 +118,7 @@ func (bor *BaseOTLPDataReceiver) ProtocolName() string {
 }
 
 func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
-	addr := fmt.Sprintf("localhost:%d", bor.Port)
+	addr := fmt.Sprintf("127.0.0.1:%d", bor.Port)
 	if bor.exporterType == "otlphttp" {
 		addr = "http://" + addr
 	}
@@ -144,13 +126,16 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	str := fmt.Sprintf(`
   %s:
     endpoint: "%s"
+    %s
+    %s
     tls:
-      insecure: true`, bor.exporterType, addr)
-
+      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue)
+	comp := "none"
 	if bor.compression != "" {
-		str += fmt.Sprintf(`
-    compression: "%s"`, bor.compression)
+		comp = bor.compression
 	}
+	str += fmt.Sprintf(`
+    compression: "%s"`, comp)
 
 	return str
 }

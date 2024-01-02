@@ -1,18 +1,7 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package k8sapiserver
+package k8sapiserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 
 import (
 	"context"
@@ -23,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +41,7 @@ type eventBroadcaster interface {
 	StartRecordingToSink(sink record.EventSink) watch.Interface
 	// StartLogging starts sending events received from this EventBroadcaster to the given logging
 	// function. The return value can be ignored or used to stop recording, if desired.
-	StartLogging(logf func(format string, args ...interface{})) watch.Interface
+	StartLogging(logf func(format string, args ...any)) watch.Interface
 	// NewRecorder returns an EventRecorder that can be used to send events to this EventBroadcaster
 	// with the event source set to the given event source.
 	NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorder
@@ -69,7 +58,7 @@ type K8sClient interface {
 
 // K8sAPIServer is a struct that produces metrics from kubernetes api server
 type K8sAPIServer struct {
-	nodeName            string //get the value from downward API
+	nodeName            string // get the value from downward API
 	logger              *zap.Logger
 	clusterNameProvider clusterNameProvider
 	cancel              context.CancelFunc
@@ -77,7 +66,7 @@ type K8sAPIServer struct {
 	mu      sync.Mutex
 	leading bool
 
-	k8sClient  K8sClient //*k8sclient.K8sClient
+	k8sClient  K8sClient // *k8sclient.K8sClient
 	epClient   k8sclient.EpClient
 	nodeClient k8sclient.NodeClient
 	podClient  k8sclient.PodClient
@@ -112,15 +101,15 @@ func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ..
 	}
 
 	if err := k.init(); err != nil {
-		return nil, fmt.Errorf("fail to initialize k8sapiserver, err: %v", err)
+		return nil, fmt.Errorf("fail to initialize k8sapiserver, err: %w", err)
 	}
 
 	return k, nil
 }
 
 // GetMetrics returns an array of metrics
-func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
-	var result []pdata.Metrics
+func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
+	var result []pmetric.Metrics
 
 	// don't generate any metrics if the current collector is not the leader
 	k.mu.Lock()
@@ -139,7 +128,7 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 	k.logger.Info("collect data from K8s API Server...")
 	timestampNs := strconv.FormatInt(time.Now().UnixNano(), 10)
 
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"cluster_failed_node_count": k.nodeClient.ClusterFailedNodeCount(),
 		"cluster_node_count":        k.nodeClient.ClusterNodeCount(),
 	}
@@ -157,7 +146,7 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 	result = append(result, md)
 
 	for service, podNum := range k.epClient.ServiceToPodNum() {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			"service_number_of_running_pods": podNum,
 		}
 		attributes := map[string]string{
@@ -179,7 +168,7 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 	}
 
 	for namespace, podNum := range k.podClient.NamespaceToRunningPodNum() {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			"namespace_number_of_running_pods": podNum,
 		}
 		attributes := map[string]string{
@@ -230,7 +219,7 @@ func (k *K8sAPIServer) init() error {
 	}
 
 	lock, err := resourcelock.New(
-		resourcelock.ConfigMapsResourceLock,
+		resourcelock.LeasesResourceLock,
 		lockNamespace, lockName,
 		clientSet.CoreV1(),
 		clientSet.CoordinationV1(),
@@ -249,10 +238,11 @@ func (k *K8sAPIServer) init() error {
 }
 
 // Shutdown stops the k8sApiServer
-func (k *K8sAPIServer) Shutdown() {
+func (k *K8sAPIServer) Shutdown() error {
 	if k.cancel != nil {
 		k.cancel()
 	}
+	return nil
 }
 
 func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourcelock.Interface) {
@@ -308,7 +298,7 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 					k.mu.Lock()
 					defer k.mu.Unlock()
 					k.leading = false
-					//node and pod are only used for cluster level metrics, endpoint is used for decorator too.
+					// node and pod are only used for cluster level metrics, endpoint is used for decorator too.
 					k.k8sClient.ShutdownNodeClient()
 					k.k8sClient.ShutdownPodClient()
 				},
@@ -319,7 +309,7 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 		})
 
 		select {
-		case <-ctx.Done(): //when leader election ends, the channel ctx.Done() will be closed
+		case <-ctx.Done(): // when leader election ends, the channel ctx.Done() will be closed
 			k.logger.Info(fmt.Sprintf("k8sapiserver shutdown Leader Election: %s", k.nodeName))
 			return
 		default:

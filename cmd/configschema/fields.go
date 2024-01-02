@@ -1,21 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package configschema
+package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 
 import (
-	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -25,12 +14,12 @@ import (
 
 // Field holds attributes and subfields of a config struct.
 type Field struct {
-	Name    string      `yaml:",omitempty"`
-	Type    string      `yaml:",omitempty"`
-	Kind    string      `yaml:",omitempty"`
-	Default interface{} `yaml:",omitempty"`
-	Doc     string      `yaml:",omitempty"`
-	Fields  []*Field    `yaml:",omitempty"`
+	Name    string   `yaml:",omitempty"`
+	Type    string   `yaml:",omitempty"`
+	Kind    string   `yaml:",omitempty"`
+	Default any      `yaml:",omitempty"`
+	Doc     string   `yaml:",omitempty"`
+	Fields  []*Field `yaml:",omitempty"`
 }
 
 // ReadFields accepts both a config struct's Value, as well as a DirResolver,
@@ -45,9 +34,9 @@ func ReadFields(v reflect.Value, dr DirResolver) (*Field, error) {
 	return field, err
 }
 
-func refl(f *Field, v reflect.Value, dr DirResolver) error {
+func refl(field *Field, v reflect.Value, dr DirResolver) error {
 	if v.Kind() == reflect.Ptr {
-		err := refl(f, v.Elem(), dr)
+		err := refl(field, v.Elem(), dr)
 		if err != nil {
 			return err
 		}
@@ -60,25 +49,28 @@ func refl(f *Field, v reflect.Value, dr DirResolver) error {
 		return err
 	}
 
-	// we also check if f.Doc hasn't already been written, thus preventing a
-	// squashed type with struct comments from overwriting the containing struct's
-	// comments
-	if sc, ok := comments["_struct"]; ok && f.Doc == "" {
-		f.Doc = sc
+	// _struct comments are those that are on the struct type itself. Here we check
+	// if field.Doc is empty, thus preventing a squashed type with struct comments
+	// from overwriting the containing struct's comments.
+	if sc, ok := comments["_struct"]; ok && field.Doc == "" {
+		field.Doc = sc
 	}
 
 	for i := 0; i < v.NumField(); i++ {
 		structField := v.Type().Field(i)
+		if !structField.IsExported() {
+			continue
+		}
 		tagName, options, err := mapstructure(structField.Tag)
 		if err != nil {
-			fmt.Printf("error parsing mapstructure tag for field %v: %q", structField, err.Error())
+			log.Printf("error parsing mapstructure tag for type: %s: %s: %v", field.Type, structField.Tag, err)
 			// not fatal, can keep going
 		}
 		if tagName == "-" {
 			continue
 		}
 		fv := v.Field(i)
-		next := f
+		next := field
 		if !containsSquash(options) {
 			name := tagName
 			if name == "" {
@@ -95,7 +87,7 @@ func refl(f *Field, v reflect.Value, dr DirResolver) error {
 				Kind: kindStr,
 				Doc:  comments[structField.Name],
 			}
-			f.Fields = append(f.Fields, next)
+			field.Fields = append(field.Fields, next)
 		}
 		err = handleKind(fv, next, dr)
 		if err != nil {
@@ -123,13 +115,9 @@ func handleKind(v reflect.Value, f *Field, dr DirResolver) (err error) {
 			err = refl(f, reflect.New(e.Elem()), dr)
 		}
 	case reflect.String:
-		if v.String() != "" {
-			f.Default = v.String()
-		}
+		f.Default = v.String()
 	case reflect.Bool:
-		if v.Bool() {
-			f.Default = v.Bool()
-		}
+		f.Default = v.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		if v.Int() != 0 {
 			if v.Type() == reflect.TypeOf(time.Duration(0)) {
@@ -139,9 +127,7 @@ func handleKind(v reflect.Value, f *Field, dr DirResolver) (err error) {
 			}
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if v.Uint() != 0 {
-			f.Default = v.Uint()
-		}
+		f.Default = v.Uint()
 	}
 	return
 }

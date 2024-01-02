@@ -1,39 +1,32 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
 import (
+	"fmt"
+	"net/http"
 	"testing"
 
+	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestLog(t *testing.T) {
 	tcs := []struct {
 		name        string
-		input       []interface{}
+		input       []any
 		wantLevel   zapcore.Level
 		wantMessage string
 	}{
 		{
 			name: "Starting provider",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.DebugValue(),
 				"msg",
@@ -48,7 +41,7 @@ func TestLog(t *testing.T) {
 		},
 		{
 			name: "Scrape failed",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.ErrorValue(),
 				"scrape_pool",
@@ -91,58 +84,58 @@ func TestLog(t *testing.T) {
 func TestExtractLogData(t *testing.T) {
 	tcs := []struct {
 		name        string
-		input       []interface{}
+		input       []any
 		wantLevel   level.Value
 		wantMessage string
-		wantOutput  []interface{}
+		wantOutput  []any
 	}{
 		{
 			name:        "nil fields",
 			input:       nil,
 			wantLevel:   level.InfoValue(), // Default
 			wantMessage: "",
-			wantOutput:  []interface{}{},
+			wantOutput:  nil,
 		},
 		{
 			name:        "empty fields",
-			input:       []interface{}{},
+			input:       []any{},
 			wantLevel:   level.InfoValue(), // Default
 			wantMessage: "",
-			wantOutput:  []interface{}{},
+			wantOutput:  nil,
 		},
 		{
 			name: "info level",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.InfoValue(),
 			},
 			wantLevel:   level.InfoValue(),
 			wantMessage: "",
-			wantOutput:  []interface{}{},
+			wantOutput:  nil,
 		},
 		{
 			name: "warn level",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.WarnValue(),
 			},
 			wantLevel:   level.WarnValue(),
 			wantMessage: "",
-			wantOutput:  []interface{}{},
+			wantOutput:  nil,
 		},
 		{
 			name: "error level",
-			input: []interface{}{
+			input: []any{
 				"level",
 				level.ErrorValue(),
 			},
 			wantLevel:   level.ErrorValue(),
 			wantMessage: "",
-			wantOutput:  []interface{}{},
+			wantOutput:  nil,
 		},
 		{
 			name: "debug level + extra fields",
-			input: []interface{}{
+			input: []any{
 				"timestamp",
 				1596604719,
 				"level",
@@ -152,14 +145,13 @@ func TestExtractLogData(t *testing.T) {
 			},
 			wantLevel:   level.DebugValue(),
 			wantMessage: "http client error",
-			wantOutput: []interface{}{
-				"timestamp",
-				1596604719,
+			wantOutput: []any{
+				"timestamp", 1596604719,
 			},
 		},
 		{
 			name: "missing level field",
-			input: []interface{}{
+			input: []any{
 				"timestamp",
 				1596604719,
 				"msg",
@@ -167,21 +159,19 @@ func TestExtractLogData(t *testing.T) {
 			},
 			wantLevel:   level.InfoValue(), // Default
 			wantMessage: "http client error",
-			wantOutput: []interface{}{
-				"timestamp",
-				1596604719,
+			wantOutput: []any{
+				"timestamp", 1596604719,
 			},
 		},
 		{
 			name: "invalid level type",
-			input: []interface{}{
+			input: []any{
 				"level",
 				"warn", // String is not recognized
 			},
 			wantLevel: level.InfoValue(), // Default
-			wantOutput: []interface{}{
-				"level",
-				"warn", // Field is preserved
+			wantOutput: []any{
+				"level", "warn", // Field is preserved
 			},
 		},
 	}
@@ -192,6 +182,109 @@ func TestExtractLogData(t *testing.T) {
 			assert.Equal(t, tc.wantLevel, ld.level)
 			assert.Equal(t, tc.wantMessage, ld.msg)
 			assert.Equal(t, tc.wantOutput, ld.otherFields)
+		})
+	}
+}
+
+func TestE2E(t *testing.T) {
+	logger, observed := observer.New(zap.DebugLevel)
+	gLogger := NewZapToGokitLogAdapter(zap.New(logger))
+
+	const targetStr = "https://host.docker.internal:5000/prometheus"
+
+	tcs := []struct {
+		name        string
+		log         func() error
+		wantLevel   zapcore.Level
+		wantMessage string
+		wantOutput  []zapcore.Field
+	}{
+		{
+			name: "debug level",
+			log: func() error {
+				return level.Debug(gLogger).Log()
+			},
+			wantLevel:   zapcore.DebugLevel,
+			wantMessage: "",
+			wantOutput:  []zapcore.Field{},
+		},
+		{
+			name: "info level",
+			log: func() error {
+				return level.Info(gLogger).Log()
+			},
+			wantLevel:   zapcore.InfoLevel,
+			wantMessage: "",
+			wantOutput:  []zapcore.Field{},
+		},
+		{
+			name: "warn level",
+			log: func() error {
+				return level.Warn(gLogger).Log()
+			},
+			wantLevel:   zapcore.WarnLevel,
+			wantMessage: "",
+			wantOutput:  []zapcore.Field{},
+		},
+		{
+			name: "error level",
+			log: func() error {
+				return level.Error(gLogger).Log()
+			},
+			wantLevel:   zapcore.ErrorLevel,
+			wantMessage: "",
+			wantOutput:  []zapcore.Field{},
+		},
+		{
+			name: "logger with and msg",
+			log: func() error {
+				ngLogger := log.With(gLogger, "scrape_pool", "scrape_pool")
+				ngLogger = log.With(ngLogger, "target", targetStr)
+				return level.Debug(ngLogger).Log("msg", "http client error", "err", fmt.Errorf("%s %q: dial tcp 192.168.65.2:5000: connect: connection refused", http.MethodGet, targetStr))
+			},
+			wantLevel:   zapcore.DebugLevel,
+			wantMessage: "http client error",
+			wantOutput: []zapcore.Field{
+				zap.String("scrape_pool", "scrape_pool"),
+				zap.String("target", "https://host.docker.internal:5000/prometheus"),
+				zap.Error(fmt.Errorf("%s %q: dial tcp 192.168.65.2:5000: connect: connection refused", http.MethodGet, targetStr)),
+			},
+		},
+		{
+			name: "missing level",
+			log: func() error {
+				ngLogger := log.With(gLogger, "target", "foo")
+				return ngLogger.Log("msg", "http client error")
+			},
+			wantLevel:   zapcore.InfoLevel, // Default
+			wantMessage: "http client error",
+			wantOutput: []zapcore.Field{
+				zap.String("target", "foo"),
+			},
+		},
+		{
+			name: "invalid level type",
+			log: func() error {
+				ngLogger := log.With(gLogger, "target", "foo")
+				return ngLogger.Log("msg", "http client error", "level", "warn")
+			},
+			wantLevel:   zapcore.InfoLevel, // Default
+			wantMessage: "http client error",
+			wantOutput: []zapcore.Field{
+				zap.String("target", "foo"),
+				zap.String("level", "warn"), // Field is preserved
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.NoError(t, tc.log())
+			entries := observed.TakeAll()
+			require.Len(t, entries, 1)
+			assert.Equal(t, tc.wantLevel, entries[0].Level)
+			assert.Equal(t, tc.wantMessage, entries[0].Message)
+			assert.Equal(t, tc.wantOutput, entries[0].Context)
 		})
 	}
 }

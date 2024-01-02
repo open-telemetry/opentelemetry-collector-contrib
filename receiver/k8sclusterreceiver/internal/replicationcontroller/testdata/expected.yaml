@@ -1,0 +1,30 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: test-namespace
+        - key: k8s.replicationcontroller.name
+          value:
+            stringValue: test-replicationcontroller-1
+        - key: k8s.replicationcontroller.uid
+          value:
+            stringValue: test-replicationcontroller-1-uid
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replication_controller
+            gauge:
+              dataPoints:
+                - asInt: "2"
+            name: k8s.replication_controller.available
+            unit: "{pod}"
+          - description: Number of desired pods in this replication_controller
+            gauge:
+              dataPoints:
+                - asInt: "1"
+            name: k8s.replication_controller.desired
+            unit: "{pod}"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

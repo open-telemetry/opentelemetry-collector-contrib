@@ -1,24 +1,13 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package azuremonitorexporter
+package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 import (
 	"strconv"
 
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 /*
@@ -27,7 +16,6 @@ import (
 
 const (
 	// TODO replace with convention.* values once/if available
-	attributeRPCGRPCStatusCode     string = "rpc.grpc.status_code"
 	attributeOtelStatusCode        string = "otel.status_code"
 	attributeOtelStatusDescription string = "otel.status_description"
 )
@@ -45,26 +33,26 @@ type NetworkAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *NetworkAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case conventions.AttributeNetTransport:
-		attrs.NetTransport = v.StringVal()
+		attrs.NetTransport = v.Str()
 	case conventions.AttributeNetPeerIP:
-		attrs.NetPeerIP = v.StringVal()
+		attrs.NetPeerIP = v.Str()
 	case conventions.AttributeNetPeerPort:
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.NetPeerPort = val
 		}
 	case conventions.AttributeNetPeerName:
-		attrs.NetPeerName = v.StringVal()
+		attrs.NetPeerName = v.Str()
 	case conventions.AttributeNetHostIP:
-		attrs.NetHostIP = v.StringVal()
+		attrs.NetHostIP = v.Str()
 	case conventions.AttributeNetHostPort:
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.NetHostPort = val
 		}
 	case conventions.AttributeNetHostName:
-		attrs.NetHostName = v.StringVal()
+		attrs.NetHostName = v.Str()
 	}
 	return true
 }
@@ -98,28 +86,28 @@ type HTTPAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *HTTPAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case conventions.AttributeHTTPMethod:
-		attrs.HTTPMethod = v.StringVal()
+		attrs.HTTPMethod = v.Str()
 	case conventions.AttributeHTTPURL:
-		attrs.HTTPURL = v.StringVal()
+		attrs.HTTPURL = v.Str()
 	case conventions.AttributeHTTPTarget:
-		attrs.HTTPTarget = v.StringVal()
+		attrs.HTTPTarget = v.Str()
 	case conventions.AttributeHTTPHost:
-		attrs.HTTPHost = v.StringVal()
+		attrs.HTTPHost = v.Str()
 	case conventions.AttributeHTTPScheme:
-		attrs.HTTPScheme = v.StringVal()
+		attrs.HTTPScheme = v.Str()
 	case conventions.AttributeHTTPStatusCode:
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPStatusCode = val
 		}
 	case "http.status_text":
-		attrs.HTTPStatusText = v.StringVal()
+		attrs.HTTPStatusText = v.Str()
 	case conventions.AttributeHTTPFlavor:
-		attrs.HTTPFlavor = v.StringVal()
+		attrs.HTTPFlavor = v.Str()
 	case conventions.AttributeHTTPUserAgent:
-		attrs.HTTPUserAgent = v.StringVal()
+		attrs.HTTPUserAgent = v.Str()
 	case conventions.AttributeHTTPRequestContentLength:
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPRequestContentLength = val
@@ -138,11 +126,11 @@ func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) bool
 		}
 
 	case conventions.AttributeHTTPRoute:
-		attrs.HTTPRoute = v.StringVal()
+		attrs.HTTPRoute = v.Str()
 	case conventions.AttributeHTTPServerName:
-		attrs.HTTPServerName = v.StringVal()
+		attrs.HTTPServerName = v.Str()
 	case conventions.AttributeHTTPClientIP:
-		attrs.HTTPClientIP = v.StringVal()
+		attrs.HTTPClientIP = v.Str()
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
@@ -161,16 +149,16 @@ type RPCAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *RPCAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *RPCAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case conventions.AttributeRPCSystem:
-		attrs.RPCSystem = v.StringVal()
+		attrs.RPCSystem = v.Str()
 	case conventions.AttributeRPCService:
-		attrs.RPCService = v.StringVal()
+		attrs.RPCService = v.Str()
 	case conventions.AttributeRPCMethod:
-		attrs.RPCMethod = v.StringVal()
-	case attributeRPCGRPCStatusCode:
-		attrs.RPCGRPCStatusCode = v.IntVal()
+		attrs.RPCMethod = v.Str()
+	case conventions.AttributeRPCGRPCStatusCode:
+		attrs.RPCGRPCStatusCode = v.Int()
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
@@ -196,30 +184,30 @@ type DatabaseAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *DatabaseAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case conventions.AttributeDBSystem:
-		attrs.DBSystem = v.StringVal()
+		attrs.DBSystem = v.Str()
 	case conventions.AttributeDBConnectionString:
-		attrs.DBConnectionString = v.StringVal()
+		attrs.DBConnectionString = v.Str()
 	case conventions.AttributeDBUser:
-		attrs.DBUser = v.StringVal()
+		attrs.DBUser = v.Str()
 	case conventions.AttributeDBStatement:
-		attrs.DBStatement = v.StringVal()
+		attrs.DBStatement = v.Str()
 	case conventions.AttributeDBOperation:
-		attrs.DBOperation = v.StringVal()
+		attrs.DBOperation = v.Str()
 	case conventions.AttributeDBMSSQLInstanceName:
-		attrs.DBMSSQLInstanceName = v.StringVal()
+		attrs.DBMSSQLInstanceName = v.Str()
 	case conventions.AttributeDBJDBCDriverClassname:
-		attrs.DBJDBCDriverClassName = v.StringVal()
+		attrs.DBJDBCDriverClassName = v.Str()
 	case conventions.AttributeDBCassandraKeyspace:
-		attrs.DBCassandraKeyspace = v.StringVal()
+		attrs.DBCassandraKeyspace = v.Str()
 	case conventions.AttributeDBHBaseNamespace:
-		attrs.DBHBaseNamespace = v.StringVal()
+		attrs.DBHBaseNamespace = v.Str()
 	case conventions.AttributeDBRedisDBIndex:
-		attrs.DBRedisDatabaseIndex = v.StringVal()
+		attrs.DBRedisDatabaseIndex = v.Str()
 	case conventions.AttributeDBMongoDBCollection:
-		attrs.DBMongoDBCollection = v.StringVal()
+		attrs.DBMongoDBCollection = v.Str()
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
@@ -245,26 +233,26 @@ type MessagingAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *MessagingAttributes) MapAttribute(k string, v pcommon.Value) bool {
 	switch k {
 	case conventions.AttributeMessagingSystem:
-		attrs.MessagingSystem = v.StringVal()
+		attrs.MessagingSystem = v.Str()
 	case conventions.AttributeMessagingDestination:
-		attrs.MessagingDestination = v.StringVal()
+		attrs.MessagingDestination = v.Str()
 	case conventions.AttributeMessagingDestinationKind:
-		attrs.MessagingDestinationKind = v.StringVal()
+		attrs.MessagingDestinationKind = v.Str()
 	case conventions.AttributeMessagingTempDestination:
-		attrs.MessagingTempDestination = v.StringVal()
+		attrs.MessagingTempDestination = v.Str()
 	case conventions.AttributeMessagingProtocol:
-		attrs.MessagingProtocol = v.StringVal()
+		attrs.MessagingProtocol = v.Str()
 	case conventions.AttributeMessagingProtocolVersion:
-		attrs.MessagingProtocolVersion = v.StringVal()
+		attrs.MessagingProtocolVersion = v.Str()
 	case conventions.AttributeMessagingURL:
-		attrs.MessagingURL = v.StringVal()
+		attrs.MessagingURL = v.Str()
 	case conventions.AttributeMessagingMessageID:
-		attrs.MessagingMessageID = v.StringVal()
+		attrs.MessagingMessageID = v.Str()
 	case conventions.AttributeMessagingConversationID:
-		attrs.MessagingConversationID = v.StringVal()
+		attrs.MessagingConversationID = v.Str()
 	case conventions.AttributeMessagingMessagePayloadSizeBytes:
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.MessagingMessagePayloadSize = val
@@ -274,7 +262,7 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue)
 			attrs.MessagingMessagePayloadCompressedSize = val
 		}
 	case conventions.AttributeMessagingOperation:
-		attrs.MessagingOperation = v.StringVal()
+		attrs.MessagingOperation = v.Str()
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
@@ -282,16 +270,39 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue)
 	return true
 }
 
+// ExceptionAttributes is the set of known attributes for Exception events
+type ExceptionAttributes struct {
+	ExceptionEscaped    string
+	ExceptionMessage    string
+	ExceptionStackTrace string
+	ExceptionType       string
+}
+
+// MapAttribute attempts to map a SpanEvent attribute to one of the known types
+func (attrs *ExceptionAttributes) MapAttribute(k string, v pcommon.Value) bool {
+	switch k {
+	case conventions.AttributeExceptionEscaped:
+		attrs.ExceptionEscaped = v.Str()
+	case conventions.AttributeExceptionMessage:
+		attrs.ExceptionMessage = v.Str()
+	case conventions.AttributeExceptionStacktrace:
+		attrs.ExceptionStackTrace = v.Str()
+	case conventions.AttributeExceptionType:
+		attrs.ExceptionType = v.Str()
+	}
+	return true
+}
+
 // Tries to return the value of the attribute as an int64
-func getAttributeValueAsInt(attributeValue pdata.AttributeValue) (int64, error) {
+func getAttributeValueAsInt(attributeValue pcommon.Value) (int64, error) {
 	switch attributeValue.Type() {
-	case pdata.AttributeValueTypeString:
+	case pcommon.ValueTypeStr:
 		// try to cast the string values to int64
-		if val, err := strconv.Atoi(attributeValue.StringVal()); err == nil {
+		if val, err := strconv.Atoi(attributeValue.Str()); err == nil {
 			return int64(val), nil
 		}
-	case pdata.AttributeValueTypeInt:
-		return attributeValue.IntVal(), nil
+	case pcommon.ValueTypeInt:
+		return attributeValue.Int(), nil
 	}
 
 	return int64(0), errUnexpectedAttributeValueType

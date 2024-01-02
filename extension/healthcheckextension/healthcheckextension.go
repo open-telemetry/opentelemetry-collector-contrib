@@ -1,76 +1,145 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package healthcheckextension
+package healthcheckextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 
 import (
 	"context"
-	"net"
+	"errors"
+	"fmt"
 	"net/http"
-	"strconv"
+	"time"
 
-	"github.com/jaegertracing/jaeger/pkg/healthcheck"
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/healthcheck"
 )
 
 type healthCheckExtension struct {
-	config Config
-	logger *zap.Logger
-	state  *healthcheck.HealthCheck
-	server http.Server
-	stopCh chan struct{}
+	config   Config
+	logger   *zap.Logger
+	state    *healthcheck.HealthCheck
+	server   *http.Server
+	stopCh   chan struct{}
+	exporter *healthCheckExporter
+	settings component.TelemetrySettings
 }
 
-var _ component.PipelineWatcher = (*healthCheckExtension)(nil)
+var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) error {
 
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
-
-	// Initialize listener
-	var (
-		ln  net.Listener
-		err error
-	)
-	if hc.config.Port != 0 && hc.config.TCPAddr.Endpoint == defaultEndpoint {
-		hc.logger.Warn("`Port` is deprecated, use `Endpoint` instead")
-		portStr := ":" + strconv.Itoa(int(hc.config.Port))
-		ln, err = net.Listen("tcp", portStr)
-	} else {
-		ln, err = hc.config.TCPAddr.Listen()
+	ln, err := hc.config.ToListener()
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %w", hc.config.Endpoint, err)
 	}
+
+	hc.server, err = hc.config.ToServer(host, hc.settings, nil)
 	if err != nil {
 		return err
 	}
 
-	// Mount HC handler
-	hc.server.Handler = hc.state.Handler()
-	hc.stopCh = make(chan struct{})
-	go func() {
-		defer close(hc.stopCh)
+	if !hc.config.CheckCollectorPipeline.Enabled {
+		// Mount HC handler
+		mux := http.NewServeMux()
+		mux.Handle(hc.config.Path, hc.baseHandler())
+		hc.server.Handler = mux
+		hc.stopCh = make(chan struct{})
+		go func() {
+			defer close(hc.stopCh)
 
-		// The listener ownership goes to the server.
-		if err := hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
-			host.ReportFatalError(err)
+			// The listener ownership goes to the server.
+			if err = hc.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
+				_ = hc.settings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+			}
+		}()
+	} else {
+		// collector pipeline health check
+		hc.exporter = newHealthCheckExporter()
+		view.RegisterExporter(hc.exporter)
+
+		interval, err := time.ParseDuration(hc.config.CheckCollectorPipeline.Interval)
+		if err != nil {
+			return err
 		}
-	}()
+
+		// ticker used by collector pipeline health check for rotation
+		ticker := time.NewTicker(time.Second)
+
+		mux := http.NewServeMux()
+		mux.Handle(hc.config.Path, hc.checkCollectorPipelineHandler())
+		hc.server.Handler = mux
+		hc.stopCh = make(chan struct{})
+		go func() {
+			defer close(hc.stopCh)
+			defer view.UnregisterExporter(hc.exporter)
+
+			go func() {
+				for {
+					select {
+					case <-ticker.C:
+						hc.exporter.rotate(interval)
+					case <-hc.stopCh:
+						return
+					}
+				}
+			}()
+
+			if errHTTP := hc.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+				host.ReportFatalError(errHTTP)
+			}
+
+		}()
+	}
 
 	return nil
 }
 
+// base handler function
+func (hc *healthCheckExtension) baseHandler() http.Handler {
+	if hc.config.ResponseBody != nil {
+		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			if hc.state.Get() == healthcheck.Ready {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Healthy))
+			} else {
+				w.WriteHeader(http.StatusServiceUnavailable)
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Unhealthy))
+			}
+		})
+	}
+	return hc.state.Handler()
+}
+
+// new handler function used for check collector pipeline
+func (hc *healthCheckExtension) checkCollectorPipelineHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if hc.check() && hc.state.Get() == healthcheck.Ready {
+			w.WriteHeader(http.StatusOK)
+			if hc.config.ResponseBody != nil {
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Healthy))
+			}
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			if hc.config.ResponseBody != nil {
+				_, _ = w.Write([]byte(hc.config.ResponseBody.Unhealthy))
+			}
+		}
+	})
+}
+
+func (hc *healthCheckExtension) check() bool {
+	return hc.exporter.checkHealthStatus(hc.config.CheckCollectorPipeline.ExporterFailureThreshold)
+}
+
 func (hc *healthCheckExtension) Shutdown(context.Context) error {
+	if hc.server == nil {
+		return nil
+	}
 	err := hc.server.Close()
 	if hc.stopCh != nil {
 		<-hc.stopCh
@@ -88,15 +157,15 @@ func (hc *healthCheckExtension) NotReady() error {
 	return nil
 }
 
-func newServer(config Config, logger *zap.Logger) *healthCheckExtension {
+func newServer(config Config, settings component.TelemetrySettings) *healthCheckExtension {
 	hc := &healthCheckExtension{
-		config: config,
-		logger: logger,
-		state:  healthcheck.New(),
-		server: http.Server{},
+		config:   config,
+		logger:   settings.Logger,
+		state:    healthcheck.New(),
+		settings: settings,
 	}
 
-	hc.state.SetLogger(logger)
+	hc.state.SetLogger(settings.Logger)
 
 	return hc
 }

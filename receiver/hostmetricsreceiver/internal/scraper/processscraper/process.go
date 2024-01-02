@@ -1,38 +1,33 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package processscraper
+package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"context"
+	"runtime"
 	"strings"
+	"time"
 
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
 // processMetadata stores process related metadata along
 // with the process handle, and provides a function to
-// initialize a pdata.Resource with the metadata
+// initialize a pcommon.Resource with the metadata
 
 type processMetadata struct {
 	pid        int32
+	parentPid  int32
 	executable *executableMetadata
 	command    *commandMetadata
 	username   string
 	handle     processHandle
+	createTime int64
 }
 
 type executableMetadata struct {
@@ -46,25 +41,25 @@ type commandMetadata struct {
 	commandLineSlice []string
 }
 
-func (m *processMetadata) initializeResource(resource pdata.Resource) {
-	attr := resource.Attributes()
-	attr.EnsureCapacity(6)
-	attr.InsertInt(conventions.AttributeProcessPID, int64(m.pid))
-	attr.InsertString(conventions.AttributeProcessExecutableName, m.executable.name)
-	attr.InsertString(conventions.AttributeProcessExecutablePath, m.executable.path)
+func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Resource {
+	rb.SetProcessPid(int64(m.pid))
+	rb.SetProcessParentPid(int64(m.parentPid))
+	rb.SetProcessExecutableName(m.executable.name)
+	rb.SetProcessExecutablePath(m.executable.path)
 	if m.command != nil {
-		attr.InsertString(conventions.AttributeProcessCommand, m.command.command)
+		rb.SetProcessCommand(m.command.command)
 		if m.command.commandLineSlice != nil {
 			// TODO insert slice here once this is supported by the data model
 			// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
-			attr.InsertString(conventions.AttributeProcessCommandLine, strings.Join(m.command.commandLineSlice, " "))
+			rb.SetProcessCommandLine(strings.Join(m.command.commandLineSlice, " "))
 		} else {
-			attr.InsertString(conventions.AttributeProcessCommandLine, m.command.commandLine)
+			rb.SetProcessCommandLine(m.command.commandLine)
 		}
 	}
 	if m.username != "" {
-		attr.InsertString(conventions.AttributeProcessOwner, m.username)
+		rb.SetProcessOwner(m.username)
 	}
+	return rb.Emit()
 }
 
 // processHandles provides a wrapper around []*process.Process
@@ -77,14 +72,25 @@ type processHandles interface {
 }
 
 type processHandle interface {
-	Name() (string, error)
-	Exe() (string, error)
-	Username() (string, error)
-	Cmdline() (string, error)
-	CmdlineSlice() ([]string, error)
-	Times() (*cpu.TimesStat, error)
-	MemoryInfo() (*process.MemoryInfoStat, error)
-	IOCounters() (*process.IOCountersStat, error)
+	NameWithContext(context.Context) (string, error)
+	ExeWithContext(context.Context) (string, error)
+	UsernameWithContext(context.Context) (string, error)
+	CmdlineWithContext(context.Context) (string, error)
+	CmdlineSliceWithContext(context.Context) ([]string, error)
+	TimesWithContext(context.Context) (*cpu.TimesStat, error)
+	PercentWithContext(context.Context, time.Duration) (float64, error)
+	MemoryInfoWithContext(context.Context) (*process.MemoryInfoStat, error)
+	MemoryPercentWithContext(context.Context) (float32, error)
+	IOCountersWithContext(context.Context) (*process.IOCountersStat, error)
+	NumThreadsWithContext(context.Context) (int32, error)
+	CreateTimeWithContext(context.Context) (int64, error)
+	ParentWithContext(context.Context) (*process.Process, error)
+	PpidWithContext(context.Context) (int32, error)
+	PageFaultsWithContext(context.Context) (*process.PageFaultsStat, error)
+	NumCtxSwitchesWithContext(context.Context) (*process.NumCtxSwitchesStat, error)
+	NumFDsWithContext(context.Context) (int32, error)
+	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
+	RlimitUsageWithContext(ctx context.Context, gatherUsed bool) ([]process.RlimitStat, error)
 }
 
 type gopsProcessHandles struct {
@@ -103,11 +109,20 @@ func (p *gopsProcessHandles) Len() int {
 	return len(p.handles)
 }
 
-func getProcessHandlesInternal() (processHandles, error) {
-	processes, err := process.Processes()
+func getProcessHandlesInternal(ctx context.Context) (processHandles, error) {
+	processes, err := process.ProcessesWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	return &gopsProcessHandles{handles: processes}, nil
+}
+
+func parentPid(ctx context.Context, handle processHandle, pid int32) (int32, error) {
+	// special case for pid 0 and pid 1 in darwin
+	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin") {
+		return 0, nil
+	}
+
+	return handle.PpidWithContext(ctx)
 }

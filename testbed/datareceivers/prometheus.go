@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package datareceivers
+package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 
 import (
 	"context"
@@ -22,9 +11,10 @@ import (
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -32,7 +22,7 @@ import (
 
 type prometheusDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.MetricsReceiver
+	receiver receiver.Metrics
 }
 
 func NewPrometheusDataReceiver(port int) testbed.DataReceiver {
@@ -42,7 +32,7 @@ func NewPrometheusDataReceiver(port int) testbed.DataReceiver {
 func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
-	addr := fmt.Sprintf("0.0.0.0:%d", dr.Port)
+	addr := fmt.Sprintf("127.0.0.1:%d", dr.Port)
 	cfg.PrometheusConfig = &promconfig.Config{
 		ScrapeConfigs: []*promconfig.ScrapeConfig{{
 			JobName:        "testbed-job",
@@ -62,12 +52,12 @@ func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 		}},
 	}
 	var err error
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
 	if err != nil {
 		return err
 	}
-	return dr.receiver.Start(context.Background(), dr)
+	return dr.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (dr *prometheusDataReceiver) Stop() error {
@@ -77,7 +67,7 @@ func (dr *prometheusDataReceiver) Stop() error {
 func (dr *prometheusDataReceiver) GenConfigYAMLStr() string {
 	format := `
   prometheus:
-    endpoint: "localhost:%d"
+    endpoint: "127.0.0.1:%d"
 `
 	return fmt.Sprintf(format, dr.Port)
 }

@@ -1,36 +1,28 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package kafkaexporter
+package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
 	"context"
 	"time"
 
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 )
 
 const (
-	typeStr             = "kafka"
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
 	defaultEncoding     = "otlp_proto"
 	defaultBroker       = "localhost:9092"
+	defaultClientID     = "sarama"
 	// default from sarama.NewConfig()
 	defaultMetadataRetryMax = 3
 	// default from sarama.NewConfig()
@@ -39,13 +31,19 @@ const (
 	defaultMetadataFull = true
 	// default max.message.bytes for the producer
 	defaultProducerMaxMessageBytes = 1000000
+	// default required_acks for the producer
+	defaultProducerRequiredAcks = sarama.WaitForLocal
+	// default from sarama.NewConfig()
+	defaultCompression = "none"
+	// default from sarama.NewConfig()
+	defaultFluxMaxMessages = 0
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaExporterFactory)
 
-// WithTracesMarshalers adds tracesMarshalers.
-func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
+// withTracesMarshalers adds tracesMarshalers.
+func withTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range tracesMarshalers {
 			factory.tracesMarshalers[marshaler.Encoding()] = marshaler
@@ -53,8 +51,26 @@ func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	}
 }
 
+// withMetricsMarshalers adds additional metric marshalers to the exporter factory.
+func withMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for _, marshaler := range metricMarshalers {
+			factory.metricsMarshalers[marshaler.Encoding()] = marshaler
+		}
+	}
+}
+
+// withLogsMarshalers adds additional log marshalers to the exporter factory.
+func withLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for _, marshaler := range logsMarshalers {
+			factory.logsMarshalers[marshaler.Encoding()] = marshaler
+		}
+	}
+}
+
 // NewFactory creates Kafka exporter factory.
-func NewFactory(options ...FactoryOption) component.ExporterFactory {
+func NewFactory(options ...FactoryOption) exporter.Factory {
 	f := &kafkaExporterFactory{
 		tracesMarshalers:  tracesMarshalers(),
 		metricsMarshalers: metricsMarshalers(),
@@ -63,22 +79,22 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	for _, o := range options {
 		o(f)
 	}
-	return exporterhelper.NewFactory(
-		typeStr,
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		exporterhelper.WithTraces(f.createTracesExporter),
-		exporterhelper.WithMetrics(f.createMetricsExporter),
-		exporterhelper.WithLogs(f.createLogsExporter),
+		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		Brokers:          []string{defaultBroker},
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		Brokers:         []string{defaultBroker},
+		ClientID:        defaultClientID,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:    "",
 		Encoding: defaultEncoding,
@@ -90,7 +106,10 @@ func createDefaultConfig() config.Exporter {
 			},
 		},
 		Producer: Producer{
-			MaxMessageBytes: defaultProducerMaxMessageBytes,
+			MaxMessageBytes:  defaultProducerMaxMessageBytes,
+			RequiredAcks:     defaultProducerRequiredAcks,
+			Compression:      defaultCompression,
+			FlushMaxMessages: defaultFluxMaxMessages,
 		},
 	}
 }
@@ -102,21 +121,25 @@ type kafkaExporterFactory struct {
 }
 
 func (f *kafkaExporterFactory) createTracesExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
-	oCfg := cfg.(*Config)
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
+	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	exp, err := newTracesExporter(*oCfg, set, f.tracesMarshalers)
+	if oCfg.Encoding == "otlp_json" {
+		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
+	}
+	exp, err := newTracesExporter(oCfg, set, f.tracesMarshalers)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
+		&oCfg,
 		exp.tracesPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -128,21 +151,25 @@ func (f *kafkaExporterFactory) createTracesExporter(
 }
 
 func (f *kafkaExporterFactory) createMetricsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.MetricsExporter, error) {
-	oCfg := cfg.(*Config)
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	exp, err := newMetricsExporter(*oCfg, set, f.metricsMarshalers)
+	if oCfg.Encoding == "otlp_json" {
+		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
+	}
+	exp, err := newMetricsExporter(oCfg, set, f.metricsMarshalers)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		&oCfg,
 		exp.metricsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -154,21 +181,25 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 }
 
 func (f *kafkaExporterFactory) createLogsExporter(
-	_ context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
-	oCfg := cfg.(*Config)
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Logs, error) {
+	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
-	exp, err := newLogsExporter(*oCfg, set, f.logsMarshalers)
+	if oCfg.Encoding == "otlp_json" {
+		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
+	}
+	exp, err := newLogsExporter(oCfg, set, f.logsMarshalers)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
+		&oCfg,
 		exp.logsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,

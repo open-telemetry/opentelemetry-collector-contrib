@@ -1,112 +1,117 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package attributesprocessor
+package attributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
-)
-
-const (
-	// typeStr is the value of "type" key in configuration.
-	typeStr = "attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor/internal/metadata"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Attributes processor.
-func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
-		typeStr,
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
-		processorhelper.WithLogs(createLogProcessor))
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
-func createDefaultConfig() config.Processor {
-	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createTracesProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateSettings,
-	cfg config.Processor,
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
-	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
-	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
+		return nil, err
 	}
-	include, err := filterspan.NewMatcher(oCfg.Include)
+	skipExpr, err := filterspan.NewSkipExpr(&oCfg.MatchConfig)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := filterspan.NewMatcher(oCfg.Exclude)
-	if err != nil {
-		return nil, err
-	}
-
 	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
-		newSpanAttributesProcessor(attrProc, include, exclude).processTraces,
+		newSpanAttributesProcessor(set.Logger, attrProc, skipExpr).processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createLogProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateSettings,
-	cfg config.Processor,
+func createLogsProcessor(
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
-	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
-	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
-	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
-	}
-	include, err := filterlog.NewMatcher(oCfg.Include)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := filterlog.NewMatcher(oCfg.Exclude)
+
+	skipExpr, err := filterlog.NewSkipExpr(&oCfg.MatchConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return processorhelper.NewLogsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
-		newLogAttributesProcessor(attrProc, include, exclude).processLogs,
+		newLogAttributesProcessor(set.Logger, attrProc, skipExpr).processLogs,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createMetricsProcessor(
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (processor.Metrics, error) {
+
+	oCfg := cfg.(*Config)
+	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
+	if err != nil {
+		return nil, err
+	}
+
+	skipExpr, err := filtermetric.NewSkipExpr(
+		filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Include),
+		filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Exclude),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		newMetricAttributesProcessor(set.Logger, attrProc, skipExpr).processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

@@ -1,0 +1,14 @@
+type: servicegraph
+
+status:
+  class: processor
+  stability:
+    deprecated: [traces]
+  distributions: [contrib, sumo]
+  warnings: []
+  codeowners:
+    active: [jpkrohling, mapno]
+
+tests:
+  config:
+  skip_lifecycle: true

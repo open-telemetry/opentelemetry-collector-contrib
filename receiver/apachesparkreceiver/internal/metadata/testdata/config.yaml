@@ -1,0 +1,283 @@
+default:
+all_set:
+  metrics:
+    spark.driver.block_manager.disk.usage:
+      enabled: true
+    spark.driver.block_manager.memory.usage:
+      enabled: true
+    spark.driver.code_generator.compilation.average_time:
+      enabled: true
+    spark.driver.code_generator.compilation.count:
+      enabled: true
+    spark.driver.code_generator.generated_class.average_size:
+      enabled: true
+    spark.driver.code_generator.generated_class.count:
+      enabled: true
+    spark.driver.code_generator.generated_method.average_size:
+      enabled: true
+    spark.driver.code_generator.generated_method.count:
+      enabled: true
+    spark.driver.code_generator.source_code.average_size:
+      enabled: true
+    spark.driver.code_generator.source_code.operations:
+      enabled: true
+    spark.driver.dag_scheduler.job.active:
+      enabled: true
+    spark.driver.dag_scheduler.job.count:
+      enabled: true
+    spark.driver.dag_scheduler.stage.count:
+      enabled: true
+    spark.driver.dag_scheduler.stage.failed:
+      enabled: true
+    spark.driver.executor.gc.operations:
+      enabled: true
+    spark.driver.executor.gc.time:
+      enabled: true
+    spark.driver.executor.memory.execution:
+      enabled: true
+    spark.driver.executor.memory.jvm:
+      enabled: true
+    spark.driver.executor.memory.pool:
+      enabled: true
+    spark.driver.executor.memory.storage:
+      enabled: true
+    spark.driver.hive_external_catalog.file_cache_hits:
+      enabled: true
+    spark.driver.hive_external_catalog.files_discovered:
+      enabled: true
+    spark.driver.hive_external_catalog.hive_client_calls:
+      enabled: true
+    spark.driver.hive_external_catalog.parallel_listing_jobs:
+      enabled: true
+    spark.driver.hive_external_catalog.partitions_fetched:
+      enabled: true
+    spark.driver.jvm_cpu_time:
+      enabled: true
+    spark.driver.live_listener_bus.dropped:
+      enabled: true
+    spark.driver.live_listener_bus.posted:
+      enabled: true
+    spark.driver.live_listener_bus.processing_time.average:
+      enabled: true
+    spark.driver.live_listener_bus.queue_size:
+      enabled: true
+    spark.executor.disk.usage:
+      enabled: true
+    spark.executor.gc_time:
+      enabled: true
+    spark.executor.input_size:
+      enabled: true
+    spark.executor.memory.usage:
+      enabled: true
+    spark.executor.shuffle.io.size:
+      enabled: true
+    spark.executor.storage_memory.usage:
+      enabled: true
+    spark.executor.task.active:
+      enabled: true
+    spark.executor.task.limit:
+      enabled: true
+    spark.executor.task.result:
+      enabled: true
+    spark.executor.time:
+      enabled: true
+    spark.job.stage.active:
+      enabled: true
+    spark.job.stage.result:
+      enabled: true
+    spark.job.task.active:
+      enabled: true
+    spark.job.task.result:
+      enabled: true
+    spark.stage.disk.spilled:
+      enabled: true
+    spark.stage.executor.cpu_time:
+      enabled: true
+    spark.stage.executor.run_time:
+      enabled: true
+    spark.stage.io.records:
+      enabled: true
+    spark.stage.io.size:
+      enabled: true
+    spark.stage.jvm_gc_time:
+      enabled: true
+    spark.stage.memory.peak:
+      enabled: true
+    spark.stage.memory.spilled:
+      enabled: true
+    spark.stage.shuffle.blocks_fetched:
+      enabled: true
+    spark.stage.shuffle.fetch_wait_time:
+      enabled: true
+    spark.stage.shuffle.io.disk:
+      enabled: true
+    spark.stage.shuffle.io.read.size:
+      enabled: true
+    spark.stage.shuffle.io.records:
+      enabled: true
+    spark.stage.shuffle.io.write.size:
+      enabled: true
+    spark.stage.shuffle.write_time:
+      enabled: true
+    spark.stage.status:
+      enabled: true
+    spark.stage.task.active:
+      enabled: true
+    spark.stage.task.result:
+      enabled: true
+    spark.stage.task.result_size:
+      enabled: true
+  resource_attributes:
+    spark.application.id:
+      enabled: true
+    spark.application.name:
+      enabled: true
+    spark.executor.id:
+      enabled: true
+    spark.job.id:
+      enabled: true
+    spark.stage.attempt.id:
+      enabled: true
+    spark.stage.id:
+      enabled: true
+none_set:
+  metrics:
+    spark.driver.block_manager.disk.usage:
+      enabled: false
+    spark.driver.block_manager.memory.usage:
+      enabled: false
+    spark.driver.code_generator.compilation.average_time:
+      enabled: false
+    spark.driver.code_generator.compilation.count:
+      enabled: false
+    spark.driver.code_generator.generated_class.average_size:
+      enabled: false
+    spark.driver.code_generator.generated_class.count:
+      enabled: false
+    spark.driver.code_generator.generated_method.average_size:
+      enabled: false
+    spark.driver.code_generator.generated_method.count:
+      enabled: false
+    spark.driver.code_generator.source_code.average_size:
+      enabled: false
+    spark.driver.code_generator.source_code.operations:
+      enabled: false
+    spark.driver.dag_scheduler.job.active:
+      enabled: false
+    spark.driver.dag_scheduler.job.count:
+      enabled: false
+    spark.driver.dag_scheduler.stage.count:
+      enabled: false
+    spark.driver.dag_scheduler.stage.failed:
+      enabled: false
+    spark.driver.executor.gc.operations:
+      enabled: false
+    spark.driver.executor.gc.time:
+      enabled: false
+    spark.driver.executor.memory.execution:
+      enabled: false
+    spark.driver.executor.memory.jvm:
+      enabled: false
+    spark.driver.executor.memory.pool:
+      enabled: false
+    spark.driver.executor.memory.storage:
+      enabled: false
+    spark.driver.hive_external_catalog.file_cache_hits:
+      enabled: false
+    spark.driver.hive_external_catalog.files_discovered:
+      enabled: false
+    spark.driver.hive_external_catalog.hive_client_calls:
+      enabled: false
+    spark.driver.hive_external_catalog.parallel_listing_jobs:
+      enabled: false
+    spark.driver.hive_external_catalog.partitions_fetched:
+      enabled: false
+    spark.driver.jvm_cpu_time:
+      enabled: false
+    spark.driver.live_listener_bus.dropped:
+      enabled: false
+    spark.driver.live_listener_bus.posted:
+      enabled: false
+    spark.driver.live_listener_bus.processing_time.average:
+      enabled: false
+    spark.driver.live_listener_bus.queue_size:
+      enabled: false
+    spark.executor.disk.usage:
+      enabled: false
+    spark.executor.gc_time:
+      enabled: false
+    spark.executor.input_size:
+      enabled: false
+    spark.executor.memory.usage:
+      enabled: false
+    spark.executor.shuffle.io.size:
+      enabled: false
+    spark.executor.storage_memory.usage:
+      enabled: false
+    spark.executor.task.active:
+      enabled: false
+    spark.executor.task.limit:
+      enabled: false
+    spark.executor.task.result:
+      enabled: false
+    spark.executor.time:
+      enabled: false
+    spark.job.stage.active:
+      enabled: false
+    spark.job.stage.result:
+      enabled: false
+    spark.job.task.active:
+      enabled: false
+    spark.job.task.result:
+      enabled: false
+    spark.stage.disk.spilled:
+      enabled: false
+    spark.stage.executor.cpu_time:
+      enabled: false
+    spark.stage.executor.run_time:
+      enabled: false
+    spark.stage.io.records:
+      enabled: false
+    spark.stage.io.size:
+      enabled: false
+    spark.stage.jvm_gc_time:
+      enabled: false
+    spark.stage.memory.peak:
+      enabled: false
+    spark.stage.memory.spilled:
+      enabled: false
+    spark.stage.shuffle.blocks_fetched:
+      enabled: false
+    spark.stage.shuffle.fetch_wait_time:
+      enabled: false
+    spark.stage.shuffle.io.disk:
+      enabled: false
+    spark.stage.shuffle.io.read.size:
+      enabled: false
+    spark.stage.shuffle.io.records:
+      enabled: false
+    spark.stage.shuffle.io.write.size:
+      enabled: false
+    spark.stage.shuffle.write_time:
+      enabled: false
+    spark.stage.status:
+      enabled: false
+    spark.stage.task.active:
+      enabled: false
+    spark.stage.task.result:
+      enabled: false
+    spark.stage.task.result_size:
+      enabled: false
+  resource_attributes:
+    spark.application.id:
+      enabled: false
+    spark.application.name:
+      enabled: false
+    spark.executor.id:
+      enabled: false
+    spark.job.id:
+      enabled: false
+    spark.stage.attempt.id:
+      enabled: false
+    spark.stage.id:
+      enabled: false

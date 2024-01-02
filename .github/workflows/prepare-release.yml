@@ -1,0 +1,38 @@
+name: Automation - Prepare Release
+
+on:
+  workflow_dispatch:
+    # Determine the version number that will be assigned to the release. During the beta phase, we increment
+    # the minor version number and set the patch number to 0.
+    inputs:
+      candidate-beta:
+        required: true
+        description: Release candidate version (beta, like 0.70.0)
+
+      current-beta:
+        required: true
+        description: Current version (beta, like 0.69.1)
+jobs:
+  # Releasing opentelemetry-collector-contrib
+  prepare-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: 'open-telemetry/opentelemetry-collector'
+          path: opentelemetry-collector
+      - uses: actions/checkout@v4
+        with:
+          path: opentelemetry-collector-contrib
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ~1.20.12
+          cache: false
+      - name: Prepare release for contrib
+        working-directory: opentelemetry-collector-contrib
+        env:
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          REPO: open-telemetry/opentelemetry-collector-contrib
+          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+          CURRENT_BETA: ${{ inputs.current-beta }}
+        run: ./.github/workflows/scripts/release-prepare-release.sh

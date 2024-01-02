@@ -1,18 +1,7 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package k8sclient
+package k8sclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 
 import (
 	"context"
@@ -68,7 +57,7 @@ type epClient struct {
 
 	mu                      sync.RWMutex
 	podKeyToServiceNamesMap map[string][]string
-	serviceToPodNumMap      map[Service]int //only running pods will show behind endpoints
+	serviceToPodNumMap      map[Service]int // only running pods will show behind endpoints
 }
 
 func (c *epClient) PodKeyToServiceNames() map[string][]string {
@@ -95,7 +84,7 @@ func (c *epClient) refresh() {
 
 	objsList := c.store.List()
 
-	tmpMap := make(map[string]map[string]struct{}) //pod key to service names
+	tmpMap := make(map[string]map[string]struct{}) // pod key to service names
 	serviceToPodNumMapNew := make(map[Service]int)
 
 	for _, obj := range objsList {
@@ -161,7 +150,7 @@ func (c *epClient) shutdown() {
 	c.stopped = true
 }
 
-func transformFuncEndpoint(obj interface{}) (interface{}, error) {
+func transformFuncEndpoint(obj any) (any, error) {
 	endpoint, ok := obj.(*v1.Endpoints)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Endpoint type", obj)

@@ -1,52 +1,69 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package routingprocessor
+//go:generate mdatagen metadata.yaml
+
+package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "routing"
+	scopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
+	nameSep   = "/"
+
+	processorKey             = "processor"
+	metricSep                = "_"
+	nonRoutedSpansKey        = "non_routed_spans"
+	nonRoutedMetricPointsKey = "non_routed_metric_points"
+	nonRoutedLogRecordsKey   = "non_routed_log_records"
 )
 
 // NewFactory creates a factory for the routing processor.
-func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
-		typeStr,
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		AttributeSource: defaultAttributeSource,
+		ErrorMode:       ottl.PropagateError,
 	}
 }
 
-func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
-	_, ok := nextConsumer.(component.Processor)
+func createTracesProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
+	warnIfNotLastInPipeline(nextConsumer, params.Logger)
+	return newTracesProcessor(params.TelemetrySettings, cfg)
+}
+
+func createMetricsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
+	warnIfNotLastInPipeline(nextConsumer, params.Logger)
+	return newMetricProcessor(params.TelemetrySettings, cfg)
+}
+
+func createLogsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
+	warnIfNotLastInPipeline(nextConsumer, params.Logger)
+	return newLogProcessor(params.TelemetrySettings, cfg)
+}
+
+func warnIfNotLastInPipeline(nextConsumer any, logger *zap.Logger) {
+	_, ok := nextConsumer.(component.Component)
 	if ok {
-		params.Logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")
+		logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")
 	}
-	return newProcessor(params.Logger, cfg)
 }

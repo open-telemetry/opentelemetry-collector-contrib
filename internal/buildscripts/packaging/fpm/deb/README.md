@@ -10,5 +10,5 @@ To override these defaults, set the `ARCH` and `VERSION` environment variables, 
 `ARCH=arm64 VERSION=4.5.6 make deb-package`.
 
 Run `./internal/buildscripts/packaging/fpm/test.sh PATH_TO_DEB_FILE [PATH_TO_CONFIG_FILE]` to run a basic installation
-test with the built package. `PATH_TO_CONFIG_FILE` defaults to `examples/tracing/otel-collector-config.yml` if one is
+test with the built package. `PATH_TO_CONFIG_FILE` defaults to `examples/demo/otel-collector-config.yaml` if one is
 not specified.

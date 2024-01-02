@@ -1,0 +1,110 @@
+type: splunkenterprise
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions:
+  codeowners:
+    active: [shalper2, MovieStoreGuy, greatestusername]
+
+attributes:
+  splunk.index.name:
+    description: The name of the index reporting a specific KPI
+    type: string
+  splunk.indexer.status:
+    description: The status message reported for a specific object
+    type: string
+  splunk.bucket.dir:
+    description: The bucket super-directory (home, cold, thawed) for each index
+    type: string
+  splunk.queue.name:
+    description: The name of the queue reporting a specific KPI
+    type: string  
+
+metrics:
+  splunk.license.index.usage:
+    enabled: true
+    description: Gauge tracking the indexed license usage per index
+    unit: By
+    gauge:
+      value_type: int 
+    attributes: [splunk.index.name]
+  # 'services/server/introspection/indexer'
+  splunk.indexer.throughput:
+    enabled: true
+    description: Gauge tracking average bytes per second throughput of indexer
+    unit: By/s
+    gauge:
+      value_type: double
+    # attribute `status` can be one of the following `normal`, `throttled`, `stopped`
+    attributes: [splunk.indexer.status]
+  # 'services/data/indexes-extended'
+  splunk.data.indexes.extended.total.size:
+    enabled: true
+    description: Size in bytes on disk of this index
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [splunk.index.name]
+  splunk.data.indexes.extended.event.count:
+    enabled: true
+    description: Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets.
+    unit: '{events}'
+    gauge:
+      value_type: int
+    attributes: [splunk.index.name]
+  splunk.data.indexes.extended.bucket.count:
+    enabled: true
+    description: Count of buckets per index
+    unit: '{buckets}'
+    gauge:
+      value_type: int
+    attributes: [splunk.index.name]
+  splunk.data.indexes.extended.raw.size:
+    enabled: true
+    description: Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [splunk.index.name]
+  ## Broken down `bucket_dirs`
+  splunk.data.indexes.extended.bucket.event.count:
+    enabled: false
+    description: Count of events in this bucket super-directory
+    unit: '{events}'
+    gauge:
+      value_type: int
+    attributes: [splunk.index.name, splunk.bucket.dir]
+  splunk.data.indexes.extended.bucket.hot.count:
+    enabled: false
+    description: (If size > 0) Number of hot buckets
+    unit: '{buckets}'
+    gauge:
+      value_type: int
+    attributes: [splunk.index.name, splunk.bucket.dir]
+  splunk.data.indexes.extended.bucket.warm.count:
+    enabled: false
+    description: (If size > 0) Number of warm buckets
+    unit: '{buckets}'
+    gauge:
+      value_type: int
+    attributes: [splunk.index.name, splunk.bucket.dir]  
+  #'services/server/introspection/queues' 
+  splunk.server.introspection.queues.current:
+    enabled: true
+    description: Gauge tracking current length of queue
+    unit: '{queues}'
+    gauge:
+      value_type: int
+    attributes: [splunk.queue.name]
+  splunk.server.introspection.queues.current.bytes:
+    enabled: true
+    description: Gauge tracking current bytes waiting in queue
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [splunk.queue.name] 
+
+tests:
+  config:

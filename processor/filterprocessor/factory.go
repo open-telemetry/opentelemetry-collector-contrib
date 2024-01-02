@@ -1,62 +1,52 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package filterprocessor
+package filterprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "filter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Filter processor.
-func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
-		typeStr,
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		processorhelper.WithMetrics(createMetricsProcessor),
-		processorhelper.WithLogs(createLogsProcessor),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 	)
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ErrorMode: ottl.PropagateError,
 	}
 }
 
 func createMetricsProcessor(
-	_ context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
-	fp, err := newFilterMetricProcessor(set.Logger, cfg.(*Config))
+) (processor.Metrics, error) {
+	fp, err := newFilterMetricProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		fp.processMetrics,
@@ -64,18 +54,39 @@ func createMetricsProcessor(
 }
 
 func createLogsProcessor(
-	_ context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
-	fp, err := newFilterLogsProcessor(set.Logger, cfg.(*Config))
+) (processor.Logs, error) {
+	fp, err := newFilterLogsProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
 	return processorhelper.NewLogsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
-		fp.ProcessLogs,
+		fp.processLogs,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createTracesProcessor(
+	ctx context.Context,
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces,
+) (processor.Traces, error) {
+	fp, err := newFilterSpansProcessor(set, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		fp.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

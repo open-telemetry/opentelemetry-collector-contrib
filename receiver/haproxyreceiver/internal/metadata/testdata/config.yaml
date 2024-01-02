@@ -1,0 +1,123 @@
+default:
+all_set:
+  metrics:
+    haproxy.bytes.input:
+      enabled: true
+    haproxy.bytes.output:
+      enabled: true
+    haproxy.clients.canceled:
+      enabled: true
+    haproxy.compression.bypass:
+      enabled: true
+    haproxy.compression.count:
+      enabled: true
+    haproxy.compression.input:
+      enabled: true
+    haproxy.compression.output:
+      enabled: true
+    haproxy.connections.errors:
+      enabled: true
+    haproxy.connections.rate:
+      enabled: true
+    haproxy.connections.retries:
+      enabled: true
+    haproxy.connections.total:
+      enabled: true
+    haproxy.downtime:
+      enabled: true
+    haproxy.failed_checks:
+      enabled: true
+    haproxy.requests.denied:
+      enabled: true
+    haproxy.requests.errors:
+      enabled: true
+    haproxy.requests.queued:
+      enabled: true
+    haproxy.requests.rate:
+      enabled: true
+    haproxy.requests.redispatched:
+      enabled: true
+    haproxy.requests.total:
+      enabled: true
+    haproxy.responses.denied:
+      enabled: true
+    haproxy.responses.errors:
+      enabled: true
+    haproxy.server_selected.total:
+      enabled: true
+    haproxy.sessions.average:
+      enabled: true
+    haproxy.sessions.count:
+      enabled: true
+    haproxy.sessions.rate:
+      enabled: true
+    haproxy.sessions.total:
+      enabled: true
+  resource_attributes:
+    haproxy.addr:
+      enabled: true
+    haproxy.proxy_name:
+      enabled: true
+    haproxy.service_name:
+      enabled: true
+none_set:
+  metrics:
+    haproxy.bytes.input:
+      enabled: false
+    haproxy.bytes.output:
+      enabled: false
+    haproxy.clients.canceled:
+      enabled: false
+    haproxy.compression.bypass:
+      enabled: false
+    haproxy.compression.count:
+      enabled: false
+    haproxy.compression.input:
+      enabled: false
+    haproxy.compression.output:
+      enabled: false
+    haproxy.connections.errors:
+      enabled: false
+    haproxy.connections.rate:
+      enabled: false
+    haproxy.connections.retries:
+      enabled: false
+    haproxy.connections.total:
+      enabled: false
+    haproxy.downtime:
+      enabled: false
+    haproxy.failed_checks:
+      enabled: false
+    haproxy.requests.denied:
+      enabled: false
+    haproxy.requests.errors:
+      enabled: false
+    haproxy.requests.queued:
+      enabled: false
+    haproxy.requests.rate:
+      enabled: false
+    haproxy.requests.redispatched:
+      enabled: false
+    haproxy.requests.total:
+      enabled: false
+    haproxy.responses.denied:
+      enabled: false
+    haproxy.responses.errors:
+      enabled: false
+    haproxy.server_selected.total:
+      enabled: false
+    haproxy.sessions.average:
+      enabled: false
+    haproxy.sessions.count:
+      enabled: false
+    haproxy.sessions.rate:
+      enabled: false
+    haproxy.sessions.total:
+      enabled: false
+  resource_attributes:
+    haproxy.addr:
+      enabled: false
+    haproxy.proxy_name:
+      enabled: false
+    haproxy.service_name:
+      enabled: false

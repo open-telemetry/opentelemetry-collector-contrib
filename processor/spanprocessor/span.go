@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package spanprocessor
+package spanprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 
 import (
 	"context"
@@ -21,16 +10,18 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 type spanProcessor struct {
 	config           Config
 	toAttributeRules []toAttributeRule
-	include          filterspan.Matcher
-	exclude          filterspan.Matcher
+	skipExpr         expr.BoolExpr[ottlspan.TransformContext]
 }
 
 // toAttributeRule is the compiled equivalent of config.ToAttributes field.
@@ -44,19 +35,14 @@ type toAttributeRule struct {
 
 // newSpanProcessor returns the span processor.
 func newSpanProcessor(config Config) (*spanProcessor, error) {
-	include, err := filterspan.NewMatcher(config.Include)
-	if err != nil {
-		return nil, err
-	}
-	exclude, err := filterspan.NewMatcher(config.Exclude)
+	skipExpr, err := filterspan.NewSkipExpr(&config.MatchConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	sp := &spanProcessor{
-		config:  config,
-		include: include,
-		exclude: exclude,
+		config:   config,
+		skipExpr: skipExpr,
 	}
 
 	// Compile ToAttributes regexp and extract attributes names.
@@ -80,30 +66,37 @@ func newSpanProcessor(config Config) (*spanProcessor, error) {
 	return sp, nil
 }
 
-func (sp *spanProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (sp *spanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			spans := ils.Spans()
-			library := ils.InstrumentationLibrary()
+			scope := ils.Scope()
 			for k := 0; k < spans.Len(); k++ {
-				s := spans.At(k)
-				if filterspan.SkipSpan(sp.include, sp.exclude, s, resource, library) {
-					continue
+				span := spans.At(k)
+				if sp.skipExpr != nil {
+					skip, err := sp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+					if err != nil {
+						return td, err
+					}
+					if skip {
+						continue
+					}
 				}
-				sp.processFromAttributes(s)
-				sp.processToAttributes(s)
+				sp.processFromAttributes(span)
+				sp.processToAttributes(span)
+				sp.processUpdateStatus(span)
 			}
 		}
 	}
 	return td, nil
 }
 
-func (sp *spanProcessor) processFromAttributes(span pdata.Span) {
+func (sp *spanProcessor) processFromAttributes(span ptrace.Span) {
 	if len(sp.config.Rename.FromAttributes) == 0 {
 		// There is FromAttributes rule.
 		return
@@ -141,14 +134,22 @@ func (sp *spanProcessor) processFromAttributes(span pdata.Span) {
 		}
 
 		switch attr.Type() {
-		case pdata.AttributeValueTypeString:
-			sb.WriteString(attr.StringVal())
-		case pdata.AttributeValueTypeBool:
-			sb.WriteString(strconv.FormatBool(attr.BoolVal()))
-		case pdata.AttributeValueTypeDouble:
-			sb.WriteString(strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64))
-		case pdata.AttributeValueTypeInt:
-			sb.WriteString(strconv.FormatInt(attr.IntVal(), 10))
+		case pcommon.ValueTypeStr:
+			sb.WriteString(attr.Str())
+		case pcommon.ValueTypeBool:
+			sb.WriteString(strconv.FormatBool(attr.Bool()))
+		case pcommon.ValueTypeDouble:
+			sb.WriteString(strconv.FormatFloat(attr.Double(), 'f', -1, 64))
+		case pcommon.ValueTypeInt:
+			sb.WriteString(strconv.FormatInt(attr.Int(), 10))
+		case pcommon.ValueTypeEmpty:
+			fallthrough
+		case pcommon.ValueTypeSlice:
+			fallthrough
+		case pcommon.ValueTypeBytes:
+			fallthrough
+		case pcommon.ValueTypeMap:
+			fallthrough
 		default:
 			sb.WriteString("<unknown-attribute-type>")
 		}
@@ -156,7 +157,7 @@ func (sp *spanProcessor) processFromAttributes(span pdata.Span) {
 	span.SetName(sb.String())
 }
 
-func (sp *spanProcessor) processToAttributes(span pdata.Span) {
+func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 	if span.Name() == "" {
 		// There is no span name to work on.
 		return
@@ -196,7 +197,7 @@ func (sp *spanProcessor) processToAttributes(span pdata.Span) {
 		// We will go over submatches and will simultaneously build a new span name,
 		// replacing matched subexpressions by attribute names.
 		for i := 1; i < len(submatches); i++ {
-			attrs.UpsertString(rule.attrNames[i], submatches[i])
+			attrs.PutStr(rule.attrNames[i], submatches[i])
 
 			// Add part of span name from end of previous match to start of this match
 			// and then add attribute name wrapped in curly brackets.
@@ -217,6 +218,23 @@ func (sp *spanProcessor) processToAttributes(span pdata.Span) {
 		if sp.config.Rename.ToAttributes.BreakAfterMatch {
 			// Stop processing, break after first match is requested.
 			break
+		}
+	}
+}
+
+func (sp *spanProcessor) processUpdateStatus(span ptrace.Span) {
+	cfg := sp.config.SetStatus
+	if cfg != nil {
+		switch cfg.Code {
+		case statusCodeOk:
+			span.Status().SetCode(ptrace.StatusCodeOk)
+			span.Status().SetMessage("")
+		case statusCodeError:
+			span.Status().SetCode(ptrace.StatusCodeError)
+			span.Status().SetMessage(cfg.Description)
+		case statusCodeUnset:
+			span.Status().SetCode(ptrace.StatusCodeUnset)
+			span.Status().SetMessage("")
 		}
 	}
 }

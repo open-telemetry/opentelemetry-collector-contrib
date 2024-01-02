@@ -1,88 +1,74 @@
-// Copyright 2021 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package syslogreceiver
+package syslogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 
 import (
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/syslog"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/tcp"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/udp"
-	syslogparser "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/syslog"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver/internal/metadata"
 )
 
-const typeStr = "syslog"
-
 // NewFactory creates a factory for syslog receiver
-func NewFactory() component.ReceiverFactory {
-	return stanza.NewFactory(ReceiverType{})
+func NewFactory() receiver.Factory {
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
 }
 
-// ReceiverType implements stanza.LogReceiverType
+// ReceiverType implements adapter.LogReceiverType
 // to create a syslog receiver
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() config.Type {
-	return typeStr
+func (f ReceiverType) Type() component.Type {
+	return metadata.Type
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() config.Receiver {
+func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return &SysLogConfig{
-		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+		BaseConfig: adapter.BaseConfig{
+			Operators:      []operator.Config{},
+			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
-		Input: stanza.InputConfig{},
+		InputConfig: *syslog.NewConfig(),
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*SysLogConfig).BaseConfig
 }
 
 // SysLogConfig defines configuration for the syslog receiver
 type SysLogConfig struct {
-	stanza.BaseConfig `mapstructure:",squash"`
-	Input             stanza.InputConfig `mapstructure:",remain"`
+	InputConfig        syslog.Config `mapstructure:",squash"`
+	adapter.BaseConfig `mapstructure:",squash"`
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*SysLogConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := syslog.NewSyslogInputConfig("syslog_input")
-	inputCfg.SyslogParserConfig = *syslogparser.NewSyslogParserConfig("syslog_parser")
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
+	return operator.NewConfig(&cfg.(*SysLogConfig).InputConfig)
+}
 
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
+func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
 	}
 
-	//
-	if inputCfg.Tcp != nil {
-		inputCfg.Tcp.InputConfig = tcp.NewTCPInputConfig("tcp_input").InputConfig
-	}
-	if inputCfg.Udp != nil {
-		inputCfg.Udp.InputConfig = udp.NewUDPInputConfig("udp_input").InputConfig
+	if componentParser.IsSet("tcp") {
+		cfg.InputConfig.TCP = &tcp.NewConfig().BaseConfig
+	} else if componentParser.IsSet("udp") {
+		cfg.InputConfig.UDP = &udp.NewConfig().BaseConfig
 	}
 
-	return &operator.Config{Builder: inputCfg}, nil
+	return componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 }

@@ -1,41 +1,31 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package kubeletstatsreceiver
+package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 
 import (
 	"errors"
 	"fmt"
-	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
-	"gopkg.in/yaml.v2"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	kube.ClientConfig       `mapstructure:",squash"`
-	confignet.TCPAddr       `mapstructure:",squash"`
-	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+
+	kube.ClientConfig `mapstructure:",squash"`
+	confignet.TCPAddr `mapstructure:",squash"`
 
 	// ExtraMetadataLabels contains list of extra metadata that should be taken from /pods endpoint
 	// and put as extra labels on metrics resource.
@@ -49,11 +39,14 @@ type Config struct {
 
 	// Configuration of the Kubernetes API client.
 	K8sAPIConfig *k8sconfig.APIConfig `mapstructure:"k8s_api_config"`
+
+	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
-// getReceiverOptions returns receiverOptions is the config is valid,
+// getReceiverOptions returns scraperOptions is the config is valid,
 // otherwise it will return an error.
-func (cfg *Config) getReceiverOptions() (*receiverOptions, error) {
+func (cfg *Config) getReceiverOptions() (*scraperOptions, error) {
 	err := kubelet.ValidateMetadataLabelsConfig(cfg.ExtraMetadataLabels)
 	if err != nil {
 		return nil, err
@@ -72,8 +65,7 @@ func (cfg *Config) getReceiverOptions() (*receiverOptions, error) {
 		}
 	}
 
-	return &receiverOptions{
-		id:                    cfg.ID(),
+	return &scraperOptions{
 		collectionInterval:    cfg.CollectionInterval,
 		extraMetadataLabels:   cfg.ExtraMetadataLabels,
 		metricGroupsToCollect: mgs,
@@ -95,31 +87,20 @@ func getMapFromSlice(collect []kubelet.MetricGroup) (map[kubelet.MetricGroup]boo
 	return out, nil
 }
 
-func (cfg *Config) Unmarshal(componentParser *config.Map) error {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil
 	}
 
-	if err := componentParser.Unmarshal(cfg); err != nil {
+	if err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 
 	// custom unmarhalling is required to get []kubelet.MetricGroup, the default
-	// unmarshaller only supports string slices.
+	// unmarshaller does not correctly overwrite slices.
 	if !componentParser.IsSet(metricGroupsConfig) {
 		cfg.MetricGroupsToCollect = defaultMetricGroups
-		return nil
-	}
-	mgs := componentParser.Get(metricGroupsConfig)
-
-	out, err := yaml.Marshal(mgs)
-	if err != nil {
-		return fmt.Errorf("failed to marshal %s to yaml: %w", metricGroupsConfig, err)
-	}
-
-	if err = yaml.UnmarshalStrict(out, &cfg.MetricGroupsToCollect); err != nil {
-		return fmt.Errorf("failed to retrieve %s: %w", metricGroupsConfig, err)
 	}
 
 	return nil

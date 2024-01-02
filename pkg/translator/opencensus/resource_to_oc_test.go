@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opencensus
 
@@ -24,8 +13,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/resource/resourcekeys"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -34,7 +24,7 @@ import (
 )
 
 func TestResourceToOC(t *testing.T) {
-	emptyResource := pdata.NewResource()
+	emptyResource := pcommon.NewResource()
 
 	ocNode := generateOcNode()
 	ocResource := generateOcResource()
@@ -45,13 +35,13 @@ func TestResourceToOC(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		resource   pdata.Resource
+		resource   pcommon.Resource
 		ocNode     *occommon.Node
 		ocResource *ocresource.Resource
 	}{
 		{
 			name:       "nil",
-			resource:   pdata.NewResource(),
+			resource:   pcommon.NewResource(),
 			ocNode:     nil,
 			ocResource: nil,
 		},
@@ -81,15 +71,13 @@ func TestResourceToOC(t *testing.T) {
 }
 
 func TestContainerResourceToOC(t *testing.T) {
-	resource := pdata.NewResource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeK8SClusterName:        pdata.NewAttributeValueString("cluster1"),
-		conventions.AttributeK8SPodName:            pdata.NewAttributeValueString("pod1"),
-		conventions.AttributeK8SNamespaceName:      pdata.NewAttributeValueString("namespace1"),
-		conventions.AttributeContainerName:         pdata.NewAttributeValueString("container-name1"),
-		conventions.AttributeCloudAccountID:        pdata.NewAttributeValueString("proj1"),
-		conventions.AttributeCloudAvailabilityZone: pdata.NewAttributeValueString("zone1"),
-	})
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventions.AttributeK8SClusterName, "cluster1")
+	resource.Attributes().PutStr(conventions.AttributeK8SPodName, "pod1")
+	resource.Attributes().PutStr(conventions.AttributeK8SNamespaceName, "namespace1")
+	resource.Attributes().PutStr(conventions.AttributeContainerName, "container-name1")
+	resource.Attributes().PutStr(conventions.AttributeCloudAccountID, "proj1")
+	resource.Attributes().PutStr(conventions.AttributeCloudAvailabilityZone, "zone1")
 
 	want := &ocresource.Resource{
 		Type: resourcekeys.ContainerType, // Inferred type
@@ -109,7 +97,7 @@ func TestContainerResourceToOC(t *testing.T) {
 	}
 
 	// Also test that the explicit resource type is preserved if present
-	resource.Attributes().InsertString(occonventions.AttributeResourceType, "other-type")
+	resource.Attributes().PutStr(occonventions.AttributeResourceType, "other-type")
 	want.Type = "other-type"
 
 	_, ocResource = internalResourceToOC(resource)
@@ -202,27 +190,27 @@ func TestResourceToOCAndBack(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(string(test), func(t *testing.T) {
-			traces := pdata.NewTraces()
+			traces := ptrace.NewTraces()
 			goldendataset.GenerateResource(test).CopyTo(traces.ResourceSpans().AppendEmpty().Resource())
 			expected := traces.ResourceSpans().At(0).Resource()
 			ocNode, ocResource := internalResourceToOC(expected)
-			actual := pdata.NewResource()
+			actual := pcommon.NewResource()
 			ocNodeResourceToInternal(ocNode, ocResource, actual)
 			// Remove opencensus resource type from actual. This will be added during translation.
-			actual.Attributes().Delete(occonventions.AttributeResourceType)
+			actual.Attributes().Remove(occonventions.AttributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
-			expected.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+			expected.Attributes().Range(func(k string, v pcommon.Value) bool {
 				a, ok := actual.Attributes().Get(k)
 				assert.True(t, ok)
 				switch v.Type() {
-				case pdata.AttributeValueTypeInt:
+				case pcommon.ValueTypeInt:
 					// conventions.AttributeProcessID is special because we preserve the type for this.
 					if k == conventions.AttributeProcessPID {
-						assert.Equal(t, v.IntVal(), a.IntVal())
+						assert.Equal(t, v.Int(), a.Int())
 					} else {
-						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
+						assert.Equal(t, strconv.FormatInt(v.Int(), 10), a.Str())
 					}
-				case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
+				case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
 					assert.Equal(t, a, a)
 				default:
 					assert.Equal(t, v, a)

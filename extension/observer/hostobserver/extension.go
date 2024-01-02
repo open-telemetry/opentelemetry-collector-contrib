@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package hostobserver
+package hostobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 
 import (
 	"context"
@@ -20,16 +9,17 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/shirou/gopsutil/net"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/net"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 type hostObserver struct {
-	observer.EndpointsWatcher
+	*observer.EndpointsWatcher
 }
 
 type endpointsLister struct {
@@ -42,20 +32,21 @@ type endpointsLister struct {
 	collectProcessDetails func(proc *process.Process) (*processDetails, error)
 }
 
-var _ component.Extension = (*hostObserver)(nil)
+var _ extension.Extension = (*hostObserver)(nil)
 
-func newObserver(logger *zap.Logger, config *Config) (component.Extension, error) {
+func newObserver(params extension.CreateSettings, config *Config) (extension.Extension, error) {
 	h := &hostObserver{
-		EndpointsWatcher: observer.EndpointsWatcher{
-			RefreshInterval: config.RefreshInterval,
-			Endpointslister: endpointsLister{
-				logger:                logger,
-				observerName:          config.ID().String(),
+		EndpointsWatcher: observer.NewEndpointsWatcher(
+			endpointsLister{
+				logger:                params.Logger,
+				observerName:          params.ID.String(),
 				getConnections:        getConnections,
 				getProcess:            process.NewProcess,
 				collectProcessDetails: collectProcessDetails,
 			},
-		},
+			config.RefreshInterval,
+			params.Logger,
+		),
 	}
 
 	return h, nil
@@ -228,12 +219,12 @@ type processDetails struct {
 func collectProcessDetails(proc *process.Process) (*processDetails, error) {
 	name, err := proc.Name()
 	if err != nil {
-		return nil, fmt.Errorf("could not get process name: %v", err)
+		return nil, fmt.Errorf("could not get process name: %w", err)
 	}
 
 	args, err := proc.Cmdline()
 	if err != nil {
-		return nil, fmt.Errorf("could not get process args: %v", err)
+		return nil, fmt.Errorf("could not get process args: %w", err)
 	}
 
 	return &processDetails{

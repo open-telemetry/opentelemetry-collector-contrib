@@ -1,0 +1,32 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: couchdb.node.name
+          value:
+            stringValue: ""
+    scopeMetrics:
+      - metrics:
+          - description: The number of database operations.
+            name: couchdb.database.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "38"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: reads
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "39"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: writes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+        scope:
+          name: otelcol/couchdbreceiver
+          version: latest

@@ -1,18 +1,7 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package host
+package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 
 import (
 	"bufio"
@@ -190,7 +179,7 @@ func (e *ebsVolume) getEBSVolumeID(devName string) string {
 	return ""
 }
 
-//extract the ebs volume id used by kubernetes cluster
+// extract the ebs volume id used by kubernetes cluster
 func (e *ebsVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 	ebsVolumeIDs := make(map[string]string)
 
@@ -209,7 +198,7 @@ func (e *ebsVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 			continue
 		}
 
-		//example line: /dev/nvme1n1 /var/lib/kubelet/plugins/kubernetes.io/aws-ebs/mounts/aws/us-west-2b/vol-0d9f0816149eb2050 ext4 rw,relatime,data=ordered 0 0
+		// example line: /dev/nvme1n1 /var/lib/kubelet/plugins/kubernetes.io/aws-ebs/mounts/aws/us-west-2b/vol-0d9f0816149eb2050 ext4 rw,relatime,data=ordered 0 0
 		keys := strings.Split(lineStr, " ")
 		if len(keys) < 2 {
 			continue

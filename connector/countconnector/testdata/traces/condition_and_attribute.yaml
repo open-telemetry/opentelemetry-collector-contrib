@@ -1,0 +1,97 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: Span count if ...
+            name: span.count.if.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127929005000"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127929005000"
+              isMonotonic: true
+          - description: Span event count by attribute if ...
+            name: spanevent.count.if.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "8"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127929006000"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127929006000"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: Span count if ...
+            name: span.count.if.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127929018000"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127929018000"
+              isMonotonic: true
+          - description: Span event count by attribute if ...
+            name: spanevent.count.if.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "8"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1678392127929018000"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1678392127929018000"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector

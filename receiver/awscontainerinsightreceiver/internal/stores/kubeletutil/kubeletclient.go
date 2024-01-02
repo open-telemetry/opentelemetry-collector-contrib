@@ -1,18 +1,7 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package kubeletutil
+package kubeletutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
 
 import (
 	"encoding/json"
@@ -62,13 +51,13 @@ func (k *KubeletClient) ListPods() ([]corev1.Pod, error) {
 	var result []corev1.Pod
 	b, err := k.restClient.Get("/pods")
 	if err != nil {
-		return result, fmt.Errorf("call to /pods endpoint failed: %v", err)
+		return result, fmt.Errorf("call to /pods endpoint failed: %w", err)
 	}
 
 	pods := corev1.PodList{}
 	err = json.Unmarshal(b, &pods)
 	if err != nil {
-		return result, fmt.Errorf("parsing response failed: %v", err)
+		return result, fmt.Errorf("parsing response failed: %w", err)
 	}
 
 	return pods.Items, nil

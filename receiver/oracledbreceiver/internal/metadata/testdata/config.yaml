@@ -1,0 +1,119 @@
+default:
+all_set:
+  metrics:
+    oracledb.consistent_gets:
+      enabled: true
+    oracledb.cpu_time:
+      enabled: true
+    oracledb.db_block_gets:
+      enabled: true
+    oracledb.dml_locks.limit:
+      enabled: true
+    oracledb.dml_locks.usage:
+      enabled: true
+    oracledb.enqueue_deadlocks:
+      enabled: true
+    oracledb.enqueue_locks.limit:
+      enabled: true
+    oracledb.enqueue_locks.usage:
+      enabled: true
+    oracledb.enqueue_resources.limit:
+      enabled: true
+    oracledb.enqueue_resources.usage:
+      enabled: true
+    oracledb.exchange_deadlocks:
+      enabled: true
+    oracledb.executions:
+      enabled: true
+    oracledb.hard_parses:
+      enabled: true
+    oracledb.logical_reads:
+      enabled: true
+    oracledb.parse_calls:
+      enabled: true
+    oracledb.pga_memory:
+      enabled: true
+    oracledb.physical_reads:
+      enabled: true
+    oracledb.processes.limit:
+      enabled: true
+    oracledb.processes.usage:
+      enabled: true
+    oracledb.sessions.limit:
+      enabled: true
+    oracledb.sessions.usage:
+      enabled: true
+    oracledb.tablespace_size.limit:
+      enabled: true
+    oracledb.tablespace_size.usage:
+      enabled: true
+    oracledb.transactions.limit:
+      enabled: true
+    oracledb.transactions.usage:
+      enabled: true
+    oracledb.user_commits:
+      enabled: true
+    oracledb.user_rollbacks:
+      enabled: true
+  resource_attributes:
+    oracledb.instance.name:
+      enabled: true
+none_set:
+  metrics:
+    oracledb.consistent_gets:
+      enabled: false
+    oracledb.cpu_time:
+      enabled: false
+    oracledb.db_block_gets:
+      enabled: false
+    oracledb.dml_locks.limit:
+      enabled: false
+    oracledb.dml_locks.usage:
+      enabled: false
+    oracledb.enqueue_deadlocks:
+      enabled: false
+    oracledb.enqueue_locks.limit:
+      enabled: false
+    oracledb.enqueue_locks.usage:
+      enabled: false
+    oracledb.enqueue_resources.limit:
+      enabled: false
+    oracledb.enqueue_resources.usage:
+      enabled: false
+    oracledb.exchange_deadlocks:
+      enabled: false
+    oracledb.executions:
+      enabled: false
+    oracledb.hard_parses:
+      enabled: false
+    oracledb.logical_reads:
+      enabled: false
+    oracledb.parse_calls:
+      enabled: false
+    oracledb.pga_memory:
+      enabled: false
+    oracledb.physical_reads:
+      enabled: false
+    oracledb.processes.limit:
+      enabled: false
+    oracledb.processes.usage:
+      enabled: false
+    oracledb.sessions.limit:
+      enabled: false
+    oracledb.sessions.usage:
+      enabled: false
+    oracledb.tablespace_size.limit:
+      enabled: false
+    oracledb.tablespace_size.usage:
+      enabled: false
+    oracledb.transactions.limit:
+      enabled: false
+    oracledb.transactions.usage:
+      enabled: false
+    oracledb.user_commits:
+      enabled: false
+    oracledb.user_rollbacks:
+      enabled: false
+  resource_attributes:
+    oracledb.instance.name:
+      enabled: false

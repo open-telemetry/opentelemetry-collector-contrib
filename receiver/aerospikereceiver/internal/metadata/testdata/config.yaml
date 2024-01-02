@@ -1,0 +1,71 @@
+default:
+all_set:
+  metrics:
+    aerospike.namespace.disk.available:
+      enabled: true
+    aerospike.namespace.geojson.region_query_cells:
+      enabled: true
+    aerospike.namespace.geojson.region_query_false_positive:
+      enabled: true
+    aerospike.namespace.geojson.region_query_points:
+      enabled: true
+    aerospike.namespace.geojson.region_query_requests:
+      enabled: true
+    aerospike.namespace.memory.free:
+      enabled: true
+    aerospike.namespace.memory.usage:
+      enabled: true
+    aerospike.namespace.query.count:
+      enabled: true
+    aerospike.namespace.scan.count:
+      enabled: true
+    aerospike.namespace.transaction.count:
+      enabled: true
+    aerospike.node.connection.count:
+      enabled: true
+    aerospike.node.connection.open:
+      enabled: true
+    aerospike.node.memory.free:
+      enabled: true
+    aerospike.node.query.tracked:
+      enabled: true
+  resource_attributes:
+    aerospike.namespace:
+      enabled: true
+    aerospike.node.name:
+      enabled: true
+none_set:
+  metrics:
+    aerospike.namespace.disk.available:
+      enabled: false
+    aerospike.namespace.geojson.region_query_cells:
+      enabled: false
+    aerospike.namespace.geojson.region_query_false_positive:
+      enabled: false
+    aerospike.namespace.geojson.region_query_points:
+      enabled: false
+    aerospike.namespace.geojson.region_query_requests:
+      enabled: false
+    aerospike.namespace.memory.free:
+      enabled: false
+    aerospike.namespace.memory.usage:
+      enabled: false
+    aerospike.namespace.query.count:
+      enabled: false
+    aerospike.namespace.scan.count:
+      enabled: false
+    aerospike.namespace.transaction.count:
+      enabled: false
+    aerospike.node.connection.count:
+      enabled: false
+    aerospike.node.connection.open:
+      enabled: false
+    aerospike.node.memory.free:
+      enabled: false
+    aerospike.node.query.tracked:
+      enabled: false
+  resource_attributes:
+    aerospike.namespace:
+      enabled: false
+    aerospike.node.name:
+      enabled: false

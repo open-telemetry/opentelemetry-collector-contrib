@@ -1,16 +1,5 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 // The objmodel package provides tools for converting OpenTelemetry Log records into
 // JSON documents.
@@ -40,9 +29,10 @@
 // Ingest Node is used. But either way, we try to present only well formed
 // document to Elasticsearch.
 
-package objmodel
+package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 
 import (
+	"encoding/hex"
 	"io"
 	"math"
 	"sort"
@@ -51,7 +41,8 @@ import (
 
 	"github.com/elastic/go-structform"
 	"github.com/elastic/go-structform/json"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
@@ -97,14 +88,9 @@ const tsLayout = "2006-01-02T15:04:05.000000000Z"
 var nilValue = Value{kind: KindNil}
 var ignoreValue = Value{kind: KindIgnore}
 
-type idValue interface {
-	IsEmpty() bool
-	HexString() string
-}
-
 // DocumentFromAttributes creates a document from a OpenTelemetry attribute
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
-func DocumentFromAttributes(am pdata.AttributeMap) Document {
+func DocumentFromAttributes(am pcommon.Map) Document {
 	return DocumentFromAttributesWithPath("", am)
 }
 
@@ -112,7 +98,7 @@ func DocumentFromAttributes(am pdata.AttributeMap) Document {
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
 //
 // All keys in the map will be prefixed with path.
-func DocumentFromAttributesWithPath(path string, am pdata.AttributeMap) Document {
+func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 	if am.Len() == 0 {
 		return Document{}
 	}
@@ -123,7 +109,7 @@ func DocumentFromAttributesWithPath(path string, am pdata.AttributeMap) Document
 }
 
 // AddTimestamp adds a raw timestamp value to the Document.
-func (doc *Document) AddTimestamp(key string, ts pdata.Timestamp) {
+func (doc *Document) AddTimestamp(key string, ts pcommon.Timestamp) {
 	doc.Add(key, TimestampValue(ts.AsTime()))
 }
 
@@ -139,11 +125,19 @@ func (doc *Document) AddString(key string, v string) {
 	}
 }
 
-// AddID adds the hex presentation of an id value to the document. If the ID
+// AddSpanID adds the hex presentation of a SpanID to the document. If the SpanID
 // is empty, no value will be added.
-func (doc *Document) AddID(key string, id idValue) {
+func (doc *Document) AddSpanID(key string, id pcommon.SpanID) {
 	if !id.IsEmpty() {
-		doc.AddString(key, id.HexString())
+		doc.AddString(key, hex.EncodeToString(id[:]))
+	}
+}
+
+// AddTraceID adds the hex presentation of a TraceID value to the document. If the TraceID
+// is empty, no value will be added.
+func (doc *Document) AddTraceID(key string, id pcommon.TraceID) {
+	if !id.IsEmpty() {
+		doc.AddString(key, hex.EncodeToString(id[:]))
 	}
 }
 
@@ -154,20 +148,29 @@ func (doc *Document) AddInt(key string, value int64) {
 
 // AddAttributes expands and flattens all key-value pairs from the input attribute map into
 // the document.
-func (doc *Document) AddAttributes(key string, attributes pdata.AttributeMap) {
+func (doc *Document) AddAttributes(key string, attributes pcommon.Map) {
 	doc.fields = appendAttributeFields(doc.fields, key, attributes)
 }
 
 // AddAttribute converts and adds a AttributeValue to the document. If the attribute represents a map,
 // the fields will be flattened.
-func (doc *Document) AddAttribute(key string, attribute pdata.AttributeValue) {
+func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 	switch attribute.Type() {
-	case pdata.AttributeValueTypeEmpty:
+	case pcommon.ValueTypeEmpty:
 		// do not add 'null'
-	case pdata.AttributeValueTypeMap:
-		doc.AddAttributes(key, attribute.MapVal())
+	case pcommon.ValueTypeMap:
+		doc.AddAttributes(key, attribute.Map())
 	default:
 		doc.Add(key, ValueFromAttribute(attribute))
+	}
+}
+
+// AddEvents converts and adds span events to the document.
+func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
+	for i := 0; i < events.Len(); i++ {
+		e := events.At(i)
+		doc.AddTimestamp(flattenKey(key, e.Name()+".time"), e.Timestamp())
+		doc.AddAttributes(flattenKey(key, e.Name()), e.Attributes())
 	}
 }
 
@@ -249,8 +252,13 @@ func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
 }
 
 func (doc *Document) iterJSONFlat(w *json.Visitor) error {
-	w.OnObjectStart(-1, structform.AnyType)
-	defer w.OnObjectFinished()
+	err := w.OnObjectStart(-1, structform.AnyType)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = w.OnObjectFinished()
+	}()
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
@@ -258,7 +266,10 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 			continue
 		}
 
-		w.OnKey(fld.key)
+		if err := w.OnKey(fld.key); err != nil {
+			return err
+		}
+
 		if err := fld.value.iterJSON(w, true); err != nil {
 			return err
 		}
@@ -271,8 +282,12 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 	objPrefix := ""
 	level := 0
 
-	w.OnObjectStart(-1, structform.AnyType)
-	defer w.OnObjectFinished()
+	if err := w.OnObjectStart(-1, structform.AnyType); err != nil {
+		return err
+	}
+	defer func() {
+		_ = w.OnObjectFinished()
+	}()
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
@@ -297,13 +312,17 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 					delta = delta[idx+1:]
 					level--
-					w.OnObjectFinished()
+					if err := w.OnObjectFinished(); err != nil {
+						return err
+					}
 				}
 
 				objPrefix = key[:L]
 			} else { // no common prefix, close all objects we reported so far.
 				for ; level > 0; level-- {
-					w.OnObjectFinished()
+					if err := w.OnObjectFinished(); err != nil {
+						return err
+					}
 				}
 				objPrefix = ""
 			}
@@ -320,19 +339,29 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 			level++
 			objPrefix = key[:len(objPrefix)+idx+1]
 			fieldName := key[start : start+idx]
-			w.OnKey(fieldName)
-			w.OnObjectStart(-1, structform.AnyType)
+			if err := w.OnKey(fieldName); err != nil {
+				return err
+			}
+			if err := w.OnObjectStart(-1, structform.AnyType); err != nil {
+				return err
+			}
 		}
 
 		// report value
 		fieldName := key[len(objPrefix):]
-		w.OnKey(fieldName)
-		fld.value.iterJSON(w, true)
+		if err := w.OnKey(fieldName); err != nil {
+			return err
+		}
+		if err := fld.value.iterJSON(w, true); err != nil {
+			return err
+		}
 	}
 
 	// close all pending object levels
 	for ; level > 0; level-- {
-		w.OnObjectFinished()
+		if err := w.OnObjectFinished(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -367,21 +396,21 @@ func TimestampValue(ts time.Time) Value {
 }
 
 // ValueFromAttribute converts a AttributeValue into a value.
-func ValueFromAttribute(attr pdata.AttributeValue) Value {
+func ValueFromAttribute(attr pcommon.Value) Value {
 	switch attr.Type() {
-	case pdata.AttributeValueTypeInt:
-		return IntValue(attr.IntVal())
-	case pdata.AttributeValueTypeDouble:
-		return DoubleValue(attr.DoubleVal())
-	case pdata.AttributeValueTypeString:
-		return StringValue(attr.StringVal())
-	case pdata.AttributeValueTypeBool:
-		return BoolValue(attr.BoolVal())
-	case pdata.AttributeValueTypeArray:
-		sub := arrFromAttributes(attr.ArrayVal())
+	case pcommon.ValueTypeInt:
+		return IntValue(attr.Int())
+	case pcommon.ValueTypeDouble:
+		return DoubleValue(attr.Double())
+	case pcommon.ValueTypeStr:
+		return StringValue(attr.Str())
+	case pcommon.ValueTypeBool:
+		return BoolValue(attr.Bool())
+	case pcommon.ValueTypeSlice:
+		sub := arrFromAttributes(attr.Slice())
 		return ArrValue(sub...)
-	case pdata.AttributeValueTypeMap:
-		sub := DocumentFromAttributes(attr.MapVal())
+	case pcommon.ValueTypeMap:
+		sub := DocumentFromAttributes(attr.Map())
 		return Value{kind: KindObject, doc: sub}
 	default:
 		return nilValue
@@ -452,19 +481,23 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 		}
 		return v.doc.iterJSON(w, dedot)
 	case KindArr:
-		w.OnArrayStart(-1, structform.AnyType)
+		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
+			return err
+		}
 		for i := range v.arr {
 			if err := v.arr[i].iterJSON(w, dedot); err != nil {
 				return err
 			}
 		}
-		w.OnArrayFinished()
+		if err := w.OnArrayFinished(); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func arrFromAttributes(aa pdata.AnyValueArray) []Value {
+func arrFromAttributes(aa pcommon.Slice) []Value {
 	if aa.Len() == 0 {
 		return nil
 	}
@@ -476,21 +509,21 @@ func arrFromAttributes(aa pdata.AnyValueArray) []Value {
 	return values
 }
 
-func appendAttributeFields(fields []field, path string, am pdata.AttributeMap) []field {
-	am.Range(func(k string, val pdata.AttributeValue) bool {
+func appendAttributeFields(fields []field, path string, am pcommon.Map) []field {
+	am.Range(func(k string, val pcommon.Value) bool {
 		fields = appendAttributeValue(fields, path, k, val)
 		return true
 	})
 	return fields
 }
 
-func appendAttributeValue(fields []field, path string, key string, attr pdata.AttributeValue) []field {
-	if attr.Type() == pdata.AttributeValueTypeEmpty {
+func appendAttributeValue(fields []field, path string, key string, attr pcommon.Value) []field {
+	if attr.Type() == pcommon.ValueTypeEmpty {
 		return fields
 	}
 
-	if attr.Type() == pdata.AttributeValueTypeMap {
-		return appendAttributeFields(fields, flattenKey(path, key), attr.MapVal())
+	if attr.Type() == pcommon.ValueTypeMap {
+		return appendAttributeFields(fields, flattenKey(path, key), attr.Map())
 	}
 
 	return append(fields, field{

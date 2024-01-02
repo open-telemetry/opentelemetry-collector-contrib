@@ -1,32 +1,23 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
-	fsregexp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	fsregexp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 // TestLoadingConfigRegexp tests loading testdata/config_strict.yaml
@@ -37,59 +28,51 @@ func TestLoadingConfigStrict(t *testing.T) {
 		"hello/world",
 	}
 
-	testDataMetricProperties := &filtermetric.MatchProperties{
-		MatchType:   filtermetric.Strict,
+	testDataMetricProperties := &filterconfig.MetricMatchProperties{
+		MatchType:   filterconfig.MetricStrict,
 		MetricNames: testDataFilters,
 	}
-
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_strict.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_strict.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		filterID config.ComponentID
-		expCfg   *Config
+		id       component.ID
+		expected *Config
 	}{
 		{
-			filterID: config.NewComponentIDWithName("filter", "empty"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
+			id: component.NewIDWithName("filter", "empty"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Strict,
+					Include: &filterconfig.MetricMatchProperties{
+						MatchType: filterconfig.MetricStrict,
 					},
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "include"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: component.NewIDWithName("filter", "include"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "exclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: component.NewIDWithName("filter", "exclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: component.NewIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
-					Exclude: &filtermetric.MatchProperties{
-						MatchType:   filtermetric.Strict,
+					Exclude: &filterconfig.MetricMatchProperties{
+						MatchType:   filterconfig.MetricStrict,
 						MetricNames: []string{"hello_world"},
 					},
 				},
@@ -97,10 +80,17 @@ func TestLoadingConfigStrict(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.filterID.String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.filterID]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
@@ -109,7 +99,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 func TestLoadingConfigStrictLogs(t *testing.T) {
 
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		ResourceAttributes: []filterconfig.Attribute{
 			{
 				Key:   "should_include",
@@ -119,7 +109,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		ResourceAttributes: []filterconfig.Attribute{
 			{
 				Key:   "should_exclude",
@@ -128,50 +118,43 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		},
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_logs_strict.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_strict.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		filterID config.ComponentID
-		expCfg   *Config
+		id       component.ID
+		expected *Config
 	}{
 		{
-			filterID: config.NewComponentIDWithName("filter", "empty"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
+			id: component.NewIDWithName("filter", "empty"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: &LogMatchProperties{
-						LogMatchType: Strict,
+						LogMatchType: strictType,
 					},
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "include"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: component.NewIDWithName("filter", "include"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "exclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: component.NewIDWithName("filter", "exclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: component.NewIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -180,10 +163,333 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.filterID.String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.filterID]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigSeverityLogsStrict tests loading testdata/config_logs_severity_strict.yaml
+func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
+
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		LogMatchType:  strictType,
+		SeverityTexts: []string{"INFO"},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		LogMatchType:  strictType,
+		SeverityTexts: []string{"DEBUG", "DEBUG2", "DEBUG3", "DEBUG4"},
+	}
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_severity_strict.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
+		{
+			id: component.NewIDWithName("filter", "include"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "exclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigSeverityLogsRegexp tests loading testdata/config_logs_severity_regexp.yaml
+func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		LogMatchType:  regexpType,
+		SeverityTexts: []string{"INFO[2-4]?"},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		LogMatchType:  regexpType,
+		SeverityTexts: []string{"DEBUG[2-4]?"},
+	}
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_severity_regexp.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
+		{
+			id: component.NewIDWithName("filter", "include"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "exclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigBodyLogsStrict tests loading testdata/config_logs_body_strict.yaml
+func TestLoadingConfigBodyLogsStrict(t *testing.T) {
+
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		LogMatchType: strictType,
+		LogBodies:    []string{"This is an important event"},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		LogMatchType: strictType,
+		LogBodies:    []string{"This event is not important"},
+	}
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_body_strict.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
+		{
+			id: component.NewIDWithName("filter", "include"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "exclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigBodyLogsStrict tests loading testdata/config_logs_body_regexp.yaml
+func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
+
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		LogMatchType: regexpType,
+		LogBodies:    []string{"^IMPORTANT:"},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		LogMatchType: regexpType,
+		LogBodies:    []string{"^MINOR:"},
+	}
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_body_regexp.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
+		{
+			id: component.NewIDWithName("filter", "include"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "exclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigMinSeverityNumberLogs tests loading testdata/config_logs_min_severity.yaml
+func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+			Min:            logSeverity("INFO"),
+			MatchUndefined: true,
+		},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+			Min: logSeverity("ERROR"),
+		},
+	}
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_min_severity.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
+		{
+			id: component.NewIDWithName("filter", "include"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "exclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			id: component.NewIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
@@ -202,44 +508,41 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		"full_name_match",
 	}
 
-	testDataMetricProperties := &filtermetric.MatchProperties{
-		MatchType:   filtermetric.Regexp,
+	testDataMetricProperties := &filterconfig.MetricMatchProperties{
+		MatchType:   filterconfig.MetricRegexp,
 		MetricNames: testDataFilters,
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_regexp.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_regexp.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		expCfg *Config
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: component.NewIDWithName("filter", "include"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
 			},
 		}, {
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: component.NewIDWithName("filter", "exclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
 			},
 		}, {
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "unlimitedcache")),
+			id: component.NewIDWithName("filter", "unlimitedcache"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Regexp,
+					Include: &filterconfig.MetricMatchProperties{
+						MatchType: filterconfig.MetricRegexp,
 						RegexpConfig: &fsregexp.Config{
 							CacheEnabled: true,
 						},
@@ -248,11 +551,12 @@ func TestLoadingConfigRegexp(t *testing.T) {
 				},
 			},
 		}, {
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "limitedcache")),
+			id: component.NewIDWithName("filter", "limitedcache"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
-					Exclude: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Regexp,
+					Exclude: &filterconfig.MetricMatchProperties{
+						MatchType: filterconfig.MetricRegexp,
 						RegexpConfig: &fsregexp.Config{
 							CacheEnabled:       true,
 							CacheMaxNumEntries: 10,
@@ -264,42 +568,97 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.expCfg.ID()]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestLoadingSpans(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_traces.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id: component.NewIDWithName("filter", "spans"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Spans: filterconfig.MatchConfig{
+					Include: &filterconfig.MatchProperties{
+						Config: filterset.Config{
+							MatchType: filterset.Strict,
+						},
+						Services: []string{"test", "test2"},
+						Attributes: []filterconfig.Attribute{
+							{Key: "should_include", Value: "(true|probably_true)"},
+						},
+					},
+					Exclude: &filterconfig.MatchProperties{
+						Config: filterset.Config{
+							MatchType: filterset.Regexp,
+						},
+						Attributes: []filterconfig.Attribute{
+							{Key: "should_exclude", Value: "(probably_false|false)"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
 
 func TestLoadingConfigExpr(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_expr.yaml"))
 	require.NoError(t, err)
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_expr.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
 	tests := []struct {
-		expCfg config.Processor
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
+			id: component.NewIDWithName("filter", "empty"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Include: &filterconfig.MetricMatchProperties{
+						MatchType: filterconfig.MetricExpr,
 					},
 				},
 			},
 		},
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: component.NewIDWithName("filter", "include"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Include: &filterconfig.MetricMatchProperties{
+						MatchType: filterconfig.MetricExpr,
 						Expressions: []string{
 							`Label("foo") == "bar"`,
 							`HasLabel("baz")`,
@@ -309,11 +668,12 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: component.NewIDWithName("filter", "exclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
-					Exclude: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Exclude: &filterconfig.MetricMatchProperties{
+						MatchType: filterconfig.MetricExpr,
 						Expressions: []string{
 							`Label("foo") == "bar"`,
 							`HasLabel("baz")`,
@@ -323,17 +683,18 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: component.NewIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Include: &filterconfig.MetricMatchProperties{
+						MatchType: filterconfig.MetricExpr,
 						Expressions: []string{
 							`HasLabel("foo")`,
 						},
 					},
-					Exclude: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Exclude: &filterconfig.MetricMatchProperties{
+						MatchType: filterconfig.MetricExpr,
 						Expressions: []string{
 							`HasLabel("bar")`,
 						},
@@ -342,10 +703,231 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.expCfg.ID()]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestLogSeverity_severityNumber(t *testing.T) {
+	testCases := []struct {
+		name string
+		sev  logSeverity
+		num  plog.SeverityNumber
+	}{
+		{
+			name: "INFO severity",
+			sev:  logSeverity("INFO"),
+			num:  plog.SeverityNumberInfo,
+		},
+		{
+			name: "info severity",
+			sev:  logSeverity("info"),
+			num:  plog.SeverityNumberInfo,
+		},
+		{
+			name: "info3 severity",
+			sev:  logSeverity("info3"),
+			num:  plog.SeverityNumberInfo3,
+		},
+		{
+			name: "DEBUG severity",
+			sev:  logSeverity("DEBUG"),
+			num:  plog.SeverityNumberDebug,
+		},
+		{
+			name: "ERROR severity",
+			sev:  logSeverity("ERROR"),
+			num:  plog.SeverityNumberError,
+		},
+		{
+			name: "WARN severity",
+			sev:  logSeverity("WARN"),
+			num:  plog.SeverityNumberWarn,
+		},
+		{
+			name: "unknown severity",
+			sev:  logSeverity("unknown"),
+			num:  plog.SeverityNumberUnspecified,
+		},
+		{
+			name: "Numeric Severity",
+			sev:  logSeverity("9"),
+			num:  plog.SeverityNumberInfo,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			num := tc.sev.severityNumber()
+			require.Equal(t, tc.num, num)
+		})
+	}
+}
+
+func TestLogSeverity_severityValidate(t *testing.T) {
+	testCases := []struct {
+		name        string
+		sev         logSeverity
+		expectedErr error
+	}{
+		{
+			name: "INFO severity",
+			sev:  logSeverity("INFO"),
+		},
+		{
+			name: "info severity",
+			sev:  logSeverity("info"),
+		},
+		{
+			name: "info3 severity",
+			sev:  logSeverity("info3"),
+		},
+		{
+			name: "DEBUG severity",
+			sev:  logSeverity("DEBUG"),
+		},
+		{
+			name: "ERROR severity",
+			sev:  logSeverity("ERROR"),
+		},
+		{
+			name: "WARN severity",
+			sev:  logSeverity("WARN"),
+		},
+		{
+			name: "FATAL severity",
+			sev:  logSeverity("FATAL"),
+		},
+		{
+			name:        "unknown severity",
+			sev:         logSeverity("unknown"),
+			expectedErr: errInvalidSeverity,
+		},
+		{
+			name: "empty severity is valid",
+			sev:  logSeverity(""),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.sev.validate()
+			if tc.expectedErr != nil {
+				require.ErrorIs(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestLoadingConfigOTTL(t *testing.T) {
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id           component.ID
+		expected     *Config
+		errorMessage string
+	}{
+		{
+			id: component.NewIDWithName("filter", "ottl"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				Traces: TraceFilters{
+					SpanConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+					SpanEventConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+				},
+				Metrics: MetricFilters{
+					MetricConditions: []string{
+						`name == "pass"`,
+					},
+					DataPointConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+				},
+				Logs: LogFilters{
+					LogConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName("filter", "multiline"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Traces: TraceFilters{
+					SpanConditions: []string{
+						`attributes["test"] == "pass"`,
+						`attributes["test"] == "also pass"`,
+					},
+				},
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "spans_mix_config"),
+			errorMessage: "cannot use ottl conditions and include/exclude for spans at the same time",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "metrics_mix_config"),
+			errorMessage: "cannot use ottl conditions and include/exclude for metrics at the same time",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "logs_mix_config"),
+			errorMessage: "cannot use ottl conditions and include/exclude for logs at the same time",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_span"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_spanevent"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_datapoint"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			if tt.expected == nil {
+				if tt.errorMessage != "" {
+					assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				} else {
+					assert.Error(t, component.ValidateConfig(cfg))
+				}
+			} else {
+				assert.NoError(t, component.ValidateConfig(cfg))
+				assert.Equal(t, tt.expected, cfg)
+			}
 		})
 	}
 }

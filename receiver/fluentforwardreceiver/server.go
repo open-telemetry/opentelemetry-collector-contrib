@@ -1,18 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package fluentforwardreceiver
+package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 
 import (
 	"context"
@@ -77,7 +66,7 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 
 			err := s.handleConn(ctx, conn)
 			if err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					s.logger.Debug("Closing connection", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Error(err))
 				} else {
 					s.logger.Debug("Unexpected error handling connection", zap.String("remoteAddr", conn.RemoteAddr().String()), zap.Error(err))
@@ -92,7 +81,7 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 	reader := msgp.NewReaderSize(conn, readBufferSize)
 
 	for {
-		mode, err := DetermineNextEventMode(reader.R)
+		mode, err := determineNextEventMode(reader.R)
 		if err != nil {
 			return err
 		}
@@ -113,10 +102,10 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 
 		err = event.DecodeMsg(reader)
 		if err != nil {
-			if err != io.EOF {
+			if !errors.Is(err, io.EOF) {
 				stats.Record(ctx, observ.FailedToParse.M(1))
 			}
-			return fmt.Errorf("failed to parse %s mode event: %v", mode.String(), err)
+			return fmt.Errorf("failed to parse %s mode event: %w", mode.String(), err)
 		}
 
 		stats.Record(ctx, observ.EventsParsed.M(1))
@@ -130,19 +119,19 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 		if event.Chunk() != "" {
 			err := msgp.Encode(conn, AckResponse{Ack: event.Chunk()})
 			if err != nil {
-				return fmt.Errorf("failed to acknowledge chunk %s: %v", event.Chunk(), err)
+				return fmt.Errorf("failed to acknowledge chunk %s: %w", event.Chunk(), err)
 			}
 		}
 	}
 }
 
-// DetermineNextEventMode inspects the next bit of data from the given peeker
+// determineNextEventMode inspects the next bit of data from the given peeker
 // reader to determine which type of event mode it is.  According to the
 // forward protocol spec: "Server MUST detect the carrier mode by inspecting
 // the second element of the array."  It is assumed that peeker is aligned at
 // the start of a new event, otherwise the result is undefined and will
 // probably error.
-func DetermineNextEventMode(peeker Peeker) (EventMode, error) {
+func determineNextEventMode(peeker Peeker) (EventMode, error) {
 	var chunk []byte
 	var err error
 	chunk, err = peeker.Peek(2)

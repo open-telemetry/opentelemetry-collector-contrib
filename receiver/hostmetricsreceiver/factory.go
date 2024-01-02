@@ -1,30 +1,20 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
-package hostmetricsreceiver
+package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
@@ -34,16 +24,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 // This file implements Factory for HostMetrics receiver.
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "hostmetrics"
-)
-
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
 		cpuscraper.TypeStr:        &cpuscraper.Factory{},
@@ -54,27 +37,20 @@ var (
 		networkscraper.TypeStr:    &networkscraper.Factory{},
 		pagingscraper.TypeStr:     &pagingscraper.Factory{},
 		processesscraper.TypeStr:  &processesscraper.Factory{},
-	}
-
-	resourceScraperFactories = map[string]internal.ResourceScraperFactory{
-		processscraper.TypeStr: &processscraper.Factory{},
+		processscraper.TypeStr:    &processscraper.Factory{},
 	}
 )
 
 // NewFactory creates a new factory for host metrics receiver.
-func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
-		typeStr,
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
-func getScraperFactory(key string) (internal.BaseFactory, bool) {
+func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 	if factory, ok := scraperFactories[key]; ok {
-		return factory, true
-	}
-
-	if factory, ok := resourceScraperFactories[key]; ok {
 		return factory, true
 	}
 
@@ -82,27 +58,27 @@ func getScraperFactory(key string) (internal.BaseFactory, bool) {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() config.Receiver {
-	return &Config{ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr)}
+func createDefaultConfig() component.Config {
+	return &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)}
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	ctx context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
 
-	addScraperOptions, err := createAddScraperOptions(ctx, set.Logger, oCfg, scraperFactories, resourceScraperFactories)
+	addScraperOptions, err := createAddScraperOptions(ctx, set, oCfg, scraperFactories)
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
-		set.Logger,
+		set,
 		consumer,
 		addScraperOptions...,
 	)
@@ -110,15 +86,14 @@ func createMetricsReceiver(
 
 func createAddScraperOptions(
 	ctx context.Context,
-	logger *zap.Logger,
+	set receiver.CreateSettings,
 	config *Config,
 	factories map[string]internal.ScraperFactory,
-	resourceFactories map[string]internal.ResourceScraperFactory,
 ) ([]scraperhelper.ScraperControllerOption, error) {
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 
 	for key, cfg := range config.Scrapers {
-		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, logger, key, cfg, factories)
+		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, set, key, cfg, factories)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create scraper for key %q: %w", key, err)
 		}
@@ -128,23 +103,13 @@ func createAddScraperOptions(
 			continue
 		}
 
-		resourceMetricsScraper, ok, err := createResourceMetricsScraper(ctx, logger, key, cfg, resourceFactories)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create resource scraper for key %q: %w", key, err)
-		}
-
-		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(resourceMetricsScraper))
-			continue
-		}
-
 		return nil, fmt.Errorf("host metrics scraper factory not found for key: %q", key)
 	}
 
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, set receiver.CreateSettings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
@@ -152,18 +117,18 @@ func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key strin
 	}
 
 	ok = true
-	scraper, err = factory.CreateMetricsScraper(ctx, logger, cfg)
+	scraper, err = factory.CreateMetricsScraper(ctx, set, cfg)
 	return
 }
 
-func createResourceMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ResourceScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
-	factory := factories[key]
-	if factory == nil {
-		ok = false
-		return
-	}
+type environment interface {
+	Lookup(k string) (string, bool)
+}
 
-	ok = true
-	scraper, err = factory.CreateResourceMetricsScraper(ctx, logger, cfg)
-	return
+type osEnv struct{}
+
+var _ environment = (*osEnv)(nil)
+
+func (e *osEnv) Lookup(k string) (string, bool) {
+	return os.LookupEnv(k)
 }

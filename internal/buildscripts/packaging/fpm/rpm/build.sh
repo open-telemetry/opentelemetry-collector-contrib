@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 set -euxo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname ${BASH_SOURCE[0]} )" && pwd )"
@@ -14,6 +17,12 @@ OTELCONTRIBCOL_PATH="$REPO_DIR/bin/otelcontribcol_linux_$ARCH"
 if [[ -z "$VERSION" ]]; then
     latest_tag="$( git describe --abbrev=0 --match v[0-9]* )"
     VERSION="${latest_tag}~post"
+fi
+
+# remap arm64 to aarch64, which is the arch used by Linux distributions
+# see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6508
+if [[ "$ARCH" == "arm64" ]]; then
+    ARCH="aarch64"
 fi
 
 mkdir -p "$OUTPUT_DIR"

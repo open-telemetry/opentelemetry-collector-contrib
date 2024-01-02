@@ -1,16 +1,5 @@
-// Copyright 2019 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package carbonexporter
 
@@ -20,16 +9,12 @@ import (
 	"testing"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func Test_sanitizeTagKey(t *testing.T) {
+func TestSanitizeTagKey(t *testing.T) {
 	tests := []struct {
 		name string
 		key  string
@@ -54,7 +39,7 @@ func Test_sanitizeTagKey(t *testing.T) {
 	}
 }
 
-func Test_sanitizeTagValue(t *testing.T) {
+func TestSanitizeTagValue(t *testing.T) {
 	tests := []struct {
 		name  string
 		value string
@@ -84,67 +69,50 @@ func Test_sanitizeTagValue(t *testing.T) {
 	}
 }
 
-func Test_buildPath(t *testing.T) {
-	type args struct {
-		name        string
-		tagKeys     []string
-		labelValues []*metricspb.LabelValue
-	}
+func TestBuildPath(t *testing.T) {
 	tests := []struct {
-		name string
-		args args
-		want string
+		name       string
+		attributes pcommon.Map
+		want       string
 	}{
 		{
 			name: "happy_path",
-			args: args{
-				name:    "happy.path",
-				tagKeys: []string{"key0"},
-				labelValues: []*metricspb.LabelValue{
-					{Value: "val0", HasValue: true},
-				},
-			},
-			want: "happy.path;key0=val0",
+			attributes: func() pcommon.Map {
+				attr := pcommon.NewMap()
+				attr.PutStr("key0", "val0")
+				return attr
+			}(),
+			want: "happy_path;key0=val0",
 		},
 		{
-			name: "emoty_value",
-			args: args{
-				name:    "t",
-				tagKeys: []string{"k0", "k1"},
-				labelValues: []*metricspb.LabelValue{
-					{Value: "", HasValue: true},
-					{Value: "v1", HasValue: true},
-				},
-			},
-			want: "t;k0=" + tagValueEmptyPlaceholder + ";k1=v1",
+			name: "empty_value",
+			attributes: func() pcommon.Map {
+				attr := pcommon.NewMap()
+				attr.PutStr("k0", "")
+				attr.PutStr("k1", "v1")
+				return attr
+			}(),
+			want: "empty_value;k0=" + tagValueEmptyPlaceholder + ";k1=v1",
 		},
 		{
-			name: "not_set_value",
-			args: args{
-				name:    "t",
-				tagKeys: []string{"k0", "k1"},
-				labelValues: []*metricspb.LabelValue{
-					{Value: "v0", HasValue: true},
-					{Value: "", HasValue: false},
-				},
-			},
-			want: "t;k0=v0;k1=" + tagValueNotSetPlaceholder,
+			name: "int_value",
+			attributes: func() pcommon.Map {
+				attr := pcommon.NewMap()
+				attr.PutInt("k", 1)
+				return attr
+			}(),
+			want: "int_value;k=1",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildPath(tt.args.name, tt.args.tagKeys, tt.args.labelValues)
+			got := buildPath(tt.name, tt.attributes)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func Test_metricDataToPlaintext(t *testing.T) {
-
-	keys := []string{"k0", "k1"}
-	values := []string{"v0", "v1"}
-	expectedTagsStr := ";k0=v0;k1=v1"
-
+func TestToPlaintext(t *testing.T) {
 	unixSecs := int64(1574092046)
 	expectedUnixSecsStr := strconv.FormatInt(unixSecs, 10)
 	unixNSecs := int64(11 * time.Millisecond)
@@ -152,180 +120,214 @@ func Test_metricDataToPlaintext(t *testing.T) {
 
 	doubleVal := 1234.5678
 	expectedDobuleValStr := strconv.FormatFloat(doubleVal, 'g', -1, 64)
-	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 	int64Val := int64(123)
 	expectedInt64ValStr := "123"
-	int64Pt := &metricspb.Point{
-		Timestamp: timestamppb.New(tsUnix),
-		Value:     &metricspb.Point_Int64Value{Int64Value: int64Val},
-	}
 
+	distributionCount := uint64(16)
+	distributionSum := float64(34.56)
 	distributionBounds := []float64{1.5, 2, 4}
-	distributionCounts := []int64{4, 2, 3, 7}
-	distributionTimeSeries := metricstestutil.Timeseries(
-		tsUnix,
-		values,
-		metricstestutil.DistPt(tsUnix, distributionBounds, distributionCounts))
-	distributionPoints := distributionTimeSeries.GetPoints()
-	require.Equal(t, 1, len(distributionPoints))
-	distribubionPoint := distributionPoints[0].Value.(*metricspb.Point_DistributionValue)
-	distributionValue := distribubionPoint.DistributionValue
+	distributionCounts := []uint64{4, 2, 3, 7}
 
-	summaryTimeSeries := metricstestutil.Timeseries(
-		tsUnix,
-		values,
-		metricstestutil.SummPt(
-			tsUnix,
-			11,
-			111,
-			[]float64{90, 95, 99, 99.9},
-			[]float64{100, 6, 4, 1}))
-	summaryPoints := summaryTimeSeries.GetPoints()
-	require.Equal(t, 1, len(summaryPoints))
-	summarySnapshot := summaryPoints[0].GetSummaryValue().GetSnapshot()
-
+	summaryCount := uint64(11)
+	summarySum := float64(111)
+	summaryQuantiles := []float64{90, 95, 99, 99.9}
+	summaryQuantileValues := []float64{100, 6, 4, 1}
 	tests := []struct {
-		name                       string
-		metricsDataFn              func() []*agentmetricspb.ExportMetricsServiceRequest
-		wantLines                  []string
-		wantNumConvertedTimeseries int
-		wantNumDroppedTimeseries   int
+		name                string
+		metricsDataFn       func() pmetric.Metrics
+		wantLines           []string
+		wantExtraLinesCount int
 	}{
 		{
-			name: "no_dims",
-			metricsDataFn: func() []*agentmetricspb.ExportMetricsServiceRequest {
-				return []*agentmetricspb.ExportMetricsServiceRequest{
-					{
-						Metrics: []*metricspb.Metric{
-							metricstestutil.Gauge("gauge_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-							metricstestutil.GaugeInt("gauge_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
-						},
-					},
-					{
-						Metrics: []*metricspb.Metric{
-							metricstestutil.Cumulative("cumulative_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-							metricstestutil.CumulativeInt("cumulative_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
-						},
-					},
-				}
+			name: "gauge",
+			metricsDataFn: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				ms.AppendEmpty().SetName("gauge_double_no_dims")
+				dps1 := ms.At(0).SetEmptyGauge().DataPoints()
+				dps1.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dps1.At(0).SetDoubleValue(doubleVal)
+				ms.AppendEmpty().SetName("gauge_int_no_dims")
+				dps2 := ms.At(1).SetEmptyGauge().DataPoints()
+				dps2.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dps2.At(0).SetIntValue(int64Val)
+				ms.AppendEmpty().SetName("gauge_double_with_dims")
+				dps3 := ms.At(2).SetEmptyGauge().DataPoints()
+				dps3.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dps3.At(0).Attributes().PutStr("k0", "v0")
+				dps3.At(0).Attributes().PutStr("k1", "v1")
+				dps3.At(0).SetDoubleValue(doubleVal)
+				ms.AppendEmpty().SetName("gauge_int_with_dims")
+				dps4 := ms.At(3).SetEmptyGauge().DataPoints()
+				dps4.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dps4.At(0).Attributes().PutStr("k0", "v0")
+				dps4.At(0).Attributes().PutStr("k1", "v1")
+				dps4.At(0).SetIntValue(int64Val)
+				ms.AppendEmpty().SetName("gauge_no_value")
+				dps5 := ms.At(4).SetEmptyGauge().DataPoints()
+				dps5.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				return md
 			},
 			wantLines: []string{
 				"gauge_double_no_dims " + expectedDobuleValStr + " " + expectedUnixSecsStr,
 				"gauge_int_no_dims " + expectedInt64ValStr + " " + expectedUnixSecsStr,
-				"cumulative_double_no_dims " + expectedDobuleValStr + " " + expectedUnixSecsStr,
-				"cumulative_int_no_dims " + expectedInt64ValStr + " " + expectedUnixSecsStr,
+				"gauge_double_with_dims;k0=v0;k1=v1 " + expectedDobuleValStr + " " + expectedUnixSecsStr,
+				"gauge_int_with_dims;k0=v0;k1=v1 " + expectedInt64ValStr + " " + expectedUnixSecsStr,
 			},
-			wantNumConvertedTimeseries: 4,
 		},
 		{
-			name: "with_dims",
-			metricsDataFn: func() []*agentmetricspb.ExportMetricsServiceRequest {
-				return []*agentmetricspb.ExportMetricsServiceRequest{
-					{
-						Metrics: []*metricspb.Metric{
-							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-							metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
-							metricstestutil.Cumulative("cumulative_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-							metricstestutil.CumulativeInt("cumulative_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
-						},
-					},
-				}
+			name: "cumulative_monotonic_sum",
+			metricsDataFn: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				ms.AppendEmpty().SetName("cumulative_double_no_dims")
+				ms.At(0).SetEmptySum().SetIsMonotonic(true)
+				dps1 := ms.At(0).Sum().DataPoints()
+				dps1.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dps1.At(0).SetDoubleValue(doubleVal)
+				ms.AppendEmpty().SetName("cumulative_int_no_dims")
+				ms.At(1).SetEmptySum().SetIsMonotonic(true)
+				dps2 := ms.At(1).Sum().DataPoints()
+				dps2.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dps2.At(0).SetIntValue(int64Val)
+				ms.AppendEmpty().SetName("cumulative_double_with_dims")
+				ms.At(2).SetEmptySum().SetIsMonotonic(true)
+				dps3 := ms.At(2).Sum().DataPoints()
+				dps3.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dps3.At(0).Attributes().PutStr("k0", "v0")
+				dps3.At(0).Attributes().PutStr("k1", "v1")
+				dps3.At(0).SetDoubleValue(doubleVal)
+				ms.AppendEmpty().SetName("cumulative_int_with_dims")
+				ms.At(3).SetEmptySum().SetIsMonotonic(true)
+				dps4 := ms.At(3).Sum().DataPoints()
+				dps4.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dps4.At(0).Attributes().PutStr("k0", "v0")
+				dps4.At(0).Attributes().PutStr("k1", "v1")
+				dps4.At(0).SetIntValue(int64Val)
+				ms.AppendEmpty().SetName("cumulative_no_value")
+				ms.At(4).SetEmptySum().SetIsMonotonic(true)
+				dps5 := ms.At(4).Sum().DataPoints()
+				dps5.AppendEmpty().SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				return md
 			},
 			wantLines: []string{
-				"gauge_double_with_dims" + expectedTagsStr + " " + expectedDobuleValStr + " " + expectedUnixSecsStr,
-				"gauge_int_with_dims" + expectedTagsStr + " " + expectedInt64ValStr + " " + expectedUnixSecsStr,
-				"cumulative_double_with_dims" + expectedTagsStr + " " + expectedDobuleValStr + " " + expectedUnixSecsStr,
-				"cumulative_int_with_dims" + expectedTagsStr + " " + expectedInt64ValStr + " " + expectedUnixSecsStr,
+				"cumulative_double_no_dims " + expectedDobuleValStr + " " + expectedUnixSecsStr,
+				"cumulative_int_no_dims " + expectedInt64ValStr + " " + expectedUnixSecsStr,
+				"cumulative_double_with_dims;k0=v0;k1=v1 " + expectedDobuleValStr + " " + expectedUnixSecsStr,
+				"cumulative_int_with_dims;k0=v0;k1=v1 " + expectedInt64ValStr + " " + expectedUnixSecsStr,
 			},
-			wantNumConvertedTimeseries: 4,
 		},
 		{
-			name: "distributions",
-			metricsDataFn: func() []*agentmetricspb.ExportMetricsServiceRequest {
-				return []*agentmetricspb.ExportMetricsServiceRequest{
-					{
-						Metrics: []*metricspb.Metric{
-							metricstestutil.GaugeDist("distrib", keys, distributionTimeSeries),
-						},
-					},
-				}
+			name: "histogram",
+			metricsDataFn: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				ms.AppendEmpty().SetName("distrib")
+				ms.At(0).SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := ms.At(0).SetEmptyHistogram().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dp.Attributes().PutStr("k0", "v0")
+				dp.Attributes().PutStr("k1", "v1")
+				dp.SetCount(distributionCount)
+				dp.SetSum(distributionSum)
+				dp.ExplicitBounds().FromRaw(distributionBounds)
+				dp.BucketCounts().FromRaw(distributionCounts)
+				return md
 			},
 			wantLines: expectedDistributionLines(
-				"distrib", expectedTagsStr, expectedUnixSecsStr,
-				distributionValue.Sum,
-				distributionValue.Count,
+				"distrib", ";k0=v0;k1=v1", expectedUnixSecsStr,
+				distributionSum,
+				distributionCount,
 				distributionBounds,
 				distributionCounts),
-			wantNumConvertedTimeseries: 1,
 		},
 		{
 			name: "summary",
-			metricsDataFn: func() []*agentmetricspb.ExportMetricsServiceRequest {
-				return []*agentmetricspb.ExportMetricsServiceRequest{
-					{
-						Metrics: []*metricspb.Metric{
-							metricstestutil.Summary("summary", keys, summaryTimeSeries),
-						},
-					},
+			metricsDataFn: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				ms.AppendEmpty().SetName("summary")
+				dp := ms.At(0).SetEmptySummary().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				dp.Attributes().PutStr("k0", "v0")
+				dp.Attributes().PutStr("k1", "v1")
+				dp.SetCount(summaryCount)
+				dp.SetSum(summarySum)
+				for i := range summaryQuantiles {
+					qv := dp.QuantileValues().AppendEmpty()
+					qv.SetQuantile(summaryQuantiles[i] / 100)
+					qv.SetValue(summaryQuantileValues[i])
 				}
+				return md
 			},
 			wantLines: expectedSummaryLines(
-				"summary", expectedTagsStr, expectedUnixSecsStr,
-				summaryPoints[0].GetSummaryValue().GetSum().Value,
-				summaryPoints[0].GetSummaryValue().GetCount().Value,
-				summarySnapshot.PercentileValues),
-			wantNumConvertedTimeseries: 1,
+				"summary", ";k0=v0;k1=v1", expectedUnixSecsStr,
+				summarySum,
+				summaryCount,
+				summaryQuantiles,
+				summaryQuantileValues),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotLines, gotNunConvertedTimeseries, gotNumDroppedTimeseries := metricDataToPlaintext(tt.metricsDataFn())
-			assert.Equal(t, tt.wantNumConvertedTimeseries, gotNunConvertedTimeseries)
-			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeseries)
+			gotLines := metricDataToPlaintext(tt.metricsDataFn())
 			got := strings.Split(gotLines, "\n")
 			got = got[:len(got)-1]
-			assert.Equal(t, tt.wantLines, got)
+			assert.Len(t, got, len(tt.wantLines)+tt.wantExtraLinesCount)
+			assert.Subset(t, tt.wantLines, got)
 		})
 	}
 }
 
 func expectedDistributionLines(
-	metricName, tags, timestampStr string,
+	metricName string,
+	tags string,
+	timestampStr string,
 	sum float64,
-	count int64,
+	count uint64,
 	bounds []float64,
-	counts []int64,
+	counts []uint64,
 ) []string {
-	lines := []string{
-		metricName + ".count" + tags + " " + formatInt64(count) + " " + timestampStr,
-		metricName + tags + " " + formatFloatForLabel(sum) + " " + timestampStr,
-	}
-
+	var lines []string
+	lines = append(lines,
+		metricName+".count"+tags+" "+formatInt64(int64(count))+" "+timestampStr,
+		metricName+tags+" "+formatFloatForLabel(sum)+" "+timestampStr,
+		metricName+".bucket"+tags+";upper_bound=inf "+formatInt64(int64(counts[len(bounds)]))+" "+timestampStr,
+	)
 	for i, bound := range bounds {
 		lines = append(lines,
-			metricName+".bucket"+tags+";upper_bound="+formatFloatForLabel(bound)+" "+formatInt64(counts[i])+" "+timestampStr)
+			metricName+".bucket"+tags+";upper_bound="+formatFloatForLabel(bound)+" "+formatInt64(int64(counts[i]))+" "+timestampStr)
 	}
-	lines = append(lines,
-		metricName+".bucket"+tags+";upper_bound=inf "+formatInt64(counts[len(bounds)])+" "+timestampStr)
 
 	return lines
 }
 
 func expectedSummaryLines(
-	metricName, tags, timestampStr string,
+	metricName string,
+	tags string,
+	timestampStr string,
 	sum float64,
-	count int64,
-	percentiles []*metricspb.SummaryValue_Snapshot_ValueAtPercentile,
+	count uint64,
+	summaryQuantiles []float64,
+	summaryQuantileValues []float64,
 ) []string {
-	lines := []string{
-		metricName + ".count" + tags + " " + formatInt64(count) + " " + timestampStr,
-		metricName + tags + " " + formatFloatForValue(sum) + " " + timestampStr,
-	}
-
-	for _, p := range percentiles {
+	var lines []string
+	lines = append(lines,
+		metricName+".count"+tags+" "+formatInt64(int64(count))+" "+timestampStr,
+		metricName+tags+" "+formatFloatForValue(sum)+" "+timestampStr,
+	)
+	for i := range summaryQuantiles {
 		lines = append(lines,
-			metricName+".quantile"+tags+";quantile="+formatFloatForLabel(p.Percentile)+" "+formatFloatForValue(p.Value)+" "+timestampStr)
+			metricName+".quantile"+tags+";quantile="+formatFloatForLabel(summaryQuantiles[i])+" "+formatFloatForValue(summaryQuantileValues[i])+" "+timestampStr)
 	}
-
 	return lines
+}
+
+func BenchmarkConsumeMetricsDefault(b *testing.B) {
+	md := generateSmallBatch()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		assert.Len(b, metricDataToPlaintext(md), 62)
+	}
 }

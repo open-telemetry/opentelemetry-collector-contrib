@@ -1,33 +1,38 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
 
-go 1.17
+go 1.20
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.24.0
-	go.opentelemetry.io/otel v1.0.1
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.24.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.24.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.0.1
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.0.1
-	go.opentelemetry.io/otel/metric v0.24.0
-	go.opentelemetry.io/otel/sdk v1.0.1
-	go.opentelemetry.io/otel/sdk/metric v0.24.0
-	google.golang.org/genproto v0.0.0-20200527145253-8367513e4ece // indirect
-	google.golang.org/grpc v1.41.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1
+	go.opentelemetry.io/otel v1.21.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.44.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.21.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.21.0
+	go.opentelemetry.io/otel/metric v1.21.0
+	go.opentelemetry.io/otel/sdk v1.21.0
+	go.opentelemetry.io/otel/sdk/metric v1.21.0
+	google.golang.org/grpc v1.60.1
 )
 
 require (
-	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
-	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.24.0 // indirect
-	go.opentelemetry.io/otel/sdk/export/metric v0.24.0 // indirect
-	go.opentelemetry.io/otel/trace v1.0.1 // indirect
-	go.opentelemetry.io/proto/otlp v0.9.0 // indirect
-	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
-	golang.org/x/sys v0.0.0-20210423185535-09eb48e85fd7 // indirect
-	golang.org/x/text v0.3.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1 // indirect
+	go.opentelemetry.io/otel/trace v1.21.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
+	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231030173426-d783a09b4405 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
+)
+
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
 )

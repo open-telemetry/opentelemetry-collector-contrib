@@ -1,0 +1,13 @@
+type: transform
+
+status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq, sumo, grafana, liatrio]
+  warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
+  codeowners:
+    active: [TylerHelmuth, kentquirk, bogdandrutu, evan-bradley]
+
+tests:
+  config:

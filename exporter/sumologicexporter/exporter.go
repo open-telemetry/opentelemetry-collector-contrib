@@ -1,18 +1,7 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sumologicexporter
+package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
 	"context"
@@ -22,9 +11,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type sumologicexporter struct {
@@ -34,55 +25,45 @@ type sumologicexporter struct {
 	filter              filter
 	prometheusFormatter prometheusFormatter
 	graphiteFormatter   graphiteFormatter
+	settings            component.TelemetrySettings
 }
 
-func initExporter(cfg *Config) (*sumologicexporter, error) {
-	switch cfg.LogFormat {
-	case JSONFormat:
-	case TextFormat:
-	default:
-		return nil, fmt.Errorf("unexpected log format: %s", cfg.LogFormat)
+func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
+
+	if cfg.MetricFormat == GraphiteFormat {
+		settings.Logger.Warn("`metric_format: graphite` nad `graphite_template` are deprecated and are going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
 	}
 
-	switch cfg.MetricFormat {
-	case GraphiteFormat:
-	case Carbon2Format:
-	case PrometheusFormat:
-	default:
-		return nil, fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
+	if cfg.MetricFormat == Carbon2Format {
+		settings.Logger.Warn("`metric_format: carbon` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
 	}
 
-	switch cfg.CompressEncoding {
-	case GZIPCompression:
-	case DeflateCompression:
-	case NoCompression:
-	default:
-		return nil, fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
+	if len(cfg.MetadataAttributes) > 0 {
+		settings.Logger.Warn("`metadata_attributes: []` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
 	}
 
-	if len(cfg.HTTPClientSettings.Endpoint) == 0 {
-		return nil, errors.New("endpoint is not set")
+	if cfg.SourceCategory != "" {
+		settings.Logger.Warn("`source_category: <template>` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
 	}
 
-	sfs, err := newSourceFormats(cfg)
-	if err != nil {
-		return nil, err
+	if cfg.SourceHost != "" {
+		settings.Logger.Warn("`source_host: <template>` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
 	}
+
+	if cfg.SourceName != "" {
+		settings.Logger.Warn("`source_name: <template>` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+	}
+
+	sfs := newSourceFormats(cfg)
 
 	f, err := newFilter(cfg.MetadataAttributes)
 	if err != nil {
 		return nil, err
 	}
 
-	pf, err := newPrometheusFormatter()
-	if err != nil {
-		return nil, err
-	}
+	pf := newPrometheusFormatter()
 
-	gf, err := newGraphiteFormatter(cfg.GraphiteTemplate)
-	if err != nil {
-		return nil, err
-	}
+	gf := newGraphiteFormatter(cfg.GraphiteTemplate)
 
 	se := &sumologicexporter{
 		config:              cfg,
@@ -90,6 +71,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		filter:              f,
 		prometheusFormatter: pf,
 		graphiteFormatter:   gf,
+		settings:            settings,
 	}
 
 	return se, nil
@@ -97,16 +79,17 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 
 func newLogsExporter(
 	cfg *Config,
-	set component.ExporterCreateSettings,
-) (component.LogsExporter, error) {
-	se, err := initExporter(cfg)
+	set exporter.CreateSettings,
+) (exporter.Logs, error) {
+	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
 
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -119,16 +102,17 @@ func newLogsExporter(
 
 func newMetricsExporter(
 	cfg *Config,
-	set component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
-	se, err := initExporter(cfg)
+	set exporter.CreateSettings,
+) (exporter.Metrics, error) {
+	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		se.pushMetricsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -141,7 +125,7 @@ func newMetricsExporter(
 
 // start starts the exporter
 func (se *sumologicexporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := se.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	client, err := se.config.HTTPClientSettings.ToClient(host, se.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -154,12 +138,12 @@ func (se *sumologicexporter) start(_ context.Context, host component.Host) (err 
 // pushLogsData groups data with common metadata and sends them as separate batched requests.
 // It returns the number of unsent logs and an error which contains a list of dropped records
 // so they can be handled by OTC retry mechanism
-func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
+func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	var (
-		currentMetadata  fields = newFields(pdata.NewAttributeMap())
-		previousMetadata fields = newFields(pdata.NewAttributeMap())
-		errs             error
-		droppedRecords   []pdata.LogRecord
+		currentMetadata  fields
+		previousMetadata = newFields(pcommon.NewMap())
+		errs             []error
+		droppedRecords   []plog.LogRecord
 		err              error
 	)
 
@@ -182,31 +166,24 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
 
-		ills := rl.InstrumentationLibraryLogs()
-		// iterate over InstrumentationLibraryLogs
+		ills := rl.ScopeLogs()
+		// iterate over ScopeLogs
 		for j := 0; j < ills.Len(); j++ {
-			ill := ills.At(j)
+			sl := ills.At(j)
 
 			// iterate over Logs
-			logs := ill.Logs()
+			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
-				// copy resource attributes into logs attributes
-				// log attributes have precedence over resource attributes
-				rl.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-					log.Attributes().Insert(k, v)
-					return true
-				})
-
-				currentMetadata = sdr.filter.filterIn(log.Attributes())
+				currentMetadata = sdr.filter.mergeAndFilterIn(rl.Resource().Attributes(), log.Attributes())
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
-					var dropped []pdata.LogRecord
+					var dropped []plog.LogRecord
 					dropped, err = sdr.sendLogs(ctx, previousMetadata)
 					if err != nil {
-						errs = multierr.Append(errs, err)
+						errs = append(errs, err)
 						droppedRecords = append(droppedRecords, dropped...)
 					}
 					sdr.cleanLogsBuffer()
@@ -216,11 +193,11 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 				previousMetadata = currentMetadata
 
 				// add log to the buffer
-				var dropped []pdata.LogRecord
+				var dropped []plog.LogRecord
 				dropped, err = sdr.batchLog(ctx, log, previousMetadata)
 				if err != nil {
 					droppedRecords = append(droppedRecords, dropped...)
-					errs = multierr.Append(errs, err)
+					errs = append(errs, err)
 				}
 			}
 		}
@@ -230,22 +207,22 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 	dropped, err := sdr.sendLogs(ctx, previousMetadata)
 	if err != nil {
 		droppedRecords = append(droppedRecords, dropped...)
-		errs = multierr.Append(errs, err)
+		errs = append(errs, err)
 	}
 
 	if len(droppedRecords) > 0 {
 		// Move all dropped records to Logs
-		droppedLogs := pdata.NewLogs()
+		droppedLogs := plog.NewLogs()
 		rls = droppedLogs.ResourceLogs()
-		ills := rls.AppendEmpty().InstrumentationLibraryLogs()
-		logs := ills.AppendEmpty().Logs()
+		ills := rls.AppendEmpty().ScopeLogs()
+		logs := ills.AppendEmpty().LogRecords()
 
 		for _, log := range droppedRecords {
 			tgt := logs.AppendEmpty()
 			log.CopyTo(tgt)
 		}
 
-		return consumererror.NewLogs(errs, droppedLogs)
+		return consumererror.NewLogs(errors.Join(errs...), droppedLogs)
 	}
 
 	return nil
@@ -254,13 +231,13 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 // pushMetricsData groups data with common metadata and send them as separate batched requests
 // it returns number of unsent metrics and error which contains list of dropped records
 // so they can be handle by the OTC retry mechanism
-func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	var (
-		currentMetadata  fields = newFields(pdata.NewAttributeMap())
-		previousMetadata fields = newFields(pdata.NewAttributeMap())
-		errs             error
+		currentMetadata  fields
+		previousMetadata = newFields(pcommon.NewMap())
+		errs             []error
 		droppedRecords   []metricPair
-		attributes       pdata.AttributeMap
+		attributes       pcommon.Map
 	)
 
 	c, err := newCompressor(se.config.CompressEncoding)
@@ -284,8 +261,8 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 
 		attributes = rm.Resource().Attributes()
 
-		// iterate over InstrumentationLibraryMetrics
-		ilms := rm.InstrumentationLibraryMetrics()
+		// iterate over ScopeMetrics
+		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 
@@ -298,14 +275,14 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 					attributes: attributes,
 				}
 
-				currentMetadata = sdr.filter.filterIn(attributes)
+				currentMetadata = sdr.filter.mergeAndFilterIn(attributes)
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
 					var dropped []metricPair
 					dropped, err = sdr.sendMetrics(ctx, previousMetadata)
 					if err != nil {
-						errs = multierr.Append(errs, err)
+						errs = append(errs, err)
 						droppedRecords = append(droppedRecords, dropped...)
 					}
 					sdr.cleanMetricBuffer()
@@ -318,7 +295,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 				dropped, err = sdr.batchMetric(ctx, mp, currentMetadata)
 				if err != nil {
 					droppedRecords = append(droppedRecords, dropped...)
-					errs = multierr.Append(errs, err)
+					errs = append(errs, err)
 				}
 			}
 		}
@@ -328,23 +305,23 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 	dropped, err := sdr.sendMetrics(ctx, previousMetadata)
 	if err != nil {
 		droppedRecords = append(droppedRecords, dropped...)
-		errs = multierr.Append(errs, err)
+		errs = append(errs, err)
 	}
 
 	if len(droppedRecords) > 0 {
 		// Move all dropped records to Metrics
-		droppedMetrics := pdata.NewMetrics()
+		droppedMetrics := pmetric.NewMetrics()
 		rms := droppedMetrics.ResourceMetrics()
 		rms.EnsureCapacity(len(droppedRecords))
 		for _, record := range droppedRecords {
 			rm := droppedMetrics.ResourceMetrics().AppendEmpty()
 			record.attributes.CopyTo(rm.Resource().Attributes())
 
-			ilms := rm.InstrumentationLibraryMetrics()
+			ilms := rm.ScopeMetrics()
 			record.metric.CopyTo(ilms.AppendEmpty().Metrics().AppendEmpty())
 		}
 
-		return consumererror.NewMetrics(errs, droppedMetrics)
+		return consumererror.NewMetrics(errors.Join(errs...), droppedMetrics)
 	}
 
 	return nil

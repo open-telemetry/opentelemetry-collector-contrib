@@ -1,37 +1,30 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubelet
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 type fakeRestClient struct {
 }
 
 func (f fakeRestClient) StatsSummary() ([]byte, error) {
-	return ioutil.ReadFile("../../testdata/stats-summary.json")
+	return os.ReadFile("../../testdata/stats-summary.json")
 }
 
 func (f fakeRestClient) Pods() ([]byte, error) {
-	return ioutil.ReadFile("../../testdata/pods.json")
+	return os.ReadFile("../../testdata/pods.json")
 }
 
 func TestMetricAccumulator(t *testing.T) {
@@ -40,20 +33,29 @@ func TestMetricAccumulator(t *testing.T) {
 	summary, _ := statsProvider.StatsSummary()
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
-	metadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
-	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, metadata, "", ValidMetricGroups))
-
+	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
+	mbs := &metadata.MetricsBuilders{
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+	}
+	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mbs))
 	// Disable all groups
-	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, metadata, "", map[MetricGroup]bool{})))
+	mbs.NodeMetricsBuilder.Reset()
+	mbs.PodMetricsBuilder.Reset()
+	mbs.OtherMetricsBuilder.Reset()
+	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs)))
 }
 
-func requireMetricsOk(t *testing.T, mds []pdata.Metrics) {
+func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 	for _, md := range mds {
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
 			rm := md.ResourceMetrics().At(i)
 			requireResourceOk(t, rm.Resource())
-			for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-				ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				ilm := rm.ScopeMetrics().At(j)
+				require.Equal(t, "otelcol/kubeletstatsreceiver", ilm.Scope().Name())
 				for k := 0; k < ilm.Metrics().Len(); k++ {
 					requireMetricOk(t, ilm.Metrics().At(k))
 				}
@@ -62,22 +64,21 @@ func requireMetricsOk(t *testing.T, mds []pdata.Metrics) {
 	}
 }
 
-func requireMetricOk(t *testing.T, m pdata.Metric) {
+func requireMetricOk(t *testing.T, m pmetric.Metric) {
 	require.NotZero(t, m.Name())
-	require.NotEqual(t, pdata.MetricDataTypeNone, m.DataType())
-
-	switch m.DataType() {
-	case pdata.MetricDataTypeGauge:
+	require.NotEqual(t, pmetric.MetricTypeEmpty, m.Type())
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
 		gauge := m.Gauge()
 		for i := 0; i < gauge.DataPoints().Len(); i++ {
 			dp := gauge.DataPoints().At(i)
 			require.NotZero(t, dp.Timestamp())
 			requirePointOk(t, dp)
 		}
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		sum := m.Sum()
 		require.True(t, sum.IsMonotonic())
-		require.Equal(t, pdata.MetricAggregationTemporalityCumulative, sum.AggregationTemporality())
+		require.Equal(t, pmetric.AggregationTemporalityCumulative, sum.AggregationTemporality())
 		for i := 0; i < sum.DataPoints().Len(); i++ {
 			dp := sum.DataPoints().At(i)
 			// Start time is required for cumulative metrics. Make assertions
@@ -87,61 +88,111 @@ func requireMetricOk(t *testing.T, m pdata.Metric) {
 			require.Less(t, dp.StartTimestamp(), dp.Timestamp())
 			requirePointOk(t, dp)
 		}
+	case pmetric.MetricTypeEmpty:
+	case pmetric.MetricTypeHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
+	case pmetric.MetricTypeSummary:
 	}
 }
 
-func requirePointOk(t *testing.T, point pdata.NumberDataPoint) {
+func requirePointOk(t *testing.T, point pmetric.NumberDataPoint) {
 	require.NotZero(t, point.Timestamp())
-	require.NotEqual(t, pdata.MetricValueTypeNone, point.Type())
+	require.NotEqual(t, pmetric.NumberDataPointValueTypeEmpty, point.ValueType())
 }
 
-func requireResourceOk(t *testing.T, resource pdata.Resource) {
+func requireResourceOk(t *testing.T, resource pcommon.Resource) {
 	require.NotZero(t, resource.Attributes().Len())
 }
 
 func TestWorkingSetMem(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(fakeMetrics())
 	requireContains(t, metrics, "k8s.pod.memory.working_set")
 	requireContains(t, metrics, "container.memory.working_set")
 
 	nodeWsMetrics := metrics["k8s.node.memory.working_set"]
-	value := nodeWsMetrics[0].Gauge().DataPoints().At(0).IntVal()
+	value := nodeWsMetrics[0].Gauge().DataPoints().At(0).IntValue()
 	require.Equal(t, int64(1234567890), value)
 }
 
 func TestPageFaults(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(fakeMetrics())
 	requireContains(t, metrics, "k8s.pod.memory.page_faults")
 	requireContains(t, metrics, "container.memory.page_faults")
 
 	nodePageFaults := metrics["k8s.node.memory.page_faults"]
-	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntVal()
+	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntValue()
 	require.Equal(t, int64(12345), value)
 }
 
 func TestMajorPageFaults(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(fakeMetrics())
 	requireContains(t, metrics, "k8s.pod.memory.major_page_faults")
 	requireContains(t, metrics, "container.memory.major_page_faults")
 
 	nodePageFaults := metrics["k8s.node.memory.major_page_faults"]
-	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntVal()
+	value := nodePageFaults[0].Gauge().DataPoints().At(0).IntValue()
 	require.Equal(t, int64(12), value)
 }
 
-func requireContains(t *testing.T, metrics map[string][]pdata.Metric, metricName string) {
+func TestUptime(t *testing.T) {
+	rc := &fakeRestClient{}
+	statsProvider := NewStatsProvider(rc)
+	summary, _ := statsProvider.StatsSummary()
+	mgs := map[MetricGroup]bool{
+		ContainerMetricGroup: true,
+		PodMetricGroup:       true,
+		NodeMetricGroup:      true,
+	}
+
+	cfg := metadata.DefaultMetricsBuilderConfig()
+	cfg.Metrics.K8sNodeUptime.Enabled = true
+	cfg.Metrics.K8sPodUptime.Enabled = true
+	cfg.Metrics.ContainerUptime.Enabled = true
+
+	mbs := &metadata.MetricsBuilders{
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
+	}
+
+	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs))
+
+	requireContains(t, metrics, "k8s.node.uptime")
+	requireContains(t, metrics, "k8s.pod.uptime")
+	requireContains(t, metrics, "container.uptime")
+}
+
+func TestEmitMetrics(t *testing.T) {
+	metrics := indexedFakeMetrics(fakeMetrics())
+	metricNames := []string{
+		"k8s.node.network.io",
+		"k8s.node.network.errors",
+		"k8s.pod.network.io",
+		"k8s.pod.network.errors",
+	}
+	for _, name := range metricNames {
+		requireContains(t, metrics, name)
+		metric := metrics[name][0]
+		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+			dp := metric.Sum().DataPoints().At(i)
+			_, found := dp.Attributes().Get("direction")
+			require.True(t, found, "expected direction attribute")
+		}
+	}
+}
+
+func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricName string) {
 	_, found := metrics[metricName]
 	require.True(t, found)
 }
 
-func indexedFakeMetrics() map[string][]pdata.Metric {
-	mds := fakeMetrics()
-	metrics := make(map[string][]pdata.Metric)
+func indexedFakeMetrics(mds []pmetric.Metrics) map[string][]pmetric.Metric {
+	metrics := make(map[string][]pmetric.Metric)
 	for _, md := range mds {
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
 			rm := md.ResourceMetrics().At(i)
-			for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-				ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				ilm := rm.ScopeMetrics().At(j)
 				for k := 0; k < ilm.Metrics().Len(); k++ {
 					m := ilm.Metrics().At(k)
 					metricName := m.Name()
@@ -155,7 +206,7 @@ func indexedFakeMetrics() map[string][]pdata.Metric {
 	return metrics
 }
 
-func fakeMetrics() []pdata.Metrics {
+func fakeMetrics() []pmetric.Metrics {
 	rc := &fakeRestClient{}
 	statsProvider := NewStatsProvider(rc)
 	summary, _ := statsProvider.StatsSummary()
@@ -164,5 +215,11 @@ func fakeMetrics() []pdata.Metrics {
 		PodMetricGroup:       true,
 		NodeMetricGroup:      true,
 	}
-	return MetricsData(zap.NewNop(), summary, Metadata{}, "foo", mgs)
+	mbs := &metadata.MetricsBuilders{
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+	}
+	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs)
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package groupbytraceprocessor
 
@@ -18,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestRingBufferCapacity(t *testing.T) {
@@ -26,13 +15,13 @@ func TestRingBufferCapacity(t *testing.T) {
 	buffer := newRingBuffer(5)
 
 	// test
-	traceIDs := []pdata.TraceID{
-		pdata.NewTraceID([16]byte{1, 2, 3, 4}),
-		pdata.NewTraceID([16]byte{2, 3, 4, 5}),
-		pdata.NewTraceID([16]byte{3, 4, 5, 6}),
-		pdata.NewTraceID([16]byte{4, 5, 6, 7}),
-		pdata.NewTraceID([16]byte{5, 6, 7, 8}),
-		pdata.NewTraceID([16]byte{6, 7, 8, 9}),
+	traceIDs := []pcommon.TraceID{
+		pcommon.TraceID([16]byte{1, 2, 3, 4}),
+		pcommon.TraceID([16]byte{2, 3, 4, 5}),
+		pcommon.TraceID([16]byte{3, 4, 5, 6}),
+		pcommon.TraceID([16]byte{4, 5, 6, 7}),
+		pcommon.TraceID([16]byte{5, 6, 7, 8}),
+		pcommon.TraceID([16]byte{6, 7, 8, 9}),
 	}
 	for _, traceID := range traceIDs {
 		buffer.put(traceID)
@@ -51,7 +40,7 @@ func TestRingBufferCapacity(t *testing.T) {
 func TestDeleteFromBuffer(t *testing.T) {
 	// prepare
 	buffer := newRingBuffer(2)
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	buffer.put(traceID)
 
 	// test
@@ -65,7 +54,7 @@ func TestDeleteFromBuffer(t *testing.T) {
 func TestDeleteNonExistingFromBuffer(t *testing.T) {
 	// prepare
 	buffer := newRingBuffer(2)
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	// test
 	deleted := buffer.delete(traceID)

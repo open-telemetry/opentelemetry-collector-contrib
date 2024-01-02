@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
@@ -21,7 +10,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -29,14 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
-
-func newTmpDir(t *testing.T) string {
-	dir, err := os.MkdirTemp("", "podman-tests")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return dir
-}
 
 func TestNewPodmanConnectionUnsupported(t *testing.T) {
 	logger := zap.NewNop()
@@ -46,8 +26,7 @@ func TestNewPodmanConnectionUnsupported(t *testing.T) {
 }
 
 func TestNewPodmanConnectionUnix(t *testing.T) {
-	tmpDir := newTmpDir(t)
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	socketPath := filepath.Join(tmpDir, "test.sock")
 	l, err := net.Listen("unix", socketPath)

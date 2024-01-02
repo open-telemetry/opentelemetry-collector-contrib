@@ -1,0 +1,24 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: type
+          value:
+            stringValue: one
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: testKey3
+                value:
+                  stringValue: teststringvalue3
+              - key: testKey2
+                value:
+                  stringValue: teststringvalue2
+            body:
+              stringValue: testscopevalue1
+            observedTimeUnixNano: "11651379494838206464"
+            severityNumber: 9
+            severityText: TEST
+            spanId: ""
+            timeUnixNano: "11651379494838206464"
+            traceId: ""
+        scope: {}

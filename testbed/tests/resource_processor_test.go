@@ -1,55 +1,41 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tests
 
 import (
 	"context"
-	"path"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 var (
-	mockedConsumedResourceWithType = func() pdata.Metrics {
-		md := pdata.NewMetrics()
+	mockedConsumedResourceWithType = func() pmetric.Metrics {
+		md := pmetric.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().UpsertString("opencensus.resourcetype", "host")
-		rm.Resource().Attributes().UpsertString("label-key", "label-value")
-		m := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("opencensus.resourcetype", "host")
+		rm.Resource().Attributes().PutStr("label-key", "label-value")
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")
-		m.SetDataType(pdata.MetricDataTypeGauge)
-		m.Gauge().DataPoints().AppendEmpty().SetIntVal(0)
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(0)
 		return md
 	}()
 
-	mockedConsumedResourceEmpty = func() pdata.Metrics {
-		md := pdata.NewMetrics()
+	mockedConsumedResourceEmpty = func() pmetric.Metrics {
+		md := pmetric.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
-		m := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")
-		m.SetDataType(pdata.MetricDataTypeGauge)
-		m.Gauge().DataPoints().AppendEmpty().SetIntVal(0)
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(0)
 		return md
 	}()
 )
@@ -57,8 +43,8 @@ var (
 type resourceProcessorTestCase struct {
 	name                    string
 	resourceProcessorConfig string
-	mockedConsumedMetrics   pdata.Metrics
-	expectedMetrics         pdata.Metrics
+	mockedConsumedMetrics   pmetric.Metrics
+	expectedMetrics         pmetric.Metrics
 }
 
 func getResourceProcessorTestCases() []resourceProcessorTestCase {
@@ -79,11 +65,11 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
       action: delete
 `,
 			mockedConsumedMetrics: mockedConsumedResourceWithType,
-			expectedMetrics: func() pdata.Metrics {
-				md := pdata.NewMetrics()
+			expectedMetrics: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
 				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().UpsertString("resource-type", "host")
-				rm.Resource().Attributes().UpsertString("label-key", "new-label-value")
+				rm.Resource().Attributes().PutStr("label-key", "new-label-value")
+				rm.Resource().Attributes().PutStr("resource-type", "host")
 				return md
 			}(),
 		},
@@ -98,10 +84,10 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 
 `,
 			mockedConsumedMetrics: mockedConsumedResourceEmpty,
-			expectedMetrics: func() pdata.Metrics {
-				md := pdata.NewMetrics()
+			expectedMetrics: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
 				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().UpsertString("additional-label-key", "additional-label-value")
+				rm.Resource().Attributes().PutStr("additional-label-key", "additional-label-value")
 				return md
 			}(),
 		},
@@ -118,7 +104,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+			resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 			require.NoError(t, err)
 
 			agentProc := testbed.NewChildProcessCollector()
@@ -174,8 +160,8 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 			expectidMD := test.expectedMetrics
 			require.Equal(t,
-				expectidMD.ResourceMetrics().At(0).Resource().Attributes().Sort(),
-				rm.At(0).Resource().Attributes().Sort(),
+				expectidMD.ResourceMetrics().At(0).Resource().Attributes().AsRaw(),
+				rm.At(0).Resource().Attributes().AsRaw(),
 			)
 		})
 	}

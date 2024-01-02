@@ -1,0 +1,146 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - scope: {}
+        logRecords:
+          - observedTimeUnixNano: "1696719286858452887"
+            body:
+              kvlistValue:
+                values:
+                  - key: type
+                    value:
+                      stringValue: DELETED
+                  - key: object
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: apiVersion
+                            value:
+                              stringValue: v1
+                          - key: firstTimestamp
+                            value: {}
+                          - key: lastTimestamp
+                            value: {}
+                          - key: eventTime
+                            value:
+                              stringValue: "2023-01-01T00:00:00.000000Z"
+                          - key: action
+                            value:
+                              stringValue: test
+                          - key: message
+                            value:
+                              stringValue: test event of type warning
+                          - key: source
+                            value:
+                              kvlistValue: {}
+                          - key: reportingComponent
+                            value:
+                              stringValue: e2etest-events-core
+                          - key: reportingInstance
+                            value:
+                              stringValue: k8sobjectsreceiver
+                          - key: metadata
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: managedFields
+                                    value:
+                                      arrayValue:
+                                        values:
+                                          - kvlistValue:
+                                              values:
+                                                - key: manager
+                                                  value:
+                                                    stringValue: k8sobjectsreceiver.test
+                                                - key: operation
+                                                  value:
+                                                    stringValue: Update
+                                                - key: apiVersion
+                                                  value:
+                                                    stringValue: events.k8s.io/v1
+                                                - key: time
+                                                  value:
+                                                    stringValue: "2000-01-01T00:00:00Z"
+                                                - key: fieldsType
+                                                  value:
+                                                    stringValue: FieldsV1
+                                                - key: fieldsV1
+                                                  value:
+                                                    kvlistValue:
+                                                      values:
+                                                        - key: f:note
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:regarding
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:action
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:reason
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:reportingController
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:reportingInstance
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:type
+                                                          value:
+                                                            kvlistValue: {}
+                                                        - key: f:eventTime
+                                                          value:
+                                                            kvlistValue: {}
+                                  - key: name
+                                    value:
+                                      stringValue: test-k8sobjects-receiver-events-core
+                                  - key: namespace
+                                    value:
+                                      stringValue: default
+                                  - key: uid
+                                    value:
+                                      stringValue: "12345"
+                                  - key: resourceVersion
+                                    value:
+                                      stringValue: "12345"
+                                  - key: creationTimestamp
+                                    value:
+                                      stringValue: "2000-01-01T00:00:00Z"
+                          - key: type
+                            value:
+                              stringValue: Warning
+                          - key: reason
+                            value:
+                              stringValue: TestEvent
+                          - key: kind
+                            value:
+                              stringValue: Event
+                          - key: involvedObject
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: kind
+                                    value:
+                                      stringValue: customresource
+                                  - key: namespace
+                                    value:
+                                      stringValue: default
+                                  - key: name
+                                    value:
+                                      stringValue: test-k8sobjects-receiver-events-core
+                                  - key: uid
+                                    value:
+                                      stringValue: 035355e1-07a3-4e86-95d0-d7a2bec7d6f0
+            attributes:
+              - key: k8s.resource.name
+                value:
+                  stringValue: events
+              - key: event.domain
+                value:
+                  stringValue: k8s
+              - key: event.name
+                value:
+                  stringValue: test-k8sobjects-receiver-events-core
+            traceId: ""
+            spanId: ""

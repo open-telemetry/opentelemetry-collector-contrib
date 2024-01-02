@@ -1,19 +1,8 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package proxy provides an http server to act as a signing proxy for SDKs calling AWS X-Ray APIs
-package proxy
+package proxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 
 import (
 	"bytes"
@@ -21,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -32,6 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 const (
@@ -88,7 +78,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		// Handler for modifying and forwarding requests
 		Director: func(req *http.Request) {
 			if req != nil && req.URL != nil {
-				logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", req.URL.String()))
+				logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(req.URL)))
 			}
 
 			// Remove connection header before signing request, otherwise the
@@ -119,8 +109,9 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	}
 
 	return &http.Server{
-		Addr:    cfg.Endpoint,
-		Handler: handler,
+		Addr:              cfg.Endpoint,
+		Handler:           handler,
+		ReadHeaderTimeout: 20 * time.Second,
 	}, nil
 }
 
@@ -153,7 +144,7 @@ func consume(body io.ReadCloser) (io.ReadSeeker, error) {
 	}
 
 	// Consume body
-	buf, err := ioutil.ReadAll(body)
+	buf, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}

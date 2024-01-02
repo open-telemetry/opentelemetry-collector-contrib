@@ -1,0 +1,12 @@
+type: splunk_hec
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, logs]
+  distributions: [contrib, splunk, sumo]
+  codeowners:
+    active: ["atoulme"]
+    emeritus:
+tests:
+  config:

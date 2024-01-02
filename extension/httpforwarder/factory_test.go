@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package httpforwarder
 
@@ -21,18 +10,18 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
 	expectType := "http_forwarder"
-	require.Equal(t, config.Type(expectType), f.Type())
+	require.Equal(t, component.Type(expectType), f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, config.NewComponentID(typeStr), cfg.ID())
 	require.Equal(t, ":6060", cfg.Ingress.Endpoint)
 	require.Equal(t, 10*time.Second, cfg.Egress.Timeout)
 
@@ -63,7 +52,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.CreateExtension(
 				context.Background(),
-				componenttest.NewNopExtensionCreateSettings(),
+				extensiontest.NewNopCreateSettings(),
 				test.config,
 			)
 			if test.wantErr {
