@@ -428,7 +428,11 @@ func (c *tracesConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession
 
 func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	c.logger.Info("Starting consumer group", zap.String("topic", claim.Topic()), zap.Int32("partition", claim.Partition()), zap.Int64("initialOffset", claim.InitialOffset()))
-	consumerName := fmt.Sprintf("%v-%v", claim.Topic(), claim.Partition())
+	statsTags := []tag.Mutator{
+		tag.Upsert(tagInstanceName, c.id.String()), 
+		tag.upsert(tagInstanceTopic, claim.Topic()), 
+		tag.Upsert(tagInstancePartition, claim.Partition())
+	}
 
 	if !c.autocommitEnabled {
 		defer session.Commit()
@@ -448,7 +452,6 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			}
 
 			ctx := c.obsrecv.StartTracesOp(session.Context())
-			statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, consumerName)}
 			_ = stats.RecordWithTags(ctx, statsTags,
 				statMessageCount.M(1),
 				statMessageOffset.M(message.Offset),
@@ -459,7 +462,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
 				_ = stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
+					statsTags,
 					statUnmarshalFailedSpans.M(1))
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -510,7 +513,11 @@ func (c *metricsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSessio
 
 func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	c.logger.Info("Starting consumer group", zap.String("topic", claim.Topic()), zap.Int32("partition", claim.Partition()), zap.Int64("initialOffset", claim.InitialOffset()))
-	consumerName := fmt.Sprintf("%v-%v", claim.Topic(), claim.Partition())
+	statsTags := []tag.Mutator{
+		tag.Upsert(tagInstanceName, c.id.String()), 
+		tag.upsert(tagInstanceTopic, claim.Topic()), 
+		tag.Upsert(tagInstancePartition, claim.Partition())
+	}
 
 	if !c.autocommitEnabled {
 		defer session.Commit()
@@ -530,7 +537,6 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			}
 
 			ctx := c.obsrecv.StartMetricsOp(session.Context())
-			statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, consumerName)}
 			_ = stats.RecordWithTags(ctx, statsTags,
 				statMessageCount.M(1),
 				statMessageOffset.M(message.Offset),
@@ -541,7 +547,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
 				_ = stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
+					statsTags,
 					statUnmarshalFailedMetricPoints.M(1))
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -596,7 +602,11 @@ func (c *logsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) 
 
 func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	c.logger.Info("Starting consumer group", zap.String("topic", claim.Topic()), zap.Int32("partition", claim.Partition()), zap.Int64("initialOffset", claim.InitialOffset()))
-	consumerName := fmt.Sprintf("%v-%v", claim.Topic(), claim.Partition())
+	statsTags := []tag.Mutator{
+		tag.Upsert(tagInstanceName, c.id.String()), 
+		tag.upsert(tagInstanceTopic, claim.Topic()), 
+		tag.Upsert(tagInstancePartition, claim.Partition())
+	}
 
 	if !c.autocommitEnabled {
 		defer session.Commit()
@@ -618,7 +628,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			ctx := c.obsrecv.StartLogsOp(session.Context())
 			_ = stats.RecordWithTags(
 				ctx,
-				[]tag.Mutator{tag.Upsert(tagInstanceName, consumerName)},
+				statsTags,
 				statMessageCount.M(1),
 				statMessageOffset.M(message.Offset),
 				statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))
@@ -628,7 +638,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
 				_ = stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
+					statsTags,
 					statUnmarshalFailedLogRecords.M(1))
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")

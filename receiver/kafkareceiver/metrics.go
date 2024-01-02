@@ -10,7 +10,9 @@ import (
 )
 
 var (
-	tagInstanceName, _ = tag.NewKey("name")
+	tagInstanceName, _      = tag.NewKey("name")
+	tagInstanceTopic, _     = tag.NewKey("topic")
+	tagInstancePartition, _ = tag.NewKey("partition")
 
 	statMessageCount     = stats.Int64("kafka_receiver_messages", "Number of received messages", stats.UnitDimensionless)
 	statMessageOffset    = stats.Int64("kafka_receiver_current_offset", "Current message offset", stats.UnitDimensionless)
