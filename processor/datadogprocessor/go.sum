@@ -27,8 +27,8 @@ github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.11.0 h1:JAFzV1P6
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.11.0/go.mod h1:cP0qZvP+u4jzz2z28KzxFYww4xX2sYv+yPQAMSLoSMU=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.11.0 h1:G5fefqlKYsJX0iqkp5Smdica6J3Ty7Gay8NINjwpdpY=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.11.0/go.mod h1:4ed2dYa6xQKKfVhJoLpNf89N0pKA8H2R0SyiCcL6PoI=
-github.com/DataDog/sketches-go v1.4.3 h1:ZB9nijteJRFUQixkQfatCqASartGNfiolIlMiEv3u/w=
-github.com/DataDog/sketches-go v1.4.3/go.mod h1:XR0ns2RtEEF09mDKXiKZiQg+nfZStrq1ZuL1eezeZe0=
+github.com/DataDog/sketches-go v1.4.4 h1:dF52vzXRFSPOj2IjXSWLvXq3jubL4CI69kwYjJ1w5Z8=
+github.com/DataDog/sketches-go v1.4.4/go.mod h1:XR0ns2RtEEF09mDKXiKZiQg+nfZStrq1ZuL1eezeZe0=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
