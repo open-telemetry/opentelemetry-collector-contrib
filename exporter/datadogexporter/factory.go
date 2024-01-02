@@ -346,6 +346,9 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			f.StopReporter()
+			if statsOut != nil {
+				close(statsOut)
+			}
 			return nil
 		}),
 	)
