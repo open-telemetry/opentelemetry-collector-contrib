@@ -128,15 +128,18 @@ The following settings are required:
 The following settings can be optionally configured:
 
 - `store`: defines the config for the in-memory store used to find requests between services by pairing spans.
-    - `ttl`: TTL is the time to live for items in the store.
-        - Default: `2s`
-    - `max_items`: MaxItems is the maximum number of items to keep in the store.
-        - Default: `1000`
+  - `ttl`: TTL is the time to live for items in the store.
+    - Default: `2s`
+  - `max_items`: MaxItems is the maximum number of items to keep in the store.
+    - Default: `1000`
 - `cache_loop`: the interval at which to clean the cache.
+  - Default: `1m`
 - `store_expiration_loop`: the time to expire old entries from the store periodically.
+  - Default: `2s`
 - `virtual_node_peer_attributes`: the list of attributes need to match for building virtual server node, the higher the front, the higher the priority.
-    - Default: `[db.name, net.sock.peer.addr, net.peer.name, rpc.service, net.sock.peer.name, net.peer.name, http.url, http.target]`
-- `metrics_flush_interval`: the interval at which metrics are flushed to the exporter. Metrics are flush on every received batch of traces by default.
+  - Default: `[db.name, net.sock.peer.addr, net.peer.name, rpc.service, net.sock.peer.name, net.peer.name, http.url, http.target]`
+- `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
+  - Default: Metrics are flushed on every received batch of traces.
 
 ## Example configuration
 
