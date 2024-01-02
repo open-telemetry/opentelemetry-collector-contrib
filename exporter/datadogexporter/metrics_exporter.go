@@ -16,8 +16,10 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/api"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -30,7 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 type metricsExporter struct {
@@ -52,7 +53,7 @@ type metricsExporter struct {
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
-func translatorFromConfig(set component.TelemetrySettings, cfg *Config, sourceProvider source.Provider, statsOut chan []byte) (*otlpmetrics.Translator, error) {
+func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTranslator *attributes.Translator, sourceProvider source.Provider, statsOut chan []byte) (*otlpmetrics.Translator, error) {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
@@ -87,7 +88,7 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, sourcePr
 	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
 		options = append(options, otlpmetrics.WithStatsOut(statsOut))
 	}
-	return otlpmetrics.NewTranslator(set, options...)
+	return otlpmetrics.NewTranslator(set, attrsTranslator, options...)
 }
 
 func newMetricsExporter(
@@ -95,12 +96,13 @@ func newMetricsExporter(
 	params exporter.CreateSettings,
 	cfg *Config,
 	onceMetadata *sync.Once,
+	attrsTranslator *attributes.Translator,
 	sourceProvider source.Provider,
 	apmStatsProcessor api.StatsProcessor,
 	metadataReporter *inframetadata.Reporter,
 	statsOut chan []byte,
 ) (*metricsExporter, error) {
-	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, sourceProvider, statsOut)
+	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, attrsTranslator, sourceProvider, statsOut)
 	if err != nil {
 		return nil, err
 	}

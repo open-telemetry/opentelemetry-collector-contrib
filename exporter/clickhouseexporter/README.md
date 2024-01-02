@@ -140,7 +140,7 @@ SELECT Timestamp as log_time,
        toString(Links.TraceId)
 FROM otel_traces
 WHERE ServiceName = 'clickhouse-exporter'
-  AND SpanAttributes['peer.service'] = 'tracegen-server'
+  AND SpanAttributes['peer.service'] = 'telemetrygen-server'
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```

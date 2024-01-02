@@ -43,7 +43,7 @@ instantiate that receiver.
 **receivers.&lt;receiver_type/id&gt;.rule**
 
 Rule expression using [expvar
-syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md).
+syntax](https://github.com/antonmedv/expr/blob/master/docs/language-definition.md).
 Variables available are detailed below in [Rule
 Expressions](#rule-expressions).
 
@@ -247,6 +247,8 @@ targeting it will have different variables available.
 extensions:
   # Configures the Kubernetes observer to watch for pod start and stop events.
   k8s_observer:
+    observe_nodes: true
+    observe_services: true
   host_observer:
 
 receivers:

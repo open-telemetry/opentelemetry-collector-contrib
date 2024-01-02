@@ -32,14 +32,14 @@ import (
 
 func TestNewWithDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	got, err := newCarbonExporter(context.TODO(), cfg, exportertest.NewNopCreateSettings())
+	got, err := newCarbonExporter(context.Background(), cfg, exportertest.NewNopCreateSettings())
 	assert.NotNil(t, got)
 	assert.NoError(t, err)
 }
 
 func TestConsumeMetricsNoServer(t *testing.T) {
 	exp, err := newCarbonExporter(
-		context.TODO(),
+		context.Background(),
 		&Config{
 			TCPAddr:         confignet.TCPAddr{Endpoint: testutil.GetAvailableLocalAddress(t)},
 			TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
@@ -59,7 +59,7 @@ func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
 	cs.start(t, 1)
 
 	exp, err := newCarbonExporter(
-		context.TODO(),
+		context.Background(),
 		&Config{
 			TCPAddr:                   confignet.TCPAddr{Endpoint: addr},
 			TimeoutSettings:           exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
@@ -124,9 +124,10 @@ func TestConsumeMetrics(t *testing.T) {
 			cs.start(t, tt.numProducers*tt.writesPerProducer*tt.md.DataPointCount())
 
 			exp, err := newCarbonExporter(
-				context.TODO(),
+				context.Background(),
 				&Config{
 					TCPAddr:         confignet.TCPAddr{Endpoint: addr},
+					MaxIdleConns:    tt.numProducers,
 					TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
 				},
 				exportertest.NewNopCreateSettings())
@@ -155,6 +156,123 @@ func TestConsumeMetrics(t *testing.T) {
 			cs.shutdownAndVerify(t)
 		})
 	}
+}
+
+func TestNewConnectionPool(t *testing.T) {
+	assert.IsType(t, &nopConnPool{}, newConnPool(confignet.TCPAddr{Endpoint: defaultEndpoint}, 10*time.Second, 0))
+	assert.IsType(t, &connPoolWithIdle{}, newConnPool(confignet.TCPAddr{Endpoint: defaultEndpoint}, 10*time.Second, 10))
+}
+
+func TestNopConnPool(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cs := newCarbonServer(t, addr, "")
+	// Each metric point will generate one Carbon line, set up the wait
+	// for all of them.
+	cs.start(t, 2)
+
+	cp := &nopConnPool{
+		timeout:   1 * time.Second,
+		tcpConfig: confignet.TCPAddr{Endpoint: addr},
+	}
+
+	conn, err := cp.get()
+	require.NoError(t, err)
+	_, err = conn.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+	assert.NoError(t, err)
+	cp.put(conn)
+
+	// Get a new connection and confirm is not the same.
+	conn2, err2 := cp.get()
+	require.NoError(t, err2)
+	assert.NotSame(t, conn, conn2)
+	_, err = conn2.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+	assert.NoError(t, err)
+	cp.put(conn2)
+
+	require.NoError(t, cp.close())
+	cs.shutdownAndVerify(t)
+}
+
+func TestConnPoolWithIdle(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cs := newCarbonServer(t, addr, "")
+	// Each metric point will generate one Carbon line, set up the wait
+	// for all of them.
+	cs.start(t, 2)
+
+	cp := &connPoolWithIdle{
+		timeout:      1 * time.Second,
+		tcpConfig:    confignet.TCPAddr{Endpoint: addr},
+		maxIdleConns: 4,
+	}
+
+	conn, err := cp.get()
+	require.NoError(t, err)
+	_, err = conn.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+	assert.NoError(t, err)
+	cp.put(conn)
+
+	// Get a new connection and confirm it is the same as the first one.
+	conn2, err2 := cp.get()
+	require.NoError(t, err2)
+	assert.Same(t, conn, conn2)
+	_, err = conn2.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+	assert.NoError(t, err)
+	cp.put(conn2)
+
+	require.NoError(t, cp.close())
+	cs.shutdownAndVerify(t)
+}
+
+func TestConnPoolWithIdleMaxConnections(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cs := newCarbonServer(t, addr, "")
+	const maxIdleConns = 4
+	// Each metric point will generate one Carbon line, set up the wait
+	// for all of them.
+	cs.start(t, maxIdleConns+1)
+
+	cp := &connPoolWithIdle{
+		timeout:      1 * time.Second,
+		tcpConfig:    confignet.TCPAddr{Endpoint: addr},
+		maxIdleConns: maxIdleConns,
+	}
+
+	// Create connections and
+	var conns []net.Conn
+	for i := 0; i < maxIdleConns; i++ {
+		conn, err := cp.get()
+		require.NoError(t, err)
+		conns = append(conns, conn)
+		if i != 0 {
+			assert.NotSame(t, conn, conns[i-1])
+		}
+
+	}
+	for _, conn := range conns {
+		cp.put(conn)
+	}
+
+	for i := 0; i < maxIdleConns+1; i++ {
+		conn, err := cp.get()
+		require.NoError(t, err)
+		_, err = conn.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+		assert.NoError(t, err)
+		if i != maxIdleConns {
+			assert.Same(t, conn, conns[maxIdleConns-i-1])
+		} else {
+			// this should be a new connection
+			for _, cachedConn := range conns {
+				assert.NotSame(t, conn, cachedConn)
+			}
+			cp.put(conn)
+		}
+	}
+	for _, conn := range conns {
+		cp.put(conn)
+	}
+	require.NoError(t, cp.close())
+	cs.shutdownAndVerify(t)
 }
 
 func generateSmallBatch() pmetric.Metrics {

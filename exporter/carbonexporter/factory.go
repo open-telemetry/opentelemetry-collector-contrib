@@ -14,6 +14,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter/internal/metadata"
 )
 
+// Defaults for not specified configuration settings.
+const (
+	defaultEndpoint = "localhost:2003"
+)
+
 // NewFactory creates a factory for Carbon exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
@@ -27,6 +32,7 @@ func createDefaultConfig() component.Config {
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: defaultEndpoint,
 		},
+		MaxIdleConns:    100,
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		QueueConfig:     exporterhelper.NewDefaultQueueSettings(),
 		RetryConfig:     exporterhelper.NewDefaultRetrySettings(),
