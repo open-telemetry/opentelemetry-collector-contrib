@@ -173,17 +173,14 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 func (s *Supervisor) createTemplates() error {
 	var err error
+
 	if s.bootstrapTemplate, err = template.New("bootstrap").Parse(bootstrapConfTpl); err != nil {
 		return err
 	}
-
-	s.extraConfigTemplate, err = template.New("bootstrap").Parse(extraConfigTpl)
-	if err != nil {
+	if s.extraConfigTemplate, err = template.New("extraconfig").Parse(extraConfigTpl); err != nil {
 		return err
 	}
-
-	s.ownTelemetryTemplate, err = template.New("bootstrap").Parse(ownTelemetryTpl)
-	if err != nil {
+	if s.ownTelemetryTemplate, err = template.New("owntelemetry").Parse(ownTelemetryTpl); err != nil {
 		return err
 	}
 
