@@ -305,6 +305,7 @@ Available Converters:
 - [ConvertCase](#convertcase)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Hour](#hour)
 - [Hours](#hours)
 - [Double](#double)
 - [Duration](#duration)
@@ -453,6 +454,20 @@ Examples:
 
 
 - `FNV("name")`
+
+### Hour
+
+`Hour(value)`
+
+The `Hour` Converter returns the hour from the specified time.  The Converter [uses the `time.Hour` function](https://pkg.go.dev/time#Time.Hour).
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Hour(Now())`
 
 ### Hours
 

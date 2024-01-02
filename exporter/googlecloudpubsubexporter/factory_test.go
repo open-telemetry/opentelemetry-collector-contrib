@@ -31,7 +31,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.endpoint = "http://testing.invalid"
+	eCfg.Endpoint = "http://testing.invalid"
 
 	te, err := factory.CreateTracesExporter(
 		context.Background(),
@@ -46,7 +46,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.endpoint = "http://testing.invalid"
+	eCfg.Endpoint = "http://testing.invalid"
 
 	me, err := factory.CreateMetricsExporter(
 		context.Background(),
@@ -61,7 +61,7 @@ func TestLogsCreateExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.endpoint = "http://testing.invalid"
+	eCfg.Endpoint = "http://testing.invalid"
 
 	me, err := factory.CreateLogsExporter(
 		context.Background(),
@@ -76,7 +76,7 @@ func TestEnsureExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	eCfg.endpoint = "http://testing.invalid"
+	eCfg.Endpoint = "http://testing.invalid"
 
 	exporter1 := ensureExporter(exportertest.NewNopCreateSettings(), eCfg)
 	exporter2 := ensureExporter(exportertest.NewNopCreateSettings(), eCfg)

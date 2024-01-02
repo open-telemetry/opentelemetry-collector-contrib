@@ -32,11 +32,20 @@ type Config struct {
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
 
+	// ClientID to configure the Kafka client with. This can be leveraged by
+	// Kafka to enforce ACLs, throttling quotas, and more.
+	ClientID string `mapstructure:"client_id"`
+
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
+
+	// PartitionTracesByID sets the message key of outgoing trace messages to the trace ID.
+	// Please note: does not have any effect on Jaeger encoding exporters since Jaeger exporters include
+	// trace ID as the message key by default.
+	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.

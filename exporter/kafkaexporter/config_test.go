@@ -54,9 +54,11 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				Topic:    "spans",
-				Encoding: "otlp_proto",
-				Brokers:  []string{"foo:123", "bar:456"},
+				Topic:               "spans",
+				Encoding:            "otlp_proto",
+				PartitionTracesByID: true,
+				Brokers:             []string{"foo:123", "bar:456"},
+				ClientID:            "test_client_id",
 				Authentication: kafka.Authentication{
 					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
@@ -106,9 +108,11 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				Topic:    "spans",
-				Encoding: "otlp_proto",
-				Brokers:  []string{"foo:123", "bar:456"},
+				Topic:               "spans",
+				Encoding:            "otlp_proto",
+				PartitionTracesByID: true,
+				Brokers:             []string{"foo:123", "bar:456"},
+				ClientID:            "test_client_id",
 				Authentication: kafka.Authentication{
 					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
@@ -159,7 +163,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Topic:                                "spans",
 				Encoding:                             "otlp_proto",
+				PartitionTracesByID:                  true,
 				Brokers:                              []string{"foo:123", "bar:456"},
+				ClientID:                             "test_client_id",
 				ResolveCanonicalBootstrapServersOnly: true,
 				Authentication: kafka.Authentication{
 					PlainText: &kafka.PlainTextConfig{

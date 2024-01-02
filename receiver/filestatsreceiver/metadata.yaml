@@ -57,3 +57,5 @@ metrics:
     gauge:
       value_type: int
     unit: "b"
+tests:
+  config:

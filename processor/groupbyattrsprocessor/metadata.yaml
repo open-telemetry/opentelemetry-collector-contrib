@@ -8,3 +8,5 @@ status:
   warnings: []
   codeowners:
     active: [rnishtala-sumo]
+tests:
+  config:

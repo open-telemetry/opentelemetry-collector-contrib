@@ -49,6 +49,8 @@ const (
 	// Centralizing some HTTP and related string constants.
 	gzipEncoding              = "gzip"
 	httpContentEncodingHeader = "Content-Encoding"
+	httpContentTypeHeader     = "Content-Type"
+	httpJSONTypeHeader        = "application/json"
 )
 
 var (
@@ -229,6 +231,14 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 	return err
 }
 
+func (r *splunkReceiver) writeSuccessResponse(ctx context.Context, resp http.ResponseWriter, eventCount int) {
+	resp.Header().Set(httpContentTypeHeader, httpJSONTypeHeader)
+	resp.WriteHeader(http.StatusOK)
+	if _, err := resp.Write(okRespBody); err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, eventCount, err)
+	}
+}
+
 func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	ctx = r.obsrecv.StartLogsOp(ctx)
@@ -292,7 +302,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if consumerErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
-		resp.WriteHeader(http.StatusOK)
+		r.writeSuccessResponse(ctx, resp, ld.LogRecordCount())
 		r.obsrecv.EndLogsOp(ctx, metadata.Type, slLen, nil)
 	}
 }
@@ -404,10 +414,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	resp.WriteHeader(http.StatusOK)
-	if _, err := resp.Write(okRespBody); err != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events)+len(metricEvents), err)
-	}
+	r.writeSuccessResponse(ctx, resp, len(events)+len(metricEvents))
 }
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {

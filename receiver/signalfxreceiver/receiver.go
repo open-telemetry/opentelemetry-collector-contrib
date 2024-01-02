@@ -17,13 +17,11 @@ import (
 
 	"github.com/gorilla/mux"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -329,22 +327,7 @@ func (r *sfxReceiver) failRequest(
 	// Use the same pattern as strings.Builder String().
 	msg := *(*string)(unsafe.Pointer(&jsonResponse))
 
-	reqSpan := trace.FromContext(ctx)
-	reqSpan.AddAttributes(
-		trace.Int64Attribute(conventions.AttributeHTTPStatusCode, int64(httpStatusCode)),
-		trace.StringAttribute("http.status_text", msg))
-	traceStatus := trace.Status{
-		Code: trace.StatusCodeInvalidArgument,
-	}
-	if httpStatusCode == http.StatusInternalServerError {
-		traceStatus.Code = trace.StatusCodeInternal
-	}
-	if err != nil {
-		traceStatus.Message = err.Error()
-	}
-	reqSpan.SetStatus(traceStatus)
-	reqSpan.End()
-
+	r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, err)
 	r.settings.Logger.Debug(
 		"SignalFx receiver request failed",
 		zap.Int("http_status_code", httpStatusCode),

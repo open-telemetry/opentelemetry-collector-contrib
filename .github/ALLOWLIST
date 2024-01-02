@@ -15,7 +15,7 @@
 #
 
 ## 
-# NOTE: New components MUST have a codeowner. Add new components to the CODEOWNERS file instead of here.
+# NOTE: New components MUST have one or more codeowners. Add codeowners to the component metadata.yaml and run make gengithub
 ##
 
 ## COMMON & SHARED components
@@ -24,3 +24,4 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
+exporter/alibabacloudlogserviceexporter/
