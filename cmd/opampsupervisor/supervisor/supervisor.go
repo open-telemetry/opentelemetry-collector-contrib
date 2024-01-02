@@ -173,8 +173,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 func (s *Supervisor) createTemplates() error {
 	var err error
-	s.bootstrapTemplate, err = template.New("bootstrap").Parse(bootstrapConfTpl)
-	if err != nil {
+	if s.bootstrapTemplate, err = template.New("bootstrap").Parse(bootstrapConfTpl); err != nil {
 		return err
 	}
 
