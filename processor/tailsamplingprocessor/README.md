@@ -130,7 +130,7 @@ processors:
               boolean_attribute: {key: key4, value: true}
          },
          {
-              name: test-policy-11,
+              name: test-policy-13,
               type: ottl_condition,
               ottl_condition: {
                    error_mode: ignore,

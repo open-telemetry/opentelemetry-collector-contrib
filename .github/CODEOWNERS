@@ -36,7 +36,6 @@ connector/spanmetricsconnector/                          @open-telemetry/collect
 examples/demo/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
 exporter/alertmanagerexporter/                           @open-telemetry/collector-contrib-approvers @jpkrohling @sokoide @mcube8
-exporter/alibabacloudlogserviceexporter/                 @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
 exporter/awscloudwatchlogsexporter/                      @open-telemetry/collector-contrib-approvers @boostchicken @bryan-aguilar @rapphil
 exporter/awsemfexporter/                                 @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia @bryan-aguilar
 exporter/awskinesisexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
@@ -290,3 +289,4 @@ reports/distributions/liatrio.yaml  @open-telemetry/collector-contrib-approvers 
 
 ## UNMAINTAINED components
 
+exporter/alibabacloudlogserviceexporter/                 @open-telemetry/collector-contrib-approvers 
