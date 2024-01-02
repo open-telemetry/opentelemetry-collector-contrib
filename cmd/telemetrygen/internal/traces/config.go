@@ -22,19 +22,6 @@ type Config struct {
 	LoadSize         int
 
 	SpanDuration time.Duration
-
-	// OTLP TLS configuration 
-	CaFile string
-
-	// OTLP mTLS configuration
-	ClientAuth struct {
-		Enabled        bool
-		ClientCertFile string
-		ClientKeyFile  string
-	}
-
-	// OTLP exporter connection timeout
-	TimeOut      time.Duration
 }
 
 // Flags registers config flags.
@@ -50,15 +37,4 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.Batch, "batch", true, "Whether to batch traces")
 	fs.IntVar(&c.LoadSize, "size", 0, "Desired minimum size in MB of string data for each trace generated. This can be used to test traces with large payloads, i.e. when testing the OTLP receiver endpoint max receive size.")
 	fs.DurationVar(&c.SpanDuration, "span-duration", 123*time.Microsecond, "The duration of each generated span.")
-
-	// TLS CA configuration
-	fs.StringVar(&c.CaFile, "ca-cert", "", "Trusted Certificate Authority to verify collector receiver certificate")
-
-	// mTLS configuration
-	fs.BoolVar(&c.ClientAuth.Enabled, "mtls", false, "Whether to require client authentication for mTLS")
-	fs.StringVar(&c.ClientAuth.ClientCertFile, "client-cert", "", "Client certificate file")
-	fs.StringVar(&c.ClientAuth.ClientKeyFile, "client-key", "", "Client private key file")
-
-	// Timeout for connection failures
-	fs.DurationVar(&c.TimeOut, "timeout", 60*time.Second, "Timeout setting when testing failure conditions")
 }

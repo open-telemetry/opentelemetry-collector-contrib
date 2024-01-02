@@ -32,17 +32,13 @@ func Start(cfg *Config) error {
 		return err
 	}
 
-	//set a timeout
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.TimeOut)
-	defer cancel()
-
 	var exp *otlptrace.Exporter
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
-		exp, err = otlptracehttp.New(ctx, httpExporterOptions(cfg)...)
+		exp, err = otlptracehttp.New(context.Background(), httpExporterOptions(cfg)...)
 	} else {
 		logger.Info("starting gRPC exporter")
-		exp, err = otlptracegrpc.New(ctx, grpcExporterOptions(cfg)...)
+		exp, err = otlptracegrpc.New(context.Background(), grpcExporterOptions(cfg)...)
 	}
 
 	if err != nil {

@@ -4,9 +4,14 @@
 package metrics
 
 import (
+	"fmt"
+	"os"
+
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 // grpcExporterOptions creates the configuration options for a gRPC-based OTLP metric exporter.
@@ -21,6 +26,15 @@ func grpcExporterOptions(cfg *Config) []otlpmetricgrpc.Option {
 
 	if cfg.Insecure {
 		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithInsecure())
+	} else {
+		credentials, err := common.GetTLSCredentialsForGRPCExporter(cfg.CaFile, cfg.ClientAuth)
+		if err != nil {
+			fmt.Printf("Failed to get TLS crendentials: %w, exiting.\n", err)
+			os.Exit(1)
+		} else {
+			grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithTLSCredentials(credentials))
+			fmt.Printf("successfully added grpc option for TLS\n")
+		}
 	}
 
 	if len(cfg.Headers) > 0 {
@@ -40,6 +54,14 @@ func httpExporterOptions(cfg *Config) []otlpmetrichttp.Option {
 
 	if cfg.Insecure {
 		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithInsecure())
+	} else {
+		tlsCfg, err := common.GetTLSCredentialsForHTTPExporter(cfg.CaFile, cfg.ClientAuth)
+		if err != nil {
+			fmt.Printf("Failed to get TLS configuration: %w, exiting.\n", err)
+			os.Exit(1)
+		} else {
+			httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithTLSClientConfig(tlsCfg))
+		}
 	}
 
 	if len(cfg.Headers) > 0 {

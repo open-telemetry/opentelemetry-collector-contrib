@@ -6,7 +6,7 @@ Implementing robust security measures is essential for any tracing ingestion ser
 - Client Authentication via [Envoy](https://www.envoyproxy.io/docs/envoy/latest/start/start), a high-performance proxy. 
 Even though we can configure OTLP receiver with mTLS for client authentication, authorization is not supported by OpenTelemetry Collector. This is one of the reasons that we use Envoy for client authentication. It allows us to easily add authorization, ensuring that only authorized clients can submit traces to the ingestion service.
 
-In this example, we also include a test via telementrygen: a tool provided from this repository for generating synthetic trace data, which helps verify the security features and overall functionality of the set up. 
+In this example, we also include a test via telementrygen: a tool provided from this repository for generating synthetic telemetry data, which helps verify the security features and overall functionality of the set up. 
 
 
 ## Data Encryption via TLS
@@ -53,7 +53,7 @@ typed_config:
 
 ## Setup Environment
 ### Generate Certificates
-To generate various self-signed certificates, including those for Envoy and the OpenTelemetry Collector receiver, as well as tracing client certificate, we utilize the widely renowned open-source tool [OpenSSL](https://www.openssl.org/source/). 
+To generate various self-signed certificates, including those for Envoy and the OpenTelemetry Collector receiver, as well as tracing client certificate, we utilize the widely renowned open-source tool [OpenSSL](https://www.openssl.org/source/), OpenSSL 3.1.0 14 was tested. 
 
 In the `certs` folder, you can find a set of `.ext` files which define the properties for a certificate. A `MakeFile` is provided to facilate the process. 
 
