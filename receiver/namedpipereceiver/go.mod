@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.89.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.91.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/confmap v0.91.0
