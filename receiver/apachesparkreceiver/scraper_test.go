@@ -53,7 +53,7 @@ func TestScraper(t *testing.T) {
 				return pmetric.NewMetrics()
 			},
 			config:      createDefaultConfig().(*Config),
-			expectedErr: errFailedAppIDCollection,
+			expectedErr: errors.Join(errFailedAppIDCollection, errors.New("could not retrieve app ids")),
 		},
 		{
 			desc: "No Matching Allowed Apps",
