@@ -14,8 +14,8 @@ import (
 
 func TestMergeTracesTwoEmpty(t *testing.T) {
 	expectedEmpty := ptrace.NewTraces()
-	trace1 := ptrace.Traces{}
-	trace2 := ptrace.Traces{}
+	trace1 := ptrace.NewTraces()
+	trace2 := ptrace.NewTraces()
 
 	mergedTraces := mergeTraces(trace1, trace2)
 
@@ -25,7 +25,7 @@ func TestMergeTracesTwoEmpty(t *testing.T) {
 func TestMergeTracesSingleEmpty(t *testing.T) {
 	expectedTraces := simpleTraces()
 
-	trace1 := ptrace.Traces{}
+	trace1 := ptrace.NewTraces()
 	trace2 := simpleTraces()
 
 	mergedTraces := mergeTraces(trace1, trace2)
@@ -68,8 +68,8 @@ func TestMergeTraces(t *testing.T) {
 
 func TestMergeMetricsTwoEmpty(t *testing.T) {
 	expectedEmpty := pmetric.NewMetrics()
-	metric1 := pmetric.Metrics{}
-	metric2 := pmetric.Metrics{}
+	metric1 := pmetric.NewMetrics()
+	metric2 := pmetric.NewMetrics()
 
 	mergedMetrics := mergeMetrics(metric1, metric2)
 
@@ -79,7 +79,7 @@ func TestMergeMetricsTwoEmpty(t *testing.T) {
 func TestMergeMetricsSingleEmpty(t *testing.T) {
 	expectedMetrics := simpleMetricsWithResource()
 
-	metric1 := pmetric.Metrics{}
+	metric1 := pmetric.NewMetrics()
 	metric2 := simpleMetricsWithResource()
 
 	mergedMetrics := mergeMetrics(metric1, metric2)
