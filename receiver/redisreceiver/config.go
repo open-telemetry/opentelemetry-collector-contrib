@@ -35,7 +35,7 @@ type Config struct {
 
 	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
-	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 // configInfo holds configuration information to be used as resource/metrics attributes.

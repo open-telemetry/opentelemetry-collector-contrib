@@ -2,7 +2,8 @@
 FROM redis:7.2.3
 
 # For debug, uncomment this
-# RUN apt update && apt install --assume-yes net-tools && apt --assume-yes install procps && apt install --assume-yes neovim
+RUN apt update && apt install --assume-yes net-tools && apt --assume-yes install procps && apt install --assume-yes neovim
+RUN apt update && apt install --assume-yes socat
 
 # Seems to be an upstream issue with testcontainers or scraperint when using named nodes or clusters, so manually do it
 
@@ -29,5 +30,6 @@ EXPOSE 6381
 EXPOSE 6382
 EXPOSE 6383
 EXPOSE 6384
+EXPOSE 6385
 ENTRYPOINT ["cluster.sh"]
 CMD ["cluster.sh"]
