@@ -31,15 +31,15 @@ extensions:
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.91.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.90.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.91.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.90.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.91.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension v0.90.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension v0.91.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.90.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.91.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.90.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.91.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
 
 exporters:
