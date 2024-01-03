@@ -246,7 +246,6 @@ func (f *factory) consumeStatsPayload(ctx context.Context, out chan []byte, trac
 				case <-ctx.Done():
 					return
 				case msg := <-out:
-
 					sp := &pb.StatsPayload{}
 
 					err := proto.Unmarshal(msg, sp)
@@ -255,7 +254,6 @@ func (f *factory) consumeStatsPayload(ctx context.Context, out chan []byte, trac
 						continue
 					}
 					for _, sc := range sp.Stats {
-						// add the hostname to the stats payload
 						traceagent.ProcessStats(sc, "", tracerVersion)
 					}
 				}
