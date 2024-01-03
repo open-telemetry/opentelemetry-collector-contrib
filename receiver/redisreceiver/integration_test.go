@@ -89,7 +89,6 @@ func TestClusterIntegration(t *testing.T) {
 			pmetrictest.IgnoreTimestamp(),
 		),
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", "expected-cluster.yaml")),
-		scraperinttest.WriteExpected(),
 		scraperinttest.FailOnErrorLogs(),
 		scraperinttest.WithCreateContainerTimeout(time.Minute),
 		scraperinttest.WithCompareTimeout(time.Minute),
