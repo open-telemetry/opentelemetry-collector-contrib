@@ -76,7 +76,6 @@ components:
         - oidc
         - pprof
         - sigv4auth
-        - solarwindsapmsettings
     processor:
         - attributes
         - cumulativetodelta
