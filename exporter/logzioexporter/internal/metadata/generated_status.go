@@ -10,8 +10,8 @@ import (
 
 const (
 	Type            = "logzio"
-	TracesStability = component.StabilityLevelUnmaintained
-	LogsStability   = component.StabilityLevelUnmaintained
+	TracesStability = component.StabilityLevelBeta
+	LogsStability   = component.StabilityLevelBeta
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
