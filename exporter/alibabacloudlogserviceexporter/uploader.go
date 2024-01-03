@@ -55,7 +55,7 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 		tokenUpdateFunc, _ := slsutil.NewTokenUpdateFunc(config.ECSRamRole, config.TokenFilePath)
 		provider := sls.NewUpdateFuncProviderAdapter(tokenUpdateFunc)
 		producerConfig.CredentialsProvider = provider
-		
+
 		producerConfig.StsTokenShutDown = make(chan struct{})
 	}
 
