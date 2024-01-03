@@ -4,12 +4,10 @@ service:
       # Enables JSON log output for the Agent.
       encoding: json
     resource:
-      # Set resource attributes required by OpAMP spec.
-      # See https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescriptionidentifying_attributes
-      service.name: "{{.ServiceName}}"
-      service.version: "{{.ServiceVersion}}"
-      service.instance.id: "{{.InstanceId}}"
-
+      # Set resource attributes suggested by the OpAMP spec.
+      # See https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescription-message
+      {{range $k, $v := .ResourceAttributes}}{{$k}}: "{{$v}}"
+      {{end}}
   # Enable extension to allow the Supervisor to check health.
   extensions: [health_check]
 
