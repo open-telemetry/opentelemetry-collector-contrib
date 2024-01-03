@@ -120,6 +120,8 @@ func writeNumberDataPoints(buf *bytes.Buffer, metricName string, dps pmetric.Num
 		dp := dps.At(i)
 		var valueStr string
 		switch dp.ValueType() {
+		case pmetric.NumberDataPointValueTypeEmpty:
+			continue // skip this data point - otherwise an empty string will be used as the value and the backend will use the timestamp as the metric value
 		case pmetric.NumberDataPointValueTypeInt:
 			valueStr = formatInt64(dp.IntValue())
 		case pmetric.NumberDataPointValueTypeDouble:

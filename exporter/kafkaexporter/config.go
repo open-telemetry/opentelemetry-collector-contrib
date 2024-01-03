@@ -32,6 +32,10 @@ type Config struct {
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
 
+	// ClientID to configure the Kafka client with. This can be leveraged by
+	// Kafka to enforce ACLs, throttling quotas, and more.
+	ClientID string `mapstructure:"client_id"`
+
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
