@@ -108,7 +108,7 @@ func TestValidate(t *testing.T) {
 
 func TestValidateMetricDuplicates(t *testing.T) {
 	allowedMetrics := map[string][]string{
-		"container.cpu.utilization":           {"docker_stats", "kubeletstats", "podman_stats"},
+		"container.cpu.utilization":           {"docker_stats", "kubeletstats"},
 		"container.cpu.usage.system":          {"docker_stats", "podman_stats"},
 		"container.cpu.usage.percpu":          {"docker_stats", "podman_stats"},
 		"container.cpu.usage.total":           {"docker_stats", "podman_stats"},
