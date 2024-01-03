@@ -106,7 +106,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
 			_, ok = endpointSegregatedTraces[endpoint]
 			if !ok {
-				endpointSegregatedTraces[endpoint] = ptrace.Traces{}
+				endpointSegregatedTraces[endpoint] = ptrace.NewTraces()
 			}
 			endpointSegregatedTraces[endpoint] = mergeTraces(endpointSegregatedTraces[endpoint], batch)
 

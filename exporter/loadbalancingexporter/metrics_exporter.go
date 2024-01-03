@@ -109,7 +109,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 
 			_, ok = endpointSegregatedMetrics[endpoint]
 			if !ok {
-				endpointSegregatedMetrics[endpoint] = pmetric.Metrics{}
+				endpointSegregatedMetrics[endpoint] = pmetric.NewMetrics()
 			}
 			endpointSegregatedMetrics[endpoint] = mergeMetrics(endpointSegregatedMetrics[endpoint], batch)
 
