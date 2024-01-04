@@ -80,7 +80,7 @@ func run(ymlPath string) error {
 		}
 	}
 
-	if md.Config != nil && md.Config.Generate {
+	if md.Config != nil && md.Config.Documentation != nil && md.Config.Documentation.Enabled {
 		if err = os.MkdirAll(filepath.Join(ymlDir, "internal", "configgen"), 0700); err != nil {
 			return fmt.Errorf("unable to create config gen directory %q: %w", filepath.Join(ymlDir, "internal", "gen"), err)
 		}

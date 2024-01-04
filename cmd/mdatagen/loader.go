@@ -205,8 +205,12 @@ type tests struct {
 	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
 }
 
+type documentation struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
 type config struct {
-	Generate bool `mapstructure:"generate"`
+	Documentation *documentation `mapstructure:"documentation"`
 }
 
 type metadata struct {

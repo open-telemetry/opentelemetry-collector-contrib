@@ -178,4 +178,5 @@ tests:
   config:
 
 config:
-  generate: true
+  documentation:
+    enabled: true
