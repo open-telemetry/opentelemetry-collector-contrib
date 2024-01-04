@@ -1,2 +1,4 @@
 effective.yaml
 agent.log
+persistent_state.yaml
+*.dat

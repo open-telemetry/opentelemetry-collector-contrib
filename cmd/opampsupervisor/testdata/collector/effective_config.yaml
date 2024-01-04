@@ -4,6 +4,13 @@ exporters:
 extensions:
     health_check:
         endpoint: localhost:8000
+    opamp:
+        instance_uid: "00000000000000000000000000"
+        server:
+            ws:
+                endpoint: ws://localhost:0/v1/opamp
+                tls:
+                    insecure: true
 receivers:
     filelog:
         include:
@@ -12,6 +19,7 @@ receivers:
 service:
     extensions:
         - health_check
+        - opamp
     pipelines:
         logs:
             exporters:

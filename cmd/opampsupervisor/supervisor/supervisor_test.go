@@ -28,7 +28,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 		hasNewConfig:                 make(chan struct{}, 1),
 		effectiveConfigFilePath:      "effective.yaml",
 		agentConfigOwnMetricsSection: &atomic.Value{},
-		effectiveConfig:              &atomic.Value{},
+		mergedConfig:                 &atomic.Value{},
 		agentHealthCheckEndpoint:     "localhost:8000",
 	}
 
@@ -80,7 +80,7 @@ service:
 	expectedConfig = bytes.ReplaceAll(expectedConfig, []byte("\r\n"), []byte("\n"))
 
 	require.True(t, configChanged)
-	require.Equal(t, string(expectedConfig), s.effectiveConfig.Load().(string))
+	require.Equal(t, string(expectedConfig), s.mergedConfig.Load().(string))
 }
 
 func Test_onMessage(t *testing.T) {
