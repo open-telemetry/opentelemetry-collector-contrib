@@ -22,19 +22,45 @@ import (
 type Settings struct {
 	// Enabled indicates whether to convert resource attributes to telemetry attributes. Default is `false`.
 	Enabled bool `mapstructure:"enabled"`
+	// ClearAfterCopy indicates whether to clear the resource attributes after the conversion has completed. Default is `false`.
+	ClearAfterCopy bool `mapstructure:"clear_after_copy,omitempty"`
 }
 
 type wrapperMetricsExporter struct {
 	exporter.Metrics
+	clearAfterCopy bool
 }
 
 func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return wme.Metrics.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
+	return wme.Metrics.ConsumeMetrics(ctx, wme.convertToMetricsAttributes(md))
 }
 
 func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
 	// Always return false since this wrapper clones the data.
 	return consumer.Capabilities{MutatesData: false}
+}
+
+func (wme *wrapperMetricsExporter) convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
+	cloneMd := pmetric.NewMetrics()
+	md.CopyTo(cloneMd)
+	rms := cloneMd.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		resource := rms.At(i).Resource()
+		attrs := resource.Attributes()
+
+		ilms := rms.At(i).ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+			metricSlice := ilm.Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				addAttributesToMetric(metricSlice.At(k), attrs)
+			}
+		}
+		if wme.clearAfterCopy {
+			attrs.Clear()
+		}
+	}
+	return cloneMd
 }
 
 // WrapMetricsExporter wraps a given exporter.Metrics and based on the given settings
@@ -43,26 +69,7 @@ func WrapMetricsExporter(set Settings, exporter exporter.Metrics) exporter.Metri
 	if !set.Enabled {
 		return exporter
 	}
-	return &wrapperMetricsExporter{Metrics: exporter}
-}
-
-func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
-	cloneMd := pmetric.NewMetrics()
-	md.CopyTo(cloneMd)
-	rms := cloneMd.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		resource := rms.At(i).Resource()
-
-		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			ilm := ilms.At(j)
-			metricSlice := ilm.Metrics()
-			for k := 0; k < metricSlice.Len(); k++ {
-				addAttributesToMetric(metricSlice.At(k), resource.Attributes())
-			}
-		}
-	}
-	return cloneMd
+	return &wrapperMetricsExporter{Metrics: exporter, clearAfterCopy: set.ClearAfterCopy}
 }
 
 // addAttributesToMetric adds additional labels to the given metric

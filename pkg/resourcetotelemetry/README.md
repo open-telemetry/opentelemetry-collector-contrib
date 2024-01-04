@@ -11,3 +11,4 @@ The following configuration options can be modified:
 
 - `resource_to_telemetry_conversion`
     - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+    - `clear_after_copy` (default = false): If `clear_after_copy` is `true`, all the resource attributes will be cleared after they've been copied.
