@@ -1,12 +1,3 @@
-receivers:
-  otlp:
-    protocols:
-      http:
-        endpoint: "localhost:{{.EndpointPort}}"
-exporters:
-  debug:
-    verbosity: basic
-
 extensions:
   opamp:
     instance_uid: "{{.InstanceUid}}"
@@ -17,8 +8,4 @@ extensions:
           insecure: true
 
 service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      exporters: [debug]
   extensions: [opamp]
