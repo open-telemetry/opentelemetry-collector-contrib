@@ -6,9 +6,11 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 	"time"
 
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
@@ -25,9 +27,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -232,6 +236,32 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
+func (f *factory) consumeStatsPayload(ctx context.Context, out chan []byte, traceagent *agent.Agent, tracerVersion string, logger *zap.Logger) {
+	for i := 0; i < runtime.NumCPU(); i++ {
+		f.wg.Add(1)
+		go func() {
+			defer f.wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case msg := <-out:
+					sp := &pb.StatsPayload{}
+
+					err := proto.Unmarshal(msg, sp)
+					if err != nil {
+						logger.Error("failed to unmarshal stats payload", zap.Error(err))
+						continue
+					}
+					for _, sc := range sp.Stats {
+						traceagent.ProcessStats(sc, "", tracerVersion)
+					}
+				}
+			}
+		}()
+	}
+}
+
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
@@ -239,7 +269,6 @@ func (f *factory) createMetricsExporter(
 	c component.Config,
 ) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
-
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
@@ -253,7 +282,12 @@ func (f *factory) createMetricsExporter(
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
 	}
-
+	var statsOut chan []byte
+	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
+		statsOut = make(chan []byte, 1000)
+		statsv := set.BuildInfo.Command + set.BuildInfo.Version
+		f.consumeStatsPayload(ctx, statsOut, traceagent, statsv, set.Logger)
+	}
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
 	if err != nil {
@@ -286,7 +320,7 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, attrsTranslator, hostProvider, traceagent, metadataReporter)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, attrsTranslator, hostProvider, traceagent, metadataReporter, statsOut)
 		if metricsErr != nil {
 			cancel()    // first cancel context
 			f.wg.Wait() // then wait for shutdown
@@ -310,6 +344,9 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			f.StopReporter()
+			if statsOut != nil {
+				close(statsOut)
+			}
 			return nil
 		}),
 	)
