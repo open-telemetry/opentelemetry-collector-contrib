@@ -1,5 +1,4 @@
 Caleb-Hurshman
-Doron-Bargo
 MaxKsyunz
 MitchellGale
 YANG-DB
@@ -7,13 +6,10 @@ architjugran
 asaharn
 billmeyer
 emreyalvac
-keep94
 kiranmayib
 liqiangz
-oded-dd
 shaochengwang
 svrakitin
-thepeterstone
 yiyang5055
 am-kinetica
 mcube8
