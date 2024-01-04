@@ -191,7 +191,7 @@ receiver/bigipreceiver/                                  @open-telemetry/collect
 receiver/carbonreceiver/                                 @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 receiver/chronyreceiver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
 receiver/cloudflarereceiver/                             @open-telemetry/collector-contrib-approvers @dehaansa @djaglowski
-receiver/cloudfoundryreceiver/                           @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared @crobert-1
+receiver/cloudfoundryreceiver/                           @open-telemetry/collector-contrib-approvers @pellared @crobert-1
 receiver/collectdreceiver/                               @open-telemetry/collector-contrib-approvers @atoulme
 receiver/couchdbreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/datadogreceiver/                                @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @jpkrohling @MovieStoreGuy
