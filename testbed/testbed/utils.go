@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
-func GetAvailablePort(t *testing.T) int {
+func GetAvailablePort(t testing.TB) int {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	_, port, err := net.SplitHostPort(endpoint)
 	require.NoError(t, err)

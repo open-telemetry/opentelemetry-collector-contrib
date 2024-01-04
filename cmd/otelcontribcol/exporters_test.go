@@ -59,7 +59,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -558,19 +557,6 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["syslog"].CreateDefaultConfig().(*syslogexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
-				// disable queue to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
-				return cfg
-			},
-			expectConsumeErr: true,
-		},
-		{
-			exporter: "tanzuobservability",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["tanzuobservability"].CreateDefaultConfig().(*tanzuobservabilityexporter.Config)
-				cfg.Traces.Endpoint = "http://" + endpoint
-				cfg.Metrics.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
 				cfg.RetrySettings.Enabled = false
