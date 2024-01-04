@@ -1,0 +1,14 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:{{.EndpointPort}}"
+exporters:
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [debug]
