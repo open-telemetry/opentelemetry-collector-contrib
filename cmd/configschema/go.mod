@@ -5,18 +5,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschem
 go 1.20
 
 require (
-	github.com/fatih/structtag v1.2.0
-	github.com/google/uuid v1.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/configschema v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.92.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.92.1-0.20240118172122-8131d31601b8
-	go.opentelemetry.io/collector/config/configtls v0.92.1-0.20240118172122-8131d31601b8
-	go.opentelemetry.io/collector/otelcol v0.92.1-0.20240118172122-8131d31601b8
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.92.1-0.20240118172122-8131d31601b8
 	golang.org/x/mod v0.14.0
-	golang.org/x/text v0.14.0
-	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -326,6 +320,7 @@ require (
 	github.com/expr-lang/expr v1.15.8 // indirect
 	github.com/facebook/time v0.0.0-20240109160331-d1456d1a6bac // indirect
 	github.com/fatih/color v1.15.0 // indirect
+	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -368,6 +363,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
+	github.com/google/uuid v1.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gophercloud/gophercloud v1.7.0 // indirect
@@ -623,6 +619,7 @@ require (
 	go.mongodb.org/mongo-driver v1.13.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.92.1-0.20240118172122-8131d31601b8 // indirect
+	go.opentelemetry.io/collector/component v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.92.1-0.20240118172122-8131d31601b8 // indirect
@@ -631,6 +628,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240118172122-8131d31601b8 // indirect
+	go.opentelemetry.io/collector/config/configtls v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/config/internal v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/confmap v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/connector v0.92.1-0.20240118172122-8131d31601b8 // indirect
@@ -645,6 +643,7 @@ require (
 	go.opentelemetry.io/collector/extension/ballastextension v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8 // indirect
+	go.opentelemetry.io/collector/otelcol v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/processor v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.92.1-0.20240118172122-8131d31601b8 // indirect
@@ -681,6 +680,7 @@ require (
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
@@ -696,6 +696,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
 	k8s.io/api v0.28.4 // indirect

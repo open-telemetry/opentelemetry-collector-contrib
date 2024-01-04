@@ -11,8 +11,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/cfgmetadatagen/cfgmetadatagen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/configschema"
 )
 
 func main() {
@@ -23,9 +23,36 @@ func main() {
 		fmt.Printf("error getting components %v", err)
 		os.Exit(1)
 	}
-	err = cfgmetadatagen.GenerateFiles(c, sourceDir, outputDir)
-	if err != nil {
-		fmt.Printf("cfg metadata generator failed: %v\n", err)
+
+	for _, e := range c.Extensions {
+		err := configschema.GenerateMetadata(e, sourceDir, outputDir)
+		if err != nil {
+			fmt.Printf("skipped writing config meta yaml: %v\n", err)
+		}
+	}
+	for _, e := range c.Exporters {
+		err := configschema.GenerateMetadata(e, sourceDir, outputDir)
+		if err != nil {
+			fmt.Printf("skipped writing config meta yaml: %v\n", err)
+		}
+	}
+	for _, p := range c.Processors {
+		err := configschema.GenerateMetadata(p, sourceDir, outputDir)
+		if err != nil {
+			fmt.Printf("skipped writing config meta yaml: %v\n", err)
+		}
+	}
+	for _, r := range c.Receivers {
+		err := configschema.GenerateMetadata(r, sourceDir, outputDir)
+		if err != nil {
+			fmt.Printf("skipped writing config meta yaml: %v\n", err)
+		}
+	}
+	for _, c := range c.Connectors {
+		err := configschema.GenerateMetadata(c, sourceDir, outputDir)
+		if err != nil {
+			fmt.Printf("skipped writing config meta yaml: %v\n", err)
+		}
 	}
 }
 
