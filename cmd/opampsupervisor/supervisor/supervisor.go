@@ -239,13 +239,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		},
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
-				instanceIdSeen := false
+				instanceIDSeen := false
 				s.agentDescription = message.AgentDescription
 				identAttr := s.agentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
-					switch attr.Key {
-					case semconv.AttributeServiceInstanceID:
+					if attr.Key == semconv.AttributeServiceInstanceID {
 						// TODO: Consider whether to attempt restarting the Collector.
 						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
 						if attr.Value.GetStringValue() != s.instanceID.String() {
@@ -255,11 +254,11 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 								s.instanceID.String())
 							return
 						}
-						instanceIdSeen = true
+						instanceIDSeen = true
 					}
 				}
 
-				if !instanceIdSeen {
+				if !instanceIDSeen {
 					done <- errors.New("the Collector did not specify an instance ID in its AgentDescription message")
 					return
 				}
@@ -293,7 +292,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		} else {
 			return errors.New("collector's OpAMP client never connected to the Supervisor")
 		}
-	case err := <-done:
+	case err = <-done:
 		if err != nil {
 			return err
 		}

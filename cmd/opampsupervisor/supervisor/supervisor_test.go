@@ -36,7 +36,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 		},
 	}
 
-	s.createTemplates()
+	require.NoError(t, s.createTemplates())
 	s.loadAgentEffectiveConfig()
 
 	configChanged, err := s.composeEffectiveConfig(&protobufs.AgentRemoteConfig{
