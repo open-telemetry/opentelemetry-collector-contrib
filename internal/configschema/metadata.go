@@ -11,8 +11,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// GenerateMetadatada generates the metadata of a component.
-func GenerateMetadatada(f component.Factory, sourceDir string, outputDir string) error {
+// GenerateMetadata generates the metadata of a component.
+func GenerateMetadata(f component.Factory, sourceDir string, outputDir string) error {
 	writer := newMetadataFileWriter(outputDir)
 	var cfg CfgInfo
 	var err error
