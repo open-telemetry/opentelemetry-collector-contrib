@@ -34,7 +34,7 @@ func newExporter(ctx context.Context, cfg *Config) (exporter, error) {
 		}
 		creds, err := common.GetTLSCredentialsForHTTPExporter(cfg.CaFile, cfg.ClientAuth)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get TLS crendentials: %w", err)
+			return nil, fmt.Errorf("failed to get TLS credentials: %w", err)
 		}
 		return &httpClientExporter{
 			client: &http.Client{Transport: &http.Transport{TLSClientConfig: creds}},
@@ -53,7 +53,7 @@ func newExporter(ctx context.Context, cfg *Config) (exporter, error) {
 	} else {
 		creds, err := common.GetTLSCredentialsForGRPCExporter(cfg.CaFile, cfg.ClientAuth)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get TLS crendentials: %w", err)
+			return nil, fmt.Errorf("failed to get TLS credentials: %w", err)
 		}
 		clientConn, err = grpc.DialContext(ctx, cfg.Endpoint(), grpc.WithTransportCredentials(creds))
 		if err != nil {
