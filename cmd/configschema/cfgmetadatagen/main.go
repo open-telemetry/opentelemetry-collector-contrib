@@ -25,31 +25,36 @@ func main() {
 	}
 
 	for _, e := range c.Extensions {
-		err := configschema.GenerateMetadata(e, sourceDir, outputDir)
+		filename := fmt.Sprintf("%s.yaml", e.Type())
+		err := configschema.GenerateMetadata(e, sourceDir, outputDir, filename)
 		if err != nil {
 			fmt.Printf("skipped writing config meta yaml: %v\n", err)
 		}
 	}
 	for _, e := range c.Exporters {
-		err := configschema.GenerateMetadata(e, sourceDir, outputDir)
+		filename := fmt.Sprintf("%s.yaml", e.Type())
+		err := configschema.GenerateMetadata(e, sourceDir, outputDir, filename)
 		if err != nil {
 			fmt.Printf("skipped writing config meta yaml: %v\n", err)
 		}
 	}
 	for _, p := range c.Processors {
-		err := configschema.GenerateMetadata(p, sourceDir, outputDir)
+		filename := fmt.Sprintf("%s.yaml", p.Type())
+		err := configschema.GenerateMetadata(p, sourceDir, outputDir, filename)
 		if err != nil {
 			fmt.Printf("skipped writing config meta yaml: %v\n", err)
 		}
 	}
 	for _, r := range c.Receivers {
-		err := configschema.GenerateMetadata(r, sourceDir, outputDir)
+		filename := fmt.Sprintf("%s.yaml", r.Type())
+		err := configschema.GenerateMetadata(r, sourceDir, outputDir, filename)
 		if err != nil {
 			fmt.Printf("skipped writing config meta yaml: %v\n", err)
 		}
 	}
 	for _, c := range c.Connectors {
-		err := configschema.GenerateMetadata(c, sourceDir, outputDir)
+		filename := fmt.Sprintf("%s.yaml", c.Type())
+		err := configschema.GenerateMetadata(c, sourceDir, outputDir, filename)
 		if err != nil {
 			fmt.Printf("skipped writing config meta yaml: %v\n", err)
 		}

@@ -5,6 +5,7 @@ package configschema // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"fmt"
+	"path/filepath"
 	"reflect"
 
 	"go.opentelemetry.io/collector/component"
@@ -12,20 +13,20 @@ import (
 )
 
 // GenerateMetadata generates the metadata of a component.
-func GenerateMetadata(f component.Factory, sourceDir string, outputDir string) error {
+func GenerateMetadata(f component.Factory, sourceDir string, outputDir string, filename string) error {
 	writer := newMetadataFileWriter(outputDir)
 	var cfg CfgInfo
 	var err error
 	if cfg, err = GetCfgInfo(f); err != nil {
 		return err
 	}
-	if err = writeComponentYAML(writer, cfg, sourceDir); err != nil {
+	if err = writeComponentYAML(writer, cfg, sourceDir, filepath.Join(outputDir, filename)); err != nil {
 		return err
 	}
 	return nil
 }
 
-func writeComponentYAML(yw metadataWriter, cfg CfgInfo, srcRoot string) error {
+func writeComponentYAML(w *metadataFileWriter, cfg CfgInfo, srcRoot string, filename string) error {
 	fields, err := ReadFields(reflect.ValueOf(cfg.CfgInstance), srcRoot)
 	if err != nil {
 		return fmt.Errorf("error reading fields for component %v: %w", cfg.Type, err)
@@ -34,7 +35,7 @@ func writeComponentYAML(yw metadataWriter, cfg CfgInfo, srcRoot string) error {
 	if err != nil {
 		return fmt.Errorf("error marshaling to yaml: %w", err)
 	}
-	err = yw.write(cfg, yamlBytes)
+	err = w.write(yamlBytes, filename)
 	if err != nil {
 		return fmt.Errorf("error writing component yaml: %w", err)
 	}

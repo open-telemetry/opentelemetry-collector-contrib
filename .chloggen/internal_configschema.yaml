@@ -16,10 +16,11 @@ issues: [30187]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Components can now generate their own configuration using the following instructions in metadata.yaml:
+  Components can now generate their own configuration documentation using the following instructions in metadata.yaml:
   ```
   config:
-    generate: true
+    documentation:
+      enabled: true
   ```
 
 # If your change doesn't affect end users or the exported elements of any package,

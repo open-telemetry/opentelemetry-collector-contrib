@@ -21,7 +21,7 @@ func main() {
 	if err := configschema.GenerateConfigDoc(filepath.Join(path, "..", ".."), f); err != nil {
 		panic(err)
 	}
-	if err := configschema.GenerateMetadata(f, filepath.Join(path, "..", ".."), filepath.Join(path, "..", "..")); err != nil {
+	if err := configschema.GenerateMetadata(f, filepath.Join(path, "..", ".."), filepath.Join(path, "..", ".."), "config_schema.yaml"); err != nil {
 		panic(err)
 	}
 }
