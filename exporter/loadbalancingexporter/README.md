@@ -27,7 +27,7 @@ The options for `routing_key` are: `service`, `traceID`, `metric` (metric name),
 | ------------- |-----------|
 | service | logs, spans, metrics |
 | traceID | logs, spans |
-| resource | metrics |
+| resource | metrics, logs |
 | metric | metrics |
 
 If no `routing_key` is configured, the default routing mechanism is `traceID`  for traces, while `service` is the default for metrics. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend.
@@ -67,6 +67,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
 * The `routing_key` property is used to route spans to exporters based on different parameters. This functionality is currently enabled only for `trace` pipeline types. It supports one of the following values:
     * `service`: exports spans based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate. 
     * `traceID` (default): exports spans based on their `traceID`.
+    * `resource`: exports logs based on `resource_keys`. exports metric based on all resource attributes. 
     * If not configured, defaults to `traceID` based routing.
 
 Simple example
@@ -126,7 +127,9 @@ processors:
 
 exporters:
   loadbalancing:
-    routing_key: "service"
+    routing_key: "resource"
+    resource_keys: 
+      - namespace
     protocol:
       otlp:
         # all options from the OTLP exporter are supported

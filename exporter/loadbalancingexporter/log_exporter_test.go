@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -148,6 +149,102 @@ func TestConsumeLogs(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestIdBasedRouting(t *testing.T) {
+	sink := new(consumertest.LogsSink)
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(sink.ConsumeLogs), nil
+	}
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	// pre-load an exporter here, so that we don't use the actual OTLP exporter
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-3"})
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(ctx context.Context) ([]string, error) {
+			return []string{"endpoint-1", "endpoint-2", "endpoint-3"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// test
+	log := twoServicesLogWithSameTraceID()
+	appendSimpleLogWithID(log.ResourceLogs().At(0), [16]byte{1, 2, 3, 4})
+	log.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+	log.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty().SetTraceID([16]byte{2, 3, 4, 5})
+	res := p.ConsumeLogs(context.Background(), log)
+
+	// verify
+	assert.NoError(t, res)
+	// This will be split into four because of the behavior of batchpersignal.SplitLogs
+	// The ad-service-1 log is split into 3
+	// - 1 log containing the two "1234" spans
+	// - 1 log containing the "2345" span
+	// - 1 log containing the span in a different ILS (despite having the same trace ID as the two "1234" logs)
+	// - 1 log containing the span in a different RS (despite having the same trace ID as the two "1234" logs)
+	re := sink.AllLogs()
+	assert.Len(t, re, 4)
+}
+
+func TestResourceAttrBasedRouting(t *testing.T) {
+	sink := new(consumertest.LogsSink)
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(sink.ConsumeLogs), nil
+	}
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), attrBasedRoutingConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(exportertest.NewNopCreateSettings(), attrBasedRoutingConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	// pre-load an exporter here, so that we don't use the actual OTLP exporter
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-3"})
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(ctx context.Context) ([]string, error) {
+			return []string{"endpoint-1", "endpoint-2", "endpoint-3"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// test
+	log := twoServicesLogWithSameTraceID()
+	rs := log.ResourceLogs().AppendEmpty()
+	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "ad-service-1")
+	appendSimpleLogWithID(rs, [16]byte{1, 2, 3, 4})
+	res := p.ConsumeLogs(context.Background(), log)
+
+	// verify
+	assert.NoError(t, res)
+	// Verify that the single Trace was split into two based on service name
+	// With the two `ad-service-1` RS being grouped into a single trace
+	re := sink.AllLogs()
+	assert.Len(t, re, 2)
+}
+
 func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockExporter(), nil
@@ -223,14 +320,17 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 	assert.Len(t, sink.AllLogs(), 2)
 }
 
-func TestNoLogsInBatch(t *testing.T) {
+func TestNoLogsInBatchTraceIdRouting(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string
 		batch plog.Logs
+		err   error
 	}{
+		// Trace ID routing
 		{
 			"no resource logs",
 			plog.NewLogs(),
+			errors.New("empty resource logs"),
 		},
 		{
 			"no instrumentation library logs",
@@ -239,6 +339,7 @@ func TestNoLogsInBatch(t *testing.T) {
 				batch.ResourceLogs().AppendEmpty()
 				return batch
 			}(),
+			errors.New("empty scope logs"),
 		},
 		{
 			"no logs",
@@ -247,11 +348,48 @@ func TestNoLogsInBatch(t *testing.T) {
 				batch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 				return batch
 			}(),
+			errors.New("empty logs"),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res := traceIDFromLogs(tt.batch)
-			assert.Equal(t, pcommon.NewTraceIDEmpty(), res)
+			res, err := routeByTraceId(tt.batch)
+			assert.Equal(t, err, tt.err)
+			assert.Equal(t, res, "")
+		})
+	}
+}
+
+func TestNoLogsInBatchResourceRouting(t *testing.T) {
+	for _, tt := range []struct {
+		desc  string
+		batch plog.Logs
+		res   []routingEntry
+		err   error
+	}{
+		// Service / Resource Attribute routing
+		{
+			"no logs",
+			func() plog.Logs {
+				batch := plog.NewLogs()
+				batch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+				return batch
+			}(),
+			[]routingEntry{
+				{
+					routingKey: traceIDRouting,
+					keyValue:   "",
+				},
+			},
+			nil,
+		},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			res, err := splitLogsByResourceAttr(tt.batch, []string{"service.name"})
+			assert.Equal(t, tt.err, err)
+			for i := range res {
+				assert.Equal(t, tt.res[i].routingKey, res[i].routingKey)
+				assert.Equal(t, tt.res[i].keyValue, res[i].keyValue)
+			}
 		})
 	}
 }
@@ -453,6 +591,22 @@ func simpleLogWithoutID() plog.Logs {
 	sl.LogRecords().AppendEmpty()
 
 	return logs
+}
+
+func twoServicesLogWithSameTraceID() plog.Logs {
+	logs := plog.NewLogs()
+	logs.ResourceLogs().EnsureCapacity(2)
+	rs1 := logs.ResourceLogs().AppendEmpty()
+	rs1.Resource().Attributes().PutStr(conventions.AttributeServiceName, "ad-service-1")
+	appendSimpleLogWithID(rs1, [16]byte{1, 2, 3, 4})
+	rs2 := logs.ResourceLogs().AppendEmpty()
+	rs2.Resource().Attributes().PutStr(conventions.AttributeServiceName, "get-recommendations-7")
+	appendSimpleLogWithID(rs2, [16]byte{1, 2, 3, 4})
+	return logs
+}
+
+func appendSimpleLogWithID(dest plog.ResourceLogs, id pcommon.TraceID) {
+	dest.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(id)
 }
 
 type mockLogsExporter struct {

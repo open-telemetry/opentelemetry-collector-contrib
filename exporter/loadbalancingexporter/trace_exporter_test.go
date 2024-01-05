@@ -581,6 +581,16 @@ func simpleConfig() *Config {
 	}
 }
 
+func attrBasedRoutingConfig() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}},
+		},
+		RoutingKey:   "resource",
+		ResourceKeys: []string{"service.name"},
+	}
+}
+
 func serviceBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
