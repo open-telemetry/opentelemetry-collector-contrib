@@ -28,10 +28,12 @@ The current metrics available via scraping from GitHub are:
 - [ ] Repository branch time
 - [x] Repository branch count
 - [x] Repository contributor count
+- [x] Repository pull request merge count
+- [x] Repository pull request open count
 - [x] Repository pull request time
 - [x] Repository pull request merge time
 - [x] Repository pull request approval time
-- [x] Repository pull request deployment time
+- [ ] Repository pull request deployment time
 
 > Note: Some metrics may be disabled by default and have to be explicitly enabled.
 > For example, the repository contributor count metric is one such metric. This is
