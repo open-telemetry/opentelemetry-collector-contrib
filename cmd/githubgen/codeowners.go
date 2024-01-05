@@ -81,8 +81,13 @@ func (cg codeownersGenerator) generate(data *githubData) error {
 	allowlistLines := strings.Split(string(allowlistData), "\n")
 
 	allowlist := make(map[string]struct{}, len(allowlistLines))
+	unusedAllowlist := make(map[string]struct{}, len(allowlistLines))
 	for _, line := range allowlistLines {
+		if line == "" {
+			continue
+		}
 		allowlist[line] = struct{}{}
+		unusedAllowlist[line] = struct{}{}
 	}
 	var missingCodeowners []string
 	var duplicateCodeowners []string
@@ -95,6 +100,7 @@ func (cg codeownersGenerator) generate(data *githubData) error {
 
 		if !present {
 			_, allowed := allowlist[codeowner]
+			delete(unusedAllowlist, codeowner)
 			allowed = allowed || strings.HasPrefix(codeowner, "open-telemetry/")
 			if !allowed {
 				missingCodeowners = append(missingCodeowners, codeowner)
@@ -110,6 +116,14 @@ func (cg codeownersGenerator) generate(data *githubData) error {
 	if len(duplicateCodeowners) > 0 {
 		sort.Strings(duplicateCodeowners)
 		return fmt.Errorf("codeowners members duplicate in allowlist: %s", strings.Join(duplicateCodeowners, ", "))
+	}
+	if len(unusedAllowlist) > 0 {
+		var unused []string
+		for k := range unusedAllowlist {
+			unused = append(unused, k)
+		}
+		sort.Strings(unused)
+		return fmt.Errorf("unused members in allowlist: %s", strings.Join(unused, ", "))
 	}
 
 	codeowners := codeownersHeader
