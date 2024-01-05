@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"os"
 
 	"google.golang.org/grpc/credentials"
@@ -40,7 +39,7 @@ func GetTLSCredentialsForGRPCExporter(caFile string, cAuth ClientAuth) (credenti
 		RootCAs: pool,
 	})
 
-	//Configuration for mTLS
+	// Configuration for mTLS
 	if cAuth.Enabled {
 		keypair, err := tls.LoadX509KeyPair(cAuth.ClientCertFile, cAuth.ClientKeyFile)
 		if err != nil {
@@ -64,8 +63,8 @@ func GetTLSCredentialsForHTTPExporter(caFile string, cAuth ClientAuth) (*tls.Con
 	tlsCfg := tls.Config{
 		RootCAs: pool,
 	}
-	
-	//Configuration for mTLS
+
+	// Configuration for mTLS
 	if cAuth.Enabled {
 		keypair, err := tls.LoadX509KeyPair(cAuth.ClientCertFile, cAuth.ClientKeyFile)
 		if err != nil {

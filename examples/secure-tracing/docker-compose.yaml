@@ -12,7 +12,7 @@ services:
       - ./certs/ca.crt:/etc/ca.crt
       - ./envoy/edge.yaml:/etc/edge.yaml
   otel-collector:
-    image: otel/opentelemetry-collector:0.85.0
+    image: otel/opentelemetry-collector:0.91.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./certs/otel-collector.crt:/etc/otel-collector.crt

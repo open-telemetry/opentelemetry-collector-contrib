@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -32,17 +31,15 @@ func newExporter(ctx context.Context, cfg *Config) (exporter, error) {
 				client: http.DefaultClient,
 				cfg:    cfg,
 			}, nil
-		} else {
-			creds, err := common.GetTLSCredentialsForHTTPExporter(cfg.CaFile, cfg.ClientAuth)
-			if err != nil {
-				fmt.Printf("Failed to get TLS crendentials: %w, exiting.\n", err)
-				os.Exit(1)
-			}
-			return &httpClientExporter{
-				client: &http.Client{Transport: &http.Transport{TLSClientConfig: creds}},
-				cfg:    cfg,
-			}, nil
 		}
+		creds, err := common.GetTLSCredentialsForHTTPExporter(cfg.CaFile, cfg.ClientAuth)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get TLS crendentials: %w", err)
+		}
+		return &httpClientExporter{
+			client: &http.Client{Transport: &http.Transport{TLSClientConfig: creds}},
+			cfg:    cfg,
+		}, nil
 	}
 
 	// Exporter with GRPC
@@ -56,8 +53,7 @@ func newExporter(ctx context.Context, cfg *Config) (exporter, error) {
 	} else {
 		creds, err := common.GetTLSCredentialsForGRPCExporter(cfg.CaFile, cfg.ClientAuth)
 		if err != nil {
-			fmt.Printf("Failed to get TLS crendentials: %w, exiting.\n", err)
-			os.Exit(1)
+			return nil, fmt.Errorf("failed to get TLS crendentials: %w", err)
 		}
 		clientConn, err = grpc.DialContext(ctx, cfg.Endpoint(), grpc.WithTransportCredentials(creds))
 		if err != nil {

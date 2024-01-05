@@ -18,16 +18,9 @@ exporters:
     verbosity: detailed
 
 service:
-  telemetry:
-    logs:
-      level: "debug"
-    metrics:
-      address: ":8888"
-
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
       exporters: [logging]
 
-  extensions: [health_check]

@@ -139,7 +139,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 		"Flag may be repeated to set multiple attributes (e.g --telemetry-attributes \"key1=\\\"value1\\\"\" --telemetry-attributes \"key2=\\\"value2\\\"\")")
 
 	// TLS CA configuration
-	fs.StringVar(&c.CaFile, "ca-cert", "", "Trusted Certificate Authority to verify collector receiver certificate")
+	fs.StringVar(&c.CaFile, "ca-cert", "", "Trusted Certificate Authority to verify server certificate")
 
 	// mTLS configuration
 	fs.BoolVar(&c.ClientAuth.Enabled, "mtls", false, "Whether to require client authentication for mTLS")
