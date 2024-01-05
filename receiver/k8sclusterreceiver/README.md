@@ -257,6 +257,16 @@ rules:
     - get
     - list
     - watch
+# (optional) HierarchicalResourceQuota
+# https://github.com/kubernetes-sigs/hierarchical-namespaces
+- apiGroups:
+    - hnc.x-k8s.io
+  resources:
+    - hierarchicalresourcequotas
+  verbs:
+    - get
+    - list
+    - watch
 EOF
 ```
 
