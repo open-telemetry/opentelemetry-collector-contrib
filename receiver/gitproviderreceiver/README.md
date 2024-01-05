@@ -30,7 +30,7 @@ The current metrics available via scraping from GitHub are:
 - [x] Repository contributor count
 - [x] Repository pull request merge count
 - [x] Repository pull request open count
-- [x] Repository pull request time
+- [x] Repository pull request open time
 - [x] Repository pull request merge time
 - [x] Repository pull request approval time
 - [ ] Repository pull request deployment time
