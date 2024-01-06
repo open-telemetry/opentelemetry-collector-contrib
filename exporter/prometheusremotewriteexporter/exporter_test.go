@@ -1003,6 +1003,10 @@ func canceledContext() context.Context {
 	return ctx
 }
 
+func assertPermanentConsumerError(t assert.TestingT, err error, _ ...any) bool {
+	return assert.True(t, consumererror.IsPermanent(err), "error should be consumererror.Permanent")
+}
+
 func TestRetries(t *testing.T) {
 
 	tts := []struct {
@@ -1029,7 +1033,7 @@ func TestRetries(t *testing.T) {
 			1,
 			http.StatusBadRequest,
 			assert.Error,
-			func(tt assert.TestingT, err error, i ...interface{}) bool { return consumererror.IsPermanent(err) },
+			assertPermanentConsumerError,
 			context.Background(),
 		},
 		{
@@ -1038,7 +1042,7 @@ func TestRetries(t *testing.T) {
 			0,
 			http.StatusInternalServerError,
 			assert.Error,
-			func(tt assert.TestingT, err error, i ...interface{}) bool { return consumererror.IsPermanent(err) },
+			assertPermanentConsumerError,
 			canceledContext(),
 		},
 	}
