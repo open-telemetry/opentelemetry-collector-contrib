@@ -1010,7 +1010,8 @@ func TestRetries(t *testing.T) {
 		serverErrorCount int // number of times server should return error
 		expectedAttempts int
 		httpStatus       int
-		shouldError      bool
+		assertError      assert.ErrorAssertionFunc
+		assertErrorType  assert.ErrorAssertionFunc
 		ctx              context.Context
 	}{
 		{
@@ -1018,7 +1019,8 @@ func TestRetries(t *testing.T) {
 			3,
 			4,
 			http.StatusInternalServerError,
-			false,
+			assert.NoError,
+			assert.NoError,
 			context.Background(),
 		},
 		{
@@ -1026,7 +1028,8 @@ func TestRetries(t *testing.T) {
 			4,
 			1,
 			http.StatusBadRequest,
-			true,
+			assert.Error,
+			func(tt assert.TestingT, err error, i ...interface{}) bool { return consumererror.IsPermanent(err) },
 			context.Background(),
 		},
 		{
@@ -1034,7 +1037,8 @@ func TestRetries(t *testing.T) {
 			4,
 			0,
 			http.StatusInternalServerError,
-			true,
+			assert.Error,
+			func(tt assert.TestingT, err error, i ...interface{}) bool { return consumererror.IsPermanent(err) },
 			canceledContext(),
 		},
 	}
@@ -1066,12 +1070,8 @@ func TestRetries(t *testing.T) {
 			}
 
 			err = exporter.execute(tt.ctx, &prompb.WriteRequest{})
-			if tt.shouldError {
-				assert.Error(t, err)
-				assert.True(t, consumererror.IsPermanent(err))
-			} else {
-				assert.NoError(t, err)
-			}
+			tt.assertError(t, err)
+			tt.assertErrorType(t, err)
 			assert.Equal(t, tt.expectedAttempts, totalAttempts)
 		})
 	}
