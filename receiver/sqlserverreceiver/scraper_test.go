@@ -30,7 +30,7 @@ type mockPerfCounterWatcher struct {
 }
 
 // Close provides a mock function with given fields:
-func (_m mockPerfCounterWatcher) Close() error {
+func (_m *mockPerfCounterWatcher) Close() error {
 	ret := _m.Called()
 
 	var r0 error
@@ -44,7 +44,7 @@ func (_m mockPerfCounterWatcher) Close() error {
 }
 
 // Path provides a mock function with given fields:
-func (_m mockPerfCounterWatcher) Path() string {
+func (_m *mockPerfCounterWatcher) Path() string {
 	ret := _m.Called()
 
 	var r0 string
@@ -58,16 +58,14 @@ func (_m mockPerfCounterWatcher) Path() string {
 }
 
 // ScrapeData provides a mock function with given fields:
-func (_m mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, error) {
+func (_m *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, error) {
 	ret := _m.Called()
 
 	var r0 []winperfcounters.CounterValue
 	if rf, ok := ret.Get(0).(func() []winperfcounters.CounterValue); ok {
 		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]winperfcounters.CounterValue)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]winperfcounters.CounterValue)
 	}
 
 	var r1 error
@@ -86,9 +84,9 @@ func TestSqlServerScraper(t *testing.T) {
 	logger, obsLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(logger)
-	s := newSqlServerScraper(settings, cfg)
+	s := newSQLServerScraper(settings, cfg)
 
-	s.start(context.Background(), nil)
+	assert.NoError(t, s.start(context.Background(), nil))
 	assert.Equal(t, 0, len(s.watcherRecorders))
 	assert.Equal(t, 21, obsLogs.Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
@@ -117,15 +115,14 @@ func TestScrape(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
 		settings := receivertest.NewNopCreateSettings()
-		scraper := newSqlServerScraper(settings, cfg)
+		scraper := newSQLServerScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
 			perfCounterWatcher := &mockPerfCounterWatcher{}
 			perfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: dbInstance, Value: float64(i)}}, nil)
-			i++
 			for _, recorder := range rec.recorders {
 				scraper.watcherRecorders = append(scraper.watcherRecorders, watcherRecorder{
-					watcher:  *perfCounterWatcher,
+					watcher:  perfCounterWatcher,
 					recorder: recorder,
 				})
 			}
@@ -162,15 +159,14 @@ func TestScrape(t *testing.T) {
 		cfg.InstanceName = "CustomInstance"
 
 		settings := receivertest.NewNopCreateSettings()
-		scraper := newSqlServerScraper(settings, cfg)
+		scraper := newSQLServerScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
 			perfCounterWatcher := &mockPerfCounterWatcher{}
 			perfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: dbInstance, Value: float64(i)}}, nil)
-			i++
 			for _, recorder := range rec.recorders {
 				scraper.watcherRecorders = append(scraper.watcherRecorders, watcherRecorder{
-					watcher:  *perfCounterWatcher,
+					watcher:  perfCounterWatcher,
 					recorder: recorder,
 				})
 			}
