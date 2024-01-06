@@ -50,6 +50,11 @@ The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
+- `processor_mode` (default = default): Processor mode to use.
+  1. `default`: Default mode, where the processor will make a sampling decision and removes unwanted traces.
+  2. `presample`: Presample mode, where the processor will make a sampling decision and keeps unwanted traces.
+  3. `postsample`: Postsample mode, where the processor does not decide and just removes unwanted traces based on `sampled_attribute_name` attribute.
+- `sampled_attribute_name`: (default = tail_sampling.sampled): Attribute name to be added to the sampled traces. This attribute will be added to all spans in the trace.
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
