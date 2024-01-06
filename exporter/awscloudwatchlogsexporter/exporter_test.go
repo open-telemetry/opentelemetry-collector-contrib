@@ -93,6 +93,7 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "no scope",
 			resource: testResource(),
 			log:      testLogRecord(),
+			scope:    emptyScope(),
 			config:   &Config{},
 			want: cwlogs.Event{
 				GeneratedTime: time.Now(),
@@ -282,6 +283,11 @@ func testScope() pcommon.InstrumentationScope {
 	scope.SetName("test-scope")
 	scope.SetVersion("1.0.0")
 	scope.Attributes().PutStr("scope-attr", "value")
+	return scope
+}
+
+func emptyScope() pcommon.InstrumentationScope {
+	scope := pcommon.NewInstrumentationScope()
 	return scope
 }
 

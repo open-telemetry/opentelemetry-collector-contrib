@@ -167,16 +167,16 @@ type scopeCwLogBody struct {
 }
 
 type cwLogBody struct {
-	Body                   any            `json:"body,omitempty"`
-	SeverityNumber         int32          `json:"severity_number,omitempty"`
-	SeverityText           string         `json:"severity_text,omitempty"`
-	DroppedAttributesCount uint32         `json:"dropped_attributes_count,omitempty"`
-	Flags                  uint32         `json:"flags,omitempty"`
-	TraceID                string         `json:"trace_id,omitempty"`
-	SpanID                 string         `json:"span_id,omitempty"`
-	Attributes             map[string]any `json:"attributes,omitempty"`
-	Scope                  scopeCwLogBody `json:"scope,omitempty"`
-	Resource               map[string]any `json:"resource,omitempty"`
+	Body                   any             `json:"body,omitempty"`
+	SeverityNumber         int32           `json:"severity_number,omitempty"`
+	SeverityText           string          `json:"severity_text,omitempty"`
+	DroppedAttributesCount uint32          `json:"dropped_attributes_count,omitempty"`
+	Flags                  uint32          `json:"flags,omitempty"`
+	TraceID                string          `json:"trace_id,omitempty"`
+	SpanID                 string          `json:"span_id,omitempty"`
+	Attributes             map[string]any  `json:"attributes,omitempty"`
+	Scope                  *scopeCwLogBody `json:"scope,omitempty"`
+	Resource               map[string]any  `json:"resource,omitempty"`
 }
 
 func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
@@ -222,9 +222,15 @@ func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope
 		body.Attributes = attrsValue(log.Attributes())
 		body.Resource = resourceAttrs
 
-		body.Scope.Name = scope.Name()
-		body.Scope.Version = scope.Version()
-		body.Scope.Attributes = attrsValue(scope.Attributes())
+		// scope should have a name at least
+		if scope.Name() != "" {
+			scopeBody := &scopeCwLogBody{
+				Name:       scope.Name(),
+				Version:    scope.Version(),
+				Attributes: attrsValue(scope.Attributes()),
+			}
+			body.Scope = scopeBody
+		}
 
 		bodyJSON, err = json.Marshal(body)
 		if err != nil {
