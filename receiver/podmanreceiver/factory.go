@@ -49,10 +49,5 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	podmanConfig := config.(*Config)
-	dsr, err := newMetricsReceiver(ctx, params, podmanConfig, consumer, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return dsr, nil
+	return newMetricsReceiver(ctx, params, podmanConfig, consumer, nil)
 }
