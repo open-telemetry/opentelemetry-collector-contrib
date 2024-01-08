@@ -13,6 +13,7 @@ import (
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
 	"github.com/scalyr/dataset-go/pkg/server_host_config"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -154,7 +155,7 @@ type Config struct {
 	TracesSettings                 `mapstructure:"traces"`
 	LogsSettings                   `mapstructure:"logs"`
 	ServerHostSettings             `mapstructure:"server_host"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.TimeoutSettings `mapstructure:"timeout"`
 }
@@ -192,7 +193,7 @@ func (c *Config) String() string {
 	s += fmt.Sprintf("%s: %+v; ", "LogsSettings", c.LogsSettings)
 	s += fmt.Sprintf("%s: %+v; ", "TracesSettings", c.TracesSettings)
 	s += fmt.Sprintf("%s: %+v; ", "ServerHostSettings", c.ServerHostSettings)
-	s += fmt.Sprintf("%s: %+v; ", "RetrySettings", c.RetrySettings)
+	s += fmt.Sprintf("%s: %+v; ", "BackOffConfig", c.BackOffConfig)
 	s += fmt.Sprintf("%s: %+v; ", "QueueSettings", c.QueueSettings)
 	s += fmt.Sprintf("%s: %+v", "TimeoutSettings", c.TimeoutSettings)
 	return s

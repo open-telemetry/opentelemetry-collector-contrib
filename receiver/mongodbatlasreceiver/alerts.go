@@ -22,9 +22,9 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -73,7 +73,7 @@ type alertsReceiver struct {
 	client        alertsClient
 	privateKey    string
 	publicKey     string
-	retrySettings exporterhelper.RetrySettings
+	backoffConfig configretry.BackOffConfig
 	pollInterval  time.Duration
 	record        *alertRecord
 	pageSize      int64
@@ -106,7 +106,7 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 		consumer:      consumer,
 		mode:          cfg.Mode,
 		projects:      cfg.Projects,
-		retrySettings: baseConfig.RetrySettings,
+		backoffConfig: baseConfig.BackOffConfig,
 		publicKey:     baseConfig.PublicKey,
 		privateKey:    string(baseConfig.PrivateKey),
 		wg:            &sync.WaitGroup{},
@@ -118,7 +118,7 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 	}
 
 	if recv.mode == alertModePoll {
-		recv.client = internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.retrySettings, recv.logger)
+		recv.client = internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.backoffConfig, recv.logger)
 		return recv, nil
 	}
 	s := &http.Server{
