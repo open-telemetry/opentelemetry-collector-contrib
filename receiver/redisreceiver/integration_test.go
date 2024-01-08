@@ -22,7 +22,7 @@ import (
 
 const redisPort = "6379"
 
-func TestOlderIntegration(t *testing.T) {
+func TestIntegrationV6(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
@@ -52,7 +52,7 @@ func TestOlderIntegration(t *testing.T) {
 	).Run(t)
 }
 
-func TestClusterIntegration(t *testing.T) {
+func TestIntegrationV7Cluster(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
