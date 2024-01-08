@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -32,11 +33,11 @@ func TestLogsRegisterConsumers(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewLogsRouter(
-		connectortest.WithLogsSink(logsFirst, &sinkFirst),
-		connectortest.WithLogsSink(logsSecond, &sinkSecond),
-		connectortest.WithLogsSink(logsThird, &sinkThird),
-	)
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsFirst:  &sinkFirst,
+		logsSecond: &sinkSecond,
+		logsThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
@@ -61,7 +62,7 @@ func TestLogsRegisterConsumers(t *testing.T) {
 }
 
 func TestLogsWithValidFailover(t *testing.T) {
-	var sinkSecond, sinkThird consumertest.LogsSink
+	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
 	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
 	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
 	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
@@ -73,11 +74,11 @@ func TestLogsWithValidFailover(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewLogsRouter(
-		connectortest.WithNopLogs(logsFirst),
-		connectortest.WithLogsSink(logsSecond, &sinkSecond),
-		connectortest.WithLogsSink(logsThird, &sinkThird),
-	)
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsFirst:  &sinkFirst,
+		logsSecond: &sinkSecond,
+		logsThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
@@ -99,7 +100,7 @@ func TestLogsWithValidFailover(t *testing.T) {
 }
 
 func TestLogsWithFailoverError(t *testing.T) {
-	var sinkSecond, sinkThird consumertest.LogsSink
+	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
 	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
 	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
 	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
@@ -111,11 +112,11 @@ func TestLogsWithFailoverError(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewLogsRouter(
-		connectortest.WithNopLogs(logsFirst),
-		connectortest.WithLogsSink(logsSecond, &sinkSecond),
-		connectortest.WithLogsSink(logsThird, &sinkThird),
-	)
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsFirst:  &sinkFirst,
+		logsSecond: &sinkSecond,
+		logsThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
@@ -136,7 +137,7 @@ func TestLogsWithFailoverError(t *testing.T) {
 }
 
 func TestLogsWithFailoverRecovery(t *testing.T) {
-	var sinkSecond, sinkThird consumertest.LogsSink
+	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
 	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
 	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
 	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
@@ -148,11 +149,11 @@ func TestLogsWithFailoverRecovery(t *testing.T) {
 		MaxRetries:       1000,
 	}
 
-	router := connectortest.NewLogsRouter(
-		connectortest.WithNopLogs(logsFirst),
-		connectortest.WithLogsSink(logsSecond, &sinkSecond),
-		connectortest.WithLogsSink(logsThird, &sinkThird),
-	)
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsFirst:  &sinkFirst,
+		logsSecond: &sinkSecond,
+		logsThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
