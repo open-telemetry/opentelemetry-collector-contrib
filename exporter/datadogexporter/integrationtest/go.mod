@@ -6,6 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.50.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.91.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tinylib/msgp v1.1.9
@@ -14,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.91.0
 	go.opentelemetry.io/collector/exporter v0.91.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.91.0
+	go.opentelemetry.io/collector/featuregate v1.0.0
 	go.opentelemetry.io/collector/otelcol v0.91.0
 	go.opentelemetry.io/collector/processor v0.91.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.91.0
@@ -113,7 +115,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.91.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.91.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.91.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.91.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.91.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.91.0 // indirect
@@ -157,7 +158,6 @@ require (
 	go.opentelemetry.io/collector/consumer v0.91.0 // indirect
 	go.opentelemetry.io/collector/extension v0.91.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.91.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.91.0 // indirect
 	go.opentelemetry.io/collector/service v0.91.0 // indirect
