@@ -11,27 +11,32 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_GetMapValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys *TestKey[any]
+		keys []ottl.Key[any]
 		err  error
 	}{
 		{
 			name: "first key not a string",
-			keys: &TestKey[any]{
-				I: ottltest.Intp(0),
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					I: ottltest.Intp(0),
+				},
 			},
 			err: fmt.Errorf("non-string indexing is not supported"),
 		},
 		{
 			name: "index map with int",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("map"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("map"),
+				},
+				&TestKey[any]{
 					I: ottltest.Intp(0),
 				},
 			},
@@ -39,10 +44,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index slice with string",
-			keys: &TestKey[any]{
-
-				S: ottltest.Strp("slice"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("slice"),
+				},
+				&TestKey[any]{
 					S: ottltest.Strp("invalid"),
 				},
 			},
@@ -50,9 +56,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index too large",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("slice"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("slice"),
+				},
+				&TestKey[any]{
 					I: ottltest.Intp(1),
 				},
 			},
@@ -60,9 +68,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index too small",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("slice"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("slice"),
+				},
+				&TestKey[any]{
 					I: ottltest.Intp(-1),
 				},
 			},
@@ -70,9 +80,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "invalid type",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("string"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("string"),
+				},
+				&TestKey[any]{
 					S: ottltest.Strp("string"),
 				},
 			},
@@ -98,13 +110,15 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 func Test_GetMapValue_MissingKey(t *testing.T) {
 	m := pcommon.NewMap()
 	m.PutEmptyMap("map1").PutEmptyMap("map2")
-	keys := TestKey[any]{
-		S: ottltest.Strp("map1"),
-		NextKey: &TestKey[any]{
+	keys := []ottl.Key[any]{
+		&TestKey[any]{
+			S: ottltest.Strp("map1"),
+		},
+		&TestKey[any]{
 			S: ottltest.Strp("unknown key"),
 		},
 	}
-	result, err := GetMapValue[any](context.Background(), nil, m, &keys)
+	result, err := GetMapValue[any](context.Background(), nil, m, keys)
 	assert.Nil(t, err)
 	assert.Nil(t, result)
 }
@@ -117,21 +131,25 @@ func Test_GetMapValue_NilKey(t *testing.T) {
 func Test_SetMapValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys *TestKey[any]
+		keys []ottl.Key[any]
 		err  error
 	}{
 		{
 			name: "first key not a string",
-			keys: &TestKey[any]{
-				I: ottltest.Intp(0),
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					I: ottltest.Intp(0),
+				},
 			},
 			err: fmt.Errorf("non-string indexing is not supported"),
 		},
 		{
 			name: "index map with int",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("map"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("map"),
+				},
+				&TestKey[any]{
 					I: ottltest.Intp(0),
 				},
 			},
@@ -139,9 +157,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index slice with string",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("slice"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("slice"),
+				},
+				&TestKey[any]{
 					S: ottltest.Strp("map"),
 				},
 			},
@@ -149,9 +169,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "slice index too large",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("slice"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("slice"),
+				},
+				&TestKey[any]{
 					I: ottltest.Intp(1),
 				},
 			},
@@ -159,9 +181,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "slice index too small",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("slice"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("slice"),
+				},
+				&TestKey[any]{
 					I: ottltest.Intp(-1),
 				},
 			},
@@ -169,9 +193,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "slice index too small",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("string"),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("string"),
+				},
+				&TestKey[any]{
 					S: ottltest.Strp("string"),
 				},
 			},
@@ -197,16 +223,18 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 	m := pcommon.NewMap()
 	m.PutEmptyMap("map1").PutStr("test", "test")
-	keys := TestKey[any]{
-		S: ottltest.Strp("map1"),
-		NextKey: &TestKey[any]{
+	keys := []ottl.Key[any]{
+		&TestKey[any]{
+			S: ottltest.Strp("map1"),
+		},
+		&TestKey[any]{
 			S: ottltest.Strp("map2"),
-			NextKey: &TestKey[any]{
-				S: ottltest.Strp("foo"),
-			},
+		},
+		&TestKey[any]{
+			S: ottltest.Strp("foo"),
 		},
 	}
-	err := SetMapValue[any](context.Background(), nil, m, &keys, "bar")
+	err := SetMapValue[any](context.Background(), nil, m, keys, "bar")
 	assert.Nil(t, err)
 
 	expected := pcommon.NewMap()
@@ -219,16 +247,18 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 
 func Test_SetMapValue_EmptyMap(t *testing.T) {
 	m := pcommon.NewMap()
-	keys := TestKey[any]{
-		S: ottltest.Strp("map1"),
-		NextKey: &TestKey[any]{
+	keys := []ottl.Key[any]{
+		&TestKey[any]{
+			S: ottltest.Strp("map1"),
+		},
+		&TestKey[any]{
 			S: ottltest.Strp("map2"),
-			NextKey: &TestKey[any]{
-				S: ottltest.Strp("foo"),
-			},
+		},
+		&TestKey[any]{
+			S: ottltest.Strp("foo"),
 		},
 	}
-	err := SetMapValue[any](context.Background(), nil, m, &keys, "bar")
+	err := SetMapValue[any](context.Background(), nil, m, keys, "bar")
 	assert.Nil(t, err)
 
 	expected := pcommon.NewMap()
