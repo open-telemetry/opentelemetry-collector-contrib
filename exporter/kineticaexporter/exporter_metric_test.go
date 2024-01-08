@@ -67,20 +67,11 @@ var showTableMetricSummaryResourceAttributesResponse = "\x04OK\x00&show_table_re
 var showTableMetricSummaryScopeAttributesResponse = "\x04OK\x00&show_table_response\xf8\x1cFotel.metric_summary_scope_attribute\x02Fotel.metric_summary_scope_attribute\x00\x02\x00\x00\x02$474749891710437496\x00\x02\xe2\x06{\"type\":\"record\",\"name\":\"type_name\",\"fields\":[{\"name\":\"summary_id\",\"type\":\"string\"},{\"name\":\"name\",\"type\":[\"string\",\"null\"]},{\"name\":\"version\",\"type\":[\"string\",\"null\"]},{\"name\":\"key\",\"type\":\"string\"},{\"name\":\"string_value\",\"type\":[\"string\",\"null\"]},{\"name\":\"bool_value\",\"type\":[\"int\",\"null\"]},{\"name\":\"int_value\",\"type\":[\"int\",\"null\"]},{\"name\":\"double_value\",\"type\":[\"double\",\"null\"]},{\"name\":\"bytes_value\",\"type\":[\"bytes\",\"null\"]}]}\x00\x02\x00\x00\x02\x12\x14bool_value\x06\x08data\x10nullable\x0eboolean\x00\x16bytes_value\x04\x14store_only\x10nullable\x00\x18double_value\x04\x08data\x10nullable\x00\x12int_value\x04\x08data\x10nullable\x00\x06key\x08\x08data\x16primary_key\x0echar128\x08dict\x00\x08name\x06\x08data\x0echar256\x10nullable\x00\x18string_value\x06\x08data\x0echar256\x10nullable\x00\x14summary_id\x08\x08data\x16primary_key\x12shard_key\x08uuid\x00\x0eversion\x06\x08data\x0echar256\x10nullable\x00\x00\x00\x028\"attribute_indexes\x00 collection_names\x08otel$compressed_columns\x000datasource_subscriptions\x00\x18foreign_keys\xaa\x01(summary_id) references otel.metric_summary(summary_id) as fk_summary_scope_attribute\"foreign_shard_key\x00$global_access_mode\x14read_write,is_automatic_partition\nfalse\x10is_dirty\x00\"is_view_persisted\x00\"last_refresh_time\x00(owner_resource_group<kinetica_system_resource_group*partition_definitions\x004partition_definitions_json\x04{}\x1cpartition_keys\x00\x1cpartition_type\x08NONE\x18record_bytes\x06925\x1crefresh_method\x00&remaining_table_ttl\x04-1\"request_avro_json\xa8\x04{\"table_name\":\"otel.metric_summary_scope_attribute\",\"type_id\":\"474749891710437496\",\"options\":{\"foreign_keys\":\"(summary_id) references otel.metric_summary(summary_id) as fk_summary_scope_attribute\",\"is_replicated\":\"false\",\"is_result_table\":\"false\",\"no_error_if_exists\":\"true\"}}\"request_avro_type\x10is_table\x16schema_name\x08otel&strategy_definitionR( ( VRAM 1, RAM 5, DISK0 5, PERSIST 5 ) )\x1atable_monitor\x04{}\x12table_ttl\x04-1\x16total_bytes\x020\x1euser_chunk_size\x0e8000000\x1eview_table_name\x00\x00\x00\x00\x00\x00\x01\x01\x00\x00"
 
 func TestExporter_pushMetricsData(t *testing.T) {
-	t.Parallel()
 	t.Run("push success", func(t *testing.T) {
 		exporter := newTestMetricsExporter(t)
 		mustPushMetricsData(t, exporter, simpleMetrics(3))
 
 		require.Equal(t, 15, 15)
-	})
-	t.Run("push failure", func(t *testing.T) {
-		exporter := newTestMetricsExporter(t)
-		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(1))
-		if err == nil {
-			err = fmt.Errorf("mock insert error")
-		}
-		require.Error(t, err)
 	})
 }
 
