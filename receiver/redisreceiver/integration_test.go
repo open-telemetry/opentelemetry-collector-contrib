@@ -69,13 +69,11 @@ func TestIntegrationV7Cluster(t *testing.T) {
 				Context:    filepath.Join("testdata", "integration"),
 				Dockerfile: "Dockerfile.cluster",
 			},
-			//WaitingFor: wait.ForListeningPort("6385/tcp").WithStartupTimeout(30 * time.Second),
 		}),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				// Strictly speaking this is non-deterministic and may not be the right port for one with repl offset
-				// script contains a shim using socat to assign at least one given replica to port 6385
 				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6384"))
 				rCfg.MetricsBuilderConfig.Metrics.RedisSlaveReplicationOffset.Enabled = true
 			}),
