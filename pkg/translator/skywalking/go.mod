@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/pdata v1.0.0
 	go.opentelemetry.io/collector/semconv v0.91.0
-	skywalking.apache.org/repo/goapi v0.0.0-20231213062226-7849efc09ba3
+	skywalking.apache.org/repo/goapi v0.0.0-20231225085619-53f5be6739c4
 )
 
 require (

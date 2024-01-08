@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 type metricsExporter struct {
@@ -52,7 +53,7 @@ type metricsExporter struct {
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
-func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTranslator *attributes.Translator, sourceProvider source.Provider) (*otlpmetrics.Translator, error) {
+func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTranslator *attributes.Translator, sourceProvider source.Provider, statsOut chan []byte) (*otlpmetrics.Translator, error) {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
@@ -84,6 +85,9 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
 		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
+	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
+		options = append(options, otlpmetrics.WithStatsOut(statsOut))
+	}
 	return otlpmetrics.NewTranslator(set, attrsTranslator, options...)
 }
 
@@ -96,8 +100,9 @@ func newMetricsExporter(
 	sourceProvider source.Provider,
 	apmStatsProcessor api.StatsProcessor,
 	metadataReporter *inframetadata.Reporter,
+	statsOut chan []byte,
 ) (*metricsExporter, error) {
-	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, attrsTranslator, sourceProvider)
+	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, attrsTranslator, sourceProvider, statsOut)
 	if err != nil {
 		return nil, err
 	}

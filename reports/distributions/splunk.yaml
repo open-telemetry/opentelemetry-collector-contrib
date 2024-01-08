@@ -15,6 +15,7 @@ components:
     connector:
         - spanmetrics
     exporter:
+        - awss3
         - file
         - kafka
         - loadbalancing
