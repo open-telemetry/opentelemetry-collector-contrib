@@ -88,7 +88,7 @@ func (p *basePath[K]) isComplete() error {
 		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
 	}
 	if p.keys != nil && !p.fetchedKeys {
-		return fmt.Errorf("the keys were not used by the context - this likely means you are trying to index a path that does not support indexing")
+		return fmt.Errorf("the keys indexing %q were not used by the context - this likely means you are trying to index a path that does not support indexing", p.name)
 	}
 	if p.nextPath == nil {
 		return nil
