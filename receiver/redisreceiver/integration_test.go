@@ -77,8 +77,8 @@ func TestClusterIntegration(t *testing.T) {
 				// Strictly speaking this is non-deterministic and may not be the right port for one with repl offset
 				// script contains a shim using socat to assign at least one given replica to port 6385
 				//rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6384"))
-				//rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6385"))
-				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6384"))
+				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6385"))
+				//rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6384"))
 				//rCfg.MetricsBuilderConfig.Metrics.RedisSlaveReplicationOffset.Enabled = true
 				rCfg.Metrics.RedisSlaveReplicationOffset.Enabled = true
 			}),
