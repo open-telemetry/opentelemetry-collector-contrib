@@ -62,6 +62,6 @@ metrics:
     enabled: false
     gauge:
       value_type: int
-    unit: "{files}"
+    unit: "{file}"
 tests:
   config:
