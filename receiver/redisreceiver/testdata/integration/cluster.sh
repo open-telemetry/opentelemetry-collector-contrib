@@ -26,12 +26,4 @@ while true; do
 done
 
 sleep 10s
-# ensure a consistent mapping to a replica on port 6385
-REPLICA_PORT=$(redis-cli -p 6379 cluster nodes | grep 'slave' | awk '{print $2}' | cut -d':' -f2 | head -n 1)
-REPLICA_PORT=${REPLICA_PORT%@*}
-if [ -n "$REPLICA_PORT" ]; then
-  echo "forwarding from port $REPLICA_PORT to 6385"
-  socat TCP4-LISTEN:6385,fork TCP4:localhost:"$REPLICA_PORT" &
-else
-  exit 1
-fi
+
