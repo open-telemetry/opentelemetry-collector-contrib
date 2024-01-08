@@ -5,7 +5,7 @@ interact with OTel data via the Collector's internal data model, [pdata](https:/
 
 This document contains documentation for both types of OTTL functions:
 
-- [Functions](#functions) that transform telemetry.
+- [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
 ## Design principles
@@ -631,7 +631,7 @@ Examples:
 
 `Log(value)`
 
-The `Log` Converter returns the logarithm of the `target`.
+The `Log` Converter returns a `float64` that is the logarithm of the `target`.
 
 `target` is either a path expression to a telemetry field to retrieve or a literal.
 
