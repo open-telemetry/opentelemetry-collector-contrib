@@ -1163,3 +1163,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockda
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ./testbed
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter => ./exporter/syslogexporter
+
+replace github.com/go-kit/kit v0.10.0 => github.com/go-kit/kit v0.11.0

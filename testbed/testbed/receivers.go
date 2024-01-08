@@ -30,6 +30,8 @@ type DataReceiver interface {
 
 	// ProtocolName returns exporterType name to use in collector config pipeline.
 	ProtocolName() string
+
+	PipelineType() string
 }
 
 // DataReceiverBase implement basic functions needed by all receivers.
@@ -55,6 +57,7 @@ type BaseOTLPDataReceiver struct {
 	compression     string
 	retry           string
 	sendingQueue    string
+	pipelineType    string
 }
 
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
@@ -140,22 +143,28 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	return str
 }
 
+func (bor *BaseOTLPDataReceiver) PipelineType() string {
+	return bor.pipelineType
+}
+
 var _ DataReceiver = (*BaseOTLPDataReceiver)(nil)
 
 // NewOTLPDataReceiver creates a new OTLP DataReceiver that will listen on the specified port after Start
 // is called.
-func NewOTLPDataReceiver(port int) *BaseOTLPDataReceiver {
+func NewOTLPDataReceiver(port int, pipelineType string) *BaseOTLPDataReceiver {
 	return &BaseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
 		exporterType:     "otlp",
+		pipelineType:     pipelineType,
 	}
 }
 
 // NewOTLPHTTPDataReceiver creates a new OTLP/HTTP DataReceiver that will listen on the specified port after Start
 // is called.
-func NewOTLPHTTPDataReceiver(port int) *BaseOTLPDataReceiver {
+func NewOTLPHTTPDataReceiver(port int, pipelineType string) *BaseOTLPDataReceiver {
 	return &BaseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
 		exporterType:     "otlphttp",
+		pipelineType:     pipelineType,
 	}
 }

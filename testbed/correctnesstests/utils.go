@@ -23,6 +23,7 @@ func CreateConfigYaml(
 	t testing.TB,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
+	connector testbed.DataConnector,
 	processors map[string]string,
 	pipelineType string,
 ) string {
@@ -78,12 +79,14 @@ service:
 
 // PipelineDef holds the information necessary to run a single testbed configuration.
 type PipelineDef struct {
-	Receiver     string
-	Exporter     string
-	TestName     string
-	DataSender   testbed.DataSender
-	DataReceiver testbed.DataReceiver
-	ResourceSpec testbed.ResourceSpec
+	Receiver         string
+	Exporter         string
+	TestName         string
+	DataSender       testbed.DataSender
+	DataSenderType   string
+	DataReceiver     testbed.DataReceiver
+	DataReceiverType string
+	ResourceSpec     testbed.ResourceSpec
 }
 
 // LoadPictOutputPipelineDefs generates a slice of PipelineDefs from the passed-in generated PICT file. The
