@@ -1,0 +1,109 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: file.name
+          value:
+            stringValue: filestats_darwin.go
+    scopeMetrics:
+      - metrics:
+          - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
+            name: file.mtime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1703319421"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: s
+          - description: The size of the file or folder, in bytes.
+            gauge:
+              dataPoints:
+                - asInt: "882"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: file.size
+            unit: b
+        scope:
+          name: otelcol/filestatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: file.name
+          value:
+            stringValue: filestats_linux.go
+    scopeMetrics:
+      - metrics:
+          - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
+            name: file.mtime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1703319421"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: s
+          - description: The size of the file or folder, in bytes.
+            gauge:
+              dataPoints:
+                - asInt: "845"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: file.size
+            unit: b
+        scope:
+          name: otelcol/filestatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: file.name
+          value:
+            stringValue: filestats_other.go
+    scopeMetrics:
+      - metrics:
+          - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
+            name: file.mtime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1703319421"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: s
+          - description: The size of the file or folder, in bytes.
+            gauge:
+              dataPoints:
+                - asInt: "776"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: file.size
+            unit: b
+        scope:
+          name: otelcol/filestatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: file.name
+          value:
+            stringValue: filestats_windows.go
+    scopeMetrics:
+      - metrics:
+          - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
+            name: file.mtime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1703319421"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: s
+          - description: The size of the file or folder, in bytes.
+            gauge:
+              dataPoints:
+                - asInt: "901"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: file.size
+            unit: b
+        scope:
+          name: otelcol/filestatsreceiver
+          version: latest
