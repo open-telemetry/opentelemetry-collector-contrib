@@ -68,13 +68,13 @@ func SetValue(value pcommon.Value, val any) error {
 	return err
 }
 
-func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, key ottl.Key[K]) (any, error) {
-	val, currentKey := value, key
+func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
+	val := value
 	var ok bool
-	for currentKey != nil {
+	for i := 0; i < len(keys); i++ {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:
-			s, err := currentKey.String(ctx, tCtx)
+			s, err := keys[i].String(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
@@ -86,7 +86,7 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 				return nil, nil
 			}
 		case pcommon.ValueTypeSlice:
-			i, err := currentKey.Int(ctx, tCtx)
+			i, err := keys[i].Int(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
@@ -100,12 +100,11 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 		default:
 			return nil, fmt.Errorf("type %v does not support string indexing", val.Type())
 		}
-		currentKey = currentKey.Next()
 	}
 	return ottlcommon.GetValue(val), nil
 }
 
-func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.Value, val any, key ottl.Key[K]) error {
+func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.Value, val any, keys []ottl.Key[K]) error {
 	var newValue pcommon.Value
 	switch val.(type) {
 	case []string, []bool, []int64, []float64, [][]byte, []any:
@@ -118,11 +117,10 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 		return err
 	}
 
-	currentKey := key
-	for currentKey != nil {
+	for i := 0; i < len(keys); i++ {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
-			s, err := currentKey.String(ctx, tCtx)
+			s, err := keys[i].String(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -136,7 +134,7 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				currentValue = potentialValue
 			}
 		case pcommon.ValueTypeSlice:
-			i, err := currentKey.Int(ctx, tCtx)
+			i, err := keys[i].Int(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -148,11 +146,11 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 			}
 			currentValue = currentValue.Slice().At(int(*i))
 		case pcommon.ValueTypeEmpty:
-			s, err := currentKey.String(ctx, tCtx)
+			s, err := keys[i].String(ctx, tCtx)
 			if err != nil {
 				return err
 			}
-			i, err := currentKey.Int(ctx, tCtx)
+			i, err := keys[i].Int(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -171,7 +169,6 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 		default:
 			return fmt.Errorf("type %v does not support string indexing", currentValue.Type())
 		}
-		currentKey = currentKey.Next()
 	}
 	newValue.CopyTo(currentValue)
 	return nil
