@@ -95,11 +95,13 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
 	promConfig := cfg.PrometheusConfig
-	if promConfig != nil {
-		err := cfg.validatePromConfig(promConfig)
-		if err != nil {
-			return err
-		}
+	if (promConfig == nil || len(promConfig.ScrapeConfigs) == 0) && cfg.TargetAllocator == nil {
+		return errors.New("no Prometheus scrape_configs or target_allocator set")
+	}
+
+	err := validatePromConfig(promConfig)
+	if err != nil {
+		return err
 	}
 
 	if cfg.TargetAllocator != nil {
@@ -111,11 +113,10 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
-	if len(promConfig.ScrapeConfigs) == 0 && cfg.TargetAllocator == nil {
-		return errors.New("no Prometheus scrape_configs or target_allocator set")
+func validatePromConfig(promConfig *promconfig.Config) error {
+	if promConfig == nil {
+		return nil
 	}
-
 	// Reject features that Prometheus supports but that the receiver doesn't support:
 	// See:
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3863
@@ -142,7 +143,7 @@ func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
 		return fmt.Errorf("unsupported features:\n\t%s", strings.Join(unsupportedFeatures, "\n\t"))
 	}
 
-	for _, sc := range cfg.PrometheusConfig.ScrapeConfigs {
+	for _, sc := range promConfig.ScrapeConfigs {
 		if sc.HTTPClientConfig.Authorization != nil {
 			if err := checkFile(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
 				return fmt.Errorf("error checking authorization credentials file %q: %w", sc.HTTPClientConfig.Authorization.CredentialsFile, err)

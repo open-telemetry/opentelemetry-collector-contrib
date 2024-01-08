@@ -326,5 +326,5 @@ gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
-skywalking.apache.org/repo/goapi v0.0.0-20231213062226-7849efc09ba3 h1:rqXePgPd1SeNYl4GSHyndwNggpGdOh+9ZMSRCfesgDU=
-skywalking.apache.org/repo/goapi v0.0.0-20231213062226-7849efc09ba3/go.mod h1:oD2dxcDAHVIt95Ee7kJHgZ5f64QNhrqTjQYARwfafc4=
+skywalking.apache.org/repo/goapi v0.0.0-20231225085619-53f5be6739c4 h1:boI2sHrjhiXdidajUn1KyVNC7CvC/pwIn9zr52TuXBQ=
+skywalking.apache.org/repo/goapi v0.0.0-20231225085619-53f5be6739c4/go.mod h1:oD2dxcDAHVIt95Ee7kJHgZ5f64QNhrqTjQYARwfafc4=
