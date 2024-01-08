@@ -31,7 +31,10 @@ func (t testProvider) Source(context.Context) (source.Source, error) {
 func newTranslator(t *testing.T, logger *zap.Logger) *metrics.Translator {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = logger
+	attributesTranslator, err := attributes.NewTranslator(set)
+	require.NoError(t, err)
 	tr, err := metrics.NewTranslator(set,
+		attributesTranslator,
 		metrics.WithHistogramMode(metrics.HistogramModeDistributions),
 		metrics.WithNumberMode(metrics.NumberModeCumulativeToDelta),
 		metrics.WithFallbackSourceProvider(testProvider("fallbackHostname")),

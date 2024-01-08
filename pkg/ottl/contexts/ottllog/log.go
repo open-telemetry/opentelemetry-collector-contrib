@@ -152,10 +152,10 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	}
 	switch path.Name() {
 	case "cache":
-		if path.Key() == nil {
+		if path.Keys() == nil {
 			return accessCache(), nil
 		}
-		return accessCacheKey(path.Key()), nil
+		return accessCacheKey(path.Keys()), nil
 	case "resource":
 		return internal.ResourcePathGetSetter[TransformContext](path.Next())
 	case "instrumentation_scope":
@@ -178,16 +178,16 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 				return accessStringBody(), nil
 			}
 		} else {
-			if path.Key() == nil {
+			if path.Keys() == nil {
 				return accessBody(), nil
 			}
-			return accessBodyKey(path.Key()), nil
+			return accessBodyKey(path.Keys()), nil
 		}
 	case "attributes":
-		if path.Key() == nil {
+		if path.Keys() == nil {
 			return accessAttributes(), nil
 		}
-		return accessAttributesKey(path.Key()), nil
+		return accessAttributesKey(path.Keys()), nil
 	case "dropped_attributes_count":
 		return accessDroppedAttributesCount(), nil
 	case "flags":
@@ -226,7 +226,7 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessCacheKey(key ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
+func accessCacheKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
@@ -332,7 +332,7 @@ func accessBody() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessBodyKey(key ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
+func accessBodyKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			body := tCtx.GetLogRecord().Body()
@@ -387,7 +387,7 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessAttributesKey(key ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
+func accessAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key)
