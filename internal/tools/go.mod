@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/chloggen v0.12.0
 	go.opentelemetry.io/build-tools/crosslink v0.12.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.12.0
-	go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231219003513-41b2c0540f56
+	go.opentelemetry.io/build-tools/multimod v0.12.1-0.20231228174121-7a291b3254be
 	go.opentelemetry.io/collector/cmd/builder v0.91.0
 	golang.org/x/tools v0.16.1
 	golang.org/x/vuln v1.0.1
@@ -190,7 +190,7 @@ require (
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.18.1 // indirect
+	github.com/spf13/viper v1.18.2 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
