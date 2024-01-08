@@ -1,3 +1,6 @@
+> Deprecated: [v0.92.0] This tool is deprecated and will be removed in a future release.
+> See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30187
+
 # Docsgen CLI Tool
 
 This package contains a CLI tool that generates markdown files for collector

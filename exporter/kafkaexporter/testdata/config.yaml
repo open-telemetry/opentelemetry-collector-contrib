@@ -3,6 +3,7 @@ kafka:
   brokers:
     - "foo:123"
     - "bar:456"
+  client_id: "test_client_id"
   metadata:
     full: false
     retry:

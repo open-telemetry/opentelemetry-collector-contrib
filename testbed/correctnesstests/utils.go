@@ -20,6 +20,7 @@ import (
 // processors, and a pipeline type. A collector created from the resulting yaml string should be able to talk
 // the specified sender and receiver.
 func CreateConfigYaml(
+	t testing.TB,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	processors map[string]string,
@@ -51,6 +52,9 @@ processors:
 extensions:
 
 service:
+  telemetry:
+    metrics:
+      address: 127.0.0.1:%d
   extensions:
   pipelines:
     %s:
@@ -64,6 +68,7 @@ service:
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
+		testbed.GetAvailablePort(t),
 		pipelineType,
 		sender.ProtocolName(),
 		processorsList,
