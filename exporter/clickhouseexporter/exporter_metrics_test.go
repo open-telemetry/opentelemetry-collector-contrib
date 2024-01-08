@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
-	"regexp"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -101,7 +100,6 @@ func TestExporter_pushMetricsData(t *testing.T) {
 	})
 	t.Run("check traceID and spanID", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
-			var sumMetrics = regexp.MustCompile(`^INSERT INTO otel_metrics_sum `)
 			if strings.HasPrefix(query, "INSERT INTO otel_metrics_gauge") {
 				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[18])
 				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[19])
@@ -110,7 +108,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[20])
 				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[21])
 			}
-			if sumMetrics.MatchString(query) {
+			if strings.HasPrefix(query, "INSERT INTO otel_metrics_sum ") {
 				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[18])
 				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[19])
 			}
