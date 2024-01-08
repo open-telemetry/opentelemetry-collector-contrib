@@ -1475,7 +1475,7 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "path that allows keys but dont define any",
+			name: "path that allows keys but none have been specified",
 			inv: editor{
 				Function: "testing_getsetter",
 				Arguments: []argument{
