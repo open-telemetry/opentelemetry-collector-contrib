@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package zipkinencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension"
+package textencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension"
 
 import (
 	"context"
@@ -20,43 +20,30 @@ func TestExtension_Start(t *testing.T) {
 		expectedErr  string
 	}{
 		{
-			name: "zipkinJSON",
+			name: "text",
+			getExtension: func() (extension.Extension, error) {
+				factory := NewFactory()
+				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), factory.CreateDefaultConfig())
+			},
+		},
+		{
+			name: "text_gbk",
 			getExtension: func() (extension.Extension, error) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
-				cfg.(*Config).Protocol = "zipkin_json"
+				cfg.(*Config).Encoding = "gbk"
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 			},
 		},
 		{
-			name: "zipkinProtobuf",
+			name: "text_blabla",
 			getExtension: func() (extension.Extension, error) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
-				cfg.(*Config).Protocol = "zipkin_proto"
+				cfg.(*Config).Encoding = "blabla"
 				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 			},
-		},
-		{
-			name: "zipkinProtobuf",
-			getExtension: func() (extension.Extension, error) {
-				factory := NewFactory()
-				cfg := factory.CreateDefaultConfig()
-				cfg.(*Config).Protocol = "zipkin_thrift"
-				cfg.(*Config).Version = "v1"
-				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
-			},
-		},
-		{
-			name: "zipkinThriftVersion_invalid",
-			getExtension: func() (extension.Extension, error) {
-				factory := NewFactory()
-				cfg := factory.CreateDefaultConfig()
-				cfg.(*Config).Protocol = "zipkin_thrift"
-				cfg.(*Config).Version = "v2"
-				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
-			},
-			expectedErr: "unsupported version: \"v2\"",
+			expectedErr: "unsupported encoding 'blabla'",
 		},
 	}
 	for _, test := range tests {

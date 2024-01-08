@@ -128,8 +128,10 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "cache access",
 			path: &internal.TestPath[TransformContext]{
 				N: "cache",
-				Keys: &internal.TestKey[TransformContext]{
-					S: ottltest.Strp("temp"),
+				KeySlice: []ottl.Key[TransformContext]{
+					&internal.TestKey[TransformContext]{
+						S: ottltest.Strp("temp"),
+					},
 				},
 			},
 			orig:   nil,
