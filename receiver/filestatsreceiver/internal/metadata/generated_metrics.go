@@ -72,7 +72,7 @@ type metricFileCount struct {
 func (m *metricFileCount) init() {
 	m.data.SetName("file.count")
 	m.data.SetDescription("The number of files matched")
-	m.data.SetUnit("{files}")
+	m.data.SetUnit("{file}")
 	m.data.SetEmptyGauge()
 }
 

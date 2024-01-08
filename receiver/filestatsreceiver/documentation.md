@@ -52,7 +52,7 @@ The number of files matched
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {files} | Gauge | Int |
+| {file} | Gauge | Int |
 
 ### file.ctime
 
