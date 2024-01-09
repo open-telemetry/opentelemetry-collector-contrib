@@ -15,7 +15,11 @@ issues: [27292]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  If you are using the Kafka receiver in a logs and/or a metrics pipeline
+  and you are not customizing the name of the topic to read from with the `topic` property,
+  the receiver will now read from `otlp_logs` or `otlp_metrics` topic instead of `otlp_spans` topic.
+  To maintain previous behavior, set the `topic` property to `otlp_spans`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
