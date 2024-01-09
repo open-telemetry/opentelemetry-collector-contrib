@@ -22,7 +22,7 @@ type metricGitRepositoryBranchCount struct {
 func (m *metricGitRepositoryBranchCount) init() {
 	m.data.SetName("git.repository.branch.count")
 	m.data.SetDescription("Number of branches in a repository")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{branch}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -73,7 +73,7 @@ type metricGitRepositoryContributorCount struct {
 func (m *metricGitRepositoryContributorCount) init() {
 	m.data.SetName("git.repository.contributor.count")
 	m.data.SetDescription("Total number of unique contributors to a repository")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{contributor}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -124,7 +124,7 @@ type metricGitRepositoryCount struct {
 func (m *metricGitRepositoryCount) init() {
 	m.data.SetName("git.repository.count")
 	m.data.SetDescription("Number of repositories in an organization")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{repository}")
 	m.data.SetEmptyGauge()
 }
 
@@ -173,7 +173,7 @@ type metricGitRepositoryPullRequestApprovedTime struct {
 func (m *metricGitRepositoryPullRequestApprovedTime) init() {
 	m.data.SetName("git.repository.pull_request.approved.time")
 	m.data.SetDescription("The amount of time it took a pull request to go from open to approved")
-	m.data.SetUnit("1")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -225,7 +225,7 @@ type metricGitRepositoryPullRequestMergedCount struct {
 func (m *metricGitRepositoryPullRequestMergedCount) init() {
 	m.data.SetName("git.repository.pull_request.merged.count")
 	m.data.SetDescription("The number of merged pull requests in a repository")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pull_request}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -276,7 +276,7 @@ type metricGitRepositoryPullRequestMergedTime struct {
 func (m *metricGitRepositoryPullRequestMergedTime) init() {
 	m.data.SetName("git.repository.pull_request.merged.time")
 	m.data.SetDescription("The amount of time it took a pull request to go from open to merged")
-	m.data.SetUnit("1")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -328,7 +328,7 @@ type metricGitRepositoryPullRequestOpenCount struct {
 func (m *metricGitRepositoryPullRequestOpenCount) init() {
 	m.data.SetName("git.repository.pull_request.open.count")
 	m.data.SetDescription("The number of open pull requests in a repository")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pull_request}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -379,7 +379,7 @@ type metricGitRepositoryPullRequestOpenTime struct {
 func (m *metricGitRepositoryPullRequestOpenTime) init() {
 	m.data.SetName("git.repository.pull_request.open.time")
 	m.data.SetDescription("The amount of time a pull request has been open")
-	m.data.SetUnit("1")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }

@@ -18,7 +18,7 @@ Number of branches in a repository
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {branch} | Gauge | Int |
 
 #### Attributes
 
@@ -32,7 +32,7 @@ Number of repositories in an organization
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {repository} | Gauge | Int |
 
 ### git.repository.pull_request.approved.time
 
@@ -40,7 +40,7 @@ The amount of time it took a pull request to go from open to approved
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| s | Gauge | Int |
 
 #### Attributes
 
@@ -55,7 +55,7 @@ The number of merged pull requests in a repository
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pull_request} | Gauge | Int |
 
 #### Attributes
 
@@ -69,7 +69,7 @@ The amount of time it took a pull request to go from open to merged
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| s | Gauge | Int |
 
 #### Attributes
 
@@ -84,7 +84,7 @@ The number of open pull requests in a repository
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pull_request} | Gauge | Int |
 
 #### Attributes
 
@@ -98,7 +98,7 @@ The amount of time a pull request has been open
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| s | Gauge | Int |
 
 #### Attributes
 
@@ -123,7 +123,7 @@ Total number of unique contributors to a repository
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {contributor} | Gauge | Int |
 
 #### Attributes
 
