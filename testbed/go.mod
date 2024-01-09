@@ -39,7 +39,7 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/config/confighttp v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/config/confignet v0.91.1-0.20240109173641-c5a2c78d6143
-	go.opentelemetry.io/collector/config/configretry v0.0.0-20231221085427-9027a8d9cc3f
+	go.opentelemetry.io/collector/config/configretry v0.0.0-20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/config/configtls v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/confmap v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/consumer v0.91.1-0.20240109173641-c5a2c78d6143
