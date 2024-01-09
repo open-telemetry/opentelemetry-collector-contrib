@@ -63,6 +63,18 @@
       },
       {
         "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://google.golang.org"],
+        "groupName": "All google.golang.org packages",
+        "matchUpdateTypes": ["minor", "patch"]
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://golang.org"],
+        "groupName": "All golang.org packages",
+        "matchUpdateTypes": ["minor", "patch"]
+      },
+      {
+        "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
         "groupName": "All github.com/googlecloudplatform packages",
         "matchUpdateTypes": ["minor", "patch"]
@@ -76,6 +88,6 @@
       "github.com/mattn/go-ieproxy",
       "github.com/DataDog/datadog-agent/pkg/trace/exportable"
     ],
-    "prConcurrentLimit": 50,
+    "prConcurrentLimit": 200,
     "suppressNotifications": ["prEditedNotification"]
   }
