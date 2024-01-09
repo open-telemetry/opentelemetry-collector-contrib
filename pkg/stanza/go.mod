@@ -19,8 +19,8 @@ require (
 	go.opentelemetry.io/collector/confmap v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
 	go.opentelemetry.io/collector/extension v0.91.0
-	go.opentelemetry.io/collector/featuregate v1.0.0
-	go.opentelemetry.io/collector/pdata v1.0.0
+	go.opentelemetry.io/collector/featuregate v1.0.1-0.20240109173641-c5a2c78d6143
+	go.opentelemetry.io/collector/pdata v1.0.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/receiver v0.91.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0

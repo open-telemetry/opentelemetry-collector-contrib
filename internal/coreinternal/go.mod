@@ -12,8 +12,8 @@ require (
 	go.opentelemetry.io/collector v0.91.0
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
-	go.opentelemetry.io/collector/featuregate v1.0.0
-	go.opentelemetry.io/collector/pdata v1.0.0
+	go.opentelemetry.io/collector/featuregate v1.0.1-0.20240109173641-c5a2c78d6143
+	go.opentelemetry.io/collector/pdata v1.0.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/receiver v0.91.0
 	go.opentelemetry.io/collector/semconv v0.91.0
 	go.opentelemetry.io/otel v1.21.0
