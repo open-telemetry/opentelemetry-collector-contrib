@@ -39,6 +39,7 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/config/confighttp v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/config/confignet v0.91.1-0.20240109173641-c5a2c78d6143
+	go.opentelemetry.io/collector/config/configretry v0.0.0-20231221085427-9027a8d9cc3f
 	go.opentelemetry.io/collector/config/configtls v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/confmap v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/consumer v0.91.1-0.20240109173641-c5a2c78d6143
@@ -122,7 +123,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gophercloud/gophercloud v1.7.0 // indirect
@@ -243,13 +244,13 @@ require (
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
 	gonum.org/v1/gonum v0.14.0 // indirect

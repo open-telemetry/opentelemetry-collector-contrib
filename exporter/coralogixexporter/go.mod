@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/config/configgrpc v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/config/configopaque v0.91.1-0.20240109173641-c5a2c78d6143
+	go.opentelemetry.io/collector/config/configretry v0.0.0-20231221085427-9027a8d9cc3f
 	go.opentelemetry.io/collector/config/configtls v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/confmap v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/collector/consumer v0.91.1-0.20240109173641-c5a2c78d6143
@@ -57,7 +58,7 @@ require (
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
