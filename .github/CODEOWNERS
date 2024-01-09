@@ -205,7 +205,7 @@ receiver/flinkmetricsreceiver/                           @open-telemetry/collect
 receiver/fluentforwardreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/gitproviderreceiver/                            @open-telemetry/collector-contrib-approvers @adrielp @astencel-sumo
 receiver/googlecloudpubsubreceiver/                      @open-telemetry/collector-contrib-approvers @alexvanboxel
-receiver/googlecloudspannerreceiver/                     @open-telemetry/collector-contrib-approvers @architjugran @varunraiko @kiranmayib
+receiver/googlecloudspannerreceiver/                     @open-telemetry/collector-contrib-approvers @varunraiko
 receiver/haproxyreceiver/                                @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
 receiver/hostmetricsreceiver/                            @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/httpcheckreceiver/                              @open-telemetry/collector-contrib-approvers @codeboten

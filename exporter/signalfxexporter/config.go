@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -50,7 +51,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 // Config defines configuration for SignalFx exporter.
 type Config struct {
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.

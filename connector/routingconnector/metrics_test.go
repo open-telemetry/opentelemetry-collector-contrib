@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -40,11 +41,11 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.MetricsSink
 
-	router := connectortest.NewMetricsRouter(
-		connectortest.WithMetricsSink(metricsDefault, &defaultSink),
-		connectortest.WithMetricsSink(metrics0, &sink0),
-		connectortest.WithMetricsSink(metrics1, &sink1),
-	)
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsDefault: &defaultSink,
+		metrics0:       &sink0,
+		metrics1:       &sink1,
+	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
@@ -99,11 +100,11 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.MetricsSink
 
-	router := connectortest.NewMetricsRouter(
-		connectortest.WithMetricsSink(metricsDefault, &defaultSink),
-		connectortest.WithMetricsSink(metrics0, &sink0),
-		connectortest.WithMetricsSink(metrics1, &sink1),
-	)
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsDefault: &defaultSink,
+		metrics0:       &sink0,
+		metrics1:       &sink1,
+	})
 
 	resetSinks := func() {
 		defaultSink.Reset()
@@ -270,11 +271,11 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.MetricsSink
 
-	router := connectortest.NewMetricsRouter(
-		connectortest.WithMetricsSink(metricsDefault, &defaultSink),
-		connectortest.WithMetricsSink(metrics0, &sink0),
-		connectortest.WithMetricsSink(metrics1, &sink1),
-	)
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsDefault: &defaultSink,
+		metrics0:       &sink0,
+		metrics1:       &sink1,
+	})
 
 	resetSinks := func() {
 		defaultSink.Reset()
@@ -427,10 +428,10 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	var sink0, sink1 consumertest.MetricsSink
 
-	router := connectortest.NewMetricsRouter(
-		connectortest.WithMetricsSink(metricsDefault, &sink0),
-		connectortest.WithMetricsSink(metricsOther, &sink1),
-	)
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsDefault: &sink0,
+		metricsOther:   &sink1,
+	})
 
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
@@ -478,10 +479,10 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 		}},
 	}
 
-	router := connectortest.NewMetricsRouter(
-		connectortest.WithNopMetrics(metricsDefault),
-		connectortest.WithNopMetrics(metricsOther),
-	)
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsDefault: consumertest.NewNop(),
+		metricsOther:   consumertest.NewNop(),
+	})
 
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(

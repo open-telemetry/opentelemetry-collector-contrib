@@ -424,8 +424,8 @@ func TestBuildExporterConfigUnknown(t *testing.T) {
 	assert.Equal(t, grpcSettings, exporterCfg.GRPCClientSettings)
 
 	assert.Equal(t, defaultCfg.TimeoutSettings, exporterCfg.TimeoutSettings)
-	assert.Equal(t, defaultCfg.QueueSettings, exporterCfg.QueueSettings)
-	assert.Equal(t, defaultCfg.RetrySettings, exporterCfg.RetrySettings)
+	assert.Equal(t, defaultCfg.QueueConfig, exporterCfg.QueueConfig)
+	assert.Equal(t, defaultCfg.RetryConfig, exporterCfg.RetryConfig)
 }
 
 func TestBatchWithTwoMetrics(t *testing.T) {
