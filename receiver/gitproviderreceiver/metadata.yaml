@@ -35,56 +35,56 @@ metrics:
   git.repository.count:
     enabled: true
     description: Number of repositories in an organization
-    unit: 1
+    unit: "{repository}"
     gauge:
       value_type: int
     attributes: []
   git.repository.branch.count:
     enabled: true
     description: Number of branches in a repository
-    unit: 1
+    unit: "{branch}"
     gauge:
       value_type: int
     attributes: [repository.name]
   git.repository.contributor.count:
     enabled: false
     description: Total number of unique contributors to a repository
-    unit: 1
+    unit: "{contributor}"
     gauge:
       value_type: int
     attributes: [repository.name]
   git.repository.pull_request.merged.count:
     enabled: true
     description: The number of merged pull requests in a repository
-    unit: 1
+    unit: "{pull_request}"
     gauge:
       value_type: int
     attributes: [repository.name]
   git.repository.pull_request.open.count:
     enabled: true
     description: The number of open pull requests in a repository
-    unit: 1
+    unit: "{pull_request}"
     gauge:
       value_type: int
     attributes: [repository.name]
   git.repository.pull_request.open.time:
     enabled: true
     description: The amount of time a pull request has been open
-    unit: 1
+    unit: s
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
   git.repository.pull_request.merged.time:
     enabled: true
     description: The amount of time it took a pull request to go from open to merged
-    unit: 1
+    unit: s
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
   git.repository.pull_request.approved.time:
     enabled: true
     description: The amount of time it took a pull request to go from open to approved
-    unit: 1
+    unit: s
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
