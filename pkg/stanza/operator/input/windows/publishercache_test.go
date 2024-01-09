@@ -14,7 +14,9 @@ import (
 
 func TestGetValidPublisher(t *testing.T) {
 	publisherCache := newPublisherCache()
-	defer publisherCache.evictAll()
+	defer func() {
+		require.NoError(t, publisherCache.evictAll())
+	}()
 
 	// Provider "Application" exists in all Windows versions.
 	publisher, openPublisherErr := publisherCache.get("Application")
@@ -29,7 +31,9 @@ func TestGetValidPublisher(t *testing.T) {
 
 func TestGetInvalidPublisher(t *testing.T) {
 	publisherCache := newPublisherCache()
-	defer publisherCache.evictAll()
+	defer func() {
+		require.NoError(t, publisherCache.evictAll())
+	}()
 
 	// Provider "InvalidProvider" does not exist in any Windows version.
 	publisher, openPublisherErr := publisherCache.get("InvalidProvider")
@@ -44,7 +48,9 @@ func TestGetInvalidPublisher(t *testing.T) {
 
 func TestValidAndInvalidPublishers(t *testing.T) {
 	publisherCache := newPublisherCache()
-	defer publisherCache.evictAll()
+	defer func() {
+		require.NoError(t, publisherCache.evictAll())
+	}()
 
 	// Provider "Application" exists in all Windows versions.
 	publisher, openPublisherErr := publisherCache.get("Application")
