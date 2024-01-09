@@ -170,3 +170,6 @@ issues:
     - text: "G402:"
       linters:
         - gosec
+    - text: "SA1019: \"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+      linters:
+        - staticcheck

@@ -104,4 +104,9 @@ service:
 ```
 </tr></table>
 
-Here we have two traces pipelines that ingest the same data but one is being sampled. The one that is sampled has its data sent to the datadog backend for you to see the sampled subset of the total traces sent across. The other non-sampled pipeline of traces sends its data to the metrics pipeline to be used in the APM stats. This unsampled pipeline gives the full picture of how much data the application emits in traces. 
+Here we have two traces pipelines that ingest the same data but one is being sampled. The one that is sampled has its data sent to the datadog backend for you to see the sampled subset of the total traces sent across. The other non-sampled pipeline of traces sends its data to the metrics pipeline to be used in the APM stats. This unsampled pipeline gives the full picture of how much data the application emits in traces.
+
+## Feature Gate for Performance
+
+In case you are experiencing high memory usage with Datadog Connector, similar to [issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29755), use the feature gate `connector.datadogconnector.performance`. With the feature gate enabled, Datadog Connector takes OTLP traces and produces OTLP metric with the name `dd.internal.stats.payload`. This Metric has an attribute `dd.internal.stats.payload` that contains the bytes for StatsPayload. With the feature gate, we can use Datadog Connector only in conjunction with Datadog Exporter. Please enable the feature only if needed for performance reasons and higher throughput. Enable the feature gate on all collectors (especially in gateway deployment) in the pipeline that sends data to Datadog. We plan to refactor this component in the future so that the signals produced are usable in any metrics pipeline.
+

@@ -47,7 +47,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 					nil,
 					consumertest.NewNop(),
 				)
-				require.ErrorIs(t, err, errConfigNotSqlServer)
+				require.ErrorIs(t, err, errConfigNotSQLServer)
 			},
 		},
 	}
