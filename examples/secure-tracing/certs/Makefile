@@ -2,6 +2,7 @@
 all: ca.crt envoy.crt tracing-client.crt otel-collector.crt 
 
 clean:
+	rm -rf *.key *.crt 
 	rm -f *.key *.crt *.csr ca.srl
 
 ca.key:

@@ -67,7 +67,12 @@ We use docker compose to bring up Envoy and OpenTelemetry Collection Pipeline. M
 ```
 $ docker compose up
 ```
-From the console window, verify that `Envoy` and `Collector` are up and running.
+From the console window, verify that `Envoy` and `Collector` are up and running. If you see error similar to following,
+
+```
+secure-tracing-otel-collector-1  | Error: cannot start pipelines: failed to load TLS config: failed to load TLS cert and key: read /etc/otel-collector.crt: is a directory
+```
+It's most likely due to missing certificates. Follow the steps from section above to generate certificates. 
 
 ## Run test
 
