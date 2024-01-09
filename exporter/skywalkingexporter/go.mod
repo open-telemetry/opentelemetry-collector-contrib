@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
 	google.golang.org/grpc v1.60.1
-	skywalking.apache.org/repo/goapi v0.0.0-20231225085619-53f5be6739c4
+	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
 
 require (

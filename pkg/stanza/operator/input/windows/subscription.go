@@ -29,7 +29,9 @@ func (s *Subscription) Open(channel string, startAt string, bookmark Bookmark) e
 	if err != nil {
 		return fmt.Errorf("failed to create signal handle: %w", err)
 	}
-	defer windows.CloseHandle(signalEvent)
+	defer func() {
+		_ = windows.CloseHandle(signalEvent)
+	}()
 
 	channelPtr, err := syscall.UTF16PtrFromString(channel)
 	if err != nil {
@@ -74,7 +76,7 @@ func (s *Subscription) Read(maxReads int) ([]Event, error) {
 	var eventsRead uint32
 	err := evtNext(s.handle, uint32(maxReads), &eventHandles[0], 0, 0, &eventsRead)
 
-	if err == ErrorInvalidOperation && eventsRead == 0 {
+	if errors.Is(err, ErrorInvalidOperation) && eventsRead == 0 {
 		return nil, nil
 	}
 
