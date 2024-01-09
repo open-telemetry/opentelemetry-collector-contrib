@@ -1192,4 +1192,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver => ../../testbed/mockdatareceivers/mockawsxrayreceiver
 
-replace go.opentelemetry.io/collector/config/configretry => go.opentelemetry.io/collector/config/configretry v0.0.0-20240109173641-c5a2c78d6143
+replace go.opentelemetry.io/collector/config/configretry => go.opentelemetry.io/collector/config/configretry v0.91.0

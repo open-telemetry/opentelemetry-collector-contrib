@@ -387,4 +387,4 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
-replace go.opentelemetry.io/collector/config/configretry => go.opentelemetry.io/collector/config/configretry v0.0.0-20240109173641-c5a2c78d6143
+replace go.opentelemetry.io/collector/config/configretry => go.opentelemetry.io/collector/config/configretry v0.91.0
