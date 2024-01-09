@@ -97,7 +97,6 @@ func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err er
 	prwe.settings.Logger.Info("Starting Prometheus Remote Write Exporter...")
 	prwe.client, err = prwe.clientSettings.ToClient(host, prwe.settings)
 	if err != nil {
-		prwe.settings.Logger.Error("Failed to create HTTP client", zap.Error(err))
 		return err
 	}
 	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
@@ -188,7 +187,6 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
-	prwe.settings.Logger.Debug("Preparing to make HTTP request to ", zap.String("endpoint: ", prwe.clientSettings.Endpoint))
 	input := make(chan *prompb.WriteRequest, len(requests))
 	for _, request := range requests {
 		input <- request
@@ -264,7 +262,6 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		// Reference for different behavior according to status code:
 		// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			prwe.settings.Logger.Debug(fmt.Sprintf("Successfully sent metrics to %s", prwe.clientSettings.Endpoint))
 			return nil
 		}
 
