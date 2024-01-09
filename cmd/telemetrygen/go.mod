@@ -7,9 +7,9 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.91.0
-	go.opentelemetry.io/collector/pdata v1.0.0
-	go.opentelemetry.io/collector/semconv v0.91.0
+	go.opentelemetry.io/collector/component v0.91.1-0.20240109173641-c5a2c78d6143
+	go.opentelemetry.io/collector/pdata v1.0.1-0.20240109173641-c5a2c78d6143
+	go.opentelemetry.io/collector/semconv v0.91.1-0.20240109173641-c5a2c78d6143
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.44.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.44.0
@@ -44,9 +44,9 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.91.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.91.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.91.1-0.20240109173641-c5a2c78d6143 // indirect
+	go.opentelemetry.io/collector/confmap v0.91.1-0.20240109173641-c5a2c78d6143 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.1-0.20240109173641-c5a2c78d6143 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -55,7 +55,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231030173426-d783a09b4405 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

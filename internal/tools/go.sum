@@ -655,11 +655,11 @@ go.opentelemetry.io/build-tools/issuegenerator v0.12.0 h1:KRP7aSUR9JoqNwv+Pp595v
 go.opentelemetry.io/build-tools/issuegenerator v0.12.0/go.mod h1:G71Og7dZJoIC+MjuY1InQ/oeAOkM1S5Nv6CCnlOdqns=
 go.opentelemetry.io/build-tools/multimod v0.12.1-0.20240108171606-a2b17e6d6e63 h1:/k1/akmYXP+ZRoHoNCbmLpluR7l1+Y+9mBL0kuIwjks=
 go.opentelemetry.io/build-tools/multimod v0.12.1-0.20240108171606-a2b17e6d6e63/go.mod h1:EGWcKkk7JQzxREP7M23rWiRK+RZioVOFRdM1KW6pnJc=
-go.opentelemetry.io/collector/cmd/builder v0.91.0 h1:+XleULVc+kfCMIjVBDVru9x5dIjTG1EfDY8nZxBqK/o=
-go.opentelemetry.io/collector/cmd/builder v0.91.0/go.mod h1:wcxXrQyLrzvYKXCG3CqDkFpbL35cBCHke6wk2RFvmZk=
+go.opentelemetry.io/collector/cmd/builder v0.91.1-0.20240109173641-c5a2c78d6143 h1:KeUkorcHSdLT7lUBlwpFO0N2r3PhocLUrdr9K1SDzE0=
+go.opentelemetry.io/collector/cmd/builder v0.91.1-0.20240109173641-c5a2c78d6143/go.mod h1:PZfoFOWMKq9tFC6YQfiU5vG/Q4prdm05zwatfyQyY+Q=
 go.tmz.dev/musttag v0.7.2 h1:1J6S9ipDbalBSODNT5jCep8dhZyMr4ttnjQagmGYR5s=
 go.tmz.dev/musttag v0.7.2/go.mod h1:m6q5NiiSKMnQYokefa2xGoyoXnrswCbJ0AWYzf4Zs28=
-go.uber.org/goleak v1.2.0 h1:xqgm/S+aQvhWFTtR0XK3Jvg7z8kGV8P4X14IzwN3Eqk=
+go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
 go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=
 go.uber.org/zap v1.26.0 h1:sI7k6L95XOKS281NhVKOFCUNIvv9e0w4BF8N3u+tCRo=

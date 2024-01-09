@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -16,7 +17,7 @@ import (
 
 // Config represent a configuration for the CloudWatch logs exporter.
 type Config struct {
-	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams
 	// that share the same retention, monitoring, and access control settings.

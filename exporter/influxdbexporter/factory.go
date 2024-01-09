@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -41,7 +42,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
 		MetricsSchema:       common.MetricsSchemaTelegrafPrometheusV1.String(),
 		SpanDimensions:      otel2influx.DefaultOtelTracesToLineProtocolConfig().SpanDimensions,
 		LogRecordDimensions: otel2influx.DefaultOtelLogsToLineProtocolConfig().LogRecordDimensions,
@@ -81,7 +82,7 @@ func createTraceExporter(
 		cfg,
 		exp.WriteTraces,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithStart(writer.Start),
 	)
 }
@@ -116,7 +117,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 		cfg,
 		exp.WriteMetrics,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithStart(writer.Start),
 	)
 }
@@ -146,7 +147,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 		cfg,
 		exp.WriteLogs,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithStart(writer.Start),
 	)
 }
