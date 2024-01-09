@@ -3,7 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encod
 go 1.20
 
 require (
-	github.com/jaegertracing/jaeger v1.52.0
+	github.com/gogo/protobuf v1.3.2
+	github.com/jaegertracing/jaeger v1.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.91.0
 	github.com/stretchr/testify v1.8.4
@@ -17,7 +18,6 @@ require (
 require (
 	github.com/apache/thrift v0.19.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -41,9 +41,9 @@ require (
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
-	google.golang.org/grpc v1.59.0 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
+	google.golang.org/grpc v1.60.0 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
