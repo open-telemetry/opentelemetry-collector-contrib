@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.0
-	go.opentelemetry.io/collector/semconv v0.91.0
+	go.opentelemetry.io/collector/pdata v1.0.1-0.20240109173641-c5a2c78d6143
+	go.opentelemetry.io/collector/semconv v0.91.1-0.20240109173641-c5a2c78d6143
 )
 
 require (
@@ -28,7 +28,7 @@ require (
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
-	google.golang.org/grpc v1.60.0 // indirect
+	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

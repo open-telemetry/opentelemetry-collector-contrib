@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -45,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
-				RetryConfig: exporterhelper.RetrySettings{
+				RetryConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					RandomizationFactor: 0.7,

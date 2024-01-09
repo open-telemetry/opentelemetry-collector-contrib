@@ -47,7 +47,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	// load the non-dynamic config normally
-	err := componentParser.Unmarshal(cfg)
+	err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused())
 	if err != nil {
 		return err
 	}

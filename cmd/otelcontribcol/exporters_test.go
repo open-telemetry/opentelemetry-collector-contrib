@@ -87,7 +87,7 @@ func TestDefaultExporters(t *testing.T) {
 
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -114,7 +114,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Metadata.Full = false
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -134,7 +134,7 @@ func TestDefaultExporters(t *testing.T) {
 				}
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -158,8 +158,8 @@ func TestDefaultExporters(t *testing.T) {
 					Endpoint: endpoint,
 				}
 				// disable queue/retry to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.QueueConfig.Enabled = false
+				cfg.RetryConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -170,8 +170,8 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue/retry to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.QueueConfig.Enabled = false
+				cfg.RetryConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -190,7 +190,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["prometheusremotewrite"].CreateDefaultConfig().(*prometheusremotewriteexporter.Config)
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.RemoteWriteQueue.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -211,7 +211,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -225,7 +225,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.APIURL = "http://" + endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -238,7 +238,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -250,7 +250,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -352,7 +352,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Metrics.Endpoint = endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -364,7 +364,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.API.Key = "cutedogsgotoheaven"
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -377,7 +377,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.APIKey = "secret-key"
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -391,7 +391,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.APIToken = "dynamictracing"
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -414,8 +414,8 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Source = "magic-source"
 				cfg.AuthConfig.CredentialFile = filepath.Join(t.TempDir(), "f5cloud.exporter.random.file")
 				// disable queue/retry to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.QueueConfig.Enabled = false
+				cfg.RetryConfig.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -439,7 +439,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -451,7 +451,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -481,7 +481,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["logicmonitor"].CreateDefaultConfig().(*logicmonitorexporter.Config)
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -493,7 +493,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -505,7 +505,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -517,7 +517,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 		},
@@ -535,7 +535,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -547,7 +547,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -559,7 +559,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,

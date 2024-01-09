@@ -10,6 +10,7 @@ import (
 
 	sapmclient "github.com/signalfx/sapm-proto/client"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -50,7 +51,7 @@ type Config struct {
 
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 }
 
 func (c *Config) Validate() error {

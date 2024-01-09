@@ -27,6 +27,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					FileAtime: MetricConfig{Enabled: true},
+					FileCount: MetricConfig{Enabled: true},
 					FileCtime: MetricConfig{Enabled: true},
 					FileMtime: MetricConfig{Enabled: true},
 					FileSize:  MetricConfig{Enabled: true},
@@ -42,6 +43,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					FileAtime: MetricConfig{Enabled: false},
+					FileCount: MetricConfig{Enabled: false},
 					FileCtime: MetricConfig{Enabled: false},
 					FileMtime: MetricConfig{Enabled: false},
 					FileSize:  MetricConfig{Enabled: false},
