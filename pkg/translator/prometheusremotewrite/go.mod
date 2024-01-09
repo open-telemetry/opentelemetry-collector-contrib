@@ -9,7 +9,7 @@ require (
 	github.com/prometheus/prometheus v0.48.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/pdata v1.0.1
-	go.opentelemetry.io/collector/semconv v0.91.1-0.20240109173641-c5a2c78d6143
+	go.opentelemetry.io/collector/semconv v0.92.0
 	go.uber.org/multierr v1.11.0
 )
 
