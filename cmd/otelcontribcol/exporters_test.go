@@ -171,7 +171,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueConfig.Enabled = false
-				cfg.QueueConfig.Enabled = false
+				cfg.RetryConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
