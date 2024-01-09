@@ -155,7 +155,7 @@ func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discove
 		if err := endpointConfig.Unmarshal(factory.CreateDefaultConfig(), confmap.WithErrorUnused()); err != nil {
 			// rather than attach to error content that can change over time,
 			// confirm the error only arises w/ ErrorUnused mapstructure setting ("invalid keys")
-			if err = endpointConfig.Unmarshal(factory.CreateDefaultConfig()); err == nil {
+			if err = endpointConfig.Unmarshal(factory.CreateDefaultConfig(), confmap.WithIgnoreUnused()); err == nil {
 				delete(discovered, endpointConfigKey)
 			}
 		}
