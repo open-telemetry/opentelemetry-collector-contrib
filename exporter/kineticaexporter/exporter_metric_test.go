@@ -456,10 +456,14 @@ func handleInsertRecords(w http.ResponseWriter, r *http.Request) {
 
 	// Custom handling for endpoint 2 POST request
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("\x04OK\x00.insert_records_response\x08\x00\x06\x00\x00\x00"))
+	_, err := w.Write([]byte("\x04OK\x00.insert_records_response\x08\x00\x06\x00\x00\x00"))
+	if err != nil {
+		http.Error(w, "Error wrting reesponse", http.StatusInternalServerError)
+		return
+	}
 }
 
-func handleExecuteSql(w http.ResponseWriter, r *http.Request) {
+func handleExecuteSQL(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -467,7 +471,11 @@ func handleExecuteSql(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	responseBytes := []byte("\x04OK\x00(execute_sql_response\xd4\x05\x02\xf6\x03{\"type\":\"record\",\"name\":\"generic_response\",\"fields\":[{\"name\":\"column_1\",\"type\":{\"type\":\"array\",\"items\":\"string\"}},{\"name\":\"column_headers\",\"type\":{\"type\":\"array\",\"items\":\"string\"}},{\"name\":\"column_datatypes\",\"type\":{\"type\":\"array\",\"items\":\"string\"}}]}$\x00\x02\ndummy\x00\x02\fstring\x00\x00\x01\x00\x00\b X-Kinetica-Group\x06DDL\ncount\x020\x1alast_endpoint\x1a/create/table.total_number_of_records\x020\x00\x00")
-	w.Write(responseBytes)
+	_, err := w.Write(responseBytes)
+	if err != nil {
+		http.Error(w, "Error wrting reesponse", http.StatusInternalServerError)
+		return
+	}
 }
 
 func handleShowTable(w http.ResponseWriter, r *http.Request) {
@@ -491,25 +499,32 @@ func handleShowTable(w http.ResponseWriter, r *http.Request) {
 
 	// fmt.Println("Response bytes => ", string(finalResponseBytes))
 
-	w.Write(finalResponseBytes)
+	_, err = w.Write(finalResponseBytes)
+	if err != nil {
+		http.Error(w, "Error wrting reesponse", http.StatusInternalServerError)
+		return
+	}
+
 }
 
 func getShowTableResponse(requestBody string) []byte {
-	if strings.Contains(requestBody, "metric_summary_scope_attribute") {
+	switch {
+	case strings.Contains(requestBody, "metric_summary_scope_attribute"):
 		return []byte(showTableMetricSummaryScopeAttributesResponse)
-	} else if strings.Contains(requestBody, "metric_summary_resource_attribute") {
+	case strings.Contains(requestBody, "metric_summary_resource_attribute"):
 		return []byte(showTableMetricSummaryResourceAttributesResponse)
-	} else if strings.Contains(requestBody, "metric_summary_datapoint_quantile_values") {
+	case strings.Contains(requestBody, "metric_summary_datapoint_quantile_values"):
 		return []byte(showTableMetricSummaryDatapointQuantileValuesResponse)
-	} else if strings.Contains(requestBody, "metric_summary_datapoint_attribute") {
+	case strings.Contains(requestBody, "metric_summary_datapoint_attribute"):
 		return []byte(showTableMetricSummaryDatapointAttributeResponse)
-	} else if strings.Contains(requestBody, "metric_summary_datapoint") {
+	case strings.Contains(requestBody, "metric_summary_datapoint"):
 		return []byte(showTableMetricSummaryDatapointResponse)
-	} else if strings.Contains(requestBody, "metric_summary") {
+	case strings.Contains(requestBody, "metric_summary"):
 		return []byte(showTableMetricSummaryResponse)
-	} else {
+	default:
 		return []byte("")
 	}
+
 }
 
 // Setup function (runs before tests start)
@@ -523,7 +538,7 @@ func TestMain(m *testing.M) {
 		case "/show/table":
 			handleShowTable(w, r)
 		case "/execute/sql":
-			handleExecuteSql(w, r)
+			handleExecuteSQL(w, r)
 		default:
 			http.Error(w, "Not found", http.StatusNotFound)
 		}
