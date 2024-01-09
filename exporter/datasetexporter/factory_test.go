@@ -119,7 +119,7 @@ func TestLoadConfig(t *testing.T) {
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     11 * time.Nanosecond,
-					RandomizationFactor: 11.3,
+					RandomizationFactor: 0.113,
 					Multiplier:          11.6,
 					MaxInterval:         12 * time.Nanosecond,
 					MaxElapsedTime:      13 * time.Nanosecond,
