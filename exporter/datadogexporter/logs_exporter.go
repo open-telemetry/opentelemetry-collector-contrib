@@ -5,10 +5,11 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
-	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	logsmapping "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs"
 	"go.opentelemetry.io/collector/consumer"
@@ -22,14 +23,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
-// otelTag specifies a tag to be added to all logs sent from the Datadog exporter
-const otelTag = "otel_source:datadog_exporter"
+// otelSource specifies a source to be added to all logs sent from the Datadog exporter
+// The tag has key `otel_source` and the value specified on this constant.
+const otelSource = "datadog_exporter"
 
 type logsExporter struct {
 	params           exporter.CreateSettings
 	cfg              *Config
 	ctx              context.Context // ctx triggers shutdown upon cancellation
 	scrubber         scrub.Scrubber  // scrubber scrubs sensitive information from error messages
+	translator       *logsmapping.Translator
 	sender           *logs.Sender
 	onceMetadata     *sync.Once
 	sourceProvider   source.Provider
@@ -42,6 +45,7 @@ func newLogsExporter(
 	params exporter.CreateSettings,
 	cfg *Config,
 	onceMetadata *sync.Once,
+	attributesTranslator *attributes.Translator,
 	sourceProvider source.Provider,
 	metadataReporter *inframetadata.Reporter,
 ) (*logsExporter, error) {
@@ -66,12 +70,17 @@ func newLogsExporter(
 		}
 	}
 
+	translator, err := logsmapping.NewTranslator(params.TelemetrySettings, attributesTranslator, otelSource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create logs translator: %w", err)
+	}
 	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.Logs.DumpPayloads, string(cfg.API.Key))
 
 	return &logsExporter{
 		params:           params,
 		cfg:              cfg,
 		ctx:              ctx,
+		translator:       translator,
 		sender:           s,
 		onceMetadata:     onceMetadata,
 		scrubber:         scrub.NewScrubber(),
@@ -83,7 +92,7 @@ func newLogsExporter(
 var _ consumer.ConsumeLogsFunc = (*logsExporter)(nil).consumeLogs
 
 // consumeLogs is implementation of cosumer.ConsumeLogsFunc
-func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error) {
+func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err error) {
 	defer func() { err = exp.scrubber.Scrub(err) }()
 	if exp.cfg.HostMetadata.Enabled {
 		// start host metadata with resource attributes from
@@ -103,29 +112,6 @@ func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error
 		}
 	}
 
-	rsl := ld.ResourceLogs()
-	var payloads []datadogV2.HTTPLogItem
-	// Iterate over resource logs
-	for i := 0; i < rsl.Len(); i++ {
-		rl := rsl.At(i)
-		sls := rl.ScopeLogs()
-		res := rl.Resource()
-		for j := 0; j < sls.Len(); j++ {
-			sl := sls.At(j)
-			lsl := sl.LogRecords()
-			// iterate over Logs
-			for k := 0; k < lsl.Len(); k++ {
-				log := lsl.At(k)
-				payload := logsmapping.Transform(log, res, exp.params.Logger)
-				ddtags := payload.GetDdtags()
-				if ddtags != "" {
-					payload.SetDdtags(ddtags + "," + otelTag)
-				} else {
-					payload.SetDdtags(otelTag)
-				}
-				payloads = append(payloads, payload)
-			}
-		}
-	}
+	payloads := exp.translator.MapLogs(ctx, ld)
 	return exp.sender.SubmitLogs(exp.ctx, payloads)
 }

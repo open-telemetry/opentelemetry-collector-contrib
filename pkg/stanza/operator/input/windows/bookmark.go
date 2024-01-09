@@ -7,6 +7,7 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"errors"
 	"fmt"
 	"syscall"
 )
@@ -59,8 +60,8 @@ func (b *Bookmark) Render(buffer Buffer) (string, error) {
 		return "", fmt.Errorf("bookmark handle is not open")
 	}
 
-	bufferUsed, _, err := evtRender(0, b.handle, EvtRenderBookmark, buffer.SizeBytes(), buffer.FirstByte())
-	if err == ErrorInsufficientBuffer {
+	bufferUsed, err := evtRender(0, b.handle, EvtRenderBookmark, buffer.SizeBytes(), buffer.FirstByte())
+	if errors.Is(err, ErrorInsufficientBuffer) {
 		buffer.UpdateSizeBytes(*bufferUsed)
 		return b.Render(buffer)
 	}

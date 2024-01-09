@@ -8,6 +8,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -21,6 +22,7 @@ const (
 	// The value of "type" key in configuration.
 	defaultLogsIndex   = "logs-generic-default"
 	defaultTracesIndex = "traces-generic-default"
+	userAgentHeaderKey = "User-Agent"
 )
 
 // NewFactory creates a factory for Elastic exporter.
@@ -76,6 +78,8 @@ func createLogsExporter(
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
 	}
 
+	setDefaultUserAgentHeader(cf, set.BuildInfo)
+
 	logsExporter, err := newLogsExporter(set.Logger, cf)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch logsExporter: %w", err)
@@ -96,6 +100,9 @@ func createTracesExporter(ctx context.Context,
 	cfg component.Config) (exporter.Traces, error) {
 
 	cf := cfg.(*Config)
+
+	setDefaultUserAgentHeader(cf, set.BuildInfo)
+
 	tracesExporter, err := newTracesExporter(set.Logger, cf)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch tracesExporter: %w", err)
@@ -107,4 +114,15 @@ func createTracesExporter(ctx context.Context,
 		tracesExporter.pushTraceData,
 		exporterhelper.WithShutdown(tracesExporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings))
+}
+
+// set default User-Agent header with BuildInfo if User-Agent is empty
+func setDefaultUserAgentHeader(cf *Config, info component.BuildInfo) {
+	if _, found := cf.Headers[userAgentHeaderKey]; found {
+		return
+	}
+	if cf.Headers == nil {
+		cf.Headers = make(map[string]string)
+	}
+	cf.Headers[userAgentHeaderKey] = fmt.Sprintf("%s/%s (%s/%s)", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
 }

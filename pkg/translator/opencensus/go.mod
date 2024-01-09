@@ -12,7 +12,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/pdata v1.0.0
 	go.opentelemetry.io/collector/semconv v0.91.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
