@@ -27,7 +27,8 @@
       {
         "matchManagers": ["gomod"],
         "matchUpdateTypes": ["major"],
-        "prBodyNotes": [":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"]
+        "prBodyNotes": [":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"],
+        "labels": ["dependency-major-update"]
       },
       {
         "matchManagers": ["dockerfile"],
