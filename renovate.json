@@ -20,6 +20,16 @@
     ],
     "packageRules": [
       {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["pin", "pinDigest", "digest", "lockFileMaintenance", "rollback", "bump", "replacement"],
+        "enabled": false
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["major"],
+        "prBodyNotes": [":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"]
+      },
+      {
         "matchManagers": ["dockerfile"],
         "groupName": "dockerfile deps"
       },
@@ -33,6 +43,36 @@
       },
       {
         "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/aws"],
+        "groupName": "All github.com/aws packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/azure"],
+        "groupName": "All github.com/azure packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/datadog"],
+        "groupName": "All github.com/datadog packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://google.golang.org"],
+        "groupName": "All google.golang.org packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://golang.org"],
+        "groupName": "All golang.org packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
+        "groupName": "All github.com/googlecloudplatform packages"
+      },
+      {
+        "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
         "groupName": "All OpenTelemetry Collector dev packages",
         "matchUpdateTypes": ["digest"]
@@ -42,46 +82,6 @@
         "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
         "groupName": "All OpenTelemetry Collector packages",
         "matchUpdateTypes": ["major", "minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/aws"],
-        "groupName": "All github.com/aws packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/azure"],
-        "groupName": "All github.com/azure packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/datadog"],
-        "groupName": "All github.com/datadog packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://google.golang.org"],
-        "groupName": "All google.golang.org packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://golang.org"],
-        "groupName": "All golang.org packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
-        "groupName": "All github.com/googlecloudplatform packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchUpdateTypes": ["minor", "patch"]
       }
     ],
     "ignoreDeps": [
