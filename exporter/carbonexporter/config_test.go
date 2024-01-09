@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -40,6 +41,7 @@ func TestLoadConfig(t *testing.T) {
 				TCPAddr: confignet.TCPAddr{
 					Endpoint: "localhost:8080",
 				},
+				MaxIdleConns: 15,
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
@@ -55,6 +57,9 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+				},
+				ResourceToTelemetryConfig: resourcetotelemetry.Settings{
+					Enabled: true,
 				},
 			},
 		},
@@ -97,9 +102,18 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "invalid_timeout",
 			config: &Config{
+				TCPAddr: confignet.TCPAddr{Endpoint: defaultEndpoint},
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: -5 * time.Second,
 				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid_max_idle_conns",
+			config: &Config{
+				TCPAddr:      confignet.TCPAddr{Endpoint: defaultEndpoint},
+				MaxIdleConns: -1,
 			},
 			wantErr: true,
 		},

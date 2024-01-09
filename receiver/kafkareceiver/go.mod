@@ -24,11 +24,13 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0
 	go.opentelemetry.io/collector/receiver v0.91.0
 	go.opentelemetry.io/collector/semconv v0.91.0
+	go.opentelemetry.io/otel/metric v1.21.0
+	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/zap v1.26.0
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.49.1 // indirect
+	github.com/aws/aws-sdk-go v1.49.13 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eapache/go-resiliency v1.4.0 // indirect
@@ -56,7 +58,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.90.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.91.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
@@ -71,11 +73,9 @@ require (
 	go.opentelemetry.io/collector/extension v0.91.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
-	go.opentelemetry.io/otel/metric v1.21.0 // indirect
-	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.16.0 // indirect
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

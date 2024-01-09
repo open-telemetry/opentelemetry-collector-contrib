@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.20
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.0-rc.7
+	github.com/DataDog/datadog-agent/pkg/proto v0.50.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.91.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vmihailenco/msgpack/v4 v4.3.13
@@ -13,8 +13,10 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0
 	go.opentelemetry.io/collector/receiver v0.91.0
 	go.opentelemetry.io/collector/semconv v0.91.0
+	go.opentelemetry.io/otel/metric v1.21.0
+	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/multierr v1.11.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
@@ -56,8 +58,6 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
-	go.opentelemetry.io/otel/metric v1.21.0 // indirect
-	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect

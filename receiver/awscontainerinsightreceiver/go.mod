@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.49.1
+	github.com/aws/aws-sdk-go v1.49.13
 	github.com/google/cadvisor v0.48.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.91.0
@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.91.0
-	github.com/shirou/gopsutil/v3 v3.23.11
+	github.com/shirou/gopsutil/v3 v3.23.12
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/config/confighttp v0.91.0
@@ -19,6 +19,8 @@ require (
 	go.opentelemetry.io/collector/consumer v0.91.0
 	go.opentelemetry.io/collector/pdata v1.0.0
 	go.opentelemetry.io/collector/receiver v0.91.0
+	go.opentelemetry.io/otel/metric v1.21.0
+	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/zap v1.26.0
 	k8s.io/api v0.28.4
 	k8s.io/apimachinery v0.28.4
@@ -121,8 +123,6 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
-	go.opentelemetry.io/otel/metric v1.21.0 // indirect
-	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect
@@ -138,7 +138,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.0.3 // indirect
-	k8s.io/klog/v2 v2.100.1 // indirect
+	k8s.io/klog/v2 v2.110.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect

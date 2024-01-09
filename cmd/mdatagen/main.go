@@ -187,6 +187,9 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"isReceiver": func() bool {
 					return md.Status.Class == "receiver"
 				},
+				"isExtension": func() bool {
+					return md.Status.Class == "extension"
+				},
 				"skipLifecycle": func() bool {
 					return md.Tests.SkipLifecycle
 				},

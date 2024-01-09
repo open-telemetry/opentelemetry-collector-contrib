@@ -7,3 +7,6 @@ status:
   distributions: [contrib, splunk, sumo, aws]
   codeowners:
     active: [jmacd, dmitryax]
+
+tests:
+  config:

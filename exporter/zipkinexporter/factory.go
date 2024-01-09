@@ -5,7 +5,6 @@ package zipkinexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,14 +32,13 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	defaultClientHTTPSettings := confighttp.NewDefaultHTTPClientSettings()
+	defaultClientHTTPSettings.Timeout = defaultTimeout
+	defaultClientHTTPSettings.WriteBufferSize = 512 * 1024
 	return &Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout: defaultTimeout,
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
-		},
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+		HTTPClientSettings: defaultClientHTTPSettings,
 		Format:             defaultFormat,
 		DefaultServiceName: defaultServiceName,
 	}
@@ -52,11 +50,6 @@ func createTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	zc := cfg.(*Config)
-
-	if zc.Endpoint == "" {
-		// TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
-		return nil, errors.New("exporter config requires a non-empty 'endpoint'")
-	}
 
 	ze, err := createZipkinExporter(zc, set.TelemetrySettings)
 	if err != nil {

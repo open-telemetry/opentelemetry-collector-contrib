@@ -4,16 +4,18 @@ go 1.20
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.24.0
-	github.com/aws/aws-sdk-go-v2/config v1.26.1
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.12
-	github.com/aws/aws-sdk-go-v2/service/sts v1.26.5
+	github.com/aws/aws-sdk-go-v2/config v1.26.2
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.13
+	github.com/aws/aws-sdk-go-v2/service/sts v1.26.6
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.91.0
 	go.opentelemetry.io/collector/confmap v0.91.0
 	go.opentelemetry.io/collector/extension v0.91.0
 	go.opentelemetry.io/collector/extension/auth v0.91.0
+	go.opentelemetry.io/otel/metric v1.21.0
+	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/zap v1.26.0
-	google.golang.org/grpc v1.60.0
+	google.golang.org/grpc v1.60.1
 )
 
 require (
@@ -41,8 +43,6 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
-	go.opentelemetry.io/otel/metric v1.21.0 // indirect
-	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect

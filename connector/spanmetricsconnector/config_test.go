@@ -110,6 +110,17 @@ func TestLoadConfig(t *testing.T) {
 				Exemplars:                ExemplarsConfig{Enabled: true, MaxPerDataPoint: &defaultMaxPerDatapoint},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resource_metrics_key_attributes"),
+			expected: &Config{
+				AggregationTemporality:       "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				DimensionsCacheSize:          defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize:     defaultResourceMetricsCacheSize,
+				ResourceMetricsKeyAttributes: []string{"service.name", "telemetry.sdk.language", "telemetry.sdk.name"},
+				MetricsFlushInterval:         15 * time.Second,
+				Histogram:                    HistogramConfig{Disable: false, Unit: defaultUnit},
+			},
+		},
 	}
 
 	for _, tt := range tests {

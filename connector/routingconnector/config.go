@@ -39,6 +39,10 @@ type Config struct {
 	// Table contains the routing table for this processor.
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
+
+	// MatchOnce determines whether the connector matches multiple statements.
+	// Optional.
+	MatchOnce bool `mapstructure:"match_once"`
 }
 
 // Validate checks if the processor configuration is valid.
