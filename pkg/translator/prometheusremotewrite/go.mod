@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.92.0
 	github.com/prometheus/common v0.45.0
 	github.com/prometheus/prometheus v0.48.1
 	github.com/stretchr/testify v1.8.4

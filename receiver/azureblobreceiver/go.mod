@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.92.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.92.0
 	go.opentelemetry.io/collector/confmap v0.92.0
