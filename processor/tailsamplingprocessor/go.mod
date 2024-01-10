@@ -5,9 +5,9 @@ go 1.20
 require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/uuid v1.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.91.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.91.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.91.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.92.0
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.92.0
