@@ -3,20 +3,20 @@ dist:
   name: oteltestbedcol
   description: OpenTelemetry Collector binary for testbed only tests.
   version: 0.91.0-dev
-  otelcol_version: 0.90.2-0.20231201205146-6e2fdc755b34
+  otelcol_version: 0.92.0
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.91.1-0.20240109173641-c5a2c78d6143
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.91.1-0.20240109173641-c5a2c78d6143
+  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.92.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.91.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.91.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.91.1-0.20240109173641-c5a2c78d6143
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.91.1-0.20240109173641-c5a2c78d6143
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.91.1-0.20240109173641-c5a2c78d6143
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.91.1-0.20240109173641-c5a2c78d6143
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.92.0
+  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.92.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.92.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.91.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.91.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.91.0
@@ -28,13 +28,13 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.91.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.91.1-0.20240109173641-c5a2c78d6143
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.91.1-0.20240109173641-c5a2c78d6143
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.92.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.91.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.91.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.91.1-0.20240109173641-c5a2c78d6143
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.91.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.91.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.91.0
@@ -100,5 +100,3 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
   - github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
   - github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
-  # remove once core v0.92.0 is released
-  - go.opentelemetry.io/collector/config/configretry => go.opentelemetry.io/collector/config/configretry v0.0.0-20240109173641-c5a2c78d6143

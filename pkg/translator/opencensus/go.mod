@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.91.0
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/pdata v1.0.1-0.20240109173641-c5a2c78d6143
-	go.opentelemetry.io/collector/semconv v0.91.1-0.20240109173641-c5a2c78d6143
+	go.opentelemetry.io/collector/pdata v1.0.1
+	go.opentelemetry.io/collector/semconv v0.92.0
 	google.golang.org/protobuf v1.32.0
 )
 
