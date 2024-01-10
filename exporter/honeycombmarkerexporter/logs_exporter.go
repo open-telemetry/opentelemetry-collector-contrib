@@ -135,7 +135,7 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRec
 	}
 
 	req.Header.Set(contentType, "application/json")
-	req.Header.Set(honeycombTeam, fmt.Sprint(e.apiKey))
+	req.Header.Set(honeycombTeam, string(e.apiKey))
 	req.Header.Set(userAgentHeaderKey, e.userAgentHeader)
 
 	resp, err := e.client.Do(req)
