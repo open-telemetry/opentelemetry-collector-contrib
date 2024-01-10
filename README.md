@@ -34,11 +34,8 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/monitoring.md">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md">Performance</a>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/roadmap.md">Roadmap</a>
   </strong>
 </p>
 
@@ -75,9 +72,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
-- [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
 - [Curtis Robert](https://github.com/crobert-1), Splunk
-- [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Matt Wear](https://github.com/mwear), Lightstep
@@ -87,6 +82,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 Emeritus Triagers:
 
 - [Alolita Sharma](https://github.com/alolita), AWS
+- [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Punya Biswal](https://github.com/punya), Google
 - [Steve Flanders](https://github.com/flands), Splunk
 
@@ -95,6 +91,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Antoine Toulme](https://github.com/atoulme), Splunk
+- [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
 - [David Ashpole](https://github.com/dashpole), Google
 - [Yang Song](https://github.com/songy23), DataDog
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba

@@ -227,9 +227,11 @@ exporters:
       # endpoint: https://api.datadoghq.com
 
       ## @param resource_attributes_as_tags - string - optional - default: false
-      ## Set to true to add all resource attributes of a metric to its metric tags.
-      ## When set to false, only a small predefined subset of resource attributes is converted
-      ## to metric tags.
+      ## Set to true to add resource attributes of a metric to its metric tags.
+      ## Please note that any of the subset of resource attributes in this
+      ## list https://docs.datadoghq.com/opentelemetry/guide/semantic_mapping/ are 
+      ## converted to datadog conventions and set to to metric tags whether this option
+      ## is enabled or not.
       #
       # resource_attributes_as_tags: false
 

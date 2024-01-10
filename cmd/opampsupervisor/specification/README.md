@@ -84,33 +84,33 @@ server:
 # If enabled the Supervisor will also report RemoteConfig status
 # to the Server.
 capabilities:
-  AcceptsRemoteConfig: # false if unspecified
+  accepts_remote_config: # false if unspecified
 
   # The Supervisor will report EffectiveConfig to the Server.
-  ReportsEffectiveConfig: # true if unspecified
+  reports_effective_config: # true if unspecified
   
   # The Supervisor can accept Collector executable package updates.
   # If enabled the Supervisor will also report package status to the
   # Server.
-  AcceptsPackages: # false if unspecified
+  accepts_packages: # false if unspecified
   
   # The Collector will report own metrics to the destination specified by
   # the Server.
-  ReportsOwnMetrics: # true if unspecified
+  reports_own_metrics: # true if unspecified
   
   # The Collector will report own logs to the destination specified by
   # the Server.
-  ReportsOwnLogs: # true if unspecified
+  reports_own_logs: # true if unspecified
   
   # The Collector will accept connections settings for exporters
   # from the Server.
-  AcceptsOtherConnectionSettings: # false if unspecified
+  accepts_other_connection_settings: # false if unspecified
   
   # The Supervisor will accept restart requests.
-  AcceptsRestartCommand: # true if unspecified
+  accepts_restart_command: # true if unspecified
   
   # The Collector will report Health.
-  ReportsHealth: # true if unspecified
+  reports_health: # true if unspecified
 
 storage:
   # A writable directory where the Supervisor can store data

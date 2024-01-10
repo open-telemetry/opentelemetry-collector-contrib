@@ -4,12 +4,14 @@
 package fileconsumer
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -26,7 +28,7 @@ type benchFile struct {
 }
 
 func simpleTextFile(b *testing.B, file *os.File) *benchFile {
-	line := string(tokenWithLength(49)) + "\n"
+	line := string(filetest.TokenWithLength(49)) + "\n"
 	return &benchFile{
 		File: file,
 		log: func(_ int) {
@@ -149,7 +151,7 @@ func BenchmarkFileInput(b *testing.B) {
 
 			var files []*benchFile
 			for _, path := range bench.paths {
-				file := openFile(b, filepath.Join(rootDir, path))
+				file := filetest.OpenFile(b, filepath.Join(rootDir, path))
 				files = append(files, simpleTextFile(b, file))
 			}
 
@@ -160,8 +162,11 @@ func BenchmarkFileInput(b *testing.B) {
 			cfg.StartAt = "beginning"
 
 			received := make(chan []byte)
-
-			op, err := cfg.Build(testutil.Logger(b), emitOnChan(received))
+			callback := func(_ context.Context, token []byte, _ map[string]any) error {
+				received <- token
+				return nil
+			}
+			op, err := cfg.Build(testutil.Logger(b), callback)
 			require.NoError(b, err)
 
 			// write half the lines before starting

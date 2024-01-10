@@ -23,6 +23,7 @@ body:
       - connector/count
       - connector/datadog
       - connector/exceptions
+      - connector/failover
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -71,7 +72,6 @@ body:
       - exporter/splunkhec
       - exporter/sumologic
       - exporter/syslog
-      - exporter/tanzuobservability
       - exporter/tencentcloudlogservice
       - exporter/zipkin
       - extension/asapauth
@@ -88,7 +88,6 @@ body:
       - extension/healthcheck
       - extension/httpforwarder
       - extension/jaegerremotesampling
-      - extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
@@ -202,7 +201,6 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
-      - receiver/jaeger/internal/jaegerreceiverdeprecated
       - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
@@ -216,6 +214,7 @@ body:
       - receiver/mongodb
       - receiver/mongodbatlas
       - receiver/mysql
+      - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
       - receiver/opencensus

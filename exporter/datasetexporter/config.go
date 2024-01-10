@@ -13,6 +13,7 @@ import (
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
 	"github.com/scalyr/dataset-go/pkg/server_host_config"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -144,14 +145,17 @@ func newDefaultServerHostSettings() ServerHostSettings {
 	}
 }
 
+const debugDefault = false
+
 type Config struct {
 	DatasetURL                     string              `mapstructure:"dataset_url"`
 	APIKey                         configopaque.String `mapstructure:"api_key"`
+	Debug                          bool                `mapstructure:"debug"`
 	BufferSettings                 `mapstructure:"buffer"`
 	TracesSettings                 `mapstructure:"traces"`
 	LogsSettings                   `mapstructure:"logs"`
 	ServerHostSettings             `mapstructure:"server_host"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.TimeoutSettings `mapstructure:"timeout"`
 }
@@ -180,16 +184,18 @@ func (c *Config) Validate() error {
 // String returns a string representation of the Config object.
 // It includes all the fields and their values in the format "field_name: field_value".
 func (c *Config) String() string {
+	apiKey, _ := c.APIKey.MarshalText()
 	s := ""
 	s += fmt.Sprintf("%s: %s; ", "DatasetURL", c.DatasetURL)
+	s += fmt.Sprintf("%s: %s (%d); ", "APIKey", apiKey, len(c.APIKey))
+	s += fmt.Sprintf("%s: %t; ", "Debug", c.Debug)
 	s += fmt.Sprintf("%s: %+v; ", "BufferSettings", c.BufferSettings)
 	s += fmt.Sprintf("%s: %+v; ", "LogsSettings", c.LogsSettings)
 	s += fmt.Sprintf("%s: %+v; ", "TracesSettings", c.TracesSettings)
 	s += fmt.Sprintf("%s: %+v; ", "ServerHostSettings", c.ServerHostSettings)
-	s += fmt.Sprintf("%s: %+v; ", "RetrySettings", c.RetrySettings)
+	s += fmt.Sprintf("%s: %+v; ", "BackOffConfig", c.BackOffConfig)
 	s += fmt.Sprintf("%s: %+v; ", "QueueSettings", c.QueueSettings)
 	s += fmt.Sprintf("%s: %+v", "TimeoutSettings", c.TimeoutSettings)
-
 	return s
 }
 
@@ -218,6 +224,7 @@ func (c *Config) convert() (*ExporterConfig, error) {
 					UseHostName: c.ServerHostSettings.UseHostName,
 					ServerHost:  c.ServerHostSettings.ServerHost,
 				},
+				Debug: c.Debug,
 			},
 			tracesSettings:     c.TracesSettings,
 			logsSettings:       c.LogsSettings,

@@ -194,9 +194,15 @@ func (a attribute) TestValue() string {
 	case pcommon.ValueTypeSlice:
 		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
 	case pcommon.ValueTypeBytes:
-		return fmt.Sprintf(`bytes("%s-val")`, a.FullName)
+		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
 	}
 	return ""
+}
+
+type tests struct {
+	Config              any  `mapstructure:"config"`
+	SkipLifecycle       bool `mapstructure:"skip_lifecycle"`
+	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
 }
 
 type metadata struct {
@@ -218,6 +224,8 @@ type metadata struct {
 	ScopeName string `mapstructure:"-"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+
+	Tests *tests `mapstructure:"tests"`
 }
 
 func setAttributesFullName(attrs map[attributeName]attribute) {
@@ -259,22 +267,21 @@ func loadMetadata(filePath string) (metadata, error) {
 	return md, nil
 }
 
+var componentTypes = map[string]func(string) string{
+	"connector": func(in string) string { return strings.TrimSuffix(in, "connector") },
+	"exporter":  func(in string) string { return strings.TrimSuffix(in, "exporter") },
+	"extension": func(in string) string { return strings.TrimSuffix(in, "extension") },
+	"processor": func(in string) string { return strings.TrimSuffix(in, "processor") },
+	"scraper":   func(in string) string { return strings.TrimSuffix(in, "scraper") },
+	"receiver":  func(in string) string { return in },
+}
+
 func shortFolderName(filePath string) string {
 	parentFolder := filepath.Base(filepath.Dir(filePath))
-	if strings.HasSuffix(parentFolder, "connector") {
-		return strings.TrimSuffix(parentFolder, "connector")
-	}
-	if strings.HasSuffix(parentFolder, "exporter") {
-		return strings.TrimSuffix(parentFolder, "exporter")
-	}
-	if strings.HasSuffix(parentFolder, "extension") {
-		return strings.TrimSuffix(parentFolder, "extension")
-	}
-	if strings.HasSuffix(parentFolder, "processor") {
-		return strings.TrimSuffix(parentFolder, "processor")
-	}
-	if strings.HasSuffix(parentFolder, "receiver") {
-		return strings.TrimSuffix(parentFolder, "receiver")
+	for cType := range componentTypes {
+		if strings.HasSuffix(parentFolder, cType) {
+			return strings.TrimSuffix(parentFolder, cType)
+		}
 	}
 	return parentFolder
 }
@@ -283,11 +290,18 @@ func scopeName(filePath string) string {
 	sn := "otelcol"
 	dirs := strings.Split(filepath.Dir(filePath), string(os.PathSeparator))
 	for _, dir := range dirs {
-		if dir != "receiver" && strings.HasSuffix(dir, "receiver") {
-			sn += "/" + dir
+		// skip directory names for component types
+		if _, ok := componentTypes[dir]; ok {
+			continue
 		}
-		if dir != "scraper" && strings.HasSuffix(dir, "scraper") {
-			sn += "/" + strings.TrimSuffix(dir, "scraper")
+		// note here that the only component that receives a different
+		// treatment is receivers. this is to prevent breaking backwards
+		// compatibility for anyone that's using the generated metrics w/
+		// scope names today.
+		for cType, normalizeFunc := range componentTypes {
+			if strings.HasSuffix(dir, cType) {
+				sn += "/" + normalizeFunc(dir)
+			}
 		}
 	}
 	return sn

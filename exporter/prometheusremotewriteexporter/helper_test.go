@@ -57,7 +57,7 @@ func Test_batchTimeSeries(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize)
+			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return

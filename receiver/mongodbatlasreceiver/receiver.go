@@ -36,7 +36,11 @@ type timeconstraints struct {
 }
 
 func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mongodbatlasreceiver {
-	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.RetrySettings, settings.Logger)
+	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
+	for _, p := range cfg.Projects {
+		p.populateIncludesAndExcludes()
+	}
+
 	return &mongodbatlasreceiver{
 		log:         settings.Logger,
 		cfg:         cfg,
@@ -77,45 +81,111 @@ func (s *mongodbatlasreceiver) shutdown(context.Context) error {
 	return s.client.Shutdown()
 }
 
+// poll decides whether to poll all projects or a specific project based on the configuration.
 func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) error {
+	if len(s.cfg.Projects) == 0 {
+		return s.pollAllProjects(ctx, time)
+	}
+	return s.pollProjects(ctx, time)
+}
+
+// pollAllProjects handles polling across all projects within the organizations.
+func (s *mongodbatlasreceiver) pollAllProjects(ctx context.Context, time timeconstraints) error {
 	orgs, err := s.client.Organizations(ctx)
 	if err != nil {
 		return fmt.Errorf("error retrieving organizations: %w", err)
 	}
 	for _, org := range orgs {
-		projects, err := s.client.Projects(ctx, org.ID)
+		proj, err := s.client.Projects(ctx, org.ID)
 		if err != nil {
-			return fmt.Errorf("error retrieving projects: %w", err)
+			s.log.Error("error retrieving projects", zap.String("orgID", org.ID), zap.Error(err))
+			continue
 		}
-		for _, project := range projects {
-			nodeClusterMap, providerMap, err := s.getNodeClusterNameMap(ctx, project.ID)
-			if err != nil {
-				return fmt.Errorf("error collecting clusters from project %s: %w", project.ID, err)
-			}
-
-			processes, err := s.client.Processes(ctx, project.ID)
-			if err != nil {
-				return fmt.Errorf("error retrieving MongoDB Atlas processes for project %s: %w", project.ID, err)
-			}
-			for _, process := range processes {
-				clusterName := nodeClusterMap[process.UserAlias]
-				providerValues := providerMap[clusterName]
-
-				if err := s.extractProcessMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
-					return fmt.Errorf("error when polling process metrics from MongoDB Atlas for process %s: %w", process.ID, err)
-				}
-
-				if err := s.extractProcessDatabaseMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
-					return fmt.Errorf("error when polling process database metrics from MongoDB Atlas for process %s: %w", process.ID, err)
-				}
-
-				if err := s.extractProcessDiskMetrics(ctx, time, org.Name, project, process, clusterName, providerValues); err != nil {
-					return fmt.Errorf("error when polling process disk metrics from MongoDB Atlas for process %s: %w", process.ID, err)
-				}
+		for _, project := range proj {
+			// Since there is no specific ProjectConfig for these projects, pass nil.
+			if err := s.processProject(ctx, time, org.Name, project, nil); err != nil {
+				s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
 			}
 		}
 	}
 	return nil
+}
+
+// pollProject handles polling for specific projects as configured.
+func (s *mongodbatlasreceiver) pollProjects(ctx context.Context, time timeconstraints) error {
+	for _, projectCfg := range s.cfg.Projects {
+		project, err := s.client.GetProject(ctx, projectCfg.Name)
+		if err != nil {
+			s.log.Error("error retrieving project", zap.String("projectName", projectCfg.Name), zap.Error(err))
+			continue
+		}
+
+		org, err := s.client.GetOrganization(ctx, project.OrgID)
+		if err != nil {
+			s.log.Error("error retrieving organization from project", zap.String("projectName", projectCfg.Name), zap.Error(err))
+			continue
+		}
+
+		if err := s.processProject(ctx, time, org.Name, project, projectCfg); err != nil {
+			s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
+		}
+	}
+	return nil
+}
+
+func (s *mongodbatlasreceiver) processProject(ctx context.Context, time timeconstraints, orgName string, project *mongodbatlas.Project, projectCfg *ProjectConfig) error {
+	nodeClusterMap, providerMap, err := s.getNodeClusterNameMap(ctx, project.ID)
+	if err != nil {
+		return fmt.Errorf("error collecting clusters from project %s: %w", project.ID, err)
+	}
+
+	processes, err := s.client.Processes(ctx, project.ID)
+	if err != nil {
+		return fmt.Errorf("error retrieving MongoDB Atlas processes for project %s: %w", project.ID, err)
+	}
+
+	for _, process := range processes {
+		clusterName := nodeClusterMap[process.UserAlias]
+		providerValues := providerMap[clusterName]
+
+		if !shouldProcessCluster(projectCfg, clusterName) {
+			// Skip processing for this cluster
+			continue
+		}
+
+		if err := s.extractProcessMetrics(ctx, time, orgName, project, process, clusterName, providerValues); err != nil {
+			return fmt.Errorf("error when polling process metrics from MongoDB Atlas for process %s: %w", process.ID, err)
+		}
+
+		if err := s.extractProcessDatabaseMetrics(ctx, time, orgName, project, process, clusterName, providerValues); err != nil {
+			return fmt.Errorf("error when polling process database metrics from MongoDB Atlas for process %s: %w", process.ID, err)
+		}
+
+		if err := s.extractProcessDiskMetrics(ctx, time, orgName, project, process, clusterName, providerValues); err != nil {
+			return fmt.Errorf("error when polling process disk metrics from MongoDB Atlas for process %s: %w", process.ID, err)
+		}
+	}
+
+	return nil
+}
+
+// shouldProcessCluster checks whether a given cluster should be processed based on the project configuration.
+func shouldProcessCluster(projectCfg *ProjectConfig, clusterName string) bool {
+	if projectCfg == nil {
+		// If there is no project config, process all clusters.
+		return true
+	}
+
+	_, isIncluded := projectCfg.includesByClusterName[clusterName]
+	_, isExcluded := projectCfg.excludesByClusterName[clusterName]
+
+	// Return false immediately if the cluster is excluded.
+	if isExcluded {
+		return false
+	}
+
+	// If IncludeClusters is empty, or the cluster is explicitly included, return true.
+	return len(projectCfg.IncludeClusters) == 0 || isIncluded
 }
 
 type providerValues struct {

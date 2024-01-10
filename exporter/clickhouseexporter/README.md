@@ -140,7 +140,7 @@ SELECT Timestamp as log_time,
        toString(Links.TraceId)
 FROM otel_traces
 WHERE ServiceName = 'clickhouse-exporter'
-  AND SpanAttributes['peer.service'] = 'tracegen-server'
+  AND SpanAttributes['peer.service'] = 'telemetrygen-server'
   AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
@@ -279,7 +279,8 @@ Connection options:
 
 - `username` (default = ): The authentication username.
 - `password` (default = ): The authentication password.
-- `ttl_days` (default = 0): The data time-to-live in days, 0 means no ttl.
+- `ttl_days` (default = 0): **Deprecated: Use 'ttl' instead.**  The data time-to-live in days, 0 means no ttl.
+- `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = otel): The database name.
 - `connection_params` (default = {}). Params is the extra connection parameters with map format.
 
@@ -311,7 +312,7 @@ use the `https` scheme.
 
 This example shows how to configure the exporter to send data to a ClickHouse server.
 It uses the native protocol without TLS. The exporter will create the database and tables if they don't exist.
-The data is stored for 3 days.
+The data is stored for 72 hours (3 days).
 
 ```yaml
 receivers:
@@ -324,7 +325,7 @@ exporters:
   clickhouse:
     endpoint: tcp://127.0.0.1:9000?dial_timeout=10s&compress=lz4
     database: otel
-    ttl_days: 3
+    ttl: 72h
     logs_table_name: otel_logs
     traces_table_name: otel_traces
     metrics_table_name: otel_metrics

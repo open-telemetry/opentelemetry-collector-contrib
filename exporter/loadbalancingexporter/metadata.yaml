@@ -11,5 +11,6 @@ status:
   - observiq
   - sumo
   - aws
+  - splunk
   codeowners:
     active: [jpkrohling]

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	k8s "k8s.io/client-go/kubernetes"
@@ -42,8 +43,9 @@ func TestCreateReceiver(t *testing.T) {
 		context.Background(), receivertest.NewNopCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, r)
 
 	// Override for test.
 	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (k8s.Interface, error) {
@@ -54,6 +56,7 @@ func TestCreateReceiver(t *testing.T) {
 		receivertest.NewNopCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err)
-	assert.NotNil(t, r)
 }

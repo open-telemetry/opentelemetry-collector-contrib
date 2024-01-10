@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, splunk, sumo]
+  distributions: [contrib, observiq, splunk, sumo, liatrio]
   codeowners:
     active: [dmitryax, TylerHelmuth]
 

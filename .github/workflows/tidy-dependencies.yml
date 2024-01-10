@@ -12,21 +12,16 @@ env:
 
 jobs:
   setup-environment:
-    # disabling until permission issues is resolved
-    # see: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22953
-    if: ${{ false }}
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    # if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: "renovate-bot/open-telemetry-_-opentelemetry-collector-contrib"
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -52,3 +47,6 @@ jobs:
           git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
         env:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+      - uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          labels: renovatebot

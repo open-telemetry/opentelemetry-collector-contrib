@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -51,9 +50,6 @@ func init() {
 
 // NewFactory creates a factory for the servicegraph processor.
 func NewFactory() processor.Factory {
-	// TODO: Handle this err
-	_ = view.Register(serviceGraphProcessorViews()...)
-
 	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
@@ -62,16 +58,12 @@ func NewFactory() processor.Factory {
 }
 
 // NewConnectorFactoryFunc creates a function that returns a factory for the servicegraph connector.
-func NewConnectorFactoryFunc(cfgType component.Type, tracesToMetricsStability component.StabilityLevel) func() connector.Factory {
-	return func() connector.Factory {
-		// TODO: Handle this err
-		_ = view.Register(serviceGraphProcessorViews()...)
-		return connector.NewFactory(
-			cfgType,
-			createDefaultConfig,
-			connector.WithTracesToMetrics(createTracesToMetricsConnector, tracesToMetricsStability),
-		)
-	}
+var NewConnectorFactoryFunc = func(cfgType component.Type, tracesToMetricsStability component.StabilityLevel) connector.Factory {
+	return connector.NewFactory(
+		cfgType,
+		createDefaultConfig,
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, tracesToMetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -86,13 +78,13 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	p := newProcessor(params.Logger, cfg)
+	p := newProcessor(params.TelemetrySettings, cfg)
 	p.tracesConsumer = nextConsumer
 	return p, nil
 }
 
 func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	c := newProcessor(params.Logger, cfg)
+	c := newProcessor(params.TelemetrySettings, cfg)
 	c.metricsConsumer = nextConsumer
 	return c, nil
 }

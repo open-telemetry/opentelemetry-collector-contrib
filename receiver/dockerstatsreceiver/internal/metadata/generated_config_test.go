@@ -34,6 +34,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerBlockioIoTimeRecursive:            MetricConfig{Enabled: true},
 					ContainerBlockioIoWaitTimeRecursive:        MetricConfig{Enabled: true},
 					ContainerBlockioSectorsRecursive:           MetricConfig{Enabled: true},
+					ContainerCPULimit:                          MetricConfig{Enabled: true},
+					ContainerCPUShares:                         MetricConfig{Enabled: true},
 					ContainerCPUThrottlingDataPeriods:          MetricConfig{Enabled: true},
 					ContainerCPUThrottlingDataThrottledPeriods: MetricConfig{Enabled: true},
 					ContainerCPUThrottlingDataThrottledTime:    MetricConfig{Enabled: true},
@@ -91,6 +93,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: true},
 					ContainerPidsCount:                         MetricConfig{Enabled: true},
 					ContainerPidsLimit:                         MetricConfig{Enabled: true},
+					ContainerRestarts:                          MetricConfig{Enabled: true},
 					ContainerUptime:                            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -116,6 +119,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerBlockioIoTimeRecursive:            MetricConfig{Enabled: false},
 					ContainerBlockioIoWaitTimeRecursive:        MetricConfig{Enabled: false},
 					ContainerBlockioSectorsRecursive:           MetricConfig{Enabled: false},
+					ContainerCPULimit:                          MetricConfig{Enabled: false},
+					ContainerCPUShares:                         MetricConfig{Enabled: false},
 					ContainerCPUThrottlingDataPeriods:          MetricConfig{Enabled: false},
 					ContainerCPUThrottlingDataThrottledPeriods: MetricConfig{Enabled: false},
 					ContainerCPUThrottlingDataThrottledTime:    MetricConfig{Enabled: false},
@@ -173,6 +178,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: false},
 					ContainerPidsCount:                         MetricConfig{Enabled: false},
 					ContainerPidsLimit:                         MetricConfig{Enabled: false},
+					ContainerRestarts:                          MetricConfig{Enabled: false},
 					ContainerUptime:                            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{

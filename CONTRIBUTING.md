@@ -201,7 +201,6 @@ When submitting a component to the community, consider breaking it down into sep
     * `make genotelcontribcol`
     * `make genoteltestbedcol`
     * `make generate`
-    * `make  gendependabot`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
 * **Second PR** should include the concrete implementation of the component. If the
@@ -233,6 +232,11 @@ The following GitHub users are the currently available sponsors, either by being
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
+* [@fatsheep9146](https://github.com/fatsheep9146)
+* [@astencel-sumo](https://github.com/astencel-sumo)
+* [@songy23](https://github.com/songy23)
+* [@Bryan Aguilar](https://github.com/bryan-aguilar)
+* [@atoulme](https://github.com/atoulme)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -365,6 +369,9 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
 - The existing Code Owners are actively looking for new Code Owners to help.
 
+
+### Requirements
+
 If you would like to help and become a Code Owner you must meet the following requirements:
 
 1. [Be a member of the OpenTelemetry organization.](https://github.com/open-telemetry/community/blob/main/community-membership.md#member)
@@ -372,9 +379,18 @@ If you would like to help and become a Code Owner you must meet the following re
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
-To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row. Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+### How to become a Code Owner
 
-### Makefile Guidelines
+To become a Code Owner, open a PR with the following changes:
+
+1. Add your GitHub username to the active codeowners entry in the component's `metadata.yaml` file.
+2. Run the command `make update-codeowners`.
+      * Note: A GitHub [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) must be configured for this command to work.
+      * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make generate` to regenerate the component's README header.
+
+Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+
+## Makefile Guidelines
 
 When adding or modifying the `Makefile`'s in this repository, consider the following design guidelines.
 
@@ -383,7 +399,7 @@ The [Makefile](./Makefile) SHOULD contain "repo-level" targets. (i.e. targets th
 Likewise, `Makefile.Common` SHOULD contain "module-level" targets. (i.e. targets that apply to one module at a time.)
 Each module should have a `Makefile` at its root that includes `Makefile.Common`.
 
-#### Module-level targets
+### Module-level targets
 
 Module-level targets SHOULD NOT act on nested modules. For example, running `make lint` at the root of the repo will
 *only* evaluate code that is part of the `go.opentelemetry.io/collector` module. This excludes nested modules such as
@@ -393,7 +409,7 @@ Each module-level target SHOULD have a corresponding repo-level target. For exam
 in each module. In this way, the entire repository is covered. The root `Makefile` contains some "for each module" targets
 that can wrap a module-level target into a repo-level target.
 
-#### Repo-level targets
+### Repo-level targets
 
 Whenever reasonable, targets SHOULD be implemented as module-level targets (and wrapped with a repo-level target).
 However, there are many valid justifications for implementing a standalone repo-level target.
@@ -403,7 +419,7 @@ However, there are many valid justifications for implementing a standalone repo-
 3. A necessary tool does not provide a mechanism for scoping its application. (e.g. `porto` cannot be limited to a specific module.)
 4. The "for each module" pattern would result in incomplete coverage of the codebase. (e.g. A target that scans all file, not just `.go` files.)
 
-#### Default targets
+### Default targets
 
 The default module-level target (i.e. running `make` in the context of an individual module), should run a substantial set of module-level
 targets for an individual module. Ideally, this would include *all* module-level targets, but exceptions should be made if a particular

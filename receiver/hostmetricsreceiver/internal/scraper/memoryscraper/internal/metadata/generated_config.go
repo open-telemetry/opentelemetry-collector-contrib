@@ -25,12 +25,20 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for hostmetricsreceiver/memory metrics.
 type MetricsConfig struct {
-	SystemMemoryUsage       MetricConfig `mapstructure:"system.memory.usage"`
-	SystemMemoryUtilization MetricConfig `mapstructure:"system.memory.utilization"`
+	SystemLinuxMemoryAvailable MetricConfig `mapstructure:"system.linux.memory.available"`
+	SystemMemoryLimit          MetricConfig `mapstructure:"system.memory.limit"`
+	SystemMemoryUsage          MetricConfig `mapstructure:"system.memory.usage"`
+	SystemMemoryUtilization    MetricConfig `mapstructure:"system.memory.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		SystemLinuxMemoryAvailable: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryLimit: MetricConfig{
+			Enabled: false,
+		},
 		SystemMemoryUsage: MetricConfig{
 			Enabled: true,
 		},
