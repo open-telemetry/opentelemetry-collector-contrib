@@ -47,6 +47,7 @@ import (
 	googlecloudexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	googlecloudpubsubexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 	googlemanagedprometheusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
+	honeycombmarkerexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
 	influxdbexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	instanaexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	kafkaexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -56,6 +57,7 @@ import (
 	lokiexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	mezmoexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	opencensusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	opensearchexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 	prometheusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	prometheusremotewriteexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	pulsarexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
@@ -65,13 +67,18 @@ import (
 	skywalkingexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 	splunkhecexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	sumologicexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
-	tanzuobservabilityexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
+	syslogexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
 	tencentcloudlogserviceexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	zipkinexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	asapauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	awsproxy "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 	basicauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	bearertokenauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	jaegerencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension"
+	jsonlogencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension"
+	otlpencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
+	textencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension"
+	zipkinencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension"
 	headerssetterextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	healthcheckextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	httpforwarder "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
@@ -83,7 +90,9 @@ import (
 	hostobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	k8sobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	oidcauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
+	opampextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 	pprofextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	remotetapextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension"
 	sigv4authextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
 	dbstorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	filestorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
@@ -99,13 +108,14 @@ import (
 	metricstransformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	probabilisticsamplerprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 	redactionprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
-	remoteobserverprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor"
+	remotetapprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor"
 	resourcedetectionprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	resourceprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	routingprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 	servicegraphprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 	spanmetricsprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 	spanprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
+	sumologicprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
 	tailsamplingprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	transformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	activedirectorydsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
@@ -218,10 +228,17 @@ func components() (otelcol.Factories, error) {
 		k8sobserver.NewFactory(),
 		dockerobserver.NewFactory(),
 		oidcauthextension.NewFactory(),
+		opampextension.NewFactory(),
 		pprofextension.NewFactory(),
+		remotetapextension.NewFactory(),
 		sigv4authextension.NewFactory(),
 		filestorage.NewFactory(),
 		dbstorage.NewFactory(),
+		otlpencodingextension.NewFactory(),
+		jaegerencodingextension.NewFactory(),
+		jsonlogencodingextension.NewFactory(),
+		textencodingextension.NewFactory(),
+		zipkinencodingextension.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -346,6 +363,7 @@ func components() (otelcol.Factories, error) {
 		googlecloudexporter.NewFactory(),
 		googlecloudpubsubexporter.NewFactory(),
 		googlemanagedprometheusexporter.NewFactory(),
+		honeycombmarkerexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
 		instanaexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
@@ -355,6 +373,7 @@ func components() (otelcol.Factories, error) {
 		lokiexporter.NewFactory(),
 		mezmoexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
+		opensearchexporter.NewFactory(),
 		prometheusexporter.NewFactory(),
 		prometheusremotewriteexporter.NewFactory(),
 		pulsarexporter.NewFactory(),
@@ -364,7 +383,7 @@ func components() (otelcol.Factories, error) {
 		skywalkingexporter.NewFactory(),
 		splunkhecexporter.NewFactory(),
 		sumologicexporter.NewFactory(),
-		tanzuobservabilityexporter.NewFactory(),
+		syslogexporter.NewFactory(),
 		tencentcloudlogserviceexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
 	)
@@ -392,10 +411,11 @@ func components() (otelcol.Factories, error) {
 		routingprocessor.NewFactory(),
 		servicegraphprocessor.NewFactory(),
 		spanmetricsprocessor.NewFactory(),
+		sumologicprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
-		remoteobserverprocessor.NewFactory(),
+		remotetapprocessor.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err

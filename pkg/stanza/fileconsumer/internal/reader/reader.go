@@ -9,11 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -21,18 +19,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 )
-
-type Config struct {
-	FingerprintSize         int
-	MaxLogSize              int
-	Emit                    emit.Callback
-	IncludeFileName         bool
-	IncludeFilePath         bool
-	IncludeFileNameResolved bool
-	IncludeFilePathResolved bool
-	DeleteAtEOF             bool
-	FlushTimeout            time.Duration
-}
 
 type Metadata struct {
 	Fingerprint     *fingerprint.Fingerprint
@@ -44,16 +30,19 @@ type Metadata struct {
 
 // Reader manages a single file
 type Reader struct {
-	*Config
 	*Metadata
-	fileName      string
-	logger        *zap.SugaredLogger
-	file          *os.File
-	lineSplitFunc bufio.SplitFunc
-	splitFunc     bufio.SplitFunc
-	decoder       *decode.Decoder
-	headerReader  *header.Reader
-	processFunc   emit.Callback
+	logger          *zap.SugaredLogger
+	fileName        string
+	file            *os.File
+	fingerprintSize int
+	maxLogSize      int
+	lineSplitFunc   bufio.SplitFunc
+	splitFunc       bufio.SplitFunc
+	decoder         *decode.Decoder
+	headerReader    *header.Reader
+	processFunc     emit.Callback
+	emitFunc        emit.Callback
+	deleteAtEOF     bool
 }
 
 // offsetToEnd sets the starting offset
@@ -70,7 +59,7 @@ func (r *Reader) NewFingerprintFromFile() (*fingerprint.Fingerprint, error) {
 	if r.file == nil {
 		return nil, errors.New("file is nil")
 	}
-	return fingerprint.New(r.file, r.FingerprintSize)
+	return fingerprint.New(r.file, r.fingerprintSize)
 }
 
 // ReadToEnd will read until the end of the file
@@ -80,10 +69,9 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	s := scanner.New(r, r.MaxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
+	s := scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
-	var eof bool
 	for {
 		select {
 		case <-ctx.Done():
@@ -93,10 +81,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		ok := s.Scan()
 		if !ok {
-			if err := s.Error(); err == nil {
-				eof = true
-			} else {
+			if err := s.Error(); err != nil {
 				r.logger.Errorw("Failed during scan", zap.Error(err))
+			} else if r.deleteAtEOF {
+				r.delete()
 			}
 			break
 		}
@@ -113,21 +101,17 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				// Do not use the updated offset from the old scanner, as the most recent token
 				// could be split differently with the new splitter.
 				r.splitFunc = r.lineSplitFunc
-				r.processFunc = r.Emit
+				r.processFunc = r.emitFunc
 				if _, err = r.file.Seek(r.Offset, 0); err != nil {
 					r.logger.Errorw("Failed to seek post-header", zap.Error(err))
 					return
 				}
-				s = scanner.New(r, r.MaxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
+				s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 			} else {
 				r.logger.Errorw("process: %w", zap.Error(err))
 			}
 		}
-
 		r.Offset = s.Pos()
-	}
-	if eof && r.DeleteAtEOF {
-		r.delete()
 	}
 }
 
@@ -147,8 +131,8 @@ func (r *Reader) delete() {
 	}
 }
 
-// Close will close the file
-func (r *Reader) Close() {
+// Close will close the file and return the metadata
+func (r *Reader) Close() *Metadata {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.logger.Debugw("Problem closing reader", zap.Error(err))
@@ -161,18 +145,21 @@ func (r *Reader) Close() {
 			r.logger.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
+	m := r.Metadata
+	r.Metadata = nil
+	return m
 }
 
 // Read from the file and update the fingerprint if necessary
 func (r *Reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
 	// or if fingerprint is behind Offset
-	if len(r.Fingerprint.FirstBytes) == r.FingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
+	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
 		return r.file.Read(dst)
 	}
 	n, err := r.file.Read(dst)
-	appendCount := min0(n, r.FingerprintSize-int(r.Offset))
-	// return for n == 0 or r.Offset >= r.FingerprintSize
+	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
+	// return for n == 0 or r.Offset >= r.fingerprintSize
 	if appendCount == 0 {
 		return n, err
 	}
@@ -196,27 +183,17 @@ func (r *Reader) NameEquals(other *Reader) bool {
 	return r.fileName == other.fileName
 }
 
-// ValidateOrClose returns true if the reader still has a valid file handle, false otherwise.
-// If false is returned, the file handle should be considered closed.
-//
-// It may create a new fingerprint from the old file handle and compare it to the
-// previously known fingerprint. If there has been a change to the fingerprint
-// (other than appended data), the file is considered truncated. Consequently, the
-// reader will automatically close the file and drop the handle.
-func (r *Reader) ValidateOrClose() bool {
+// Validate returns true if the reader still has a valid file handle, false otherwise.
+func (r *Reader) Validate() bool {
 	if r.file == nil {
 		return false
 	}
-	refreshedFingerprint, err := fingerprint.New(r.file, r.FingerprintSize)
+	refreshedFingerprint, err := fingerprint.New(r.file, r.fingerprintSize)
 	if err != nil {
-		r.logger.Debugw("Closing unreadable file", zap.Error(err), zap.String(attrs.LogFileName, r.fileName))
-		r.Close()
 		return false
 	}
 	if refreshedFingerprint.StartsWith(r.Fingerprint) {
 		return true
 	}
-	r.logger.Debugw("Closing truncated file", zap.String(attrs.LogFileName, r.fileName))
-	r.Close()
 	return false
 }

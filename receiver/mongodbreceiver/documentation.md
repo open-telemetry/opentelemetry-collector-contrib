@@ -34,12 +34,6 @@ The number of collections.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {collections} | Sum | Int | Cumulative | false |
 
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
-
 ### mongodb.connection.count
 
 The number of connections.
@@ -52,7 +46,6 @@ The number of connections.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 | type | The status of the connection. | Str: ``active``, ``available``, ``current`` |
 
 ### mongodb.cursor.count
@@ -79,12 +72,6 @@ The size of the collection. Data compression does not affect this value.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
-
 ### mongodb.database.count
 
 The number of existing databases.
@@ -105,7 +92,6 @@ The number of document operations executed.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
 ### mongodb.extent.count
@@ -115,12 +101,6 @@ The number of extents.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {extents} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 
 ### mongodb.global_lock.time
 
@@ -142,7 +122,6 @@ The number of times an index has been accessed.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 | collection | The name of a collection. | Any Str |
 
 ### mongodb.index.count
@@ -153,12 +132,6 @@ The number of indexes.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {indexes} | Sum | Int | Cumulative | false |
 
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
-
 ### mongodb.index.size
 
 Sum of the space allocated to all indexes in the database, including free index space.
@@ -166,12 +139,6 @@ Sum of the space allocated to all indexes in the database, including free index 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 
 ### mongodb.memory.usage
 
@@ -185,7 +152,6 @@ The amount of memory used.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 | type | The type of memory used. | Str: ``resident``, ``virtual`` |
 
 ### mongodb.network.io.receive
@@ -219,12 +185,6 @@ The number of objects.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {objects} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 
 ### mongodb.operation.count
 
@@ -272,12 +232,6 @@ If collection data is compressed it reflects the compressed size.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | true |
 
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
-
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
@@ -310,7 +264,6 @@ Number of times the lock was acquired in the specified mode.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
 
@@ -326,7 +279,6 @@ Cumulative wait time for the lock acquisitions.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
 
@@ -342,7 +294,6 @@ Number of times the lock acquisitions encountered waits because the locks were h
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
 
@@ -358,7 +309,6 @@ Number of times the lock acquisitions encountered deadlocks.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
 

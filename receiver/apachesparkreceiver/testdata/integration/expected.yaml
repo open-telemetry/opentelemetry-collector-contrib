@@ -1178,7 +1178,7 @@ resourceMetrics:
                 - asInt: "1"
                   startTimeUnixNano: "1684786599036141000"
                   timeUnixNano: "1684786605037452000"
-            unit: '{ task }'
+            unit: '{ stage }'
           - description: Number of stages with a specific result in this job.
             name: spark.job.stage.result
             sum:
@@ -1206,7 +1206,7 @@ resourceMetrics:
                   startTimeUnixNano: "1684786599036141000"
                   timeUnixNano: "1684786605037452000"
               isMonotonic: true
-            unit: '{ task }'
+            unit: '{ stage }'
           - description: Number of active tasks in this job.
             name: spark.job.task.active
             sum:

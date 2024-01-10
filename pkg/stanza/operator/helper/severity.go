@@ -49,7 +49,7 @@ type severityMap map[string]entry.Severity
 //  1. severity level if found, or default level
 //  2. string version of input value
 //  3. error if invalid input type
-func (m severityMap) find(value interface{}) (entry.Severity, string, error) {
+func (m severityMap) find(value any) (entry.Severity, string, error) {
 	switch v := value.(type) {
 	case int:
 		strV := strconv.Itoa(v)

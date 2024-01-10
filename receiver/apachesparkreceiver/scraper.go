@@ -58,7 +58,7 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	// Call applications endpoint to get ids and names for all apps in the cluster
 	apps, err := s.client.Applications()
 	if err != nil {
-		return pmetric.NewMetrics(), errFailedAppIDCollection
+		return pmetric.NewMetrics(), errors.Join(errFailedAppIDCollection, err)
 	}
 
 	// Check apps against allowed app names from config

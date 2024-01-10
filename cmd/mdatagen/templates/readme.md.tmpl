@@ -11,7 +11,7 @@
 {{- $idx = inc $idx }}
 {{- end }}
 {{- end}}
-{{- if ne $class "cmd" }}
+{{- if and (ne $class "cmd") (ne $class "pkg")  }}
 | Distributions | [{{ stringsJoin .Status.SortedDistributions "], [" }}] |
 {{- end }}
 {{- if .Status.Warnings }}

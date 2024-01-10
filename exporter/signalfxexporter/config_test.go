@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -48,13 +49,15 @@ func TestLoadConfig(t *testing.T) {
 				AccessToken: "testToken",
 				Realm:       "ap0",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Timeout:             5 * time.Second,
-					Headers:             nil,
-					MaxIdleConns:        &hundred,
-					MaxIdleConnsPerHost: &hundred,
-					IdleConnTimeout:     &idleConnTimeout,
+					Timeout:              10 * time.Second,
+					Headers:              nil,
+					MaxIdleConns:         &hundred,
+					MaxIdleConnsPerHost:  &hundred,
+					IdleConnTimeout:      &idleConnTimeout,
+					HTTP2ReadIdleTimeout: 10 * time.Second,
+					HTTP2PingTimeout:     10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     5 * time.Second,
 					MaxInterval:         30 * time.Second,
@@ -114,11 +117,13 @@ func TestLoadConfig(t *testing.T) {
 						"added-entry": "added value",
 						"dot.test":    "test",
 					},
-					MaxIdleConns:        &seventy,
-					MaxIdleConnsPerHost: &seventy,
-					IdleConnTimeout:     &idleConnTimeout,
+					MaxIdleConns:         &seventy,
+					MaxIdleConnsPerHost:  &seventy,
+					IdleConnTimeout:      &idleConnTimeout,
+					HTTP2ReadIdleTimeout: 10 * time.Second,
+					HTTP2PingTimeout:     10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -186,14 +191,14 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						MetricName: "metric4",
-						Dimensions: map[string]interface{}{
+						Dimensions: map[string]any{
 							"dimension_key": "dimension_val",
 						},
 					},
 					{
 						MetricName: "metric5",
-						Dimensions: map[string]interface{}{
-							"dimension_key": []interface{}{"dimension_val1", "dimension_val2"},
+						Dimensions: map[string]any{
+							"dimension_key": []any{"dimension_val1", "dimension_val2"},
 						},
 					},
 					{
@@ -204,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						MetricName: "cpu.utilization",
-						Dimensions: map[string]interface{}{
+						Dimensions: map[string]any{
 							"container_name": "/^[A-Z][A-Z]$/",
 						},
 					},
@@ -545,7 +550,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, tt.cfg.Unmarshal(confmap.NewFromStringMap(map[string]interface{}{})))
+			require.NoError(t, tt.cfg.Unmarshal(confmap.NewFromStringMap(map[string]any{})))
 			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
 		})
 	}

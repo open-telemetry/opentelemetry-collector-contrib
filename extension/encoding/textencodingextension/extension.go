@@ -9,11 +9,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 )
 
-var _ plog.Marshaler = &textExtension{}
-var _ plog.Unmarshaler = &textExtension{}
+var (
+	_ encoding.LogsMarshalerExtension   = (*textExtension)(nil)
+	_ encoding.LogsUnmarshalerExtension = (*textExtension)(nil)
+)
 
 type textExtension struct {
 	config      *Config

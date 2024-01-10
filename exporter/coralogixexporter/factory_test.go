@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -28,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetrySettings, exporterhelper.NewDefaultRetrySettings())
+	assert.Equal(t, ocfg.BackOffConfig, configretry.NewDefaultBackOffConfig())
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
 }
@@ -80,13 +81,13 @@ func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name             string
-		config           Config
+		config           *Config
 		mustFailOnCreate bool
 		mustFailOnStart  bool
 	}{
 		{
 			name: "UseSecure",
-			config: Config{
+			config: &Config{
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -97,7 +98,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "Keepalive",
-			config: Config{
+			config: &Config{
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Keepalive: &configgrpc.KeepaliveClientConfig{
@@ -110,7 +111,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "NoneCompression",
-			config: Config{
+			config: &Config{
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: "none",
@@ -119,7 +120,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "GzipCompression",
-			config: Config{
+			config: &Config{
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Gzip,
@@ -128,7 +129,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "SnappyCompression",
-			config: Config{
+			config: &Config{
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Snappy,
@@ -137,7 +138,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "ZstdCompression",
-			config: Config{
+			config: &Config{
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
 					Compression: configcompression.Zstd,
@@ -146,7 +147,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "Headers",
-			config: Config{
+			config: &Config{
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					Headers: map[string]configopaque.String{
@@ -158,7 +159,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "NumConsumers",
-			config: Config{
+			config: &Config{
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 				},
@@ -166,7 +167,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "CertPemFileError",
-			config: Config{
+			config: &Config{
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
@@ -180,7 +181,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "UseDomain",
-			config: Config{
+			config: &Config{
 				Domain: "localhost",
 				DomainSettings: configgrpc.GRPCClientSettings{
 					TLSSetting: configtls.TLSClientSetting{
@@ -195,7 +196,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopCreateSettings()
-			consumer, err := factory.CreateTracesExporter(context.Background(), set, &tt.config)
+			consumer, err := factory.CreateTracesExporter(context.Background(), set, tt.config)
 			if tt.mustFailOnCreate {
 				assert.NotNil(t, err)
 				return

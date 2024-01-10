@@ -41,7 +41,7 @@ var (
 			Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
 			Severity:     entry.Info,
 			SeverityText: "info",
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"appname":  "SecureAuth0",
 				"facility": 10,
 				"hostname": "192.168.2.132",
@@ -49,8 +49,8 @@ var (
 				"msg_id":   "ID52020",
 				"priority": 86,
 				"proc_id":  "23108",
-				"structured_data": map[string]interface{}{
-					"SecureAuth@27389": map[string]interface{}{
+				"structured_data": map[string]any{
+					"SecureAuth@27389": map[string]any{
 						"PEN":             "27389",
 						"Realm":           "SecureAuth0",
 						"UserHostAddress": "192.168.2.132",
@@ -72,15 +72,16 @@ func TestInput(t *testing.T) {
 	cases = append(cases, OctetCase)
 
 	for _, tc := range cases {
+		cfg := tc.Config.BaseConfig
 		if tc.ValidForTCP {
 			t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, NewConfigWithTCP(&tc.Config.BaseConfig), tc)
+				InputTest(t, NewConfigWithTCP(&cfg), tc)
 			})
 		}
 
 		if tc.ValidForUDP {
 			t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, NewConfigWithUDP(&tc.Config.BaseConfig), tc)
+				InputTest(t, NewConfigWithUDP(&cfg), tc)
 			})
 		}
 	}

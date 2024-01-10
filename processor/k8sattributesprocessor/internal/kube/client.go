@@ -26,10 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
 )
 
-// Upgrade to StageBeta in v0.83.0
+// Upgrade to StageStable in v0.92.0
 var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.rfc3339",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, uses RFC3339 format for k8s.pod.start_time value"),
 	featuregate.WithRegisterFromVersion("v0.82.0"),
 )
@@ -42,6 +42,7 @@ type WatchClient struct {
 	kc                 kubernetes.Interface
 	informer           cache.SharedInformer
 	namespaceInformer  cache.SharedInformer
+	nodeInformer       cache.SharedInformer
 	replicasetInformer cache.SharedInformer
 	replicasetRegex    *regexp.Regexp
 	cronJobRegex       *regexp.Regexp
@@ -59,6 +60,10 @@ type WatchClient struct {
 	// A map containing Namespace related data, used to associate them with resources.
 	// Key is namespace name
 	Namespaces map[string]*Namespace
+
+	// A map containing Node related data, used to associate them with resources.
+	// Key is node name
+	Nodes map[string]*Node
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -89,6 +94,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 	c.Pods = map[PodIdentifier]*Pod{}
 	c.Namespaces = map[string]*Namespace{}
+	c.Nodes = map[string]*Node{}
 	c.ReplicaSets = map[string]*ReplicaSet{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
@@ -127,7 +133,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
 	err = c.informer.SetTransform(
-		func(object interface{}) (interface{}, error) {
+		func(object any) (any, error) {
 			originalPod, success := object.(*api_v1.Pod)
 			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
 				return object, nil
@@ -148,7 +154,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		}
 		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace)
 		err = c.replicasetInformer.SetTransform(
-			func(object interface{}) (interface{}, error) {
+			func(object any) (any, error) {
 				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
 				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
 					return object, nil
@@ -160,6 +166,10 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if c.extractNodeLabelsAnnotations() {
+		c.nodeInformer = newNodeSharedInformer(c.kc, c.Filters.Node)
 	}
 
 	return c, err
@@ -198,6 +208,18 @@ func (c *WatchClient) Start() {
 		}
 		go c.replicasetInformer.Run(c.stopCh)
 	}
+
+	if c.nodeInformer != nil {
+		_, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleNodeAdd,
+			UpdateFunc: c.handleNodeUpdate,
+			DeleteFunc: c.handleNodeDelete,
+		})
+		if err != nil {
+			c.logger.Error("error adding event handler to node informer", zap.Error(err))
+		}
+		go c.nodeInformer.Run(c.stopCh)
+	}
 }
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
@@ -205,7 +227,7 @@ func (c *WatchClient) Stop() {
 	close(c.stopCh)
 }
 
-func (c *WatchClient) handlePodAdd(obj interface{}) {
+func (c *WatchClient) handlePodAdd(obj any) {
 	observability.RecordPodAdded()
 	if pod, ok := obj.(*api_v1.Pod); ok {
 		c.addOrUpdatePod(pod)
@@ -216,7 +238,7 @@ func (c *WatchClient) handlePodAdd(obj interface{}) {
 	observability.RecordPodTableSize(int64(podTableSize))
 }
 
-func (c *WatchClient) handlePodUpdate(_, newPod interface{}) {
+func (c *WatchClient) handlePodUpdate(_, newPod any) {
 	observability.RecordPodUpdated()
 	if pod, ok := newPod.(*api_v1.Pod); ok {
 		// TODO: update or remove based on whether container is ready/unready?.
@@ -228,7 +250,7 @@ func (c *WatchClient) handlePodUpdate(_, newPod interface{}) {
 	observability.RecordPodTableSize(int64(podTableSize))
 }
 
-func (c *WatchClient) handlePodDelete(obj interface{}) {
+func (c *WatchClient) handlePodDelete(obj any) {
 	observability.RecordPodDeleted()
 	if pod, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Pod); ok {
 		c.forgetPod(pod)
@@ -239,7 +261,7 @@ func (c *WatchClient) handlePodDelete(obj interface{}) {
 	observability.RecordPodTableSize(int64(podTableSize))
 }
 
-func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
+func (c *WatchClient) handleNamespaceAdd(obj any) {
 	observability.RecordNamespaceAdded()
 	if namespace, ok := obj.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
@@ -248,7 +270,7 @@ func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleNamespaceUpdate(_, newNamespace interface{}) {
+func (c *WatchClient) handleNamespaceUpdate(_, newNamespace any) {
 	observability.RecordNamespaceUpdated()
 	if namespace, ok := newNamespace.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
@@ -257,7 +279,7 @@ func (c *WatchClient) handleNamespaceUpdate(_, newNamespace interface{}) {
 	}
 }
 
-func (c *WatchClient) handleNamespaceDelete(obj interface{}) {
+func (c *WatchClient) handleNamespaceDelete(obj any) {
 	observability.RecordNamespaceDeleted()
 	if namespace, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Namespace); ok {
 		c.m.Lock()
@@ -270,6 +292,37 @@ func (c *WatchClient) handleNamespaceDelete(obj interface{}) {
 		c.m.Unlock()
 	} else {
 		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleNodeAdd(obj any) {
+	observability.RecordNodeAdded()
+	if node, ok := obj.(*api_v1.Node); ok {
+		c.addOrUpdateNode(node)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Node", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleNodeUpdate(_, newNode any) {
+	observability.RecordNodeUpdated()
+	if node, ok := newNode.(*api_v1.Node); ok {
+		c.addOrUpdateNode(node)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Node", zap.Any("received", newNode))
+	}
+}
+
+func (c *WatchClient) handleNodeDelete(obj any) {
+	observability.RecordNodeDeleted()
+	if node, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Node); ok {
+		c.m.Lock()
+		if n, ok := c.Nodes[node.Name]; ok {
+			delete(c.Nodes, n.Name)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type api_v1.Node", zap.Any("received", obj))
 	}
 }
 
@@ -335,6 +388,17 @@ func (c *WatchClient) GetNamespace(namespace string) (*Namespace, bool) {
 	c.m.RUnlock()
 	if ok {
 		return ns, ok
+	}
+	return nil, false
+}
+
+// GetNode takes a node name and returns the node object the node name is associated with.
+func (c *WatchClient) GetNode(nodeName string) (*Node, bool) {
+	c.m.RLock()
+	node, ok := c.Nodes[nodeName]
+	c.m.RUnlock()
+	if ok {
+		return node, ok
 	}
 	return nil, false
 }
@@ -614,10 +678,25 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	return tags
 }
 
+func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromNodeMetadata(node.Labels, tags, "k8s.node.labels.%s")
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromNodeMetadata(node.Annotations, tags, "k8s.node.annotations.%s")
+	}
+
+	return tags
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:        pod.Name,
 		Namespace:   pod.GetNamespace(),
+		NodeName:    pod.Spec.NodeName,
 		Address:     pod.Status.PodIP,
 		HostNetwork: pod.Spec.HostNetwork,
 		PodUID:      string(pod.UID),
@@ -832,6 +911,36 @@ func (c *WatchClient) extractNamespaceLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractNodeLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromNode {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromNode {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *WatchClient) addOrUpdateNode(node *api_v1.Node) {
+	newNode := &Node{
+		Name:    node.Name,
+		NodeUID: string(node.UID),
+	}
+	newNode.Attributes = c.extractNodeAttributes(node)
+
+	c.m.Lock()
+	if node.Name != "" {
+		c.Nodes[node.Name] = newNode
+	}
+	c.m.Unlock()
+}
+
 func needContainerAttributes(rules ExtractionRules) bool {
 	return rules.ContainerImageName ||
 		rules.ContainerName ||
@@ -839,7 +948,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerID
 }
 
-func (c *WatchClient) handleReplicaSetAdd(obj interface{}) {
+func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	observability.RecordReplicaSetAdded()
 	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
 		c.addOrUpdateReplicaSet(replicaset)
@@ -848,7 +957,7 @@ func (c *WatchClient) handleReplicaSetAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleReplicaSetUpdate(_, newRS interface{}) {
+func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 	observability.RecordReplicaSetUpdated()
 	if replicaset, ok := newRS.(*apps_v1.ReplicaSet); ok {
 		c.addOrUpdateReplicaSet(replicaset)
@@ -857,7 +966,7 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newRS interface{}) {
 	}
 }
 
-func (c *WatchClient) handleReplicaSetDelete(obj interface{}) {
+func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	observability.RecordReplicaSetDeleted()
 	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.ReplicaSet); ok {
 		c.m.Lock()
@@ -919,7 +1028,7 @@ func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
 // ignoreDeletedFinalStateUnknown returns the object wrapped in
 // DeletedFinalStateUnknown. Useful in OnDelete resource event handlers that do
 // not need the additional context.
-func ignoreDeletedFinalStateUnknown(obj interface{}) interface{} {
+func ignoreDeletedFinalStateUnknown(obj any) any {
 	if obj, ok := obj.(cache.DeletedFinalStateUnknown); ok {
 		return obj.Obj
 	}

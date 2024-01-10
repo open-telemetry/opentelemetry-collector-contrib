@@ -34,21 +34,23 @@ const (
 
 	responseOK                        = `{"text": "Success", "code": 0}`
 	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
-	responseInvalidMethod             = `Only "POST" method is supported`
-	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
+	responseInvalidMethod             = `"Only \"POST\" method is supported"`
+	responseInvalidEncoding           = `"\"Content-Encoding\" must be \"gzip\" or empty"`
 	responseInvalidDataFormat         = `{"text":"Invalid data format","code":6}`
 	responseErrEventRequired          = `{"text":"Event field is required","code":12}`
 	responseErrEventBlank             = `{"text":"Event field cannot be blank","code":13}`
-	responseErrGzipReader             = "Error on gzip body"
-	responseErrUnmarshalBody          = "Failed to unmarshal message body"
-	responseErrInternalServerError    = "Internal Server Error"
-	responseErrUnsupportedMetricEvent = "Unsupported metric event"
-	responseErrUnsupportedLogEvent    = "Unsupported log event"
+	responseErrGzipReader             = `"Error on gzip body"`
+	responseErrUnmarshalBody          = `"Failed to unmarshal message body"`
+	responseErrInternalServerError    = `"Internal Server Error"`
+	responseErrUnsupportedMetricEvent = `"Unsupported metric event"`
+	responseErrUnsupportedLogEvent    = `"Unsupported log event"`
 	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
 	responseNoData                    = `{"text":"No data","code":5}`
 	// Centralizing some HTTP and related string constants.
 	gzipEncoding              = "gzip"
 	httpContentEncodingHeader = "Content-Encoding"
+	httpContentTypeHeader     = "Content-Type"
+	httpJSONTypeHeader        = "application/json"
 )
 
 var (
@@ -58,18 +60,18 @@ var (
 	errInvalidMethod          = errors.New("invalid http method")
 	errInvalidEncoding        = errors.New("invalid encoding")
 
-	okRespBody                = initJSONResponse(responseOK)
-	eventRequiredRespBody     = initJSONResponse(responseErrEventRequired)
-	eventBlankRespBody        = initJSONResponse(responseErrEventBlank)
-	invalidEncodingRespBody   = initJSONResponse(responseInvalidEncoding)
-	invalidFormatRespBody     = initJSONResponse(responseInvalidDataFormat)
-	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
-	errGzipReaderRespBody     = initJSONResponse(responseErrGzipReader)
-	errUnmarshalBodyRespBody  = initJSONResponse(responseErrUnmarshalBody)
-	errInternalServerError    = initJSONResponse(responseErrInternalServerError)
-	errUnsupportedMetricEvent = initJSONResponse(responseErrUnsupportedMetricEvent)
-	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
-	noDataRespBody            = initJSONResponse(responseNoData)
+	okRespBody                = []byte(responseOK)
+	eventRequiredRespBody     = []byte(responseErrEventRequired)
+	eventBlankRespBody        = []byte(responseErrEventBlank)
+	invalidEncodingRespBody   = []byte(responseInvalidEncoding)
+	invalidFormatRespBody     = []byte(responseInvalidDataFormat)
+	invalidMethodRespBody     = []byte(responseInvalidMethod)
+	errGzipReaderRespBody     = []byte(responseErrGzipReader)
+	errUnmarshalBodyRespBody  = []byte(responseErrUnmarshalBody)
+	errInternalServerError    = []byte(responseErrInternalServerError)
+	errUnsupportedMetricEvent = []byte(responseErrUnsupportedMetricEvent)
+	errUnsupportedLogEvent    = []byte(responseErrUnsupportedLogEvent)
+	noDataRespBody            = []byte(responseNoData)
 )
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
@@ -125,7 +127,7 @@ func newMetricsReceiver(
 			WriteTimeout:      defaultServerTimeout,
 		},
 		obsrecv:        obsrecv,
-		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
+		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
 	}
 
 	return r, nil
@@ -169,7 +171,7 @@ func newLogsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
+		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
 		obsrecv:        obsrecv,
 	}
 
@@ -227,6 +229,14 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 	err := r.server.Close()
 	r.shutdownWG.Wait()
 	return err
+}
+
+func (r *splunkReceiver) writeSuccessResponse(ctx context.Context, resp http.ResponseWriter, eventCount int) {
+	resp.Header().Set(httpContentTypeHeader, httpJSONTypeHeader)
+	resp.WriteHeader(http.StatusOK)
+	if _, err := resp.Write(okRespBody); err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, eventCount, err)
+	}
 }
 
 func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Request) {
@@ -292,7 +302,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if consumerErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
-		resp.WriteHeader(http.StatusOK)
+		r.writeSuccessResponse(ctx, resp, ld.LogRecordCount())
 		r.obsrecv.EndLogsOp(ctx, metadata.Type, slLen, nil)
 	}
 }
@@ -404,10 +414,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	resp.WriteHeader(http.StatusOK)
-	if _, err := resp.Write(okRespBody); err != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events)+len(metricEvents), err)
-	}
+	r.writeSuccessResponse(ctx, resp, len(events)+len(metricEvents))
 }
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
@@ -464,23 +471,14 @@ func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Req
 	_, _ = writer.Write([]byte(responseHecHealthy))
 }
 
-func initJSONResponse(s string) []byte {
-	respBody, err := jsoniter.Marshal(s)
-	if err != nil {
-		// This is to be used in initialization so panic here is fine.
-		panic(err)
-	}
-	return respBody
-}
-
-func isFlatJSONField(field interface{}) bool {
+func isFlatJSONField(field any) bool {
 	switch value := field.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		return false
-	case []interface{}:
+	case []any:
 		for _, v := range value {
 			switch v.(type) {
-			case map[string]interface{}, []interface{}:
+			case map[string]any, []any:
 				return false
 			}
 		}

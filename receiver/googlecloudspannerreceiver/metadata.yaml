@@ -6,4 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib, observiq, sumo]
   codeowners:
-    active: [architjugran, varunraiko, kiranmayib]
+    active: [varunraiko]
+    emeritus: [architjugran, kiranmayib]
+tests:
+  config:

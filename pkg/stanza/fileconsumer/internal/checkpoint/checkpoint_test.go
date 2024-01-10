@@ -52,8 +52,9 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			"one",
 			[]*reader.Metadata{
 				{
-					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
-					Offset:      3,
+					FileAttributes: make(map[string]any),
+					Fingerprint:    &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
+					Offset:         3,
 				},
 			},
 		},
@@ -61,12 +62,14 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			"two",
 			[]*reader.Metadata{
 				{
-					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
-					Offset:      3,
+					FileAttributes: make(map[string]any),
+					Fingerprint:    &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
+					Offset:         3,
 				},
 				{
-					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("barrrr")},
-					Offset:      6,
+					FileAttributes: make(map[string]any),
+					Fingerprint:    &fingerprint.Fingerprint{FirstBytes: []byte("barrrr")},
+					Offset:         6,
 				},
 			},
 		},
@@ -76,11 +79,12 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 				{
 					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
 					Offset:      3,
-					FileAttributes: map[string]interface{}{
+					FileAttributes: map[string]any{
 						"hello": "world",
 					},
 				},
 				{
+					FileAttributes:  make(map[string]any),
 					Fingerprint:     &fingerprint.Fingerprint{FirstBytes: []byte("barrrr")},
 					Offset:          6,
 					HeaderFinalized: true,
@@ -88,7 +92,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 				{
 					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("ab")},
 					Offset:      2,
-					FileAttributes: map[string]interface{}{
+					FileAttributes: map[string]any{
 						"hello2": "world2",
 					},
 					HeaderFinalized: true,
@@ -132,7 +136,7 @@ func TestMigrateHeaderAttributes(t *testing.T) {
 		{
 			Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
 			Offset:      3,
-			FileAttributes: map[string]interface{}{
+			FileAttributes: map[string]any{
 				"hello": "world",
 			},
 		},

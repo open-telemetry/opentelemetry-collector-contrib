@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -35,8 +36,8 @@ func TestLoadConfig(t *testing.T) {
 		Token:  "token",
 		Region: "eu",
 	}
-	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
-	expected.RetrySettings.MaxInterval = 5 * time.Second
+	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
+	expected.BackOffConfig.MaxInterval = 5 * time.Second
 	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
 	expected.QueueSettings.Enabled = false
 	expected.HTTPClientSettings = confighttp.HTTPClientSettings{
@@ -64,7 +65,7 @@ func TestDefaultLoadConfig(t *testing.T) {
 	expected := &Config{
 		Token: "logzioTESTtoken",
 	}
-	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
+	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
 	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
 	expected.HTTPClientSettings = confighttp.HTTPClientSettings{
 		Endpoint: "",
@@ -82,7 +83,7 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 	// Config with legacy options
 	actualCfg := &Config{
 		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
 		Token:          "logzioTESTtoken",
 		CustomEndpoint: "https://api.example.com",
 		QueueMaxLength: 10,
@@ -109,7 +110,7 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		CustomEndpoint: "https://api.example.com",
 		QueueMaxLength: 10,
 		DrainInterval:  10,
-		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
 		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "https://api.example.com",

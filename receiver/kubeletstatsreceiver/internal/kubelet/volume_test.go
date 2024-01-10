@@ -29,7 +29,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 		volumeSource                    v1.VolumeSource
 		pod                             pod
 		detailedPVCLabelsSetterOverride func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
-		want                            map[string]interface{}
+		want                            map[string]any
 	}{
 		{
 			name:       "persistentVolumeClaim - with detailed PVC labels (AWS)",
@@ -50,7 +50,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				})
 				return nil
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.name":                "volume0",
 				"k8s.volume.type":                "awsElasticBlockStore",
 				"aws.volume.id":                  "volume_id",
@@ -81,7 +81,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				})
 				return nil
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.name":                "volume0",
 				"k8s.volume.type":                "gcePersistentDisk",
 				"gce.pd.name":                    "pd_name",
@@ -111,7 +111,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				})
 				return nil
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.name":                "volume0",
 				"k8s.volume.type":                "glusterfs",
 				"glusterfs.endpoints.name":       "endpoints_name",
@@ -139,7 +139,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				})
 				return nil
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.name":                "volume0",
 				"k8s.volume.type":                "local",
 				"k8s.persistentvolumeclaim.name": "claim-name",

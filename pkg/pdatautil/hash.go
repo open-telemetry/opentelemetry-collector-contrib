@@ -44,7 +44,7 @@ func newHashWriter() *hashWriter {
 }
 
 var hashWriterPool = &sync.Pool{
-	New: func() interface{} { return newHashWriter() },
+	New: func() any { return newHashWriter() },
 }
 
 // MapHash return a hash for the provided map.

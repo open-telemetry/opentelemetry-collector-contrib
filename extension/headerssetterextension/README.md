@@ -88,15 +88,8 @@ service:
       exporters: [ loki ]
 ```
 
-## Limitations
-
-At the moment, it is not possible to use the `from_context` option to ge the
-header value if Collector's pipeline contains the batch processor. See [#4544].
-
-
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [Mimir]: https://grafana.com/oss/mimir/
 [Tempo]: https://grafana.com/oss/tempo/
 [Loki]: https://grafana.com/oss/loki/
-[#4544]: https://github.com/open-telemetry/opentelemetry-collector/issues/4544

@@ -122,6 +122,9 @@ func (e *kafkaLogsProducer) Close(context.Context) error {
 
 func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c := sarama.NewConfig()
+
+	c.ClientID = config.ClientID
+
 	// These setting are required by the sarama.SyncProducer implementation.
 	c.Producer.Return.Successes = true
 	c.Producer.Return.Errors = true
@@ -133,6 +136,10 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
 	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
+
+	if config.ResolveCanonicalBootstrapServersOnly {
+		c.Net.ResolveCanonicalBootstrapServers = true
+	}
 
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
@@ -183,6 +190,11 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
+	}
+	if config.PartitionTracesByID {
+		if keyableMarshaler, ok := marshaler.(KeyableTracesMarshaler); ok {
+			keyableMarshaler.Key()
+		}
 	}
 	producer, err := newSaramaProducer(config)
 	if err != nil {

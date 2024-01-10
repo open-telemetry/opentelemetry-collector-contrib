@@ -5,6 +5,7 @@ package ecs
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,8 @@ import (
 )
 
 type mockMetaDataProvider struct {
-	isV4 bool
+	isV4           bool
+	taskArnVersion int `default:"1"`
 }
 
 var _ ecsutil.MetadataProvider = (*mockMetaDataProvider)(nil)
@@ -26,9 +28,20 @@ func (md *mockMetaDataProvider) FetchTaskMetadata() (*ecsutil.TaskMetadata, erro
 	c := createTestContainer(md.isV4)
 	c.DockerID = "05281997" // Simulate one "application" and one "collector" container
 	cs := []ecsutil.ContainerMetadata{createTestContainer(md.isV4), c}
+
+	var taskARN string
+	switch md.taskArnVersion {
+	case 1:
+		taskARN = "arn:aws:ecs:us-west-2:123456789123:task/123"
+	case 2:
+		taskARN = "arn:aws:ecs:us-west-2:123456789123:task/my-cluster/123"
+	default:
+		return nil, fmt.Errorf("%s: %d", "Unsupported ECS TaskARN Spec Version", md.taskArnVersion)
+	}
+
 	tmd := &ecsutil.TaskMetadata{
 		Cluster:          "my-cluster",
-		TaskARN:          "arn:aws:ecs:us-west-2:123456789123:task/123",
+		TaskARN:          taskARN,
 		Family:           "family",
 		AvailabilityZone: "us-west-2a",
 		Revision:         "26",
@@ -84,6 +97,7 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 		AwsEcsClusterArn:      metadata.ResourceAttributeConfig{Enabled: true},
 		AwsEcsLaunchtype:      metadata.ResourceAttributeConfig{Enabled: true},
 		AwsEcsTaskArn:         metadata.ResourceAttributeConfig{Enabled: true},
+		AwsEcsTaskID:          metadata.ResourceAttributeConfig{Enabled: true},
 		AwsEcsTaskFamily:      metadata.ResourceAttributeConfig{Enabled: true},
 		AwsEcsTaskRevision:    metadata.ResourceAttributeConfig{Enabled: true},
 		AwsLogGroupArns:       metadata.ResourceAttributeConfig{Enabled: true},
@@ -109,6 +123,7 @@ func Test_ecsDetectV4(t *testing.T) {
 	attr.PutStr("cloud.platform", "aws_ecs")
 	attr.PutStr("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
 	attr.PutStr("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
+	attr.PutStr("aws.ecs.task.id", "123")
 	attr.PutStr("aws.ecs.task.family", "family")
 	attr.PutStr("aws.ecs.task.revision", "26")
 	attr.PutStr("cloud.region", "us-west-2")
@@ -120,7 +135,36 @@ func Test_ecsDetectV4(t *testing.T) {
 	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStr("stream")
 	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
-	d := Detector{provider: &mockMetaDataProvider{isV4: true}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
+	d := Detector{provider: &mockMetaDataProvider{isV4: true, taskArnVersion: 1}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
+	got, _, err := d.Detect(context.TODO())
+
+	assert.Nil(t, err)
+	assert.NotNil(t, got)
+	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
+}
+
+func Test_ecsDetectV4WithTaskArnVersion2(t *testing.T) {
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
+
+	want := pcommon.NewResource()
+	attr := want.Attributes()
+	attr.PutStr("cloud.provider", "aws")
+	attr.PutStr("cloud.platform", "aws_ecs")
+	attr.PutStr("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
+	attr.PutStr("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/my-cluster/123")
+	attr.PutStr("aws.ecs.task.id", "123")
+	attr.PutStr("aws.ecs.task.family", "family")
+	attr.PutStr("aws.ecs.task.revision", "26")
+	attr.PutStr("cloud.region", "us-west-2")
+	attr.PutStr("cloud.availability_zone", "us-west-2a")
+	attr.PutStr("cloud.account.id", "123456789123")
+	attr.PutStr("aws.ecs.launchtype", "ec2")
+	attr.PutEmptySlice("aws.log.group.names").AppendEmpty().SetStr("group")
+	attr.PutEmptySlice("aws.log.group.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group")
+	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStr("stream")
+	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
+
+	d := Detector{provider: &mockMetaDataProvider{isV4: true, taskArnVersion: 2}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -137,13 +181,38 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr.PutStr("cloud.platform", "aws_ecs")
 	attr.PutStr("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
 	attr.PutStr("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
+	attr.PutStr("aws.ecs.task.id", "123")
 	attr.PutStr("aws.ecs.task.family", "family")
 	attr.PutStr("aws.ecs.task.revision", "26")
 	attr.PutStr("cloud.region", "us-west-2")
 	attr.PutStr("cloud.availability_zone", "us-west-2a")
 	attr.PutStr("cloud.account.id", "123456789123")
 
-	d := Detector{provider: &mockMetaDataProvider{isV4: false}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
+	d := Detector{provider: &mockMetaDataProvider{isV4: false, taskArnVersion: 1}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
+	got, _, err := d.Detect(context.TODO())
+
+	assert.Nil(t, err)
+	assert.NotNil(t, got)
+	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
+}
+
+func Test_ecsDetectV3WithTaskArnVersion2(t *testing.T) {
+	t.Setenv(endpoints.TaskMetadataEndpointV3EnvVar, "endpoint")
+
+	want := pcommon.NewResource()
+	attr := want.Attributes()
+	attr.PutStr("cloud.provider", "aws")
+	attr.PutStr("cloud.platform", "aws_ecs")
+	attr.PutStr("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
+	attr.PutStr("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/my-cluster/123")
+	attr.PutStr("aws.ecs.task.id", "123")
+	attr.PutStr("aws.ecs.task.family", "family")
+	attr.PutStr("aws.ecs.task.revision", "26")
+	attr.PutStr("cloud.region", "us-west-2")
+	attr.PutStr("cloud.availability_zone", "us-west-2a")
+	attr.PutStr("cloud.account.id", "123456789123")
+
+	d := Detector{provider: &mockMetaDataProvider{isV4: false, taskArnVersion: 2}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
@@ -18,17 +19,34 @@ import (
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`
+
+	// ResolveCanonicalBootstrapServersOnly makes Sarama do a DNS lookup for
+	// each of the provided brokers. It will then do a PTR lookup for each
+	// returned IP, and that set of names becomes the broker list. This can be
+	// required in SASL environments.
+	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
+
 	// Kafka protocol version
 	ProtocolVersion string `mapstructure:"protocol_version"`
+
+	// ClientID to configure the Kafka client with. This can be leveraged by
+	// Kafka to enforce ACLs, throttling quotas, and more.
+	ClientID string `mapstructure:"client_id"`
+
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
+
+	// PartitionTracesByID sets the message key of outgoing trace messages to the trace ID.
+	// Please note: does not have any effect on Jaeger encoding exporters since Jaeger exporters include
+	// trace ID as the message key by default.
+	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.

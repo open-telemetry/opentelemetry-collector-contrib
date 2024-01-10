@@ -381,9 +381,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces, set receiver.Creat
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server
-	srv := grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	srv := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	agenttracepb.RegisterTraceServiceServer(srv, oci)
 	go func() {
 		_ = srv.Serve(ln)

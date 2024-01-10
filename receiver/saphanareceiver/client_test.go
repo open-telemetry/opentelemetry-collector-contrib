@@ -26,7 +26,7 @@ func (m *testResultWrapper) Next() bool {
 	return m.current < len(m.contents)
 }
 
-func (m *testResultWrapper) Scan(dest ...interface{}) error {
+func (m *testResultWrapper) Scan(dest ...any) error {
 	for i, output := range dest {
 		d, _ := output.(*sql.NullString)
 		*d = m.contents[m.current][i]

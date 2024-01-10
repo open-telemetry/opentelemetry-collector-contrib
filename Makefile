@@ -3,7 +3,6 @@ include ./Makefile.Common
 RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
-OTEL_RC_VERSION=main
 OTEL_STABLE_VERSION=main
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
@@ -88,6 +87,10 @@ stability-tests: otelcontribcol
 	@echo Stability tests are disabled until we have a stable performance environment.
 	@echo To enable the tests replace this echo by $(MAKE) -C testbed run-stability-tests
 
+.PHONY: gogci
+gogci:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
+
 .PHONY: gotidy
 gotidy:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
@@ -135,19 +138,12 @@ COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
 .PHONY: push-tags
-push-tags: $(MULITMOD)
-	$(MULITMOD) verify
-	set -e; for tag in `$(MULITMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+push-tags: $(MULTIMOD)
+	$(MULTIMOD) verify
+	set -e; for tag in `$(MULTIMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
 		git push ${REMOTE} $${tag}; \
 	done;
-
-DEPENDABOT_PATH=".github/dependabot.yml"
-.PHONY: gendependabot
-gendependabot:
-	cd cmd/githubgen && $(GOCMD) install .
-	githubgen -dependabot
-
 
 # Define a delegation target for each module
 .PHONY: $(ALL_MODS)
@@ -226,7 +222,7 @@ docker-telemetrygen:
 	COMPONENT=telemetrygen $(MAKE) docker-component
 
 .PHONY: generate
-generate:
+generate: install-tools
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
@@ -236,10 +232,17 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
-.PHONY: gengithub
-gengithub:
+.PHONY: githubgen-install
+githubgen-install:
 	cd cmd/githubgen && $(GOCMD) install .
+
+.PHONY: gengithub
+gengithub: githubgen-install
 	githubgen
+
+.PHONY: gendistributions
+gendistributions: githubgen-install
+	githubgen distributions
 
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
@@ -289,14 +292,13 @@ telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
-.PHONY: update-dep
-update-dep:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="updatedep"
-	$(MAKE) otelcontribcol
-
 .PHONY: update-otel
-update-otel:
-	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION) RC_VERSION=$(OTEL_RC_VERSION) STABLE_VERSION=$(OTEL_STABLE_VERSION)
+update-otel:$(MULTIMOD)
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
+	git add . && git commit -s -m "[chore] multimod update stable modules"
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
+	git add . && git commit -s -m "[chore] multimod update beta modules"
+	$(MAKE) gotidy
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -308,7 +310,7 @@ otel-from-tree:
 	# 2. Run `make otel-from-tree` (only need to run it once to remap go modules)
 	# 3. You can now build contrib and it will use your local otel core changes.
 	# 4. Before committing/pushing your contrib changes, undo by running `make otel-from-lib`.
-	$(MAKE) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(SRC_ROOT)/../opentelemetry-collector"
+	$(MAKE) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(SRC_PARENT_DIR)/opentelemetry-collector"
 
 .PHONY: otel-from-lib
 otel-from-lib:
@@ -318,6 +320,7 @@ otel-from-lib:
 .PHONY: build-examples
 build-examples:
 	docker-compose -f examples/demo/docker-compose.yaml build
+	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker-compose -f ../docker-compose.yaml build
 	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package
@@ -367,18 +370,18 @@ certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
 
 .PHONY: multimod-verify
-multimod-verify: $(MULITMOD)
+multimod-verify: $(MULTIMOD)
 	@echo "Validating versions.yaml"
-	$(MULITMOD) verify
+	$(MULTIMOD) verify
 
 .PHONY: multimod-prerelease
-multimod-prerelease: $(MULITMOD)
-	$(MULITMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+multimod-prerelease: $(MULTIMOD)
+	$(MULTIMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
 	$(MAKE) gotidy
 
 .PHONY: multimod-sync
-multimod-sync: $(MULITMOD)
-	$(MULITMOD) sync -a=true -s=true -o ../opentelemetry-collector
+multimod-sync: $(MULTIMOD)
+	$(MULTIMOD) sync -a=true -s=true -o ../opentelemetry-collector
 	$(MAKE) gotidy
 
 .PHONY: crosslink
@@ -401,10 +404,5 @@ genconfigdocs:
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
-	for FILE in bug_report feature_request other; do \
-		YAML_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml"; \
-		TMP_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml.tmp"; \
-		cat "$${YAML_FILE}" > "$${TMP_FILE}"; \
-	 	FILE="$${TMP_FILE}" ./.github/workflows/scripts/add-component-options.sh > "$${YAML_FILE}"; \
-		rm "$${TMP_FILE}"; \
-	done
+	cd cmd/githubgen && $(GOCMD) install .
+	githubgen issue-templates

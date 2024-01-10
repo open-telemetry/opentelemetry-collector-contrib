@@ -18,7 +18,7 @@ type TestResultsSummary interface {
 	// Init creates and open the file and write headers.
 	Init(resultsDir string)
 	// Add results for one test.
-	Add(testName string, result interface{})
+	Add(testName string, result any)
 	// Save the total results and close the file.
 	Save()
 }
@@ -32,6 +32,12 @@ type benchmarkResult struct {
 	Value float64 `json:"value"`
 	Range string  `json:"range,omitempty"`
 	Extra string  `json:"extra,omitempty"`
+}
+
+type LogPresentResults struct {
+	testName string
+	result   string
+	duration time.Duration
 }
 
 // PerformanceResults implements the TestResultsSummary interface with fields suitable for reporting
@@ -90,7 +96,7 @@ func (r *PerformanceResults) Save() {
 }
 
 // Add results for one test.
-func (r *PerformanceResults) Add(_ string, result interface{}) {
+func (r *PerformanceResults) Add(_ string, result any) {
 	testResult, ok := result.(*PerformanceTestResult)
 	if !ok {
 		return
@@ -182,8 +188,8 @@ type TraceAssertionFailure struct {
 	typeName      string
 	dataComboName string
 	fieldPath     string
-	expectedValue interface{}
-	actualValue   interface{}
+	expectedValue any
+	actualValue   any
 	sumCount      int
 }
 
@@ -213,7 +219,7 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 			"----------------------------------------|------|-------:|---------:|-------------:|------------:|--------\n")
 }
 
-func (r *CorrectnessResults) Add(_ string, result interface{}) {
+func (r *CorrectnessResults) Add(_ string, result any) {
 	testResult, ok := result.(*CorrectnessTestResult)
 	if !ok {
 		return

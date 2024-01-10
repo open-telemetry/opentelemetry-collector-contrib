@@ -105,6 +105,46 @@ func TestConsumeMetricsWithNaNValues(t *testing.T) {
 
 }
 
+func TestConsumeMetricsWithInfValues(t *testing.T) {
+	tests := []struct {
+		testName     string
+		generateFunc func(string) pmetric.Metrics
+	}{
+		{
+			"histograme-with-inf",
+			generateTestHistogramMetricWithInfs,
+		}, {
+			"gauge-with-inf",
+			generateTestGaugeMetricInf,
+		}, {
+			"summary-with-inf",
+			generateTestSummaryMetricWithInf,
+		}, {
+			"exponentialHistogram-with-inf",
+			generateTestExponentialHistogramMetricWithInfs,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.testName, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			factory := NewFactory()
+			expCfg := factory.CreateDefaultConfig().(*Config)
+			expCfg.Region = "us-west-2"
+			expCfg.MaxRetries = 0
+			expCfg.OutputDestination = "stdout"
+			exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+			assert.Nil(t, err)
+			assert.NotNil(t, exp)
+			md := tc.generateFunc(tc.testName)
+			require.NoError(t, exp.pushMetricsData(ctx, md))
+			require.NoError(t, exp.shutdown(ctx))
+		})
+	}
+
+}
+
 func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -168,7 +208,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
-		resourceAttributeMap: map[string]interface{}{
+		resourceAttributeMap: map[string]any{
 			"aws.ecs.cluster.name": "test-cluster-name",
 			"aws.ecs.task.id":      "test-task-id",
 		},
@@ -199,7 +239,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
-		resourceAttributeMap: map[string]interface{}{
+		resourceAttributeMap: map[string]any{
 			"aws.ecs.cluster.name": "test-cluster-name",
 			"aws.ecs.task.id":      "test-task-id",
 		},
@@ -230,7 +270,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
-		resourceAttributeMap: map[string]interface{}{
+		resourceAttributeMap: map[string]any{
 			"aws.ecs.cluster.name": "test-cluster-name",
 			"aws.ecs.task.id":      "test-task-id",
 		},

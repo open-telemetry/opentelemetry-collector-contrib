@@ -9,6 +9,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -22,6 +23,7 @@ const (
 	defaultLogsTopic    = "otlp_logs"
 	defaultEncoding     = "otlp_proto"
 	defaultBroker       = "localhost:9092"
+	defaultClientID     = "sarama"
 	// default from sarama.NewConfig()
 	defaultMetadataRetryMax = 3
 	// default from sarama.NewConfig()
@@ -41,8 +43,8 @@ const (
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaExporterFactory)
 
-// WithTracesMarshalers adds tracesMarshalers.
-func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
+// withTracesMarshalers adds tracesMarshalers.
+func withTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range tracesMarshalers {
 			factory.tracesMarshalers[marshaler.Encoding()] = marshaler
@@ -50,8 +52,8 @@ func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	}
 }
 
-// WithMetricsMarshalers adds additional metric marshalers to the exporter factory.
-func WithMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
+// withMetricsMarshalers adds additional metric marshalers to the exporter factory.
+func withMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range metricMarshalers {
 			factory.metricsMarshalers[marshaler.Encoding()] = marshaler
@@ -59,8 +61,8 @@ func WithMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
 	}
 }
 
-// WithLogMarshalers adds additional log marshalers to the exporter factory.
-func WithLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
+// withLogsMarshalers adds additional log marshalers to the exporter factory.
+func withLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range logsMarshalers {
 			factory.logsMarshalers[marshaler.Encoding()] = marshaler
@@ -90,9 +92,10 @@ func NewFactory(options ...FactoryOption) exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		Brokers:         []string{defaultBroker},
+		ClientID:        defaultClientID,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:    "",
 		Encoding: defaultEncoding,
@@ -143,7 +146,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(exp.Close))
 }
@@ -173,7 +176,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(exp.Close))
 }
@@ -203,7 +206,7 @@ func (f *kafkaExporterFactory) createLogsExporter(
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithShutdown(exp.Close))
 }

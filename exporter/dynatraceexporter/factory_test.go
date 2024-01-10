@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -28,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &dtconfig.Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
@@ -55,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expected: &dtconfig.Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -71,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid"),
 			expected: &dtconfig.Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -94,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_tags"),
 			expected: &dtconfig.Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 				HTTPClientSettings: confighttp.HTTPClientSettings{

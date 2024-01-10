@@ -7,7 +7,7 @@ parent: string
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
   # Required: The class of the component (For example receiver)
-  class: <receiver|processor|exporter|connector|extension>
+  class: <receiver|processor|exporter|connector|extension|cmd|pkg>
   # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector#stability-levels
   stability:
     development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
@@ -104,3 +104,9 @@ metrics:
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
+
+# Lifecycle tests generated for this component.
+tests:
+  config: # {} by default, specific testing configuration for lifecycle tests.
+  skip_lifecycle: false # false by default
+  expect_consumer_error: true # false by default

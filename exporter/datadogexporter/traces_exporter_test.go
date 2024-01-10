@@ -38,59 +38,59 @@ func TestMain(m *testing.M) {
 type testlogger struct{}
 
 // Trace implements Logger.
-func (testlogger) Trace(_ ...interface{}) {}
+func (testlogger) Trace(_ ...any) {}
 
 // Tracef implements Logger.
-func (testlogger) Tracef(_ string, _ ...interface{}) {}
+func (testlogger) Tracef(_ string, _ ...any) {}
 
 // Debug implements Logger.
-func (testlogger) Debug(v ...interface{}) { fmt.Println("DEBUG", fmt.Sprint(v...)) }
+func (testlogger) Debug(v ...any) { fmt.Println("DEBUG", fmt.Sprint(v...)) }
 
 // Debugf implements Logger.
-func (testlogger) Debugf(format string, params ...interface{}) {
+func (testlogger) Debugf(format string, params ...any) {
 	fmt.Println("DEBUG", fmt.Sprintf(format, params...))
 }
 
 // Info implements Logger.
-func (testlogger) Info(v ...interface{}) { fmt.Println("INFO", fmt.Sprint(v...)) }
+func (testlogger) Info(v ...any) { fmt.Println("INFO", fmt.Sprint(v...)) }
 
 // Infof implements Logger.
-func (testlogger) Infof(format string, params ...interface{}) {
+func (testlogger) Infof(format string, params ...any) {
 	fmt.Println("INFO", fmt.Sprintf(format, params...))
 }
 
 // Warn implements Logger.
-func (testlogger) Warn(v ...interface{}) error {
+func (testlogger) Warn(v ...any) error {
 	fmt.Println("WARN", fmt.Sprint(v...))
 	return nil
 }
 
 // Warnf implements Logger.
-func (testlogger) Warnf(format string, params ...interface{}) error {
+func (testlogger) Warnf(format string, params ...any) error {
 	fmt.Println("WARN", fmt.Sprintf(format, params...))
 	return nil
 }
 
 // Error implements Logger.
-func (testlogger) Error(v ...interface{}) error {
+func (testlogger) Error(v ...any) error {
 	fmt.Println("ERROR", fmt.Sprint(v...))
 	return nil
 }
 
 // Errorf implements Logger.
-func (testlogger) Errorf(format string, params ...interface{}) error {
+func (testlogger) Errorf(format string, params ...any) error {
 	fmt.Println("ERROR", fmt.Sprintf(format, params...))
 	return nil
 }
 
 // Critical implements Logger.
-func (testlogger) Critical(v ...interface{}) error {
+func (testlogger) Critical(v ...any) error {
 	fmt.Println("CRITICAL", fmt.Sprint(v...))
 	return nil
 }
 
 // Criticalf implements Logger.
-func (testlogger) Criticalf(format string, params ...interface{}) error {
+func (testlogger) Criticalf(format string, params ...any) error {
 	fmt.Println("CRITICAL", fmt.Sprintf(format, params...))
 	return nil
 }
@@ -176,24 +176,24 @@ func TestTracesSource(t *testing.T) {
 		return *p.Series[0].Resources[0].Name, p.Series[0].Tags
 	}
 	for _, tt := range []struct {
-		attrs map[string]interface{}
+		attrs map[string]any
 		host  string
 		tags  []string
 	}{
 		{
-			attrs: map[string]interface{}{},
+			attrs: map[string]any{},
 			host:  "fallbackHostname",
 			tags:  []string{"version:latest", "command:otelcol"},
 		},
 		{
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				attributes.AttributeDatadogHostname: "customName",
 			},
 			host: "customName",
 			tags: []string{"version:latest", "command:otelcol"},
 		},
 		{
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				semconv.AttributeCloudProvider:      semconv.AttributeCloudProviderAWS,
 				semconv.AttributeCloudPlatform:      semconv.AttributeCloudPlatformAWSECS,
 				semconv.AttributeAWSECSTaskARN:      "example-task-ARN",
@@ -229,7 +229,6 @@ func TestTracesSource(t *testing.T) {
 }
 
 func TestTraceExporter(t *testing.T) {
-	t.Skip("Flaky test on CI, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27630")
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
@@ -259,6 +258,7 @@ func TestTraceExporter(t *testing.T) {
 			},
 			IgnoreResources: []string{},
 			flushInterval:   0.1,
+			TraceBuffer:     2,
 		},
 	}
 
@@ -340,11 +340,11 @@ func simpleTraces() ptrace.Traces {
 	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, nil)
 }
 
-func simpleTracesWithAttributes(attrs map[string]interface{}) ptrace.Traces {
+func simpleTracesWithAttributes(attrs map[string]any) ptrace.Traces {
 	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, attrs)
 }
 
-func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Traces {
+func genTraces(traceID pcommon.TraceID, attrs map[string]any) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()

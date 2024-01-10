@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -291,7 +291,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	err := parser.Unmarshal(rac)
 	if err != nil {
 		return err
 	}
@@ -311,6 +311,8 @@ type ResourceAttributesConfig struct {
 	MongodbAtlasProcessTypeName ResourceAttributeConfig `mapstructure:"mongodb_atlas.process.type_name"`
 	MongodbAtlasProjectID       ResourceAttributeConfig `mapstructure:"mongodb_atlas.project.id"`
 	MongodbAtlasProjectName     ResourceAttributeConfig `mapstructure:"mongodb_atlas.project.name"`
+	MongodbAtlasProviderName    ResourceAttributeConfig `mapstructure:"mongodb_atlas.provider.name"`
+	MongodbAtlasRegionName      ResourceAttributeConfig `mapstructure:"mongodb_atlas.region.name"`
 	MongodbAtlasUserAlias       ResourceAttributeConfig `mapstructure:"mongodb_atlas.user.alias"`
 }
 
@@ -345,6 +347,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		MongodbAtlasProjectName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		MongodbAtlasProviderName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		MongodbAtlasRegionName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		MongodbAtlasUserAlias: ResourceAttributeConfig{
 			Enabled: false,

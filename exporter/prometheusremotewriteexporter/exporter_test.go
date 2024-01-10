@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -36,7 +37,7 @@ import (
 func Test_NewPRWExporter(t *testing.T) {
 	cfg := &Config{
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
-		RetrySettings:      exporterhelper.RetrySettings{},
+		BackOffConfig:      configretry.BackOffConfig{},
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
@@ -132,7 +133,7 @@ func Test_NewPRWExporter(t *testing.T) {
 func Test_Start(t *testing.T) {
 	cfg := &Config{
 		TimeoutSettings:   exporterhelper.TimeoutSettings{},
-		RetrySettings:     exporterhelper.RetrySettings{},
+		BackOffConfig:     configretry.BackOffConfig{},
 		MaxBatchSizeBytes: 3000000,
 		Namespace:         "",
 		ExternalLabels:    map[string]string{},
@@ -345,7 +346,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = endpoint.String()
 	cfg.RemoteWriteQueue.NumConsumers = 1
-	cfg.RetrySettings = exporterhelper.RetrySettings{
+	cfg.BackOffConfig = configretry.BackOffConfig{
 		Enabled:         true,
 		InitialInterval: 100 * time.Millisecond, // Shorter initial interval
 		MaxInterval:     1 * time.Second,        // Shorter max interval
@@ -368,7 +369,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		return err
 	}
 
-	return prwe.handleExport(context.Background(), testmap)
+	return prwe.handleExport(context.Background(), testmap, nil)
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -677,7 +678,7 @@ func Test_PushMetrics(t *testing.T) {
 					defer server.Close()
 
 					// Adjusted retry settings for faster testing
-					retrySettings := exporterhelper.RetrySettings{
+					retrySettings := configretry.BackOffConfig{
 						Enabled:         true,
 						InitialInterval: 100 * time.Millisecond, // Shorter initial interval
 						MaxInterval:     1 * time.Second,        // Shorter max interval
@@ -699,7 +700,7 @@ func Test_PushMetrics(t *testing.T) {
 						CreatedMetric: &CreatedMetric{
 							Enabled: true,
 						},
-						RetrySettings: retrySettings,
+						BackOffConfig: retrySettings,
 					}
 
 					if useWAL {
@@ -919,7 +920,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		"timeseries1": ts1,
 		"timeseries2": ts2,
 	}
-	errs := prwe.handleExport(ctx, tsMap)
+	errs := prwe.handleExport(ctx, tsMap, nil)
 	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
 	// exported data in-flight will flushed flushed to the WAL before exiting.
@@ -1017,7 +1018,7 @@ func TestRetryOn5xx(t *testing.T) {
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
 		client:      http.DefaultClient,
-		retrySettings: exporterhelper.RetrySettings{
+		retrySettings: configretry.BackOffConfig{
 			Enabled: true,
 		},
 	}
@@ -1050,7 +1051,7 @@ func TestNoRetryOn4xx(t *testing.T) {
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
 		client:      http.DefaultClient,
-		retrySettings: exporterhelper.RetrySettings{
+		retrySettings: configretry.BackOffConfig{
 			Enabled: true,
 		},
 	}

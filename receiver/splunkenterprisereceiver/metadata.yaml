@@ -6,7 +6,7 @@ status:
     development: [metrics]
   distributions:
   codeowners:
-    active: [shalper2, MovieStoreGuy]
+    active: [shalper2, MovieStoreGuy, greatestusername]
 
 attributes:
   splunk.index.name:
@@ -105,3 +105,6 @@ metrics:
     gauge:
       value_type: int
     attributes: [splunk.queue.name] 
+
+tests:
+  config:

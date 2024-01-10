@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -17,15 +18,15 @@ type Config struct {
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 	// Google Cloud Project ID where the Pubsub client will connect to
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service
 	UserAgent string `mapstructure:"user_agent"`
-	// Override of the Pubsub endpoint, for testing only
-	endpoint string
+	// Override of the Pubsub Endpoint, leave empty for the default endpoint
+	Endpoint string `mapstructure:"endpoint"`
 	// Only has effect if Endpoint is not ""
-	insecure bool
+	Insecure bool `mapstructure:"insecure"`
 
 	// The fully qualified resource name of the Pubsub topic
 	Topic string `mapstructure:"topic"`

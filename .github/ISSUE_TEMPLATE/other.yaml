@@ -23,10 +23,12 @@ body:
       - connector/count
       - connector/datadog
       - connector/exceptions
+      - connector/failover
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
+      - exporter/alertmanager
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
       - exporter/awsemf
@@ -70,21 +72,22 @@ body:
       - exporter/splunkhec
       - exporter/sumologic
       - exporter/syslog
-      - exporter/tanzuobservability
       - exporter/tencentcloudlogservice
       - exporter/zipkin
       - extension/asapauth
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
+      - extension/encoding/otlpencoding
       - extension/encoding/textencoding
+      - extension/encoding/zipkinencoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
       - extension/jaegerremotesampling
-      - extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
@@ -93,12 +96,15 @@ body:
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
       - extension/oidcauth
+      - extension/opamp
       - extension/pprof
+      - extension/remotetap
       - extension/sigv4auth
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
       - internal/aws
+      - internal/collectd
       - internal/core
       - internal/datadog
       - internal/docker
@@ -114,17 +120,20 @@ body:
       - pkg/batchperresourceattr
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
+      - pkg/golden
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/stanza
+      - pkg/translator/azure
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
+      - pkg/translator/skywalking
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
@@ -140,7 +149,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
-      - processor/remoteobserver
+      - processor/remotetap
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
@@ -151,6 +160,7 @@ body:
       - processor/servicegraph
       - processor/span
       - processor/spanmetrics
+      - processor/sumologic
       - processor/tailsampling
       - processor/transform
       - receiver/activedirectoryds
@@ -191,7 +201,6 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
-      - receiver/jaeger/internal/jaegerreceiverdeprecated
       - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
@@ -205,6 +214,7 @@ body:
       - receiver/mongodb
       - receiver/mongodbatlas
       - receiver/mysql
+      - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
       - receiver/opencensus

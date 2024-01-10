@@ -58,8 +58,8 @@ func (c *Config) UnmarshalJSON(bytes []byte) error {
 }
 
 // UnmarshalYAML will unmarshal a config from YAML.
-func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	rawConfig := map[string]interface{}{}
+func (c *Config) UnmarshalYAML(unmarshal func(any) error) error {
+	rawConfig := map[string]any{}
 	err := unmarshal(&rawConfig)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal yaml to base config: %w", err)
@@ -107,7 +107,7 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 	}
 
 	builder := builderFunc()
-	if err := component.Unmarshal(builder, confmap.WithErrorUnused()); err != nil {
+	if err := component.Unmarshal(builder); err != nil {
 		return fmt.Errorf("unmarshal to %s: %w", typeString, err)
 	}
 

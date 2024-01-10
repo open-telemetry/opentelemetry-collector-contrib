@@ -48,7 +48,7 @@ func TestLogToCWLog(t *testing.T) {
 		name     string
 		resource pcommon.Resource
 		log      plog.LogRecord
-		config   Config
+		config   *Config
 		want     cwlogs.Event
 		wantErr  bool
 	}{
@@ -56,7 +56,7 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "basic",
 			resource: testResource(),
 			log:      testLogRecord(),
-			config:   Config{},
+			config:   &Config{},
 			want: cwlogs.Event{
 				GeneratedTime: time.Now(),
 				InputLogEvent: &cloudwatchlogs.InputLogEvent{
@@ -73,7 +73,7 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "no resource",
 			resource: pcommon.NewResource(),
 			log:      testLogRecord(),
-			config:   Config{},
+			config:   &Config{},
 			want: cwlogs.Event{
 				GeneratedTime: time.Now(),
 				InputLogEvent: &cloudwatchlogs.InputLogEvent{
@@ -90,7 +90,7 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "no trace",
 			resource: testResource(),
 			log:      testLogRecordWithoutTrace(),
-			config: Config{
+			config: &Config{
 				LogGroupName:  "tLogGroup",
 				LogStreamName: "tStreamName",
 			},
@@ -110,7 +110,7 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "raw",
 			resource: testResource(),
 			log:      testLogRecordWithoutTrace(),
-			config: Config{
+			config: &Config{
 				LogGroupName:  "tLogGroup",
 				LogStreamName: "tStreamName",
 				RawLog:        true,
@@ -131,7 +131,7 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "raw emf v1",
 			resource: testResource(),
 			log:      createPLog(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
-			config: Config{
+			config: &Config{
 				LogGroupName:  "tLogGroup",
 				LogStreamName: "tStreamName",
 				RawLog:        true,
@@ -152,7 +152,7 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "raw emf v1 with log stream",
 			resource: testResource(),
 			log:      createPLog(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","LogStreamName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
-			config: Config{
+			config: &Config{
 				LogGroupName:  "tLogGroup",
 				LogStreamName: "tStreamName",
 				RawLog:        true,
@@ -173,7 +173,7 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "raw emf v0",
 			resource: testResource(),
 			log:      createPLog(`{"Timestamp":1574109732004,"log_group_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
-			config: Config{
+			config: &Config{
 				LogGroupName:  "tLogGroup",
 				LogStreamName: "tStreamName",
 				RawLog:        true,
@@ -194,7 +194,7 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "raw emf v0 with log stream",
 			resource: testResource(),
 			log:      createPLog(`{"Timestamp":1574109732004,"log_group_name":"Foo","log_stream_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
-			config: Config{
+			config: &Config{
 				LogGroupName:  "tLogGroup",
 				LogStreamName: "tStreamName",
 				RawLog:        true,
@@ -216,7 +216,7 @@ func TestLogToCWLog(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resourceAttrs := attrsValue(tt.resource.Attributes())
-			got, err := logToCWLog(resourceAttrs, tt.log, &tt.config)
+			got, err := logToCWLog(resourceAttrs, tt.log, tt.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("logToCWLog() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -41,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -54,9 +55,11 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				Topic:    "spans",
-				Encoding: "otlp_proto",
-				Brokers:  []string{"foo:123", "bar:456"},
+				Topic:               "spans",
+				Encoding:            "otlp_proto",
+				PartitionTracesByID: true,
+				Brokers:             []string{"foo:123", "bar:456"},
+				ClientID:            "test_client_id",
 				Authentication: kafka.Authentication{
 					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
@@ -93,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -106,9 +109,11 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				Topic:    "spans",
-				Encoding: "otlp_proto",
-				Brokers:  []string{"foo:123", "bar:456"},
+				Topic:               "spans",
+				Encoding:            "otlp_proto",
+				PartitionTracesByID: true,
+				Brokers:             []string{"foo:123", "bar:456"},
+				ClientID:            "test_client_id",
 				Authentication: kafka.Authentication{
 					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
@@ -119,6 +124,54 @@ func TestLoadConfig(t *testing.T) {
 						Password:  "pass",
 						Mechanism: "PLAIN",
 						Version:   0,
+					},
+				},
+				Metadata: Metadata{
+					Full: false,
+					Retry: MetadataRetry{
+						Max:     15,
+						Backoff: defaultMetadataRetryBackoff,
+					},
+				},
+				Producer: Producer{
+					MaxMessageBytes: 10000000,
+					RequiredAcks:    sarama.WaitForAll,
+					Compression:     "none",
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, ""),
+			option: func(conf *Config) {
+				conf.ResolveCanonicalBootstrapServersOnly = true
+			},
+			expected: &Config{
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 10 * time.Second,
+				},
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				PartitionTracesByID:                  true,
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ClientID:                             "test_client_id",
+				ResolveCanonicalBootstrapServersOnly: true,
+				Authentication: kafka.Authentication{
+					PlainText: &kafka.PlainTextConfig{
+						Username: "jdoe",
+						Password: "pass",
 					},
 				},
 				Metadata: Metadata{

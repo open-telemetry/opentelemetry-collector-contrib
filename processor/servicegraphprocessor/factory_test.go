@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -22,17 +23,17 @@ func TestNewProcessor(t *testing.T) {
 	}{
 		{
 			name:                            "simplest config (use defaults)",
-			expectedLatencyHistogramBuckets: defaultLatencyHistogramBucketsMs,
+			expectedLatencyHistogramBuckets: defaultLatencyHistogramBuckets,
 		},
 		{
 			name:                            "latency histogram configured with catch-all bucket to check no additional catch-all bucket inserted",
 			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
-			expectedLatencyHistogramBuckets: []float64{2},
+			expectedLatencyHistogramBuckets: []float64{0.002},
 		},
 		{
 			name:                            "full config with no catch-all bucket and check the catch-all bucket is inserted",
 			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
-			expectedLatencyHistogramBuckets: []float64{2},
+			expectedLatencyHistogramBuckets: []float64{0.002},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -64,22 +65,22 @@ func TestNewConnector(t *testing.T) {
 	}{
 		{
 			name:                            "simplest config (use defaults)",
-			expectedLatencyHistogramBuckets: defaultLatencyHistogramBucketsMs,
+			expectedLatencyHistogramBuckets: defaultLatencyHistogramBuckets,
 		},
 		{
 			name:                            "latency histogram configured with catch-all bucket to check no additional catch-all bucket inserted",
 			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
-			expectedLatencyHistogramBuckets: []float64{2},
+			expectedLatencyHistogramBuckets: []float64{0.002},
 		},
 		{
 			name:                            "full config with no catch-all bucket and check the catch-all bucket is inserted",
 			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
-			expectedLatencyHistogramBuckets: []float64{2},
+			expectedLatencyHistogramBuckets: []float64{0.002},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			factory := newConnectorFactory()
+			factory := NewConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)
 
 			creationParams := connectortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)

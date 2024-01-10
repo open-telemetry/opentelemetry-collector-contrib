@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
 )
 
 func Test_carbonreceiver_New(t *testing.T) {
@@ -97,7 +97,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			got, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				require.NotNil(t, got)
@@ -136,28 +136,10 @@ func Test_carbonreceiver_Start(t *testing.T) {
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\""),
 		},
-		{
-			name: "negative_tcp_idle_timeout",
-			args: args{
-				config: Config{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "localhost:2003",
-						Transport: "tcp",
-					},
-					TCPIdleTimeout: -1 * time.Second,
-					Parser: &protocol.Config{
-						Type:   "plaintext",
-						Config: &protocol.PlaintextConfig{},
-					},
-				},
-				nextConsumer: consumertest.NewNop(),
-			},
-			wantErr: errors.New("invalid idle timeout: -1s"),
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			got, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
 			require.NoError(t, err)
 			err = got.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
@@ -218,7 +200,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			rt := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
 			cs := receivertest.NewNopCreateSettings()
 			cs.TracerProvider = rt
-			rcv, err := New(cs, *cfg, sink)
+			rcv, err := newMetricsReceiver(cs, *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
 

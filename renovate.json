@@ -1,21 +1,35 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "labels": [
+      "renovatebot",
       "dependencies"
     ],
-    "extends": [
-      "config:base"
-    ],
+    "constraints": {
+      "go": "1.20"
+    },
     "schedule": ["every tuesday"],
+    "extends": ["config:recommended"],
     "ignorePaths": [
       "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_9_3",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_0",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4.lpu",
+      "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4lpu",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.5_0"
     ],
     "packageRules": [
+      {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["pin", "pinDigest", "digest", "lockFileMaintenance", "rollback", "bump", "replacement"],
+        "enabled": false
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["major"],
+        "prBodyNotes": [":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"],
+        "labels": ["dependency-major-update"]
+      },
       {
         "matchManagers": ["dockerfile"],
         "groupName": "dockerfile deps"
@@ -30,10 +44,51 @@
       },
       {
         "matchManagers": ["gomod"],
-        "enabled": false
+        "matchSourceUrlPrefixes": ["https://github.com/aws"],
+        "groupName": "All github.com/aws packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/azure"],
+        "groupName": "All github.com/azure packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/datadog"],
+        "groupName": "All github.com/datadog packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://google.golang.org"],
+        "groupName": "All google.golang.org packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://golang.org"],
+        "groupName": "All golang.org packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
+        "groupName": "All github.com/googlecloudplatform packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
+        "groupName": "All OpenTelemetry Collector dev packages",
+        "matchUpdateTypes": ["digest"]
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
+        "groupName": "All OpenTelemetry Collector packages",
+        "matchUpdateTypes": ["major", "minor", "patch"]
       }
     ],
     "ignoreDeps": [
-      "github.com/mattn/go-ieproxy"
-    ]
+      "github.com/mattn/go-ieproxy",
+      "github.com/DataDog/datadog-agent/pkg/trace/exportable"
+    ],
+    "prConcurrentLimit": 200,
+    "suppressNotifications": ["prEditedNotification"]
   }

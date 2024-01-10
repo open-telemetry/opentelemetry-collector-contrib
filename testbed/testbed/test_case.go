@@ -5,9 +5,11 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"testing"
@@ -114,7 +116,7 @@ func NewTestCase(
 	tc.LoadGenerator, err = NewLoadGenerator(dataProvider, sender)
 	require.NoError(t, err, "Cannot create generator")
 
-	tc.MockBackend = NewMockBackend(tc.composeTestResultFileName("backend.log"), receiver)
+	tc.MockBackend = NewMockBackend(tc.ComposeTestResultFileName("backend.log"), receiver)
 	tc.MockBackend.WithDecisionFunc(tc.decision)
 
 	go tc.logStats()
@@ -122,7 +124,7 @@ func NewTestCase(
 	return &tc
 }
 
-func (tc *TestCase) composeTestResultFileName(fileName string) string {
+func (tc *TestCase) ComposeTestResultFileName(fileName string) string {
 	fileName, err := filepath.Abs(path.Join(tc.resultDir, fileName))
 	require.NoError(tc.t, err, "Cannot resolve %s", fileName)
 	return fileName
@@ -131,7 +133,7 @@ func (tc *TestCase) composeTestResultFileName(fileName string) string {
 // StartAgent starts the agent and redirects its standard output and standard error
 // to "agent.log" file located in the test directory.
 func (tc *TestCase) StartAgent(args ...string) {
-	logFileName := tc.composeTestResultFileName("agent.log")
+	logFileName := tc.ComposeTestResultFileName("agent.log")
 
 	startParams := StartParams{
 		Name:         "Agent",
@@ -254,7 +256,7 @@ func (tc *TestCase) Sleep(d time.Duration) {
 // if time is out and condition does not become true. If error is signaled
 // while waiting the function will return false, but will not record additional
 // test error (we assume that signaled error is already recorded in indicateError()).
-func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg interface{}) bool {
+func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg any) bool {
 	startTime := time.Now()
 
 	// Start with 5 ms waiting interval between condition re-evaluation.
@@ -285,7 +287,7 @@ func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg in
 }
 
 // WaitFor is like WaitForN but with a fixed duration of 10 seconds
-func (tc *TestCase) WaitFor(cond func() bool, errMsg interface{}) bool {
+func (tc *TestCase) WaitFor(cond func() bool, errMsg any) bool {
 	return tc.WaitForN(cond, time.Second*10, errMsg)
 }
 
@@ -321,4 +323,36 @@ func (tc *TestCase) logStatsOnce() {
 		tc.agentProc.GetResourceConsumption(),
 		tc.LoadGenerator.GetStats(),
 		tc.MockBackend.GetStats())
+}
+
+// Used to search for text in agent.log
+// It can be used to verify if we've hit QueuedRetry sender or memory limiter
+func (tc *TestCase) AgentLogsContains(text string) bool {
+	filename := tc.ComposeTestResultFileName("agent.log")
+	cmd := exec.Command("cat", filename)
+	grep := exec.Command("grep", "-E", text)
+
+	pipe, err := cmd.StdoutPipe()
+	defer func(pipe io.ReadCloser) {
+		err = pipe.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(pipe)
+	grep.Stdin = pipe
+
+	if err != nil {
+		log.Printf("Error while searching %s in %s", text, tc.ComposeTestResultFileName("agent.log"))
+		return false
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Print("Error while executing command: ", err.Error())
+		return false
+	}
+
+	res, _ := grep.Output()
+	return string(res) != ""
+
 }

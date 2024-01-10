@@ -57,3 +57,11 @@ metrics:
     gauge:
       value_type: int
     unit: "b"
+  file.count:
+    description: The number of files matched
+    enabled: false
+    gauge:
+      value_type: int
+    unit: "{file}"
+tests:
+  config:

@@ -167,7 +167,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 }
 
 func newGzipPool() sync.Pool {
-	return sync.Pool{New: func() interface{} {
+	return sync.Pool{New: func() any {
 		return gzip.NewWriter(nil)
 	}}
 }

@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,20 +16,49 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+type optionalFnTestArgs[K any] struct {
+	Target ottl.StringGetter[K]
+}
+
+func optionalFnTestFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("Test", &optionalFnTestArgs[K]{}, createTestFunction[K])
+}
+
+func createTestFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*optionalFnTestArgs[K])
+
+	if !ok {
+		return nil, fmt.Errorf("TestFactory args must be of type *optionalFnTestArgs[K]")
+	}
+
+	return hashString(args.Target), nil
+}
+
+func hashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
+
+	return func(ctx context.Context, tCtx K) (any, error) {
+		val, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		return fmt.Sprintf("hash(%s)", val), nil
+	}
+}
+
 func Test_replacePattern(t *testing.T) {
 	input := pcommon.NewValueStr("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
 	ottlValue := ottl.StandardFunctionGetter[pcommon.Value]{
 		FCtx: ottl.FunctionContext{
 			Set: componenttest.NewNopTelemetrySettings(),
 		},
-		Fact: StandardConverters[pcommon.Value]()["SHA256"],
+		Fact: optionalFnTestFactory[pcommon.Value](),
 	}
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Value]](ottlValue)
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Getter: func(ctx context.Context, tCtx pcommon.Value) (interface{}, error) {
+		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx.Str(), nil
 		},
-		Setter: func(ctx context.Context, tCtx pcommon.Value, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
 			tCtx.SetStr(val.(string))
 			return nil
 		},
@@ -45,15 +75,57 @@ func Test_replacePattern(t *testing.T) {
 		{
 			name:    "replace regex match (with hash function)",
 			target:  target,
-			pattern: `passwd\=[^\s]*(\s?)`,
+			pattern: `passwd\=([^\s]*)\s?`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
-				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
-					return "passwd=*** ", nil
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$1", nil
 				},
 			},
 			function: optionalArg,
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("application 0f2407f2d83337b1f757eb1754a7643ce0e8fba620bc605c54566cd6dfd838beotherarg=notsensitive key1 key2")
+				expectedValue.SetStr("application hash(sensitivedtata)otherarg=notsensitive key1 key2")
+			},
+		},
+		{
+			name:    "replace regex match (static text)",
+			target:  target,
+			pattern: `passwd\=([^\s]*)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "passwd", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application hash(passwd) otherarg=notsensitive key1 key2")
+			},
+		},
+		{
+			name:    "replace regex match (no capture group with $1 and hash function)",
+			target:  target,
+			pattern: `passwd\=[^\s]*\s?`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$1", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application hash()otherarg=notsensitive key1 key2")
+			},
+		},
+		{
+			name:    "replace regex match (no capture group or hash function with $1)",
+			target:  target,
+			pattern: `passwd\=[^\s]*\s?`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "$1", nil
+				},
+			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application otherarg=notsensitive key1 key2")
 			},
 		},
 		{
@@ -61,7 +133,7 @@ func Test_replacePattern(t *testing.T) {
 			target:  target,
 			pattern: `passwd\=[^\s]*(\s?)`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
-				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+				Getter: func(context.Context, pcommon.Value) (any, error) {
 					return "passwd=*** ", nil
 				},
 			},
@@ -75,7 +147,7 @@ func Test_replacePattern(t *testing.T) {
 			target:  target,
 			pattern: `nomatch\=[^\s]*(\s?)`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
-				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+				Getter: func(context.Context, pcommon.Value) (any, error) {
 					return "shouldnotbeinoutput", nil
 				},
 			},
@@ -89,7 +161,7 @@ func Test_replacePattern(t *testing.T) {
 			target:  target,
 			pattern: `key[^\s]*(\s?)`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
-				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+				Getter: func(context.Context, pcommon.Value) (any, error) {
 					return "**** ", nil
 				},
 			},
@@ -103,7 +175,7 @@ func Test_replacePattern(t *testing.T) {
 			target:  target,
 			pattern: `(\w+)=(\w+)`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
-				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+				Getter: func(context.Context, pcommon.Value) (any, error) {
 					return "$1:$2", nil
 				},
 			},
@@ -117,7 +189,7 @@ func Test_replacePattern(t *testing.T) {
 			target:  target,
 			pattern: `passwd\=[^\s]*(\s?)`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
-				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+				Getter: func(context.Context, pcommon.Value) (any, error) {
 					return "passwd=$$$$$$ ", nil
 				},
 			},
@@ -147,23 +219,23 @@ func Test_replacePattern(t *testing.T) {
 
 func Test_replacePattern_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardGetSetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx any, val any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
-	replacement := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+	replacement := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
 			return "{replacement}", nil
 		},
 	}
-	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 
-	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, function)
+	exprFunc, err := replacePattern[any](target, "regexp", replacement, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -174,23 +246,23 @@ func Test_replacePattern_bad_input(t *testing.T) {
 
 func Test_replacePattern_bad_function_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardGetSetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx any, val any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
-	replacement := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+	replacement := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
 	}
-	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 
-	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, function)
+	exprFunc, err := replacePattern[any](target, "regexp", replacement, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -201,55 +273,55 @@ func Test_replacePattern_bad_function_input(t *testing.T) {
 
 func Test_replacePattern_bad_function_result(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardGetSetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx any, val any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
-	replacement := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+	replacement := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
 			return nil, nil
 		},
 	}
-	ottlValue := ottl.StandardFunctionGetter[interface{}]{
+	ottlValue := ottl.StandardFunctionGetter[any]{
 		FCtx: ottl.FunctionContext{
 			Set: componenttest.NewNopTelemetrySettings(),
 		},
-		Fact: StandardConverters[interface{}]()["IsString"],
+		Fact: StandardConverters[any]()["IsString"],
 	}
-	function := ottl.NewTestingOptional[ottl.FunctionGetter[interface{}]](ottlValue)
+	function := ottl.NewTestingOptional[ottl.FunctionGetter[any]](ottlValue)
 
-	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement, function)
+	exprFunc, err := replacePattern[any](target, "regexp", replacement, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "replacement value is not a string")
+	assert.ErrorContains(t, err, "expected string but got nil")
 	assert.Nil(t, result)
 }
 
 func Test_replacePattern_get_nil(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardGetSetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx any, val any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
-	replacement := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+	replacement := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
 			return "{anything}", nil
 		},
 	}
-	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 
-	exprFunc, err := replacePattern[interface{}](target, `nomatch\=[^\s]*(\s?)`, replacement, function)
+	exprFunc, err := replacePattern[any](target, `nomatch\=[^\s]*(\s?)`, replacement, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)
@@ -258,25 +330,25 @@ func Test_replacePattern_get_nil(t *testing.T) {
 }
 
 func Test_replacePatterns_invalid_pattern(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	target := &ottl.StandardGetSetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			t.Errorf("nothing should be received in this scenario")
 			return nil, nil
 		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx any, val any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
-	replacement := &ottl.StandardStringGetter[interface{}]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+	replacement := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
 			return "{anything}", nil
 		},
 	}
-	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
+	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 
 	invalidRegexPattern := "*"
-	_, err := replacePattern[interface{}](target, invalidRegexPattern, replacement, function)
+	_, err := replacePattern[any](target, invalidRegexPattern, replacement, function)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }

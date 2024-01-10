@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,8 @@ type MetricsConfig struct {
 	ContainerBlockioIoTimeRecursive            MetricConfig `mapstructure:"container.blockio.io_time_recursive"`
 	ContainerBlockioIoWaitTimeRecursive        MetricConfig `mapstructure:"container.blockio.io_wait_time_recursive"`
 	ContainerBlockioSectorsRecursive           MetricConfig `mapstructure:"container.blockio.sectors_recursive"`
-	ContainerCPUPercent                        MetricConfig `mapstructure:"container.cpu.percent"`
+	ContainerCPULimit                          MetricConfig `mapstructure:"container.cpu.limit"`
+	ContainerCPUShares                         MetricConfig `mapstructure:"container.cpu.shares"`
 	ContainerCPUThrottlingDataPeriods          MetricConfig `mapstructure:"container.cpu.throttling_data.periods"`
 	ContainerCPUThrottlingDataThrottledPeriods MetricConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
 	ContainerCPUThrottlingDataThrottledTime    MetricConfig `mapstructure:"container.cpu.throttling_data.throttled_time"`
@@ -91,6 +92,7 @@ type MetricsConfig struct {
 	ContainerNetworkIoUsageTxPackets           MetricConfig `mapstructure:"container.network.io.usage.tx_packets"`
 	ContainerPidsCount                         MetricConfig `mapstructure:"container.pids.count"`
 	ContainerPidsLimit                         MetricConfig `mapstructure:"container.pids.limit"`
+	ContainerRestarts                          MetricConfig `mapstructure:"container.restarts"`
 	ContainerUptime                            MetricConfig `mapstructure:"container.uptime"`
 }
 
@@ -120,7 +122,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerBlockioSectorsRecursive: MetricConfig{
 			Enabled: false,
 		},
-		ContainerCPUPercent: MetricConfig{
+		ContainerCPULimit: MetricConfig{
+			Enabled: false,
+		},
+		ContainerCPUShares: MetricConfig{
 			Enabled: false,
 		},
 		ContainerCPUThrottlingDataPeriods: MetricConfig{
@@ -294,6 +299,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerPidsLimit: MetricConfig{
 			Enabled: false,
 		},
+		ContainerRestarts: MetricConfig{
+			Enabled: false,
+		},
 		ContainerUptime: MetricConfig{
 			Enabled: false,
 		},
@@ -311,7 +319,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	err := parser.Unmarshal(rac)
 	if err != nil {
 		return err
 	}

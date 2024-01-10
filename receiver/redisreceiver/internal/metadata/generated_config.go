@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	err := parser.Unmarshal(rac)
 	if err != nil {
 		return err
 	}
@@ -189,13 +189,21 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for redis resource attributes.
 type ResourceAttributesConfig struct {
-	RedisVersion ResourceAttributeConfig `mapstructure:"redis.version"`
+	RedisVersion  ResourceAttributeConfig `mapstructure:"redis.version"`
+	ServerAddress ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort    ResourceAttributeConfig `mapstructure:"server.port"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		RedisVersion: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ServerAddress: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServerPort: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }
