@@ -267,7 +267,6 @@ receiver/zipkinreceiver/                                 @open-telemetry/collect
 receiver/zookeeperreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 
 testbed/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-testbed/mockdatareceivers/mockawsxrayreceiver/           @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 testbed/mockdatasenders/mockdatadogagentexporter/        @open-telemetry/collector-contrib-approvers @boostchicken
 
 #####################################################
