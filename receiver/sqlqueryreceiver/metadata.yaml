@@ -8,3 +8,6 @@ status:
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
     active: [dmitryax, pmcollins]
+
+tests:
+  config:

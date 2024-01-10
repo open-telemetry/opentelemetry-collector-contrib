@@ -5,6 +5,7 @@ package kafkareceiver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -33,9 +35,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshalers()}
 	r, err := f.createTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+	require.NoError(t, err)
 	// no available broker
-	require.Error(t, err)
-	assert.Nil(t, r)
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestCreateTracesReceiver_error(t *testing.T) {
@@ -77,9 +79,9 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
 	r, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+	require.NoError(t, err)
 	// no available broker
-	require.Error(t, err)
-	assert.Nil(t, r)
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestCreateMetricsReceiver_error(t *testing.T) {
@@ -119,11 +121,11 @@ func TestCreateLogsReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
+	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers("Test Version", zap.NewNop())}
 	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+	require.NoError(t, err)
 	// no available broker
-	require.Error(t, err)
-	assert.Nil(t, r)
+	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestCreateLogsReceiver_error(t *testing.T) {
@@ -131,10 +133,32 @@ func TestCreateLogsReceiver_error(t *testing.T) {
 	cfg.ProtocolVersion = "2.0.0"
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
-	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
+	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers("Test Version", zap.NewNop())}
 	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
+}
+
+func TestGetLogsUnmarshaler_encoding_text_error(t *testing.T) {
+	tests := []struct {
+		name     string
+		encoding string
+	}{
+		{
+			name:     "text encoding has typo",
+			encoding: "text_uft-8",
+		},
+		{
+			name:     "text encoding is a random string",
+			encoding: "text_vnbqgoba156",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers("Test Version", zap.NewNop()))
+			assert.ErrorContains(t, err, fmt.Sprintf("unsupported encoding '%v'", test.encoding[5:]))
+		})
+	}
 }
 
 func TestWithLogsUnmarshalers(t *testing.T) {

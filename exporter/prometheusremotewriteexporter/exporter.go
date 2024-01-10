@@ -21,9 +21,9 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
@@ -42,7 +42,7 @@ type prwExporter struct {
 	maxBatchSizeBytes int
 	clientSettings    *confighttp.HTTPClientSettings
 	settings          component.TelemetrySettings
-	retrySettings     exporterhelper.RetrySettings
+	retrySettings     configretry.BackOffConfig
 	wal               *prweWAL
 	exporterSettings  prometheusremotewrite.Settings
 }
@@ -70,7 +70,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:    &cfg.HTTPClientSettings,
 		settings:          set.TelemetrySettings,
-		retrySettings:     cfg.RetrySettings,
+		retrySettings:     cfg.BackOffConfig,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -226,15 +226,24 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
+	// Uses proto.Marshal to convert the WriteRequest into bytes array
+	data, errMarshal := proto.Marshal(writeReq)
+	if errMarshal != nil {
+		return consumererror.NewPermanent(errMarshal)
+	}
+	buf := make([]byte, len(data), cap(data))
+	compressedData := snappy.Encode(buf, data)
+
 	// executeFunc can be used for backoff and non backoff scenarios.
 	executeFunc := func() error {
-		// Uses proto.Marshal to convert the WriteRequest into bytes array
-		data, err := proto.Marshal(writeReq)
-		if err != nil {
-			return backoff.Permanent(consumererror.NewPermanent(err))
+		// check there was no timeout in the component level to avoid retries
+		// to continue to run after a timeout
+		select {
+		case <-ctx.Done():
+			return backoff.Permanent(ctx.Err())
+		default:
+			// continue
 		}
-		buf := make([]byte, len(data), cap(data))
-		compressedData := snappy.Encode(buf, data)
 
 		// Create the HTTP POST request to send to the endpoint
 		req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))

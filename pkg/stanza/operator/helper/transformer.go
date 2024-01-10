@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr/vm"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"

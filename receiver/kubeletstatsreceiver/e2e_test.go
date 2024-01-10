@@ -31,6 +31,7 @@ import (
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 
 func TestE2E(t *testing.T) {
+
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
@@ -39,6 +40,10 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, err)
 	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
 	require.NoError(t, err)
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, dynamicClient, testID)
@@ -49,7 +54,6 @@ func TestE2E(t *testing.T) {
 		}
 	}()
 
-	metricsConsumer := new(consumertest.MetricsSink)
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
@@ -66,17 +70,19 @@ func TestE2E(t *testing.T) {
 	)
 }
 
-func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
+func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
 
 	rcvr, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mc)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, err, "failed creating metrics receiver")
-	defer func() {
+	return func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
-	}()
+	}
+}
 
+func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
 	timeoutMinutes := 3
 	require.Eventuallyf(t, func() bool {
 		return len(mc.AllMetrics()) > entriesNum

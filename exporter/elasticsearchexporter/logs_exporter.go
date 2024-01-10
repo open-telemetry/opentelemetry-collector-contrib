@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -18,9 +19,10 @@ import (
 type elasticsearchLogsExporter struct {
 	logger *zap.Logger
 
-	index        string
-	dynamicIndex bool
-	maxAttempts  int
+	index          string
+	logstashFormat LogstashFormatSettings
+	dynamicIndex   bool
+	maxAttempts    int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -62,10 +64,11 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		client:      client,
 		bulkIndexer: bulkIndexer,
 
-		index:        indexStr,
-		dynamicIndex: cfg.LogsDynamicIndex.Enabled,
-		maxAttempts:  maxAttempts,
-		model:        model,
+		index:          indexStr,
+		dynamicIndex:   cfg.LogsDynamicIndex.Enabled,
+		maxAttempts:    maxAttempts,
+		model:          model,
+		logstashFormat: cfg.LogstashFormat,
 	}
 	return esLogsExp, nil
 }
@@ -107,6 +110,14 @@ func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource 
 		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, record)
 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
+		if err != nil {
+			return err
+		}
+		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeLog(resource, record, scope)

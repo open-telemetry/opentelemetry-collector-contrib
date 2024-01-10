@@ -14,12 +14,12 @@ import (
 	"github.com/DataDog/sketches-go/ddsketch"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
@@ -29,7 +29,7 @@ func TestProcessorStart(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("fail", func(t *testing.T) {
-		p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockTracesConsumer{})
+		p, err := newProcessor(ctx, componenttest.NewNopTelemetrySettings(), createDefaultConfig(), &mockTracesConsumer{})
 		require.NoError(t, err)
 		defer p.Shutdown(ctx) //nolint:errcheck
 		require.True(t, p.Capabilities().MutatesData)
@@ -42,7 +42,7 @@ func TestProcessorStart(t *testing.T) {
 	})
 
 	t.Run("fail/2", func(t *testing.T) {
-		p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockTracesConsumer{})
+		p, err := newProcessor(ctx, componenttest.NewNopTelemetrySettings(), createDefaultConfig(), &mockTracesConsumer{})
 		require.NoError(t, err)
 		defer p.Shutdown(ctx) //nolint:errcheck
 		err = p.Start(ctx, &mockHost{
@@ -56,7 +56,7 @@ func TestProcessorStart(t *testing.T) {
 	})
 
 	t.Run("succeed/0", func(t *testing.T) {
-		p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockTracesConsumer{})
+		p, err := newProcessor(ctx, componenttest.NewNopTelemetrySettings(), createDefaultConfig(), &mockTracesConsumer{})
 		require.NoError(t, err)
 		defer p.Shutdown(ctx) //nolint:errcheck
 		err = p.Start(ctx, &mockHost{
@@ -69,7 +69,7 @@ func TestProcessorStart(t *testing.T) {
 	})
 
 	t.Run("succeed/1", func(t *testing.T) {
-		p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockTracesConsumer{})
+		p, err := newProcessor(ctx, componenttest.NewNopTelemetrySettings(), createDefaultConfig(), &mockTracesConsumer{})
 		require.NoError(t, err)
 		defer p.Shutdown(ctx) //nolint:errcheck
 		err = p.Start(ctx, &mockHost{
@@ -82,7 +82,7 @@ func TestProcessorStart(t *testing.T) {
 	})
 
 	t.Run("succeed/2", func(t *testing.T) {
-		lp, err := newProcessor(ctx, zap.NewNop(), &Config{MetricsExporter: component.NewIDWithName("datadog", "2")}, &mockTracesConsumer{})
+		lp, err := newProcessor(ctx, componenttest.NewNopTelemetrySettings(), &Config{MetricsExporter: component.NewIDWithName("datadog", "2")}, &mockTracesConsumer{})
 		require.NoError(t, err)
 		defer lp.Shutdown(ctx) //nolint:errcheck
 		err = lp.Start(ctx, &mockHost{
@@ -99,7 +99,7 @@ func TestProcessorStart(t *testing.T) {
 func TestProcessorIngest(t *testing.T) {
 	var mockConsumer mockTracesConsumer
 	ctx := context.Background()
-	p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockConsumer)
+	p, err := newProcessor(ctx, componenttest.NewNopTelemetrySettings(), createDefaultConfig(), &mockConsumer)
 	require.NoError(t, err)
 	out := make(chan *pb.StatsPayload, 1)
 	ing := &mockIngester{Out: out}

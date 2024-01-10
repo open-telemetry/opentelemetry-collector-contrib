@@ -7,3 +7,6 @@ status:
   distributions: [sumo]
   codeowners:
     active: [MovieStoreGuy]
+
+tests:
+  config:
