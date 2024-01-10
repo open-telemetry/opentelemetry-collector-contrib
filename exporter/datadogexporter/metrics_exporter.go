@@ -114,7 +114,7 @@ func newMetricsExporter(
 		ctx:               ctx,
 		tr:                tr,
 		scrubber:          scrubber,
-		retrier:           clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		retrier:           clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
 		onceMetadata:      onceMetadata,
 		sourceProvider:    sourceProvider,
 		getPushTime:       func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
