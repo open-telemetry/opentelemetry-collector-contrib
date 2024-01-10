@@ -55,10 +55,6 @@ func TestIntegrationV6(t *testing.T) {
 func TestIntegrationV7Cluster(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		scraperinttest.WithNetworkRequest(testcontainers.NetworkRequest{
-			Name:           "redis",
-			CheckDuplicate: true,
-		}),
 		scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
 			ExposedPorts: []string{
 				redisPort,
@@ -74,7 +70,6 @@ func TestIntegrationV7Cluster(t *testing.T) {
 				Dockerfile: "Dockerfile.cluster",
 			},
 			WaitingFor: wait.ForListeningPort("6385").WithStartupTimeout(30 * time.Second),
-			Networks:   []string{"redis"},
 		}),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
