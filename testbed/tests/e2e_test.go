@@ -45,10 +45,9 @@ func TestIdleMode(t *testing.T) {
 		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 20, ExpectedMaxRAM: 83}),
 	)
 	tc.StartAgent()
+	t.Cleanup(tc.Stop)
 
 	tc.Sleep(tc.Duration)
-
-	tc.Stop()
 }
 
 const ballastConfig = `
@@ -81,6 +80,8 @@ func TestBallastMemory(t *testing.T) {
 			cp := testbed.NewChildProcessCollector()
 			cleanup, err := cp.PrepareConfig(ballastCfg)
 			require.NoError(t, err)
+			t.Cleanup(cleanup)
+
 			tc := testbed.NewTestCase(
 				t,
 				dataProvider,
@@ -99,6 +100,7 @@ func TestBallastMemory(t *testing.T) {
 				),
 			)
 			tc.StartAgent()
+			t.Cleanup(tc.Stop)
 
 			var rss, vms uint32
 			// It is possible that the process is not ready or the ballast code path
@@ -128,9 +130,6 @@ func TestBallastMemory(t *testing.T) {
 			} else {
 				assert.LessOrEqual(t, float32(rss), lenientMax, rssTooHigh)
 			}
-
-			cleanup()
-			tc.Stop()
 		})
 	}
 }
