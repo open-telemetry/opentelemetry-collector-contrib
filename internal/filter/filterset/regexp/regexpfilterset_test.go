@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -64,7 +65,7 @@ func TestRegexpMatches(t *testing.T) {
 	fs, err := NewFilterSet(validRegexpFilters, &Config{})
 	assert.NotNil(t, fs)
 	assert.NoError(t, err)
-	assert.False(t, fs.cacheEnabled)
+	assert.Nil(t, fs.cache)
 
 	matches := []string{
 		"full/name/match",
@@ -105,9 +106,9 @@ func TestRegexpDeDup(t *testing.T) {
 		"prefix/.*",
 	}
 	fs, err := NewFilterSet(dupRegexpFilters, &Config{})
+	require.NoError(t, err)
 	assert.NotNil(t, fs)
-	assert.NoError(t, err)
-	assert.False(t, fs.cacheEnabled)
+	assert.Nil(t, fs.cache)
 	assert.EqualValues(t, 1, len(fs.regexes))
 }
 
@@ -117,9 +118,9 @@ func TestRegexpMatchesCaches(t *testing.T) {
 		CacheEnabled:       true,
 		CacheMaxNumEntries: 0,
 	})
+	require.NoError(t, err)
 	assert.NotNil(t, fs)
-	assert.NoError(t, err)
-	assert.True(t, fs.cacheEnabled)
+	assert.NotNil(t, fs.cache)
 
 	matches := []string{
 		"full/name/match",
@@ -140,7 +141,7 @@ func TestRegexpMatchesCaches(t *testing.T) {
 			assert.True(t, fs.Matches(m))
 
 			matched, ok := fs.cache.Get(m)
-			assert.True(t, matched.(bool) && ok)
+			assert.True(t, matched && ok)
 		})
 	}
 
@@ -155,7 +156,7 @@ func TestRegexpMatchesCaches(t *testing.T) {
 			assert.False(t, fs.Matches(m))
 
 			matched, ok := fs.cache.Get(m)
-			assert.True(t, !matched.(bool) && ok)
+			assert.True(t, !matched && ok)
 		})
 	}
 }
@@ -166,8 +167,9 @@ func TestWithCacheSize(t *testing.T) {
 		CacheEnabled:       true,
 		CacheMaxNumEntries: size,
 	})
+	require.NoError(t, err)
 	assert.NotNil(t, fs)
-	assert.NoError(t, err)
+	assert.NotNil(t, fs.cache)
 
 	matches := []string{
 		"prefix/test/match",

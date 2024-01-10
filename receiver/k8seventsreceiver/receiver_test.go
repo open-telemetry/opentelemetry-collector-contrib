@@ -16,17 +16,21 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
-	client := fake.NewSimpleClientset()
+	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewSimpleClientset(), nil
+	}
 	r, err := newReceiver(
 		receivertest.NewNopCreateSettings(),
 		rCfg,
 		consumertest.NewNop(),
-		client,
 	)
 
 	require.NoError(t, err)
@@ -39,7 +43,6 @@ func TestNewReceiver(t *testing.T) {
 		receivertest.NewNopCreateSettings(),
 		rCfg,
 		consumertest.NewNop(),
-		client,
 	)
 
 	require.NoError(t, err)
@@ -50,13 +53,11 @@ func TestNewReceiver(t *testing.T) {
 
 func TestHandleEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
-	client := fake.NewSimpleClientset()
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
 		receivertest.NewNopCreateSettings(),
 		rCfg,
 		sink,
-		client,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
@@ -70,13 +71,11 @@ func TestHandleEvent(t *testing.T) {
 
 func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
-	client := fake.NewSimpleClientset()
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
 		receivertest.NewNopCreateSettings(),
 		rCfg,
 		sink,
-		client,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
@@ -108,12 +107,10 @@ func TestGetEventTimestamp(t *testing.T) {
 
 func TestAllowEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
-	client := fake.NewSimpleClientset()
 	r, err := newReceiver(
 		receivertest.NewNopCreateSettings(),
 		rCfg,
 		consumertest.NewNop(),
-		client,
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)

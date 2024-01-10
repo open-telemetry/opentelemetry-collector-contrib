@@ -3,7 +3,6 @@ include ./Makefile.Common
 RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
-OTEL_RC_VERSION=main
 OTEL_STABLE_VERSION=main
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
@@ -233,10 +232,17 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
-.PHONY: gengithub
-gengithub:
+.PHONY: githubgen-install
+githubgen-install:
 	cd cmd/githubgen && $(GOCMD) install .
+
+.PHONY: gengithub
+gengithub: githubgen-install
 	githubgen
+
+.PHONY: gendistributions
+gendistributions: githubgen-install
+	githubgen distributions
 
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
@@ -286,14 +292,13 @@ telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
-.PHONY: update-dep
-update-dep:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="updatedep"
-	$(MAKE) otelcontribcol
-
 .PHONY: update-otel
-update-otel:
-	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION) RC_VERSION=$(OTEL_RC_VERSION) STABLE_VERSION=$(OTEL_STABLE_VERSION)
+update-otel:$(MULTIMOD)
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
+	git add . && git commit -s -m "[chore] multimod update stable modules"
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
+	git add . && git commit -s -m "[chore] multimod update beta modules"
+	$(MAKE) gotidy
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -305,7 +310,7 @@ otel-from-tree:
 	# 2. Run `make otel-from-tree` (only need to run it once to remap go modules)
 	# 3. You can now build contrib and it will use your local otel core changes.
 	# 4. Before committing/pushing your contrib changes, undo by running `make otel-from-lib`.
-	$(MAKE) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(SRC_ROOT)/../opentelemetry-collector"
+	$(MAKE) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(SRC_PARENT_DIR)/opentelemetry-collector"
 
 .PHONY: otel-from-lib
 otel-from-lib:
@@ -315,6 +320,7 @@ otel-from-lib:
 .PHONY: build-examples
 build-examples:
 	docker-compose -f examples/demo/docker-compose.yaml build
+	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker-compose -f ../docker-compose.yaml build
 	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package

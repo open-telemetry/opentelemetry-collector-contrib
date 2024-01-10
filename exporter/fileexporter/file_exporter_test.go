@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -484,12 +485,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 
 // tempFileName provides a temporary file name for testing.
 func tempFileName(t *testing.T) string {
-	tmpfile, err := os.CreateTemp("", "*")
-	require.NoError(t, err)
-	require.NoError(t, tmpfile.Close())
-	socket := tmpfile.Name()
-	require.NoError(t, os.Remove(socket))
-	return socket
+	return filepath.Join(t.TempDir(), "fileexporter_test.tmp")
 }
 
 // errorWriter is an io.Writer that will return an error all ways

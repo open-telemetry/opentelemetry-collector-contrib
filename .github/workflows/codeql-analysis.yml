@@ -7,6 +7,7 @@ on:
 jobs:
   CodeQL-Build:
     runs-on: macos-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     env:
       # Force CodeQL to run the extraction on the files compiled by our custom
       # build command, as opposed to letting the autobuilder figure it out.
@@ -15,14 +16,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: go
 
@@ -31,6 +32,6 @@ jobs:
           make otelcontribcol
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         timeout-minutes: 60
 

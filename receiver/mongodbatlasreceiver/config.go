@@ -12,8 +12,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -32,7 +32,7 @@ type Config struct {
 	Alerts                                  AlertConfig                   `mapstructure:"alerts"`
 	Events                                  *EventsConfig                 `mapstructure:"events"`
 	Logs                                    LogConfig                     `mapstructure:"logs"`
-	RetrySettings                           exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	BackOffConfig                           configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
 	StorageID                               *component.ID                 `mapstructure:"storage"`
 }
 

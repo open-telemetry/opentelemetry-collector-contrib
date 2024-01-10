@@ -8,3 +8,7 @@ status:
   codeowners:
     active: ["atoulme", "shalper2"]
     emeritus:
+
+tests:
+  config:
+    endpoint: 127.0.0.1:8088

@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -24,10 +25,10 @@ func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 		}},
 	}
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithNopTraces(component.NewIDWithName(component.DataTypeTraces, "default")),
-		connectortest.WithNopTraces(component.NewIDWithName(component.DataTypeTraces, "0")),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		component.NewIDWithName(component.DataTypeTraces, "default"): consumertest.NewNop(),
+		component.NewIDWithName(component.DataTypeTraces, "0"):       consumertest.NewNop(),
+	})
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(context.Background(),

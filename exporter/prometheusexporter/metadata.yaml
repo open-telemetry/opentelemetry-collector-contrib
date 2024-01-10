@@ -12,5 +12,6 @@ status:
   - observiq
   - redhat
   - sumo
+  - liatrio
   codeowners:
     active: [Aneurysm9]

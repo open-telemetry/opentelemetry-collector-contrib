@@ -610,7 +610,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 		Code:        "Error",
 		Description: "custom error message",
 	}
-	// This test numer two include rule for applying rule only for status code 400
+	// This test number two include rule for applying rule only for status code 400
 	oCfg.Include = &filterconfig.MatchProperties{
 		Config: filterset.Config{
 			MatchType: filterset.Strict,
@@ -630,7 +630,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 		outputStatusDescription string
 	}{
 		{
-			// without attribiutes - should not apply rule and leave status code as it is
+			// without attributes - should not apply rule and leave status code as it is
 			inputStatusCode:  ptrace.StatusCodeOk,
 			outputStatusCode: ptrace.StatusCodeOk,
 		},
