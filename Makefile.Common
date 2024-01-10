@@ -20,6 +20,8 @@ endif
 
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
+# SRC_PARENT_DIR is the absolute path of source tree's parent directory
+SRC_PARENT_DIR :=  $(shell dirname $(SRC_ROOT))
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
