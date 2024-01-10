@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.92.0
 	go.opentelemetry.io/collector/extension v0.92.0
 	go.opentelemetry.io/collector/extension/auth v0.92.0
-	go.opentelemetry.io/collector/pdata v1.0.1
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240110091511-bf804d6c4ecc
 	go.opentelemetry.io/collector/receiver v0.92.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.18.0
@@ -47,7 +47,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240110091511-bf804d6c4ecc // indirect
 	// indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0

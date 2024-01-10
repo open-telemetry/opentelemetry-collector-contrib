@@ -647,8 +647,8 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.92.0 // indirect
 	go.opentelemetry.io/collector/extension/ballastextension v0.92.0 // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.92.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240110091511-bf804d6c4ecc // indirect
 	go.opentelemetry.io/collector/processor v0.92.0 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.92.0 // indirect
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.92.0 // indirect
