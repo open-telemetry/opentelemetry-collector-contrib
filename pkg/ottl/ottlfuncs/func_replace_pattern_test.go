@@ -198,6 +198,20 @@ func Test_replacePattern(t *testing.T) {
 				expectedValue.SetStr("application passwd=$$$ otherarg=notsensitive key1 key2")
 			},
 		},
+		{
+			name:    "replacement with literal hash",
+			target:  target,
+			pattern: `passwd\=([^\s]*)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "passwd=$1", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application passwd=hash(sensitivedtata) otherarg=notsensitive key1 key2")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

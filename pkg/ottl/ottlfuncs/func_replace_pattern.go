@@ -39,11 +39,19 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 
 func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string) (string, error) {
 	var updatedString string
+	var replacementGroup string
 	updatedString = originalValStr
 	submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
+	// Extract capture group from replacement value to apply the function on it
+	r := regexp.MustCompile(`(\$[0-9]+)`)
+	matches := r.FindStringSubmatch(replacementVal)
+	replacementGroup = replacementVal
+	if len(matches) > 1 {
+		replacementGroup = matches[1]
+	}
 	for _, submatch := range submatches {
 		fullMatch := originalValStr[submatch[0]:submatch[1]]
-		result := compiledPattern.ExpandString([]byte{}, replacementVal, originalValStr, submatch)
+		result := compiledPattern.ExpandString([]byte{}, replacementGroup, originalValStr, submatch)
 		fnVal := fn.Get()
 		replaceValGetter := ottl.StandardStringGetter[K]{
 			Getter: func(context.Context, K) (any, error) {
@@ -62,7 +70,13 @@ func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern
 		if !ok {
 			return "", fmt.Errorf("the replacement value must be a string")
 		}
-		updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementValStr)
+		if len(matches) > 1 {
+			// Replace the capture group in the replacement value with the result of the function
+			replacementValStr = r.ReplaceAllString(replacementVal, replacementValStr)
+			updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementValStr)
+		} else {
+			updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementValStr)
+		}
 	}
 	return updatedString, nil
 }
