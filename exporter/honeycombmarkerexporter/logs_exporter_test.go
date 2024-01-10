@@ -20,10 +20,11 @@ import (
 
 func TestExportMarkers(t *testing.T) {
 	tests := []struct {
-		name         string
-		config       Config
-		attributeMap map[string]string
-		expectedURL  string
+		name           string
+		config         Config
+		attributeMap   map[string]string
+		expectedAPIKey string
+		expectedURL    string
 	}{
 		{
 			name: "all fields",
@@ -48,7 +49,8 @@ func TestExportMarkers(t *testing.T) {
 				"url":     "https://api.testhost.io",
 				"type":    "test-type",
 			},
-			expectedURL: "/1/markers/test-dataset",
+			expectedAPIKey: "test-apikey",
+			expectedURL:    "/1/markers/test-dataset",
 		},
 		{
 			name: "no message key",
@@ -71,7 +73,8 @@ func TestExportMarkers(t *testing.T) {
 				"url":  "https://api.testhost.io",
 				"type": "test-type",
 			},
-			expectedURL: "/1/markers/test-dataset",
+			expectedAPIKey: "test-apikey",
+			expectedURL:    "/1/markers/test-dataset",
 		},
 		{
 			name: "no url",
@@ -94,7 +97,8 @@ func TestExportMarkers(t *testing.T) {
 				"message": "this is a test message",
 				"type":    "test-type",
 			},
-			expectedURL: "/1/markers/test-dataset",
+			expectedAPIKey: "test-apikey",
+			expectedURL:    "/1/markers/test-dataset",
 		},
 		{
 			name: "no dataset_slug",
@@ -114,7 +118,8 @@ func TestExportMarkers(t *testing.T) {
 			attributeMap: map[string]string{
 				"type": "test-type",
 			},
-			expectedURL: "/1/markers/__all__",
+			expectedAPIKey: "test-apikey",
+			expectedURL:    "/1/markers/__all__",
 		},
 	}
 
@@ -126,15 +131,15 @@ func TestExportMarkers(t *testing.T) {
 
 				require.NoError(t, err)
 
-				assert.Equal(t, len(decodedBody), len(tt.attributeMap))
+				assert.Equal(t, len(tt.attributeMap), len(decodedBody))
 
 				for attr := range tt.attributeMap {
-					assert.Equal(t, decodedBody[attr], tt.attributeMap[attr])
+					assert.Equal(t, tt.attributeMap[attr], decodedBody[attr])
 				}
 				assert.Contains(t, req.URL.Path, tt.expectedURL)
 
 				apiKey := req.Header.Get(honeycombTeam)
-				assert.Equal(t, apiKey, string(tt.config.APIKey))
+				assert.Equal(t, tt.expectedAPIKey, apiKey)
 
 				userAgent := req.Header.Get(userAgentHeaderKey)
 				assert.NotEmpty(t, userAgent)
