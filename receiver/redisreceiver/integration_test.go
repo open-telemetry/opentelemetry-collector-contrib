@@ -78,6 +78,7 @@ func TestIntegrationV7Cluster(t *testing.T) {
 				// However, we're using socat and some port forwarding in the Dockerfile to ensure this always points
 				// to a replica node, so in practice any failures due to cluster node role changes is unlikely
 				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6385"))
+				rCfg.MetricsBuilderConfig.Metrics.RedisReplicationReplicaOffset.Enabled = true
 			}),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),

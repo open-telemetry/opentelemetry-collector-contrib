@@ -56,8 +56,8 @@ type MetricsConfig struct {
 	RedisRdbChangesSinceLastSave           MetricConfig `mapstructure:"redis.rdb.changes_since_last_save"`
 	RedisReplicationBacklogFirstByteOffset MetricConfig `mapstructure:"redis.replication.backlog_first_byte_offset"`
 	RedisReplicationOffset                 MetricConfig `mapstructure:"redis.replication.offset"`
+	RedisReplicationReplicaOffset          MetricConfig `mapstructure:"redis.replication.replica_offset"`
 	RedisRole                              MetricConfig `mapstructure:"redis.role"`
-	RedisSlaveReplicationOffset            MetricConfig `mapstructure:"redis.slave.replication.offset"`
 	RedisSlavesConnected                   MetricConfig `mapstructure:"redis.slaves.connected"`
 	RedisUptime                            MetricConfig `mapstructure:"redis.uptime"`
 }
@@ -157,10 +157,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisReplicationOffset: MetricConfig{
 			Enabled: true,
 		},
-		RedisRole: MetricConfig{
+		RedisReplicationReplicaOffset: MetricConfig{
 			Enabled: false,
 		},
-		RedisSlaveReplicationOffset: MetricConfig{
+		RedisRole: MetricConfig{
 			Enabled: false,
 		},
 		RedisSlavesConnected: MetricConfig{

@@ -20,14 +20,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1"
+                - asInt: "2"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{client}'
           - description: Biggest input buffer among current client connections
             gauge:
               dataPoints:
-                - asInt: "20480"
+                - asInt: "24"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.clients.max_input_buffer
@@ -53,7 +53,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "15"
+                - asInt: "16"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -83,7 +83,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 0.019543
+                - asDouble: 0.015728
                   attributes:
                     - key: state
                       value:
@@ -97,14 +97,14 @@ resourceMetrics:
                         stringValue: sys_children
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 0.017978
+                - asDouble: 0.015961
                   attributes:
                     - key: state
                       value:
                         stringValue: sys_main_thread
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 0.004598
+                - asDouble: 0.013353
                   attributes:
                     - key: state
                       value:
@@ -118,7 +118,7 @@ resourceMetrics:
                         stringValue: user_children
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asDouble: 0.005992
+                - asDouble: 0.012769
                   attributes:
                     - key: state
                       value:
@@ -178,7 +178,7 @@ resourceMetrics:
           - description: Ratio between used_memory_rss and used_memory
             gauge:
               dataPoints:
-                - asDouble: 4.17
+                - asDouble: 4.54
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.memory.fragmentation_ratio
@@ -194,7 +194,7 @@ resourceMetrics:
           - description: Peak memory consumed by Redis (in bytes)
             gauge:
               dataPoints:
-                - asInt: "1889616"
+                - asInt: "1894880"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.memory.peak
@@ -202,7 +202,7 @@ resourceMetrics:
           - description: Number of bytes that Redis allocated as seen by the operating system
             gauge:
               dataPoints:
-                - asInt: "7512064"
+                - asInt: "8196096"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.memory.rss
@@ -210,7 +210,7 @@ resourceMetrics:
           - description: Total number of bytes allocated by Redis using its allocator
             gauge:
               dataPoints:
-                - asInt: "1889616"
+                - asInt: "1894880"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.memory.used
@@ -220,7 +220,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "605"
+                - asInt: "877"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -230,7 +230,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "13178"
+                - asInt: "13421"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -247,7 +247,7 @@ resourceMetrics:
           - description: The master offset of the replication backlog buffer
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asInt: "1"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.replication.backlog_first_byte_offset
@@ -255,7 +255,7 @@ resourceMetrics:
           - description: The server's current replication offset
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asInt: "14"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: redis.replication.offset
@@ -263,10 +263,10 @@ resourceMetrics:
           - description: Offset for redis replica
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asInt: "14"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: redis.slave.replication.offset
+            name: redis.replication.replica_offset
             unit: By
           - description: Number of connected replicas
             name: redis.slaves.connected
@@ -282,7 +282,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "6"
+                - asInt: "13"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true

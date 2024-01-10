@@ -63,9 +63,9 @@ all_set:
       enabled: true
     redis.replication.offset:
       enabled: true
-    redis.role:
+    redis.replication.replica_offset:
       enabled: true
-    redis.slave.replication.offset:
+    redis.role:
       enabled: true
     redis.slaves.connected:
       enabled: true
@@ -142,9 +142,9 @@ none_set:
       enabled: false
     redis.replication.offset:
       enabled: false
-    redis.role:
+    redis.replication.replica_offset:
       enabled: false
-    redis.slave.replication.offset:
+    redis.role:
       enabled: false
     redis.slaves.connected:
       enabled: false

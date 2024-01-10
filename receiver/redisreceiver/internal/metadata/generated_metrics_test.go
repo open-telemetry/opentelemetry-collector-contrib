@@ -176,10 +176,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisReplicationOffsetDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisRoleDataPoint(ts, 1, AttributeRoleReplica)
+			mb.RecordRedisReplicationReplicaOffsetDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisSlaveReplicationOffsetDataPoint(ts, 1)
+			mb.RecordRedisRoleDataPoint(ts, 1, AttributeRoleReplica)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -641,6 +641,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.replication.replica_offset":
+					assert.False(t, validatedMetrics["redis.replication.replica_offset"], "Found a duplicate in the metrics slice: redis.replication.replica_offset")
+					validatedMetrics["redis.replication.replica_offset"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Offset for redis replica", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "redis.role":
 					assert.False(t, validatedMetrics["redis.role"], "Found a duplicate in the metrics slice: redis.role")
 					validatedMetrics["redis.role"] = true
@@ -658,18 +670,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("role")
 					assert.True(t, ok)
 					assert.EqualValues(t, "replica", attrVal.Str())
-				case "redis.slave.replication.offset":
-					assert.False(t, validatedMetrics["redis.slave.replication.offset"], "Found a duplicate in the metrics slice: redis.slave.replication.offset")
-					validatedMetrics["redis.slave.replication.offset"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Offset for redis replica", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "redis.slaves.connected":
 					assert.False(t, validatedMetrics["redis.slaves.connected"], "Found a duplicate in the metrics slice: redis.slaves.connected")
 					validatedMetrics["redis.slaves.connected"] = true
