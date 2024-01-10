@@ -414,7 +414,6 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 			annoVal := annotationValue(value)
 			indexed := indexAllAttrs || indexedKeys[key]
 			if annoVal != nil && indexed {
-				key = fixAnnotationKey(key)
 				annotations[key] = annoVal
 			} else {
 				metaVal := value.AsRaw()
@@ -428,7 +427,6 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 
 	if indexAllAttrs {
 		for key, value := range attributes {
-			key = fixAnnotationKey(key)
 			annoVal := annotationValue(value)
 			if annoVal != nil {
 				annotations[key] = annoVal
@@ -438,7 +436,6 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		for key, value := range attributes {
 			switch {
 			case indexedKeys[key]:
-				key = fixAnnotationKey(key)
 				annoVal := annotationValue(value)
 				if annoVal != nil {
 					annotations[key] = annoVal
@@ -504,22 +501,4 @@ func fixSegmentName(name string) string {
 	}
 
 	return name
-}
-
-// fixAnnotationKey removes any invalid characters from the annotaiton key.  AWS X-Ray defines
-// the list of valid characters here:
-// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-func fixAnnotationKey(key string) string {
-	return strings.Map(func(r rune) rune {
-		switch {
-		case '0' <= r && r <= '9':
-			fallthrough
-		case 'A' <= r && r <= 'Z':
-			fallthrough
-		case 'a' <= r && r <= 'z':
-			return r
-		default:
-			return '_'
-		}
-	}, key)
 }
