@@ -69,7 +69,7 @@ func (f *metricsFailover) Shutdown(_ context.Context) error {
 
 func newMetricsToMetrics(set connector.CreateSettings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
 	config := cfg.(*Config)
-	mr, ok := metrics.(connector.MetricsRouter)
+	mr, ok := metrics.(connector.MetricsRouterAndConsumer)
 	if !ok {
 		return nil, errors.New("consumer is not of type MetricsRouter")
 	}

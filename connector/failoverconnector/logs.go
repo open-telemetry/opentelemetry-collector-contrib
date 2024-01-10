@@ -69,7 +69,7 @@ func (f *logsFailover) Shutdown(_ context.Context) error {
 
 func newLogsToLogs(set connector.CreateSettings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
 	config := cfg.(*Config)
-	lr, ok := logs.(connector.LogsRouter)
+	lr, ok := logs.(connector.LogsRouterAndConsumer)
 	if !ok {
 		return nil, errors.New("consumer is not of type LogsRouter")
 	}
