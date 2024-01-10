@@ -257,16 +257,6 @@ rules:
     - get
     - list
     - watch
-# (optional) HierarchicalResourceQuota
-# https://github.com/kubernetes-sigs/hierarchical-namespaces
-- apiGroups:
-    - hnc.x-k8s.io
-  resources:
-    - hierarchicalresourcequotas
-  verbs:
-    - get
-    - list
-    - watch
 EOF
 ```
 
@@ -352,3 +342,35 @@ Add the following rules to your ClusterRole:
   - watch
 ```
 
+### HierarchicalResourceQuota
+
+You can enable [HierarchicalResourceQuota](https://github.com/kubernetes-sigs/hierarchical-namespaces) support to collect aggregate quota restrictions as metrics.
+
+Example:
+
+```yaml
+  k8s_cluster:
+    resource_attributes:
+      k8s.hierarchicalresourcequota.name:
+        enabled: true
+      k8s.hierarchicalresourcequota.uid:
+        enabled: true
+    metrics:
+      k8s.hierarchical_resource_quota.hard_limit:
+        enabled: true
+      k8s.hierarchical_resource_quota.used:
+        enabled: true
+```
+
+Add the following rules to your ClusterRole:
+
+```yaml
+- apiGroups:
+    - hnc.x-k8s.io
+  resources:
+    - hierarchicalresourcequotas
+  verbs:
+    - get
+    - list
+    - watch
+```
