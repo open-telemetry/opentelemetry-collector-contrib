@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka"
 
 import (
 	"crypto/sha256"
@@ -11,7 +11,7 @@ import (
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/awsmsk"
 )
 
 // Authentication defines authentication.
@@ -51,7 +51,7 @@ type AWSMSKConfig struct {
 	BrokerAddr string `mapstructure:"broker_addr"`
 }
 
-// KerberosConfig defines kereros configuration.
+// KerberosConfig defines kerberos configuration.
 type KerberosConfig struct {
 	ServiceName string `mapstructure:"service_name"`
 	Realm       string `mapstructure:"realm"`

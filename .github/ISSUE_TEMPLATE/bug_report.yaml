@@ -117,7 +117,6 @@ body:
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
-      - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
       - internal/sharedcomponent
@@ -127,6 +126,7 @@ body:
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
       - pkg/golden
+      - pkg/kafka
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil

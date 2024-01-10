@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/IBM/sarama v1.42.1
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka v0.92.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.92.0
 	go.opentelemetry.io/collector/config/configtls v0.92.0
@@ -73,7 +73,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../internal/kafka
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka => ./../../pkg/kafka
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
