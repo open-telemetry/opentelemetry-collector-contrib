@@ -182,7 +182,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	case err != nil:
 		return err
 	case !isSupported:
-		rw.logger.Warn("Server doesn't support any of the group versions defined for the kind",
+		rw.logger.Info("Server doesn't support any of the group versions defined for the kind",
 			zap.String("kind", gvk.HierarchicalResourceQuota.Kind))
 	default:
 		dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(rw.dynamicClient, rw.config.MetadataCollectionInterval)
