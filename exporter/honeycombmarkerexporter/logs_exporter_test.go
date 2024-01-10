@@ -20,11 +20,10 @@ import (
 
 func TestExportMarkers(t *testing.T) {
 	tests := []struct {
-		name           string
-		config         Config
-		attributeMap   map[string]string
-		expectedAPIKey string
-		expectedURL    string
+		name         string
+		config       Config
+		attributeMap map[string]string
+		expectedURL  string
 	}{
 		{
 			name: "all fields",
@@ -49,8 +48,7 @@ func TestExportMarkers(t *testing.T) {
 				"url":     "https://api.testhost.io",
 				"type":    "test-type",
 			},
-			expectedAPIKey: "test-apikey",
-			expectedURL:    "/1/markers/test-dataset",
+			expectedURL: "/1/markers/test-dataset",
 		},
 		{
 			name: "no message key",
@@ -73,8 +71,7 @@ func TestExportMarkers(t *testing.T) {
 				"url":  "https://api.testhost.io",
 				"type": "test-type",
 			},
-			expectedAPIKey: "test-apikey",
-			expectedURL:    "/1/markers/test-dataset",
+			expectedURL: "/1/markers/test-dataset",
 		},
 		{
 			name: "no url",
@@ -97,8 +94,7 @@ func TestExportMarkers(t *testing.T) {
 				"message": "this is a test message",
 				"type":    "test-type",
 			},
-			expectedAPIKey: "test-apikey",
-			expectedURL:    "/1/markers/test-dataset",
+			expectedURL: "/1/markers/test-dataset",
 		},
 		{
 			name: "no dataset_slug",
@@ -118,8 +114,7 @@ func TestExportMarkers(t *testing.T) {
 			attributeMap: map[string]string{
 				"type": "test-type",
 			},
-			expectedAPIKey: "test-apikey",
-			expectedURL:    "/1/markers/__all__",
+			expectedURL: "/1/markers/__all__",
 		},
 	}
 
@@ -139,7 +134,7 @@ func TestExportMarkers(t *testing.T) {
 				assert.Contains(t, req.URL.Path, tt.expectedURL)
 
 				apiKey := req.Header.Get(honeycombTeam)
-				assert.Equal(t, tt.expectedAPIKey, apiKey)
+				assert.Equal(t, string(tt.config.APIKey), apiKey)
 
 				userAgent := req.Header.Get(userAgentHeaderKey)
 				assert.NotEmpty(t, userAgent)
