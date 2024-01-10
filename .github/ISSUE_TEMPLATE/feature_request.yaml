@@ -72,7 +72,6 @@ body:
       - exporter/splunkhec
       - exporter/sumologic
       - exporter/syslog
-      - exporter/tanzuobservability
       - exporter/tencentcloudlogservice
       - exporter/zipkin
       - extension/asapauth
@@ -216,6 +215,7 @@ body:
       - receiver/mongodb
       - receiver/mongodbatlas
       - receiver/mysql
+      - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
       - receiver/opencensus

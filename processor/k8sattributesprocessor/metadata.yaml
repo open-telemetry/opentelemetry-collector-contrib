@@ -4,7 +4,7 @@ status:
   class: processor
   stability:
     beta: [logs, metrics, traces]
-  distributions: [contrib, splunk, observiq, sumo, redhat, aws, grafana]
+  distributions: [contrib, splunk, observiq, sumo, redhat, aws, grafana, liatrio]
   codeowners:
     active: [dmitryax, rmfitzpatrick, fatsheep9146, TylerHelmuth]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
@@ -97,3 +97,6 @@ resource_attributes:
     description: Container image tag. Requires container.id or k8s.container.name.
     type: string
     enabled: true
+
+tests:
+  config:

@@ -7,6 +7,7 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"errors"
 	"syscall"
 	"unsafe"
 
@@ -68,7 +69,7 @@ const (
 // evtSubscribe is the direct syscall implementation of EvtSubscribe (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe)
 func evtSubscribe(session uintptr, signalEvent windows.Handle, channelPath *uint16, query *uint16, bookmark uintptr, context uintptr, callback uintptr, flags uint32) (uintptr, error) {
 	handle, _, err := subscribeProc.Call(session, uintptr(signalEvent), uintptr(unsafe.Pointer(channelPath)), uintptr(unsafe.Pointer(query)), bookmark, context, callback, uintptr(flags))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
 	}
 
@@ -78,7 +79,7 @@ func evtSubscribe(session uintptr, signalEvent windows.Handle, channelPath *uint
 // evtNext is the direct syscall implementation of EvtNext (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtnext)
 func evtNext(resultSet uintptr, eventsSize uint32, events *uintptr, timeout uint32, flags uint32, returned *uint32) error {
 	_, _, err := nextProc.Call(resultSet, uintptr(eventsSize), uintptr(unsafe.Pointer(events)), uintptr(timeout), uintptr(flags), uintptr(unsafe.Pointer(returned)))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return err
 	}
 
@@ -86,21 +87,21 @@ func evtNext(resultSet uintptr, eventsSize uint32, events *uintptr, timeout uint
 }
 
 // evtRender is the direct syscall implementation of EvtRender (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtrender)
-func evtRender(context uintptr, fragment uintptr, flags uint32, bufferSize uint32, buffer *byte) (*uint32, *uint32, error) {
+func evtRender(context uintptr, fragment uintptr, flags uint32, bufferSize uint32, buffer *byte) (*uint32, error) {
 	bufferUsed := new(uint32)
 	propertyCount := new(uint32)
 	_, _, err := renderProc.Call(context, fragment, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)), uintptr(unsafe.Pointer(propertyCount)))
-	if err != ErrorSuccess {
-		return bufferUsed, propertyCount, err
+	if !errors.Is(err, ErrorSuccess) {
+		return bufferUsed, err
 	}
 
-	return bufferUsed, propertyCount, nil
+	return bufferUsed, nil
 }
 
 // evtClose is the direct syscall implementation of EvtClose (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtclose)
 func evtClose(handle uintptr) error {
 	_, _, err := closeProc.Call(handle)
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return err
 	}
 
@@ -110,7 +111,7 @@ func evtClose(handle uintptr) error {
 // evtCreateBookmark is the direct syscall implementation of EvtCreateBookmark (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreatebookmark)
 func evtCreateBookmark(bookmarkXML *uint16) (uintptr, error) {
 	handle, _, err := createBookmarkProc.Call(uintptr(unsafe.Pointer(bookmarkXML)))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
 	}
 
@@ -120,7 +121,7 @@ func evtCreateBookmark(bookmarkXML *uint16) (uintptr, error) {
 // evtUpdateBookmark is the direct syscall implementation of EvtUpdateBookmark (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtcreatebookmark)
 func evtUpdateBookmark(bookmark uintptr, event uintptr) error {
 	_, _, err := updateBookmarkProc.Call(bookmark, event)
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return err
 	}
 
@@ -130,7 +131,7 @@ func evtUpdateBookmark(bookmark uintptr, event uintptr) error {
 // evtOpenPublisherMetadata is the direct syscall implementation of EvtOpenPublisherMetadata (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtopenpublishermetadata)
 func evtOpenPublisherMetadata(session uintptr, publisherIdentity *uint16, logFilePath *uint16, locale uint32, flags uint32) (uintptr, error) {
 	handle, _, err := openPublisherMetadataProc.Call(session, uintptr(unsafe.Pointer(publisherIdentity)), uintptr(unsafe.Pointer(logFilePath)), uintptr(locale), uintptr(flags))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return 0, err
 	}
 
@@ -141,7 +142,7 @@ func evtOpenPublisherMetadata(session uintptr, publisherIdentity *uint16, logFil
 func evtFormatMessage(publisherMetadata uintptr, event uintptr, messageID uint32, valueCount uint32, values uintptr, flags uint32, bufferSize uint32, buffer *byte) (*uint32, error) {
 	bufferUsed := new(uint32)
 	_, _, err := formatMessageProc.Call(publisherMetadata, event, uintptr(messageID), uintptr(valueCount), values, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)))
-	if err != ErrorSuccess {
+	if !errors.Is(err, ErrorSuccess) {
 		return bufferUsed, err
 	}
 

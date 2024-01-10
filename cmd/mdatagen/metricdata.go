@@ -125,7 +125,7 @@ func (d *gauge) Unmarshal(parser *confmap.Conf) error {
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
-	return parser.Unmarshal(d, confmap.WithErrorUnused())
+	return parser.Unmarshal(d)
 }
 
 func (d gauge) Type() string {

@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
 )
 
 func Test_carbonreceiver_New(t *testing.T) {
@@ -135,24 +135,6 @@ func Test_carbonreceiver_Start(t *testing.T) {
 				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\""),
-		},
-		{
-			name: "negative_tcp_idle_timeout",
-			args: args{
-				config: Config{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "localhost:2003",
-						Transport: "tcp",
-					},
-					TCPIdleTimeout: -1 * time.Second,
-					Parser: &protocol.Config{
-						Type:   "plaintext",
-						Config: &protocol.PlaintextConfig{},
-					},
-				},
-				nextConsumer: consumertest.NewNop(),
-			},
-			wantErr: errors.New("invalid idle timeout: -1s"),
 		},
 	}
 	for _, tt := range tests {

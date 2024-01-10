@@ -39,7 +39,7 @@ func (s *remoteObserverExtension) Start(_ context.Context, host component.Host) 
 	go func() {
 		err := s.server.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			_ = s.settings.TelemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+			s.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil

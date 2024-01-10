@@ -5,7 +5,7 @@ interact with OTel data via the Collector's internal data model, [pdata](https:/
 
 This document contains documentation for both types of OTTL functions:
 
-- [Functions](#functions) that transform telemetry.
+- [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
 ## Design principles
@@ -305,6 +305,7 @@ Available Converters:
 - [ConvertCase](#convertcase)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Hour](#hour)
 - [Hours](#hours)
 - [Double](#double)
 - [Duration](#duration)
@@ -453,6 +454,20 @@ Examples:
 
 
 - `FNV("name")`
+
+### Hour
+
+`Hour(value)`
+
+The `Hour` Converter returns the hour from the specified time.  The Converter [uses the `time.Hour` function](https://pkg.go.dev/time#Time.Hour).
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Hour(Now())`
 
 ### Hours
 
@@ -616,7 +631,7 @@ Examples:
 
 `Log(value)`
 
-The `Log` Converter returns the logarithm of the `target`.
+The `Log` Converter returns a `float64` that is the logarithm of the `target`.
 
 `target` is either a path expression to a telemetry field to retrieve or a literal.
 

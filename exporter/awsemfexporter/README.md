@@ -22,7 +22,7 @@ and then sends them directly to CloudWatch Logs using the
 ## Data Conversion
 Convert OpenTelemetry ```Int64DataPoints```, ```DoubleDataPoints```, ```SummaryDataPoints``` metrics datapoints into 
 CloudWatch ```EMF``` structured log formats and send it to CloudWatch. Logs and Metrics will be displayed in 
-CloudWatch console. NaN values are not supported by CloudWatch EMF and will be dropped by the exporter.
+CloudWatch console. NaN, Inf values are not supported by CloudWatch EMF and will be dropped by the exporter.
 
 ## Exporter Configuration
 
