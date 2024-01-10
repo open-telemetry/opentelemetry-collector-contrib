@@ -7,7 +7,7 @@ require (
 	github.com/kineticadb/kinetica-api-go v0.0.3
 	github.com/samber/lo v1.39.0
 	github.com/stretchr/testify v1.8.4
-	github.com/wk8/go-ordered-map v1.0.0
+	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.opentelemetry.io/collector/component v0.92.1-0.20240110091511-bf804d6c4ecc
 	go.opentelemetry.io/collector/config/configopaque v0.92.1-0.20240110091511-bf804d6c4ecc
 	go.opentelemetry.io/collector/confmap v0.92.1-0.20240110091511-bf804d6c4ecc
@@ -20,6 +20,8 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+require github.com/wk8/go-ordered-map v1.0.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
