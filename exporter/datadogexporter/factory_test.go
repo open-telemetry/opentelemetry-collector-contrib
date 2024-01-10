@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -71,7 +72,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		TimeoutSettings: defaulttimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
@@ -132,7 +133,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
 				TimeoutSettings: defaulttimeoutSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -180,7 +181,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "api"),
 			expected: &Config{
 				TimeoutSettings: defaulttimeoutSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
@@ -235,7 +236,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "api2"),
 			expected: &Config{
 				TimeoutSettings: defaulttimeoutSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
@@ -620,7 +621,7 @@ func TestOnlyMetadata(t *testing.T) {
 	ctx := context.Background()
 	cfg := &Config{
 		TimeoutSettings: defaulttimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API:          APIConfig{Key: "notnull"},

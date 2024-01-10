@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -84,7 +86,7 @@ func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (expor
 		// disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(config.QueueSettings),
-		exporterhelper.WithRetry(config.RetrySettings),
+		exporterhelper.WithRetry(config.BackOffConfig),
 	)
 }
 func newLogzioLogsExporter(config *Config, set exporter.CreateSettings) (exporter.Logs, error) {
@@ -106,7 +108,7 @@ func newLogzioLogsExporter(config *Config, set exporter.CreateSettings) (exporte
 		// disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(config.QueueSettings),
-		exporterhelper.WithRetry(config.RetrySettings),
+		exporterhelper.WithRetry(config.BackOffConfig),
 	)
 }
 
@@ -127,14 +129,16 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logRecords := scopeLogs.At(j).LogRecords()
+			scope := scopeLogs.At(j).Scope()
+			details := mergeMapEntries(resource.Attributes(), scope.Attributes())
+			details.PutStr(`scopeName`, scope.Name())
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
-				jsonLog := convertLogRecordToJSON(log, resource)
-				logzioLog, err := json.Marshal(jsonLog)
+				jsonLog, err := json.Marshal(convertLogRecordToJSON(log, details))
 				if err != nil {
 					return err
 				}
-				_, err = dataBuffer.Write(append(logzioLog, '\n'))
+				_, err = dataBuffer.Write(append(jsonLog, '\n'))
 				if err != nil {
 					return err
 				}
@@ -145,6 +149,34 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 	// reset the data buffer after each export to prevent duplicated data
 	dataBuffer.Reset()
 	return err
+}
+
+func mergeMapEntries(maps ...pcommon.Map) pcommon.Map {
+	res := map[string]any{}
+	for _, m := range maps {
+		for key, val := range m.AsRaw() {
+			// Check if the key was already added
+			if resMapValue, keyExists := res[key]; keyExists {
+				rt := reflect.TypeOf(resMapValue)
+				switch rt.Kind() {
+				case reflect.Slice:
+					res[key] = append(resMapValue.([]any), val)
+				default:
+					// Create a new slice and append values if the key exists:
+					valslice := []any{}
+					res[key] = append(valslice, resMapValue, val)
+				}
+			} else {
+				res[key] = val
+			}
+		}
+	}
+	pcommonRes := pcommon.NewMap()
+	err := pcommonRes.FromRaw(res)
+	if err != nil {
+		return pcommon.Map{}
+	}
+	return pcommonRes
 }
 
 func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace.Traces) error {

@@ -22,6 +22,7 @@ import (
 	"github.com/scalyr/dataset-go/pkg/api/request"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -837,7 +838,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		ServerHostSettings: ServerHostSettings{
 			ServerHost: testServerHost,
 		},
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}

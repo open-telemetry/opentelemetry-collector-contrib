@@ -26,7 +26,7 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.
 	case "version":
 		return accessInstrumentationScopeVersion[K](), nil
 	case "attributes":
-		mapKeys := path.Key()
+		mapKeys := path.Keys()
 		if mapKeys == nil {
 			return accessInstrumentationScopeAttributes[K](), nil
 		}
@@ -66,13 +66,13 @@ func accessInstrumentationScopeAttributes[K InstrumentationScopeContext]() ottl.
 	}
 }
 
-func accessInstrumentationScopeAttributesKey[K InstrumentationScopeContext](key ottl.Key[K]) ottl.StandardGetSetter[K] {
+func accessInstrumentationScopeAttributesKey[K InstrumentationScopeContext](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return GetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), key)
+			return GetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return SetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), key, val)
+			return SetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), keys, val)
 		},
 	}
 }

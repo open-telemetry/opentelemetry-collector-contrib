@@ -57,6 +57,9 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
+	s.mb.RecordFileCountDataPoint(now, int64(len(matches)))
+	s.mb.EmitForResource()
+
 	if len(scrapeErrors) > 0 {
 		return s.mb.Emit(), scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
 	}

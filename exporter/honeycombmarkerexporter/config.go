@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -31,7 +32,7 @@ type Config struct {
 
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
 }
 
 type Marker struct {

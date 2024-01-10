@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -65,7 +66,7 @@ func createDefaultConfig() component.Config {
 			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
 		},
 		SplunkAppName:           defaultSplunkAppName,
-		RetrySettings:           exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
 		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
@@ -109,7 +110,7 @@ func createTracesExporter(
 		c.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop))
@@ -131,7 +132,7 @@ func createMetricsExporter(
 		c.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop))
@@ -163,7 +164,7 @@ func createLogsExporter(
 		c.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop))
