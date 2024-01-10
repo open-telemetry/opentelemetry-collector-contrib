@@ -78,7 +78,7 @@ func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error
 	}
 	go func() {
 		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			_ = cdr.createSettings.TelemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+			cdr.createSettings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
