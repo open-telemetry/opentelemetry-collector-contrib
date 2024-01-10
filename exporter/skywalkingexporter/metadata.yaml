@@ -6,4 +6,5 @@ status:
     beta: [metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [liqiangz]
+    active: []
+    emeritus: [liqiangz]

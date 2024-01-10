@@ -46,10 +46,10 @@ func Test_buildLabels(t *testing.T) {
 		},
 		{
 			name: "end_with_quotes",
-			tags: "source=\"tst escape\\\" tst\" x=\"tst spc\"",
+			tags: "source=\"test escaped\\\" text\" x=\"tst spc\"",
 			wantAttributes: func() pcommon.Map {
 				m := pcommon.NewMap()
-				m.PutStr("source", "tst escape\" tst")
+				m.PutStr("source", "test escaped\" text")
 				m.PutStr("x", "tst spc")
 				return m
 			}(),
@@ -79,6 +79,17 @@ func Test_buildLabels(t *testing.T) {
 		},
 		{
 			name: "empty_tagValue",
+			tags: "k0=0 k1=" +
+				"",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("k0", "0")
+				m.PutStr("k1", "")
+				return m
+			}(),
+		},
+		{
+			name: "empty_quoted_tagValue",
 			tags: "k0=0 k1=\"\"",
 			wantAttributes: func() pcommon.Map {
 				m := pcommon.NewMap()
@@ -90,6 +101,16 @@ func Test_buildLabels(t *testing.T) {
 		{
 			name:    "no_tag",
 			tags:    "k0=0 k1",
+			wantErr: true,
+		},
+		{
+			name:    "partially_quoted",
+			tags:    "k0=0 k1=\"test",
+			wantErr: true,
+		},
+		{
+			name:    "end_with_escaped_",
+			tags:    "k0=0 k1=\"test\\\"",
 			wantErr: true,
 		},
 	}

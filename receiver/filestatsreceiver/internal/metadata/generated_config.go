@@ -26,6 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for filestats metrics.
 type MetricsConfig struct {
 	FileAtime MetricConfig `mapstructure:"file.atime"`
+	FileCount MetricConfig `mapstructure:"file.count"`
 	FileCtime MetricConfig `mapstructure:"file.ctime"`
 	FileMtime MetricConfig `mapstructure:"file.mtime"`
 	FileSize  MetricConfig `mapstructure:"file.size"`
@@ -34,6 +35,9 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		FileAtime: MetricConfig{
+			Enabled: false,
+		},
+		FileCount: MetricConfig{
 			Enabled: false,
 		},
 		FileCtime: MetricConfig{

@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 					IdleConnTimeout: &idleConnTimeout,
 					Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("sample_basic_auth")},
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     100 * time.Millisecond,
 					MaxInterval:         30 * time.Second,
