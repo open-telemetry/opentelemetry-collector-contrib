@@ -161,7 +161,7 @@ type Config struct {
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(c, confmap.WithErrorUnused()); err != nil {
+	if err := conf.Unmarshal(c); err != nil {
 		return fmt.Errorf("cannot unmarshal config: %w", err)
 	}
 
