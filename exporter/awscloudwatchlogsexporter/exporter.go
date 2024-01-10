@@ -140,10 +140,11 @@ func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher c
 		sls := rl.ScopeLogs()
 		for j := 0; j < sls.Len(); j++ {
 			sl := sls.At(j)
+			scope := sl.Scope()
 			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				event, err := logToCWLog(resourceAttrs, log, config)
+				event, err := logToCWLog(resourceAttrs, scope, log, config)
 				if err != nil {
 					logger.Debug("Failed to convert to CloudWatch Log", zap.Error(err))
 				} else {
@@ -159,19 +160,26 @@ func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher c
 	return errs
 }
 
-type cwLogBody struct {
-	Body                   any            `json:"body,omitempty"`
-	SeverityNumber         int32          `json:"severity_number,omitempty"`
-	SeverityText           string         `json:"severity_text,omitempty"`
-	DroppedAttributesCount uint32         `json:"dropped_attributes_count,omitempty"`
-	Flags                  uint32         `json:"flags,omitempty"`
-	TraceID                string         `json:"trace_id,omitempty"`
-	SpanID                 string         `json:"span_id,omitempty"`
-	Attributes             map[string]any `json:"attributes,omitempty"`
-	Resource               map[string]any `json:"resource,omitempty"`
+type scopeCwLogBody struct {
+	Name       string         `json:"name,omitempty"`
+	Version    string         `json:"version,omitempty"`
+	Attributes map[string]any `json:"attributes,omitempty"`
 }
 
-func logToCWLog(resourceAttrs map[string]any, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
+type cwLogBody struct {
+	Body                   any             `json:"body,omitempty"`
+	SeverityNumber         int32           `json:"severity_number,omitempty"`
+	SeverityText           string          `json:"severity_text,omitempty"`
+	DroppedAttributesCount uint32          `json:"dropped_attributes_count,omitempty"`
+	Flags                  uint32          `json:"flags,omitempty"`
+	TraceID                string          `json:"trace_id,omitempty"`
+	SpanID                 string          `json:"span_id,omitempty"`
+	Attributes             map[string]any  `json:"attributes,omitempty"`
+	Scope                  *scopeCwLogBody `json:"scope,omitempty"`
+	Resource               map[string]any  `json:"resource,omitempty"`
+}
+
+func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	logGroupName := config.LogGroupName
@@ -213,6 +221,16 @@ func logToCWLog(resourceAttrs map[string]any, log plog.LogRecord, config *Config
 		}
 		body.Attributes = attrsValue(log.Attributes())
 		body.Resource = resourceAttrs
+
+		// scope should have a name at least
+		if scope.Name() != "" {
+			scopeBody := &scopeCwLogBody{
+				Name:       scope.Name(),
+				Version:    scope.Version(),
+				Attributes: attrsValue(scope.Attributes()),
+			}
+			body.Scope = scopeBody
+		}
 
 		bodyJSON, err = json.Marshal(body)
 		if err != nil {
