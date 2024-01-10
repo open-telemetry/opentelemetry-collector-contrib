@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -38,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
@@ -93,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "all"),
 			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version

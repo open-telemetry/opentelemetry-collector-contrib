@@ -43,7 +43,7 @@ instantiate that receiver.
 **receivers.&lt;receiver_type/id&gt;.rule**
 
 Rule expression using [expvar
-syntax](https://github.com/antonmedv/expr/blob/master/docs/language-definition.md).
+syntax](https://github.com/expr-lang/expr/blob/master/docs/language-definition.md).
 Variables available are detailed below in [Rule
 Expressions](#rule-expressions).
 

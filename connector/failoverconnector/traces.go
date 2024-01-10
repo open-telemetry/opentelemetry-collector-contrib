@@ -77,7 +77,7 @@ func (f *tracesFailover) Shutdown(_ context.Context) error {
 
 func newTracesToTraces(set connector.CreateSettings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
 	config := cfg.(*Config)
-	tr, ok := traces.(connector.TracesRouter)
+	tr, ok := traces.(connector.TracesRouterAndConsumer)
 	if !ok {
 		return nil, errors.New("consumer is not of type TracesRouter")
 	}

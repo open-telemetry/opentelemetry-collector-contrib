@@ -32,7 +32,7 @@ func (e *ecsObserver) Start(_ context.Context, _ component.Host) error {
 		if err := e.sd.runAndWriteFile(ctx); err != nil {
 			e.telemetrySettings.Logger.Error("ECSDiscovery stopped by error", zap.Error(err))
 			// Stop the collector
-			_ = e.telemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+			e.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
