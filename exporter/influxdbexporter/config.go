@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"golang.org/x/exp/maps"
 )
@@ -29,7 +30,7 @@ type V1Compatibility struct {
 type Config struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
 
 	// Org is the InfluxDB organization name of the destination bucket.
 	Org string `mapstructure:"org"`

@@ -68,6 +68,9 @@ func Load(ctx context.Context, persister operator.Persister) ([]*reader.Metadata
 		if err = dec.Decode(rmd); err != nil {
 			return nil, err
 		}
+		if rmd.FileAttributes == nil {
+			rmd.FileAttributes = map[string]any{}
+		}
 
 		// Migrate readers that used FileAttributes.HeaderAttributes
 		// This block can be removed in a future release, tentatively v0.90.0

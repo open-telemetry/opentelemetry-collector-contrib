@@ -36,7 +36,7 @@ type timeconstraints struct {
 }
 
 func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mongodbatlasreceiver {
-	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.RetrySettings, settings.Logger)
+	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
 	for _, p := range cfg.Projects {
 		p.populateIncludesAndExcludes()
 	}
