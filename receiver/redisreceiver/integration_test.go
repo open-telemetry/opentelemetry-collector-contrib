@@ -55,6 +55,10 @@ func TestIntegrationV6(t *testing.T) {
 func TestIntegrationV7Cluster(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
+		scraperinttest.WithNetworkRequest(testcontainers.NetworkRequest{
+			Name:           "redis",
+			CheckDuplicate: true,
+		}),
 		scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
 			ExposedPorts: []string{
 				redisPort,
@@ -69,12 +73,16 @@ func TestIntegrationV7Cluster(t *testing.T) {
 				Context:    filepath.Join("testdata", "integration"),
 				Dockerfile: "Dockerfile.cluster",
 			},
+			WaitingFor: wait.ForListeningPort("6385").WithStartupTimeout(30 * time.Second),
+			Networks:   []string{"redis"},
 		}),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				// Strictly speaking this is non-deterministic and may not be the right port for one with repl offset
-				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6384"))
+				// However, we're using socat and some port forwarding in the Dockerfile to ensure this always points
+				// to a replica node, so in practice any failures due to cluster node role changes is unlikely
+				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6385"))
 				rCfg.MetricsBuilderConfig.Metrics.RedisSlaveReplicationOffset.Enabled = true
 			}),
 		scraperinttest.WithCompareOptions(
