@@ -58,7 +58,7 @@ var (
 
 	// ErrInconsistentSampling is returned when a sampler update
 	// is illogical, indicating that the tracestate was not
-	// modified.  Preferrably Samplers will avoid seeing this
+	// modified.  Preferably, Samplers will avoid seeing this
 	// error by using a ThresholdGreater() test, which allows them
 	// to report a more clear error to the user.  For example, if
 	// data arrives sampled at 1/100 and an eqalizing sampler is

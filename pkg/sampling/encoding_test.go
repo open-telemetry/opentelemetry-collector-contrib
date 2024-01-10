@@ -37,7 +37,7 @@ func must[T any](t T, err error) T {
 // mustNot panics when the error is nil.  this does not call
 // require.Error() in order to use a one-line test calling
 // convention, meaning `mustNot(functionCall())` ensures there is an
-// error without requiring a separate varaible assignemnt.
+// error without requiring a separate variable assignment.
 //
 // To do the same with Error() means rewriting the expression with
 // a two-line statement:
