@@ -20,7 +20,7 @@ This receiver fetches metrics from a vCenter or ESXi host running VMware vSphere
 
 This receiver has been built to support ESXi and vCenter versions:
 
-- 7.5
+- 8
 - 7.0
 - 6.7
 

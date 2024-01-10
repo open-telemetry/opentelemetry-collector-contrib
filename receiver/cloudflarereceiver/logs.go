@@ -110,7 +110,7 @@ func (l *logsReceiver) startListening(ctx context.Context, _ component.Host) err
 
 			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("ServeTLS failed", zap.Error(err))
-				_ = l.telemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+				l.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 
 		} else {
@@ -123,7 +123,7 @@ func (l *logsReceiver) startListening(ctx context.Context, _ component.Host) err
 
 			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("Serve failed", zap.Error(err))
-				_ = l.telemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+				l.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 
 		}
