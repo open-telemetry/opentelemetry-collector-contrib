@@ -21,9 +21,9 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
@@ -42,7 +42,7 @@ type prwExporter struct {
 	maxBatchSizeBytes int
 	clientSettings    *confighttp.HTTPClientSettings
 	settings          component.TelemetrySettings
-	retrySettings     exporterhelper.RetrySettings
+	retrySettings     configretry.BackOffConfig
 	wal               *prweWAL
 	exporterSettings  prometheusremotewrite.Settings
 }
@@ -70,7 +70,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:    &cfg.HTTPClientSettings,
 		settings:          set.TelemetrySettings,
-		retrySettings:     cfg.RetrySettings,
+		retrySettings:     cfg.BackOffConfig,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,

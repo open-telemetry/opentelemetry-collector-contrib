@@ -191,7 +191,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// We need custom unmarshaling because prometheus "config" subkey defines its own
 	// YAML unmarshaling routines so we need to do it explicitly.
 
-	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
+	err := componentParser.Unmarshal(cfg)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to parse config: %w", err)
 	}
