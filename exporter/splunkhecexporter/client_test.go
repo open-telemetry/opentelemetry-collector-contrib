@@ -1297,7 +1297,7 @@ func TestErrorReceived(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.RetrySettings.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
@@ -1346,7 +1346,7 @@ func TestInvalidURL(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.RetrySettings.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.HTTPClientSettings.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopCreateSettings()
@@ -1386,7 +1386,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.RetrySettings.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true
@@ -1422,7 +1422,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.RetrySettings.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = false
@@ -1457,7 +1457,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.RetrySettings.Enabled = false
+	cfg.BackOffConfig.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true

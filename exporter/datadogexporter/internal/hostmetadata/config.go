@@ -4,6 +4,7 @@
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 
 import (
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -24,5 +25,5 @@ type PusherConfig struct {
 	// TimeoutSettings of exporter.
 	TimeoutSettings exporterhelper.TimeoutSettings
 	// RetrySettings of exporter.
-	RetrySettings exporterhelper.RetrySettings
+	RetrySettings configretry.BackOffConfig
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -40,11 +41,11 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := connectortest.NewLogsRouter(
-		connectortest.WithLogsSink(logsDefault, &defaultSink),
-		connectortest.WithLogsSink(logs0, &sink0),
-		connectortest.WithLogsSink(logs1, &sink1),
-	)
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsDefault: &defaultSink,
+		logs0:       &sink0,
+		logs1:       &sink1,
+	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
@@ -99,11 +100,11 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := connectortest.NewLogsRouter(
-		connectortest.WithLogsSink(logsDefault, &defaultSink),
-		connectortest.WithLogsSink(logs0, &sink0),
-		connectortest.WithLogsSink(logs1, &sink1),
-	)
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsDefault: &defaultSink,
+		logs0:       &sink0,
+		logs1:       &sink1,
+	})
 
 	resetSinks := func() {
 		defaultSink.Reset()
@@ -255,11 +256,11 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := connectortest.NewLogsRouter(
-		connectortest.WithLogsSink(logsDefault, &defaultSink),
-		connectortest.WithLogsSink(logs0, &sink0),
-		connectortest.WithLogsSink(logs1, &sink1),
-	)
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsDefault: &defaultSink,
+		logs0:       &sink0,
+		logs1:       &sink1,
+	})
 
 	resetSinks := func() {
 		defaultSink.Reset()
@@ -397,10 +398,10 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	var sink0, sink1 consumertest.LogsSink
 
-	router := connectortest.NewLogsRouter(
-		connectortest.WithLogsSink(logsDefault, &sink0),
-		connectortest.WithLogsSink(logsOther, &sink1),
-	)
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsDefault: &sink0,
+		logsOther:   &sink1,
+	})
 
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
@@ -448,10 +449,10 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 		}},
 	}
 
-	router := connectortest.NewLogsRouter(
-		connectortest.WithNopLogs(logsDefault),
-		connectortest.WithNopLogs(logsOther),
-	)
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsDefault: consumertest.NewNop(),
+		logsOther:   consumertest.NewNop(),
+	})
 
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
