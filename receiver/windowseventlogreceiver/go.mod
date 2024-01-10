@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.92.0
 	go.opentelemetry.io/otel/metric v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
-	golang.org/x/sys v0.15.0
+	golang.org/x/sys v0.16.0
 )
 
 require (
