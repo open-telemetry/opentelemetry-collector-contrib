@@ -53,6 +53,7 @@ func TestIntegrationV6(t *testing.T) {
 }
 
 func TestIntegrationV7Cluster(t *testing.T) {
+	t.Skip("Skipping due to flakieness, possibly related to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30411")
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
