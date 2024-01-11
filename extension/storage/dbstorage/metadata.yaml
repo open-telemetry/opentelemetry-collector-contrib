@@ -7,3 +7,6 @@ status:
   distributions: [contrib, sumo]
   codeowners:
     active: [dmitryax, atoulme]
+
+tests:
+  config:
