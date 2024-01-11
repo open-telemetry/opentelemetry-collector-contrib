@@ -85,3 +85,8 @@ func (ar *MockAwsXrayDataReceiver) GenConfigYAMLStr() string {
 func (ar *MockAwsXrayDataReceiver) ProtocolName() string {
 	return "awsxray"
 }
+
+// PipelineType
+func (ar *MockAwsXrayDataReceiver) PipelineType() string {
+	return "traces"
+}

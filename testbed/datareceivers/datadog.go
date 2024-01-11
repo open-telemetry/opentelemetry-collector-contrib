@@ -57,3 +57,8 @@ func (dd *datadogDataReceiver) GenConfigYAMLStr() string {
 func (dd *datadogDataReceiver) ProtocolName() string {
 	return "datadog"
 }
+
+// PipelineType
+func (dd *datadogDataReceiver) PipelineType() string {
+	return "traces"
+}

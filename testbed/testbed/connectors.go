@@ -8,8 +8,4 @@ type DataConnector interface {
 	// ProtocolName returns exporter name to use in collector config pipeline.
 	ProtocolName() string
 
-	// metrics/logs/traces?
-	ReceiverPipelineType() string
-
-	ExporterPipelineType() string
 }

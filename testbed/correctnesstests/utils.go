@@ -11,10 +11,22 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/dataconnectors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
+
+/*
+
+Comments:
+Using an if statement to check if the connector is defined and if so then use a config with two pipelines.
+This can probably be improved to not just be a simply fork.
+
+This CreateConfigYaml method is also very similar to the one for performance tests so this could be an opportunity to reuse code.
+
+
+*/
 
 // CreateConfigYaml creates a yaml config for an otel collector given a testbed sender, testbed receiver, any
 // processors, and a pipeline type. A collector created from the resulting yaml string should be able to talk
@@ -25,7 +37,6 @@ func CreateConfigYaml(
 	receiver testbed.DataReceiver,
 	connector testbed.DataConnector,
 	processors map[string]string,
-	pipelineType string,
 ) string {
 
 	// Prepare extra processor config section and comma-separated list of extra processor
@@ -42,6 +53,67 @@ func CreateConfigYaml(
 			processorsList += name
 			first = false
 		}
+	}
+
+	var pipeline1 string
+	switch sender.(type) {
+	case testbed.TraceDataSender:
+		pipeline1 = "traces"
+	case testbed.MetricDataSender:
+		pipeline1 = "metrics"
+	case testbed.LogDataSender:
+		pipeline1 = "logs"
+	default:
+		t.Error("Invalid DataSender type")
+	}
+
+	// Need better var name
+	var pipeline2 string
+	pipeline2 = receiver.PipelineType()
+
+
+	if (connector != nil) {
+		format := `
+receivers:%v
+exporters:%v
+processors:
+  %s
+
+extensions:
+
+connectors:%v
+
+service:
+  telemetry:
+    metrics:
+      address: 127.0.0.1:%d
+    logs:
+      level: "debug"
+  extensions:
+  pipelines:
+    %s:
+      receivers: [%v]
+      processors: [%s]
+      exporters: [%v]
+    %s:
+      receivers: [%v]
+      exporters: [%v]
+`
+		return fmt.Sprintf(
+			format,
+			sender.GenConfigYAMLStr(),
+			receiver.GenConfigYAMLStr(),
+			processorsSections,
+			connector.GenConfigYAMLStr(),
+			testbed.GetAvailablePort(t),
+			pipeline1,
+			sender.ProtocolName(),
+			processorsList,
+			connector.ProtocolName(),
+			pipeline2,
+			connector.ProtocolName(),
+			receiver.ProtocolName(),
+		)
 	}
 
 	format := `
@@ -70,7 +142,7 @@ service:
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
 		testbed.GetAvailablePort(t),
-		pipelineType,
+		pipeline1,
 		sender.ProtocolName(),
 		processorsList,
 		receiver.ProtocolName(),
@@ -156,7 +228,7 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	var receiver testbed.DataReceiver
 	switch exporter {
 	case "otlp":
-		receiver = testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+		receiver = testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t), "metrics")
 	case "opencensus":
 		receiver = datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t))
 	case "jaeger":
@@ -169,4 +241,15 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 		t.Errorf("unknown exporter type: %s", exporter)
 	}
 	return receiver
+}
+
+func ConstructConnector(t *testing.T, connector string) testbed.DataConnector {
+	var dataconnector testbed.DataConnector
+	switch connector {
+	case "spanmetrics":
+		dataconnector = dataconnectors.NewSpanMetricDataConnector()
+	default:
+		t.Errorf("unknown connector type: %s", connector)
+	}
+	return dataconnector
 }

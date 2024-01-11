@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/fluent/fluent-logger-golang v1.9.0
 	github.com/jaegertracing/jaeger v1.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.91.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.91.0
@@ -41,6 +42,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v0.91.0
 	go.opentelemetry.io/collector/config/configtls v0.91.0
 	go.opentelemetry.io/collector/confmap v0.91.0
+	go.opentelemetry.io/collector/connector v0.91.0
 	go.opentelemetry.io/collector/consumer v0.91.0
 	go.opentelemetry.io/collector/exporter v0.91.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.91.0
@@ -159,6 +161,7 @@ require (
 	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20181214104525-299bdde78165 // indirect
+	github.com/lightstep/go-expohisto v1.0.0 // indirect
 	github.com/linode/linodego v1.23.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -207,6 +210,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/tilinna/clock v1.1.0 // indirect
 	github.com/tinylib/msgp v1.1.9 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
@@ -218,7 +222,6 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.91.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.91.0 // indirect
-	go.opentelemetry.io/collector/connector v0.91.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.91.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0 // indirect
 	go.opentelemetry.io/collector/service v0.91.0 // indirect

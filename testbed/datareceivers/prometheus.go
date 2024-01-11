@@ -75,3 +75,8 @@ func (dr *prometheusDataReceiver) GenConfigYAMLStr() string {
 func (dr *prometheusDataReceiver) ProtocolName() string {
 	return "prometheus"
 }
+
+// PipelineType
+func (dr *prometheusDataReceiver) PipelineType() string {
+	return "metrics"	
+}

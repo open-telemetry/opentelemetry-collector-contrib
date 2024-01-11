@@ -67,3 +67,8 @@ func (or *ocDataReceiver) GenConfigYAMLStr() string {
 func (or *ocDataReceiver) ProtocolName() string {
 	return "opencensus"
 }
+
+// PipelineType
+func (or *ocDataReceiver) PipelineType() string {
+		return "traces"	
+}

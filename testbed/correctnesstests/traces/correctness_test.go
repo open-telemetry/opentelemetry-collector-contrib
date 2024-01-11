@@ -55,7 +55,7 @@ func testWithTracingGoldenDataset(
 	require.NoError(t, err, "default components resulted in: %v", err)
 	runner := testbed.NewInProcessCollector(factories)
 	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
-	config := correctnesstests.CreateConfigYaml(t, sender, receiver, processors, "traces")
+	config := correctnesstests.CreateConfigYaml(t, sender, receiver, nil, processors)
 	log.Println(config)
 	configCleanup, cfgErr := runner.PrepareConfig(config)
 	require.NoError(t, cfgErr, "collector configuration resulted in: %v", cfgErr)
@@ -114,7 +114,7 @@ func TestSporadicGoldenDataset(t *testing.T) {
 			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
 			"")
 		sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-		receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+		receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t), "traces")
 		receiver.WithRetry(`
     retry_on_failure:
       enabled: false
@@ -123,7 +123,7 @@ func TestSporadicGoldenDataset(t *testing.T) {
     sending_queue:
       enabled: false
 `)
-		_, err = runner.PrepareConfig(correctnesstests.CreateConfigYaml(t, sender, receiver, nil, "traces"))
+		_, err = runner.PrepareConfig(correctnesstests.CreateConfigYaml(t, sender, receiver, nil, nil))
 		require.NoError(t, err, "collector configuration resulted in: %v", err)
 		validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
 		tc := testbed.NewTestCase(

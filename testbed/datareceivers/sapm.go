@@ -75,3 +75,8 @@ func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
 func (sr *SapmDataReceiver) ProtocolName() string {
 	return "sapm"
 }
+
+// PipelineType
+func (sr *SapmDataReceiver) PipelineType() string {
+	return "traces"	
+}

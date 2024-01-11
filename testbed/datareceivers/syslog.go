@@ -70,3 +70,8 @@ func (cr *SyslogDataReceiver) GenConfigYAMLStr() string {
 func (cr *SyslogDataReceiver) ProtocolName() string {
 	return "tcp"
 }
+
+// PipelineType
+func (cr *SyslogDataReceiver) PipelineType() string {
+	return "logs"	
+}

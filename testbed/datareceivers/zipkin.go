@@ -59,3 +59,8 @@ func (zr *zipkinDataReceiver) GenConfigYAMLStr() string {
 func (zr *zipkinDataReceiver) ProtocolName() string {
 	return "zipkin"
 }
+
+// PipelineType
+func (zr *zipkinDataReceiver) PipelineType() string {
+	return "traces"	
+}

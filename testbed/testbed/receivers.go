@@ -15,6 +15,14 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+/*
+
+Comments:
+Is there an easier way to know the pipeline type other than adding the var to the struct?  The senders
+uses different kind of data senders for each data type so can it be replicated for receivers too?
+
+*/
+
 // DataReceiver allows to receive traces or metrics. This is an interface that must
 // be implemented by all protocols that want to be used in MockBackend.
 // Note the terminology: DataReceiver is something that can listen and receive data
