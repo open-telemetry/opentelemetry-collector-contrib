@@ -998,69 +998,86 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	assert.Equal(t, gotFromWAL, gotFromUpload)
 }
 
-func TestRetryOn5xx(t *testing.T) {
-	// Create a mock HTTP server with a counter to simulate a 5xx error on the first attempt and a 2xx success on the second attempt
-	attempts := 0
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if attempts < 4 {
-			attempts++
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(http.StatusOK)
-		}
-	}))
-	defer mockServer.Close()
-
-	endpointURL, err := url.Parse(mockServer.URL)
-	require.NoError(t, err)
-
-	// Create the prwExporter
-	exporter := &prwExporter{
-		endpointURL: endpointURL,
-		client:      http.DefaultClient,
-		retrySettings: configretry.BackOffConfig{
-			Enabled: true,
-		},
-	}
-
-	ctx := context.Background()
-
-	// Execute the write request and verify that the exporter returns a non-permanent error on the first attempt.
-	err = exporter.execute(ctx, &prompb.WriteRequest{})
-	assert.NoError(t, err)
-	assert.Equal(t, 4, attempts)
+func canceledContext() context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	return ctx
 }
 
-func TestNoRetryOn4xx(t *testing.T) {
-	// Create a mock HTTP server with a counter to simulate a 4xx error
-	attempts := 0
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if attempts < 1 {
-			attempts++
-			http.Error(w, "Bad Request", http.StatusBadRequest)
-		} else {
-			w.WriteHeader(http.StatusOK)
-		}
-	}))
-	defer mockServer.Close()
+func assertPermanentConsumerError(t assert.TestingT, err error, _ ...any) bool {
+	return assert.True(t, consumererror.IsPermanent(err), "error should be consumererror.Permanent")
+}
 
-	endpointURL, err := url.Parse(mockServer.URL)
-	require.NoError(t, err)
+func TestRetries(t *testing.T) {
 
-	// Create the prwExporter
-	exporter := &prwExporter{
-		endpointURL: endpointURL,
-		client:      http.DefaultClient,
-		retrySettings: configretry.BackOffConfig{
-			Enabled: true,
+	tts := []struct {
+		name             string
+		serverErrorCount int // number of times server should return error
+		expectedAttempts int
+		httpStatus       int
+		assertError      assert.ErrorAssertionFunc
+		assertErrorType  assert.ErrorAssertionFunc
+		ctx              context.Context
+	}{
+		{
+			"test 5xx should retry",
+			3,
+			4,
+			http.StatusInternalServerError,
+			assert.NoError,
+			assert.NoError,
+			context.Background(),
+		},
+		{
+			"test 4xx should not retry",
+			4,
+			1,
+			http.StatusBadRequest,
+			assert.Error,
+			assertPermanentConsumerError,
+			context.Background(),
+		},
+		{
+			"test timeout context should not execute",
+			4,
+			0,
+			http.StatusInternalServerError,
+			assert.Error,
+			assertPermanentConsumerError,
+			canceledContext(),
 		},
 	}
 
-	ctx := context.Background()
+	for _, tt := range tts {
+		t.Run(tt.name, func(t *testing.T) {
+			totalAttempts := 0
+			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if totalAttempts < tt.serverErrorCount {
+					http.Error(w, http.StatusText(tt.httpStatus), tt.httpStatus)
+				} else {
+					w.WriteHeader(http.StatusOK)
+				}
+				totalAttempts++
+			},
+			))
+			defer mockServer.Close()
 
-	// Execute the write request and verify that the exporter returns an error due to the 4xx response.
-	err = exporter.execute(ctx, &prompb.WriteRequest{})
-	assert.Error(t, err)
-	assert.True(t, consumererror.IsPermanent(err))
-	assert.Equal(t, 1, attempts)
+			endpointURL, err := url.Parse(mockServer.URL)
+			require.NoError(t, err)
+
+			// Create the prwExporter
+			exporter := &prwExporter{
+				endpointURL: endpointURL,
+				client:      http.DefaultClient,
+				retrySettings: configretry.BackOffConfig{
+					Enabled: true,
+				},
+			}
+
+			err = exporter.execute(tt.ctx, &prompb.WriteRequest{})
+			tt.assertError(t, err)
+			tt.assertErrorType(t, err)
+			assert.Equal(t, tt.expectedAttempts, totalAttempts)
+		})
+	}
 }
