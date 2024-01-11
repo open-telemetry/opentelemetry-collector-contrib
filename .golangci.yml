@@ -60,6 +60,8 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
+    # this defaults to true
+    skip-generated: false
 
   govet:
     # report about shadowed variables
