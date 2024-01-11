@@ -46,7 +46,7 @@ type metricContainerCPUTime struct {
 // init fills container.cpu.time metric with initial data.
 func (m *metricContainerCPUTime) init() {
 	m.data.SetName("container.cpu.time")
-	m.data.SetDescription("Container CPU time")
+	m.data.SetDescription("Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -97,8 +97,8 @@ type metricContainerCPUUsage struct {
 // init fills container.cpu.usage metric with initial data.
 func (m *metricContainerCPUUsage) init() {
 	m.data.SetName("container.cpu.usage")
-	m.data.SetDescription("Container CPU usage")
-	m.data.SetUnit("s")
+	m.data.SetDescription("Total CPU usage (sum of all cores per second) averaged over the sample window")
+	m.data.SetUnit("{cpu}")
 	m.data.SetEmptyGauge()
 }
 
@@ -883,7 +883,7 @@ type metricK8sNodeCPUTime struct {
 // init fills k8s.node.cpu.time metric with initial data.
 func (m *metricK8sNodeCPUTime) init() {
 	m.data.SetName("k8s.node.cpu.time")
-	m.data.SetDescription("Node CPU time")
+	m.data.SetDescription("Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -934,8 +934,8 @@ type metricK8sNodeCPUUsage struct {
 // init fills k8s.node.cpu.usage metric with initial data.
 func (m *metricK8sNodeCPUUsage) init() {
 	m.data.SetName("k8s.node.cpu.usage")
-	m.data.SetDescription("Node CPU usage")
-	m.data.SetUnit("s")
+	m.data.SetDescription("Total CPU usage (sum of all cores per second) averaged over the sample window")
+	m.data.SetUnit("{cpu}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1632,7 +1632,7 @@ type metricK8sPodCPUTime struct {
 // init fills k8s.pod.cpu.time metric with initial data.
 func (m *metricK8sPodCPUTime) init() {
 	m.data.SetName("k8s.pod.cpu.time")
-	m.data.SetDescription("Pod CPU time")
+	m.data.SetDescription("Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -1683,8 +1683,8 @@ type metricK8sPodCPUUsage struct {
 // init fills k8s.pod.cpu.usage metric with initial data.
 func (m *metricK8sPodCPUUsage) init() {
 	m.data.SetName("k8s.pod.cpu.usage")
-	m.data.SetDescription("Pod CPU usage")
-	m.data.SetUnit("s")
+	m.data.SetDescription("Total CPU usage (sum of all cores per second) averaged over the sample window")
+	m.data.SetUnit("{cpu}")
 	m.data.SetEmptyGauge()
 }
 

@@ -320,7 +320,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.cpu.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Container CPU time", ms.At(i).Description())
+					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -334,8 +334,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.cpu.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container CPU usage", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", ms.At(i).Description())
+					assert.Equal(t, "{cpu}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -528,7 +528,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.node.cpu.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Node CPU time", ms.At(i).Description())
+					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -542,8 +542,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.node.cpu.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node CPU usage", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", ms.At(i).Description())
+					assert.Equal(t, "{cpu}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -728,7 +728,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.pod.cpu.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Pod CPU time", ms.At(i).Description())
+					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -742,8 +742,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.pod.cpu.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod CPU usage", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", ms.At(i).Description())
+					assert.Equal(t, "{cpu}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
