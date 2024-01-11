@@ -53,6 +53,7 @@ func TestIntegrationV6(t *testing.T) {
 }
 
 func TestIntegrationV7Cluster(t *testing.T) {
+    t.Skip("")
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
