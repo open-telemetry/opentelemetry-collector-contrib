@@ -5,12 +5,16 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
@@ -41,18 +45,23 @@ type connectorImp struct {
 var _ component.Component = (*connectorImp)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // function to create a new connector
-func newConnector(logger *zap.Logger, _ component.Config, metricsConsumer consumer.Metrics, tracesConsumer consumer.Traces) (*connectorImp, error) {
-	logger.Info("Building datadog connector")
+func newConnector(set component.TelemetrySettings, _ component.Config, metricsConsumer consumer.Metrics, tracesConsumer consumer.Traces) (*connectorImp, error) {
+	set.Logger.Info("Building datadog connector")
 
 	in := make(chan *pb.StatsPayload, 100)
-	trans, err := metrics.NewTranslator(logger)
+	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
+	attributesTranslator, err := attributes.NewTranslator(set)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create attributes translator: %w", err)
+	}
+	trans, err := metrics.NewTranslator(set, attributesTranslator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metrics translator: %w", err)
+	}
 
 	ctx := context.Background()
-	if err != nil {
-		return nil, err
-	}
 	return &connectorImp{
-		logger:          logger,
+		logger:          set.Logger,
 		agent:           datadog.NewAgent(ctx, in),
 		translator:      trans,
 		in:              in,
@@ -105,8 +114,19 @@ func (c *connectorImp) run() {
 			if len(stats.Stats) == 0 {
 				continue
 			}
+			var mx pmetric.Metrics
+			var err error
+			if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
+				c.logger.Debug("Received stats payload", zap.Any("stats", stats))
+				mx, err = c.translator.StatsToMetrics(stats)
+				if err != nil {
+					c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
+					continue
+				}
+			} else {
+				mx = c.translator.StatsPayloadToMetrics(stats)
+			}
 			// APM stats as metrics
-			mx := c.translator.StatsPayloadToMetrics(stats)
 			ctx := context.TODO()
 
 			// send metrics to the consumer or next component in pipeline

@@ -141,7 +141,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			tc.MockBackend.ClearReceivedItems()
 			startCounter := tc.MockBackend.DataItemsReceived()
 
-			sender, ok := tc.Sender.(testbed.MetricDataSender)
+			sender, ok := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.MetricDataSender)
 			require.True(t, ok, "unsupported metric sender")
 
 			require.NoError(t, sender.ConsumeMetrics(context.Background(), test.mockedConsumedMetrics))

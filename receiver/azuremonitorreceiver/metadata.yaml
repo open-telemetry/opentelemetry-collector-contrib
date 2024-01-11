@@ -15,3 +15,8 @@ resource_attributes:
   azuremonitor.subscription_id:
     description: Azure subscription ID
     type: string
+
+tests:
+  config:
+    client_secret: "secret"
+    tenant_id: "id"

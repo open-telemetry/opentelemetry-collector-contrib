@@ -28,8 +28,8 @@ func valueFor(x any) value {
 		case v == "NAME":
 			// if the string is NAME construct a path of "name".
 			val.Literal = &mathExprLiteral{
-				Path: &Path{
-					Fields: []Field{
+				Path: &path{
+					Fields: []field{
 						{
 							Name: "name",
 						},
@@ -38,11 +38,11 @@ func valueFor(x any) value {
 			}
 		case strings.Contains(v, "ENUM"):
 			// if the string contains ENUM construct an EnumSymbol from it.
-			val.Enum = (*EnumSymbol)(ottltest.Strp(v))
+			val.Enum = (*enumSymbol)(ottltest.Strp(v))
 		case v == "dur1" || v == "dur2":
 			val.Literal = &mathExprLiteral{
-				Path: &Path{
-					Fields: []Field{
+				Path: &path{
+					Fields: []field{
 						{
 							Name: v,
 						},
@@ -51,8 +51,8 @@ func valueFor(x any) value {
 			}
 		case v == "time1" || v == "time2":
 			val.Literal = &mathExprLiteral{
-				Path: &Path{
-					Fields: []Field{
+				Path: &path{
+					Fields: []field{
 						{
 							Name: v,
 						},
@@ -93,7 +93,7 @@ func comparisonHelper(left any, right any, op string) *comparison {
 func Test_newComparisonEvaluator(t *testing.T) {
 	p, _ := NewParser(
 		defaultFunctionsForTests(),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -185,7 +185,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 func Test_newConditionEvaluator_invalid(t *testing.T) {
 	p, _ := NewParser(
 		defaultFunctionsForTests(),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -195,12 +195,12 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 		comparison *comparison
 	}{
 		{
-			name: "unknown Path",
+			name: "unknown path",
 			comparison: &comparison{
 				Left: value{
-					Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+					Enum: (*enumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 				},
-				Op: EQ,
+				Op: eq,
 				Right: value{
 					String: ottltest.Strp("trash"),
 				},
@@ -233,7 +233,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 
 	p, _ := NewParser(
 		functions,
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -488,7 +488,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 							Left: value{
 								String: ottltest.Strp("test"),
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								String: ottltest.Strp("not test"),
 							},
@@ -616,7 +616,7 @@ func Test_newBooleanExpressionEvaluator_invalid(t *testing.T) {
 
 	p, _ := NewParser(
 		functions,
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)

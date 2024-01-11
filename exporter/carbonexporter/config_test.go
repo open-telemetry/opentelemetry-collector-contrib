@@ -11,9 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,8 +39,29 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				Endpoint: "localhost:8080",
-				Timeout:  10 * time.Second,
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "localhost:8080",
+				},
+				MaxIdleConns: 15,
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 10 * time.Second,
+				},
+				RetryConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					RandomizationFactor: 0.7,
+					Multiplier:          3.14,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+				},
+				QueueConfig: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+				ResourceToTelemetryConfig: resourcetotelemetry.Settings{
+					Enabled: true,
+				},
 			},
 		},
 	}
@@ -69,14 +94,27 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "invalid_tcp_addr",
 			config: &Config{
-				Endpoint: "http://localhost:2003",
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "http://localhost:2003",
+				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid_timeout",
 			config: &Config{
-				Timeout: -5 * time.Second,
+				TCPAddr: confignet.TCPAddr{Endpoint: defaultEndpoint},
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: -5 * time.Second,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid_max_idle_conns",
+			config: &Config{
+				TCPAddr:      confignet.TCPAddr{Endpoint: defaultEndpoint},
+				MaxIdleConns: -1,
 			},
 			wantErr: true,
 		},

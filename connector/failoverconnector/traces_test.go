@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -32,11 +33,11 @@ func TestTracesRegisterConsumers(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithTracesSink(tracesFirst, &sinkFirst),
-		connectortest.WithTracesSink(tracesSecond, &sinkSecond),
-		connectortest.WithTracesSink(tracesThird, &sinkThird),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesFirst:  &sinkFirst,
+		tracesSecond: &sinkSecond,
+		tracesThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
@@ -73,11 +74,11 @@ func TestTracesWithValidFailover(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithNopTraces(tracesFirst),
-		connectortest.WithTracesSink(tracesSecond, &sinkSecond),
-		connectortest.WithTracesSink(tracesThird, &sinkThird),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesFirst:  new(consumertest.TracesSink),
+		tracesSecond: &sinkSecond,
+		tracesThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
@@ -111,11 +112,11 @@ func TestTracesWithFailoverError(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithNopTraces(tracesFirst),
-		connectortest.WithTracesSink(tracesSecond, &sinkSecond),
-		connectortest.WithTracesSink(tracesThird, &sinkThird),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesFirst:  new(consumertest.TracesSink),
+		tracesSecond: &sinkSecond,
+		tracesThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
@@ -148,11 +149,11 @@ func TestTracesWithFailoverRecovery(t *testing.T) {
 		MaxRetries:       1000,
 	}
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithNopTraces(tracesFirst),
-		connectortest.WithTracesSink(tracesSecond, &sinkSecond),
-		connectortest.WithTracesSink(tracesThird, &sinkThird),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesFirst:  new(consumertest.TracesSink),
+		tracesSecond: &sinkSecond,
+		tracesThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))

@@ -22,7 +22,7 @@ type metricSystemCPULoadAverage15m struct {
 func (m *metricSystemCPULoadAverage15m) init() {
 	m.data.SetName("system.cpu.load_average.15m")
 	m.data.SetDescription("Average CPU Load over 15 minutes.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{thread}")
 	m.data.SetEmptyGauge()
 }
 
@@ -71,7 +71,7 @@ type metricSystemCPULoadAverage1m struct {
 func (m *metricSystemCPULoadAverage1m) init() {
 	m.data.SetName("system.cpu.load_average.1m")
 	m.data.SetDescription("Average CPU Load over 1 minute.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{thread}")
 	m.data.SetEmptyGauge()
 }
 
@@ -120,7 +120,7 @@ type metricSystemCPULoadAverage5m struct {
 func (m *metricSystemCPULoadAverage5m) init() {
 	m.data.SetName("system.cpu.load_average.5m")
 	m.data.SetDescription("Average CPU Load over 5 minutes.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{thread}")
 	m.data.SetEmptyGauge()
 }
 

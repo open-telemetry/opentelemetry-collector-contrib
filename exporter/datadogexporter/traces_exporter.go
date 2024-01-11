@@ -62,7 +62,7 @@ func newTracesExporter(
 		onceMetadata:     onceMetadata,
 		scrubber:         scrubber,
 		sourceProvider:   sourceProvider,
-		retrier:          clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		retrier:          clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
 		metadataReporter: metadataReporter,
 	}
 	// client to send running metric to the backend & perform API key validation

@@ -36,6 +36,7 @@ The following settings are available:
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignored` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
+- `match_once (optional, default: false)`: determines whether the connector matches multiple statements or not. If enabled, the payload will be routed to the first pipeline in the `table` whose routing condition is met.
 
 Example:
 
@@ -55,10 +56,21 @@ connectors:
   routing:
     default_pipelines: [traces/jaeger]
     error_mode: ignore
+    match_once: false
     table:
       - statement: route() where attributes["X-Tenant"] == "acme"
         pipelines: [traces/jaeger-acme]
       - statement: delete_key(attributes, "X-Tenant") where IsMatch(attributes["X-Tenant"], ".*corp")
+        pipelines: [traces/jaeger-ecorp]
+
+  routing/match_once:
+    default_pipelines: [traces/jaeger]
+    error_mode: ignore
+    match_once: true
+    table:
+      - statement: route() where attributes["X-Tenant"] == "acme"
+        pipelines: [traces/jaeger-acme]
+      - statement: route() where attributes["X-Tenant"] == ".*acme"
         pipelines: [traces/jaeger-ecorp]
 
 service:
