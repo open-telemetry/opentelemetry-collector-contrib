@@ -5,20 +5,21 @@ go 1.20
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.5.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.92.0
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.92.0
-	go.opentelemetry.io/collector/component v0.92.0
-	go.opentelemetry.io/collector/confmap v0.92.0
-	go.opentelemetry.io/collector/consumer v0.92.0
-	go.opentelemetry.io/collector/featuregate v1.0.1
-	go.opentelemetry.io/collector/pdata v1.0.1
-	go.opentelemetry.io/collector/processor v0.92.0
-	go.opentelemetry.io/collector/receiver v0.92.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.92.0
-	go.opentelemetry.io/collector/semconv v0.92.0
+	go.opentelemetry.io/collector v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/component v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/confmap v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/consumer v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/processor v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/receiver v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/semconv v0.92.1-0.20240110091511-bf804d6c4ecc
 	go.opentelemetry.io/otel/metric v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/multierr v1.11.0
@@ -34,7 +35,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.7+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
@@ -68,24 +69,24 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.2 // indirect
+	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/configgrpc v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/confighttp v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/confignet v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/internal v0.92.0 // indirect
-	go.opentelemetry.io/collector/extension v0.92.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.92.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/configcompression v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/configgrpc v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/confighttp v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/confignet v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/configtls v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/internal v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/extension v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/extension/auth v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
@@ -127,3 +128,11 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8ste
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go v0.54.0 => cloud.google.com/go v0.110.10
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden

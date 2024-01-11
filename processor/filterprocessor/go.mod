@@ -12,11 +12,11 @@ require (
 	github.com/prometheus/common v0.45.0
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/component v0.92.0
-	go.opentelemetry.io/collector/confmap v0.92.0
-	go.opentelemetry.io/collector/consumer v0.92.0
-	go.opentelemetry.io/collector/pdata v1.0.1
-	go.opentelemetry.io/collector/processor v0.92.0
+	go.opentelemetry.io/collector/component v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/confmap v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/consumer v0.92.1-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/processor v0.92.1-0.20240110091511-bf804d6c4ecc
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/metric v1.21.0
 	go.opentelemetry.io/otel/sdk/metric v1.21.0
@@ -57,10 +57,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	go.opentelemetry.io/collector v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.92.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.1 // indirect
-	go.opentelemetry.io/collector/semconv v0.92.0 // indirect
+	go.opentelemetry.io/collector v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/semconv v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
 	go.opentelemetry.io/otel/sdk v1.21.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/net v0.19.0 // indirect

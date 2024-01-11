@@ -20,7 +20,8 @@ type Config struct {
 	StatusCode       string
 	Batch            bool
 	LoadSize         int
-	SpanDuration     time.Duration
+
+	SpanDuration time.Duration
 }
 
 // Flags registers config flags.

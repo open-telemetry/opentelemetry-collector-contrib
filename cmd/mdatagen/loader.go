@@ -124,7 +124,7 @@ func (m *metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
-	err := parser.Unmarshal(m, confmap.WithErrorUnused())
+	err := parser.Unmarshal(m)
 	if err != nil {
 		return err
 	}

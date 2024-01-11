@@ -41,6 +41,12 @@ type baseLogsExporter struct {
 	consumer.Logs
 }
 
+// TODO: Find a place for this to be shared.
+type baseTracesExporter struct {
+	component.Component
+	consumer.Traces
+}
+
 // NewFactory creates a factory for Splunk HEC exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
@@ -103,7 +109,7 @@ func createTracesExporter(
 
 	c := newTracesClient(set, cfg)
 
-	return exporterhelper.NewTracesExporter(
+	e, err := exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
@@ -114,6 +120,17 @@ func createTracesExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop))
+
+	if err != nil {
+		return nil, err
+	}
+
+	wrapped := &baseTracesExporter{
+		Component: e,
+		Traces:    batchperresourceattr.NewMultiBatchPerResourceTraces([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}, e),
+	}
+
+	return wrapped, nil
 }
 
 func createMetricsExporter(
@@ -125,7 +142,7 @@ func createMetricsExporter(
 
 	c := newMetricsClient(set, cfg)
 
-	exporter, err := exporterhelper.NewMetricsExporter(
+	e, err := exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
@@ -141,8 +158,8 @@ func createMetricsExporter(
 	}
 
 	wrapped := &baseMetricsExporter{
-		Component: exporter,
-		Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.HecTokenLabel, exporter),
+		Component: e,
+		Metrics:   batchperresourceattr.NewMultiBatchPerResourceMetrics([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}, e),
 	}
 
 	return wrapped, nil
@@ -175,7 +192,7 @@ func createLogsExporter(
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs: batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, &perScopeBatcher{
+		Logs: batchperresourceattr.NewMultiBatchPerResourceLogs([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}, &perScopeBatcher{
 			logsEnabled:      cfg.LogDataEnabled,
 			profilingEnabled: cfg.ProfilingDataEnabled,
 			logger:           set.Logger,
