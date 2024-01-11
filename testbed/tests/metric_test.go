@@ -35,7 +35,6 @@ func TestMetric10kDPS(t *testing.T) {
 				ExpectedMaxCPU: 237,
 				ExpectedMaxRAM: 100,
 			},
-			skipMessage: "Flaky test, https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9729",
 		},
 		{
 			name:     "OpenCensus",

@@ -161,22 +161,21 @@ func Scenario10kItemsPerSecond(
 		resultsSummary,
 		testbed.WithResourceLimits(resourceSpec),
 	)
-	defer tc.Stop()
+	t.Cleanup(tc.Stop)
 
 	tc.StartBackend()
 	tc.StartAgent()
 
 	tc.StartLoad(options)
 
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+
 	tc.Sleep(tc.Duration)
 
 	tc.StopLoad()
 
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 		"all data items received")
-
-	tc.StopAgent()
 
 	tc.ValidateData()
 }
@@ -221,7 +220,7 @@ func Scenario10kItemsPerSecondAlternateBackend(
 		resultsSummary,
 		testbed.WithResourceLimits(resourceSpec),
 	)
-	defer tc.Stop()
+	t.Cleanup(tc.Stop)
 
 	// for some scenarios, the mockbackend isn't the same as the receiver
 	// therefore, the backend must be initialized with the correct receiver
@@ -231,16 +230,13 @@ func Scenario10kItemsPerSecondAlternateBackend(
 	tc.StartAgent()
 
 	tc.StartLoad(options)
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 
 	tc.Sleep(tc.Duration)
 
 	tc.StopLoad()
-
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 		"all data items received")
-
-	tc.StopAgent()
 
 	tc.ValidateData()
 }
@@ -311,8 +307,6 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 			tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 				"all spans received")
 
-			tc.StopAgent()
-
 			tc.ValidateData()
 		})
 	}
@@ -336,7 +330,6 @@ func ScenarioTestTraceNoBackend10kSPS(
 	resultsSummary testbed.TestResultsSummary,
 	configuration processorConfig,
 ) {
-
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
@@ -359,7 +352,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 		testbed.WithResourceLimits(resourceSpec),
 	)
 
-	defer tc.Stop()
+	t.Cleanup(tc.Stop)
 
 	tc.StartAgent()
 	tc.StartLoad(options)
