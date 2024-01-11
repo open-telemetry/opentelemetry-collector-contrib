@@ -21,9 +21,9 @@ const ServiceNameKey = "service.name"
 
 func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
 	cfg := castConfig(config)
-	e, err := newDatasetExporter("logs", cfg, set)
+	e, err := newDatasetExporter("traces", cfg, set)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
+		return nil, fmt.Errorf("cannot get DataSetExporter: %w", err)
 	}
 
 	return exporterhelper.NewTracesExporter(
@@ -32,7 +32,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 		config,
 		e.consumeTraces,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithShutdown(e.shutdown),
 	)

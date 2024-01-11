@@ -12,14 +12,15 @@ env:
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 jobs:
-  docker-build:
+  collector-build:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -33,6 +34,41 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Build Collector
+        run: make otelcontribcol
+      - name: Upload Collector Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: collector-binary
+          path: ./bin/*
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: collector-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ~1.20.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Download Collector Binary
+        uses: actions/download-artifact@v3
+        with:
+          name: collector-binary
+          path: bin/
+      - run: chmod +x bin/*
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol
@@ -54,9 +90,9 @@ jobs:
     needs: docker-build
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-cache
@@ -107,3 +143,35 @@ jobs:
         run: |
           cd receiver/k8sobjectsreceiver
           go test -v --tags=e2e
+  supervisor-test:
+    runs-on: ubuntu-latest
+    needs: collector-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ~1.20.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }} 
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Download Collector Binary
+        uses: actions/download-artifact@v3
+        with:
+          name: collector-binary
+          path: bin/
+      - run: chmod +x bin/*
+      - name: Run opampsupervisor e2e tests
+        run: |    
+          cd cmd/opampsupervisor
+          go test -v --tags=e2e
+

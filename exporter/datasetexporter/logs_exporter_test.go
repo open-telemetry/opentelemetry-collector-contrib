@@ -11,7 +11,9 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -20,6 +22,7 @@ import (
 	"github.com/scalyr/dataset-go/pkg/api/request"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -780,12 +783,15 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 
 	attempt := atomic.Uint64{}
 	wasSuccessful := atomic.Bool{}
-	addRequest := add_events.AddEventsRequest{}
+	addRequests := []add_events.AddEventsRequest{}
+	lock := sync.Mutex{}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		attempt.Add(1)
 		cer, err := extract(req)
-		addRequest = cer
+		lock.Lock()
+		addRequests = append(addRequests, cer)
+		lock.Unlock()
 
 		assert.NoError(t, err, "Error reading request: %v", err)
 
@@ -804,8 +810,9 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	config := &Config{
 		DatasetURL: server.URL,
 		APIKey:     "key-lib",
+		Debug:      true,
 		BufferSettings: BufferSettings{
-			MaxLifetime:          500 * time.Millisecond,
+			MaxLifetime:          2 * time.Second,
 			GroupBy:              []string{"attributes.container_id"},
 			RetryInitialInterval: time.Second,
 			RetryMaxInterval:     time.Minute,
@@ -831,7 +838,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		ServerHostSettings: ServerHostSettings{
 			ServerHost: testServerHost,
 		},
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
@@ -881,151 +888,204 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	}
 
 	assert.True(t, wasSuccessful.Load())
+	assert.Equal(t, uint64(4), attempt.Load())
+
+	sort.SliceStable(addRequests, func(i, j int) bool {
+		if addRequests[i].Session == addRequests[j].Session {
+			return len(addRequests[i].Events) < len(addRequests[j].Events)
+		}
+		return addRequests[i].Session < addRequests[j].Session
+	})
+
 	assert.Equal(t,
-		add_events.AddEventsRequest{
-			AuthParams: request.AuthParams{
-				Token: "key-lib",
-			},
-			AddEventsRequestParams: add_events.AddEventsRequestParams{
-				Session:     addRequest.Session,
-				SessionInfo: addRequest.SessionInfo,
-				Events: []*add_events.Event{
-					{
-						Thread: testLEventReq.Thread,
-						Log:    testLEventReq.Log,
-						Sev:    testLEventReq.Sev,
-						Ts:     testLEventReq.Ts,
-						Attrs: map[string]any{
-							add_events.AttrOrigServerHost: testServerHost,
-							"app":                         "server",
-							"instance_num":                float64(1),
-							"dropped_attributes_count":    float64(1),
-							"message":                     "This is a log message",
-							"span_id":                     "0102040800000000",
-							"trace_id":                    "08040201000000000000000000000000",
-							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
-
-							"R#resource-attr": "resource-attr-val-1",
-						},
-					},
-					{
-						Thread: testLEventReq.Thread,
-						Log:    testLEventReq.Log,
-						Sev:    testLEventReq.Sev,
-						Ts:     testLEventReq.Ts,
-						Attrs: map[string]any{
-							add_events.AttrOrigServerHost: "serverHostFromAttribute",
-							"app":                         "server",
-							"instance_num":                float64(1),
-							"dropped_attributes_count":    float64(1),
-							"message":                     "This is a log message",
-							"span_id":                     "0102040800000000",
-							"trace_id":                    "08040201000000000000000000000000",
-							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
-
-							"R#resource-attr": "resource-attr-val-1",
-							"R#serverHost":    "serverHostFromResource",
-						},
-					},
-					{
-						Thread: testLEventReq.Thread,
-						Log:    testLEventReq.Log,
-						Sev:    testLEventReq.Sev,
-						Ts:     testLEventReq.Ts,
-						Attrs: map[string]any{
-							add_events.AttrOrigServerHost: "serverHostFromResourceServer",
-							"app":                         "server",
-							"instance_num":                float64(1),
-							"dropped_attributes_count":    float64(1),
-							"message":                     "This is a log message",
-							"span_id":                     "0102040800000000",
-							"trace_id":                    "08040201000000000000000000000000",
-							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
-
-							"R#resource-attr": "resource-attr-val-1",
-							"R#host.name":     "serverHostFromResourceHost",
-							"R#serverHost":    "serverHostFromResourceServer",
-						},
-					},
-					{
-						Thread: testLEventReq.Thread,
-						Log:    testLEventReq.Log,
-						Sev:    testLEventReq.Sev,
-						Ts:     testLEventReq.Ts,
-						Attrs: map[string]any{
-							add_events.AttrOrigServerHost: "serverHostFromResourceHost",
-							"app":                         "server",
-							"instance_num":                float64(1),
-							"dropped_attributes_count":    float64(1),
-							"message":                     "This is a log message",
-							"span_id":                     "0102040800000000",
-							"trace_id":                    "08040201000000000000000000000000",
-							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
-
-							"R#resource-attr": "resource-attr-val-1",
-							"R#host.name":     "serverHostFromResourceHost",
-						},
-					},
-					{
-						Thread: testLEventReq.Thread,
-						Log:    testLEventReq.Log,
-						Sev:    testLEventReq.Sev,
-						Ts:     testLEventReq.Ts,
-						Attrs: map[string]any{
-							add_events.AttrOrigServerHost: testServerHost,
-							"app":                         "server",
-							"instance_num":                float64(1),
-							"dropped_attributes_count":    float64(1),
-							"message":                     "This is a log message",
-							"span_id":                     "0102040800000000",
-							"trace_id":                    "08040201000000000000000000000000",
-							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
-
-							"string":                     "stringA",
-							"double":                     2.0,
-							"bool":                       true,
-							"empty":                      nil,
-							"int":                        float64(3),
-							"map#map_empty":              nil,
-							"map#map_string":             "map_stringA",
-							"map#map_map#map_map_string": "map_map_stringA",
-							"slice#0":                    "slice_stringA",
-							"name":                       "filled_nameA",
-							"span_id_":                   "filled_span_idA",
-
-							"S#string":                     "stringS",
-							"S#double":                     2.0,
-							"S#bool":                       true,
-							"S#empty":                      nil,
-							"S#int":                        float64(3),
-							"S#map#map_empty":              nil,
-							"S#map#map_string":             "map_stringS",
-							"S#map#map_map#map_map_string": "map_map_stringS",
-							"S#slice#0":                    "slice_stringS",
-							"S#name":                       "filled_nameS",
-							"S#span_id":                    "filled_span_idS",
-
-							"R#string":                     "stringR",
-							"R#double":                     2.0,
-							"R#bool":                       true,
-							"R#empty":                      nil,
-							"R#int":                        float64(3),
-							"R#map#map_empty":              nil,
-							"R#map#map_string":             "map_stringR",
-							"R#map#map_map#map_map_string": "map_map_stringR",
-							"R#slice#0":                    "slice_stringR",
-							"R#name":                       "filled_nameR",
-							"R#span_id":                    "filled_span_idR",
-
-							"R#resource-attr": "resource-attr-val-1",
-						},
-					},
+		[]add_events.AddEventsRequest{
+			{
+				AuthParams: request.AuthParams{
+					Token: "key-lib",
 				},
-				Threads: []*add_events.Thread{testLThread},
-				Logs:    []*add_events.Log{testLLog},
+				AddEventsRequestParams: add_events.AddEventsRequestParams{
+					Session: addRequests[0].Session,
+					SessionInfo: &add_events.SessionInfo{
+						add_events.AttrServerHost: "serverHostFromAttribute",
+						add_events.AttrSessionKey: "0296b9a57cb379df0f35aaf2d23500d3",
+					},
+					Events: []*add_events.Event{
+						{
+							Thread: testLEventReq.Thread,
+							Log:    testLEventReq.Log,
+							Sev:    testLEventReq.Sev,
+							Ts:     testLEventReq.Ts,
+							Attrs: map[string]any{
+								"app":                      "server",
+								"instance_num":             float64(1),
+								"dropped_attributes_count": float64(1),
+								"message":                  "This is a log message",
+								"span_id":                  "0102040800000000",
+								"trace_id":                 "08040201000000000000000000000000",
+
+								"R#resource-attr": "resource-attr-val-1",
+								"R#serverHost":    "serverHostFromResource",
+							},
+							ServerHost: "",
+						},
+					},
+					Threads: []*add_events.Thread{testLThread},
+					Logs:    []*add_events.Log{testLLog},
+				},
+			},
+			{
+				AuthParams: request.AuthParams{
+					Token: "key-lib",
+				},
+				AddEventsRequestParams: add_events.AddEventsRequestParams{
+					Session: addRequests[1].Session,
+					SessionInfo: &add_events.SessionInfo{
+						add_events.AttrServerHost: "serverHostFromResourceHost",
+						add_events.AttrSessionKey: "73b97897d80d89c9a09a3ee6ed178650",
+					},
+					Events: []*add_events.Event{
+						{
+							Thread: testLEventReq.Thread,
+							Log:    testLEventReq.Log,
+							Sev:    testLEventReq.Sev,
+							Ts:     testLEventReq.Ts,
+							Attrs: map[string]any{
+								"app":                      "server",
+								"instance_num":             float64(1),
+								"dropped_attributes_count": float64(1),
+								"message":                  "This is a log message",
+								"span_id":                  "0102040800000000",
+								"trace_id":                 "08040201000000000000000000000000",
+
+								"R#resource-attr": "resource-attr-val-1",
+								"R#host.name":     "serverHostFromResourceHost",
+							},
+						},
+					},
+					Threads: []*add_events.Thread{testLThread},
+					Logs:    []*add_events.Log{testLLog},
+				},
+			},
+			{
+				AuthParams: request.AuthParams{
+					Token: "key-lib",
+				},
+				AddEventsRequestParams: add_events.AddEventsRequestParams{
+					Session: addRequests[2].Session,
+					SessionInfo: &add_events.SessionInfo{
+						add_events.AttrServerHost: "serverHostFromResourceServer",
+						add_events.AttrSessionKey: "770e22b433d2e9a31fa9a81abf3b9b87",
+					},
+					Events: []*add_events.Event{
+						{
+							Thread: testLEventReq.Thread,
+							Log:    testLEventReq.Log,
+							Sev:    testLEventReq.Sev,
+							Ts:     testLEventReq.Ts,
+							Attrs: map[string]any{
+								"app":                      "server",
+								"instance_num":             float64(1),
+								"dropped_attributes_count": float64(1),
+								"message":                  "This is a log message",
+								"span_id":                  "0102040800000000",
+								"trace_id":                 "08040201000000000000000000000000",
+
+								"R#resource-attr": "resource-attr-val-1",
+								"R#host.name":     "serverHostFromResourceHost",
+								"R#serverHost":    "serverHostFromResourceServer",
+							},
+						},
+					},
+					Threads: []*add_events.Thread{testLThread},
+					Logs:    []*add_events.Log{testLLog},
+				},
+			},
+			{
+				AuthParams: request.AuthParams{
+					Token: "key-lib",
+				},
+				AddEventsRequestParams: add_events.AddEventsRequestParams{
+					Session: addRequests[3].Session,
+					SessionInfo: &add_events.SessionInfo{
+						add_events.AttrServerHost: "foo",
+						add_events.AttrSessionKey: "caedd419dc354c24a69aac7508890ec1",
+					},
+					Events: []*add_events.Event{
+						{
+							Thread: testLEventReq.Thread,
+							Log:    testLEventReq.Log,
+							Sev:    testLEventReq.Sev,
+							Ts:     testLEventReq.Ts,
+							Attrs: map[string]any{
+								"app":                      "server",
+								"instance_num":             float64(1),
+								"dropped_attributes_count": float64(1),
+								"message":                  "This is a log message",
+								"span_id":                  "0102040800000000",
+								"trace_id":                 "08040201000000000000000000000000",
+
+								"R#resource-attr": "resource-attr-val-1",
+							},
+						},
+						{
+							Thread: testLEventReq.Thread,
+							Log:    testLEventReq.Log,
+							Sev:    testLEventReq.Sev,
+							Ts:     testLEventReq.Ts,
+							Attrs: map[string]any{
+								"app":                      "server",
+								"instance_num":             float64(1),
+								"dropped_attributes_count": float64(1),
+								"message":                  "This is a log message",
+								"span_id":                  "0102040800000000",
+								"trace_id":                 "08040201000000000000000000000000",
+
+								"string":                     "stringA",
+								"double":                     2.0,
+								"bool":                       true,
+								"empty":                      nil,
+								"int":                        float64(3),
+								"map#map_empty":              nil,
+								"map#map_string":             "map_stringA",
+								"map#map_map#map_map_string": "map_map_stringA",
+								"slice#0":                    "slice_stringA",
+								"name":                       "filled_nameA",
+								"span_id_":                   "filled_span_idA",
+
+								"S#string":                     "stringS",
+								"S#double":                     2.0,
+								"S#bool":                       true,
+								"S#empty":                      nil,
+								"S#int":                        float64(3),
+								"S#map#map_empty":              nil,
+								"S#map#map_string":             "map_stringS",
+								"S#map#map_map#map_map_string": "map_map_stringS",
+								"S#slice#0":                    "slice_stringS",
+								"S#name":                       "filled_nameS",
+								"S#span_id":                    "filled_span_idS",
+
+								"R#string":                     "stringR",
+								"R#double":                     2.0,
+								"R#bool":                       true,
+								"R#empty":                      nil,
+								"R#int":                        float64(3),
+								"R#map#map_empty":              nil,
+								"R#map#map_string":             "map_stringR",
+								"R#map#map_map#map_map_string": "map_map_stringR",
+								"R#slice#0":                    "slice_stringR",
+								"R#name":                       "filled_nameR",
+								"R#span_id":                    "filled_span_idR",
+
+								"R#resource-attr": "resource-attr-val-1",
+							},
+						},
+					},
+					Threads: []*add_events.Thread{testLThread},
+					Logs:    []*add_events.Log{testLLog},
+				},
 			},
 		},
-		addRequest,
+		addRequests,
 	)
 }
 

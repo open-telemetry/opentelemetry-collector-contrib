@@ -20,6 +20,8 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
+	maxIdleConns := 42
+	idleConnTimeout := 80 * time.Second
 
 	tests := []struct {
 		id       component.ID
@@ -40,7 +42,9 @@ func TestLoadConfig(t *testing.T) {
 					Headers: map[string]configopaque.String{
 						"otel_http_forwarder": "dev",
 					},
-					Timeout: 5 * time.Second,
+					MaxIdleConns:    &maxIdleConns,
+					IdleConnTimeout: &idleConnTimeout,
+					Timeout:         5 * time.Second,
 				},
 			},
 		},

@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
-func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *metadata.MetricsBuilder, logger *zap.Logger) {
+func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *metadata.MetricsBuilder, _ *zap.Logger) {
 	stat := fileinfo.Sys().(*syscall.Win32FileAttributeData)
 	atime := stat.LastAccessTime.Nanoseconds() / int64(time.Second)
 	ctime := stat.LastWriteTime.Nanoseconds() / int64(time.Second)

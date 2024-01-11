@@ -17,4 +17,6 @@ type Config struct {
 	internal.ScraperConfig
 	// GitHubOrg is the name of the GitHub organization to srape (github scraper only)
 	GitHubOrg string `mapstructure:"github_org"`
+	// SearchQuery is the query to use when defining a custom search for repository data
+	SearchQuery string `mapstructure:"search_query"`
 }

@@ -37,14 +37,19 @@ jobs:
           - other
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
+    env:
+      # Limit memory usage via GC environment variables to avoid OOM on GH runners, especially for `cmd/otelcontribcol`,
+      # see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28682#issuecomment-1802296776
+      GOGC: 50
+      GOMEMLIMIT: 2GiB
     steps:
       - uses: actions/checkout@v4
       - if: matrix.group == 'receiver-0'
         name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: ~1.20.12
           cache: false
       - name: Cache Go
         id: go-mod-cache
@@ -55,6 +60,9 @@ jobs:
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - if: matrix.group == 'cmd'
+        name: Increasing GOTEST_TIMEOUT for group 'cmd'
+        run: echo "GOTEST_TIMEOUT=1200s" >> $Env:GITHUB_ENV
       - name: Run Unit tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
   windows-unittest:

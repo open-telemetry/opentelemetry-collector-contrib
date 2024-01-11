@@ -24,7 +24,7 @@ to report metrics from a target MBean server using a built-in `otel` helper-util
 
 This receiver will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
 connection information and target Groovy script.  It then reports metrics to an implicitly created OTLP receiver.
-In order to use you will need to download the most [recent release](https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
+In order to use you will need to download the most [recent release](https://github.com/open-telemetry/opentelemetry-java-contrib/releases)
 of the JMX Metric Gatherer JAR and configure the receiver with its path.  It is assumed that the JRE is
 available on your system.
 

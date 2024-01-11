@@ -234,10 +234,7 @@ func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
 }
 
 func renderCreateLogsTableSQL(cfg *Config) string {
-	var ttlExpr string
-	if cfg.TTLDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
-	}
+	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "Timestamp")
 	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, ttlExpr)
 }
 

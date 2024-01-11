@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package main
 
 import (
@@ -34,7 +30,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
@@ -215,6 +213,35 @@ func TestDefaultExtensions(t *testing.T) {
 			skipLifecycle: true,
 			getConfigFn: func() component.Config {
 				return extFactories["jaegerremotesampling"].CreateDefaultConfig().(*jaegerremotesampling.Config)
+			},
+		},
+		{
+			extension: "otlp_encoding",
+		},
+		{
+			extension: "text_encoding",
+		},
+		{
+			extension: "jaeger_encoding",
+		},
+		{
+			extension: "json_log_encoding",
+		},
+		{
+			extension: "zipkin_encoding",
+		},
+		{
+			extension: "remotetap",
+			getConfigFn: func() component.Config {
+				return extFactories["remotetap"].CreateDefaultConfig().(*remotetapextension.Config)
+			},
+		},
+		{
+			extension: "opamp",
+			getConfigFn: func() component.Config {
+				cfg := extFactories["opamp"].CreateDefaultConfig().(*opampextension.Config)
+				cfg.Server.WS.Endpoint = "wss://" + endpoint
+				return cfg
 			},
 		},
 	}

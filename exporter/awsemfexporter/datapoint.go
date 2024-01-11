@@ -61,10 +61,10 @@ type dataPoints interface {
 	// retained: indicates whether the data point is valid for further process
 	// NOTE: It is an expensive call as it calculates the metric value.
 	CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) (dataPoint []dataPoint, retained bool)
-	// IsStaleOrNaN returns true if metric value has NoRecordedValue flag set or if any metric value contains a NaN.
-	// When return value is true, IsStaleOrNaN also returns the attributes attached to the metric which can be used for
+	// IsStaleNaNInf returns true if metric value has NoRecordedValue flag set or if any metric value contains a NaN or Inf.
+	// When return value is true, IsStaleNaNInf also returns the attributes attached to the metric which can be used for
 	// logging purposes.
-	IsStaleOrNaN(i int) (bool, pcommon.Map)
+	IsStaleNaNInf(i int) (bool, pcommon.Map)
 }
 
 // deltaMetricMetadata contains the metadata required to perform rate/delta calculation
@@ -149,13 +149,13 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 	return []dataPoint{{name: dps.metricName, value: metricVal, labels: labels, timestampMs: timestampMs}}, retained
 }
 
-func (dps numberDataPointSlice) IsStaleOrNaN(i int) (bool, pcommon.Map) {
+func (dps numberDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 	metric := dps.NumberDataPointSlice.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
 	if metric.ValueType() == pmetric.NumberDataPointValueTypeDouble {
-		return math.IsNaN(metric.DoubleValue()), metric.Attributes()
+		return math.IsNaN(metric.DoubleValue()) || math.IsInf(metric.DoubleValue(), 0), metric.Attributes()
 	}
 	return false, pcommon.Map{}
 }
@@ -179,12 +179,14 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 	}}, true
 }
 
-func (dps histogramDataPointSlice) IsStaleOrNaN(i int) (bool, pcommon.Map) {
+func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 	metric := dps.HistogramDataPointSlice.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
-	if math.IsNaN(metric.Max()) || math.IsNaN(metric.Sum()) || math.IsNaN(metric.Min()) {
+	if math.IsNaN(metric.Max()) || math.IsNaN(metric.Sum()) ||
+		math.IsNaN(metric.Min()) || math.IsInf(metric.Max(), 0) ||
+		math.IsInf(metric.Sum(), 0) || math.IsInf(metric.Min(), 0) {
 		return true, metric.Attributes()
 	}
 	return false, pcommon.Map{}
@@ -272,14 +274,17 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 	}}, true
 }
 
-func (dps exponentialHistogramDataPointSlice) IsStaleOrNaN(i int) (bool, pcommon.Map) {
+func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 	metric := dps.ExponentialHistogramDataPointSlice.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
 	if math.IsNaN(metric.Max()) ||
 		math.IsNaN(metric.Min()) ||
-		math.IsNaN(metric.Sum()) {
+		math.IsNaN(metric.Sum()) ||
+		math.IsInf(metric.Max(), 0) ||
+		math.IsInf(metric.Min(), 0) ||
+		math.IsInf(metric.Sum(), 0) {
 		return true, metric.Attributes()
 	}
 
@@ -343,14 +348,24 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 	return datapoints, retained
 }
 
-func (dps summaryDataPointSlice) IsStaleOrNaN(i int) (bool, pcommon.Map) {
+func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 	metric := dps.SummaryDataPointSlice.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
-	if math.IsNaN(metric.Sum()) {
+	if math.IsNaN(metric.Sum()) || math.IsInf(metric.Sum(), 0) {
 		return true, metric.Attributes()
 	}
+
+	values := metric.QuantileValues()
+	for i := 0; i < values.Len(); i++ {
+		quantile := values.At(i)
+		if math.IsNaN(quantile.Value()) || math.IsNaN(quantile.Quantile()) ||
+			math.IsInf(quantile.Value(), 0) || math.IsInf(quantile.Quantile(), 0) {
+			return true, metric.Attributes()
+		}
+	}
+
 	return false, metric.Attributes()
 }
 

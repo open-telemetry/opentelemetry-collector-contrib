@@ -4,6 +4,9 @@ status:
   class: processor
   stability:
     beta: [traces, metrics, logs]
-  distributions: [sumo]
+  distributions: [contrib, sumo]
   codeowners:
     active: [aboguszewski-sumo, astencel-sumo, sumo-drosiek]
+
+tests:
+  config:

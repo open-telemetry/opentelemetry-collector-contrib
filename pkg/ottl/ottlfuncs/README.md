@@ -5,8 +5,20 @@ interact with OTel data via the Collector's internal data model, [pdata](https:/
 
 This document contains documentation for both types of OTTL functions:
 
-- [Functions](#functions) that transform telemetry.
+- [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
+
+## Design principles
+
+For the standard OTTL functions described in this document, we specify design principles to ensure they are always
+secure and safe for use:
+
+- Built-in OTTL functions may not access the file system, network, or any other I/O devices.
+- Built-in OTTL functions may share information only through their parameters and results.
+- Built-in OTTL functions must be terminating; they must not loop forever.
+
+OTTL functions are implemented in Go, and so are only limited by what can be implemented in a Go program.
+User-defined OTTL functions may therefore not adhere the above principles.
 
 ## Working with functions
 
@@ -293,11 +305,13 @@ Available Converters:
 - [ConvertCase](#convertcase)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Hour](#hour)
 - [Hours](#hours)
 - [Double](#double)
 - [Duration](#duration)
 - [Int](#int)
 - [IsBool](#isbool)
+- [IsDouble](#isdouble)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
@@ -441,6 +455,20 @@ Examples:
 
 - `FNV("name")`
 
+### Hour
+
+`Hour(value)`
+
+The `Hour` Converter returns the hour from the specified time.  The Converter [uses the `time.Hour` function](https://pkg.go.dev/time#Time.Hour).
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Hour(Now())`
+
 ### Hours
 
 `Hours(value)`
@@ -506,6 +534,22 @@ Examples:
 
 
 - `IsBool(attributes["any key"])`
+
+### IsDouble
+
+`IsDouble(value)`
+
+The `IsDouble` Converter returns true if the given value is a double.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+If `value` is a `float64` or a `pcommon.ValueTypeDouble` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsDouble(body)`
+
+- `IsDouble(attributes["maybe a double"])`
 
 ### IsMap
 
@@ -587,7 +631,7 @@ Examples:
 
 `Log(value)`
 
-The `Log` Converter returns the logarithm of the `target`.
+The `Log` Converter returns a `float64` that is the logarithm of the `target`.
 
 `target` is either a path expression to a telemetry field to retrieve or a literal.
 

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -28,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		TracesSettings:     newDefaultTracesSettings(),
 		LogsSettings:       newDefaultLogsSettings(),
 		ServerHostSettings: newDefaultServerHostSettings(),
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 	}, cfg, "failed to create default config")
@@ -53,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 				TracesSettings:     newDefaultTracesSettings(),
 				LogsSettings:       newDefaultLogsSettings(),
 				ServerHostSettings: newDefaultServerHostSettings(),
-				RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 				QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 			},
@@ -74,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 				TracesSettings:     newDefaultTracesSettings(),
 				LogsSettings:       newDefaultLogsSettings(),
 				ServerHostSettings: newDefaultServerHostSettings(),
-				RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 				QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 			},
@@ -84,6 +85,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				DatasetURL: "https://app.scalyr.com",
 				APIKey:     "key-full",
+				Debug:      true,
 				BufferSettings: BufferSettings{
 					MaxLifetime:          3456 * time.Millisecond,
 					GroupBy:              []string{"body.map.kubernetes.pod_id", "body.map.kubernetes.docker_id", "body.map.stream"},
@@ -114,10 +116,10 @@ func TestLoadConfig(t *testing.T) {
 					UseHostName: false,
 					ServerHost:  "server-host",
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     11 * time.Nanosecond,
-					RandomizationFactor: 11.3,
+					RandomizationFactor: 0.113,
 					Multiplier:          11.6,
 					MaxInterval:         12 * time.Nanosecond,
 					MaxElapsedTime:      13 * time.Nanosecond,
@@ -160,7 +162,7 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:false ExportResourcePrefix: ExportScopeInfo:false ExportScopePrefix: DecomposeComplexMessageField:false DecomposedComplexMessagePrefix: exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; TracesSettings: {exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; ServerHostSettings: {UseHostName:false ServerHost:}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExporter: cannot convert config: DatasetURL: ; APIKey: [REDACTED] (0); Debug: false; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:false ExportResourcePrefix: ExportScopeInfo:false ExportScopePrefix: DecomposeComplexMessageField:false DecomposedComplexMessagePrefix: exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; TracesSettings: {exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; ServerHostSettings: {UseHostName:false ServerHost:}; BackOffConfig: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",
@@ -180,7 +182,7 @@ func createExporterTests() []CreateTest {
 				ServerHostSettings: ServerHostSettings{
 					UseHostName: true,
 				},
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			},

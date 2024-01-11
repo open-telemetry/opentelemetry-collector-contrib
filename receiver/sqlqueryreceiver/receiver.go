@@ -19,7 +19,7 @@ type sqlOpenerFunc func(driverName, dataSourceName string) (*sql.DB, error)
 
 type dbProviderFunc func() (*sql.DB, error)
 
-type clientProviderFunc func(db, string, *zap.Logger) dbClient
+type clientProviderFunc func(db, string, *zap.Logger, TelemetryConfig) dbClient
 
 func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateLogsFunc {
 	return func(
@@ -52,6 +52,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc c
 				query:     query,
 				scrapeCfg: sqlCfg.ScraperControllerSettings,
 				logger:    settings.TelemetrySettings.Logger,
+				telemetry: sqlCfg.Telemetry,
 				dbProviderFunc: func() (*sql.DB, error) {
 					return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
 				},

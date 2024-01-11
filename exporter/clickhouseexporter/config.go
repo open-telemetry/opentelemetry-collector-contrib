@@ -8,16 +8,18 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
@@ -37,7 +39,10 @@ type Config struct {
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
 	MetricsTableName string `mapstructure:"metrics_table_name"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
+	// Deprecated: Use 'ttl' instead
 	TTLDays uint `mapstructure:"ttl_days"`
+	// TTL is The data time-to-live example 30m, 48h. 0 means no ttl.
+	TTL time.Duration `mapstructure:"ttl"`
 }
 
 const defaultDatabase = "default"
@@ -45,6 +50,7 @@ const defaultDatabase = "default"
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
+	errConfigTTL             = errors.New("both 'ttl_days' and 'ttl' can not be provided. 'ttl_days' is deprecated, use 'ttl' instead")
 )
 
 // Validate the clickhouse server configuration.
@@ -55,6 +61,10 @@ func (cfg *Config) Validate() (err error) {
 	dsn, e := cfg.buildDSN(cfg.Database)
 	if e != nil {
 		err = errors.Join(err, e)
+	}
+
+	if cfg.TTL > 0 && cfg.TTLDays > 0 {
+		err = errors.Join(err, errConfigTTL)
 	}
 
 	// Validate DSN with clickhouse driver.

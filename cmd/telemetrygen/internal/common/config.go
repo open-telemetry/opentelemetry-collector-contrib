@@ -63,6 +63,18 @@ type Config struct {
 	Headers             KeyValue
 	ResourceAttributes  KeyValue
 	TelemetryAttributes KeyValue
+
+	// OTLP TLS configuration
+	CaFile string
+
+	// OTLP mTLS configuration
+	ClientAuth ClientAuth
+}
+
+type ClientAuth struct {
+	Enabled        bool
+	ClientCertFile string
+	ClientKeyFile  string
 }
 
 // Endpoint returns the appropriate endpoint URL based on the selected communication mode (gRPC or HTTP)
@@ -125,4 +137,12 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	c.TelemetryAttributes = make(map[string]string)
 	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in the format \"key=\\\"value\\\"\". "+
 		"Flag may be repeated to set multiple attributes (e.g --telemetry-attributes \"key1=\\\"value1\\\"\" --telemetry-attributes \"key2=\\\"value2\\\"\")")
+
+	// TLS CA configuration
+	fs.StringVar(&c.CaFile, "ca-cert", "", "Trusted Certificate Authority to verify server certificate")
+
+	// mTLS configuration
+	fs.BoolVar(&c.ClientAuth.Enabled, "mtls", false, "Whether to require client authentication for mTLS")
+	fs.StringVar(&c.ClientAuth.ClientCertFile, "client-cert", "", "Client certificate file")
+	fs.StringVar(&c.ClientAuth.ClientKeyFile, "client-key", "", "Client private key file")
 }

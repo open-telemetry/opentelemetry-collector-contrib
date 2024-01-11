@@ -83,7 +83,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	p, _ := NewParser(
 		functions,
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -150,8 +150,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -176,8 +176,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -283,8 +283,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 						Name: "get_setter_arg",
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -323,8 +323,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -368,7 +368,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+							Enum: (*enumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 						},
 					},
 				},
@@ -393,6 +393,59 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "non_pointer",
 			},
 		},
+		{
+			name: "path parts not all used",
+			inv: editor{
+				Function: "testing_getsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+										{
+											Name: "not-used",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keys not allowed",
+			inv: editor{
+				Function: "testing_getsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+											Keys: []key{
+												{
+													String: ottltest.Strp("foo"),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -407,7 +460,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 func Test_NewFunctionCall(t *testing.T) {
 	p, _ := NewParser(
 		defaultFunctionsForTests(),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -542,8 +595,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -568,7 +621,7 @@ func Test_NewFunctionCall(t *testing.T) {
 										Bool: (*boolean)(ottltest.Boolp(true)),
 									},
 									{
-										Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+										Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM")),
 									},
 									{
 										List: &list{
@@ -620,8 +673,8 @@ func Test_NewFunctionCall(t *testing.T) {
 													{
 														Value: value{
 															Literal: &mathExprLiteral{
-																Path: &Path{
-																	Fields: []Field{
+																Path: &path{
+																	Fields: []field{
 																		{
 																			Name: "name",
 																		},
@@ -766,8 +819,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -777,8 +830,8 @@ func Test_NewFunctionCall(t *testing.T) {
 									},
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -877,8 +930,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -899,8 +952,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -921,8 +974,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -979,8 +1032,8 @@ func Test_NewFunctionCall(t *testing.T) {
 									},
 									{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -996,8 +1049,8 @@ func Test_NewFunctionCall(t *testing.T) {
 													{
 														Value: value{
 															Literal: &mathExprLiteral{
-																Path: &Path{
-																	Fields: []Field{
+																Path: &path{
+																	Fields: []field{
 																		{
 																			Name: "name",
 																		},
@@ -1168,8 +1221,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1264,8 +1317,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1305,8 +1358,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1344,8 +1397,8 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Path: &Path{
-									Fields: []Field{
+								Path: &path{
+									Fields: []field{
 										{
 											Name: "name",
 										},
@@ -1384,7 +1437,59 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+							Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM")),
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "Complex Indexing",
+			inv: editor{
+				Function: "testing_getsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
+											Keys: []key{
+												{
+													String: ottltest.Strp("foo"),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "path that allows keys but none have been specified",
+			inv: editor{
+				Function: "testing_getsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -1414,7 +1519,7 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 	)
 	p, _ := NewParser(
 		CreateFactoryMap[any](fact),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -1425,8 +1530,8 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 			{
 				Value: value{
 					Literal: &mathExprLiteral{
-						Path: &Path{
-							Fields: []Field{
+						Path: &path{
+							Fields: []field{
 								{
 									Name: "name",
 								},
@@ -1461,8 +1566,8 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 			{
 				Value: value{
 					Literal: &mathExprLiteral{
-						Path: &Path{
-							Fields: []Field{
+						Path: &path{
+							Fields: []field{
 								{
 									Name: "name",
 								},
@@ -2092,4 +2197,196 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithEnum,
 		),
 	)
+}
+
+func Test_basePath_Name(t *testing.T) {
+	bp := basePath[any]{
+		name: "test",
+	}
+	n := bp.Name()
+	assert.Equal(t, "test", n)
+}
+
+func Test_basePath_Next(t *testing.T) {
+	bp := basePath[any]{
+		nextPath: &basePath[any]{},
+	}
+	next := bp.Next()
+	assert.NotNil(t, next)
+	assert.Nil(t, next.Next())
+}
+
+func Test_basePath_Keys(t *testing.T) {
+	k := &baseKey[any]{}
+	bp := basePath[any]{
+		keys: []Key[any]{
+			k,
+		},
+	}
+	ks := bp.Keys()
+	assert.Equal(t, 1, len(ks))
+	assert.Equal(t, k, ks[0])
+}
+
+func Test_basePath_isComplete(t *testing.T) {
+	tests := []struct {
+		name          string
+		p             basePath[any]
+		expectedError bool
+	}{
+		{
+			name: "fetched no next",
+			p: basePath[any]{
+				fetched: true,
+			},
+		},
+		{
+			name: "fetched with next",
+			p: basePath[any]{
+				fetched: true,
+				nextPath: &basePath[any]{
+					fetched: true,
+				},
+			},
+		},
+		{
+			name: "not fetched no next",
+			p: basePath[any]{
+				fetched: false,
+			},
+			expectedError: true,
+		},
+		{
+			name: "not fetched with next",
+			p: basePath[any]{
+				fetched: true,
+				nextPath: &basePath[any]{
+					fetched: false,
+				},
+			},
+			expectedError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.p.isComplete()
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_basePath_NextWithIsComplete(t *testing.T) {
+	tests := []struct {
+		name          string
+		pathFunc      func() *basePath[any]
+		expectedError bool
+	}{
+		{
+			name: "fetched",
+			pathFunc: func() *basePath[any] {
+				bp := basePath[any]{
+					fetched: true,
+					nextPath: &basePath[any]{
+						fetched: false,
+					},
+				}
+				bp.Next()
+				return &bp
+			},
+		},
+		{
+			name: "not fetched enough",
+			pathFunc: func() *basePath[any] {
+				bp := basePath[any]{
+					fetched: true,
+					nextPath: &basePath[any]{
+						fetched: false,
+						nextPath: &basePath[any]{
+							fetched: false,
+						},
+					},
+				}
+				bp.Next()
+				return &bp
+			},
+			expectedError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.pathFunc().isComplete()
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_newPath(t *testing.T) {
+	fields := []field{
+		{
+			Name: "body",
+		},
+		{
+			Name: "string",
+		},
+	}
+	np, err := newPath[any](fields)
+	assert.NoError(t, err)
+	p := Path[any](np)
+	assert.Equal(t, "body", p.Name())
+	assert.Nil(t, p.Keys())
+	p = p.Next()
+	assert.Equal(t, "string", p.Name())
+	assert.Nil(t, p.Keys())
+	assert.Nil(t, p.Next())
+}
+
+func Test_baseKey_String(t *testing.T) {
+	bp := baseKey[any]{
+		s: ottltest.Strp("test"),
+	}
+	s, err := bp.String(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, s)
+	assert.Equal(t, "test", *s)
+}
+
+func Test_baseKey_Int(t *testing.T) {
+	bp := baseKey[any]{
+		i: ottltest.Intp(1),
+	}
+	i, err := bp.Int(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, i)
+	assert.Equal(t, int64(1), *i)
+}
+
+func Test_newKey(t *testing.T) {
+	keys := []key{
+		{
+			String: ottltest.Strp("foo"),
+		},
+		{
+			String: ottltest.Strp("bar"),
+		},
+	}
+	ks := newKeys[any](keys)
+
+	assert.Equal(t, 2, len(ks))
+
+	s, err := ks[0].String(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, s)
+	assert.Equal(t, "foo", *s)
+	s, err = ks[1].String(context.Background(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, s)
+	assert.Equal(t, "bar", *s)
 }
