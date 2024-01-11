@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -101,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "apitoken"),
 			expected: &Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "https://company.logicmonitor.com/rest",
@@ -115,7 +116,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bearertoken"),
 			expected: &Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "https://company.logicmonitor.com/rest",
@@ -128,7 +129,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "resource-mapping-op"),
 			expected: &Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "https://company.logicmonitor.com/rest",

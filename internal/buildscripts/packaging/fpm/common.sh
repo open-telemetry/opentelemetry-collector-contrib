@@ -31,8 +31,8 @@ docker_cp() {
     local dest_dir="$( dirname "$dest" )"
 
     echo "Copying $src to $container:$dest ..."
-    docker exec $container mkdir -p "$dest_dir"
-    docker cp "$src" $container:"$dest"
+    podman exec $container mkdir -p "$dest_dir"
+    podman cp "$src" $container:"$dest"
 }
 
 install_pkg() {
@@ -43,9 +43,9 @@ install_pkg() {
     echo "Installing $pkg_base ..."
     docker_cp $container "$pkg_path" /tmp/$pkg_base
     if [[ "${pkg_base##*.}" = "deb" ]]; then
-        docker exec $container dpkg -i /tmp/$pkg_base
+        podman exec $container dpkg -i /tmp/$pkg_base
     else
-        docker exec $container rpm -ivh /tmp/$pkg_base
+        podman exec $container rpm -ivh /tmp/$pkg_base
     fi
 }
 
@@ -56,8 +56,8 @@ uninstall_pkg() {
 
     echo "Uninstalling $pkg_name ..."
     if [[ "$pkg_type" = "deb" ]]; then
-        docker exec $container dpkg -r $pkg_name
+        podman exec $container dpkg -r $pkg_name
     else
-        docker exec $container rpm -e $pkg_name
+        podman exec $container rpm -e $pkg_name
     fi
 }
