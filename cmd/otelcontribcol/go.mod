@@ -1188,5 +1188,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opam
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter => ../../testbed/mockdatasenders/mockdatadogagentexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../testbed
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver => ../../testbed/mockdatareceivers/mockawsxrayreceiver
