@@ -312,8 +312,9 @@ github.com/mtibben/percent v0.2.1/go.mod h1:KG9uO+SZkUp+VkRHsCdYQV3XSZrrSpR3O9ib
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
-github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
+github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
+github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
 github.com/onsi/ginkgo v1.14.0/go.mod h1:iSB4RoI2tjJc9BBv4NKIKWKya62Rps+oPG/Lv9klQyY=
@@ -424,6 +425,8 @@ go.opentelemetry.io/collector/confmap v0.92.0 h1:xz20zNIvF9ZA1eWE+MZmZunmdXPIP/f
 go.opentelemetry.io/collector/confmap v0.92.0/go.mod h1:CmqTszB2uwiJ9ieEqISdecuoVuyt3jMnJ/9kD53GYHs=
 go.opentelemetry.io/collector/consumer v0.92.0 h1:twa8T0iR9KVglvRbwZ5OPKLXPCC2DO6gVhrgDZ47MPE=
 go.opentelemetry.io/collector/consumer v0.92.0/go.mod h1:fBZqP7bou3I7pDhWjleBuzdaLfQgJBc92wPJVOcKaGU=
+go.opentelemetry.io/collector/extension v0.92.0 h1:zaehgW+LXCMNEb1d6Af/VHWphh5ZwX9aZl+NuQLGhpQ=
+go.opentelemetry.io/collector/extension v0.92.0/go.mod h1:5EYwiaGU6deSY8YWqT5gvlnD850yJXP3NqFRKVVbYLs=
 go.opentelemetry.io/collector/featuregate v1.0.1 h1:ok//hLSXttBbyu4sSV1pTx1nKdr5udSmrWy5sFMIIbM=
 go.opentelemetry.io/collector/featuregate v1.0.1/go.mod h1:QQXjP4etmJQhkQ20j4P/rapWuItYxoFozg/iIwuKnYg=
 go.opentelemetry.io/collector/pdata v1.0.1 h1:dGX2h7maA6zHbl5D3AsMnF1c3Nn+3EUftbVCLzeyNvA=
