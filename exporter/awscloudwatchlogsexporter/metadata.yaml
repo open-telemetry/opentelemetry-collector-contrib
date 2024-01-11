@@ -10,10 +10,6 @@ status:
 
 tests:
   config:
-    endpoint: http://localhost:0
-    region: local
-    sending_queue:
-      enabled: false
-    retry_on_failure:
-      enabled: false
+    log_group_name: "testing-logs"
+    log_stream_name: "testing-integrations-stream"
   expect_consumer_error: true
