@@ -19,7 +19,7 @@ import (
 )
 
 // DataSender defines the interface that allows sending data. This is an interface
-// that must be implemented by all protocols that want to be used in LoadGenerator.
+// that must be implemented by all protocols that want to be used in ProviderSender.
 // Note the terminology: DataSender is something that sends data to Collector
 // and the corresponding entity that receives the data in the Collector is a receiver.
 type DataSender interface {

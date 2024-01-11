@@ -13,10 +13,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
 // Config defines configuration for the Honeycomb Marker exporter.
@@ -57,8 +55,6 @@ type Marker struct {
 type Rules struct {
 	// LogConditions is the list of ottllog conditions that determine a match
 	LogConditions []string `mapstructure:"log_conditions"`
-
-	logBoolExpr expr.BoolExpr[ottllog.TransformContext]
 }
 
 var _ component.Config = (*Config)(nil)
