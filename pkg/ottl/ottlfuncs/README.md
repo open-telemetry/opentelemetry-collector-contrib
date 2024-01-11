@@ -173,6 +173,9 @@ Examples:
 - `flatten(cache, "k8s", 4)`
 
 
+- `flatten(body, depth=2)`
+
+
 ### keep_keys
 
 `keep_keys(target, keys[])`
