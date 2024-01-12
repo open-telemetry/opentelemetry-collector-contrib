@@ -55,6 +55,12 @@ config:
           metrics:
             system.cpu.utilization:
               enabled: true
+            system.cpu.physical.count:
+              enabled: true
+            system.cpu.logical.count:
+              enabled: true
+            system.cpu.frequency:
+              enabled: true
         disk:
         load:
         memory:
@@ -98,6 +104,15 @@ config:
       - key: service
         from_attribute: service_name
         action: upsert
+    transform:
+      metric_statements: &statements
+        - context: resource
+          statements:
+            - set(attributes["datadog.host.use_as_metadata"],true)
+            - set(attributes["datadog.host.tag.foo"],"bar")
+      trace_statements: *statements
+      log_statements: *statements
+
     attributes/kafkasrc:
       include:
         match_type: regexp
@@ -120,6 +135,33 @@ config:
       detectors: [env, gcp, ecs, ec2, azure, system]
       timeout: 5s
       override: false
+      system:
+        # Enable optional system attributes
+        resource_attributes:
+          os.type:
+            enabled: true
+          os.description:
+            enabled: true
+          host.ip:
+            enabled: true
+          host.mac:
+            enabled: true
+          host.arch:
+            enabled: true
+          host.cpu.vendor.id:
+            enabled: true
+          host.cpu.model.name:
+            enabled: true
+          host.cpu.family:
+            enabled: true
+          host.cpu.model.id:
+            enabled: true
+          host.cpu.stepping:
+            enabled: true
+          host.cpu.cache.l2.size:
+            enabled: true
+          host.id:
+            enabled: false
     # adds various tags related to k8s
     # adds various tags related to k8s
     k8sattributes:
@@ -185,12 +227,12 @@ config:
     pipelines:
       metrics:
         receivers: [otlp, hostmetrics, prometheus]
-        processors: [resourcedetection, k8sattributes, batch]
+        processors: [resourcedetection, k8sattributes, transform, batch]
         exporters: [datadog]
       traces:
         receivers: [otlp]
-        processors: [resourcedetection, k8sattributes, batch]
+        processors: [resourcedetection, k8sattributes, transform, batch]
         exporters: [datadog]
       logs:
-        processors: [memory_limiter, resourcedetection, k8sattributes, attributes, attributes/kafkasrc, batch]
+        processors: [memory_limiter, resourcedetection, k8sattributes, attributes, attributes/kafkasrc, transform, batch]
         exporters: [datadog]
