@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/component v0.92.1-0.20240110091511-bf804d6c4ecc
 	go.opentelemetry.io/collector/confmap v0.92.1-0.20240110091511-bf804d6c4ecc
 	go.opentelemetry.io/collector/consumer v0.92.1-0.20240110091511-bf804d6c4ecc
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240110091511-bf804d6c4ecc
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/collector/processor v0.92.1-0.20240110091511-bf804d6c4ecc
 	go.opentelemetry.io/collector/semconv v0.92.1-0.20240110091511-bf804d6c4ecc
 	go.opentelemetry.io/otel/metric v1.21.0
@@ -45,7 +45,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
