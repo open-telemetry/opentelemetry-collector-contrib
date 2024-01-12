@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -34,4 +35,16 @@ func TestNewConnector(t *testing.T) {
 
 	_, ok = traceToTracesConnector.(*connectorImp)
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
+}
+
+func Test_Shutdown_Traces(t *testing.T) {
+	factory := NewFactory()
+
+	creationParams := connectortest.NewNopCreateSettings()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	traceToMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	err = traceToMetricsConnector.Shutdown(context.Background())
+	require.NoError(t, err)
 }
