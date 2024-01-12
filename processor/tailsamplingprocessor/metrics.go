@@ -28,6 +28,7 @@ var (
 	statPolicyEvaluationErrorCount = stats.Int64("sampling_policy_evaluation_error", "Count of sampling policy evaluation errors", stats.UnitDimensionless)
 
 	statCountTracesSampled       = stats.Int64("count_traces_sampled", "Count of traces that were sampled or not per sampling policy", stats.UnitDimensionless)
+	statCountSpansSampled        = stats.Int64("count_spans_sampled", "Count of spans that were sampled or not per sampling policy", stats.UnitDimensionless)
 	statCountGlobalTracesSampled = stats.Int64("global_count_traces_sampled", "Global count of traces that were sampled or not by at least one policy", stats.UnitDimensionless)
 
 	statDroppedTooEarlyCount    = stats.Int64("sampling_trace_dropped_too_early", "Count of traces that needed to be dropped before the configured wait time", stats.UnitDimensionless)
@@ -88,6 +89,13 @@ func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 		TagKeys:     sampledTagKeys,
 		Aggregation: view.Sum(),
 	}
+	countSpansSampledView := &view.View{
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountSpansSampled.Name()),
+		Measure:     statCountSpansSampled,
+		Description: statCountSpansSampled.Description(),
+		TagKeys:     sampledTagKeys,
+		Aggregation: view.Sum(),
+	}
 
 	countGlobalTracesSampledView := &view.View{
 		Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statCountGlobalTracesSampled.Name()),
@@ -126,6 +134,7 @@ func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 		countPolicyEvaluationErrorView,
 
 		countTracesSampledView,
+		countSpansSampledView,
 		countGlobalTracesSampledView,
 
 		countTraceDroppedTooEarlyView,
