@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -32,11 +33,11 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewMetricsRouter(
-		connectortest.WithMetricsSink(metricsFirst, &sinkFirst),
-		connectortest.WithMetricsSink(metricsSecond, &sinkSecond),
-		connectortest.WithMetricsSink(metricsThird, &sinkThird),
-	)
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsFirst:  &sinkFirst,
+		metricsSecond: &sinkSecond,
+		metricsThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
@@ -61,7 +62,7 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 }
 
 func TestMetricsWithValidFailover(t *testing.T) {
-	var sinkSecond, sinkThird consumertest.MetricsSink
+	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
 	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
 	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
 	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
@@ -73,11 +74,11 @@ func TestMetricsWithValidFailover(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewMetricsRouter(
-		connectortest.WithNopMetrics(metricsFirst),
-		connectortest.WithMetricsSink(metricsSecond, &sinkSecond),
-		connectortest.WithMetricsSink(metricsThird, &sinkThird),
-	)
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsFirst:  &sinkFirst,
+		metricsSecond: &sinkSecond,
+		metricsThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
@@ -99,7 +100,7 @@ func TestMetricsWithValidFailover(t *testing.T) {
 }
 
 func TestMetricsWithFailoverError(t *testing.T) {
-	var sinkSecond, sinkThird consumertest.MetricsSink
+	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
 	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
 	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
 	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
@@ -111,11 +112,11 @@ func TestMetricsWithFailoverError(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewMetricsRouter(
-		connectortest.WithNopMetrics(metricsFirst),
-		connectortest.WithMetricsSink(metricsSecond, &sinkSecond),
-		connectortest.WithMetricsSink(metricsThird, &sinkThird),
-	)
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsFirst:  &sinkFirst,
+		metricsSecond: &sinkSecond,
+		metricsThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
@@ -136,7 +137,7 @@ func TestMetricsWithFailoverError(t *testing.T) {
 }
 
 func TestMetricsWithFailoverRecovery(t *testing.T) {
-	var sinkSecond, sinkThird consumertest.MetricsSink
+	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
 	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
 	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
 	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
@@ -148,11 +149,11 @@ func TestMetricsWithFailoverRecovery(t *testing.T) {
 		MaxRetries:       1000,
 	}
 
-	router := connectortest.NewMetricsRouter(
-		connectortest.WithNopMetrics(metricsFirst),
-		connectortest.WithMetricsSink(metricsSecond, &sinkSecond),
-		connectortest.WithMetricsSink(metricsThird, &sinkThird),
-	)
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsFirst:  &sinkFirst,
+		metricsSecond: &sinkSecond,
+		metricsThird:  &sinkThird,
+	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))

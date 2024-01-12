@@ -75,6 +75,6 @@ func fakeDBConnect(string, string) (*sql.DB, error) {
 	return nil, nil
 }
 
-func mkFakeClient(db, string, *zap.Logger) dbClient {
+func mkFakeClient(db, string, *zap.Logger, TelemetryConfig) dbClient {
 	return &fakeDBClient{stringMaps: [][]stringMap{{{"foo": "111"}}}}
 }

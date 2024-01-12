@@ -86,7 +86,7 @@ func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (expor
 		// disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(config.QueueSettings),
-		exporterhelper.WithRetry(config.RetrySettings),
+		exporterhelper.WithRetry(config.BackOffConfig),
 	)
 }
 func newLogzioLogsExporter(config *Config, set exporter.CreateSettings) (exporter.Logs, error) {
@@ -108,7 +108,7 @@ func newLogzioLogsExporter(config *Config, set exporter.CreateSettings) (exporte
 		// disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(config.QueueSettings),
-		exporterhelper.WithRetry(config.RetrySettings),
+		exporterhelper.WithRetry(config.BackOffConfig),
 	)
 }
 

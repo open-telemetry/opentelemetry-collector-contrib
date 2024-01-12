@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -36,7 +37,7 @@ func createDefaultConfig() component.Config {
 	defaultClientHTTPSettings.Timeout = defaultTimeout
 	defaultClientHTTPSettings.WriteBufferSize = 512 * 1024
 	return &Config{
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
 		HTTPClientSettings: defaultClientHTTPSettings,
 		Format:             defaultFormat,
@@ -64,5 +65,5 @@ func createTracesExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(zc.QueueSettings),
-		exporterhelper.WithRetry(zc.RetrySettings))
+		exporterhelper.WithRetry(zc.BackOffConfig))
 }
