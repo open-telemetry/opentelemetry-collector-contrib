@@ -82,7 +82,7 @@ func newPRWTelemetry(set exporter.CreateSettings) (prwTelemetry, error) {
 		metric.WithUnit("1"),
 	)
 
-	translatedTimeSeries, errTranslatedMetrics := meter.Int64Counter(prefix+"translated_metrics",
+	translatedTimeSeries, errTranslatedMetrics := meter.Int64Counter(prefix+"translated_time_series",
 		metric.WithDescription("Number of Prometheus time series that were translated from OTel metrics"),
 		metric.WithUnit("1"),
 	)
