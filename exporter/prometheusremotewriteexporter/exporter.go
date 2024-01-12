@@ -180,8 +180,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
 			prwe.telemetry.recordTranslationFailure(ctx)
-			prwe.settings.Logger.Debug("failed to translate metrics %s", zap.Error(err))
-			prwe.settings.Logger.Debug("exporting remaining %s metrics", zap.Int("translated", len(tsMap)))
+			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
 		}
 
 		prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
