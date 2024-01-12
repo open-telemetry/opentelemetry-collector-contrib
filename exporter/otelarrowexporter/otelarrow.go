@@ -5,6 +5,7 @@ package otelarrowexporter
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc"
 
@@ -17,17 +18,28 @@ import (
 )
 
 type baseExporter struct {
+	// config is the active component.Config.
+	config *Config
+
+	// settings are the active collector-wide settings.
+	settings exporter.CreateSettings
+
 	// TODO: implementation
 }
-
-var _ component.Exporter = &baseExporter{}
 
 type streamClientFactory func(cfg *Config, conn *grpc.ClientConn) arrow.StreamClientFunc
 
 // newExporter configures a new exporter using the associated stream factory for Arrow.
 func newExporter(cfg component.Config, set exporter.CreateSettings, streamClientFactory streamClientFactory) (*baseExporter, error) {
 	// TODO: Implementation.
-	return &baseExporter{}, nil
+	oCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("unrecognized configuration type: %T", cfg)
+	}
+	return &baseExporter{
+		config:   oCfg,
+		settings: set,
+	}, nil
 }
 
 // start configures and starts the gRPC client connection.

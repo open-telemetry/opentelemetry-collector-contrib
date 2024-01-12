@@ -76,6 +76,6 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	// TODO implementation in a separate PR
+	// TODO: Implementation.
 	return nil
 }
