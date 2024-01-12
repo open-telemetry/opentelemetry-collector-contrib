@@ -16,14 +16,16 @@ import (
 // Regarding the database/sql ignore: see https://github.com/SAP/go-hdb/issues/130
 // Regarding the SAP/go-hdb ignore: see https://github.com/SAP/go-hdb/issues/131
 // Regarding the cihub/seelog ignore: see https://github.com/cihub/seelog/issues/182
+// Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/135
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
 		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
 		goleak.IgnoreTopFunction("github.com/DataDog/datadog-agent/pkg/trace/metrics/timing.(*Set).Autoreport.func1"),
-		// Unfortunately this ignore can't be anymore specific, even though it's casued by the SAP/go-hdb/driver
+		// Unfortunately this ignore can't be anymore specific, even though it's caused by the SAP/go-hdb/driver
 		// package. There's no reference to this package in the goleak output. This has the potential of
 		// hiding future leaks, so we should remove as soon as the referenced issue is resolved.
 		goleak.IgnoreTopFunction("database/sql.(*DB).connectionOpener"),
 		goleak.IgnoreTopFunction("github.com/SAP/go-hdb/driver.(*metrics).collect"),
-		goleak.IgnoreAnyFunction("github.com/cihub/seelog.(*asyncLoopLogger).processQueue"))
+		goleak.IgnoreAnyFunction("github.com/cihub/seelog.(*asyncLoopLogger).processQueue"),
+		goleak.IgnoreAnyFunction("github.com/godbus/dbus.(*Conn).inWorker"))
 }
