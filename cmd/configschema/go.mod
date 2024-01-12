@@ -9,7 +9,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/configschema v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.92.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.92.1-0.20240118172122-8131d31601b8
 	golang.org/x/mod v0.14.0
 )
 
@@ -648,6 +647,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.92.1-0.20240118172122-8131d31601b8 // indirect
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/semconv v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/service v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/contrib/config v0.1.1 // indirect
