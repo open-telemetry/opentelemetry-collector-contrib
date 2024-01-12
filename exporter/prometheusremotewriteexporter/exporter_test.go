@@ -111,7 +111,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			prwe, err := newPRWExporter(cfg, tt.set)
+			prwe, err := newPRWExporter(cfg, tt.set, newPRWTelemetry(set))
 
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
@@ -200,7 +200,7 @@ func Test_Start(t *testing.T) {
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.HTTPClientSettings = tt.clientSettings
 
-			prwe, err := newPRWExporter(cfg, tt.set)
+			prwe, err := newPRWExporter(cfg, tt.set, newPRWTelemetry(tt.set))
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
@@ -360,7 +360,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := newPRWExporter(cfg, set)
+	prwe, err := newPRWExporter(cfg, set, newPRWTelemetry(set))
 	if err != nil {
 		return err
 	}
@@ -370,6 +370,19 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	}
 
 	return prwe.handleExport(context.Background(), testmap, nil)
+}
+
+type mockPRWTelemetry struct {
+	failedTranslations   int
+	translatedTimeSeries int
+}
+
+func (m *mockPRWTelemetry) recordTranslationFailure(_ context.Context) {
+	m.failedTranslations++
+}
+
+func (m *mockPRWTelemetry) recordTranslatedTimeSeries(_ context.Context, numTs int) {
+	m.translatedTimeSeries += numTs
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -462,19 +475,23 @@ func Test_PushMetrics(t *testing.T) {
 	}
 
 	tests := []struct {
-		name               string
-		metrics            pmetric.Metrics
-		reqTestFunc        func(t *testing.T, r *http.Request, expected int, isStaleMarker bool)
-		expectedTimeSeries int
-		httpResponseCode   int
-		returnErr          bool
-		isStaleMarker      bool
-		skipForWAL         bool
+		name                 string
+		metrics              pmetric.Metrics
+		reqTestFunc          func(t *testing.T, r *http.Request, expected int, isStaleMarker bool)
+		expectedTimeSeries   int
+		httpResponseCode     int
+		returnErr            bool
+		isStaleMarker        bool
+		skipForWAL           bool
+		hasFailedTranslation bool
 	}{
 		{
-			name:             "invalid_type_case",
-			metrics:          invalidTypeBatch,
-			httpResponseCode: http.StatusAccepted,
+			name:                 "invalid_type_case",
+			metrics:              invalidTypeBatch,
+			httpResponseCode:     http.StatusAccepted,
+			reqTestFunc:          checkFunc,
+			expectedTimeSeries:   1, // the resource target metric.
+			hasFailedTranslation: true,
 		},
 		{
 			name:               "intSum_case",
@@ -571,35 +588,40 @@ func Test_PushMetrics(t *testing.T) {
 			skipForWAL: true,
 		},
 		{
-			name:             "emptyGauge_case",
-			metrics:          emptyDoubleGaugeBatch,
-			reqTestFunc:      checkFunc,
-			httpResponseCode: http.StatusAccepted,
+			name:                 "emptyGauge_case",
+			metrics:              emptyDoubleGaugeBatch,
+			reqTestFunc:          checkFunc,
+			httpResponseCode:     http.StatusAccepted,
+			hasFailedTranslation: true,
 		},
 		{
-			name:             "emptyCumulativeSum_case",
-			metrics:          emptyCumulativeSumBatch,
-			reqTestFunc:      checkFunc,
-			httpResponseCode: http.StatusAccepted,
+			name:                 "emptyCumulativeSum_case",
+			metrics:              emptyCumulativeSumBatch,
+			reqTestFunc:          checkFunc,
+			httpResponseCode:     http.StatusAccepted,
+			hasFailedTranslation: true,
 		},
 		{
-			name:             "emptyCumulativeHistogram_case",
-			metrics:          emptyCumulativeHistogramBatch,
-			reqTestFunc:      checkFunc,
-			httpResponseCode: http.StatusAccepted,
+			name:                 "emptyCumulativeHistogram_case",
+			metrics:              emptyCumulativeHistogramBatch,
+			reqTestFunc:          checkFunc,
+			httpResponseCode:     http.StatusAccepted,
+			hasFailedTranslation: true,
 		},
 		{
-			name:             "emptySummary_case",
-			metrics:          emptySummaryBatch,
-			reqTestFunc:      checkFunc,
-			httpResponseCode: http.StatusAccepted,
+			name:                 "emptySummary_case",
+			metrics:              emptySummaryBatch,
+			reqTestFunc:          checkFunc,
+			httpResponseCode:     http.StatusAccepted,
+			hasFailedTranslation: true,
 		},
 		{
-			name:               "partialSuccess_case",
-			metrics:            partialSuccess1,
-			reqTestFunc:        checkFunc,
-			httpResponseCode:   http.StatusAccepted,
-			expectedTimeSeries: 4,
+			name:                 "partialSuccess_case",
+			metrics:              partialSuccess1,
+			reqTestFunc:          checkFunc,
+			httpResponseCode:     http.StatusAccepted,
+			expectedTimeSeries:   4,
+			hasFailedTranslation: true,
 		},
 		{
 			name:               "staleNaNIntGauge_case",
@@ -675,6 +697,7 @@ func Test_PushMetrics(t *testing.T) {
 				}
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
+					mockTelemetry := &mockPRWTelemetry{}
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
 							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
@@ -723,7 +746,9 @@ func Test_PushMetrics(t *testing.T) {
 					}
 					set := exportertest.NewNopCreateSettings()
 					set.BuildInfo = buildInfo
-					prwe, nErr := newPRWExporter(cfg, set)
+
+					prwe, nErr := newPRWExporter(cfg, set, mockTelemetry)
+
 					require.NoError(t, nErr)
 					ctx, cancel := context.WithCancel(context.Background())
 					defer cancel()
@@ -736,6 +761,13 @@ func Test_PushMetrics(t *testing.T) {
 						assert.Error(t, err)
 						return
 					}
+
+					if tt.hasFailedTranslation {
+						assert.Equal(t, 1, mockTelemetry.failedTranslations)
+					} else {
+						assert.Equal(t, 0, mockTelemetry.failedTranslations)
+					}
+					assert.Equal(t, tt.expectedTimeSeries, mockTelemetry.translatedTimeSeries)
 					assert.NoError(t, err)
 				})
 			}
@@ -901,7 +933,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	prwe, perr := newPRWExporter(cfg, set)
+	prwe, perr := newPRWExporter(cfg, set, newPRWTelemetry(set))
 	assert.NoError(t, perr)
 
 	nopHost := componenttest.NewNopHost()
@@ -979,7 +1011,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// 4. Finally, ensure that the bytes that were uploaded to the
 	// Prometheus Remote Write endpoint are exactly as were saved in the WAL.
 	// Read from that same WAL, export to the RWExporter server.
-	prwe2, err := newPRWExporter(cfg, set)
+	prwe2, err := newPRWExporter(cfg, set, newPRWTelemetry(set))
 	assert.NoError(t, err)
 	require.NoError(t, prwe2.Start(ctx, nopHost))
 	t.Cleanup(func() {

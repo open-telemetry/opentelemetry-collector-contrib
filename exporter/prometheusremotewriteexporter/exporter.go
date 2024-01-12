@@ -25,12 +25,32 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
+
+type prwTelemetry interface {
+	recordTranslationFailure(ctx context.Context)
+	recordTranslatedTimeSeries(ctx context.Context, numTS int)
+}
+
+type prwTelemetryOtel struct {
+	failedTranslations   metric.Int64Counter
+	translatedTimeSeries metric.Int64Counter
+}
+
+func (p *prwTelemetryOtel) recordTranslationFailure(ctx context.Context) {
+	p.failedTranslations.Add(ctx, 1)
+}
+
+func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS int) {
+	p.translatedTimeSeries.Add(ctx, int64(numTS))
+}
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
@@ -46,10 +66,33 @@ type prwExporter struct {
 	retrySettings     configretry.BackOffConfig
 	wal               *prweWAL
 	exporterSettings  prometheusremotewrite.Settings
+	telemetry         prwTelemetry
+}
+
+func newPRWTelemetry(set exporter.CreateSettings) prwTelemetry {
+
+	meter := metadata.Meter(set.TelemetrySettings)
+	// TODO: create helper functions similar to the processor helper: BuildCustomMetricName
+	prefix := "exporter/" + metadata.Type + "/"
+
+	failedTranslations, _ := meter.Int64Counter(prefix+"failed_translations",
+		metric.WithDescription("Number of translation operations that failed to translate metrics from OTEL to Prometheus"),
+		metric.WithUnit("1"),
+	)
+
+	translatedTimeSeries, _ := meter.Int64Counter(prefix+"translated_metrics",
+		metric.WithDescription("Number of Prometheus time series that were translated from OTEL metrics"),
+		metric.WithUnit("1"),
+	)
+
+	return &prwTelemetryOtel{
+		failedTranslations:   failedTranslations,
+		translatedTimeSeries: translatedTimeSeries,
+	}
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
-func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, error) {
+func newPRWExporter(cfg *Config, set exporter.CreateSettings, telemetry prwTelemetry) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err
@@ -80,6 +123,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
 		},
+		telemetry: telemetry,
 	}
 	if cfg.WAL == nil {
 		return prwe, nil
@@ -135,9 +179,12 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
-			prwe.settings.Logger.Warn("Failed to translate metrics: %s", zap.Error(err))
-			prwe.settings.Logger.Warn("Exporting remaining %s metrics.", zap.Int("converted", len(tsMap)))
+			prwe.telemetry.recordTranslationFailure(ctx)
+			prwe.settings.Logger.Debug("failed to translate metrics %s", zap.Error(err))
+			prwe.settings.Logger.Debug("exporting remaining %s metrics", zap.Int("translated", len(tsMap)))
 		}
+
+		prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
 
 		var m []*prompb.MetricMetadata
 		if prwe.exporterSettings.SendMetadata {

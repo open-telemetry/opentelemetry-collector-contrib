@@ -35,7 +35,8 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 		return nil, errors.New("invalid configuration")
 	}
 
-	prwe, err := newPRWExporter(prwCfg, set)
+	telemetry := newPRWTelemetry(set)
+	prwe, err := newPRWExporter(prwCfg, set, telemetry)
 	if err != nil {
 		return nil, err
 	}
