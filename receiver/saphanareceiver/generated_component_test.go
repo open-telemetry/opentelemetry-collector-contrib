@@ -38,7 +38,7 @@ func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 	assert.NoError(aneh, err)
 }
 
-func Test_ComponentLifecycle(t *testing.T) {
+func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
