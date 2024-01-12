@@ -8,3 +8,8 @@ status:
   distributions: [contrib]
   codeowners:
     active: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]
+
+tests:
+  config:
+    http:
+      endpoint: https://opensearch.example.com:9200
