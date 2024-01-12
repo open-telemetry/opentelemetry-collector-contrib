@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: minikube
     scopeMetrics:
       - metrics:
-          - description: Node CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.node.cpu.time
             sum:
               aggregationTemporality: 2
@@ -166,7 +166,7 @@ resourceMetrics:
             stringValue: 42ad382b-ed0b-446d-9aab-3fdce8b4f9e2
     scopeMetrics:
       - metrics:
-          - description: Pod CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.pod.cpu.time
             sum:
               aggregationTemporality: 2
@@ -326,7 +326,7 @@ resourceMetrics:
             stringValue: eb632b33-62c6-4a80-9575-a97ab363ad7f
     scopeMetrics:
       - metrics:
-          - description: Pod CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.pod.cpu.time
             sum:
               aggregationTemporality: 2
@@ -486,7 +486,7 @@ resourceMetrics:
             stringValue: 0adffe8e-9849-4e05-b4cd-92d2d1e1f1c3
     scopeMetrics:
       - metrics:
-          - description: Pod CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.pod.cpu.time
             sum:
               aggregationTemporality: 2
@@ -646,7 +646,7 @@ resourceMetrics:
             stringValue: 5a5fbd34cfb43ee7bee976798370c910
     scopeMetrics:
       - metrics:
-          - description: Pod CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.pod.cpu.time
             sum:
               aggregationTemporality: 2
@@ -806,7 +806,7 @@ resourceMetrics:
             stringValue: 3bef16d65fa74d46458df57d8f6f59af
     scopeMetrics:
       - metrics:
-          - description: Pod CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.pod.cpu.time
             sum:
               aggregationTemporality: 2
@@ -966,7 +966,7 @@ resourceMetrics:
             stringValue: 3016593d20758bbfe68aba26604a8e3d
     scopeMetrics:
       - metrics:
-          - description: Pod CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.pod.cpu.time
             sum:
               aggregationTemporality: 2
@@ -1126,7 +1126,7 @@ resourceMetrics:
             stringValue: 0a6d6b05-0e8d-4920-8a38-926a33164d45
     scopeMetrics:
       - metrics:
-          - description: Pod CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.pod.cpu.time
             sum:
               aggregationTemporality: 2
@@ -1286,7 +1286,7 @@ resourceMetrics:
             stringValue: 5795d0c442cb997ff93c49feeb9f6386
     scopeMetrics:
       - metrics:
-          - description: Pod CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.pod.cpu.time
             sum:
               aggregationTemporality: 2
@@ -1446,7 +1446,7 @@ resourceMetrics:
             stringValue: 14bf95e0-9451-4192-b111-807b03163670
     scopeMetrics:
       - metrics:
-          - description: Pod CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.pod.cpu.time
             sum:
               aggregationTemporality: 2
@@ -1609,7 +1609,7 @@ resourceMetrics:
             stringValue: eb632b33-62c6-4a80-9575-a97ab363ad7f
     scopeMetrics:
       - metrics:
-          - description: Container CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: container.cpu.time
             sum:
               aggregationTemporality: 2
@@ -1718,7 +1718,7 @@ resourceMetrics:
             stringValue: 0adffe8e-9849-4e05-b4cd-92d2d1e1f1c3
     scopeMetrics:
       - metrics:
-          - description: Container CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: container.cpu.time
             sum:
               aggregationTemporality: 2
@@ -1827,7 +1827,7 @@ resourceMetrics:
             stringValue: 5a5fbd34cfb43ee7bee976798370c910
     scopeMetrics:
       - metrics:
-          - description: Container CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: container.cpu.time
             sum:
               aggregationTemporality: 2
@@ -1936,7 +1936,7 @@ resourceMetrics:
             stringValue: 3bef16d65fa74d46458df57d8f6f59af
     scopeMetrics:
       - metrics:
-          - description: Container CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: container.cpu.time
             sum:
               aggregationTemporality: 2
@@ -2045,7 +2045,7 @@ resourceMetrics:
             stringValue: 3016593d20758bbfe68aba26604a8e3d
     scopeMetrics:
       - metrics:
-          - description: Container CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: container.cpu.time
             sum:
               aggregationTemporality: 2
@@ -2154,7 +2154,7 @@ resourceMetrics:
             stringValue: 0a6d6b05-0e8d-4920-8a38-926a33164d45
     scopeMetrics:
       - metrics:
-          - description: Container CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: container.cpu.time
             sum:
               aggregationTemporality: 2
@@ -2263,7 +2263,7 @@ resourceMetrics:
             stringValue: 5795d0c442cb997ff93c49feeb9f6386
     scopeMetrics:
       - metrics:
-          - description: Container CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: container.cpu.time
             sum:
               aggregationTemporality: 2
@@ -2372,7 +2372,7 @@ resourceMetrics:
             stringValue: 42ad382b-ed0b-446d-9aab-3fdce8b4f9e2
     scopeMetrics:
       - metrics:
-          - description: Container CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: container.cpu.time
             sum:
               aggregationTemporality: 2
@@ -2481,7 +2481,7 @@ resourceMetrics:
             stringValue: 14bf95e0-9451-4192-b111-807b03163670
     scopeMetrics:
       - metrics:
-          - description: Container CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: container.cpu.time
             sum:
               aggregationTemporality: 2

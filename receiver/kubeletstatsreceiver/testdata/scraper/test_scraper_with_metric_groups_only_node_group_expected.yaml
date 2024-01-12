@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: minikube
     scopeMetrics:
       - metrics:
-          - description: Node CPU time
+          - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             name: k8s.node.cpu.time
             sum:
               aggregationTemporality: 2
