@@ -18,8 +18,8 @@ import (
 
 func TestMetadataFileWriter(t *testing.T) {
 	tempDir := t.TempDir()
-	w := newMetadataFileWriter(tempDir)
-	err := w.write([]byte("hello"), "mytype")
+	w := newMetadataFileWriter()
+	err := w.write([]byte("hello"), filepath.Join(tempDir, "mytype.yaml"))
 	require.NoError(t, err)
 	file, err := os.Open(filepath.Join(tempDir, "mytype.yaml"))
 	require.NoError(t, err)

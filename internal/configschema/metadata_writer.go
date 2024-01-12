@@ -8,14 +8,12 @@ import (
 )
 
 type metadataFileWriter struct {
-	baseDir     string
 	dirsCreated map[string]struct{}
 }
 
-func newMetadataFileWriter(dir string) *metadataFileWriter {
+func newMetadataFileWriter() *metadataFileWriter {
 	return &metadataFileWriter{
 		dirsCreated: map[string]struct{}{},
-		baseDir:     dir,
 	}
 }
 

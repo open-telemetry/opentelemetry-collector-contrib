@@ -14,7 +14,7 @@ import (
 
 // GenerateMetadata generates the metadata of a component.
 func GenerateMetadata(f component.Factory, sourceDir string, outputDir string, filename string) error {
-	writer := newMetadataFileWriter(outputDir)
+	writer := newMetadataFileWriter()
 	var cfg CfgInfo
 	var err error
 	if cfg, err = GetCfgInfo(f); err != nil {
