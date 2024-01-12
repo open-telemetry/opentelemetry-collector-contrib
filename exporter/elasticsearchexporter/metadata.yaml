@@ -10,3 +10,4 @@ status:
 
 tests:
   config:
+    endpoints: [http://localhost:9200]
