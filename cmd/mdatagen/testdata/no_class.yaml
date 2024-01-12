@@ -1,7 +1,0 @@
-type: test
-
-status:
-  stability:
-    development: [logs]
-    beta: [traces]
-    stable: [metrics]
