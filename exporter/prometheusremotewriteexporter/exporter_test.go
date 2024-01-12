@@ -483,7 +483,7 @@ func Test_PushMetrics(t *testing.T) {
 		returnErr            bool
 		isStaleMarker        bool
 		skipForWAL           bool
-		hasFailedTranslation bool
+		expectedFailedTranslations int
 	}{
 		{
 			name:                 "invalid_type_case",
@@ -762,11 +762,7 @@ func Test_PushMetrics(t *testing.T) {
 						return
 					}
 
-					if tt.hasFailedTranslation {
-						assert.Equal(t, 1, mockTelemetry.failedTranslations)
-					} else {
-						assert.Equal(t, 0, mockTelemetry.failedTranslations)
-					}
+					assert.Equal(t, tt.ExpectedFailedTranslations,  mockTelemetry.failedTranslations)
 					assert.Equal(t, tt.expectedTimeSeries, mockTelemetry.translatedTimeSeries)
 					assert.NoError(t, err)
 				})
