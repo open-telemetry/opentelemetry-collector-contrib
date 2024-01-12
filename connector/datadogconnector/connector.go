@@ -65,7 +65,6 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		translator:      trans,
 		in:              in,
 		metricsConsumer: metricsConsumer,
-		tracesConsumer:  tracesConsumer,
 	}, nil
 }
 
