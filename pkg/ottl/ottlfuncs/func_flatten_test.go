@@ -178,7 +178,7 @@ func Test_flatten_bad_target(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_flatten_bad_input(t *testing.T) {
+func Test_flatten_bad_depth(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
 		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return pcommon.NewMap(), nil

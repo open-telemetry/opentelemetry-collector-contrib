@@ -126,9 +126,6 @@ func Test_e2e_editors(t *testing.T) {
 			statement: `merge_maps(attributes, attributes["foo"], "insert")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
-				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
-				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
-				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("slice")
 				v := s.AppendEmpty()
 				v.SetStr("val")

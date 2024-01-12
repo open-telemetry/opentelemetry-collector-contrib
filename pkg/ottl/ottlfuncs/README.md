@@ -96,7 +96,11 @@ Examples:
 
 `flatten(target, prefix, depth)`
 
-The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. For example, the following map
+The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
+
+`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
+
+For example, the following map
 
 ```json
 {
@@ -120,8 +124,6 @@ is converted to
     "occupants.1": "user 2"
 }
 ```
-
-`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
 
 If `prefix` is supplied, it will be appended to the start of the new keys. This can help you namespace the changes. For example, if in the above example a `prefix` of `app` was configured, the result would be
 

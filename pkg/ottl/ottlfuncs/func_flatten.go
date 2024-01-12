@@ -66,18 +66,19 @@ func flattenHelper(m pcommon.Map, result pcommon.Map, prefix string, currentDept
 		prefix += "."
 	}
 	m.Range(func(k string, v pcommon.Value) bool {
-		if currentDepth < maxDepth && v.Type() == pcommon.ValueTypeMap {
-			flattenHelper(v.Map(), result, prefix+k, currentDepth+1, maxDepth)
-			return true
-		}
 		switch v.Type() {
+		case pcommon.ValueTypeMap:
+			if currentDepth < maxDepth {
+				flattenHelper(v.Map(), result, prefix+k, currentDepth+1, maxDepth)
+				return true
+			}
 		case pcommon.ValueTypeSlice:
 			for i := 0; i < v.Slice().Len(); i++ {
 				v.Slice().At(i).CopyTo(result.PutEmpty(fmt.Sprintf("%v.%v", prefix+k, i)))
 			}
-		default:
-			v.CopyTo(result.PutEmpty(prefix + k))
+			return true
 		}
+		v.CopyTo(result.PutEmpty(prefix + k))
 		return true
 	})
 }
