@@ -94,7 +94,7 @@ Examples:
 
 ### flatten
 
-`flatten(target, prefix, depth)`
+`flatten(target, Optional[prefix], Optional[depth])`
 
 The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
 
@@ -246,7 +246,7 @@ Examples:
 
 ### replace_all_matches
 
-`replace_all_matches(target, pattern, replacement, function)`
+`replace_all_matches(target, pattern, replacement, Optional[function])`
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
@@ -264,7 +264,7 @@ Examples:
 
 ### replace_all_patterns
 
-`replace_all_patterns(target, mode, regex, replacement, function)`
+`replace_all_patterns(target, mode, regex, replacement, Optional[function])`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
@@ -295,7 +295,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 ### replace_match
 
-`replace_match(target, pattern, replacement, function)`
+`replace_match(target, pattern, replacement, Optional[function])`
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
@@ -315,7 +315,7 @@ Examples:
 
 ### replace_pattern
 
-`replace_pattern(target, regex, replacement, function)`
+`replace_pattern(target, regex, replacement, Optional[function])`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
