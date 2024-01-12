@@ -27,7 +27,7 @@ The following settings are optional:
 
 [osquery](https://osquery.io/) must be installed on the system where the collector is running. Once running as a daemon, the collector can connect to it using osquery's extension socket.
 
-Example queries and data sources for querying are available in the [osquery docs](https://osquery.io/schema).
+Example queries and data sources for querying are available in the [osquery docs](https://osquery.io/).
 
 ## Example configuration
 
