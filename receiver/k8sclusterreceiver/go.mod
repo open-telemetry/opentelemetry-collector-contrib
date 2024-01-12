@@ -16,7 +16,6 @@ require (
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.92.1-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/collector/component v0.92.1-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/collector/confmap v0.92.1-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/collector/consumer v0.92.1-0.20240112172857-83d463ceba06
@@ -91,6 +90,7 @@ require (
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.opentelemetry.io/collector v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.92.1-0.20240112172857-83d463ceba06 // indirect
