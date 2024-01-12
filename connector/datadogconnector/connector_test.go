@@ -28,10 +28,12 @@ func TestNewConnector(t *testing.T) {
 
 	_, ok := traceToMetricsConnector.(*connectorImp)
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
+	assert.NoError(t, traceToMetricsConnector.Shutdown(context.Background()))
 
 	traceToTracesConnector, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
 	_, ok = traceToTracesConnector.(*connectorImp)
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
+	assert.NoError(t, traceToTracesConnector.Shutdown(context.Background()))
 }

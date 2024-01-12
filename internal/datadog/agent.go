@@ -114,6 +114,8 @@ func (p *TraceAgent) Stop() {
 		p.ErrorsSampler,
 		p.NoPrioritySampler,
 		p.EventProcessor,
+		p.TraceWriter,
+		p.StatsWriter,
 	} {
 		stopper.Stop()
 	}
