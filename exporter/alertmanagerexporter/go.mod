@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
 	github.com/prometheus/common v0.45.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.92.1-0.20240110091511-bf804d6c4ecc
@@ -73,3 +74,11 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden

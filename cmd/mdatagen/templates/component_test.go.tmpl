@@ -55,7 +55,7 @@ func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 
 
 {{ if isExporter }}
-func Test_ComponentLifecycle(t *testing.T) {
+func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct{
@@ -146,7 +146,7 @@ func Test_ComponentLifecycle(t *testing.T) {
 {{ end }}
 
 {{ if isProcessor }}
-func Test_ComponentLifecycle(t *testing.T) {
+func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct{
@@ -235,7 +235,7 @@ func Test_ComponentLifecycle(t *testing.T) {
 {{ end }}
 
 {{ if isReceiver }}
-func Test_ComponentLifecycle(t *testing.T) {
+func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct{
@@ -304,7 +304,7 @@ func Test_ComponentLifecycle(t *testing.T) {
 {{ end }}
 
 {{ if isExtension }}
-func Test_ComponentLifecycle(t *testing.T) {
+func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
