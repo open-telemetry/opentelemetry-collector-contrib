@@ -43,5 +43,5 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, params extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
-	return newXrayProxy(cfg.(*Config), params.Logger)
+	return newXrayProxy(cfg.(*Config), params.TelemetrySettings)
 }
