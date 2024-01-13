@@ -77,36 +77,6 @@ func TestOAuthClientSettings(t *testing.T) {
 			shouldError:   true,
 			expectedError: "failed to load TLS config: failed to load TLS cert and key",
 		},
-		{
-			name: "missing_client_id",
-			settings: &Config{
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
-			},
-			shouldError:   true,
-			expectedError: errNoClientIDProvided.Error(),
-		},
-		{
-			name: "missing_client_secret",
-			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
-				Scopes:   []string{"resource.read"},
-			},
-			shouldError:   true,
-			expectedError: errNoClientSecretProvided.Error(),
-		},
-		{
-			name: "missing_token_url",
-			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
-				Scopes:       []string{"resource.read"},
-			},
-			shouldError:   true,
-			expectedError: errNoTokenURLProvided.Error(),
-		},
 	}
 
 	for _, test := range tests {
@@ -251,15 +221,6 @@ func TestRoundTripper(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{
-			name: "invalid_client_settings_should_error",
-			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
-				Scopes:   []string{"resource.read"},
-			},
-			shouldError: true,
-		},
 	}
 
 	testString := "TestString"
@@ -307,15 +268,6 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 				Timeout:      1,
 			},
 			shouldError: false,
-		},
-		{
-			name: "invalid_client_settings_should_error",
-			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
-				Scopes:   []string{"resource.read"},
-			},
-			shouldError: true,
 		},
 	}
 

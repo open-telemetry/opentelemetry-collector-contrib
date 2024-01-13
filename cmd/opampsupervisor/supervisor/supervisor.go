@@ -29,8 +29,6 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
-	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtls"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
 
@@ -72,11 +70,9 @@ type Supervisor struct {
 	// Agent's instance id.
 	instanceID ulid.ULID
 
-	// The name of the agent.
-	agentName string
-
-	// The version of the agent.
-	agentVersion string
+	bootstrapTemplate    *template.Template
+	extraConfigTemplate  *template.Template
+	ownTelemetryTemplate *template.Template
 
 	bootstrapTemplate    *template.Template
 	extraConfigTemplate  *template.Template
@@ -150,7 +146,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", port)
 
 	logger.Debug("Supervisor starting",
-		zap.String("id", s.instanceID.String()), zap.String("name", s.agentName), zap.String("version", s.agentVersion))
+		zap.String("id", s.instanceID.String()))
 
 	s.loadAgentEffectiveConfig()
 
@@ -175,18 +171,14 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 func (s *Supervisor) createTemplates() error {
 	var err error
-	s.bootstrapTemplate, err = template.New("bootstrap").Parse(bootstrapConfTpl)
-	if err != nil {
+
+	if s.bootstrapTemplate, err = template.New("bootstrap").Parse(bootstrapConfTpl); err != nil {
 		return err
 	}
-
-	s.extraConfigTemplate, err = template.New("bootstrap").Parse(extraConfigTpl)
-	if err != nil {
+	if s.extraConfigTemplate, err = template.New("extraconfig").Parse(extraConfigTpl); err != nil {
 		return err
 	}
-
-	s.ownTelemetryTemplate, err = template.New("bootstrap").Parse(ownTelemetryTpl)
-	if err != nil {
+	if s.ownTelemetryTemplate, err = template.New("owntelemetry").Parse(ownTelemetryTpl); err != nil {
 		return err
 	}
 
@@ -240,7 +232,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	srv := server.New(s.logger.Sugar())
 
-	done := make(chan struct{}, 1)
+	done := make(chan error, 1)
 	var connected atomic.Bool
 
 	err = srv.Start(newServerSettings(flattenedSettings{
@@ -251,29 +243,31 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		},
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
+				instanceIDSeen := false
 				s.agentDescription = message.AgentDescription
 				identAttr := s.agentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
-					switch attr.Key {
-					case semconv.AttributeServiceInstanceID:
-						// TODO Consider this a critical error
+					if attr.Key == semconv.AttributeServiceInstanceID {
+						// TODO: Consider whether to attempt restarting the Collector.
 						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
 						if attr.Value.GetStringValue() != s.instanceID.String() {
-							s.logger.Error(
-								"Client's instance ID does not match with the instance ID set by the Supervisor",
-								zap.String("expected", s.instanceID.String()),
-								zap.String("saw", attr.Value.GetStringValue()),
-							)
+							done <- fmt.Errorf(
+								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
+								attr.Value.GetStringValue(),
+								s.instanceID.String())
+							return
 						}
-					case semconv.AttributeServiceName:
-						s.agentName = attr.Value.GetStringValue()
-					case semconv.AttributeServiceVersion:
-						s.agentVersion = attr.Value.GetStringValue()
+						instanceIDSeen = true
 					}
 				}
 
-				done <- struct{}{}
+				if !instanceIDSeen {
+					done <- errors.New("the Collector did not specify an instance ID in its AgentDescription message")
+					return
+				}
+
+				done <- nil
 			}
 		},
 	}))
@@ -295,13 +289,17 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 
 	select {
+	// TODO make timeout configurable
 	case <-time.After(3 * time.Second):
 		if connected.Load() {
 			return errors.New("collector connected but never responded with an AgentDescription message")
 		} else {
 			return errors.New("collector's OpAMP client never connected to the Supervisor")
 		}
-	case <-done:
+	case err = <-done:
+		if err != nil {
+			return err
+		}
 	}
 
 	if err = cmd.Stop(context.Background()); err != nil {
@@ -501,14 +499,20 @@ func (s *Supervisor) createInstanceID() (ulid.ULID, error) {
 
 func (s *Supervisor) composeExtraLocalConfig() []byte {
 	var cfg bytes.Buffer
+	resourceAttrs := map[string]string{}
+	for _, attr := range s.agentDescription.IdentifyingAttributes {
+		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
+	}
+	for _, attr := range s.agentDescription.NonIdentifyingAttributes {
+		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
+	}
+	tplVars := map[string]any{
+		"Healthcheck":        s.agentHealthCheckEndpoint,
+		"ResourceAttributes": resourceAttrs,
+	}
 	err := s.extraConfigTemplate.Execute(
 		&cfg,
-		map[string]any{
-			"ServiceName":    s.agentName,
-			"ServiceVersion": s.agentVersion,
-			"InstanceId":     s.instanceID.String(),
-			"Healthcheck":    s.agentHealthCheckEndpoint,
-		},
+		tplVars,
 	)
 	if err != nil {
 		s.logger.Error("Could not compose local config", zap.Error(err))

@@ -14,7 +14,7 @@ env:
 jobs:
   collector-build:
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,6 +68,7 @@ jobs:
         with:
           name: collector-binary
           path: bin/
+      - run: chmod +x bin/*
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol

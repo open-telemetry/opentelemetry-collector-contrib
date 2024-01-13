@@ -24,9 +24,7 @@ type nodeCapacity struct {
 	logger      *zap.Logger
 
 	// osLstat returns a FileInfo describing the named file.
-	osLstat func(name string) (os.FileInfo, error)
-	// osSetenv sets the value of the environment variable named by the key
-	osSetenv      func(key string, value string) error
+	osLstat       func(name string) (os.FileInfo, error)
 	virtualMemory func(ctx context.Context) (*mem.VirtualMemoryStat, error)
 	cpuInfo       func(ctx context.Context) ([]cpu.InfoStat, error)
 }
@@ -37,7 +35,6 @@ func newNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (nodeCap
 	nc := &nodeCapacity{
 		logger:        logger,
 		osLstat:       os.Lstat,
-		osSetenv:      os.Setenv,
 		virtualMemory: mem.VirtualMemoryWithContext,
 		cpuInfo:       cpu.InfoWithContext,
 	}

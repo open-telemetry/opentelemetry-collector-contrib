@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -41,10 +42,11 @@ func TestLoadConfig(t *testing.T) {
 				TCPAddr: confignet.TCPAddr{
 					Endpoint: "localhost:8080",
 				},
+				MaxIdleConns: 15,
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
-				RetryConfig: exporterhelper.RetrySettings{
+				RetryConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					RandomizationFactor: 0.7,
@@ -101,9 +103,18 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "invalid_timeout",
 			config: &Config{
+				TCPAddr: confignet.TCPAddr{Endpoint: defaultEndpoint},
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: -5 * time.Second,
 				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid_max_idle_conns",
+			config: &Config{
+				TCPAddr:      confignet.TCPAddr{Endpoint: defaultEndpoint},
+				MaxIdleConns: -1,
 			},
 			wantErr: true,
 		},

@@ -16,7 +16,7 @@ import (
 	md "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen/internal/metadata"
 )
 
-func Test_runContents(t *testing.T) {
+func TestRunContents(t *testing.T) {
 	tests := []struct {
 		yml                  string
 		wantMetricsGenerated bool
@@ -96,7 +96,7 @@ foo
 	}
 }
 
-func Test_run(t *testing.T) {
+func TestRun(t *testing.T) {
 	type args struct {
 		ymlPath string
 	}
@@ -125,7 +125,7 @@ func Test_run(t *testing.T) {
 	}
 }
 
-func Test_inlineReplace(t *testing.T) {
+func TestInlineReplace(t *testing.T) {
 	tests := []struct {
 		name           string
 		markdown       string
@@ -324,12 +324,22 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
 	Type             = "foo"
 	MetricsStability = component.StabilityLevelBeta
 )
+
+func Meter(settings component.TelemetrySettings) metric.Meter {
+	return settings.MeterProvider.Meter("")
+}
+
+func Tracer(settings component.TelemetrySettings) trace.Tracer {
+	return settings.TracerProvider.Tracer("")
+}
 `,
 		},
 		{
@@ -348,12 +358,22 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
 	Type             = "foo"
 	MetricsStability = component.StabilityLevelAlpha
 )
+
+func Meter(settings component.TelemetrySettings) metric.Meter {
+	return settings.MeterProvider.Meter("")
+}
+
+func Tracer(settings component.TelemetrySettings) trace.Tracer {
+	return settings.TracerProvider.Tracer("")
+}
 `,
 		},
 	}

@@ -27,17 +27,19 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestNewWithDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	got, err := newCarbonExporter(cfg, exportertest.NewNopCreateSettings())
+	got, err := newCarbonExporter(context.Background(), cfg, exportertest.NewNopCreateSettings())
 	assert.NotNil(t, got)
 	assert.NoError(t, err)
 }
 
 func TestConsumeMetricsNoServer(t *testing.T) {
 	exp, err := newCarbonExporter(
+		context.Background(),
 		&Config{
 			TCPAddr:         confignet.TCPAddr{Endpoint: testutil.GetAvailableLocalAddress(t)},
 			TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
@@ -45,8 +47,30 @@ func TestConsumeMetricsNoServer(t *testing.T) {
 		exportertest.NewNopCreateSettings())
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
-	require.Error(t, exp.ConsumeMetrics(context.Background(), generateLargeBatch()))
+	require.Error(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
 	require.NoError(t, exp.Shutdown(context.Background()))
+}
+
+func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cs := newCarbonServer(t, addr, "test_0;key_0=value_0;key_1=value_1;key_2=value_2;service.name=carbon 0")
+	// Each metric point will generate one Carbon line, set up the wait
+	// for all of them.
+	cs.start(t, 1)
+
+	exp, err := newCarbonExporter(
+		context.Background(),
+		&Config{
+			TCPAddr:                   confignet.TCPAddr{Endpoint: addr},
+			TimeoutSettings:           exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
+			ResourceToTelemetryConfig: resourcetotelemetry.Settings{Enabled: true},
+		},
+		exportertest.NewNopCreateSettings())
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
+	assert.NoError(t, exp.Shutdown(context.Background()))
+	cs.shutdownAndVerify(t)
 }
 
 func TestConsumeMetrics(t *testing.T) {
@@ -94,14 +118,16 @@ func TestConsumeMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			addr := testutil.GetAvailableLocalAddress(t)
-			cs := newCarbonServer(t, addr)
+			cs := newCarbonServer(t, addr, "")
 			// Each metric point will generate one Carbon line, set up the wait
 			// for all of them.
 			cs.start(t, tt.numProducers*tt.writesPerProducer*tt.md.DataPointCount())
 
 			exp, err := newCarbonExporter(
+				context.Background(),
 				&Config{
 					TCPAddr:         confignet.TCPAddr{Endpoint: addr},
+					MaxIdleConns:    tt.numProducers,
 					TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
 				},
 				exportertest.NewNopCreateSettings())
@@ -132,31 +158,145 @@ func TestConsumeMetrics(t *testing.T) {
 	}
 }
 
+func TestNewConnectionPool(t *testing.T) {
+	assert.IsType(t, &nopConnPool{}, newConnPool(confignet.TCPAddr{Endpoint: defaultEndpoint}, 10*time.Second, 0))
+	assert.IsType(t, &connPoolWithIdle{}, newConnPool(confignet.TCPAddr{Endpoint: defaultEndpoint}, 10*time.Second, 10))
+}
+
+func TestNopConnPool(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cs := newCarbonServer(t, addr, "")
+	// Each metric point will generate one Carbon line, set up the wait
+	// for all of them.
+	cs.start(t, 2)
+
+	cp := &nopConnPool{
+		timeout:   1 * time.Second,
+		tcpConfig: confignet.TCPAddr{Endpoint: addr},
+	}
+
+	conn, err := cp.get()
+	require.NoError(t, err)
+	_, err = conn.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+	assert.NoError(t, err)
+	cp.put(conn)
+
+	// Get a new connection and confirm is not the same.
+	conn2, err2 := cp.get()
+	require.NoError(t, err2)
+	assert.NotSame(t, conn, conn2)
+	_, err = conn2.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+	assert.NoError(t, err)
+	cp.put(conn2)
+
+	require.NoError(t, cp.close())
+	cs.shutdownAndVerify(t)
+}
+
+func TestConnPoolWithIdle(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cs := newCarbonServer(t, addr, "")
+	// Each metric point will generate one Carbon line, set up the wait
+	// for all of them.
+	cs.start(t, 2)
+
+	cp := &connPoolWithIdle{
+		timeout:      1 * time.Second,
+		tcpConfig:    confignet.TCPAddr{Endpoint: addr},
+		maxIdleConns: 4,
+	}
+
+	conn, err := cp.get()
+	require.NoError(t, err)
+	_, err = conn.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+	assert.NoError(t, err)
+	cp.put(conn)
+
+	// Get a new connection and confirm it is the same as the first one.
+	conn2, err2 := cp.get()
+	require.NoError(t, err2)
+	assert.Same(t, conn, conn2)
+	_, err = conn2.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+	assert.NoError(t, err)
+	cp.put(conn2)
+
+	require.NoError(t, cp.close())
+	cs.shutdownAndVerify(t)
+}
+
+func TestConnPoolWithIdleMaxConnections(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cs := newCarbonServer(t, addr, "")
+	const maxIdleConns = 4
+	// Each metric point will generate one Carbon line, set up the wait
+	// for all of them.
+	cs.start(t, maxIdleConns+1)
+
+	cp := &connPoolWithIdle{
+		timeout:      1 * time.Second,
+		tcpConfig:    confignet.TCPAddr{Endpoint: addr},
+		maxIdleConns: maxIdleConns,
+	}
+
+	// Create connections and
+	var conns []net.Conn
+	for i := 0; i < maxIdleConns; i++ {
+		conn, err := cp.get()
+		require.NoError(t, err)
+		conns = append(conns, conn)
+		if i != 0 {
+			assert.NotSame(t, conn, conns[i-1])
+		}
+
+	}
+	for _, conn := range conns {
+		cp.put(conn)
+	}
+
+	for i := 0; i < maxIdleConns+1; i++ {
+		conn, err := cp.get()
+		require.NoError(t, err)
+		_, err = conn.Write([]byte(metricDataToPlaintext(generateSmallBatch())))
+		assert.NoError(t, err)
+		if i != maxIdleConns {
+			assert.Same(t, conn, conns[maxIdleConns-i-1])
+		} else {
+			// this should be a new connection
+			for _, cachedConn := range conns {
+				assert.NotSame(t, conn, cachedConn)
+			}
+			cp.put(conn)
+		}
+	}
+	for _, conn := range conns {
+		cp.put(conn)
+	}
+	require.NoError(t, cp.close())
+	cs.shutdownAndVerify(t)
+}
+
 func generateSmallBatch() pmetric.Metrics {
-	metrics := pmetric.NewMetrics()
-	m := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	m.SetName("test_gauge")
-	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.Attributes().PutStr("k0", "v0")
-	dp.Attributes().PutStr("k1", "v1")
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	dp.SetDoubleValue(123)
-	return metrics
+	return generateMetricsBatch(1)
 }
 
 func generateLargeBatch() pmetric.Metrics {
+	return generateMetricsBatch(1024)
+}
+
+func generateMetricsBatch(size int) pmetric.Metrics {
 	ts := time.Now()
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test_carbon")
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "carbon")
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 1028; i++ {
+	for i := 0; i < size; i++ {
 		m := ms.AppendEmpty()
 		m.SetName("test_" + strconv.Itoa(i))
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp.Attributes().PutStr("k0", "v0")
-		dp.Attributes().PutStr("k1", "v1")
+		dp.Attributes().PutStr("key_0", "value_0")
+		dp.Attributes().PutStr("key_1", "value_1")
+		dp.Attributes().PutStr("key_2", "value_2")
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		dp.SetIntValue(int64(i))
 	}
@@ -165,19 +305,21 @@ func generateLargeBatch() pmetric.Metrics {
 }
 
 type carbonServer struct {
-	ln         *net.TCPListener
-	doneServer *atomic.Bool
-	wg         sync.WaitGroup
+	ln                    *net.TCPListener
+	doneServer            *atomic.Bool
+	wg                    sync.WaitGroup
+	expectedContainsValue string
 }
 
-func newCarbonServer(t *testing.T, addr string) *carbonServer {
+func newCarbonServer(t *testing.T, addr string, expectedContainsValue string) *carbonServer {
 	laddr, err := net.ResolveTCPAddr("tcp", addr)
 	require.NoError(t, err)
 	ln, err := net.ListenTCP("tcp", laddr)
 	require.NoError(t, err)
 	return &carbonServer{
-		ln:         ln,
-		doneServer: &atomic.Bool{},
+		ln:                    ln,
+		doneServer:            &atomic.Bool{},
+		expectedContainsValue: expectedContainsValue,
 	}
 }
 
@@ -198,13 +340,15 @@ func (cs *carbonServer) start(t *testing.T, numExpectedReq int) {
 
 				reader := bufio.NewReader(conn)
 				for {
-					// Actual metric validation is done by other tests, here it
-					// is just flow.
-					_, err := reader.ReadBytes(byte('\n'))
+					buf, err := reader.ReadBytes(byte('\n'))
 					if errors.Is(err, io.EOF) {
 						return
 					}
 					require.NoError(t, err)
+
+					if cs.expectedContainsValue != "" {
+						assert.Contains(t, string(buf), cs.expectedContainsValue)
+					}
 
 					cs.wg.Done()
 				}

@@ -380,7 +380,7 @@ func verifySingleSpan(
 	span.SetSpanID(idutils.UInt64ToSpanID(1))
 	span.SetName(spanName)
 
-	sender := tc.Sender.(testbed.TraceDataSender)
+	sender := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.TraceDataSender)
 	require.NoError(t, sender.ConsumeTraces(context.Background(), td))
 
 	// We bypass the load generator in this test, but make sure to increment the

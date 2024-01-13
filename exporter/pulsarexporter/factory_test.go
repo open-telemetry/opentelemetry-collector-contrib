@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
@@ -18,7 +19,7 @@ func Test_createDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		Endpoint:        defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.

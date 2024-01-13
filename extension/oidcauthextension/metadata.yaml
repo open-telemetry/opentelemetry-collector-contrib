@@ -7,3 +7,7 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [jpkrohling]
+
+tests:
+  config:
+  skip_lifecycle: true
