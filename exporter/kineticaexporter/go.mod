@@ -21,6 +21,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
+require github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
+
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
