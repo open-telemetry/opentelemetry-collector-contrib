@@ -80,7 +80,7 @@ func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-// Clusters returns the clusterComputeResources of the vSphere SDK
+// Datacenters returns the datacenterComputeResources of the vSphere SDK
 func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter, error) {
 	datacenters, err := vc.finder.DatacenterList(ctx, "*")
 	if err != nil {
