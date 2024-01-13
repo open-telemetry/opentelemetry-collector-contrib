@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
-			ProcessorMode:           Default,
+			ProcessorMode:           DecideAndDrop,
 			SampledAttributeName:    defaultSampledKeyName,
 			PolicyCfgs: []PolicyCfg{
 				{

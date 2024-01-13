@@ -48,13 +48,11 @@ const (
 type ProcessorMode string
 
 const (
-	Default ProcessorMode = "default"
-
 	// Marks traces as sampled in the pre-sampling stage.
-	PreSample ProcessorMode = "presample"
+	DecideAndDrop ProcessorMode = "decide_and_drop"
 
 	// Drops traces in the post-sampling stage which are not sampled.
-	PostSample ProcessorMode = "postsample"
+	DecideAndTag ProcessorMode = "decide_and_tag"
 )
 
 const (

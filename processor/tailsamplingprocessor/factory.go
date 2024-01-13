@@ -38,7 +38,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		DecisionWait:         30 * time.Second,
 		NumTraces:            50000,
-		ProcessorMode:        Default,
+		ProcessorMode:        DecideAndDrop,
 		SampledAttributeName: defaultSampledKeyName,
 	}
 }

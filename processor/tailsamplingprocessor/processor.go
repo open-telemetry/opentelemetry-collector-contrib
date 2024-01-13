@@ -211,44 +211,31 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		}
 
 		trace := d.(*sampling.TraceData)
-		if tsp.processorMode == PreSample || tsp.processorMode == Default {
 
-			trace.DecisionTime = time.Now()
+		trace.DecisionTime = time.Now()
 
-			decision, policy := tsp.makeDecision(id, trace, &metrics)
+		decision, policy := tsp.makeDecision(id, trace, &metrics)
 
-			// Sampled or not, remove the batches
-			trace.Lock()
-			allSpans := trace.ReceivedBatches
-			trace.FinalDecision = decision
-			trace.ReceivedBatches = ptrace.NewTraces()
-			trace.Unlock()
+		// Sampled or not, remove the batches
+		trace.Lock()
+		allSpans := trace.ReceivedBatches
+		trace.FinalDecision = decision
+		trace.ReceivedBatches = ptrace.NewTraces()
+		trace.Unlock()
 
-			if tsp.processorMode == PreSample {
-				// Forward all spans to the next consumer, but add attribute about sampling decision to each span.
-				// This is done only in PreSample mode.
-				ctx := tsp.ctx
-				if decision == sampling.Sampled {
-					tsp.markTraceAsSampled(&allSpans)
-					ctx = policy.ctx
-				}
-
-				_ = tsp.nextConsumer.ConsumeTraces(ctx, allSpans)
-
-			} else if decision == sampling.Sampled {
-				_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
+		if tsp.processorMode == DecideAndTag {
+			// Forward all spans to the next consumer, but add attribute about sampling decision to each span.
+			// This is done only in DecideAndTag mode.
+			ctx := tsp.ctx
+			if decision == sampling.Sampled {
+				tsp.markTraceAsSampled(&allSpans)
+				ctx = policy.ctx
 			}
-		} else {
-			trace.Lock()
-			allSpans := trace.ReceivedBatches
-			trace.ReceivedBatches = ptrace.NewTraces()
-			trace.Unlock()
 
-			// Check if trace is marked as samples
-			sampled := tsp.isTraceSampled(&allSpans)
-			if sampled {
-				_ = tsp.nextConsumer.ConsumeTraces(tsp.ctx, allSpans)
-			}
+			_ = tsp.nextConsumer.ConsumeTraces(ctx, allSpans)
+
+		} else if decision == sampling.Sampled {
+			_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
 		}
 	}
 
@@ -270,35 +257,19 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 func (tsp *tailSamplingSpanProcessor) markTraceAsSampled(spans *ptrace.Traces) {
 	for i := 0; i < spans.ResourceSpans().Len(); i++ {
 		rs := spans.ResourceSpans().At(i)
-		ilss := rs.ScopeSpans()
-		for j := 0; j < ilss.Len(); j++ {
-			ils := ilss.At(j)
-			spans := ils.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
-				span.Attributes().PutBool(tsp.sampledAttributeName, true)
-			}
-		}
+		tsp.markSpansAsSampled(&rs)
 	}
 }
 
-func (tsp *tailSamplingSpanProcessor) isTraceSampled(spans *ptrace.Traces) bool {
-	for i := 0; i < spans.ResourceSpans().Len(); i++ {
-		rs := spans.ResourceSpans().At(i)
-		ilss := rs.ScopeSpans()
-		for j := 0; j < ilss.Len(); j++ {
-			ils := ilss.At(j)
-			spans := ils.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
-				decision, exists := span.Attributes().Get(tsp.sampledAttributeName)
-				if exists && decision.Bool() {
-					return true
-				}
-			}
+func (tsp *tailSamplingSpanProcessor) markSpansAsSampled(resourceSpans *ptrace.ResourceSpans) {
+	ils := resourceSpans.ScopeSpans()
+	for i := 0; i < ils.Len(); i++ {
+		spans := ils.At(i).Spans()
+		for j := 0; j < spans.Len(); j++ {
+			span := spans.At(j)
+			span.Attributes().PutBool(tsp.sampledAttributeName, true)
 		}
 	}
-	return false
 }
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *policy) {
@@ -486,26 +457,37 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		} else {
 			actualData.Unlock()
 
-			switch finalDecision {
-			case sampling.Sampled:
-				// Forward the spans to the policy destinations
-				traceTd := ptrace.NewTraces()
-				appendToTraces(traceTd, resourceSpans, spans)
-				if err := tsp.nextConsumer.ConsumeTraces(tsp.ctx, traceTd); err != nil {
-					tsp.logger.Warn(
-						"Error sending late arrived spans to destination",
-						zap.Error(err))
+			if tsp.processorMode == DecideAndTag {
+				// Forward all spans to the next consumer, but add attribute about sampling decision to each span.
+				// This is done only in DecideAndTag mode.
+				tsp.markSpansAsSampled(&resourceSpans)
+				tsp.forwardLateArrivingSpans(resourceSpans, spans)
+			} else {
+				switch finalDecision {
+				case sampling.Sampled:
+					// Forward the spans to the policy destinations
+					tsp.forwardLateArrivingSpans(resourceSpans, spans)
+				case sampling.NotSampled:
+					stats.Record(tsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
+				default:
+					tsp.logger.Warn("Encountered unexpected sampling decision",
+						zap.Int("decision", int(finalDecision)))
 				}
-			case sampling.NotSampled:
-				stats.Record(tsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
-			default:
-				tsp.logger.Warn("Encountered unexpected sampling decision",
-					zap.Int("decision", int(finalDecision)))
 			}
 		}
 	}
 
 	stats.Record(tsp.ctx, statNewTraceIDReceivedCount.M(newTraceIDs))
+}
+
+func (tsp *tailSamplingSpanProcessor) forwardLateArrivingSpans(resourceSpans ptrace.ResourceSpans, spans []spanAndScope) {
+	traceTd := ptrace.NewTraces()
+	appendToTraces(traceTd, resourceSpans, spans)
+	if err := tsp.nextConsumer.ConsumeTraces(tsp.ctx, traceTd); err != nil {
+		tsp.logger.Warn(
+			"Error sending late arrived spans to destination",
+			zap.Error(err))
+	}
 }
 
 func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {

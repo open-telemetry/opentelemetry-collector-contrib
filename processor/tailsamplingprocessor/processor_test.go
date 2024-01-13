@@ -130,7 +130,7 @@ func TestTraceIntegrity(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
-		processorMode:   Default,
+		processorMode:   DecideAndDrop,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -251,7 +251,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testLatencyPolicy,
-		ProcessorMode:           Default,
+		ProcessorMode:           DecideAndDrop,
 	}
 	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
@@ -373,7 +373,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
-		processorMode:   Default,
+		processorMode:   DecideAndDrop,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -436,7 +436,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
-		processorMode:   Default,
+		processorMode:   DecideAndDrop,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -506,7 +506,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
-		processorMode:   Default,
+		processorMode:   DecideAndDrop,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -571,7 +571,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
-		processorMode:   Default,
+		processorMode:   DecideAndDrop,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -636,7 +636,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		mutatorsBuf:     make([]tag.Mutator, 1),
 		numTracesOnMap:  &atomic.Uint64{},
-		processorMode:   Default,
+		processorMode:   DecideAndDrop,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -681,6 +681,87 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	require.Equal(t, 0, msp.SpanCount())
 }
 
+func TestSamplingDecideAndTag(t *testing.T) {
+	const maxSize = 100
+	const decisionWaitSeconds = 5
+	// For this test explicitly control the timer calls and batcher, and set a mock
+	// sampling policy evaluator.
+	msp := new(consumertest.TracesSink)
+	mpe := &mockPolicyEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    maxSize,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
+		policies: []*policy{
+			{
+				name: "policy-1", evaluator: mpe, ctx: context.TODO(),
+			}},
+		deleteChan:           make(chan pcommon.TraceID, maxSize),
+		policyTicker:         mtt,
+		tickerFrequency:      100 * time.Millisecond,
+		numTracesOnMap:       &atomic.Uint64{},
+		mutatorsBuf:          make([]tag.Mutator, 1),
+		processorMode:        DecideAndTag,
+		sampledAttributeName: defaultSampledKeyName,
+	}
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
+	_, batches := generateIdsAndBatches(210)
+	currItem := 0
+	numSpansPerBatchWindow := 10
+	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
+	for evalNum := 0; evalNum < decisionWaitSeconds; evalNum++ {
+		for ; currItem < numSpansPerBatchWindow*(evalNum+1); currItem++ {
+			require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[currItem]))
+			require.True(t, mtt.Started, "Time ticker was expected to have started")
+		}
+		tsp.samplingPolicyOnTick()
+		require.False(
+			t,
+			msp.SpanCount() != 0 || mpe.EvaluationCount != 0,
+			"policy for initial items was evaluated before decision wait period",
+		)
+	}
+
+	mpe.NextDecision = sampling.Sampled
+	tsp.samplingPolicyOnTick()
+	require.False(
+		t,
+		msp.SpanCount() == 0 || mpe.EvaluationCount == 0,
+		"policy should have been evaluated totalspans == %d and evaluationcount(1) == %d and evaluationcount(2) == %d",
+		msp.SpanCount(),
+		mpe.EvaluationCount,
+	)
+
+	require.Equal(t, numSpansPerBatchWindow, msp.SpanCount(), "nextConsumer should've been called with exactly 1 batch of spans")
+
+	// Late span of a sampled trace should be sent directly down the pipeline exporter
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), batches[0]))
+	expectedNumWithLateSpan := numSpansPerBatchWindow + 1
+	require.Equal(t, expectedNumWithLateSpan, msp.SpanCount(), "late span was not accounted for")
+
+	// Verify that the sampled attribute was added to all spans
+	for _, trace := range msp.AllTraces() {
+		for i := 0; i < trace.ResourceSpans().Len(); i++ {
+			ss := trace.ResourceSpans().At(i).ScopeSpans()
+			for j := 0; j < ss.Len(); j++ {
+				for k := 0; k < ss.At(j).Spans().Len(); k++ {
+					span := ss.At(j).Spans().At(k)
+					attrValue, ok := span.Attributes().Get(tsp.sampledAttributeName)
+					require.True(t, ok, "sampled attribute not found")
+					require.True(t, attrValue.Bool())
+				}
+			}
+		}
+	}
+}
+
 func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	const maxSize = 100
 	nextConsumer := new(consumertest.TracesSink)
@@ -701,7 +782,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
-		processorMode:   Default,
+		processorMode:   DecideAndDrop,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -770,7 +851,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
 		mutatorsBuf:     make([]tag.Mutator, 1),
-		processorMode:   Default,
+		processorMode:   DecideAndDrop,
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -832,7 +913,7 @@ func TestSubSecondDecisionTime(t *testing.T) {
 		DecisionWait:  500 * time.Millisecond,
 		NumTraces:     uint64(50000),
 		PolicyCfgs:    testPolicy,
-		ProcessorMode: Default,
+		ProcessorMode: DecideAndDrop,
 	})
 	require.NoError(t, err)
 

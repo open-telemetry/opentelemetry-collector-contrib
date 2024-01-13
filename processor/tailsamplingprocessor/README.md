@@ -50,10 +50,9 @@ The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
-- `processor_mode` (default = default): Processor mode to use.
-  1. `default`: Default mode, where the processor will make a sampling decision and removes unwanted traces.
-  2. `presample`: Presample mode, where the processor will make a sampling decision and keeps unwanted traces.
-  3. `postsample`: Postsample mode, where the processor does not decide and just removes unwanted traces based on `sampled_attribute_name` attribute.
+- `processor_mode` (default = decide_and_drop): Processor mode to use.
+  1. `decide_and_drop`: Determines which traces should be sampled and drops the rest.
+  2. `decide_and_tag`: Determines which traces should be sampled and adds an attribute to the trace with the sampling decision.
 - `sampled_attribute_name`: (default = tail_sampling.sampled): Attribute name to be added to the sampled traces. This attribute will be added to all spans in the trace.
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
@@ -432,6 +431,41 @@ As a rule of thumb, if you want to add probabilistic sampling and...
 
 [probabilistic_sampling_processor]: ../probabilisticsamplerprocessor
 [loadbalancing_exporter]: ../../exporter/loadbalancingexporter
+
+## Example using `processor_mode` = `decide_and_tag` with [spanmetricsconnector](../../connector/spanmetricsconnector/README.md)
+
+```yaml
+connectors:
+  forward:
+  spanmetrics:
+    exemplars:
+      enabled: true
+      dynamic:
+        enabled: true
+processors:
+  filter/drop_unsampled:
+    error_mode: ignore
+    traces:
+      span:
+      - attributes["tail_sampling.sampled"] == nil # Drop spans that are not sampled
+  tail_sampling:
+    processor_mode: decide_and_tag
+    policies: []
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [tail_sampling]
+      exporters: [forward, spanmetrics]
+    traces/sampled:
+      receivers: [forward]
+      processors: [filter/drop_unsampled]
+      exporters: [otlp/to_traces_backend]
+    metrics:
+      receivers: [spanmetrics]
+      processors: []
+      exporters: [otlp/to_metrics_backend]
+```
 
 ## FAQ
 
