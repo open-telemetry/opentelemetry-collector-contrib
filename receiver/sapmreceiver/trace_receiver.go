@@ -176,7 +176,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		defer sr.shutdownWG.Done()
 		if errHTTP := sr.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			sr.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil
