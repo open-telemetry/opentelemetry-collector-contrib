@@ -377,7 +377,7 @@ go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8 h
 go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8/go.mod h1:QQXjP4etmJQhkQ20j4P/rapWuItYxoFozg/iIwuKnYg=
 go.opentelemetry.io/collector/pdata v1.0.2-0.20240118172122-8131d31601b8 h1:ygOOx2cN0zZHrPowRymfUgnRa6aEd5eE0xrv9VAQL9c=
 go.opentelemetry.io/collector/pdata v1.0.2-0.20240118172122-8131d31601b8/go.mod h1:jutXeu0QOXYY8wcZ/hege+YAnSBP3+jpTqYU1+JTI5Y=
-go.opentelemetry.io/collector/processor v0.92.1-0.20240110091511-bf804d6c4ecc h1:OsWGmqWaYi5SusdgdTHBQuVk8gDpwSUxzVI1TrT71IE=
+go.opentelemetry.io/collector/processor v0.92.1-0.20240112172857-83d463ceba06 h1:kRhvGvIFU1n70GS3NxTV+BjILewqycTqV2HnGYadOII=
 go.opentelemetry.io/collector/receiver v0.92.1-0.20240118172122-8131d31601b8 h1:qqxWxCWgfCBjU7beT7hiVk+BiZEeg9MykErpJGKuhuM=
 go.opentelemetry.io/collector/receiver v0.92.1-0.20240118172122-8131d31601b8/go.mod h1:BOA4WlE4tBd4hPn3B85O6Gbj6hzyE8RsksK1GQgEWwM=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 h1:aFJWCqJMNjENlcleuuOkGAPH82y0yULBScfXcIEdS24=
