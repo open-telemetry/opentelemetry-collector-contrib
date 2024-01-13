@@ -7,3 +7,9 @@ status:
   distributions: [contrib]
   codeowners:
     active: [atoulme, martin-majlis-s1, zdaratom, tomaz-s1]
+
+tests:
+  config:
+    dataset_url: https://app.scalyr.com
+    api_key: key-minimal
+  skip_lifecycle: true
