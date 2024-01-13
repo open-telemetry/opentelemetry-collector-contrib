@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -34,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	actualCfg := cfg.(*Config)
 	expectedCfg := &Config{
 		Config: otlphttp.Config{
-			RetrySettings: exporterhelper.RetrySettings{
+			RetryConfig: configretry.BackOffConfig{
 				Enabled:             true,
 				InitialInterval:     10 * time.Second,
 				MaxInterval:         1 * time.Minute,
@@ -42,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 				RandomizationFactor: backoff.DefaultRandomizationFactor,
 				Multiplier:          backoff.DefaultMultiplier,
 			},
-			QueueSettings: exporterhelper.QueueSettings{
+			QueueConfig: exporterhelper.QueueSettings{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
