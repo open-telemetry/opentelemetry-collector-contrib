@@ -130,7 +130,9 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) *supervisor.Supervisor {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
-	s, err := supervisor.NewSupervisor(zap.NewNop(), cfgFile.Name())
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+	s, err := supervisor.NewSupervisor(logger, cfgFile.Name())
 	require.NoError(t, err)
 
 	return s

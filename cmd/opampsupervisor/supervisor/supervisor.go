@@ -29,6 +29,8 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
 
@@ -69,10 +71,6 @@ type Supervisor struct {
 
 	// Agent's instance id.
 	instanceID ulid.ULID
-
-	bootstrapTemplate    *template.Template
-	extraConfigTemplate  *template.Template
-	ownTelemetryTemplate *template.Template
 
 	bootstrapTemplate    *template.Template
 	extraConfigTemplate  *template.Template
@@ -354,7 +352,7 @@ func (s *Supervisor) startOpAMP() error {
 		return err
 	}
 
-	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint))
+	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
 		Header:         s.config.Server.Headers,
