@@ -15,3 +15,8 @@ status:
   - liatrio
   codeowners:
     active: [Aneurysm9]
+
+tests:
+  config:
+    endpoint: "1.2.3.4:1234"
+  skip_lifecycle: true
