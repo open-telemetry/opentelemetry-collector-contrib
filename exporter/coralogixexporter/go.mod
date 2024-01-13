@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.93.1-0.20240130182548-89388addcc7f
 	go.opentelemetry.io/collector/config/configcompression v0.93.1-0.20240130182548-89388addcc7f
@@ -71,6 +72,9 @@ require (
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
+replace cloud.google.com/go v0.65.0 => cloud.google.com/go v0.110.10
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
