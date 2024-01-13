@@ -8,3 +8,11 @@ status:
   codeowners:
     active: []
     emeritus: [gramidt]
+
+tests:
+  config:
+    endpoint: "https://f5cloud"
+    source: "dev"
+    f5cloud_auth:
+      credential_file: "testdata/empty_credential_file.json"
+  skip_lifecycle: true
