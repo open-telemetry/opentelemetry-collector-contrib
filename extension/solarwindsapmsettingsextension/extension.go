@@ -33,6 +33,5 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 
 func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) error {
 	extension.logger.Debug("Shutting down solarwinds apm settings extension")
-	extension.cancel()
 	return nil
 }
