@@ -5,8 +5,10 @@ go 1.20
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.45.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.45.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.92.1-0.20240112172857-83d463ceba06
+	go.opentelemetry.io/collector/confmap v0.92.1-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/collector/exporter v0.92.1-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/collector/otelcol v0.92.1-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/otel/metric v1.21.0
@@ -79,7 +81,6 @@ require (
 	go.opentelemetry.io/collector v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240112172857-83d463ceba06 // indirect
-	go.opentelemetry.io/collector/confmap v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/connector v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/consumer v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/extension v0.92.1-0.20240112172857-83d463ceba06 // indirect
