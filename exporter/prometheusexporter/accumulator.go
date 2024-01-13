@@ -165,11 +165,13 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 
 	// Drop metrics with unspecified aggregations
 	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityUnspecified {
+		a.logger.Debug(fmt.Sprintf("Dropping metric with unspecified aggregation: %s", metric.Name()))
 		return
 	}
 
 	// Drop non-monotonic and non-cumulative metrics
 	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && !doubleSum.IsMonotonic() {
+		a.logger.Debug(fmt.Sprintf("Dropping non-monotonic and non-cumulative metric %s", metric.Name()))
 		return
 	}
 
