@@ -17,7 +17,7 @@ import (
 	vt "github.com/vmware/govmomi/vim25/types"
 )
 
-// vcenterClient is a client that
+// vcenterClient is a client that collects data from a vCenter endpoint.
 type vcenterClient struct {
 	moClient  *govmomi.Client
 	vimDriver *vim25.Client
