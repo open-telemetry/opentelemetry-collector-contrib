@@ -433,7 +433,7 @@ func (s *Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) htt
 	return headers
 }
 
-func (s *Supervisor) onOpampConnectionSettings(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *protobufs.OpAMPConnectionSettings) error {
 	if settings == nil {
 		s.logger.Debug("Received ConnectionSettings request with nil settings")
 		return nil
@@ -461,7 +461,10 @@ func (s *Supervisor) onOpampConnectionSettings(ctx context.Context, settings *pr
 		newServerConfig.TLSSetting = configtls.TLSClientSetting{Insecure: true}
 	}
 
-	s.stopOpAMP()
+	if err := s.stopOpAMP(); err != nil {
+		s.logger.Error("Cannot stop the OpAMP client", zap.Error(err))
+		return err
+	}
 
 	// take a copy of the current OpAMP server config
 	oldServerConfig := s.config.Server
