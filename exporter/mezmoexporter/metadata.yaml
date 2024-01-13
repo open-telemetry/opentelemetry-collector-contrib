@@ -7,3 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [dashpole, billmeyer, gjanco]
+
+tests:
+  config:
+  expect_consumer_error: true
