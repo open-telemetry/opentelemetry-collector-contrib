@@ -107,8 +107,6 @@ func TestComponentLifecycle(t *testing.T) {
 				}
 			})
 
-			assert.NoError(t, err)
-
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
