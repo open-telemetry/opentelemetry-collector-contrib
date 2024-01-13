@@ -1,0 +1,16 @@
+openapi:
+  openapi_specs:
+  - "{ \"openapi\": \"3.0.0\", \"info\": {\"title\": \"test\", \"version\": \"1.0.0\"}}"
+  openapi_file_paths:
+  - testdata/petstore.yaml
+  openapi_endpoints:
+  - "http://localhost:8080/api/v1"
+  - "http://localhost:8080/api/v2"
+  openapi_directories:
+  - http://localhost:8080
+  api_load_timeout: 10s
+  api_reload_interval: 1m
+  allow_http_and_https: true
+  openapi_extensions:
+  - x-foo
+  - x-bar

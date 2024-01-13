@@ -1,0 +1,12 @@
+type: openapi
+
+status:
+  class: processor
+  stability:
+    alpha: [traces]
+  distributions:
+  codeowners:
+    active: [tiithansen]
+
+tests:
+  config:
