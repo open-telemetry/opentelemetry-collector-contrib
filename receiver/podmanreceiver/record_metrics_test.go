@@ -61,15 +61,15 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.BlockInput}})
 
 		case "container.cpu.usage.system":
-			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.CPUSystemNano}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: toSecondsWithNanosecondPrecision(podmanStats.CPUSystemNano)}})
 		case "container.cpu.usage.total":
-			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.CPUNano}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: toSecondsWithNanosecondPrecision(podmanStats.CPUNano)}})
 		case "container.cpu.percent":
 			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{doubleVal: podmanStats.CPU}})
 		case "container.cpu.usage.percpu":
 			points := make([]point, len(podmanStats.PerCPU))
 			for i, v := range podmanStats.PerCPU {
-				points[i] = point{intVal: v, attributes: map[string]string{"core": fmt.Sprintf("cpu%d", i)}}
+				points[i] = point{intVal: toSecondsWithNanosecondPrecision(v), attributes: map[string]string{"core": fmt.Sprintf("cpu%d", i)}}
 			}
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, points)
 

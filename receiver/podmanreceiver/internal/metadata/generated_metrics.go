@@ -172,7 +172,7 @@ type metricContainerCPUUsagePercpu struct {
 func (m *metricContainerCPUUsagePercpu) init() {
 	m.data.SetName("container.cpu.usage.percpu")
 	m.data.SetDescription("Total CPU time consumed per CPU-core.")
-	m.data.SetUnit("ns")
+	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -225,7 +225,7 @@ type metricContainerCPUUsageSystem struct {
 func (m *metricContainerCPUUsageSystem) init() {
 	m.data.SetName("container.cpu.usage.system")
 	m.data.SetDescription("System CPU usage.")
-	m.data.SetUnit("ns")
+	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -276,7 +276,7 @@ type metricContainerCPUUsageTotal struct {
 func (m *metricContainerCPUUsageTotal) init() {
 	m.data.SetName("container.cpu.usage.total")
 	m.data.SetDescription("Total CPU time consumed.")
-	m.data.SetUnit("ns")
+	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

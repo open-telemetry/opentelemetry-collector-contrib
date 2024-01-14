@@ -36,7 +36,7 @@ metrics:
   container.cpu.usage.system:
     enabled: true
     description: "System CPU usage."
-    unit: ns
+    unit: s
     sum:
       value_type: int
       monotonic: true
@@ -44,7 +44,7 @@ metrics:
   container.cpu.usage.total:
     enabled: true
     description: "Total CPU time consumed."
-    unit: ns
+    unit: s
     sum:
       value_type: int
       monotonic: true
@@ -52,7 +52,7 @@ metrics:
   container.cpu.usage.percpu:
     enabled: true
     description: "Total CPU time consumed per CPU-core."
-    unit: ns
+    unit: s
     sum:
       value_type: int
       monotonic: true
