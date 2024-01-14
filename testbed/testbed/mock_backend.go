@@ -195,8 +195,6 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 		return err
 	}
 
-	tc.numSpansReceived.Add(uint64(td.SpanCount()))
-
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		ils := rs.At(i).ScopeSpans()
@@ -226,6 +224,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 	}
 
 	tc.backend.ConsumeTrace(td)
+	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	return nil
 }
