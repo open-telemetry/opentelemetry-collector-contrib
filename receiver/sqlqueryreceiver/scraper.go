@@ -27,6 +27,7 @@ type scraper struct {
 	clientProviderFunc clientProviderFunc
 	dbProviderFunc     dbProviderFunc
 	logger             *zap.Logger
+	telemetry          TelemetryConfig
 	client             dbClient
 	db                 *sql.DB
 }
@@ -43,7 +44,7 @@ func (s *scraper) Start(context.Context, component.Host) error {
 	if err != nil {
 		return fmt.Errorf("failed to open db connection: %w", err)
 	}
-	s.client = s.clientProviderFunc(dbWrapper{s.db}, s.query.SQL, s.logger)
+	s.client = s.clientProviderFunc(dbWrapper{s.db}, s.query.SQL, s.logger, s.telemetry)
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 
 	return nil

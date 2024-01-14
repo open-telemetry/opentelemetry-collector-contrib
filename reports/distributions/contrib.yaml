@@ -43,6 +43,7 @@ components:
         - loki
         - mezmo
         - opencensus
+        - opensearch
         - prometheus
         - prometheusremotewrite
         - pulsar

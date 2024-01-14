@@ -80,6 +80,8 @@ Or, to generate a specific number of traces:
 telemetrygen traces --otlp-insecure --traces 1
 ```
 
+To send traces in secure connection, see [examples/secure-tracing](../../examples/secure-tracing/)
+
 Check `telemetrygen traces --help` for all the options.
 
 ### Logs

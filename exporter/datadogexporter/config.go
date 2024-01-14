@@ -552,7 +552,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		return err
 	}
 
-	err := configMap.Unmarshal(c, confmap.WithErrorUnused())
+	err := configMap.Unmarshal(c)
 	if err != nil {
 		return err
 	}

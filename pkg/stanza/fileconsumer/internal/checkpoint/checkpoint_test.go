@@ -52,8 +52,9 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			"one",
 			[]*reader.Metadata{
 				{
-					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
-					Offset:      3,
+					FileAttributes: make(map[string]any),
+					Fingerprint:    &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
+					Offset:         3,
 				},
 			},
 		},
@@ -61,12 +62,14 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			"two",
 			[]*reader.Metadata{
 				{
-					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
-					Offset:      3,
+					FileAttributes: make(map[string]any),
+					Fingerprint:    &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
+					Offset:         3,
 				},
 				{
-					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("barrrr")},
-					Offset:      6,
+					FileAttributes: make(map[string]any),
+					Fingerprint:    &fingerprint.Fingerprint{FirstBytes: []byte("barrrr")},
+					Offset:         6,
 				},
 			},
 		},
@@ -81,6 +84,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 					},
 				},
 				{
+					FileAttributes:  make(map[string]any),
 					Fingerprint:     &fingerprint.Fingerprint{FirstBytes: []byte("barrrr")},
 					Offset:          6,
 					HeaderFinalized: true,
