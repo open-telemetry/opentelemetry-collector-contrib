@@ -5,9 +5,9 @@ package cassandraexporter
 
 import (
 	"errors"
-	"github.com/gocql/gocql"
 	"testing"
 
+	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/require"
 )
 

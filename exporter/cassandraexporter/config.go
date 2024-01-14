@@ -3,8 +3,9 @@
 
 package cassandraexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 import (
-	"go.opentelemetry.io/collector/config/configopaque"
 	"time"
+
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 type Config struct {
@@ -16,8 +17,7 @@ type Config struct {
 	LogsTable   string        `mapstructure:"logs_table"`
 	Replication Replication   `mapstructure:"replication"`
 	Compression Compression   `mapstructure:"compression"`
-	Auth        Auth        `mapstructure:"auth"`
-
+	Auth        Auth          `mapstructure:"auth"`
 }
 
 type Replication struct {
