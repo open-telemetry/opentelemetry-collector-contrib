@@ -19,7 +19,7 @@ TEST_COLORIZE="${SED} 's/PASS/${PASS_COLOR}/' | ${SED} 's/FAIL/${FAIL_COLOR}/'"
 
 mkdir -p results/junit
 
-RUN_TESTBED=1 go test -race -v ${TEST_ARGS} 2>&1 | tee results/testoutput.log | bash -c "${TEST_COLORIZE}"
+RUN_TESTBED=1 go test -v ${TEST_ARGS} 2>&1 | tee results/testoutput.log | bash -c "${TEST_COLORIZE}"
 
 testStatus=${PIPESTATUS[0]}
 
