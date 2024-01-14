@@ -17,6 +17,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -38,6 +39,13 @@ type TraceAgent struct {
 	// exit signals the agent to shut down.
 	exit chan struct{}
 }
+
+// ConnectorPerformanceFeatureGate uses optimized code paths for the Datadog Connector.
+var ConnectorPerformanceFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"connector.datadogconnector.performance",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Datadog Connector will use optimized code"),
+)
 
 // newAgent creates a new unstarted traceagent using the given context. Call Start to start the traceagent.
 // The out channel will receive outoing stats payloads resulting from spans ingested using the Ingest method.

@@ -28,6 +28,9 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 		return nil, err
 	}
 	cluster.Keyspace = cfg.Keyspace
+	cluster.Consistency = gocql.Quorum
+	cluster.Port = cfg.Port
+	cluster.Timeout = cfg.Timeout
 
 	session, err := cluster.CreateSession()
 	if err != nil {
@@ -43,6 +46,9 @@ func initializeTraceKernel(cfg *Config) error {
 	if err != nil {
 		return err
 	}
+	cluster.Consistency = gocql.Quorum
+	cluster.Port = cfg.Port
+	cluster.Timeout = cfg.Timeout
 
 	session, err := cluster.CreateSession()
 	if err != nil {

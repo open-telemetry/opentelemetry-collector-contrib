@@ -1,5 +1,7 @@
 # Metadata Generator
 
+> This module is being moved to https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/mdatagen and will be deprecated in this repository.
+
 Every component's documentation should include a brief description of the component and guidance on how to use it.
 There is also some information about the component (or metadata) that should be included to help end-users understand the current state of the component and whether it is right for their use case.
 Examples of this metadata about a component are:

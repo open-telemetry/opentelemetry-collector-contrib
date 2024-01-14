@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
@@ -85,7 +86,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	md := metadata{}
-	if err := conf.Unmarshal(&md); err != nil {
+	if err := conf.Unmarshal(&md, confmap.WithIgnoreUnused()); err != nil {
 		return md, err
 	}
 

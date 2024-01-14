@@ -7,6 +7,48 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.92.0
+
+### 🛑 Breaking changes 🛑
+
+- `carbonexporter`: Change Config member names (#29862)
+- `carbonreceiver`: Hide unnecessary public API (#29895)
+- `pkg/ottl`: Unexport `ADD`, `SUB`, `MULT`, `DIV`, `EQ`, `NE`, `LT`, `LTE`, `GT`, and `GTE` (#29925)
+- `pkg/ottl`: Change `Path` to be an Interface instead of the grammar struct. (#29897)
+  Affects creators of custom contexts.
+- `golden`: Use testing.TB for golden.WriteMetrics, golden.WriteTraces and golden.WriteLogs over *testing.T (#30277)
+
+### 💡 Enhancements 💡
+
+- `kafkaexporter`: add ability to publish kafka messages with message key of TraceID - it will allow partitioning of the kafka Topic. (#12318)
+- `kafkaexporter`: Adds the ability to configure the Kafka client's Client ID. (#30144)
+
+## v0.91.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Rename `Statements` to `StatementSequence`. Remove `Eval` function from `StatementSequence`, use `ConditionSequence` instead. (#29598)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `ConditionSequence` for evaluating lists of conditions (#29339)
+
+## v0.90.0
+
+### 🛑 Breaking changes 🛑
+
+- `clickhouseexporter`: Replace `Config.QueueSettings` field with `exporterhelper.QueueSettings` and remove `QueueSettings` struct (#27653)
+- `kafkareceiver`: Do not export the function `WithTracesUnmarshalers`, `WithMetricsUnmarshalers`, `WithLogsUnmarshalers` (#26304)
+
+### 💡 Enhancements 💡
+
+- `datadogreceiver`: The datadogreceiver supports the new datadog protocol that is sent by the datadog agent API/v0.2/traces. (#27045)
+- `pkg/ottl`: Add ability to independently parse OTTL conditions. (#29315)
+
+### 🧰 Bug fixes 🧰
+
+- `cassandraexporter`: Exist check for keyspace and dynamic timeout (#27633)
+
 ## v0.89.0
 
 ### 🛑 Breaking changes 🛑

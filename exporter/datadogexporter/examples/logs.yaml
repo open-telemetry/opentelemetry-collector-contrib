@@ -1,0 +1,35 @@
+receivers:
+ filelog:
+    include_file_path: true
+    poll_interval: 500ms
+    include:
+      - /var/log/*/app.log
+    operators:
+      - type: json_parser
+      # If your logs are not json, please make sure that you are using the regex_parser to parse out the timestamp into attributes.time.
+      # - type: regex_parser
+      #   id: parser-timestamp
+      #   ...
+      # Layout needs to match log timestamp format. If this section is removed, timestamp will correspond to time log was intake by DD.
+      - type: time_parser
+        parse_from: attributes.time
+        layout: '%Y-%m-%dT%H:%M:%S%z'
+
+processors:
+  batch:
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
+
+exporters:
+  datadog:
+    api:
+      site: ${env:DD_SITE}
+      key: ${env:DD_API_KEY}
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [batch]
+      exporters: [datadog]

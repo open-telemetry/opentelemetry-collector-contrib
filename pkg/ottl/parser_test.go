@@ -105,8 +105,8 @@ func Test_parse(t *testing.T) {
 											{
 												Value: value{
 													Literal: &mathExprLiteral{
-														Path: &Path{
-															Fields: []Field{
+														Path: &path{
+															Fields: []field{
 																{
 																	Name: "bear",
 																},
@@ -138,14 +138,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bar"),
 													},
@@ -179,11 +179,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("message"),
 													},
@@ -202,11 +202,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("device_name"),
 													},
@@ -219,7 +219,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
+								Enum: (*enumSymbol)(ottltest.Strp("SHA256")),
 							},
 						},
 					},
@@ -237,11 +237,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("message"),
 													},
@@ -272,11 +272,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("message"),
 													},
@@ -289,7 +289,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								Enum: (*EnumSymbol)(ottltest.Strp("S")),
+								Enum: (*enumSymbol)(ottltest.Strp("S")),
 							},
 						},
 					},
@@ -307,14 +307,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "bar",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("x"),
 													},
@@ -336,7 +336,7 @@ func Test_parse(t *testing.T) {
 								Literal: &mathExprLiteral{
 									Converter: &converter{
 										Function: "Test",
-										Keys: []Key{
+										Keys: []key{
 											{
 												Int: ottltest.Intp(0),
 											},
@@ -363,14 +363,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bar"),
 													},
@@ -397,8 +397,8 @@ func Test_parse(t *testing.T) {
 							Comparison: &comparison{
 								Left: value{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -406,7 +406,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: EQ,
+								Op: eq,
 								Right: value{
 									String: ottltest.Strp("fido"),
 								},
@@ -426,14 +426,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bar"),
 													},
@@ -460,8 +460,8 @@ func Test_parse(t *testing.T) {
 							Comparison: &comparison{
 								Left: value{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -469,7 +469,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: NE,
+								Op: ne,
 								Right: value{
 									String: ottltest.Strp("fido"),
 								},
@@ -489,14 +489,14 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "foo",
 											},
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bar"),
 													},
@@ -523,8 +523,8 @@ func Test_parse(t *testing.T) {
 							Comparison: &comparison{
 								Left: value{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -532,7 +532,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: EQ,
+								Op: eq,
 								Right: value{
 									String: ottltest.Strp("fido"),
 								},
@@ -613,11 +613,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("bytes"),
 													},
@@ -648,11 +648,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -683,11 +683,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -700,7 +700,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+								Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM")),
 							},
 						},
 					},
@@ -718,11 +718,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -755,11 +755,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -796,11 +796,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -840,11 +840,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -911,11 +911,11 @@ func Test_parse(t *testing.T) {
 										},
 										{
 											Literal: &mathExprLiteral{
-												Path: &Path{
-													Fields: []Field{
+												Path: &path{
+													Fields: []field{
 														{
 															Name: "attributes",
-															Keys: []Key{
+															Keys: []key{
 																{
 																	String: ottltest.Strp("test"),
 																},
@@ -944,11 +944,11 @@ func Test_parse(t *testing.T) {
 						{
 							Value: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "attributes",
-												Keys: []Key{
+												Keys: []key{
 													{
 														String: ottltest.Strp("test"),
 													},
@@ -971,7 +971,7 @@ func Test_parse(t *testing.T) {
 									},
 									Right: []*opAddSubTerm{
 										{
-											Operator: SUB,
+											Operator: sub,
 											Term: &addSubTerm{
 												Left: &mathValue{
 													Literal: &mathExprLiteral{
@@ -1001,7 +1001,7 @@ func Test_parse(t *testing.T) {
 										},
 										Right: []*opAddSubTerm{
 											{
-												Operator: ADD,
+												Operator: add,
 												Term: &addSubTerm{
 													Left: &mathValue{
 														Literal: &mathExprLiteral{
@@ -1010,7 +1010,7 @@ func Test_parse(t *testing.T) {
 													},
 													Right: []*opMultDivValue{
 														{
-															Operator: MULT,
+															Operator: mult,
 															Value: &mathValue{
 																Literal: &mathExprLiteral{
 																	Int: ottltest.Intp(2),
@@ -1023,14 +1023,14 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: EQ,
+								Op: eq,
 								Right: value{
 									MathExpression: &mathExpression{
 										Left: &addSubTerm{
 											Left: &mathValue{
 												Literal: &mathExprLiteral{
-													Path: &Path{
-														Fields: []Field{
+													Path: &path{
+														Fields: []field{
 															{
 																Name: "three",
 															},
@@ -1040,7 +1040,7 @@ func Test_parse(t *testing.T) {
 											},
 											Right: []*opMultDivValue{
 												{
-													Operator: DIV,
+													Operator: div,
 													Value: &mathValue{
 														Literal: &mathExprLiteral{
 															Converter: &converter{
@@ -1103,8 +1103,8 @@ func Test_parseCondition_full(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1112,7 +1112,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 								},
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								String: ottltest.Strp("fido"),
 							},
@@ -1130,8 +1130,8 @@ func Test_parseCondition_full(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1139,7 +1139,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 								},
 							},
-							Op: NE,
+							Op: ne,
 							Right: value{
 								String: ottltest.Strp("fido"),
 							},
@@ -1166,7 +1166,7 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 									Right: []*opAddSubTerm{
 										{
-											Operator: ADD,
+											Operator: add,
 											Term: &addSubTerm{
 												Left: &mathValue{
 													Literal: &mathExprLiteral{
@@ -1175,7 +1175,7 @@ func Test_parseCondition_full(t *testing.T) {
 												},
 												Right: []*opMultDivValue{
 													{
-														Operator: MULT,
+														Operator: mult,
 														Value: &mathValue{
 															Literal: &mathExprLiteral{
 																Int: ottltest.Intp(2),
@@ -1188,14 +1188,14 @@ func Test_parseCondition_full(t *testing.T) {
 									},
 								},
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								MathExpression: &mathExpression{
 									Left: &addSubTerm{
 										Left: &mathValue{
 											Literal: &mathExprLiteral{
-												Path: &Path{
-													Fields: []Field{
+												Path: &path{
+													Fields: []field{
 														{
 															Name: "three",
 														},
@@ -1205,7 +1205,7 @@ func Test_parseCondition_full(t *testing.T) {
 										},
 										Right: []*opMultDivValue{
 											{
-												Operator: DIV,
+												Operator: div,
 												Value: &mathValue{
 													Literal: &mathExprLiteral{
 														Converter: &converter{
@@ -1234,8 +1234,12 @@ func Test_parseCondition_full(t *testing.T) {
 	}
 }
 
-func testParsePath(val *Path) (GetSetter[any], error) {
-	if val != nil && len(val.Fields) > 0 && (val.Fields[0].Name == "name" || val.Fields[0].Name == "attributes") {
+func testParsePath[K any](p Path[K]) (GetSetter[any], error) {
+	if p != nil && (p.Name() == "name" || p.Name() == "attributes") {
+		if p.Name() == "attributes" {
+			p.Keys()
+		}
+
 		return &StandardGetSetter[any]{
 			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				return tCtx, nil
@@ -1246,14 +1250,14 @@ func testParsePath(val *Path) (GetSetter[any], error) {
 			},
 		}, nil
 	}
-	if val.Fields[0].Name == "dur1" || val.Fields[0].Name == "dur2" {
+	if p != nil && (p.Name() == "dur1" || p.Name() == "dur2") {
 		return &StandardGetSetter[any]{
 			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Duration)
 				if !ok {
 					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
 				}
-				return m[val.Fields[0].Name], nil
+				return m[p.Name()], nil
 			},
 			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
@@ -1261,14 +1265,14 @@ func testParsePath(val *Path) (GetSetter[any], error) {
 			},
 		}, nil
 	}
-	if val.Fields[0].Name == "time1" || val.Fields[0].Name == "time2" {
+	if p != nil && (p.Name() == "time1" || p.Name() == "time2") {
 		return &StandardGetSetter[any]{
 			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Time)
 				if !ok {
 					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
 				}
-				return m[val.Fields[0].Name], nil
+				return m[p.Name()], nil
 			},
 			Setter: func(ctx context.Context, tCtx any, val any) error {
 				reflect.DeepEqual(tCtx, val)
@@ -1276,7 +1280,7 @@ func testParsePath(val *Path) (GetSetter[any], error) {
 			},
 		}, nil
 	}
-	return nil, fmt.Errorf("bad path %v", val)
+	return nil, fmt.Errorf("bad path %v", p)
 }
 
 // Helper for test cases where the WHERE clause is all that matters.
@@ -1289,8 +1293,8 @@ func setNameTest(b *booleanExpression) *parsedStatement {
 				{
 					Value: value{
 						Literal: &mathExprLiteral{
-							Path: &Path{
-								Fields: []Field{
+							Path: &path{
+								Fields: []field{
 									{
 										Name: "name",
 									},
@@ -1525,8 +1529,8 @@ func Test_parseWhere(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1534,7 +1538,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: NE,
+							Op: ne,
 							Right: value{
 								String: ottltest.Strp("foo"),
 							},
@@ -1547,8 +1551,8 @@ func Test_parseWhere(t *testing.T) {
 								Comparison: &comparison{
 									Left: value{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -1556,7 +1560,7 @@ func Test_parseWhere(t *testing.T) {
 											},
 										},
 									},
-									Op: NE,
+									Op: ne,
 									Right: value{
 										String: ottltest.Strp("bar"),
 									},
@@ -1575,8 +1579,8 @@ func Test_parseWhere(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1584,7 +1588,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								String: ottltest.Strp("foo"),
 							},
@@ -1599,8 +1603,8 @@ func Test_parseWhere(t *testing.T) {
 								Comparison: &comparison{
 									Left: value{
 										Literal: &mathExprLiteral{
-											Path: &Path{
-												Fields: []Field{
+											Path: &path{
+												Fields: []field{
 													{
 														Name: "name",
 													},
@@ -1608,7 +1612,7 @@ func Test_parseWhere(t *testing.T) {
 											},
 										},
 									},
-									Op: EQ,
+									Op: eq,
 									Right: value{
 										String: ottltest.Strp("bar"),
 									},
@@ -1651,8 +1655,8 @@ func Test_parseWhere(t *testing.T) {
 						Comparison: &comparison{
 							Left: value{
 								Literal: &mathExprLiteral{
-									Path: &Path{
-										Fields: []Field{
+									Path: &path{
+										Fields: []field{
 											{
 												Name: "name",
 											},
@@ -1660,7 +1664,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: EQ,
+							Op: eq,
 							Right: value{
 								String: ottltest.Strp("bar"),
 							},
@@ -1780,7 +1784,7 @@ func Test_ParseStatements_Error(t *testing.T) {
 
 	p, _ := NewParser(
 		CreateFactoryMap[any](),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -1810,7 +1814,7 @@ func Test_ParseConditions_Error(t *testing.T) {
 
 	p, _ := NewParser(
 		CreateFactoryMap[any](),
-		testParsePath,
+		testParsePath[any],
 		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
@@ -2091,10 +2095,30 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			},
 			errorMode: PropagateError,
 		},
+		{
+			name: "SilentError error from condition",
+			condition: func(context.Context, any) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx any) (any, error) {
+				return 1, nil
+			},
+			errorMode: SilentError,
+		},
+		{
+			name: "SilentError error from function",
+			condition: func(context.Context, any) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx any) (any, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode: SilentError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statements := Statements[any]{
+			statements := StatementSequence[any]{
 				statements: []*Statement[any]{
 					{
 						condition: BoolExpr[any]{tt.condition},
@@ -2115,82 +2139,146 @@ func Test_Statements_Execute_Error(t *testing.T) {
 	}
 }
 
-func Test_Statements_Eval(t *testing.T) {
+func Test_ConditionSequence_Eval(t *testing.T) {
 	tests := []struct {
 		name           string
 		conditions     []boolExpressionEvaluator[any]
 		function       ExprFunc[any]
 		errorMode      ErrorMode
+		logicOp        LogicOperation
 		expectedResult bool
 	}{
 		{
-			name: "True",
+			name: "True with OR",
 			conditions: []boolExpressionEvaluator[any]{
 				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
+			logicOp:        Or,
 			expectedResult: true,
 		},
 		{
-			name: "At least one True",
+			name: "At least one True with OR",
 			conditions: []boolExpressionEvaluator[any]{
 				alwaysFalse[any],
 				alwaysFalse[any],
 				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
+			logicOp:        Or,
 			expectedResult: true,
 		},
 		{
-			name: "False",
+			name: "False with OR",
 			conditions: []boolExpressionEvaluator[any]{
 				alwaysFalse[any],
 				alwaysFalse[any],
 			},
 			errorMode:      IgnoreError,
+			logicOp:        Or,
 			expectedResult: false,
 		},
 		{
-			name: "Error is false when using Ignore",
+			name: "Single erroring condition is treated as false when using Ignore with OR",
 			conditions: []boolExpressionEvaluator[any]{
-				alwaysFalse[any],
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode:      IgnoreError,
+			logicOp:        Or,
+			expectedResult: false,
+		},
+		{
+			name: "erroring condition is ignored when using Ignore with OR",
+			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
 					return true, fmt.Errorf("test")
 				},
 				alwaysTrue[any],
 			},
 			errorMode:      IgnoreError,
+			logicOp:        Or,
+			expectedResult: true,
+		},
+		{
+			name: "True with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysTrue[any],
+				alwaysTrue[any],
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
+			expectedResult: true,
+		},
+		{
+			name: "At least one False with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+				alwaysTrue[any],
+				alwaysTrue[any],
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
+			expectedResult: false,
+		},
+		{
+			name: "False with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				alwaysFalse[any],
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
+			expectedResult: false,
+		},
+		{
+			name: "Single erroring condition is treated as false when using Ignore with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
+			expectedResult: false,
+		},
+		{
+			name: "erroring condition is ignored when using Ignore with AND",
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+				alwaysTrue[any],
+			},
+			errorMode:      IgnoreError,
+			logicOp:        And,
 			expectedResult: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[any]
+			var rawStatements []*Condition[any]
 			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[any]{
+				rawStatements = append(rawStatements, &Condition[any]{
 					condition: BoolExpr[any]{condition},
-					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
-							return nil, fmt.Errorf("function should not be called")
-						},
-					},
 				})
 			}
 
-			statements := Statements[any]{
-				statements:        rawStatements,
+			conditions := ConditionSequence[any]{
+				conditions:        rawStatements,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,
+				logicOp:           tt.logicOp,
 			}
 
-			result, err := statements.Eval(context.Background(), nil)
+			result, err := conditions.Eval(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
 }
 
-func Test_Statements_Eval_Error(t *testing.T) {
+func Test_ConditionSequence_Eval_Error(t *testing.T) {
 	tests := []struct {
 		name       string
 		conditions []boolExpressionEvaluator[any]
@@ -2198,7 +2286,7 @@ func Test_Statements_Eval_Error(t *testing.T) {
 		errorMode  ErrorMode
 	}{
 		{
-			name: "Propagate Error from function",
+			name: "Propagate Error from condition",
 			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
 					return true, fmt.Errorf("test")
@@ -2206,30 +2294,47 @@ func Test_Statements_Eval_Error(t *testing.T) {
 			},
 			errorMode: PropagateError,
 		},
+		{
+			name: "Ignore Error from function with IgnoreError",
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "Ignore Error from function with SilentError",
+			conditions: []boolExpressionEvaluator[any]{
+				func(context.Context, any) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode: SilentError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var rawStatements []*Statement[any]
+			var rawConditions []*Condition[any]
 			for _, condition := range tt.conditions {
-				rawStatements = append(rawStatements, &Statement[any]{
+				rawConditions = append(rawConditions, &Condition[any]{
 					condition: BoolExpr[any]{condition},
-					function: Expr[any]{
-						exprFunc: func(ctx context.Context, tCtx any) (any, error) {
-							return nil, fmt.Errorf("function should not be called")
-						},
-					},
 				})
 			}
 
-			statements := Statements[any]{
-				statements:        rawStatements,
+			conditions := ConditionSequence[any]{
+				conditions:        rawConditions,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 				errorMode:         tt.errorMode,
 			}
 
-			result, err := statements.Eval(context.Background(), nil)
-			assert.Error(t, err)
+			result, err := conditions.Eval(context.Background(), nil)
 			assert.False(t, result)
+			if tt.errorMode == PropagateError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

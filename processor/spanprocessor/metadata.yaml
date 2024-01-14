@@ -7,3 +7,8 @@ status:
   distributions: [core, contrib, observiq, splunk, sumo, aws, redhat, grafana]
   codeowners:
     active: [boostchicken]
+
+tests:
+  config:
+    name:
+      from_attributes: [db.svc, operation, id]

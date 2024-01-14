@@ -15,16 +15,11 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/metadata"
 )
 
 // NewFactory creates a factory for the jaeger remote sampling extension.
 func NewFactory() extension.Factory {
-	if !protoGate.IsEnabled() {
-		return jaegerremotesamplingdeprecated.NewFactory()
-	}
-
 	return extension.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -56,14 +51,14 @@ func logDeprecation(logger *zap.Logger) {
 	})
 }
 
-const protoInsteadOfThrift = "extension.jaegerremotesampling.replaceThriftWithProto"
-
+// nolint
 var protoGate = featuregate.GlobalRegistry().MustRegister(
-	protoInsteadOfThrift,
-	featuregate.StageBeta,
+	"extension.jaegerremotesampling.replaceThriftWithProto",
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription(
 		"When enabled, the jaegerremotesampling will use Proto-gen over Thrift-gen.",
 	),
+	featuregate.WithRegisterToVersion("0.92.0"),
 )
 
 func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {

@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -451,7 +451,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return &Config{
 					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					BackOffConfig:             configretry.NewDefaultBackOffConfig(),
 					Alerts: AlertConfig{
 						Mode: alertModePoll,
 						Projects: []*ProjectConfig{
@@ -497,7 +497,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return &Config{
 					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					BackOffConfig:             configretry.NewDefaultBackOffConfig(),
 					Alerts: AlertConfig{
 						Mode: alertModePoll,
 						Projects: []*ProjectConfig{
@@ -525,7 +525,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return &Config{
 					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					BackOffConfig:             configretry.NewDefaultBackOffConfig(),
 					Alerts: AlertConfig{
 						Mode: alertModePoll,
 						Projects: []*ProjectConfig{

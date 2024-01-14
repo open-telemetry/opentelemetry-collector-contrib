@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -16,7 +17,7 @@ import (
 // Config defines configuration for Remote Write exporter.
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
 	// prefix attached to each exported metric name
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
@@ -48,6 +49,9 @@ type Config struct {
 
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
+
+	// SendMetadata controls whether prometheus metadata will be generated and sent
+	SendMetadata bool `mapstructure:"send_metadata"`
 }
 
 type CreatedMetric struct {

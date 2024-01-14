@@ -293,6 +293,7 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
+    extended_documentation: This metric is available only on Linux systems.
   # The calculation for node.disk.io.write is actually in KiBy(1024 bytes), not kBy (1000 bytes)
   # The metric value calculation comes from sectors: https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsInfo.java#L293
   # The metric value is gathered by reading disk stats files from https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsProbe.java#L117
@@ -307,6 +308,7 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
+    extended_documentation: This metric is available only on Linux systems.
   elasticsearch.node.cluster.io:
     description: The number of bytes sent and received on the network for internal cluster communication.
     unit: By

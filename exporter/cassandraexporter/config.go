@@ -4,17 +4,20 @@
 package cassandraexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 import (
 	"go.opentelemetry.io/collector/config/configopaque"
+	"time"
 )
 
 type Config struct {
-	DSN         string      `mapstructure:"dsn"`
-	Port        int         `mapstructure:"port"`
-	Keyspace    string      `mapstructure:"keyspace"`
-	TraceTable  string      `mapstructure:"trace_table"`
-	LogsTable   string      `mapstructure:"logs_table"`
-	Replication Replication `mapstructure:"replication"`
-	Compression Compression `mapstructure:"compression"`
+	DSN         string        `mapstructure:"dsn"`
+	Port        int           `mapstructure:"port"`
+	Timeout     time.Duration `mapstructure:"timeout"`
+	Keyspace    string        `mapstructure:"keyspace"`
+	TraceTable  string        `mapstructure:"trace_table"`
+	LogsTable   string        `mapstructure:"logs_table"`
+	Replication Replication   `mapstructure:"replication"`
+	Compression Compression   `mapstructure:"compression"`
 	Auth        Auth        `mapstructure:"auth"`
+
 }
 
 type Replication struct {

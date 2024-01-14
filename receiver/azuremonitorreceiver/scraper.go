@@ -108,8 +108,8 @@ type azureScraper struct {
 	azIDWorkloadFunc                func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
 	armClientOptions                *arm.ClientOptions
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
-	armMonitorDefinitionsClientFunc func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
-	armMonitorMetricsClientFunc     func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
+	armMonitorDefinitionsClientFunc func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
+	armMonitorMetricsClientFunc     func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
 	mutex                           *sync.Mutex
 }
 
@@ -144,7 +144,7 @@ type MetricsDefinitionsClientInterface interface {
 }
 
 func (s *azureScraper) getMetricsDefinitionsClient() MetricsDefinitionsClientInterface {
-	client, _ := s.armMonitorDefinitionsClientFunc(s.cred, s.armClientOptions)
+	client, _ := s.armMonitorDefinitionsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	return client
 }
 
@@ -155,7 +155,7 @@ type MetricsValuesClient interface {
 }
 
 func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
-	client, _ := s.armMonitorMetricsClientFunc(s.cred, s.armClientOptions)
+	client, _ := s.armMonitorMetricsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	return client
 }
 
