@@ -199,7 +199,6 @@ The following configuration options are supported:
       errors (`UNAVAILABLE` or `DEADLINE_EXCEEDED`).
 - `trace` (optional): Configuration for sending traces to Cloud Trace.
   - `endpoint` (default = cloudtrace.googleapis.com): Endpoint where trace data is going to be sent to.
-  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
   - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
   - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
   - `attribute_mappings` (optional): AttributeMappings determines how to map from OpenTelemetry attribute keys to Google Cloud Trace keys.  By default, it changes http and service keys so that they appear more prominently in the UI.

@@ -644,3 +644,6 @@ metrics:
       input_type: string
     attributes: []
     enabled: true
+
+tests:
+  config:
