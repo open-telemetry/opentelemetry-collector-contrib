@@ -59,7 +59,7 @@ func transformCPUMetrics(metrics pmetric.MetricSlice) error {
 	numCoresScaler := float64(numCores)
 
 	// add number of new metrics added below
-	metrics.EnsureCapacity(metrics.Len() + 9)
+	metrics.EnsureCapacity(metrics.Len() + 19)
 
 	m := metrics.AppendEmpty()
 	m.SetName("system.cpu.cores")
@@ -123,6 +123,76 @@ func transformCPUMetrics(metrics pmetric.MetricSlice) error {
 	dp.SetTimestamp(timestamp)
 	dp.SetStartTimestamp(startTimestamp)
 	dp.SetDoubleValue(userPercent / numCoresScaler)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.steal.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(stealPercent)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.steal.norm.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(stealPercent / numCoresScaler)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.wait.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(iowaitPercent)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.wait.norm.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(iowaitPercent / numCoresScaler)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.nice.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(nicePercent)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.nice.norm.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(nicePercent / numCoresScaler)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.interrupt.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(irqPercent)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.interrupt.norm.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(irqPercent / numCoresScaler)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.softirq.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(softirqPercent)
+
+	m = metrics.AppendEmpty()
+	m.SetName("system.cpu.softirq.norm.pct")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(timestamp)
+	dp.SetStartTimestamp(startTimestamp)
+	dp.SetDoubleValue(softirqPercent / numCoresScaler)
 
 	return nil
 }

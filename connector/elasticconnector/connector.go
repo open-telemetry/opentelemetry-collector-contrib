@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/tommyers-elastic/opentelemetry-collector-contrib/connector/elasticconnector/internal/datastream"
 	"github.com/tommyers-elastic/opentelemetry-collector-contrib/connector/elasticconnector/internal/hostmetrics"
 
 	"go.opentelemetry.io/collector/component"
@@ -56,20 +57,16 @@ func (c *ElasticConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 			scopeMetric := resourceMetric.ScopeMetrics().At(j)
 			scope := scopeMetric.Scope()
 
-			if strings.HasPrefix(scope.Name(), "otelcol/hostmetricsreceiver") {
-				err := hostmetrics.TransformForElasticSystemMetricsCompatibilty(scopeMetric)
+			if err := datastream.AddDataStreamFields(datastream.Metrics, scope); err != nil {
+				c.logger.Error("error adding Elastic data stream fields", zap.Error(err))
+			}
 
-				if err != nil {
-					c.logger.Error("hostmetrics transform failed", zap.Error(err))
+			if strings.HasPrefix(scope.Name(), "otelcol/hostmetricsreceiver") {
+				if err := hostmetrics.TransformHostMetricsForElasticCompatibilty(scopeMetric); err != nil {
+					c.logger.Error("error adding hostmetrics data", zap.Error(err))
 				}
 			}
 
-			targetDataset := getDatasetForScope(scope)
-			if targetDataset != "" {
-				scopeAttrs := scope.Attributes()
-				scopeAttrs.PutStr("data_stream.type", "metrics")
-				scopeAttrs.PutStr("data_stream.dataset", targetDataset)
-			}
 		}
 	}
 	return c.metricsConsumer.ConsumeMetrics(ctx, md)
