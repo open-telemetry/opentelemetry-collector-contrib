@@ -52,11 +52,15 @@ func Test_Scrape_All(t *testing.T) {
 	cfg.Include = filepath.Join(tmpDir, "*.log")
 	cfg.Metrics.FileAtime.Enabled = true
 	cfg.Metrics.FileCtime.Enabled = true
+	cfg.Metrics.FileCount.Enabled = true
 
 	s := newScraper(cfg, receivertest.NewNopCreateSettings())
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, 0, metrics.ResourceMetrics().Len())
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	fileCount := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	require.Equal(t, int64(0), fileCount.Gauge().DataPoints().At(0).IntValue())
+	require.Equal(t, "file.count", fileCount.Name())
 	logFile := filepath.Join(tmpDir, "my.log")
 	err = os.WriteFile(logFile, []byte("something"), 0600)
 	t.Cleanup(func() {
@@ -71,8 +75,9 @@ func Test_Scrape_All(t *testing.T) {
 	require.Equal(t, []string{logFile}, matches)
 	metrics, err = s.scrape(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	require.Equal(t, 2, metrics.ResourceMetrics().Len())
 	require.Equal(t, 4, metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 1, metrics.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().Len())
 	aTimeMetric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	require.Equal(t, "file.atime", aTimeMetric.Name())
 	require.Equal(t, fileinfo.ModTime().Unix(), aTimeMetric.Sum().DataPoints().At(0).IntValue())
@@ -85,4 +90,7 @@ func Test_Scrape_All(t *testing.T) {
 	sizeMetric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3)
 	require.Equal(t, "file.size", sizeMetric.Name())
 	require.Equal(t, int64(9), sizeMetric.Gauge().DataPoints().At(0).IntValue())
+	fileCount = metrics.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0)
+	require.Equal(t, "file.count", fileCount.Name())
+	require.Equal(t, int64(1), fileCount.Gauge().DataPoints().At(0).IntValue())
 }

@@ -16,7 +16,7 @@ import (
 	md "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen/internal/metadata"
 )
 
-func Test_runContents(t *testing.T) {
+func TestRunContents(t *testing.T) {
 	tests := []struct {
 		yml                  string
 		wantMetricsGenerated bool
@@ -96,7 +96,7 @@ foo
 	}
 }
 
-func Test_run(t *testing.T) {
+func TestRun(t *testing.T) {
 	type args struct {
 		ymlPath string
 	}
@@ -125,7 +125,7 @@ func Test_run(t *testing.T) {
 	}
 }
 
-func Test_inlineReplace(t *testing.T) {
+func TestInlineReplace(t *testing.T) {
 	tests := []struct {
 		name           string
 		markdown       string

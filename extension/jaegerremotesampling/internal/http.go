@@ -72,7 +72,7 @@ func (h *SamplingHTTPServer) Start(_ context.Context, host component.Host) error
 		defer h.shutdownWG.Done()
 
 		if err := h.srv.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			_ = h.telemetry.ReportComponentStatus(component.NewFatalErrorEvent(err))
+			h.telemetry.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 
