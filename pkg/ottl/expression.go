@@ -27,14 +27,19 @@ func (e Expr[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 	return e.exprFunc(ctx, tCtx)
 }
 
+// Getter is a interface that returns value of type any.
 type Getter[K any] interface {
+	// Get retrieves a value of type Any.
 	Get(ctx context.Context, tCtx K) (any, error)
 }
 
+// Setter is an interface that sets a value of type Any.
 type Setter[K any] interface {
+	// Set sets a value of type Any.
 	Set(ctx context.Context, tCtx K, val any) error
 }
 
+// GetSetter is a an interface that combines the Getter and Setter interfaces.
 type GetSetter[K any] interface {
 	Getter[K]
 	Setter[K]
@@ -284,6 +289,7 @@ func (g StandardBoolGetter[K]) Get(ctx context.Context, tCtx K) (bool, error) {
 
 // FunctionGetter uses a function factory to return an instantiated function as an Expr.
 type FunctionGetter[K any] interface {
+	// Get retrieves Expr[K] from given Argument, args
 	Get(args Arguments) (Expr[K], error)
 }
 
