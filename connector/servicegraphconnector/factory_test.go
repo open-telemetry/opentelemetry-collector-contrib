@@ -44,7 +44,7 @@ func TestNewConnector(t *testing.T) {
 
 			// Test
 			conn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
-			smc := conn.(*serviceGraphProcessor)
+			smc := conn.(*serviceGraphConnector)
 
 			// Verify
 			assert.NoError(t, err)

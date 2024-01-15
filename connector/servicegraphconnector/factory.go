@@ -22,9 +22,9 @@ const (
 	typeStr = "servicegraph"
 	// The stability level of the processor.
 	connectorStability                    = component.StabilityLevelDevelopment
-	virtualNodeFeatureGateID              = "processor.servicegraph.virtualNode"
-	legacyLatencyMetricNamesFeatureGateID = "processor.servicegraph.legacyLatencyMetricNames"
-	legacyLatencyUnitMs                   = "processor.servicegraph.legacyLatencyUnitMs"
+	virtualNodeFeatureGateID              = "connector.servicegraph.virtualNode"
+	legacyLatencyMetricNamesFeatureGateID = "connector.servicegraph.legacyLatencyMetricNames"
+	legacyLatencyUnitMs                   = "connector.servicegraph.legacyLatencyUnitMs"
 )
 
 var virtualNodeFeatureGate, legacyMetricNamesFeatureGate, legacyLatencyUnitMsFeatureGate *featuregate.Gate
@@ -73,13 +73,12 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
-	p := newProcessor(params.TelemetrySettings, cfg)
-	p.tracesConsumer = nextConsumer
+	p := newConnector(params.TelemetrySettings, cfg)
 	return p, nil
 }
 
 func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	c := newProcessor(params.TelemetrySettings, cfg)
+	c := newConnector(params.TelemetrySettings, cfg)
 	c.metricsConsumer = nextConsumer
 	return c, nil
 }

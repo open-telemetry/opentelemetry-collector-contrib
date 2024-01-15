@@ -39,7 +39,7 @@ func TestConnectorStart(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test
-	smp := traceProcessor.(*serviceGraphProcessor)
+	smp := traceProcessor.(*serviceGraphConnector)
 	err = smp.Start(context.Background(), componenttest.NewNopHost())
 
 	// Verify
@@ -251,7 +251,7 @@ func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
-	p := serviceGraphProcessor{
+	p := serviceGraphConnector{
 		reqTotal:                             make(map[string]int64),
 		reqFailedTotal:                       make(map[string]int64),
 		reqServerDurationSecondsSum:          make(map[string]float64),
@@ -309,7 +309,6 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
 	p := newProcessor(set, cfg)
-	p.tracesConsumer = consumertest.NewNop()
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
@@ -362,7 +361,6 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	set := setupTelemetry(reader)
 	p := newProcessor(set, cfg)
-	p.tracesConsumer = consumertest.NewNop()
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
