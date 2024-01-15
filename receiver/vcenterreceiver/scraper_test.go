@@ -126,7 +126,7 @@ func TestStartFailures_Metrics(t *testing.T) {
 		err  error
 	}{
 		{
-			desc: "bad client connect",
+			desc: "bad delegate connect",
 			cfg: &Config{
 				Endpoint: "http://no-host",
 			},

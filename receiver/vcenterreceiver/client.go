@@ -7,7 +7,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
+	"github.com/ReneKroon/ttlcache/v2"
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
@@ -16,6 +18,107 @@ import (
 	"github.com/vmware/govmomi/vim25"
 	vt "github.com/vmware/govmomi/vim25/types"
 )
+
+type client interface {
+	// EnsureConnection will establish a connection to the vSphere SDK if not already established
+	EnsureConnection(ctx context.Context) error
+	// Datacenters returns the datacenterComputeResources of the vSphere SDK
+	Datacenters(ctx context.Context) ([]*object.Datacenter, error)
+	// Clusters returns the clusterComputeResources of the vSphere SDK
+	Clusters(ctx context.Context, datacenter *object.Datacenter) ([]*object.ClusterComputeResource, error)
+	// ResourcePools returns the resourcePools in the vSphere SDK
+	ResourcePools(ctx context.Context) ([]*object.ResourcePool, error)
+	VMs(ctx context.Context) ([]*object.VirtualMachine, error)
+	Disconnect(ctx context.Context) error
+
+	PerformanceQuery(
+		ctx context.Context,
+		spec vt.PerfQuerySpec,
+		names []string,
+		objs []vt.ManagedObjectReference,
+	) (*perfSampleResult, error)
+}
+
+func newCachingClient(c *Config) client {
+	cache := ttlcache.NewCache()
+	_ = cache.SetTTL(5 * time.Minute)
+	cache.SkipTTLExtensionOnHit(true)
+	return &cachingClient{
+		delegate: defaultNewVcenterClient(c),
+		cache:    cache,
+	}
+}
+
+type cachingClient struct {
+	delegate client
+	cache    *ttlcache.Cache
+}
+
+func (c cachingClient) PerformanceQuery(ctx context.Context, spec vt.PerfQuerySpec, names []string, objs []vt.ManagedObjectReference) (*perfSampleResult, error) {
+	return c.delegate.PerformanceQuery(ctx, spec, names, objs)
+}
+
+func (c cachingClient) EnsureConnection(ctx context.Context) error {
+	return c.delegate.EnsureConnection(ctx)
+}
+
+func (c cachingClient) Datacenters(ctx context.Context) ([]*object.Datacenter, error) {
+	if dcs, _ := c.cache.Get("dcs"); dcs != nil {
+		return dcs.([]*object.Datacenter), nil
+	}
+
+	dcs, err := c.delegate.Datacenters(ctx)
+	if err != nil {
+		return dcs, err
+	}
+	err = c.cache.Set("dcs", dcs)
+	return dcs, err
+}
+
+func (c cachingClient) Clusters(ctx context.Context, datacenter *object.Datacenter) ([]*object.ClusterComputeResource, error) {
+	key := "datacenter" + datacenter.Reference().String()
+	if clusters, _ := c.cache.Get(key); clusters != nil {
+		return clusters.([]*object.ClusterComputeResource), nil
+	}
+
+	clusters, err := c.delegate.Clusters(ctx, datacenter)
+	if err != nil {
+		return clusters, err
+	}
+	err = c.cache.Set(key, clusters)
+	return clusters, err
+}
+
+func (c cachingClient) ResourcePools(ctx context.Context) ([]*object.ResourcePool, error) {
+	if rps, _ := c.cache.Get("resourcepools"); rps != nil {
+		return rps.([]*object.ResourcePool), nil
+	}
+	rps, err := c.delegate.ResourcePools(ctx)
+	if err != nil {
+		return rps, err
+	}
+	err = c.cache.Set("resourcepools", rps)
+	return rps, err
+}
+
+func (c cachingClient) VMs(ctx context.Context) ([]*object.VirtualMachine, error) {
+	if vms, _ := c.cache.Get("vms"); vms != nil {
+		return vms.([]*object.VirtualMachine), nil
+	}
+	vms, err := c.delegate.VMs(ctx)
+	if err != nil {
+		return vms, err
+	}
+	err = c.cache.Set("vms", vms)
+	return vms, err
+}
+
+func (c cachingClient) Disconnect(ctx context.Context) error {
+	_ = c.cache.Close()
+	return c.delegate.Disconnect(ctx)
+}
+
+var _ client = &cachingClient{}
 
 // vcenterClient is a client that collects data from a vCenter endpoint.
 type vcenterClient struct {
@@ -27,9 +130,9 @@ type vcenterClient struct {
 	cfg       *Config
 }
 
-var newVcenterClient = defaultNewVcenterClient
+var newVcenterClient = newCachingClient
 
-func defaultNewVcenterClient(c *Config) *vcenterClient {
+func defaultNewVcenterClient(c *Config) client {
 	return &vcenterClient{
 		cfg: c,
 	}
@@ -121,7 +224,7 @@ type perfSampleResult struct {
 	results  []performance.EntityMetric
 }
 
-func (vc *vcenterClient) performanceQuery(
+func (vc *vcenterClient) PerformanceQuery(
 	ctx context.Context,
 	spec vt.PerfQuerySpec,
 	names []string,

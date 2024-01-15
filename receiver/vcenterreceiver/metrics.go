@@ -147,7 +147,7 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(
 		IntervalId: int32(20),
 	}
 
-	info, err := v.client.performanceQuery(ctx, spec, hostPerfMetricList, []types.ManagedObjectReference{host.Reference()})
+	info, err := v.client.PerformanceQuery(ctx, spec, hostPerfMetricList, []types.ManagedObjectReference{host.Reference()})
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
@@ -191,7 +191,7 @@ func (v *vcenterMetricScraper) recordVMPerformance(
 		IntervalId: int32(20),
 	}
 
-	info, err := v.client.performanceQuery(ctx, spec, vmPerfMetricList, []types.ManagedObjectReference{vm.Reference()})
+	info, err := v.client.PerformanceQuery(ctx, spec, vmPerfMetricList, []types.ManagedObjectReference{vm.Reference()})
 	if err != nil {
 		errs.AddPartial(1, err)
 		return

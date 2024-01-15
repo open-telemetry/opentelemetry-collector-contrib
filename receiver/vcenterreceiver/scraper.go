@@ -34,7 +34,7 @@ var emitPerfMetricsWithObjects = featuregate.GlobalRegistry().MustRegister(
 var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
-	client             *vcenterClient
+	client             client
 	config             *Config
 	mb                 *metadata.MetricsBuilder
 	logger             *zap.Logger
