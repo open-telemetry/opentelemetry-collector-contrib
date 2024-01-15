@@ -7,3 +7,6 @@ status:
   distributions: [contrib, sumo]
   codeowners:
     active: [djaglowski, jpkrohling]
+
+tests:
+  config:
