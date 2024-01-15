@@ -2,6 +2,9 @@ package elasticconnector
 
 import (
 	"context"
+	"strings"
+
+	"github.com/tommyers-elastic/opentelemetry-collector-contrib/connector/elasticconnector/internal/hostmetrics"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -25,7 +28,7 @@ type ElasticConnector struct {
 
 // newConnector is a function to create a new connector
 func newConnector(logger *zap.Logger, config component.Config) (*ElasticConnector, error) {
-	logger.Info("Building elasticconnector connector")
+	logger.Info("Building elastic connector")
 	cfg := config.(*Config)
 
 	return &ElasticConnector{
@@ -36,7 +39,7 @@ func newConnector(logger *zap.Logger, config component.Config) (*ElasticConnecto
 
 // Capabilities implements the consumer interface.
 func (c *ElasticConnector) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: true}
 }
 
 // ConsumeTraces method is called for each instance of a trace sent to the connector
@@ -48,11 +51,19 @@ func (c *ElasticConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 func (c *ElasticConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		resourceMetric := md.ResourceMetrics().At(i)
-		
+
 		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
 			scopeMetric := resourceMetric.ScopeMetrics().At(j)
 			scope := scopeMetric.Scope()
-			
+
+			if strings.HasPrefix(scope.Name(), "otelcol/hostmetricsreceiver") {
+				err := hostmetrics.TransformForElasticSystemMetricsCompatibilty(scopeMetric)
+
+				if err != nil {
+					c.logger.Error("hostmetrics transform failed", zap.Error(err))
+				}
+			}
+
 			targetDataset := getDatasetForScope(scope)
 			if targetDataset != "" {
 				scopeAttrs := scope.Attributes()
