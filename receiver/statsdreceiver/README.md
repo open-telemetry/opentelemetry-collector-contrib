@@ -166,4 +166,9 @@ service:
 
 A simple way to send a metric to `localhost:8125`:
 
-`echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u localhost 8125`
+```shell
+echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u -4 localhost 8125;
+echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u -6 localhost 8125;
+```
+
+Which sends a UDP packet using both IPV4 and IPV6, which is needed because the receiver's UDP server only accepts one or the other.
