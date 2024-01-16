@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"sync"
 	"sync/atomic"
 	"text/template"
 	"time"
@@ -100,6 +101,7 @@ type Supervisor struct {
 	opampClient client.OpAMPClient
 
 	shuttingDown bool
+	supervisorWG sync.WaitGroup
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
@@ -160,7 +162,12 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	}
 
 	s.startHealthCheckTicker()
-	go s.runAgentProcess()
+
+	s.supervisorWG.Add(1)
+	go func() {
+		defer s.supervisorWG.Done()
+		s.runAgentProcess()
+	}()
 
 	return s, nil
 }
@@ -786,6 +793,8 @@ func (s *Supervisor) Shutdown() {
 	if s.healthCheckTicker != nil {
 		s.healthCheckTicker.Stop()
 	}
+
+	s.supervisorWG.Wait()
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
