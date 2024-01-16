@@ -705,7 +705,7 @@ func (s *Supervisor) runAgentProcess() {
 
 		case <-s.commander.Done():
 			if s.shuttingDown {
-				break
+				return
 			}
 
 			s.logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
