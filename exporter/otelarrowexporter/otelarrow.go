@@ -1,10 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otelarrowexporter
+package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"google.golang.org/grpc"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+// baseExporter is used as the basis for all OpenTelemetry signal types.
 type baseExporter struct {
 	// config is the active component.Config.
 	config *Config
@@ -36,6 +38,9 @@ func newExporter(cfg component.Config, set exporter.CreateSettings, streamClient
 	if !ok {
 		return nil, fmt.Errorf("unrecognized configuration type: %T", cfg)
 	}
+	if oCfg.Endpoint == "" {
+		return nil, errors.New("OTel-Arrow exporter config requires an Endpoint")
+	}
 	return &baseExporter{
 		config:   oCfg,
 		settings: set,
@@ -44,7 +49,11 @@ func newExporter(cfg component.Config, set exporter.CreateSettings, streamClient
 
 // start configures and starts the gRPC client connection.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
-	// TODO: Implementation.
+	// TODO: Implementation: the following is a placeholder used
+	// to satisfy gRPC configuration-related configuration errors.
+	if _, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings.TelemetrySettings); err != nil {
+		return err
+	}
 	return nil
 }
 

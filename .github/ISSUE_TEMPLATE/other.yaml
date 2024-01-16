@@ -62,6 +62,7 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
+      - exporter/otelarrow
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar

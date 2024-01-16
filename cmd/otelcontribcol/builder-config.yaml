@@ -79,6 +79,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.92.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.92.0

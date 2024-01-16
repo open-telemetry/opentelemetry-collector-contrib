@@ -1,12 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otelarrowexporter
+package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter"
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
+	"github.com/open-telemetry/otel-arrow/pkg/config"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
@@ -76,6 +78,48 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	// TODO: Implementation.
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("queue settings has invalid configuration: %w", err)
+	}
+	if err := cfg.Arrow.Validate(); err != nil {
+		return fmt.Errorf("arrow settings has invalid configuration: %w", err)
+	}
+
 	return nil
+}
+
+// Validate returns an error when the number of streams is less than 1.
+func (cfg *ArrowSettings) Validate() error {
+	if cfg.NumStreams < 1 {
+		return fmt.Errorf("stream count must be > 0: %d", cfg.NumStreams)
+	}
+
+	if cfg.MaxStreamLifetime.Seconds() < 1 {
+		return fmt.Errorf("max stream life must be >= 1s: %d", cfg.MaxStreamLifetime)
+	}
+
+	if err := cfg.Zstd.Validate(); err != nil {
+		return fmt.Errorf("zstd encoder: invalid configuration: %w", err)
+	}
+
+	// The cfg.PayloadCompression field is validated by the underlying library,
+	// but we only support Zstd or none.
+	switch cfg.PayloadCompression {
+	case "none", "", configcompression.Zstd:
+	default:
+		return fmt.Errorf("unsupported payload compression: %s", cfg.PayloadCompression)
+	}
+	return nil
+}
+
+func (cfg *ArrowSettings) ToArrowProducerOptions() (arrowOpts []config.Option) {
+	switch cfg.PayloadCompression {
+	case configcompression.Zstd:
+		arrowOpts = append(arrowOpts, config.WithZstd())
+	case "none", "":
+		arrowOpts = append(arrowOpts, config.WithNoZstd())
+	default:
+		// Should have failed in validate, nothing we can do.
+	}
+	return
 }
