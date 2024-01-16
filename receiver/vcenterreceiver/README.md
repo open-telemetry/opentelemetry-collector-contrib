@@ -83,7 +83,7 @@ These metrics were improperly dimensioned and needed another metric attribute `o
 - The receiver will emit the `object` metric attribute by default
 - `receiver.vcenter.emitPerfMetricsWithObjects` is *enabled* by default.
 
-#### v0.95.0, March 2024
+#### v0.95.0, February 2024
 
 - The feature gates are removed.
 - Performance metrics will always include the `object` metric attribute.
