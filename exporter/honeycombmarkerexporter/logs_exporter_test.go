@@ -126,15 +126,15 @@ func TestExportMarkers(t *testing.T) {
 
 				require.NoError(t, err)
 
-				assert.Equal(t, len(decodedBody), len(tt.attributeMap))
+				assert.Equal(t, len(tt.attributeMap), len(decodedBody))
 
 				for attr := range tt.attributeMap {
-					assert.Equal(t, decodedBody[attr], tt.attributeMap[attr])
+					assert.Equal(t, tt.attributeMap[attr], decodedBody[attr])
 				}
 				assert.Contains(t, req.URL.Path, tt.expectedURL)
 
 				apiKey := req.Header.Get(honeycombTeam)
-				assert.Equal(t, apiKey, string(tt.config.APIKey))
+				assert.Equal(t, string(tt.config.APIKey), apiKey)
 
 				userAgent := req.Header.Get(userAgentHeaderKey)
 				assert.NotEmpty(t, userAgent)

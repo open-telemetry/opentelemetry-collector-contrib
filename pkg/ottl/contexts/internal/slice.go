@@ -12,12 +12,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, key ottl.Key[K]) (any, error) {
-	if key == nil {
+func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []ottl.Key[K]) (any, error) {
+	if len(keys) == 0 {
 		return nil, fmt.Errorf("cannot get slice value without key")
 	}
 
-	i, err := key.Int(ctx, tCtx)
+	i, err := keys[0].Int(ctx, tCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -31,15 +31,15 @@ func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, key ottl
 		return nil, fmt.Errorf("index %d out of bounds", idx)
 	}
 
-	return getIndexableValue[K](ctx, tCtx, s.At(idx), key.Next())
+	return getIndexableValue[K](ctx, tCtx, s.At(idx), keys[1:])
 }
 
-func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, key ottl.Key[K], val any) error {
-	if key == nil {
+func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []ottl.Key[K], val any) error {
+	if len(keys) == 0 {
 		return fmt.Errorf("cannot set slice value without key")
 	}
 
-	i, err := key.Int(ctx, tCtx)
+	i, err := keys[0].Int(ctx, tCtx)
 	if err != nil {
 		return err
 	}
@@ -53,5 +53,5 @@ func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, key ottl
 		return fmt.Errorf("index %d out of bounds", idx)
 	}
 
-	return setIndexableValue[K](ctx, tCtx, s.At(idx), val, key.Next())
+	return setIndexableValue[K](ctx, tCtx, s.At(idx), val, keys[1:])
 }

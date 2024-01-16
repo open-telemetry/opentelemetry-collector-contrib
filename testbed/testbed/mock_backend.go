@@ -41,9 +41,10 @@ type MockBackend struct {
 	logFile     *os.File
 
 	// Start/stop flags
-	isStarted bool
-	stopOnce  sync.Once
-	startedAt time.Time
+	isStarted  bool
+	stopOnce   sync.Once
+	startedAt  time.Time
+	startMutex sync.Mutex
 
 	// Recording fields.
 	isRecording     bool
@@ -55,6 +56,8 @@ type MockBackend struct {
 	DroppedTraces  []ptrace.Traces
 	DroppedMetrics []pmetric.Metrics
 	DroppedLogs    []plog.Logs
+
+	LogsToRetry []plog.Logs
 
 	// decision to return permanent/non-permanent errors
 	decision decisionFunc
@@ -98,6 +101,8 @@ func (mb *MockBackend) Start() error {
 	}
 
 	mb.isStarted = true
+	mb.startMutex.Lock()
+	defer mb.startMutex.Unlock()
 	mb.startedAt = time.Now()
 	return nil
 }
@@ -128,6 +133,8 @@ func (mb *MockBackend) EnableRecording() {
 }
 
 func (mb *MockBackend) GetStats() string {
+	mb.startMutex.Lock()
+	defer mb.startMutex.Unlock()
 	received := mb.DataItemsReceived()
 	return printer.Sprintf("Received:%10d items (%d/sec)", received, int(float64(received)/time.Since(mb.startedAt).Seconds()))
 }
@@ -166,8 +173,6 @@ func (mb *MockBackend) ConsumeMetric(md pmetric.Metrics) {
 var _ consumer.Traces = (*MockTraceConsumer)(nil)
 
 func (mb *MockBackend) ConsumeLogs(ld plog.Logs) {
-	mb.recordMutex.Lock()
-	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
 		mb.ReceivedLogs = append(mb.ReceivedLogs, ld)
 	}
@@ -189,8 +194,6 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 		}
 		return err
 	}
-
-	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
@@ -221,6 +224,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 	}
 
 	tc.backend.ConsumeTrace(td)
+	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	return nil
 }
@@ -269,9 +273,15 @@ func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+	lc.backend.recordMutex.Lock()
+	defer lc.backend.recordMutex.Unlock()
 	if err := lc.backend.decision(); err != nil {
-		if consumererror.IsPermanent(err) && lc.backend.isRecording {
-			lc.backend.DroppedLogs = append(lc.backend.DroppedLogs, ld)
+		if lc.backend.isRecording {
+			if consumererror.IsPermanent(err) {
+				lc.backend.DroppedLogs = append(lc.backend.DroppedLogs, ld)
+			} else {
+				lc.backend.LogsToRetry = append(lc.backend.LogsToRetry, ld)
+			}
 		}
 		return err
 	}
@@ -289,6 +299,16 @@ func RandomNonPermanentError() error {
 	s := status.New(code, errNonPermanent.Error())
 	if rand.Float32() < 0.5 {
 		return s.Err()
+	}
+	return nil
+}
+
+func GenerateNonPernamentErrorUntil(ch chan bool) error {
+	code := codes.Unavailable
+	s := status.New(code, errNonPermanent.Error())
+	defaultReturn := s.Err()
+	if <-ch {
+		return defaultReturn
 	}
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -28,7 +29,7 @@ func NewFactory() exporter.Factory {
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() component.Config {
 	return &dtconfig.Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
@@ -59,7 +60,7 @@ func createMetricsExporter(
 		cfg,
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithStart(exp.start),
 	)
 	if err != nil {

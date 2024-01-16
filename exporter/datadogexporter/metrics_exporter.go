@@ -16,6 +16,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/api"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
@@ -30,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 type metricsExporter struct {
@@ -51,7 +53,7 @@ type metricsExporter struct {
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
-func translatorFromConfig(set component.TelemetrySettings, cfg *Config, sourceProvider source.Provider) (*otlpmetrics.Translator, error) {
+func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTranslator *attributes.Translator, sourceProvider source.Provider, statsOut chan []byte) (*otlpmetrics.Translator, error) {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
@@ -83,7 +85,10 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, sourcePr
 	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
 		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
-	return otlpmetrics.NewTranslator(set, options...)
+	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
+		options = append(options, otlpmetrics.WithStatsOut(statsOut))
+	}
+	return otlpmetrics.NewTranslator(set, attrsTranslator, options...)
 }
 
 func newMetricsExporter(
@@ -91,11 +96,13 @@ func newMetricsExporter(
 	params exporter.CreateSettings,
 	cfg *Config,
 	onceMetadata *sync.Once,
+	attrsTranslator *attributes.Translator,
 	sourceProvider source.Provider,
 	apmStatsProcessor api.StatsProcessor,
 	metadataReporter *inframetadata.Reporter,
+	statsOut chan []byte,
 ) (*metricsExporter, error) {
-	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, sourceProvider)
+	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, attrsTranslator, sourceProvider, statsOut)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +114,7 @@ func newMetricsExporter(
 		ctx:               ctx,
 		tr:                tr,
 		scrubber:          scrubber,
-		retrier:           clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		retrier:           clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
 		onceMetadata:      onceMetadata,
 		sourceProvider:    sourceProvider,
 		getPushTime:       func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
