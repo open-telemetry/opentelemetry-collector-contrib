@@ -14,7 +14,10 @@ import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/debug"
 	vt "github.com/vmware/govmomi/vim25/types"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal"
 )
 
 // vcenterClient is a client that collects data from a vCenter endpoint.
@@ -47,6 +50,9 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	sdkURL, err := vc.cfg.SDKUrl()
 	if err != nil {
 		return err
+	}
+	if vc.cfg.Debug {
+		debug.SetProvider(&internal.LogProvider{}) // TODO hughesjj need to set the log provider
 	}
 	client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.Insecure)
 	if err != nil {

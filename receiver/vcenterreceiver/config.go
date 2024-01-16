@@ -24,6 +24,7 @@ type Config struct {
 	Endpoint                                string              `mapstructure:"endpoint"`
 	Username                                string              `mapstructure:"username"`
 	Password                                configopaque.String `mapstructure:"password"`
+	Debug                                   bool                `mapstructure:"debug"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver

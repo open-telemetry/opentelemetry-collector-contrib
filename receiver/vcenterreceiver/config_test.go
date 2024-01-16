@@ -76,6 +76,16 @@ func TestConfigValidation(t *testing.T) {
 			},
 			expectedErr: errors.New("password not provided"),
 		},
+		{
+			desc: "debug is set",
+			cfg: Config{
+				Endpoint:                  "https://vcsa.some-host",
+				Username:                  "otelu",
+				Password:                  "otelp",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Debug:                     true,
+			},
+		},
 	}
 
 	for _, tc := range cases {
