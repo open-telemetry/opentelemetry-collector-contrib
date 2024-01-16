@@ -10,7 +10,7 @@ resourceMetrics:
           version: latest
         metrics:
           - name: k8s.node.cpu.time
-            description: Node CPU time
+            description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
             unit: s
             sum:
               dataPoints:

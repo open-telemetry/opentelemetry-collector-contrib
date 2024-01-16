@@ -99,7 +99,7 @@ func (r *lokiReceiver) startProtocolsServers(host component.Host) error {
 		if err != nil {
 			return fmt.Errorf("failed create http server error: %w", err)
 		}
-		err = r.startHTTPServer(host)
+		err = r.startHTTPServer()
 		if err != nil {
 			return fmt.Errorf("failed to start http server error: %w", err)
 		}
@@ -113,7 +113,7 @@ func (r *lokiReceiver) startProtocolsServers(host component.Host) error {
 
 		push.RegisterPusherServer(r.serverGRPC, r)
 
-		err = r.startGRPCServer(host)
+		err = r.startGRPCServer()
 		if err != nil {
 			return fmt.Errorf("failed to start grpc server error: %w", err)
 		}
@@ -122,7 +122,7 @@ func (r *lokiReceiver) startProtocolsServers(host component.Host) error {
 	return err
 }
 
-func (r *lokiReceiver) startHTTPServer(host component.Host) error {
+func (r *lokiReceiver) startHTTPServer() error {
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.conf.HTTP.Endpoint))
 	listener, err := r.conf.HTTP.ToListener()
 	if err != nil {
@@ -133,13 +133,13 @@ func (r *lokiReceiver) startHTTPServer(host component.Host) error {
 	go func() {
 		defer r.shutdownWG.Done()
 		if errHTTP := r.serverHTTP.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			r.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil
 }
 
-func (r *lokiReceiver) startGRPCServer(host component.Host) error {
+func (r *lokiReceiver) startGRPCServer() error {
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.conf.GRPC.NetAddr.Endpoint))
 	listener, err := r.conf.GRPC.ToListener()
 	if err != nil {
@@ -150,7 +150,7 @@ func (r *lokiReceiver) startGRPCServer(host component.Host) error {
 	go func() {
 		defer r.shutdownWG.Done()
 		if errGRPC := r.serverGRPC.Serve(listener); !errors.Is(errGRPC, grpc.ErrServerStopped) && errGRPC != nil {
-			host.ReportFatalError(errGRPC)
+			r.settings.ReportStatus(component.NewFatalErrorEvent(errGRPC))
 		}
 	}()
 	return nil
