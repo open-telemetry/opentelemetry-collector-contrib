@@ -57,7 +57,7 @@ func newVmwareVcenterScraper(
 }
 
 func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) error {
-	connectErr := v.client.EnsureConnection(ctx)
+	connectErr := v.client.EnsureConnection(ctx, v.logger)
 	// don't fail to start if we cannot establish connection, just log an error
 	if connectErr != nil {
 		v.logger.Error(fmt.Sprintf("unable to establish a connection to the vSphere SDK %s", connectErr.Error()))
@@ -75,7 +75,7 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 	}
 
 	// ensure connection before scraping
-	if err := v.client.EnsureConnection(ctx); err != nil {
+	if err := v.client.EnsureConnection(ctx, v.logger); err != nil {
 		return pmetric.NewMetrics(), fmt.Errorf("unable to connect to vSphere SDK: %w", err)
 	}
 

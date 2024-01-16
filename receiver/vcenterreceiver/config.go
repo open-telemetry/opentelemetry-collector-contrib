@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -24,6 +25,8 @@ type Config struct {
 	Endpoint                                string              `mapstructure:"endpoint"`
 	Username                                string              `mapstructure:"username"`
 	Password                                configopaque.String `mapstructure:"password"`
+	RefreshTTL                              time.Duration       `mapstructure:"refresh_ttl"`
+	CachingTTL                              time.Duration       `mapstructure:"caching_ttl"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver

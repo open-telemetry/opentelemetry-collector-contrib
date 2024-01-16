@@ -16,6 +16,7 @@ import (
 	"github.com/vmware/govmomi/vim25"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap"
 )
 
 func TestGetClusters(t *testing.T) {
@@ -86,7 +87,7 @@ func TestSessionReestablish(t *testing.T) {
 		require.NoError(t, err)
 		require.False(t, connected)
 
-		err = client.EnsureConnection(ctx)
+		err = client.EnsureConnection(ctx, zap.NewNop())
 		require.NoError(t, err)
 
 		connected, err = client.moClient.SessionManager.SessionIsActive(ctx)

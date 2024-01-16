@@ -7,6 +7,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -28,6 +29,8 @@ func TestScrape(t *testing.T) {
 		Endpoint:             mockServer.URL,
 		Username:             mock.MockUsername,
 		Password:             mock.MockPassword,
+		RefreshTTL:           1 * time.Second,
+		CachingTTL:           5 * time.Minute,
 	}
 
 	testScrape(ctx, t, cfg)
@@ -43,6 +46,8 @@ func TestScrapeWithPerfObjects(t *testing.T) {
 		Endpoint:             mockServer.URL,
 		Username:             mock.MockUsername,
 		Password:             mock.MockPassword,
+		RefreshTTL:           1 * time.Second,
+		CachingTTL:           5 * time.Minute,
 	}
 
 	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
@@ -75,6 +80,8 @@ func TestScrape_TLS(t *testing.T) {
 		Endpoint:             mockServer.URL,
 		Username:             mock.MockUsername,
 		Password:             mock.MockPassword,
+		RefreshTTL:           1 * time.Second,
+		CachingTTL:           5 * time.Minute,
 	}
 
 	cfg.Insecure = true

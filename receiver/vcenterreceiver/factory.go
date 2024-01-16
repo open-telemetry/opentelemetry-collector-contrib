@@ -34,6 +34,8 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: cfg,
 		TLSClientSetting:          configtls.TLSClientSetting{},
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		CachingTTL:                15 * time.Minute,
+		RefreshTTL:                5 * time.Minute,
 	}
 }
 

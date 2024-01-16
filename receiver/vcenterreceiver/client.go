@@ -17,11 +17,12 @@ import (
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
 	vt "github.com/vmware/govmomi/vim25/types"
+	"go.uber.org/zap"
 )
 
 type client interface {
 	// EnsureConnection will establish a connection to the vSphere SDK if not already established
-	EnsureConnection(ctx context.Context) error
+	EnsureConnection(ctx context.Context, logger *zap.Logger) error
 	// Datacenters returns the datacenterComputeResources of the vSphere SDK
 	Datacenters(ctx context.Context) ([]*object.Datacenter, error)
 	// Clusters returns the clusterComputeResources of the vSphere SDK
@@ -41,79 +42,131 @@ type client interface {
 
 func newCachingClient(c *Config) client {
 	cache := ttlcache.NewCache()
-	_ = cache.SetTTL(5 * time.Minute)
+	_ = cache.SetTTL(c.CachingTTL)
 	cache.SkipTTLExtensionOnHit(true)
 	return &cachingClient{
-		delegate: defaultNewVcenterClient(c),
-		cache:    cache,
+		delegate:   defaultNewVcenterClient(c),
+		cache:      cache,
+		refreshTTL: c.RefreshTTL,
 	}
 }
 
 type cachingClient struct {
-	delegate client
-	cache    *ttlcache.Cache
+	delegate    client
+	cache       *ttlcache.Cache
+	refreshTTL  time.Duration
+	refreshChan chan struct{}
 }
 
-func (c cachingClient) PerformanceQuery(ctx context.Context, spec vt.PerfQuerySpec, names []string, objs []vt.ManagedObjectReference) (*perfSampleResult, error) {
+func (c *cachingClient) PerformanceQuery(ctx context.Context, spec vt.PerfQuerySpec, names []string, objs []vt.ManagedObjectReference) (*perfSampleResult, error) {
 	return c.delegate.PerformanceQuery(ctx, spec, names, objs)
 }
 
-func (c cachingClient) EnsureConnection(ctx context.Context) error {
-	return c.delegate.EnsureConnection(ctx)
+func (c *cachingClient) EnsureConnection(ctx context.Context, logger *zap.Logger) error {
+	if vc, ok := c.delegate.(*vcenterClient); ok {
+		if vc.moClient != nil {
+			if sessionActive, _ := vc.moClient.SessionManager.SessionIsActive(ctx); sessionActive {
+				return nil
+			}
+		}
+	}
+	if c.refreshChan != nil {
+		close(c.refreshChan)
+	}
+	c.refreshChan = make(chan struct{})
+	if err := c.delegate.EnsureConnection(ctx, logger); err != nil {
+		return err
+	}
+	if err := c.cache.Purge(); err != nil {
+		return err
+	}
+	if err := c.refresh(ctx); err != nil {
+		return err
+	}
+	go func() {
+		ticker := time.NewTicker(c.refreshTTL)
+		for {
+			select {
+			case <-c.refreshChan:
+				return
+			case <-ticker.C:
+				err := c.refresh(ctx)
+				if err != nil {
+					logger.Error("Error refreshing vCenter data: %v")
+				}
+			}
+		}
+	}()
+	return nil
 }
 
-func (c cachingClient) Datacenters(ctx context.Context) ([]*object.Datacenter, error) {
-	if dcs, _ := c.cache.Get("dcs"); dcs != nil {
-		return dcs.([]*object.Datacenter), nil
-	}
-
+func (c *cachingClient) refresh(ctx context.Context) error {
+	// cache data centers
 	dcs, err := c.delegate.Datacenters(ctx)
 	if err != nil {
-		return dcs, err
+		return err
 	}
-	err = c.cache.Set("dcs", dcs)
-	return dcs, err
-}
-
-func (c cachingClient) Clusters(ctx context.Context, datacenter *object.Datacenter) ([]*object.ClusterComputeResource, error) {
-	key := "datacenter" + datacenter.Reference().String()
-	if clusters, _ := c.cache.Get(key); clusters != nil {
-		return clusters.([]*object.ClusterComputeResource), nil
+	if err = c.cache.Set("dcs", dcs); err != nil {
+		return err
 	}
-
-	clusters, err := c.delegate.Clusters(ctx, datacenter)
-	if err != nil {
-		return clusters, err
-	}
-	err = c.cache.Set(key, clusters)
-	return clusters, err
-}
-
-func (c cachingClient) ResourcePools(ctx context.Context) ([]*object.ResourcePool, error) {
-	if rps, _ := c.cache.Get("resourcepools"); rps != nil {
-		return rps.([]*object.ResourcePool), nil
-	}
+	// cache resource pools
 	rps, err := c.delegate.ResourcePools(ctx)
 	if err != nil {
-		return rps, err
+		return err
 	}
-	err = c.cache.Set("resourcepools", rps)
-	return rps, err
-}
-
-func (c cachingClient) VMs(ctx context.Context) ([]*object.VirtualMachine, error) {
-	if vms, _ := c.cache.Get("vms"); vms != nil {
-		return vms.([]*object.VirtualMachine), nil
+	if err = c.cache.Set("resourcepools", rps); err != nil {
+		return err
 	}
+	// cache VMs
 	vms, err := c.delegate.VMs(ctx)
 	if err != nil {
-		return vms, err
+		return err
 	}
-	err = c.cache.Set("vms", vms)
-	return vms, err
+	if err = c.cache.Set("vms", vms); err != nil {
+		return err
+	}
+
+	// cache clusters under data centers
+	for _, datacenter := range dcs {
+		key := "datacenter" + datacenter.Reference().String()
+
+		clusters, err := c.delegate.Clusters(ctx, datacenter)
+		if err != nil {
+			return err
+		}
+		if err = c.cache.Set(key, clusters); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (c cachingClient) Disconnect(ctx context.Context) error {
+func (c *cachingClient) Datacenters(_ context.Context) ([]*object.Datacenter, error) {
+	dcs, _ := c.cache.Get("dcs")
+	return dcs.([]*object.Datacenter), nil
+}
+
+func (c *cachingClient) Clusters(_ context.Context, datacenter *object.Datacenter) ([]*object.ClusterComputeResource, error) {
+	key := "datacenter" + datacenter.Reference().String()
+	clusters, _ := c.cache.Get(key)
+	return clusters.([]*object.ClusterComputeResource), nil
+}
+
+func (c *cachingClient) ResourcePools(_ context.Context) ([]*object.ResourcePool, error) {
+	rps, _ := c.cache.Get("resourcepools")
+	return rps.([]*object.ResourcePool), nil
+}
+
+func (c *cachingClient) VMs(_ context.Context) ([]*object.VirtualMachine, error) {
+	vms, _ := c.cache.Get("vms")
+	return vms.([]*object.VirtualMachine), nil
+}
+
+func (c *cachingClient) Disconnect(ctx context.Context) error {
+	if c.refreshChan != nil {
+		close(c.refreshChan)
+	}
 	_ = c.cache.Close()
 	return c.delegate.Disconnect(ctx)
 }
@@ -139,7 +192,7 @@ func defaultNewVcenterClient(c *Config) client {
 }
 
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
-func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
+func (vc *vcenterClient) EnsureConnection(ctx context.Context, _ *zap.Logger) error {
 	if vc.moClient != nil {
 		sessionActive, _ := vc.moClient.SessionManager.SessionIsActive(ctx)
 		if sessionActive {
