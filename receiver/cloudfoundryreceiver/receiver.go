@@ -102,7 +102,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 			return
 		}
 
-		cfr.streamMetrics(innerCtx, envelopeStream, host)
+		cfr.streamMetrics(innerCtx, envelopeStream)
 		cfr.settings.Logger.Debug("cloudfoundry metrics streamer stopped")
 	}()
 
@@ -120,8 +120,7 @@ func (cfr *cloudFoundryReceiver) Shutdown(_ context.Context) error {
 
 func (cfr *cloudFoundryReceiver) streamMetrics(
 	ctx context.Context,
-	stream loggregator.EnvelopeStream,
-	host component.Host) {
+	stream loggregator.EnvelopeStream) {
 
 	for {
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
