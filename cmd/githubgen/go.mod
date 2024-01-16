@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
 go 1.20
 
 require (
-	github.com/google/go-github/v57 v57.0.0
+	github.com/google/go-github/v58 v58.0.0
 	go.opentelemetry.io/collector/confmap v0.92.1-0.20240112172857-83d463ceba06
 	gopkg.in/yaml.v3 v3.0.1
 )
