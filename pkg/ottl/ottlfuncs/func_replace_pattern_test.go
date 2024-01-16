@@ -199,7 +199,7 @@ func Test_replacePattern(t *testing.T) {
 			},
 		},
 		{
-			name:    "replacement with literal hash",
+			name:    "replacement with prefix",
 			target:  target,
 			pattern: `passwd\=([^\s]*)`,
 			replacement: ottl.StandardStringGetter[pcommon.Value]{
@@ -210,6 +210,20 @@ func Test_replacePattern(t *testing.T) {
 			function: optionalArg,
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("application passwd=hash(sensitivedtata) otherarg=notsensitive key1 key2")
+			},
+		},
+		{
+			name:    "replacement with multiple hash",
+			target:  target,
+			pattern: `passwd\=([^\s]*).*(otherarg=)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (any, error) {
+					return "passwd=$2$1", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application passwd=hash(otherarg=)hash(sensitivedtata)notsensitive key1 key2")
 			},
 		},
 	}
