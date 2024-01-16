@@ -5,6 +5,7 @@ package reader // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"time"
 
@@ -73,9 +74,11 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	r.lineSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.MaxLogSize), f.TrimFunc)
 
 	if !f.FromBeginning {
-		if err = r.offsetToEnd(); err != nil {
-			return nil, err
+		var info os.FileInfo
+		if info, err = r.file.Stat(); err != nil {
+			return nil, fmt.Errorf("stat: %w", err)
 		}
+		r.Offset = info.Size()
 	}
 
 	r.emitFunc = f.EmitFunc
