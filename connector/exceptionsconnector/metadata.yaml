@@ -7,3 +7,6 @@ status:
   distributions: [contrib]
   codeowners:
     active: [jpkrohling, marctc]
+
+tests:
+  config:

@@ -66,7 +66,7 @@ func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consum
 
 // Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
-func (r *pReceiver) Start(_ context.Context, host component.Host) error {
+func (r *pReceiver) Start(_ context.Context, _ component.Host) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
@@ -75,7 +75,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	// add scrape configs defined by the collector configs
 	baseCfg := r.cfg.PrometheusConfig
 
-	err := r.initPrometheusComponents(discoveryCtx, host, logger)
+	err := r.initPrometheusComponents(discoveryCtx, logger)
 	if err != nil {
 		r.settings.Logger.Error("Failed to initPrometheusComponents Prometheus components", zap.Error(err))
 		return err
@@ -233,14 +233,14 @@ func (r *pReceiver) applyCfg(cfg *config.Config) error {
 	return r.discoveryManager.ApplyConfig(discoveryCfg)
 }
 
-func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component.Host, logger log.Logger) error {
+func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Logger) error {
 	r.discoveryManager = discovery.NewManager(ctx, logger)
 
 	go func() {
 		r.settings.Logger.Info("Starting discovery manager")
 		if err := r.discoveryManager.Run(); err != nil && !errors.Is(err, context.Canceled) {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
-			host.ReportFatalError(err)
+			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 
@@ -282,7 +282,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		r.settings.Logger.Info("Starting scrape manager")
 		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
 			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
-			host.ReportFatalError(err)
+			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
