@@ -59,11 +59,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.92.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.92.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension v0.92.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.92.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.92.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.92.1-0.20240112172857-83d463ceba06
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension v0.92.1-0.20240112172857-83d463ceba06
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.92.1-0.20240112172857-83d463ceba06
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.92.1-0.20240112172857-83d463ceba06
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.92.1-0.20240112172857-83d463ceba06
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.92.0
@@ -81,7 +81,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.92.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.1-0.20240112172857-83d463ceba06
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.92.0
@@ -529,7 +529,7 @@ require (
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19 // indirect
 	github.com/oklog/ulid/v2 v2.1.0 // indirect
 	github.com/open-telemetry/opamp-go v0.10.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.92.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.92.0 // indirect
@@ -556,14 +556,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.92.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.92.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.92.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.92.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.92.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
