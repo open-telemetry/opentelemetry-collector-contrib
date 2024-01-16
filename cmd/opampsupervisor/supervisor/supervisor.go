@@ -782,6 +782,10 @@ func (s *Supervisor) Shutdown() {
 			s.logger.Error("Could not stop the OpAMP client", zap.Error(err))
 		}
 	}
+
+	if s.healthCheckTicker != nil {
+		s.healthCheckTicker.Stop()
+	}
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
