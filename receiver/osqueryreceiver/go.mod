@@ -26,12 +26,12 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.92.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.92.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.92.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.92.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.1 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.1 // indirect
+	go.opentelemetry.io/collector v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/confmap v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/consumer v0.92.1-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240110091511-bf804d6c4ecc // indirect
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240110091511-bf804d6c4ecc // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
