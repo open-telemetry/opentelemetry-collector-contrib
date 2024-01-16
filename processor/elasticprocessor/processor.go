@@ -47,6 +47,19 @@ func (p *ElasticProcessor) processMetrics(_ context.Context, md pmetric.Metrics)
 }
 
 func (p *ElasticProcessor) processLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		resourceLog := ld.ResourceLogs().At(i)
+
+		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
+			scopeMetric := resourceLog.ScopeLogs().At(j)
+			scope := scopeMetric.Scope()
+
+			if err := datastream.AddDataStreamFields(datastream.Logs, scope); err != nil {
+				p.logger.Error("error adding Elastic data stream fields", zap.Error(err))
+			}
+		}
+	}
+
 	return ld, nil
 }
 
