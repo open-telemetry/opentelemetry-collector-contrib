@@ -7,9 +7,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 const (
@@ -39,13 +36,13 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	noopProcessor := func(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) { return md, nil }
+	elasticProcessor := newProcessor(set)
 	return processorhelper.NewMetricsProcessor(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		noopProcessor,
+		elasticProcessor.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
@@ -55,13 +52,13 @@ func createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	noopProcessor := func(_ context.Context, ld plog.Logs) (plog.Logs, error) { return ld, nil }
+	elasticProcessor := newProcessor(set)
 	return processorhelper.NewLogsProcessor(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		noopProcessor,
+		elasticProcessor.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
@@ -71,12 +68,12 @@ func createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	noopProcessor := func(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) { return td, nil }
+	elasticProcessor := newProcessor(set)
 	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		noopProcessor,
+		elasticProcessor.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
