@@ -6,6 +6,7 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -24,13 +25,16 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	cluster := gocql.NewCluster(cfg.DSN)
-	session, err := cluster.CreateSession()
+	cluster, err := newCluster(cfg)
+	if err != nil {
+		return nil, err
+	}
 	cluster.Keyspace = cfg.Keyspace
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 	cluster.Timeout = cfg.Timeout
 
+	session, err := cluster.CreateSession()
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +44,10 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 
 func initializeLogKernel(cfg *Config) error {
 	ctx := context.Background()
-	cluster := gocql.NewCluster(cfg.DSN)
+	cluster, err := newCluster(cfg)
+	if err != nil {
+		return err
+	}
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 	cluster.Timeout = cfg.Timeout
@@ -62,6 +69,25 @@ func initializeLogKernel(cfg *Config) error {
 	}
 
 	return nil
+}
+
+func newCluster(cfg *Config) (*gocql.ClusterConfig, error) {
+	cluster := gocql.NewCluster(cfg.DSN)
+	if cfg.Auth.UserName != "" && cfg.Auth.Password == "" {
+		return nil, errors.New("empty auth.password")
+	}
+	if cfg.Auth.Password != "" && cfg.Auth.UserName == "" {
+		return nil, errors.New("empty auth.username")
+	}
+	if cfg.Auth.UserName != "" && cfg.Auth.Password != "" {
+		cluster.Authenticator = gocql.PasswordAuthenticator{
+			Username: cfg.Auth.UserName,
+			Password: string(cfg.Auth.Password),
+		}
+	}
+	cluster.Consistency = gocql.Quorum
+	cluster.Port = cfg.Port
+	return cluster, nil
 }
 
 func (e *logsExporter) Start(_ context.Context, _ component.Host) error {
