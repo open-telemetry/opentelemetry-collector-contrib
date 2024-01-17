@@ -8,6 +8,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/exporter v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240117180253-4371e14440ee
+	go.uber.org/goleak v1.3.0
 )
 
 require (
