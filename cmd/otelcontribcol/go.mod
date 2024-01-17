@@ -252,7 +252,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.2.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.1 // indirect
 	github.com/Azure/azure-storage-queue-go v0.0.0-20230531184854-c06a8eff66fe // indirect
-	github.com/Azure/go-amqp v1.0.3 // indirect
+	github.com/Azure/go-amqp v1.0.4 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.29 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.23 // indirect
@@ -309,11 +309,11 @@ require (
 	github.com/apache/thrift v0.19.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.49.21 // indirect
+	github.com/aws/aws-sdk-go v1.49.22 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.24.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.4 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.26.3 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.14 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.26.4 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.15 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.11 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.10 // indirect
@@ -327,7 +327,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.24.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.18.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.26.7 // indirect
 	github.com/aws/smithy-go v1.19.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -503,7 +503,6 @@ require (
 	github.com/mattn/go-ieproxy v0.0.11 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-sqlite3 v1.14.19 // indirect
-	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/microsoft/ApplicationInsights-Go v0.4.4 // indirect
 	github.com/microsoft/go-mssqldb v1.6.0 // indirect
 	github.com/miekg/dns v1.1.56 // indirect
@@ -590,7 +589,7 @@ require (
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.45.0 // indirect
+	github.com/prometheus/common v0.46.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
@@ -625,7 +624,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.842 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.843 // indirect
 	github.com/tg123/go-htpasswd v1.2.2 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -694,14 +693,14 @@ require (
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gonum.org/v1/gonum v0.14.0 // indirect
-	google.golang.org/api v0.155.0 // indirect
+	google.golang.org/api v0.156.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240102182953-50ed04b92917 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240102182953-50ed04b92917 // indirect

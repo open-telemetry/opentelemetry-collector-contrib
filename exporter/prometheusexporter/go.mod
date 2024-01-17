@@ -9,8 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.92.0
 	github.com/prometheus/client_golang v1.18.0
 	github.com/prometheus/client_model v0.5.0
-	github.com/prometheus/common v0.45.0
-	github.com/prometheus/prometheus v0.48.1
+	github.com/prometheus/common v0.46.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.92.1-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/collector/config/confighttp v0.92.1-0.20240112172857-83d463ceba06
@@ -113,7 +112,6 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/miekg/dns v1.1.56 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -133,6 +131,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/prometheus/prometheus v0.48.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.21 // indirect
@@ -160,7 +159,7 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
-	golang.org/x/oauth2 v0.14.0 // indirect
+	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

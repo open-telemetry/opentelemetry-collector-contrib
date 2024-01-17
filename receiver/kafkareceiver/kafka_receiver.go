@@ -126,7 +126,7 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
 }
 
-func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
+func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -161,7 +161,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, consumerGroup); err != nil {
-			host.ReportFatalError(err)
+			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	<-consumerGroup.ready
@@ -210,7 +210,7 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshaler 
 	}, nil
 }
 
-func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
+func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -245,7 +245,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
-			host.ReportFatalError(err)
+			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	<-metricsConsumerGroup.ready
@@ -294,7 +294,7 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshaler Log
 	}, nil
 }
 
-func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
+func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -329,7 +329,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
-			host.ReportFatalError(err)
+			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	<-logsConsumerGroup.ready
