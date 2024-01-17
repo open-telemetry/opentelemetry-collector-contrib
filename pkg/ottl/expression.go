@@ -29,13 +29,13 @@ func (e Expr[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 
 // Getter resolves a value at runtime without performing any type checking on the value that is returned.
 type Getter[K any] interface {
-	// Get retrieves a value of type Any.
+	// Get retrieves a value of type 'Any' and returns an error if there are any issues during retrieval.
 	Get(ctx context.Context, tCtx K) (any, error)
 }
 
 // Setter allows setting an untyped value on a predefined field within some data at runtime.
 type Setter[K any] interface {
-	// Set sets a value of type Any.
+	// Set sets a value of type 'Any' and returns an error if there are any issues during the setting process.
 	Set(ctx context.Context, tCtx K, val any) error
 }
 
