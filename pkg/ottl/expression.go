@@ -40,7 +40,7 @@ type Setter[K any] interface {
 }
 
 // GetSetter is an interface that combines the Getter and Setter interfaces.
-// It should be used to represent the ability to both get and set a value.```
+// It should be used to represent the ability to both get and set a value.
 type GetSetter[K any] interface {
 	Getter[K]
 	Setter[K]
