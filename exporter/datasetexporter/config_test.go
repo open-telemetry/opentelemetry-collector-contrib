@@ -38,7 +38,7 @@ func TestConfigUseDefaults(t *testing.T) {
 		"api_key":     "secret",
 	})
 	err := config.Unmarshal(configMap)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, "https://example.com", config.DatasetURL)
 	assert.Equal(t, "secret", string(config.APIKey))
@@ -158,7 +158,7 @@ func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 		},
 	})
 	err := config.Unmarshal(configMap)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, true, config.LogsSettings.ExportResourceInfo)
 }
 
@@ -173,6 +173,6 @@ func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 		},
 	})
 	err := config.Unmarshal(configMap)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, false, config.LogsSettings.ExportScopeInfo)
 }

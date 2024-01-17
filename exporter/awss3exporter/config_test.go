@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfig(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
@@ -69,7 +69,7 @@ func TestConfig(t *testing.T) {
 
 func TestConfigForS3CompatibleSystems(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
@@ -157,7 +157,7 @@ func TestConfig_Validate(t *testing.T) {
 
 func TestMarshallerName(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory

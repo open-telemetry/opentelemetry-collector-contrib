@@ -81,7 +81,7 @@ func TestWatchingTimeouts(t *testing.T) {
 
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedError := "context deadline exceeded"
 
@@ -93,7 +93,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	observed, logs := observer.New(zapcore.WarnLevel)
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	cnt, ofInterest := cli.inspectedContainerIsOfInterest(context.Background(), "SomeContainerId")
 	assert.False(t, ofInterest)
@@ -126,7 +126,7 @@ func TestFetchingTimeouts(t *testing.T) {
 
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedError := "context deadline exceeded"
 
@@ -135,7 +135,7 @@ func TestFetchingTimeouts(t *testing.T) {
 	observed, logs := observer.New(zapcore.WarnLevel)
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	statsJSON, err := cli.FetchContainerStatsAsJSON(
 		context.Background(),
@@ -182,7 +182,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	dc := &Container{
 		ContainerJSON: &dtypes.ContainerJSON{
@@ -229,7 +229,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 
 	cli, err := NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	go cli.ContainerEventLoop(context.Background())
 

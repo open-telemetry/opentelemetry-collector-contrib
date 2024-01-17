@@ -141,7 +141,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func checkErrorsAndStartAndShutdown(t *testing.T, exporter component.Component, err error, mustFailOnCreate, mustFailOnStart bool) {
 	if mustFailOnCreate {
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 		return
 	}
 	assert.NoError(t, err)

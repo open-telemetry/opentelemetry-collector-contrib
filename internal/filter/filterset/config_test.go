@@ -74,7 +74,7 @@ func TestConfigInvalid(t *testing.T) {
 			assert.Equal(t, expCfg, actualCfg)
 
 			fs, err := CreateFilterSet([]string{}, actualCfg)
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 			assert.Nil(t, fs)
 		})
 	}
