@@ -1,0 +1,104 @@
+## `headerless_jarray_parser` operator
+
+The `headerless_jarray_parser` operator parses the string-type field selected by `parse_from` with the given header values.
+
+### Configuration Fields
+
+| Field              | Default                                  | Description                                                                                                                                       |
+|--------------------|------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`               | `headerless_jarray_parser`                             | A unique identifier for the operator.                                                                                                             |
+| `output`           | Next in pipeline                         | The connected operator(s) that will receive all outbound entries.                                                                                 |
+| `header`           | required when `header_attribute` not set | A string of delimited field names                                                                                                                 |
+| `header_attribute` | required when `header` not set           | An attribute name to read the header field from, to support dynamic field names                                                                   |
+| `header_delimiter` | value of `delimiter`                     | A character that will be used as a delimiter for headers. Values `\r` and `\n` cannot be used as a delimiter.                                       |
+| `parse_from`       | `body`                                   | The [field](../types/field.md) from which the value will be parsed.                                                                               |
+| `parse_to`         | `attributes`                             | The [field](../types/field.md) to which the value will be parsed.                                                                                 |
+| `on_error`         | `send`                                   | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md).                                                     |
+| `timestamp`        | `nil`                                    | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator.          |
+| `severity`         | `nil`                                    | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator.             |
+
+### Embedded Operations
+
+The `headerless_jarray` can be configured to embed certain operations such as timestamp and severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
+
+### Example Configurations
+
+#### Parse the field `message` with a jarray parser
+
+Configuration:
+
+```yaml
+- type: headerless_jarray_parser
+  header: id,severity,message,isExample
+```
+
+<table>
+<tr><td> Input Entry </td> <td> Output Entry </td></tr>
+<tr>
+<td>
+
+```json
+{
+  "body": "[1,\"debug\",\"Debug Message\", true]"
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "body": {
+    "id": 1,
+    "severity": "debug",
+    "message": "Debug Message",
+    "isExample": true
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
+#### Parse the field `message` with a headerless jarray parser into attributes using | as header delimiter
+
+Configuration:
+
+```yaml
+- type: headerless_jarray_parser
+  parse_from: body
+  parse_to: attributes
+  header: id|severity|message|isExample
+  header_delimiter: "|"
+```
+
+<table>
+<tr><td> Input Entry </td> <td> Output Entry </td></tr>
+<tr>
+<td>
+
+```json
+{
+  "body": "[1,\"debug\",\"Debug Message\", true]"
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "attributes": {
+    "id": 1,
+    "severity": "debug",
+    "message": "Debug Message",
+    "isExample": true
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
