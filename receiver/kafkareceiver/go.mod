@@ -31,7 +31,7 @@ require (
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
-	github.com/aws/aws-sdk-go v1.49.21 // indirect
+	github.com/aws/aws-sdk-go v1.49.22 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
