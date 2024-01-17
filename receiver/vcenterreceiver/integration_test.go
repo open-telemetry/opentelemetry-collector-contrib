@@ -12,21 +12,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vim25"
-	"github.com/vmware/govmomi/vim25/debug"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal"
 )
 
 func TestIntegration(t *testing.T) {
@@ -35,13 +33,14 @@ func TestIntegration(t *testing.T) {
 		require.True(t, set)
 
 		s := session.NewManager(c)
-		newVcenterClient = func(cfg *Config) *vcenterClient {
+		newVcenterClient = func(cfg *Config, logger *zap.Logger) *vcenterClient {
 			client := &vcenterClient{
 				cfg: cfg,
 				moClient: &govmomi.Client{
 					Client:         c,
 					SessionManager: s,
 				},
+				logger: logger,
 			}
 			require.NoError(t, client.EnsureConnection(context.Background()))
 			client.vimDriver = c
@@ -84,20 +83,19 @@ func TestIntegration(t *testing.T) {
 func TestIntegrationDebug(t *testing.T) {
 	// As debug.SetProvider is a global configuration setting
 	// it must be set before vim25.Client is instantiated
-	l := logrus.WithFields(logrus.Fields{})
-	debug.SetProvider(internal.NewLogProvider(l))
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		pw, set := simulator.DefaultLogin.Password()
 		require.True(t, set)
 
 		s := session.NewManager(c)
-		newVcenterClient = func(cfg *Config) *vcenterClient {
+		newVcenterClient = func(cfg *Config, logger *zap.Logger) *vcenterClient {
 			client := &vcenterClient{
 				cfg: cfg,
 				moClient: &govmomi.Client{
 					Client:         c,
 					SessionManager: s,
 				},
+				logger: logger,
 			}
 			require.NoError(t, client.EnsureConnection(context.Background()))
 			client.vimDriver = c

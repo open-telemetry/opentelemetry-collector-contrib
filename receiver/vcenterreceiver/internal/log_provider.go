@@ -7,14 +7,14 @@ import (
 	"io"
 	"regexp"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 type LogWriterCloser struct {
-	log logrus.FieldLogger
+	log *zap.Logger
 }
 
-func NewLogWriterCloser(log logrus.FieldLogger) *LogWriterCloser {
+func NewLogWriterCloser(log *zap.Logger) *LogWriterCloser {
 	return &LogWriterCloser{log: log}
 }
 
@@ -28,15 +28,15 @@ func (lwc *LogWriterCloser) Close() error {
 }
 
 type LogProvider struct {
-	log logrus.FieldLogger
+	log *zap.Logger
 }
 
-func NewLogProvider(log logrus.FieldLogger) *LogProvider {
+func NewLogProvider(log *zap.Logger) *LogProvider {
 	return &LogProvider{log: log}
 }
 
 func (s *LogProvider) NewFile(p string) io.WriteCloser {
-	return NewLogWriterCloser(s.log)
+	return NewLogWriterCloser(s.log.Named(p))
 }
 
 func (s *LogProvider) Flush() {

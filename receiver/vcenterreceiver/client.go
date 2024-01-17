@@ -16,6 +16,7 @@ import (
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/debug"
 	vt "github.com/vmware/govmomi/vim25/types"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal"
 )
@@ -28,13 +29,15 @@ type vcenterClient struct {
 	pc        *property.Collector
 	pm        *performance.Manager
 	cfg       *Config
+	logger    *zap.Logger
 }
 
 var newVcenterClient = defaultNewVcenterClient
 
-func defaultNewVcenterClient(c *Config) *vcenterClient {
+func defaultNewVcenterClient(c *Config, log *zap.Logger) *vcenterClient {
 	return &vcenterClient{
-		cfg: c,
+		cfg:    c,
+		logger: log,
 	}
 }
 
@@ -52,7 +55,8 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 		return err
 	}
 	if vc.cfg.Debug {
-		debug.SetProvider(&internal.LogProvider{}) // TODO hughesjj need to set the log provider
+		logger := internal.NewLogProvider(vc.logger)
+		debug.SetProvider(logger) // TODO hughesjj need to set the log provider
 	}
 	client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.Insecure)
 	if err != nil {
