@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/otel/metric v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
+	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 )
 

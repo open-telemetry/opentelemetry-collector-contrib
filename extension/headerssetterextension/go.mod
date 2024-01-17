@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/otel/metric v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
+	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 	google.golang.org/grpc v1.60.1
 )

@@ -7,6 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.92.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.92.1-0.20240117180253-4371e14440ee
+	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 )
 
