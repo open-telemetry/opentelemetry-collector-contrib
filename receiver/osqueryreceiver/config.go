@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	osquery "github.com/osquery/osquery-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -31,6 +32,9 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	ExtensionsSocket                        string   `mapstructure:"extensions_socket"`
 	Queries                                 []string `mapstructure:"queries"`
+
+	// For mocking
+	makeClient func(string) *osquery.ExtensionManagerClient
 }
 
 func (c Config) Validate() error {
@@ -38,4 +42,19 @@ func (c Config) Validate() error {
 		return errors.New("queries cannot be empty")
 	}
 	return nil
+}
+
+func makeOsQueryClient(socket string) *osquery.ExtensionManagerClient {
+	client, err := osquery.NewClient(socket, 10*time.Second)
+	if err != nil {
+		return nil
+	}
+	return client
+}
+
+func (c Config) getOsQueryClient() *osquery.ExtensionManagerClient {
+	if c.makeClient == nil {
+		c.makeClient = makeOsQueryClient
+	}
+	return c.makeClient(c.ExtensionsSocket)
 }
