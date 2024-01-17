@@ -83,11 +83,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "negative_queue_size"),
-			errorMessage: "remote write queue size can't be negative",
+			errorMessage: "'queue_size' must be positive",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "negative_num_consumers"),
-			errorMessage: "remote write consumer number can't be negative",
+			errorMessage: "'num_consumers' must be positive",
 		},
 	}
 

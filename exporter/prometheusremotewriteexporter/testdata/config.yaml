@@ -29,12 +29,14 @@ prometheusremotewrite/2:
 prometheusremotewrite/negative_queue_size:
   endpoint: "localhost:8888"
   remote_write_queue:
+    enabled: true
     queue_size: -1
     num_consumers: 10
 
 prometheusremotewrite/negative_num_consumers:
   endpoint: "localhost:8888"
   remote_write_queue:
+    enabled: true
     queue_size: 5
     num_consumers: -1
 

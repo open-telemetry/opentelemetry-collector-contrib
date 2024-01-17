@@ -4,7 +4,7 @@
 package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -79,24 +79,29 @@ type RemoteWriteQueue struct {
 	NumConsumers int `mapstructure:"num_consumers"`
 }
 
+func (cfg *RemoteWriteQueue) Validate() error {
+	if !cfg.Enabled {
+		// If `RemoteWriteQueue` is disabled no need to validate.
+		return nil
+	}
+
+	if cfg.QueueSize <= 0 {
+		return errors.New("'queue_size' must be positive")
+	}
+
+	if cfg.NumConsumers <= 0 {
+		return errors.New("'num_consumers' must be positive")
+	}
+
+	return nil
+}
+
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
 
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.RemoteWriteQueue.QueueSize < 0 {
-		return fmt.Errorf("remote write queue size can't be negative")
-	}
-
-	if cfg.RemoteWriteQueue.Enabled && cfg.RemoteWriteQueue.QueueSize == 0 {
-		return fmt.Errorf("a 0 size queue will drop all the data")
-	}
-
-	if cfg.RemoteWriteQueue.NumConsumers < 0 {
-		return fmt.Errorf("remote write consumer number can't be negative")
-	}
-
 	if cfg.TargetInfo == nil {
 		cfg.TargetInfo = &TargetInfo{
 			Enabled: true,
@@ -108,7 +113,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 	if cfg.MaxBatchSizeBytes < 0 {
-		return fmt.Errorf("max_batch_byte_size must be greater than 0")
+		return errors.New("'max_batch_byte_size' must be greater than 0")
 	}
 	if cfg.MaxBatchSizeBytes == 0 {
 		// Defaults to ~2.81MB
