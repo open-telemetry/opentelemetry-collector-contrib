@@ -7,3 +7,8 @@ status:
   distributions: [contrib]
   codeowners:
     active: [AbhiPrasad]
+
+
+tests:
+  config:
+  expect_consumer_error: true

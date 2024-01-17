@@ -128,8 +128,10 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "cache access",
 			path: &internal.TestPath[TransformContext]{
 				N: "cache",
-				Keys: &internal.TestKey[TransformContext]{
-					S: ottltest.Strp("temp"),
+				KeySlice: []ottl.Key[TransformContext]{
+					&internal.TestKey[TransformContext]{
+						S: ottltest.Strp("temp"),
+					},
 				},
 			},
 			orig:   nil,
@@ -150,11 +152,11 @@ func Test_newPathGetSetter(t *testing.T) {
 			ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exMetric := createMetricTelemetry()
 			exCache := pcommon.NewMap()

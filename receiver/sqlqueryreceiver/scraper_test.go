@@ -335,7 +335,7 @@ func TestScraper_FakeDB_Warnings(t *testing.T) {
 	db := fakeDB{rowVals: [][]any{{42, nil}}}
 	logger := zap.NewNop()
 	scrpr := scraper{
-		client: newDbClient(db, "", logger),
+		client: newDbClient(db, "", logger, TelemetryConfig{}),
 		logger: logger,
 		query: Query{
 			Metrics: []MetricCfg{{
@@ -354,7 +354,7 @@ func TestScraper_FakeDB_MultiRows_Warnings(t *testing.T) {
 	db := fakeDB{rowVals: [][]any{{42, nil}, {43, nil}}}
 	logger := zap.NewNop()
 	scrpr := scraper{
-		client: newDbClient(db, "", logger),
+		client: newDbClient(db, "", logger, TelemetryConfig{}),
 		logger: logger,
 		query: Query{
 			Metrics: []MetricCfg{{
@@ -375,7 +375,7 @@ func TestScraper_FakeDB_MultiRows_Error(t *testing.T) {
 	db := fakeDB{rowVals: [][]any{{42, nil}, {43, nil}}}
 	logger := zap.NewNop()
 	scrpr := scraper{
-		client: newDbClient(db, "", logger),
+		client: newDbClient(db, "", logger, TelemetryConfig{}),
 		logger: logger,
 		query: Query{
 			Metrics: []MetricCfg{{

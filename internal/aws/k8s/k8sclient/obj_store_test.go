@@ -33,7 +33,7 @@ func TestGet(t *testing.T) {
 	item, exists, err := o.Get("a")
 	assert.Nil(t, item)
 	assert.False(t, exists)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGetByKey(t *testing.T) {
@@ -41,7 +41,7 @@ func TestGetByKey(t *testing.T) {
 	item, exists, err := o.GetByKey("a")
 	assert.Nil(t, item)
 	assert.False(t, exists)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGetListKeys(t *testing.T) {
@@ -76,7 +76,7 @@ func TestGetList(t *testing.T) {
 func TestDelete(t *testing.T) {
 	o := NewObjStore(transformFunc, zap.NewNop())
 	err := o.Delete(nil)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	o.objs = map[types.UID]any{
 		"bc5f5839-f62e-44b9-a79e-af250d92dcb1": &v1.Pod{
@@ -115,7 +115,7 @@ func TestDelete(t *testing.T) {
 		},
 	}
 	err = o.Delete(obj)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, o.refreshed)
 
 	keys := o.ListKeys()
@@ -126,7 +126,7 @@ func TestDelete(t *testing.T) {
 func TestAdd(t *testing.T) {
 	o := NewObjStore(transformFunc, zap.NewNop())
 	err := o.Add(nil)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	o = NewObjStore(transformFuncWithError, zap.NewNop())
 	obj := &v1.Pod{
@@ -141,7 +141,7 @@ func TestAdd(t *testing.T) {
 		},
 	}
 	err = o.Add(obj)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestUpdate(t *testing.T) {
@@ -171,7 +171,7 @@ func TestUpdate(t *testing.T) {
 		},
 	}
 	err := o.Update(updatedObj)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	keys := o.ListKeys()
 	assert.Equal(t, 1, len(keys))
@@ -209,5 +209,5 @@ func TestReplace(t *testing.T) {
 		},
 	}
 	err := o.Replace(objArray, "")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

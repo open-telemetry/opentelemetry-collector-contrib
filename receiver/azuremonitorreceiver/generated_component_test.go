@@ -38,7 +38,7 @@ func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 	assert.NoError(aneh, err)
 }
 
-func Test_ComponentLifecycle(t *testing.T) {
+func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
@@ -70,9 +70,6 @@ func Test_ComponentLifecycle(t *testing.T) {
 		})
 
 		t.Run(test.name+"-lifecycle", func(t *testing.T) {
-
-			// TODO support lifecycle
-			t.SkipNow()
 
 			firstRcvr, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)

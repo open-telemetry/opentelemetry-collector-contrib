@@ -224,7 +224,7 @@ func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.C
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
 		exporterhelper.WithTimeout(config.TimeoutSettings),
-		exporterhelper.WithRetry(config.RetrySettings),
+		exporterhelper.WithRetry(config.BackoffConfig),
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithShutdown(s.shutdown),
 	)

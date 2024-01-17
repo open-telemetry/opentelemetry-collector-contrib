@@ -42,5 +42,5 @@ func createExtension(_ context.Context, set extension.CreateSettings, cfg compon
 		return nil, errors.New("\"endpoint\" is required when using the \"pprof\" extension")
 	}
 
-	return newServer(*config, set.Logger), nil
+	return newServer(*config, set.TelemetrySettings), nil
 }

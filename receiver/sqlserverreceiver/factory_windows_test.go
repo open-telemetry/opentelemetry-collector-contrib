@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package sqlserverreceiver
 
@@ -47,7 +46,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 					nil,
 					consumertest.NewNop(),
 				)
-				require.ErrorIs(t, err, errConfigNotSqlServer)
+				require.ErrorIs(t, err, errConfigNotSQLServer)
 			},
 		},
 	}
