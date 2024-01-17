@@ -39,3 +39,60 @@ Example queries and data sources for querying are available in the [osquery docs
       - "select * from certificates"
       - "select * from block_devices"
 ```
+
+### Example log record
+
+Output of one log line from the query `select * form processes` output from the `debug` exporter with `detailed` level:
+
+```
+LogRecord #0
+ObservedTimestamp: 1970-01-01 00:00:00 +0000 UTC
+Timestamp: 2024-01-17 20:33:32.080179 +0000 UTC
+SeverityText: INFO
+SeverityNumber: Info(9)
+Body: Str(select * from processes)
+Trace ID:
+Span ID:
+Flags: 0
+ResourceLog #725
+Resource SchemaURL: https://opentelemetry.io/schemas/1.6.1
+Resource attributes:
+     -> path: Str(/opt/osquery/lib/osquery.app/Contents/MacOS/osqueryd)
+     -> pgroup: Str(99994)
+     -> pid: Str(99994)
+     -> root: Str()
+     -> start_time: Str(1705098258)
+     -> cwd: Str(//workspace/opentelemetry-collector-contrib/receiver/osqueryreceiver)
+     -> egid: Str(20)
+     -> gid: Str(20)
+     -> sgid: Str(20)
+     -> suid: Str(502)
+     -> disk_bytes_read: Str(348160)
+     -> system_time: Str(1440)
+     -> threads: Str(6)
+     -> uppid: Str(4095249)
+     -> cpu_subtype: Str(0)
+     -> cpu_type: Str(16777228)
+     -> parent: Str(26489)
+     -> upid: Str(4763733)
+     -> user_time: Str(1888)
+     -> cmdline: Str(osqueryi)
+     -> uid: Str(502)
+     -> disk_bytes_written: Str(589824)
+     -> euid: Str(502)
+     -> name: Str(osqueryd)
+     -> on_disk: Str(1)
+     -> translated: Str(0)
+     -> nice: Str(0)
+     -> resident_size: Str(48119808)
+     -> state: Str(R)
+     -> total_size: Str(22988928)
+     -> wired_size: Str(0)
+     -> host.name: Str(MREM1F1E2230)
+     -> os.type: Str(darwin)
+ScopeLogs #0
+ScopeLogs SchemaURL:
+InstrumentationScope
+InstrumentationScope attributes:
+     -> otel.scope.name: Str(otelcol/osqueryreceiver)
+```
