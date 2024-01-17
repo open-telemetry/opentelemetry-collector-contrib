@@ -30,8 +30,8 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/confmap v0.92.1-0.20240112172857-83d463ceba06 // indirect
 	go.opentelemetry.io/collector/consumer v0.92.1-0.20240112172857-83d463ceba06 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240112172857-83d463ceba06 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240112172857-83d463ceba06 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee // indirect
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240117180253-4371e14440ee // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect

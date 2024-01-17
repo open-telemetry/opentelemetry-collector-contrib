@@ -19,8 +19,8 @@ require (
 	go.opentelemetry.io/collector/confmap v0.92.1-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/collector/consumer v0.92.1-0.20240112172857-83d463ceba06
 	go.opentelemetry.io/collector/extension v0.92.1-0.20240112172857-83d463ceba06
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240112172857-83d463ceba06
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240112172857-83d463ceba06
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/receiver v0.92.1-0.20240112172857-83d463ceba06
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
