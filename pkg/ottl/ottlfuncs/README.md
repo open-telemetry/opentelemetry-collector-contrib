@@ -47,6 +47,7 @@ Available Editors:
 
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
+- [flatten](#flatten)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
 - [merge_maps](#merge_maps)
@@ -61,9 +62,9 @@ Available Editors:
 
 `delete_key(target, key)`
 
-The `delete_key` function removes a key from a `pdata.Map`
+The `delete_key` function removes a key from a `pcommon.Map`
 
-`target` is a path expression to a `pdata.Map` type field. `key` is a string that is a key in the map.
+`target` is a path expression to a `pcommon.Map` type field. `key` is a string that is a key in the map.
 
 The key will be deleted from the map.
 
@@ -78,9 +79,9 @@ Examples:
 
 `delete_matching_keys(target, pattern)`
 
-The `delete_matching_keys` function removes all keys from a `pdata.Map` that match a regex pattern.
+The `delete_matching_keys` function removes all keys from a `pcommon.Map` that match a regex pattern.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a regex string.
+`target` is a path expression to a `pcommon.Map` type field. `pattern` is a regex string.
 
 All keys that match the pattern will be deleted from the map.
 
@@ -91,13 +92,99 @@ Examples:
 
 - `delete_matching_keys(resource.attributes, "(?i).*password.*")`
 
+### flatten
+
+`flatten(target, Optional[prefix], Optional[depth])`
+
+The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
+
+`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
+
+For example, the following map
+
+```json
+{
+  "name": "test",
+  "address": {
+    "street": "first",
+    "house": 1234
+  },
+  "occupants": ["user 1", "user 2"]
+}
+```
+
+is converted to 
+
+```json
+{
+    "name": "test",
+    "address.street": "first",
+    "address.house": 1234,
+    "occupants.0": "user 1",
+    "occupants.1": "user 2"
+}
+```
+
+If `prefix` is supplied, it will be appended to the start of the new keys. This can help you namespace the changes. For example, if in the above example a `prefix` of `app` was configured, the result would be
+
+```json
+{
+    "app.name": "test",
+    "app.address.street": "first",
+    "app.address.house": 1234,
+    "app.occupants.0": "user 1",
+    "app.occupants.1": "user 2"
+}
+```
+
+If `depth` is supplied, the function will only flatten nested maps up to that depth. For example, if a `depth` of `2` was configured, the following map
+
+```json
+{
+  "0": {
+    "1": {
+      "2": {
+        "3": {
+          "4": "value"
+        }
+      }
+    }
+  }
+}
+```
+
+the result would be
+
+```json
+{
+  "0.1.2": {
+    "3": {
+      "4": "value"
+    }
+  }
+}
+```
+
+A `depth` of `0` means that no flattening will occur.
+
+Examples:
+
+- `flatten(attributes)`
+
+
+- `flatten(cache, "k8s", 4)`
+
+
+- `flatten(body, depth=2)`
+
+
 ### keep_keys
 
 `keep_keys(target, keys[])`
 
-The `keep_keys` function removes all keys from the `pdata.Map` that do not match one of the supplied keys.
+The `keep_keys` function removes all keys from the `pcommon.Map` that do not match one of the supplied keys.
 
-`target` is a path expression to a `pdata.Map` type field. `keys` is a slice of one or more strings.
+`target` is a path expression to a `pcommon.Map` type field. `keys` is a slice of one or more strings.
 
 The map will be changed to only contain the keys specified by the list of strings.
 
@@ -112,9 +199,9 @@ Examples:
 
 `limit(target, limit, priority_keys[])`
 
-The `limit` function reduces the number of elements in a `pdata.Map` to be no greater than the limit.
+The `limit` function reduces the number of elements in a `pcommon.Map` to be no greater than the limit.
 
-`target` is a path expression to a `pdata.Map` type field. `limit` is a non-negative integer.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer.
 `priority_keys` is a list of strings of attribute keys that won't be dropped during limiting.
 
 The number of priority keys must be less than the supplied `limit`.
@@ -137,7 +224,7 @@ Examples:
 
 The `merge_maps` function merges the source map into the target map using the supplied strategy to handle conflicts.
 
-`target` is a `pdata.Map` type field. `source` is a `pdata.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
+`target` is a `pcommon.Map` type field. `source` is a `pcommon.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
 
 If strategy is:
 
@@ -159,11 +246,11 @@ Examples:
 
 ### replace_all_matches
 
-`replace_all_matches(target, pattern, replacement, function)`
+`replace_all_matches(target, pattern, replacement, Optional[function])`
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching string with the hash value of `replacement`.
+`target` is a path expression to a `pcommon.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching string with the hash value of `replacement`.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
@@ -177,11 +264,11 @@ Examples:
 
 ### replace_all_patterns
 
-`replace_all_patterns(target, mode, regex, replacement, function)`
+`replace_all_patterns(target, mode, regex, replacement, Optional[function])`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
+`target` is a path expression to a `pcommon.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 `mode` determines whether the match and replace will occur on the map's value or key. Valid values are `key` and `value`.
 
@@ -208,7 +295,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 ### replace_match
 
-`replace_match(target, pattern, replacement, function)`
+`replace_match(target, pattern, replacement, Optional[function])`
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
@@ -228,7 +315,7 @@ Examples:
 
 ### replace_pattern
 
-`replace_pattern(target, regex, replacement, function)`
+`replace_pattern(target, regex, replacement, Optional[function])`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
@@ -281,9 +368,9 @@ Examples:
 
 `truncate_all(target, limit)`
 
-The `truncate_all` function truncates all string values in a `pdata.Map` so that none are longer than the limit.
+The `truncate_all` function truncates all string values in a `pcommon.Map` so that none are longer than the limit.
 
-`target` is a path expression to a `pdata.Map` type field. `limit` is a non-negative integer.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer.
 
 The map will be mutated such that the number of characters in all string values is less than or equal to the limit. Non-string values are ignored.
 

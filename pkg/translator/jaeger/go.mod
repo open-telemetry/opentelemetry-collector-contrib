@@ -6,8 +6,8 @@ require (
 	github.com/jaegertracing/jaeger v1.53.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240112172857-83d463ceba06
-	go.opentelemetry.io/collector/semconv v0.92.1-0.20240112172857-83d463ceba06
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240117180253-4371e14440ee
+	go.opentelemetry.io/collector/semconv v0.92.1-0.20240117180253-4371e14440ee
 )
 
 require (
@@ -23,8 +23,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
 	google.golang.org/grpc v1.60.1 // indirect
