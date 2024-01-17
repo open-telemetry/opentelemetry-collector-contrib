@@ -47,6 +47,7 @@ exporters:
   - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.92.1-0.20240117180253-4371e14440ee
   - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.92.1-0.20240117180253-4371e14440ee
   - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.92.1-0.20240117180253-4371e14440ee
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.92.0
@@ -312,6 +313,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ../../receiver/redisreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension => ../../extension/basicauthextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter => ../../exporter/influxdbexporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter => ../../exporter/alertmanagerexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ../../exporter/alibabacloudlogserviceexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../internal/docker
