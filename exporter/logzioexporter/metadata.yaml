@@ -8,7 +8,6 @@ status:
   codeowners:
     active: [yotamloe]
 
-
 tests:
   config:
     endpoint: "172.0.0.1:8080:"
