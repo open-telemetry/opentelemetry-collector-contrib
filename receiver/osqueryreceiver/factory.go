@@ -23,7 +23,10 @@ func createLogsReceiver(
 	if err := component.ValidateConfig(cfg); err != nil {
 		return nil, fmt.Errorf("cannot configure osquery logs receiver: %w", err)
 	}
-	receiver := newOsQueryReceiver(cfg.(*Config), consumer, set)
+	receiver, err := newOsQueryReceiver(cfg.(*Config), consumer, set)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create osquery logs receiver: %w", err)
+	}
 	return receiver, nil
 }
 

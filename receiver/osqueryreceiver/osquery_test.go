@@ -19,8 +19,8 @@ func TestOsQueryLogFactory(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Queries = []string{"select * from block_devices"}
-	cfg.makeClient = func(string) *osquery.ExtensionManagerClient {
-		return nil
+	cfg.makeClient = func(string) (*osquery.ExtensionManagerClient, error) {
+		return nil, nil
 	}
 
 	recv, err := createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package osqueryreceiver
+package osqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver"
 
 import (
 	"context"
@@ -18,27 +18,35 @@ import (
 	"go.uber.org/zap"
 )
 
+const defaultClientConnectRetries = 3
+
 type osQueryReceiver struct {
 	config       *Config
 	logger       *zap.Logger
 	client       *osquery.ExtensionManagerClient
 	logsConsumer consumer.Logs
+	mx           sync.Mutex
 	stopperChan  chan struct{}
 	wg           sync.WaitGroup
 	start        time.Time
 	end          time.Time
 }
 
-func newOsQueryReceiver(cfg *Config, consumer consumer.Logs, set receiver.CreateSettings) *osQueryReceiver {
+func newOsQueryReceiver(cfg *Config, consumer consumer.Logs, set receiver.CreateSettings) (*osQueryReceiver, error) {
+	client, err := cfg.getOsQueryClient()
+	if err != nil {
+		return nil, err
+	}
+
 	osqr := &osQueryReceiver{
 		config:       cfg,
 		logsConsumer: consumer,
 		stopperChan:  make(chan struct{}),
 		logger:       set.Logger,
-		client:       cfg.getOsQueryClient(),
+		client:       client,
 	}
 
-	return osqr
+	return osqr, nil
 }
 
 func newLog(ld plog.Logs, query string, row map[string]string) plog.Logs {
@@ -59,12 +67,36 @@ func newLog(ld plog.Logs, query string, row map[string]string) plog.Logs {
 	return ld
 }
 
+func (or *osQueryReceiver) connect(retries int) (*osquery.ExtensionManagerClient, error) {
+	client, err := or.config.getOsQueryClient()
+	if err != nil && retries > 0 {
+		or.logger.Info("Error connecting to osquery socket, retrying", zap.Error(err))
+		return or.connect(retries - 1)
+	} else if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
 func (or *osQueryReceiver) runQuery(ctx context.Context, query string) {
+	or.mx.Lock()
+	defer or.mx.Unlock()
+
 	if or.client == nil {
 		return
 	}
+	or.logger.Debug("Running query", zap.String("query", query))
 
-	rows, err := or.client.QueryRows(query)
+	// Use a separate connection for queries in order to be able to recover from timed out queries
+	queryClient, err := or.connect(defaultClientConnectRetries)
+	if err != nil {
+		or.logger.Error("Could not connect to osquery socket", zap.Error(err))
+		return
+	}
+	defer queryClient.Close()
+
+	rows, err := queryClient.QueryRows(query)
 	if err != nil {
 		or.logger.Error("Error running query", zap.Error(err))
 	}
@@ -80,7 +112,6 @@ func (or *osQueryReceiver) runQuery(ctx context.Context, query string) {
 }
 
 func (or *osQueryReceiver) collect(ctx context.Context) {
-	or.logger.Info("Collecting logs")
 	for _, query := range or.config.Queries {
 		go or.runQuery(ctx, query)
 	}
@@ -118,7 +149,6 @@ func (or *osQueryReceiver) Shutdown(context.Context) error {
 	or.wg.Wait()
 	if or.client != nil {
 		or.client.Close()
-		return nil
 	}
 	return nil
 }

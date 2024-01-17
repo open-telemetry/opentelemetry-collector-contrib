@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	defaultSocket = "/var/osquery/osquery.em"
+	defaultSocket       = "/var/osquery/osquery.em"
+	defaultQueryTimeout = 30 * time.Second
 )
 
 func createDefaultConfig() component.Config {
@@ -34,7 +35,7 @@ type Config struct {
 	Queries                                 []string `mapstructure:"queries"`
 
 	// For mocking
-	makeClient func(string) *osquery.ExtensionManagerClient
+	makeClient func(string) (*osquery.ExtensionManagerClient, error)
 }
 
 func (c Config) Validate() error {
@@ -44,15 +45,15 @@ func (c Config) Validate() error {
 	return nil
 }
 
-func makeOsQueryClient(socket string) *osquery.ExtensionManagerClient {
-	client, err := osquery.NewClient(socket, 10*time.Second)
+func makeOsQueryClient(socket string) (*osquery.ExtensionManagerClient, error) {
+	client, err := osquery.NewClient(socket, defaultQueryTimeout)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return client
+	return client, nil
 }
 
-func (c Config) getOsQueryClient() *osquery.ExtensionManagerClient {
+func (c Config) getOsQueryClient() (*osquery.ExtensionManagerClient, error) {
 	if c.makeClient == nil {
 		c.makeClient = makeOsQueryClient
 	}
