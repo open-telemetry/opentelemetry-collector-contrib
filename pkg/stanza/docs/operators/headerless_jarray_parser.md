@@ -23,12 +23,14 @@ The `headerless_jarray` can be configured to embed certain operations such as ti
 
 ### Example Configurations
 
-#### Parse the field `message` with a jarray parser
+#### Parse the field `body` with a headerless jarray parser into attributes
 
 Configuration:
 
 ```yaml
 - type: headerless_jarray_parser
+  parse_from: body
+  parse_to: attributes
   header: id,severity,message,isExample
 ```
 
@@ -48,7 +50,7 @@ Configuration:
 
 ```json
 {
-  "body": {
+  "attributes": {
     "id": 1,
     "severity": "debug",
     "message": "Debug Message",
@@ -61,7 +63,7 @@ Configuration:
 </tr>
 </table>
 
-#### Parse the field `message` with a headerless jarray parser into attributes using | as header delimiter
+#### Parse the field `body` with a headerless jarray parser into attributes using | as header delimiter
 
 Configuration:
 
@@ -102,3 +104,42 @@ Configuration:
 </tr>
 </table>
 
+#### Parse the field `message` with a jarray parser
+
+Configuration:
+
+```yaml
+- type: headerless_jarray_parser
+  header: id,severity,message,isExample
+```
+
+<table>
+<tr><td> Input Entry </td> <td> Output Entry </td></tr>
+<tr>
+<td>
+
+```json
+{
+  "body": {
+    "message":"[1,\"debug\",\"Debug Message\", true]"
+  }
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "body": {
+    "id": 1,
+    "severity": "debug",
+    "message": "Debug Message",
+    "isExample": true
+  }
+}
+```
+
+</td>
+</tr>
+</table>
