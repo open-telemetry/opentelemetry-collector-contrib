@@ -21,9 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
-const (
-	defaultDockerAPIVersion         = 1.22
-	minimalRequiredDockerAPIVersion = 1.22
+var (
+	defaultDockerAPIVersion         = "1.22"
+	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion(defaultDockerAPIVersion)
 )
 
 var _ extension.Extension = (*dockerObserver)(nil)
