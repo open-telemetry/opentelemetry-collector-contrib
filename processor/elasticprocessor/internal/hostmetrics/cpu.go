@@ -9,7 +9,7 @@ func transformCPUMetrics(metrics pmetric.MetricSlice) error {
 	var timestamp, startTimestamp pcommon.Timestamp
 	var numCores int64
 	var totalPercent, idlePercent, systemPercent, userPercent, stealPercent,
-	iowaitPercent, nicePercent, irqPercent, softirqPercent float64
+		iowaitPercent, nicePercent, irqPercent, softirqPercent float64
 
 	// iterate all metrics in the current scope and generate the additional Elastic system integration metrics
 	for i := 0; i < metrics.Len(); i++ {
@@ -22,34 +22,34 @@ func transformCPUMetrics(metrics pmetric.MetricSlice) error {
 		} else if metric.Name() == "system.cpu.utilization" {
 			dataPoints := metric.Gauge().DataPoints()
 			for j := 0; j < dataPoints.Len(); j++ {
-				dataPoint := dataPoints.At(j)
-				value := dataPoint.DoubleValue()
+				dp := dataPoints.At(j)
+				value := dp.DoubleValue()
 
-				if state, ok := dataPoint.Attributes().Get("state"); ok {
+				if state, ok := dp.Attributes().Get("state"); ok {
 					switch state.Str() {
 					case "idle":
 						idlePercent += value
-						case "system":
-							systemPercent += value
-							totalPercent += value
-							case "user":
-								userPercent += value
-								totalPercent += value
-								case "steal":
-									stealPercent += value
-									totalPercent += value
-									case "wait":
-										iowaitPercent += value
-										totalPercent += value
-										case "nice":
-											nicePercent += value
-											totalPercent += value
-											case "interrupt":
-												irqPercent += value
-												totalPercent += value
-												case "softirq":
-													softirqPercent += value
-													totalPercent += value
+					case "system":
+						systemPercent += value
+						totalPercent += value
+					case "user":
+						userPercent += value
+						totalPercent += value
+					case "steal":
+						stealPercent += value
+						totalPercent += value
+					case "wait":
+						iowaitPercent += value
+						totalPercent += value
+					case "nice":
+						nicePercent += value
+						totalPercent += value
+					case "interrupt":
+						irqPercent += value
+						totalPercent += value
+					case "softirq":
+						softirqPercent += value
+						totalPercent += value
 					}
 				}
 			}
@@ -167,14 +167,14 @@ func transformCPUMetrics(metrics pmetric.MetricSlice) error {
 	dp.SetDoubleValue(nicePercent / numCoresScaler)
 
 	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.interrupt.pct")
+	m.SetName("system.cpu.irq.pct")
 	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(timestamp)
 	dp.SetStartTimestamp(startTimestamp)
 	dp.SetDoubleValue(irqPercent)
 
 	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.interrupt.norm.pct")
+	m.SetName("system.cpu.irq.norm.pct")
 	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(timestamp)
 	dp.SetStartTimestamp(startTimestamp)

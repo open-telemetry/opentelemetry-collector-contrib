@@ -15,7 +15,9 @@ func TransformHostMetricsForElasticCompatibilty(scopeMetrics pmetric.ScopeMetric
 	switch scraper := path.Base(scopeName); scraper {
 	case "cpu":
 		return transformCPUMetrics(scopeMetrics.Metrics())
-		default:
-			return fmt.Errorf("no matching transform function found for scope '%s'", scopeName)
+	case "memory":
+		return transformMemoryMetrics(scopeMetrics.Metrics())
+	default:
+		return fmt.Errorf("no matching transform function found for scope '%s'", scopeName)
 	}
 }

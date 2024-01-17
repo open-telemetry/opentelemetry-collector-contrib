@@ -3,20 +3,20 @@ package elasticconnector
 import (
 	"context"
 	"strings"
-	
+
 	"github.com/tommyers-elastic/opentelemetry-collector-contrib/processor/elasticprocessor/internal/datastream"
 	"github.com/tommyers-elastic/opentelemetry-collector-contrib/processor/elasticprocessor/internal/hostmetrics"
-	
-	"go.opentelemetry.io/collector/processor"
+
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	
+	"go.opentelemetry.io/collector/processor"
+
 	"go.uber.org/zap"
 )
 
 type ElasticProcessor struct {
-	logger          *zap.Logger
+	logger *zap.Logger
 }
 
 func newProcessor(set processor.CreateSettings) *ElasticProcessor {
@@ -42,7 +42,7 @@ func (p *ElasticProcessor) processMetrics(_ context.Context, md pmetric.Metrics)
 			}
 		}
 	}
-	
+
 	return md, nil
 }
 
