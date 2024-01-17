@@ -34,7 +34,7 @@ func TestCreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 
 }

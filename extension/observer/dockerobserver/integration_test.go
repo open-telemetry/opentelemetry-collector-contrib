@@ -49,10 +49,10 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer func() {
 		err := container.Terminate(ctx)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}()
 	require.NotNil(t, container)
 
@@ -94,10 +94,10 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer func() {
 		err = container.Terminate(ctx)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}()
 	require.NotNil(t, container)
 
@@ -118,7 +118,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	require.True(t, found, "No nginx container found")
 
 	tcDockerClient, err := testcontainers.NewDockerClientWithOpts(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.NoError(t, tcDockerClient.ContainerRename(context.Background(), container.GetContainerID(), "nginx-updated"))
 
@@ -154,7 +154,7 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, container)
 
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
@@ -174,7 +174,7 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 	require.True(t, found, "No nginx container found")
 
 	err = container.Terminate(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.Eventually(t, func() bool { return mn.RemoveCount() == 1 }, 3*time.Second, 10*time.Millisecond)
 }
@@ -191,10 +191,10 @@ func TestObserverExcludesImagesIntegration(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer func() {
 		err := container.Terminate(ctx)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}()
 	require.NotNil(t, container)
 

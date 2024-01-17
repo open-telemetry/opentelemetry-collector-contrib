@@ -76,7 +76,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	}
 
 	client, err := newLibpodClient(zap.NewNop(), config)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	cli := newContainerScraper(client, zap.NewNop(), config)
 	assert.NotNil(t, cli)
@@ -129,7 +129,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 	}
 
 	client, err := newLibpodClient(zap.NewNop(), config)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	cli := newContainerScraper(client, zap.New(observed), config)
 	assert.NotNil(t, cli)

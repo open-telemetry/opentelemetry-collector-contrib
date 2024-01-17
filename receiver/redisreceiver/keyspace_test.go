@@ -11,7 +11,7 @@ import (
 
 func TestParseKeyspace(t *testing.T) {
 	ks, err := parseKeyspaceString(9, "keys=1,expires=2,avg_ttl=3")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, "9", ks.db)
 	require.Equal(t, 1, ks.keys)
 	require.Equal(t, 2, ks.expires)
@@ -28,7 +28,7 @@ func TestParseMalformedKeyspace(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := parseKeyspaceString(0, test.keyspace)
-			require.NotNil(t, err)
+			require.Error(t, err)
 		})
 	}
 }

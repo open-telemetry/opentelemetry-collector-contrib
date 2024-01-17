@@ -62,7 +62,7 @@ func createNginxContainer(ctx context.Context, t *testing.T) testcontainers.Cont
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, container)
 
 	return container

@@ -35,7 +35,7 @@ func TestNewReceiver(t *testing.T) {
 	mr, err := newMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, nextConsumer, nil)
 
 	assert.NotNil(t, mr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestNewReceiverErrors(t *testing.T) {
