@@ -6,7 +6,6 @@ package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
-	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,9 +29,6 @@ type sshcheckScraper struct {
 // start starts the scraper by creating a new SSH Client on the scraper
 func (s *sshcheckScraper) start(_ context.Context, host component.Host) error {
 	var err error
-	if !supportedOS() {
-		return errWindowsUnsupported
-	}
 	s.Client, err = s.Config.ToClient(host, s.settings)
 	return err
 }
@@ -135,8 +131,4 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *sshcheckScraper
 		settings: settings.TelemetrySettings,
 		mb:       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 	}
-}
-
-func supportedOS() bool {
-	return !(runtime.GOOS == "windows")
 }
