@@ -29,7 +29,8 @@ func TestIdleMode(t *testing.T) {
 	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 	cfg := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
-	cp := testbed.NewChildProcessCollector()
+	cp := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
 	cleanup, err := cp.PrepareConfig(cfg)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
@@ -77,7 +78,7 @@ func TestBallastMemory(t *testing.T) {
 			ballastCfg := createConfigYaml(
 				t, sender, receiver, resultDir, nil,
 				map[string]string{"memory_ballast": fmt.Sprintf(ballastConfig, test.ballastSize)})
-			cp := testbed.NewChildProcessCollector()
+			cp := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 			cleanup, err := cp.PrepareConfig(ballastCfg)
 			require.NoError(t, err)
 			t.Cleanup(cleanup)
