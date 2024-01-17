@@ -4,7 +4,7 @@ status:
   class: exporter
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib, observiq, sumo, splunk]
   codeowners:
     active: [atoulme, pdelewski]
 tests:

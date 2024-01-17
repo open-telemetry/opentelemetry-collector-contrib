@@ -54,3 +54,25 @@ func TestParse(t *testing.T) {
 		t.Errorf("Given: %v, expected: %v", dt, dt2)
 	}
 }
+
+func TestZulu(t *testing.T) {
+	format := "%Y-%m-%dT%H:%M:%S.%L%z"
+	// These time should all parse as UTC.
+	for _, input := range []string{
+		"2019-01-02T15:04:05.666666Z",
+		"2019-01-02T15:04:05.666666-0000",
+		"2019-01-02T15:04:05.666666+0000",
+	} {
+		t.Run(input, func(t *testing.T) {
+			dt, err := Parse(format, input)
+			if err != nil {
+				t.Error(err)
+			} else if dt.UnixNano() != dt1.UnixNano() {
+				// We compare the unix nanoseconds because Go has a subtle parsing difference between "Z" and "+0000".
+				// The former returns a Time with the UTC timezone, the latter returns a Time with a 0000 time zone offset.
+				// (See Go's documentation for `time.Parse`.)
+				t.Errorf("Given: %v, expected: %v", dt, dt1)
+			}
+		})
+	}
+}

@@ -12,9 +12,11 @@ import (
 	"path"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -141,7 +143,7 @@ func Scenario10kItemsPerSecond(
 		ItemsPerBatch:      100,
 		Parallel:           1,
 	}
-	agentProc := testbed.NewChildProcessCollector()
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
 	configCleanup, err := agentProc.PrepareConfig(configStr)
@@ -159,22 +161,21 @@ func Scenario10kItemsPerSecond(
 		resultsSummary,
 		testbed.WithResourceLimits(resourceSpec),
 	)
-	defer tc.Stop()
+	t.Cleanup(tc.Stop)
 
 	tc.StartBackend()
 	tc.StartAgent()
 
 	tc.StartLoad(options)
 
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+
 	tc.Sleep(tc.Duration)
 
 	tc.StopLoad()
 
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 		"all data items received")
-
-	tc.StopAgent()
 
 	tc.ValidateData()
 }
@@ -200,7 +201,7 @@ func Scenario10kItemsPerSecondAlternateBackend(
 		ItemsPerBatch:      100,
 		Parallel:           1,
 	}
-	agentProc := testbed.NewChildProcessCollector()
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
 	fmt.Println(configStr)
@@ -219,7 +220,7 @@ func Scenario10kItemsPerSecondAlternateBackend(
 		resultsSummary,
 		testbed.WithResourceLimits(resourceSpec),
 	)
-	defer tc.Stop()
+	t.Cleanup(tc.Stop)
 
 	// for some scenarios, the mockbackend isn't the same as the receiver
 	// therefore, the backend must be initialized with the correct receiver
@@ -229,16 +230,13 @@ func Scenario10kItemsPerSecondAlternateBackend(
 	tc.StartAgent()
 
 	tc.StartLoad(options)
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 
 	tc.Sleep(tc.Duration)
 
 	tc.StopLoad()
-
-	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 		"all data items received")
-
-	tc.StopAgent()
 
 	tc.ValidateData()
 }
@@ -270,7 +268,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 
 			options := constructLoadOptions(test)
 
-			agentProc := testbed.NewChildProcessCollector()
+			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 			// Prepare results dir.
 			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -309,8 +307,6 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 			tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() },
 				"all spans received")
 
-			tc.StopAgent()
-
 			tc.ValidateData()
 		})
 	}
@@ -334,12 +330,11 @@ func ScenarioTestTraceNoBackend10kSPS(
 	resultsSummary testbed.TestResultsSummary,
 	configuration processorConfig,
 ) {
-
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
 	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
-	agentProc := testbed.NewChildProcessCollector()
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 	configStr := createConfigYaml(t, sender, receiver, resultDir, configuration.Processor, nil)
 	configCleanup, err := agentProc.PrepareConfig(configStr)
 	require.NoError(t, err)
@@ -357,7 +352,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 		testbed.WithResourceLimits(resourceSpec),
 	)
 
-	defer tc.Stop()
+	t.Cleanup(tc.Stop)
 
 	tc.StartAgent()
 	tc.StartLoad(options)
@@ -367,6 +362,141 @@ func ScenarioTestTraceNoBackend10kSPS(
 	rss, _, err := tc.AgentMemoryInfo()
 	require.NoError(t, err)
 	assert.Less(t, configuration.ExpectedMinFinalRAM, rss)
+}
+
+func ScenarioSendingQueuesFull(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	loadOptions testbed.LoadOptions,
+	resourceSpec testbed.ResourceSpec,
+	sleepTime int,
+	resultsSummary testbed.TestResultsSummary,
+	processors map[string]string,
+	extensions map[string]string,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
+	dataChannel := make(chan bool)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.LogPresentValidator{
+			LogBody: "sending_queue is full",
+			Present: true,
+		},
+		resultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
+		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
+	)
+
+	tc.MockBackend.EnableRecording()
+	defer tc.Stop()
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(loadOptions)
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, time.Second*time.Duration(sleepTime), "load generator started")
+
+	// searchFunc checks for "sending_queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
+	// to generate only successes from that time on
+	tc.WaitForN(func() bool {
+		logFound := tc.AgentLogsContains("sending_queue is full")
+		if !logFound {
+			dataChannel <- true
+			return false
+		}
+		tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == 0 }, "no data successfully received before an error")
+		close(dataChannel)
+		return logFound
+	}, time.Second*time.Duration(sleepTime), "sending_queue errors present")
+
+	// check if data started to be received successfully
+	tc.WaitForN(func() bool {
+		return tc.MockBackend.DataItemsReceived() > 0
+	}, time.Second*time.Duration(sleepTime), "data started to be successfully received")
+
+	tc.WaitForN(func() bool {
+		// get IDs from logs to retry
+		logsToRetry := getLogsID(tc.MockBackend.LogsToRetry)
+
+		// get IDs from logs received successfully
+		successfulLogs := getLogsID(tc.MockBackend.ReceivedLogs)
+
+		// check if all the logs to retry were actually retried
+		logsWereRetried := allElementsExistInSlice(logsToRetry, successfulLogs)
+		return logsWereRetried
+	}, time.Second*time.Duration(sleepTime), "all logs were retried successfully")
+
+	tc.StopLoad()
+	tc.StopAgent()
+	tc.ValidateData()
+}
+
+func ScenarioSendingQueuesNotFull(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	loadOptions testbed.LoadOptions,
+	resourceSpec testbed.ResourceSpec,
+	sleepTime int,
+	resultsSummary testbed.TestResultsSummary,
+	processors map[string]string,
+	extensions map[string]string,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.LogPresentValidator{
+			LogBody: "sending_queue is full",
+			Present: false,
+		},
+		resultsSummary,
+		testbed.WithResourceLimits(resourceSpec),
+	)
+	defer tc.Stop()
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(loadOptions)
+
+	tc.Sleep(time.Second * time.Duration(sleepTime))
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, time.Second*time.Duration(sleepTime),
+		"all spans received")
+
+	tc.StopLoad()
+	tc.StopAgent()
+	tc.ValidateData()
 }
 
 func constructLoadOptions(test TestCase) testbed.LoadOptions {
@@ -379,4 +509,37 @@ func constructLoadOptions(test TestCase) testbed.LoadOptions {
 		options.Attributes[attrName] = genRandByteString(rand.Intn(test.attrSizeByte*2-1) + 1)
 	}
 	return options
+}
+
+func getLogsID(logToRetry []plog.Logs) []string {
+	var result []string
+	for _, logElement := range logToRetry {
+		logRecord := logElement.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+		for index := 0; index < logRecord.Len(); index++ {
+			logObj := logRecord.At(index)
+			itemIndex, _ := logObj.Attributes().Get("item_index")
+			batchIndex, _ := logObj.Attributes().Get("batch_index")
+			result = append(result, fmt.Sprintf("%s%s", batchIndex.AsString(), itemIndex.AsString()))
+		}
+	}
+	return result
+}
+
+func allElementsExistInSlice(slice1, slice2 []string) bool {
+	// Create a map to store elements of slice2 for efficient lookup
+	elementMap := make(map[string]bool)
+
+	// Populate the map with elements from slice2
+	for _, element := range slice2 {
+		elementMap[element] = true
+	}
+
+	// Check if all elements of slice1 exist in slice2
+	for _, element := range slice1 {
+		if _, exists := elementMap[element]; !exists {
+			return false
+		}
+	}
+
+	return true
 }

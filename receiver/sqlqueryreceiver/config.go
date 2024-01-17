@@ -17,10 +17,11 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Driver                                  string        `mapstructure:"driver"`
-	DataSource                              string        `mapstructure:"datasource"`
-	Queries                                 []Query       `mapstructure:"queries"`
-	StorageID                               *component.ID `mapstructure:"storage"`
+	Driver                                  string          `mapstructure:"driver"`
+	DataSource                              string          `mapstructure:"datasource"`
+	Queries                                 []Query         `mapstructure:"queries"`
+	StorageID                               *component.ID   `mapstructure:"storage"`
+	Telemetry                               TelemetryConfig `mapstructure:"telemetry"`
 }
 
 func (c Config) Validate() error {
@@ -177,4 +178,12 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: cfg,
 	}
+}
+
+type TelemetryConfig struct {
+	Logs TelemetryLogsConfig `mapstructure:"logs"`
+}
+
+type TelemetryLogsConfig struct {
+	Query bool `mapstructure:"query"`
 }

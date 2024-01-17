@@ -56,7 +56,7 @@ func (w *wsprocessor) Start(_ context.Context, host component.Host) error {
 	go func() {
 		defer w.shutdownWG.Done()
 		if errHTTP := w.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			w.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil

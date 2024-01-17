@@ -172,3 +172,7 @@ service:
     logs:
       level: debug #activate debug mode
 ```
+
+#### Scope Name
+When using the logs exporter with logs originating from instrumentation library (i.e opentelemetry log4j2 appender), the scopeName field will be added (if the field is populated in the original log). 
+```

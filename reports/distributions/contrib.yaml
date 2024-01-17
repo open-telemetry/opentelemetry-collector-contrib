@@ -43,6 +43,7 @@ components:
         - loki
         - mezmo
         - opencensus
+        - opensearch
         - prometheus
         - prometheusremotewrite
         - pulsar
@@ -53,7 +54,6 @@ components:
         - splunk_hec
         - sumologic
         - syslog
-        - tanzuobservability
         - tencentcloud_logservice
         - zipkin
     extension:
