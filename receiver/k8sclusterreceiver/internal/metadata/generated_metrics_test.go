@@ -270,7 +270,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
 			rb.SetOsDescription("os.description-val")
-			rb.SetOsVersion("os.version-val")
+			rb.SetOsType("os.type-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
