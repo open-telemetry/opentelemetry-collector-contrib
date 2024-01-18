@@ -172,13 +172,13 @@ resource_attributes:
     type: string
     enabled: false
 
-  os.version:
-    description: The version of operating system used by Kubernetes Node.
+  os.description:
+    description: The os description used by Kubernetes Node.
     type: string
     enabled: false
 
-  os.description:
-    description: The os description used by Kubernetes Node.
+  os.type:
+    description: The os type used by Kubernetes Node.
     type: string
     enabled: false
 
