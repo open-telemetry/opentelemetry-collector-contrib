@@ -23,12 +23,11 @@ var (
 )
 
 type Config struct {
-	confighttp.ClientConfig                 `mapstructure:",squash"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	IdxEndpoint                             string `mapstructure:"idx_endpoint"`
-	SHEndpoint                              string `mapstructure:"sh_endpoint"`
-	CMEndpoint                              string `mapstructure:"cm_endpoint"`
+	IdxEndpoint                             confighttp.HTTPClientSettings `mapstructure:"indexer"`
+	SHEndpoint                              confighttp.HTTPClientSettings `mapstructure:"search_head"`
+	CMEndpoint                              confighttp.HTTPClientSettings `mapstructure:"cluster_master"`
 }
 
 func (cfg *Config) Validate() (errors error) {
@@ -36,19 +35,29 @@ func (cfg *Config) Validate() (errors error) {
 	var err error
 	endpoints := []string{}
 
-	if cfg.Endpoint != "" {
-		errors = multierr.Append(errors, errUnspecifiedEndpoint)
-	} else if cfg.IdxEndpoint == "" && cfg.SHEndpoint == "" && cfg.CMEndpoint == "" {
+	// if no endpoint is set we do not start the receiver. For each set endpoint we go through and Validate
+	// that it contains an auth setting and a valid endpoint, if its missing either of these the receiver will
+	// fail to start.
+	if cfg.IdxEndpoint.Endpoint == "" && cfg.SHEndpoint.Endpoint == "" && cfg.CMEndpoint.Endpoint == "" {
 		errors = multierr.Append(errors, errBadOrMissingEndpoint)
 	} else {
-		if cfg.IdxEndpoint != "" {
-			endpoints = append(endpoints, cfg.IdxEndpoint)
+		if cfg.IdxEndpoint.Endpoint != "" {
+			if cfg.IdxEndpoint.Auth.AuthenticatorID.Name() == "" {
+				errors = multierr.Append(errors, errMissingAuthExtension)
+			}
+			endpoints = append(endpoints, cfg.IdxEndpoint.Endpoint)
 		}
-		if cfg.SHEndpoint != "" {
-			endpoints = append(endpoints, cfg.SHEndpoint)
+		if cfg.SHEndpoint.Endpoint != "" {
+			if cfg.SHEndpoint.Auth.AuthenticatorID.Name() == "" {
+				errors = multierr.Append(errors, errMissingAuthExtension)
+			}
+			endpoints = append(endpoints, cfg.SHEndpoint.Endpoint)
 		}
-		if cfg.CMEndpoint != "" {
-			endpoints = append(endpoints, cfg.CMEndpoint)
+		if cfg.CMEndpoint.Endpoint != "" {
+			if cfg.CMEndpoint.Auth.AuthenticatorID.Name() == "" {
+				errors = multierr.Append(errors, errMissingAuthExtension)
+			}
+			endpoints = append(endpoints, cfg.CMEndpoint.Endpoint)
 		}
 
 		for _, e := range endpoints {
@@ -65,9 +74,12 @@ func (cfg *Config) Validate() (errors error) {
 		}
 	}
 
+<<<<<<< HEAD
 	if cfg.ClientConfig.Auth.AuthenticatorID.Name() == "" {
 		errors = multierr.Append(errors, errMissingAuthExtension)
 	}
 
+=======
+>>>>>>> 3a6a3c2ce2 (refactored client)
 	return errors
 }

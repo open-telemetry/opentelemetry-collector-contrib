@@ -8,7 +8,7 @@ jobs.
 
 ## Configuration
 
-The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping.
+The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping. These must be set for each Splunk instance type (indexer, search head, or cluster master) from which you wish to pull metrics. At present, only one of each type is accepted, which if done properly should allow for deployment wide metrics to be gathered. 
 
 * `basicauth` (from [basicauthextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/basicauthextension)): A configured stanza for the basicauthextension.
 * `auth` (no default): String name referencing your auth extension.
@@ -23,16 +23,25 @@ Example:
 
 ```yaml
 extensions:
-    basicauth/client:
+    basicauth/indexer:
+        client_auth:
+            username: admin
+            password: securityFirst
+    basicauth/cluster_master:
         client_auth:
             username: admin
             password: securityFirst
 
 receivers:
     splunkenterprise:
-        auth: basicauth/client
-        endpoint: "https://localhost:8089"
-        timeout: 45s
+        indexer:
+            auth: basicauth/indexer
+            endpoint: "https://localhost:8089"
+            timeout: 45s
+        cluster_master:
+            auth: basicauth/cluster_master
+            endpoint: "https://localhost:8089"
+            timeout: 45s
 ```
 
 For a full list of settings exposed by this receiver please look [here](./config.go) with a detailed configuration [here](./testdata/config.yaml).
