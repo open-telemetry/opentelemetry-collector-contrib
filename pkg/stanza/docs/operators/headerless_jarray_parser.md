@@ -1,6 +1,48 @@
 ## `headerless_jarray_parser` operator
 
 The `headerless_jarray_parser` operator parses the string-type field selected by `parse_from` with the given header values.
+A JArray string (or a json array string) is a string that represents a JSON array. A JSON array is a type of data structure that is used to store data in a structured way. It consists of an ordered list of values that can be either strings, numbers, objects, or even other arrays.
+#### Examples:
+a simple Jarray string with strictly strings in it:
+```
+"[\"Ford\", \"BMW\", \"Fiat\"]"
+```
+
+Jarray after parsing:
+```json
+["Ford", "BMW", "Fiat"]
+```
+
+a more complex Jarray string with different types in it without nested objects:
+```
+"[\"Hello\", 42, true, null]"
+```
+
+Jarray after parsing:
+```json
+["Hello", 42, true, null]
+```
+
+a more complex Jarray string with different types in it with nested objects:
+```
+"[\"Hello\", 42, {\"name\": \"Alice\", \"age\": 25}, [1, 2, 3], true, null]"
+```
+
+Jarray after parsing:
+```json
+["Hello", 42, {"name": "Alice", "age": 25}, [1, 2, 3], true, null]
+```
+
+Notice that for this example, the current parser will parse every nested object as a string and so the result is actually this - 
+```json
+["Hello", 42, "{\"name\": \"Alice\", \"age\": 25}", "[1, 2, 3]", true, null]
+```
+
+More information on json arrays can be found [here](https://json-schema.org/understanding-json-schema/reference/array)
+
+#### Adding headers:
+This parser's aim to allow parsing such headerless json array strings and to match headers to them. Examples can be seen under Example Configurations section
+
 
 ### Configuration Fields
 
