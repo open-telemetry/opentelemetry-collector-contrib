@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package dockerstatsreceiver
 
@@ -63,7 +62,7 @@ func createNginxContainer(ctx context.Context, t *testing.T) testcontainers.Cont
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, container)
 
 	return container

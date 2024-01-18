@@ -16,7 +16,7 @@ func newFakeAPIParser() *redisSvc {
 func TestParser(t *testing.T) {
 	s := newFakeAPIParser()
 	info, err := s.info()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 130, len(info))
 	require.Equal(t, "1.24", info["allocator_frag_ratio"]) // spot check
 }

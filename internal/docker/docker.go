@@ -20,10 +20,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	minimalRequiredDockerAPIVersion = 1.22
-	userAgent                       = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
-)
+const userAgent = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
+
+var minimumRequiredDockerAPIVersion = MustNewAPIVersion("1.22")
 
 // Container is client.ContainerInspect() response container
 // stats and translated environment string map for potential labels.
@@ -46,10 +45,17 @@ type Client struct {
 }
 
 func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
+	version := minimumRequiredDockerAPIVersion
+	if config.DockerAPIVersion != "" {
+		var err error
+		if version, err = NewAPIVersion(config.DockerAPIVersion); err != nil {
+			return nil, err
+		}
+	}
 	client, err := docker.NewClientWithOpts(
 		append([]docker.Opt{
 			docker.WithHost(config.Endpoint),
-			docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
+			docker.WithVersion(version),
 			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
 		}, opts...)...,
 	)

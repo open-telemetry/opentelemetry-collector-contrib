@@ -220,8 +220,8 @@ configuration.
 To overcome this problem the Supervisor starts the Collector with an
 "noop" configuration that collects nothing but allows the opamp
 extension to be started. The "noop" configuration is a single pipeline
-with a filelog receiver that points to a non-existing file and a logging
-exporter and the opamp extension. The purpose of the "noop"
+with an OTLP receiver that listens on a random port and a debug
+exporter, and the opamp extension. The purpose of the "noop"
 configuration is to make sure the Collector starts and the opamp
 extension communicates with the Supervisor.
 

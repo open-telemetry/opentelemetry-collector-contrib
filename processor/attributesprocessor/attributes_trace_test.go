@@ -91,7 +91,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
 		tt := testCases[i]
@@ -158,7 +158,7 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		Config: *createConfig(filterset.Strict),
 	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
@@ -226,7 +226,7 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 		Config:    *createConfig(filterset.Strict),
 	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
@@ -294,7 +294,7 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		Config:    *createConfig(filterset.Regexp),
 	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
@@ -353,7 +353,7 @@ func TestAttributes_Hash(t *testing.T) {
 	}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
@@ -456,7 +456,7 @@ func TestAttributes_Convert(t *testing.T) {
 	}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
