@@ -27,8 +27,8 @@ type Fileset[T Matchable] struct {
 	readers []T
 }
 
-func New[T Matchable](cap int) *Fileset[T] {
-	return &Fileset[T]{readers: make([]T, 0, cap)}
+func New[T Matchable](capacity int) *Fileset[T] {
+	return &Fileset[T]{readers: make([]T, 0, capacity)}
 }
 
 func (set *Fileset[T]) Len() int {
