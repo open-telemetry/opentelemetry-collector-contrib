@@ -25,7 +25,19 @@ type assertNoErrorHost struct {
 
 var _ component.Host = (*assertNoErrorHost)(nil)
 
-func TestComponentLifecycle(t *testing.T) {
+// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
+func newAssertNoErrorHost(t *testing.T) component.Host {
+	return &assertNoErrorHost{
+		componenttest.NewNopHost(),
+		t,
+	}
+}
+
+func (aneh *assertNoErrorHost) ReportFatalError(err error) {
+	assert.NoError(aneh, err)
+}
+
+func Test_ComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
