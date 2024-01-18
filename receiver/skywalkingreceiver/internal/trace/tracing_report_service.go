@@ -100,9 +100,10 @@ func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer c
 		return nil
 	}
 	ptd := skywalking.ProtoToTraces(segment)
+	count := ptd.SpanCount()
 	obsContext := obsreport.StartTracesOp(ctx)
 	err := consumer.ConsumeTraces(ctx, ptd)
-	obsreport.EndTracesOp(obsContext, format, ptd.SpanCount(), err)
+	obsreport.EndTracesOp(obsContext, format, count, err)
 	return err
 }
 
