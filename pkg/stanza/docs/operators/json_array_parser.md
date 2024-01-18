@@ -60,11 +60,11 @@ This parser can parse such headerless json array strings and match headers to th
 
 ### Embedded Operations
 
-The `headerless_jarray` can be configured to embed certain operations such as timestamp and severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
+The `json_array_parser` can be configured to embed certain operations such as timestamp and severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
 
 ### Example Configurations
 
-#### Parse the field `body` with a headerless jarray parser into attributes
+#### Parse the field `body` with a json array parser into attributes
 
 Configuration:
 
