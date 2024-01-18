@@ -38,7 +38,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }
 

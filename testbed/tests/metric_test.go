@@ -109,7 +109,7 @@ func TestMetricsFromFile(t *testing.T) {
 		// ItemsPerBatch is based on the data from the file.
 		ItemsPerBatch: dataProvider.ItemsPerBatch,
 	}
-	agentProc := testbed.NewChildProcessCollector()
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))

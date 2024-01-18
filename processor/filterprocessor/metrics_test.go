@@ -335,7 +335,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 				next,
 			)
 			assert.NotNil(t, fmp)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			caps := fmp.Capabilities()
 			assert.True(t, caps.MutatesData)
@@ -383,7 +383,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 			next,
 		)
 		assert.NotNil(t, fmp)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		caps := fmp.Capabilities()
 		assert.True(t, caps.MutatesData)
@@ -398,7 +398,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 				},
 			},
 		}))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		tel.assertMetrics(t, expectedMetrics{
 			metricDataPointsFiltered: float64(0),
@@ -412,7 +412,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 				},
 			},
 		}))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		tel.assertMetrics(t, expectedMetrics{
 			metricDataPointsFiltered: float64(1),
@@ -426,7 +426,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 				},
 			},
 		}))
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		tel.assertMetrics(t, expectedMetrics{
 			metricDataPointsFiltered: float64(2),

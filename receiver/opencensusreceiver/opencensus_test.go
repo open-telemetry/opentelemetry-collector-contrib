@@ -414,7 +414,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.NotNil(t, ocr)
 
 				ocr.traceConsumer = sink
@@ -565,7 +565,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.NotNil(t, ocr)
 
 				ocr.metricsConsumer = sink

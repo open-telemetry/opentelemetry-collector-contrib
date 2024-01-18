@@ -422,7 +422,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -447,7 +447,7 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
 
 	exprFunc, err := replaceAllPatterns[any](target, modeValue, "regexpattern", replacement, function)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
