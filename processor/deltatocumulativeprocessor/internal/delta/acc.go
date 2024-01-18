@@ -29,6 +29,10 @@ func (a *Accumulator) Aggregate(id streams.Ident, dp pmetric.NumberDataPoint) {
 		v.Int += dp.IntValue()
 	}
 
+	if dp.Timestamp().AsTime().After(v.Last.AsTime()) {
+		v.Last = dp.Timestamp()
+	}
+
 	a.vals[id] = v
 }
 
