@@ -26,6 +26,7 @@ const (
 	collectorHTTPTransport = "http"
 	grpcTransport          = "grpc"
 	failing                = "failing"
+	format                 = "protobuf"
 )
 
 type Receiver struct {
@@ -71,7 +72,7 @@ func (r *Receiver) Collect(stream agent.TraceSegmentReportService_CollectServer)
 			return err
 		}
 
-		err = consumeTraces(stream.Context(), segmentObject, r.nextConsumer)
+		err = consumeTraces(stream.Context(), segmentObject, r.nextConsumer, r.grpcObsrecv)
 		if err != nil {
 			return stream.SendAndClose(&common.Commands{})
 		}
@@ -85,7 +86,7 @@ func (r *Receiver) CollectInSync(ctx context.Context, segments *agent.SegmentCol
 		if err != nil {
 			fmt.Printf("cannot marshal segemnt from sync, %v", err)
 		}
-		err = consumeTraces(ctx, segment, r.nextConsumer)
+		err = consumeTraces(ctx, segment, r.nextConsumer, r.grpcObsrecv)
 		if err != nil {
 			fmt.Printf("cannot consume traces, %v", err)
 		}
@@ -94,12 +95,16 @@ func (r *Receiver) CollectInSync(ctx context.Context, segments *agent.SegmentCol
 	return &common.Commands{}, nil
 }
 
-func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer consumer.Traces) error {
+func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer consumer.Traces, obsreport *receiverhelper.ObsReport) error {
 	if segment == nil {
 		return nil
 	}
 	ptd := skywalking.ProtoToTraces(segment)
-	return consumer.ConsumeTraces(ctx, ptd)
+	count := ptd.SpanCount()
+	obsContext := obsreport.StartTracesOp(ctx)
+	err := consumer.ConsumeTraces(ctx, ptd)
+	obsreport.EndTracesOp(obsContext, format, count, err)
+	return err
 }
 
 func (r *Receiver) HTTPHandler(rsp http.ResponseWriter, req *http.Request) {
@@ -116,7 +121,7 @@ func (r *Receiver) HTTPHandler(rsp http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, segment := range data {
-		err = consumeTraces(req.Context(), segment, r.nextConsumer)
+		err = consumeTraces(req.Context(), segment, r.nextConsumer, r.grpcObsrecv)
 		if err != nil {
 			fmt.Printf("cannot consume traces, %v", err)
 		}

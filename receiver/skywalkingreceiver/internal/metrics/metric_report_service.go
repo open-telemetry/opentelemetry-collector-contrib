@@ -16,6 +16,7 @@ const (
 	collectorHTTPTransport = "http"
 	grpcTransport          = "grpc"
 	failing                = "failing"
+	format                 = "protobuf"
 )
 
 type Receiver struct {
@@ -52,18 +53,22 @@ func NewReceiver(nextConsumer consumer.Metrics, set receiver.CreateSettings) (*R
 
 // Collect implements the service Collect traces func.
 func (r *Receiver) Collect(ctx context.Context, jvmMetricCollection *agent.JVMMetricCollection) (*common.Commands, error) {
-	err := consumeMetrics(ctx, jvmMetricCollection, r.nextConsumer)
+	err := consumeMetrics(ctx, jvmMetricCollection, r.nextConsumer, r.grpcObsrecv)
 	if err != nil {
 		return &common.Commands{}, err
 	}
 	return &common.Commands{}, nil
 }
 
-func consumeMetrics(ctx context.Context, collection *agent.JVMMetricCollection, nextConsumer consumer.Metrics) error {
+func consumeMetrics(ctx context.Context, collection *agent.JVMMetricCollection, nextConsumer consumer.Metrics, obsreport *receiverhelper.ObsReport) error {
 	if collection == nil {
 		return nil
 	}
 	pmd := SwMetricsToMetrics(collection)
-	return nextConsumer.ConsumeMetrics(ctx, pmd)
+	count := pmd.MetricCount()
+	obsContext := obsreport.StartMetricsOp(ctx)
+	err := nextConsumer.ConsumeMetrics(ctx, pmd)
+	obsreport.EndMetricsOp(obsContext, format, count, err)
+	return err
 
 }
