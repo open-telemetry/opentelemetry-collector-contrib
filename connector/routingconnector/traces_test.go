@@ -58,12 +58,11 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 	require.Same(t, &defaultSink, rtConn.router.defaultConsumer)
 
-	route, ok := rtConn.router.routes[rtConn.router.table[0].Statement]
-	assert.True(t, ok)
-	require.Same(t, &sink0, route.consumer)
+	route := routingItem[consumer.Traces]{}
 
-	route, ok = rtConn.router.routes[rtConn.router.table[1].Statement]
-	assert.True(t, ok)
+	assert.NotPanics(t, func() { route = rtConn.router.routeSlice[0] })
+	require.Same(t, &sink0, route.consumer)
+	assert.NotPanics(t, func() { route = rtConn.router.routeSlice[1] })
 
 	routeConsumer, err := router.Consumer(traces0, traces1)
 	require.NoError(t, err)
@@ -156,6 +155,120 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 		assert.Len(t, defaultSink.AllTraces(), 0)
 		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 0)
+	})
+
+	t.Run("span matched by all expressions", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 2)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		rl = tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 3)
+		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span1")
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultSink.AllTraces(), 0)
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 1)
+
+		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, sink1.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, sink0.AllTraces(), sink1.AllTraces())
+	})
+
+	t.Run("span matched by one expression, multiple pipelines", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 5)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultSink.AllTraces(), 1)
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 0)
+
+		assert.Equal(t, defaultSink.AllTraces()[0].SpanCount(), 1)
+		assert.Equal(t, sink0.AllTraces()[0].SpanCount(), 1)
+		assert.Equal(t, defaultSink.AllTraces(), sink0.AllTraces())
+	})
+}
+
+func TestTracesAreCorrectlySplitIfRoutingStatementsAreSameString(t *testing.T) {
+	tracesDefault := component.NewIDWithName(component.DataTypeTraces, "default")
+	traces0 := component.NewIDWithName(component.DataTypeTraces, "0")
+	traces1 := component.NewIDWithName(component.DataTypeTraces, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []component.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 0 and attributes["value"] < 4`,
+				Pipelines: []component.ID{traces0},
+			},
+			{
+				Statement: `route() where attributes["value"] > 0 and attributes["value"] < 4`,
+				Pipelines: []component.ID{traces1},
+			},
+			{
+				Statement: `route() where attributes["value"] == 5`,
+				Pipelines: []component.ID{tracesDefault, traces0},
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.TracesSink
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		traces1:       &sink1,
+		traces0:       &sink0,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateTracesToTraces(
+		context.Background(),
+		connectortest.NewNopCreateSettings(),
+		cfg,
+		router.(consumer.Traces),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, conn.Shutdown(context.Background()))
+	}()
+
+	t.Run("span matched by 0 expressions", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 10)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultSink.AllTraces(), 1)
+		assert.Len(t, sink0.AllTraces(), 0)
 		assert.Len(t, sink1.AllTraces(), 0)
 	})
 

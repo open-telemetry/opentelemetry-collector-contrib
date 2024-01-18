@@ -30,7 +30,6 @@ type router[C any] struct {
 	parser ottl.Parser[ottlresource.TransformContext]
 
 	table      []RoutingTableItem
-	routes     map[string]routingItem[C]
 	routeSlice []routingItem[C]
 
 	defaultConsumer  C
@@ -58,7 +57,6 @@ func newRouter[C any](
 		logger:           settings.Logger,
 		parser:           parser,
 		table:            table,
-		routes:           make(map[string]routingItem[C]),
 		consumerProvider: provider,
 	}
 
@@ -116,21 +114,18 @@ func (r *router[C]) registerRouteConsumers() error {
 			return err
 		}
 
-		route, ok := r.routes[key(item)]
-		if !ok {
-			route.statement = statement
-		}
-
 		consumer, err := r.consumerProvider(item.Pipelines...)
 		if err != nil {
 			return fmt.Errorf("%w: %s", errPipelineNotFound, err.Error())
 		}
-		route.consumer = consumer
-		if !ok {
-			r.routeSlice = append(r.routeSlice, route)
+
+		route := routingItem[C]{
+			consumer:  consumer,
+			statement: statement,
 		}
 
-		r.routes[key(item)] = route
+		r.routeSlice = append(r.routeSlice, route)
+
 	}
 	return nil
 }
