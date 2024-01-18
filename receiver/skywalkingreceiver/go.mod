@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/confmap v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/consumer v0.92.1-0.20240117180253-4371e14440ee
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/receiver v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/semconv v0.92.1-0.20240117180253-4371e14440ee
@@ -26,7 +27,6 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -70,7 +70,6 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.92.1-0.20240117180253-4371e14440ee // indirect
 	go.opentelemetry.io/collector/extension v0.92.1-0.20240117180253-4371e14440ee // indirect
 	go.opentelemetry.io/collector/extension/auth v0.92.1-0.20240117180253-4371e14440ee // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
