@@ -59,7 +59,7 @@ transport.
 using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
 If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
-- `tls`: see [TLS Configuration Settings](../../config/configtls/README.md) for the full set of available options.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
 Example:
 
@@ -76,11 +76,9 @@ exporters:
       insecure: true
 ```
 
-By default, `zstd` compression is enabled at the gRPC level. See
-[compression
-comparison](../../config/configgrpc/README.md#compression-comparison)
-for details and benchmark information.  To disable gRPC-level
-compression, configure as follows:
+By default, `zstd` compression is enabled at the gRPC level.  See
+[compression configuration](#compression-configuration) below.  To
+disable gRPC-level compression, configure "none":
 
 ```yaml
 exporters:
@@ -145,9 +143,12 @@ exporters:
 When this is configured, the stream will terminate cleanly without
 causing retries, with `OK` gRPC status.
 
-[The corresponding `otelarrowreceiver` keepalive setting, that is
-compatible with the one above,
-reads](../../receiver/otelarrowreceiver/README.md):
+The corresponding `otelarrowreceiver` keepalive setting, that is
+compatible with the one above, reads:
+
+<!-- TODO add a link to the (../../receiver/otelarrowreceiver/README.md) section
+discussing this topic from the receiver perspective after both READMEs are present
+in collector-contrib -->
 
 ```
 receivers:
@@ -189,8 +190,14 @@ and the Arrow level.  The exporter metrics described above will be
 correct in either case.  The default settings are subject to change as
 we gain experience.
 
-The gRPC-level Zstd compression can be configured, however there is an
-important caveat.  The gRPC-Go library requires that compressor
+See the Collector [compression
+comparison](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configgrpc/README.md#compression-comparison)
+for general information about the choice of Zstd by default, for other
+general compression configuration and benchmark information.
+
+For the OpenTelemetry Protocol with Apache Arrow streams specifically,
+gRPC-level the Zstd compression level can be configured.  However, there
+is an important caveat: the gRPC-Go library requires that compressor
 implementations be registered statically.  These libraries use
 compressors named `zstdarrow1`, `zstdarrow2`, ..., `zstdarrow10`,
 supporting 10 configurable compression levels.  Note, however that
@@ -211,7 +218,12 @@ level](https://arrow.apache.org/docs/format/Columnar.html#format-ipc).
 
 - `payload_compression`: compression applied at the Arrow IPC level, "none" by default, "zstd" supported.
 
-Compression settings at the Arrow IPC level cannot be further configured.
+      payload_compression: zstd  # describes Arrow-IPC compression (default "none")
+
+Compression settings at the Arrow IPC level cannot be further
+configured.  We do not recommend configuring both payload and
+gRPC-level compression at once, hwoever these settings are
+independent.
 
 For example, two exporters may be configured with multiple zstd
 configurations, provided they use different levels:
@@ -223,7 +235,6 @@ exporters:
     arrow:
       zstd:
         level: 10      # describes gRPC-level compression level (default 5)
-      payload_compression: zstd  # describes Arrow-IPC compression (default "none")
   otelarrow/fastest:
     compression: zstd
     arrow:
