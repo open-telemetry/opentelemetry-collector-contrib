@@ -16,6 +16,7 @@ import (
 )
 
 var (
+	errUnspecifiedEndpoint  = errors.New("endpoint to an unspecified node type")
 	errBadOrMissingEndpoint = errors.New("missing a valid endpoint")
 	errBadScheme            = errors.New("endpoint scheme must be either http or https")
 	errMissingAuthExtension = errors.New("auth extension missing from config")
