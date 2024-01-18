@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package headerless_jarray // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jarray"
+package json_array // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jarray"
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"github.com/valyala/fastjson"
 )
 
-const operatorType = "headerless_jarray_parser"
+const operatorType = "json_array_parser"
 const jsonHeaderDelimiter = ","
 
 func init() {

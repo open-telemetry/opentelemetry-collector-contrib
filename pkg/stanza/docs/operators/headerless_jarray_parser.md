@@ -1,6 +1,6 @@
-## `headerless_jarray_parser` operator
+## `json_array_parser` operator
 
-The `headerless_jarray_parser` operator parses the string-type field selected by `parse_from` with the given header values.
+The `json_array_parser` operator parses the string-type field selected by `parse_from` with the given header values.
 A JArray string (or a json array string) is a string that represents a JSON array. A JSON array is a type of data structure that is used to store data in a structured way. It consists of an ordered list of values that can be either strings, numbers, objects, or even other arrays.
 #### Examples:
 a simple Jarray string with strictly strings in it:
@@ -48,7 +48,7 @@ This parser can parse such headerless json array strings and match headers to th
 
 | Field              | Default                                  | Description                                                                                                                                       |
 |--------------------|------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `id`               | `headerless_jarray_parser`                             | A unique identifier for the operator.                                                                                                             |
+| `id`               | `json_array_parser`                             | A unique identifier for the operator.                                                                                                             |
 | `output`           | Next in pipeline                         | The connected operator(s) that will receive all outbound entries.                                                                                 |
 | `header`           | required when `header_attribute` not set | A string of delimited field names                                                                                                                 |
 | `header_attribute` | required when `header` not set           | An attribute name to read the header field from, to support dynamic field names                                                                   |
@@ -69,7 +69,7 @@ The `headerless_jarray` can be configured to embed certain operations such as ti
 Configuration:
 
 ```yaml
-- type: headerless_jarray_parser
+- type: json_array_parser
   parse_from: body
   parse_to: attributes
   header: id,severity,message,isExample
@@ -109,7 +109,7 @@ Configuration:
 Configuration:
 
 ```yaml
-- type: headerless_jarray_parser
+- type: json_array_parser
   header: id,severity,message,isExample
 ```
 

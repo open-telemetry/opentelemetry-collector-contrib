@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package headerless_jarray
+package json_array
 
 import (
 	"context"
