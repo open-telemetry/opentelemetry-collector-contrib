@@ -17,6 +17,8 @@ func TransformHostMetricsForElasticCompatibilty(scopeMetrics pmetric.ScopeMetric
 		return transformCPUMetrics(scopeMetrics.Metrics())
 	case "memory":
 		return transformMemoryMetrics(scopeMetrics.Metrics())
+	case "load":
+		return transformLoadMetrics(scopeMetrics.Metrics())
 	default:
 		return fmt.Errorf("no matching transform function found for scope '%s'", scopeName)
 	}
