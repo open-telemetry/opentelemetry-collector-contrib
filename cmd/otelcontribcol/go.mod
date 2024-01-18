@@ -155,6 +155,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.92.0
@@ -1191,3 +1192,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opam
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter => ../../testbed/mockdatasenders/mockdatadogagentexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../testbed
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
