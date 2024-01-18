@@ -8,14 +8,14 @@ import (
 	"errors"
 	"fmt"
 
-	"google.golang.org/grpc"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 )
 
 // baseExporter is used as the basis for all OpenTelemetry signal types.
@@ -29,10 +29,10 @@ type baseExporter struct {
 	// TODO: implementation
 }
 
-type streamClientFactory func(cfg *Config, conn *grpc.ClientConn) arrow.StreamClientFunc
+type streamClientFactory func(conn *grpc.ClientConn) arrow.StreamClientFunc
 
 // newExporter configures a new exporter using the associated stream factory for Arrow.
-func newExporter(cfg component.Config, set exporter.CreateSettings, streamClientFactory streamClientFactory) (*baseExporter, error) {
+func newExporter(cfg component.Config, set exporter.CreateSettings, _ streamClientFactory) (*baseExporter, error) {
 	// TODO: Implementation.
 	oCfg, ok := cfg.(*Config)
 	if !ok {
@@ -57,22 +57,22 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	return nil
 }
 
-func (e *baseExporter) shutdown(ctx context.Context) error {
+func (e *baseExporter) shutdown(_ context.Context) error {
 	// TODO: Implementation.
 	return nil
 }
 
-func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+func (e *baseExporter) pushTraces(_ context.Context, _ ptrace.Traces) error {
 	// TODO: Implementation.
 	return nil
 }
 
-func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e *baseExporter) pushMetrics(_ context.Context, _ pmetric.Metrics) error {
 	// TODO: Implementation.
 	return nil
 }
 
-func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+func (e *baseExporter) pushLogs(_ context.Context, _ plog.Logs) error {
 	// TODO: Implementation.
 	return nil
 }

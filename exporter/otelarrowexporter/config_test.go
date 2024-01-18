@@ -13,12 +13,12 @@ import (
 	"github.com/open-telemetry/otel-arrow/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -45,7 +45,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 10 * time.Second,
 			},
-			RetrySettings: exporterhelper.RetrySettings{
+			RetrySettings: configretry.BackOffConfig{
 				Enabled:             true,
 				InitialInterval:     10 * time.Second,
 				RandomizationFactor: 0.7,

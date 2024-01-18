@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/open-telemetry/otel-arrow/collector/testutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -31,7 +31,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetrySettings, exporterhelper.NewDefaultRetrySettings())
+	assert.Equal(t, ocfg.RetrySettings, configretry.NewDefaultBackOffConfig())
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
 	assert.Equal(t, ocfg.Compression, configcompression.Zstd)
@@ -185,7 +185,8 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopCreateSettings()
-			consumer, err := factory.CreateTracesExporter(context.Background(), set, &tt.config)
+			config := tt.config
+			consumer, err := factory.CreateTracesExporter(context.Background(), set, &config)
 			if tt.mustFailOnCreate {
 				assert.NotNil(t, err)
 				return
