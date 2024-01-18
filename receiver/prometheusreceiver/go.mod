@@ -17,9 +17,9 @@ require (
 	go.opentelemetry.io/collector/confmap v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/consumer v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/exporter v0.92.1-0.20240117180253-4371e14440ee
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8
 	go.opentelemetry.io/collector/otelcol v0.92.1-0.20240117180253-4371e14440ee
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240117180253-4371e14440ee
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240118172122-8131d31601b8
 	go.opentelemetry.io/collector/processor v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/processor/batchprocessor v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/receiver v0.92.1-0.20240117180253-4371e14440ee

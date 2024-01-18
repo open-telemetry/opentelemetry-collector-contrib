@@ -50,8 +50,8 @@ require (
 	go.opentelemetry.io/collector v0.92.1-0.20240117180253-4371e14440ee // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240117180253-4371e14440ee // indirect
 	go.opentelemetry.io/collector/extension v0.92.1-0.20240117180253-4371e14440ee // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee // indirect
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240117180253-4371e14440ee // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.44.1-0.20231201153405-6027c1ae76f2 // indirect
 	go.opentelemetry.io/otel/sdk v1.21.0 // indirect

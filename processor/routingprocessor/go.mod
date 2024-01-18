@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/exporter v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.92.1-0.20240117180253-4371e14440ee
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240117180253-4371e14440ee
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240118172122-8131d31601b8
 	go.opentelemetry.io/collector/processor v0.92.1-0.20240117180253-4371e14440ee
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/metric v1.21.0
@@ -72,7 +72,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.92.1-0.20240117180253-4371e14440ee // indirect
 	go.opentelemetry.io/collector/extension v0.92.1-0.20240117180253-4371e14440ee // indirect
 	go.opentelemetry.io/collector/extension/auth v0.92.1-0.20240117180253-4371e14440ee // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/receiver v0.92.1-0.20240117180253-4371e14440ee // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.44.1-0.20231201153405-6027c1ae76f2 // indirect
