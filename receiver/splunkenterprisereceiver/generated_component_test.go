@@ -6,6 +6,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -15,7 +16,27 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func TestComponentLifecycle(t *testing.T) {
+// assertNoErrorHost implements a component.Host that asserts that there were no errors.
+type assertNoErrorHost struct {
+	component.Host
+	*testing.T
+}
+
+var _ component.Host = (*assertNoErrorHost)(nil)
+
+// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
+func newAssertNoErrorHost(t *testing.T) component.Host {
+	return &assertNoErrorHost{
+		componenttest.NewNopHost(),
+		t,
+	}
+}
+
+func (aneh *assertNoErrorHost) ReportFatalError(err error) {
+	assert.NoError(aneh, err)
+}
+
+func Test_ComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {

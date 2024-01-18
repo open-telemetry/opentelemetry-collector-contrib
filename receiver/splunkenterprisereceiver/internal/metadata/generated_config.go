@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms)
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}

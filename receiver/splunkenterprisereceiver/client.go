@@ -5,6 +5,7 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -13,32 +14,63 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// Indexer type "enum". Included in context sent from scraper functions
+const (
+	typeIdx = "IDX"
+	typeSh  = "SH"
+	typeCm  = "CM"
+)
+
+var (
+	errCtxMissingEndpointType = errors.New("context was passed without the endpoint type included")
+)
+
+// Type wrapper for accessing context value
+type endpointType string
+
 type splunkEntClient struct {
-	client   *http.Client
-	endpoint *url.URL
+	client    *http.Client
+	endpoints map[any]*url.URL
 }
 
-func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
-	client, err := cfg.ClientConfig.ToClient(h, s)
+func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
+	endpoints := make(map[any]*url.URL)
+	client, err := cfg.HTTPClientSettings.ToClient(h, s)
 	if err != nil {
 		return nil, err
 	}
 
-	endpoint, _ := url.Parse(cfg.Endpoint)
+	// if the endpoint is defined, put it in the endpoints map for later use
+	// we already checked that url.Parse does not fail in cfg.Validate()
+	if cfg.IdxEndpoint != "" {
+		endpoints[typeIdx], _ = url.Parse(cfg.IdxEndpoint)
+	}
+	if cfg.SHEndpoint != "" {
+		endpoints[typeSh], _ = url.Parse(cfg.SHEndpoint)
+	}
+	if cfg.CMEndpoint != "" {
+		endpoints[typeCm], _ = url.Parse(cfg.CMEndpoint)
+	}
 
 	return &splunkEntClient{
-		client:   client,
-		endpoint: endpoint,
+		client:    client,
+		endpoints: endpoints,
 	}, nil
 }
 
 // For running ad hoc searches only
 func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse) (*http.Request, error) {
+	// get endpoint type from the context
+	eptType := ctx.Value(endpointType("type"))
+	if eptType == nil {
+		return nil, errCtxMissingEndpointType
+	}
+
 	// Running searches via Splunk's REST API is a two step process: First you submit the job to run
 	// this returns a jobid which is then used in the second part to retrieve the search results
 	if sr.Jobid == nil {
 		path := "/services/search/jobs/"
-		url, _ := url.JoinPath(c.endpoint.String(), path)
+		url, _ := url.JoinPath(c.endpoints[eptType].String(), path)
 
 		// reader for the response data
 		data := strings.NewReader(sr.search)
@@ -52,7 +84,7 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 		return req, nil
 	}
 	path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
-	url, _ := url.JoinPath(c.endpoint.String(), path)
+	url, _ := url.JoinPath(c.endpoints[eptType].String(), path)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -63,7 +95,13 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 }
 
 func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint string) (*http.Request, error) {
-	url := c.endpoint.String() + apiEndpoint
+	// get endpoint type from the context
+	eptType := ctx.Value(endpointType("type"))
+	if eptType == nil {
+		return nil, errCtxMissingEndpointType
+	}
+
+	url := c.endpoints[eptType].String() + apiEndpoint
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
