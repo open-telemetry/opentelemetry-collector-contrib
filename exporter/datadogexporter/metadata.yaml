@@ -16,4 +16,8 @@ tests:
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       site: datadoghq.eu
+    sending_queue:
+      enabled: false
+    retry_on_failure:
+      enabled: false
   expect_consumer_error: true
