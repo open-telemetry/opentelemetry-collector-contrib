@@ -6,6 +6,7 @@
 package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -103,8 +104,8 @@ func (pc *perfCounter) Path() string {
 
 func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 	if err := pc.query.CollectData(); err != nil {
-		pdhErr, ok := err.(*win_perf_counters.PdhError)
-		if !ok || pdhErr.ErrorCode != win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR {
+		var pdhErr *win_perf_counters.PdhError
+		if !errors.As(err, &pdhErr) || pdhErr.ErrorCode != win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR {
 			return nil, fmt.Errorf("failed to collect data for performance counter '%s': %w", pc.path, err)
 		}
 
