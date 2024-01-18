@@ -724,7 +724,7 @@ func TestPushTraceData(t *testing.T) {
 			}
 
 			err := s.pushTraceData(context.Background(), test.td)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, test.called, transport.called)
 		})
 	}

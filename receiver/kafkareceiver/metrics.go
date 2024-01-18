@@ -11,6 +11,7 @@ import (
 
 var (
 	tagInstanceName, _ = tag.NewKey("name")
+	tagPartition, _    = tag.NewKey("partition")
 
 	statMessageCount     = stats.Int64("kafka_receiver_messages", "Number of received messages", stats.UnitDimensionless)
 	statMessageOffset    = stats.Int64("kafka_receiver_current_offset", "Current message offset", stats.UnitDimensionless)
@@ -26,13 +27,14 @@ var (
 
 // metricViews return metric views for Kafka receiver.
 func metricViews() []*view.View {
-	tagKeys := []tag.Key{tagInstanceName}
+	partitionAgnosticTagKeys := []tag.Key{tagInstanceName}
+	partitionSpecificTagKeys := []tag.Key{tagInstanceName, tagPartition}
 
 	countMessages := &view.View{
 		Name:        statMessageCount.Name(),
 		Measure:     statMessageCount,
 		Description: statMessageCount.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionSpecificTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -40,7 +42,7 @@ func metricViews() []*view.View {
 		Name:        statMessageOffset.Name(),
 		Measure:     statMessageOffset,
 		Description: statMessageOffset.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionSpecificTagKeys,
 		Aggregation: view.LastValue(),
 	}
 
@@ -48,7 +50,7 @@ func metricViews() []*view.View {
 		Name:        statMessageOffsetLag.Name(),
 		Measure:     statMessageOffsetLag,
 		Description: statMessageOffsetLag.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionSpecificTagKeys,
 		Aggregation: view.LastValue(),
 	}
 
@@ -56,7 +58,7 @@ func metricViews() []*view.View {
 		Name:        statPartitionStart.Name(),
 		Measure:     statPartitionStart,
 		Description: statPartitionStart.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionAgnosticTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -64,7 +66,7 @@ func metricViews() []*view.View {
 		Name:        statPartitionClose.Name(),
 		Measure:     statPartitionClose,
 		Description: statPartitionClose.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionAgnosticTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -72,7 +74,7 @@ func metricViews() []*view.View {
 		Name:        statUnmarshalFailedMetricPoints.Name(),
 		Measure:     statUnmarshalFailedMetricPoints,
 		Description: statUnmarshalFailedMetricPoints.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionAgnosticTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -80,7 +82,7 @@ func metricViews() []*view.View {
 		Name:        statUnmarshalFailedLogRecords.Name(),
 		Measure:     statUnmarshalFailedLogRecords,
 		Description: statUnmarshalFailedLogRecords.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionAgnosticTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -88,7 +90,7 @@ func metricViews() []*view.View {
 		Name:        statUnmarshalFailedSpans.Name(),
 		Measure:     statUnmarshalFailedSpans,
 		Description: statUnmarshalFailedSpans.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionAgnosticTagKeys,
 		Aggregation: view.Sum(),
 	}
 

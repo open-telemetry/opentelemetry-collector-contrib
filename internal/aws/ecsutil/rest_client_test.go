@@ -32,7 +32,7 @@ func TestRestClientFromClient(t *testing.T) {
 	rest := NewRestClientFromClient(&fakeClient{})
 	metadata, err := rest.GetResponse(endpoints.TaskMetadataPath)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, endpoints.TaskMetadataPath, string(metadata))
 }
 

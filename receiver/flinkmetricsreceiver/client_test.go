@@ -175,7 +175,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 				require.Equal(t, expected, &actual.Metrics)
 
 				hostname, err := os.Hostname()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.EqualValues(t, hostname, actual.Host)
 			},
 		},
@@ -378,7 +378,7 @@ func TestGetJobsMetrics(t *testing.T) {
 				require.EqualValues(t, "State machine job", actual[0].JobName)
 
 				hostname, err := os.Hostname()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.EqualValues(t, hostname, actual[0].Host)
 			},
 		},
