@@ -11,14 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFilesetCorrectnessReader(t *testing.T) {
-	New[*reader.Reader](10)
-}
-
-func TestFilesetCorrectnessMetadata(t *testing.T) {
-	New[*reader.Metadata](10)
-}
-
 type testOp func(t *testing.T)
 
 type test[T Matchable] struct {

@@ -8,9 +8,15 @@ import (
 	"slices"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
 var errFilesetEmpty = errors.New("pop() on empty Fileset")
+
+var (
+	_ Matchable = (*reader.Reader)(nil)
+	_ Matchable = (*reader.Metadata)(nil)
+)
 
 type Matchable interface {
 	GetFingerprint() *fingerprint.Fingerprint
