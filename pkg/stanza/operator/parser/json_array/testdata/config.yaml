@@ -1,17 +1,17 @@
 basic:
-  type: headerless_jarray_parser
+  type: json_array_parser
   parse_from: body.message
   header: id,severity,message
 header_attribute:
-  type: headerless_jarray_parser
+  type: json_array_parser
   parse_from: body.message
   header_attribute: header_field
 parse_to_attributes:
-  type: headerless_jarray_parser
+  type: json_array_parser
   parse_to: attributes
 parse_to_body:
-  type: headerless_jarray_parser
+  type: json_array_parser
   parse_to: body
 parse_to_resource:
-  type: headerless_jarray_parser
+  type: json_array_parser
   parse_to: resource
