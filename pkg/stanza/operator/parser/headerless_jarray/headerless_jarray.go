@@ -18,6 +18,7 @@ import (
 )
 
 const operatorType = "headerless_jarray_parser"
+const jsonHeaderDelimiter = ","
 
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
@@ -40,7 +41,6 @@ type Config struct {
 	helper.ParserConfig `mapstructure:",squash"`
 
 	Header          string `mapstructure:"header"`
-	HeaderDelimiter string `mapstructure:"header_delimiter"`
 	HeaderAttribute string `mapstructure:"header_attribute"`
 }
 
@@ -51,45 +51,34 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	if c.HeaderDelimiter == "" {
-		c.HeaderDelimiter = ","
-	}
-
-	headerDelimiter := []rune(c.HeaderDelimiter)[0]
-
-	if len([]rune(c.HeaderDelimiter)) != 1 {
-		return nil, fmt.Errorf("invalid 'header_delimiter': '%s'", c.HeaderDelimiter)
-	}
-
-	var headers []string
-	switch {
-	case c.Header == "" && c.HeaderAttribute == "":
+	if c.Header == "" && c.HeaderAttribute == "" {
 		return nil, errors.New("missing required field 'header' or 'header_attribute'")
-	case c.Header != "" && c.HeaderAttribute != "":
+	}
+	if c.Header != "" && c.HeaderAttribute != "" {
 		return nil, errors.New("only one header parameter can be set: 'header' or 'header_attribute'")
-	case c.Header != "" && !strings.Contains(c.Header, c.HeaderDelimiter):
+	}
+	if c.Header != "" && !strings.Contains(c.Header, jsonHeaderDelimiter) {
 		return nil, errors.New("missing field delimiter in header")
-	case c.Header != "":
-		headers = strings.Split(c.Header, c.HeaderDelimiter)
 	}
 
 	pp := &fastjson.ParserPool{}
-
-	return &Parser{
+	p := &Parser{
 		ParserOperator:  parserOperator,
-		header:          headers,
 		headerAttribute: c.HeaderAttribute,
-		headerDelimiter: headerDelimiter,
-		parse:           generateJarrayParseFunc(headers, pp),
 		pp:              pp,
-	}, nil
+	}
+
+	if c.Header != "" {
+		p.parse = generateJarrayParseFunc(strings.Split(c.Header, jsonHeaderDelimiter), pp)
+	}
+
+	return p, nil
+
 }
 
 // Parser is an operator that parses jarray in an entry.
 type Parser struct {
 	helper.ParserOperator
-	headerDelimiter rune
-	header          []string
 	headerAttribute string
 	parse           parseFunc
 	pp              *fastjson.ParserPool
@@ -99,26 +88,26 @@ type parseFunc func(any) (any, error)
 
 // Process will parse an entry for jarray.
 func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
-	parse := r.parse
-
-	// If we have a headerAttribute set we need to dynamically generate our parser function
-	if r.headerAttribute != "" {
-		h, ok := e.Attributes[r.headerAttribute]
-		if !ok {
-			err := fmt.Errorf("failed to read dynamic header attribute %s", r.headerAttribute)
-			r.Error(err)
-			return err
-		}
-		headerString, ok := h.(string)
-		if !ok {
-			err := fmt.Errorf("header is expected to be a string but is %T", h)
-			r.Error(err)
-			return err
-		}
-		headers := strings.Split(headerString, string([]rune{r.headerDelimiter}))
-		parse = generateJarrayParseFunc(headers, r.pp)
+	// Static parse function
+	if r.parse != nil {
+		return r.ParserOperator.ProcessWith(ctx, e, r.parse)
 	}
 
+	// Dynamically generate the parse function based on a header attribute
+	h, ok := e.Attributes[r.headerAttribute]
+	if !ok {
+		err := fmt.Errorf("failed to read dynamic header attribute %s", r.headerAttribute)
+		r.Error(err)
+		return err
+	}
+	headerString, ok := h.(string)
+	if !ok {
+		err := fmt.Errorf("header is expected to be a string but is %T", h)
+		r.Error(err)
+		return err
+	}
+	headers := strings.Split(headerString, jsonHeaderDelimiter)
+	parse := generateJarrayParseFunc(headers, r.pp)
 	return r.ParserOperator.ProcessWith(ctx, e, parse)
 }
 

@@ -173,8 +173,7 @@ func TestParserJarray(t *testing.T) {
 		{
 			"advanced",
 			func(p *Config) {
-				p.Header = "name;address;age;phone;position"
-				p.HeaderDelimiter = ";"
+				p.Header = "name,address,age,phone,position"
 			},
 			[]entry.Entry{
 				{
@@ -213,35 +212,6 @@ func TestParserJarray(t *testing.T) {
 				{
 					Attributes: map[string]interface{}{
 						"Fields": "name,age,height,number",
-						"name":   "stanza dev",
-						"age":    int64(1),
-						"height": int64(400),
-						"number": "555-555-5555",
-					},
-					Body: "[\"stanza dev\",1,400,\"555-555-5555\"]",
-				},
-			},
-			false,
-			false,
-		},
-		{
-			"dynamic-fields-header-delimiter",
-			func(p *Config) {
-				p.HeaderAttribute = "Fields"
-				p.HeaderDelimiter = "|"
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "name|age|height|number",
-					},
-					Body: "[\"stanza dev\",1,400,\"555-555-5555\"]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "name|age|height|number",
 						"name":   "stanza dev",
 						"age":    int64(1),
 						"height": int64(400),
@@ -432,32 +402,6 @@ func TestParserJarray(t *testing.T) {
 			},
 			false,
 			true,
-		},
-		{
-			"invalid-header-delimiter",
-			func(p *Config) {
-				// expect []rune of length 1
-				p.Header = "name,,age,,height,,number"
-				p.HeaderDelimiter = ",,"
-			},
-			[]entry.Entry{
-				{
-					Body: "[\"stanza\",1,400,\"555-555-5555\"]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"name":   "stanza",
-						"age":    int64(1),
-						"height": int64(400),
-						"number": "555-555-5555",
-					},
-					Body: "[\"stanza\",1,400,\"555-555-5555\"]",
-				},
-			},
-			true,
-			false,
 		},
 		{
 			"parse-failure-num-fields-mismatch",
@@ -744,12 +688,5 @@ func TestBuildParserJarray(t *testing.T) {
 		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "missing field delimiter in header")
-	})
-
-	t.Run("InvalidHeaderFieldWrongDelimiter", func(t *testing.T) {
-		c := newBasicParser()
-		c.Header = "name;position;number"
-		_, err := c.Build(testutil.Logger(t))
-		require.Error(t, err)
 	})
 }

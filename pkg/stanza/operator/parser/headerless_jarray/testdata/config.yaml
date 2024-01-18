@@ -2,10 +2,6 @@ basic:
   type: headerless_jarray_parser
   parse_from: body.message
   header: id,severity,message
-header_delimiter:
-  type: headerless_jarray_parser
-  header: "id\tseverity\tmessage"
-  header_delimiter: "\t"
 header_attribute:
   type: headerless_jarray_parser
   parse_from: body.message
