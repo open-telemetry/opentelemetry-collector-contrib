@@ -65,9 +65,10 @@ func consumeMetrics(ctx context.Context, collection *agent.JVMMetricCollection, 
 		return nil
 	}
 	pmd := SwMetricsToMetrics(collection)
+	count := pmd.MetricCount()
 	obsContext := obsreport.StartMetricsOp(ctx)
 	err := nextConsumer.ConsumeMetrics(ctx, pmd)
-	obsreport.EndMetricsOp(obsContext, format, pmd.MetricCount(), err)
+	obsreport.EndMetricsOp(obsContext, format, count, err)
 	return err
 
 }
