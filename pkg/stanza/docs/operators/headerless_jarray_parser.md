@@ -41,7 +41,7 @@ Notice that for this example, the current parser will parse every nested object 
 More information on json arrays can be found [here](https://json-schema.org/understanding-json-schema/reference/array)
 
 #### Adding headers:
-This parser give the ability to parse such headerless json array strings and to match headers to them. Examples can be seen under Example Configurations section
+This parser can parse such headerless json array strings and to match headers to them. Examples can be seen under Example Configurations section
 
 
 ### Configuration Fields
