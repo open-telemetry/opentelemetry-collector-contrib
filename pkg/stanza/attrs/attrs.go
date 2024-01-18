@@ -3,9 +3,22 @@
 
 package attrs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/attrs"
 
+import fca "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
+
 const (
-	LogFileName         = "log.file.name"
-	LogFilePath         = "log.file.path"
-	LogFileNameResolved = "log.file.name_resolved"
-	LogFilePathResolved = "log.file.path_resolved"
+	// Deprecated: [v0.93.0] Use pkg/stanza/fileconsumer/attrs.LogFileName instead.
+	// Will be removed in v0.94.0.
+	LogFileName = fca.LogFileName
+
+	// Deprecated: [v0.92.0] Use pkg/stanza/fileconsumer/attrs.LogFilePath instead.
+	// Will be removed in v0.94.0.
+	LogFilePath = fca.LogFilePath
+
+	// Deprecated: [v0.92.0] Use pkg/stanza/fileconsumer/attrs.LogFileNameResolved instead.
+	// Will be removed in v0.94.0.
+	LogFileNameResolved = fca.LogFileNameResolved
+
+	// Deprecated: [v0.92.0] Use pkg/stanza/fileconsumer/attrs.LogFilePathResolved instead.
+	// Will be removed in v0.94.0.
+	LogFilePathResolved = fca.LogFilePathResolved
 )

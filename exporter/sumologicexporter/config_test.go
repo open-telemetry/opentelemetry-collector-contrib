@@ -109,7 +109,7 @@ func TestConfigValidation(t *testing.T) {
 			if tc.expectedErr == "" {
 				assert.NoError(t, err)
 			} else {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				assert.EqualError(t, err, tc.expectedErr)
 			}
 		})

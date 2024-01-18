@@ -234,13 +234,14 @@ func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	numReceivedSpans := td.SpanCount()
 	consumerErr := zr.nextConsumer.ConsumeTraces(ctx, td)
 
 	receiverTagValue := zipkinV2TagValue
 	if asZipkinv1 {
 		receiverTagValue = zipkinV1TagValue
 	}
-	obsrecv.EndTracesOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
+	obsrecv.EndTracesOp(ctx, receiverTagValue, numReceivedSpans, consumerErr)
 	if consumerErr == nil {
 		// Send back the response "Accepted" as
 		// required at https://zipkin.io/zipkin-api/#/default/post_spans

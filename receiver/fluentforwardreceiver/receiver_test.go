@@ -45,7 +45,7 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 
 	connect := func() net.Conn {
 		conn, err := net.Dial("tcp", receiver.(*fluentReceiver).listener.Addr().String())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		return conn
 	}
 

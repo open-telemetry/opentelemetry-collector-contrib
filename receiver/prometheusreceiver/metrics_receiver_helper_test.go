@@ -128,7 +128,7 @@ type testData struct {
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
 // config
-func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
+func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error) {
 	jobs := make([]map[string]any, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
 	metricPaths := make([]string, len(tds))
@@ -163,7 +163,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 		t.attributes = internal.CreateResource(t.name, u.Host, l).Attributes()
 	}
 	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
-	return mp, pCfg, err
+	return mp, (*PromConfig)(pCfg), err
 }
 
 func waitForScrapeResults(t *testing.T, targets []*testData, cms *consumertest.MetricsSink) {
@@ -608,7 +608,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config), cfgMuts ...func(*promcfg.Config)) {
+func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config), cfgMuts ...func(*PromConfig)) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
