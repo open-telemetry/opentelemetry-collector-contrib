@@ -6,9 +6,13 @@ info:
     name: MIT
 servers:
   - url: "http://api.petstore.io/v1"
+    x-service-name: petstore
   - url: "http://api.petstore.io/v2"
+    x-service-name: petstore
   - url: http://staging.petstore.io/v1
+    x-service-name: petstore-staging
   - url: http://staging.petstore.io/v2
+    x-service-name: petstore-staging
 paths:
   /pets:
     get:

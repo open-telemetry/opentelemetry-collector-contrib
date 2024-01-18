@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -26,17 +27,21 @@ import (
 )
 
 const (
-	httpSchemeAttribute         = "http.scheme"
-	httpHostAttribute           = "http.host"
-	httpTargetAttribute         = "http.target"
-	httpMethodAttribute         = "http.method"
-	httpRouteAttribute          = "http.route"
-	openAPIAttributePrefix      = "openapi."
-	openAPIOperationIDAttribute = "openapi.operation_id"
-	openAPIDeprecatedAttribute  = "openapi.deprecated"
+	urlSchemeAttributeKey          = "url.scheme"
+	urlFullAttributeKey            = "url.full"
+	urlPathAttributeKey            = "url.path"
+	urlQueryAttributeKey           = "url.query"
+	serverAddressAttributeKey      = "server.address"
+	httpRequestMethodAttributeKey  = "http.request.method"
+	httpTargetAttributeKey         = "http.target"
+	httpRouteAttributeKey          = "http.route"
+	serviceNameAttributeKey        = "service.name"
+	openAPIAttributePrefix         = "openapi."
+	openAPIOperationIDAttributeKey = "openapi.operation_id"
+	openAPIDeprecatedAttributeKey  = "openapi.deprecated"
 )
 
-func buildFullTarget(scheme string, host string, target string) string {
+func buildFullTarget(scheme string, host string, target string, query string) string {
 
 	// Check if the target already has a scheme
 	if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
@@ -48,7 +53,12 @@ func buildFullTarget(scheme string, host string, target string) string {
 		return scheme + "://" + target
 	}
 
-	return scheme + "://" + host + target
+	fullUrl := scheme + "://" + host + target
+	if query != "" {
+		fullUrl += "?" + query
+	}
+
+	return fullUrl
 }
 
 type apiDirectoryResponse struct {
@@ -56,13 +66,14 @@ type apiDirectoryResponse struct {
 }
 
 type openAPIProcessor struct {
-	ctx               context.Context
-	nextConsumer      consumer.Traces
-	logger            *zap.Logger
-	apiReloadTicker   timeutils.TTicker
-	apiReloadInterval time.Duration
-	routers           unsafe.Pointer
-	cfg               Config
+	ctx                context.Context
+	nextConsumer       consumer.Traces
+	logger             *zap.Logger
+	apiReloadTicker    timeutils.TTicker
+	apiReloadInterval  time.Duration
+	routers            unsafe.Pointer
+	serviceHostMapping unsafe.Pointer
+	cfg                Config
 }
 
 func newTracesProcessor(ctx context.Context, settings component.TelemetrySettings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
@@ -86,12 +97,23 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 	emptyRouters := make(map[string]*Router)
 	oap.swapRouters(&emptyRouters)
 
+	emptyServiceHostMapping := make(map[string]string)
+	oap.swapServiceHostMapping(&emptyServiceHostMapping)
+
 	oap.loadApis()
 	if oap.hasRemoteApis() && oap.apiReloadInterval > 0 {
 		oap.apiReloadTicker = &timeutils.PolicyTicker{OnTickFunc: oap.loadApis}
 	}
 
 	return oap, nil
+}
+
+func (oap *openAPIProcessor) loadServiceHostMapping() *map[string]string {
+	return (*map[string]string)(atomic.LoadPointer(&oap.serviceHostMapping))
+}
+
+func (oap *openAPIProcessor) swapServiceHostMapping(newServiceHostMapping *map[string]string) {
+	atomic.StorePointer(&oap.serviceHostMapping, unsafe.Pointer(newServiceHostMapping))
 }
 
 func (oap *openAPIProcessor) loadRouters() *map[string]*Router {
@@ -113,6 +135,7 @@ func (oap *openAPIProcessor) hasRemoteApis() bool {
 // Start is invoked during service startup.
 func (oap *openAPIProcessor) Start(context.Context, component.Host) error {
 	if oap.apiReloadTicker != nil {
+		oap.logger.Info("Starting OpenAPI processor reload ticker")
 		oap.apiReloadTicker.Start(oap.apiReloadInterval)
 	}
 	return nil
@@ -121,6 +144,7 @@ func (oap *openAPIProcessor) Start(context.Context, component.Host) error {
 // Shutdown is invoked during service shutdown.
 func (oap *openAPIProcessor) Shutdown(context.Context) error {
 	if oap.apiReloadTicker != nil {
+		oap.logger.Info("Stopping OpenAPI processor reload ticker")
 		oap.apiReloadTicker.Stop()
 	}
 	return nil
@@ -132,6 +156,16 @@ func (oap *openAPIProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces
 		return err
 	}
 	return oap.nextConsumer.ConsumeTraces(ctx, td)
+}
+
+func (oap *openAPIProcessor) getHostFromServiceName(resourceSpan ptrace.ResourceSpans) string {
+	serviceName, ok := resourceSpan.Resource().Attributes().Get(serviceNameAttributeKey)
+	if !ok {
+		return ""
+	}
+
+	serviceHostMapping := oap.loadServiceHostMapping()
+	return (*serviceHostMapping)[serviceName.AsString()]
 }
 
 func (oap *openAPIProcessor) processTraces(_ context.Context, td ptrace.Traces) error {
@@ -148,30 +182,59 @@ func (oap *openAPIProcessor) processTraces(_ context.Context, td ptrace.Traces) 
 					continue
 				}
 
-				httpScheme, ok := span.Attributes().Get(httpSchemeAttribute)
-				if !ok {
-					continue
-				}
-
+				var host string
 				// Get the http host attribute
-				httpHost, ok := span.Attributes().Get(httpHostAttribute)
+				serverAddressAttr, ok := span.Attributes().Get(serverAddressAttributeKey)
+				if !ok {
+					host = oap.getHostFromServiceName(resourceSpan)
+				} else {
+					host = serverAddressAttr.AsString()
+					// If host value is IP try serviceName
+					if net.ParseIP(host) != nil || host == "" {
+						host = oap.getHostFromServiceName(resourceSpan)
+					}
+				}
+
+				if host == "" {
+					continue
+				}
+
+				httpRequestMethodAttr, ok := span.Attributes().Get(httpRequestMethodAttributeKey)
 				if !ok {
 					continue
 				}
 
-				// Get the http target attribute
-				httpTarget, ok := span.Attributes().Get(httpTargetAttribute)
-				if !ok {
-					continue
+				var fullTarget string
+				if span.Kind() == ptrace.SpanKindServer {
+
+					urlScheme, ok := span.Attributes().Get(urlSchemeAttributeKey)
+					if !ok {
+						continue
+					}
+
+					// Get the http target attribute
+					urlPath, ok := span.Attributes().Get(urlPathAttributeKey)
+					if !ok {
+						continue
+					}
+
+					var query string
+					urlQuery, ok := span.Attributes().Get(urlQueryAttributeKey)
+					if ok {
+						query = urlQuery.AsString()
+					}
+
+					fullTarget = buildFullTarget(urlScheme.AsString(), host, urlPath.AsString(), query)
+
+				} else {
+					urlFullAttr, ok := span.Attributes().Get(urlFullAttributeKey)
+					if !ok {
+						continue
+					} else {
+						fullTarget = urlFullAttr.AsString()
+					}
 				}
 
-				// Get the http method attribute
-				httpMethod, ok := span.Attributes().Get(httpMethodAttribute)
-				if !ok {
-					continue
-				}
-
-				host := httpHost.AsString()
 				// Get the router based on the host
 				routers := oap.loadRouters()
 				router, ok := (*routers)[host]
@@ -179,11 +242,9 @@ func (oap *openAPIProcessor) processTraces(_ context.Context, td ptrace.Traces) 
 					continue
 				}
 
-				fullTarget := buildFullTarget(httpScheme.AsString(), host, httpTarget.AsString())
-
 				// Get the route based on the target
 				// Create a dummy http request
-				req, err := http.NewRequest(httpMethod.AsString(), fullTarget, nil)
+				req, err := http.NewRequest(httpRequestMethodAttr.AsString(), fullTarget, nil)
 				if err != nil {
 					continue
 				}
@@ -193,11 +254,11 @@ func (oap *openAPIProcessor) processTraces(_ context.Context, td ptrace.Traces) 
 					continue
 				}
 
-				span.Attributes().PutStr(httpRouteAttribute, route.Path)
+				span.Attributes().PutStr(httpRouteAttributeKey, route.Path)
 
 				// Set the operation id attribute
-				span.Attributes().PutStr(openAPIOperationIDAttribute, route.Operation.OperationID)
-				span.Attributes().PutBool(openAPIDeprecatedAttribute, route.Operation.Deprecated)
+				span.Attributes().PutStr(openAPIOperationIDAttributeKey, route.Operation.OperationID)
+				span.Attributes().PutBool(openAPIDeprecatedAttributeKey, route.Operation.Deprecated)
 
 				// Extract and add extensions
 				oap.extractAndAddExtensions(span, route)
@@ -226,29 +287,22 @@ func (oap *openAPIProcessor) extractAndAddExtensions(span ptrace.Span, route *ro
 	}
 }
 
-func (oap *openAPIProcessor) addRouter(doc *openapi3.T, routers *map[string]*Router) {
+func (oap *openAPIProcessor) addRouter(doc *openapi3.T, routers *map[string]*Router, serviceHostMapping *map[string]string) {
 
-	// Get list of servers
-	servers := doc.Servers
-	if len(servers) == 0 {
-		oap.logger.Error("No servers found in OpenAPI document")
-		return
-	}
-
-	err := addRoutersFromAPI(doc, routers, oap.cfg.AllowHTTPAndHTTPS)
+	err := addRoutersFromAPI(doc, routers, serviceHostMapping, oap.cfg.AllowHTTPAndHTTPS)
 	if err != nil {
 		oap.logger.Error("Error creating router", zap.Error(err))
 		return
 	}
 }
 
-func (oap *openAPIProcessor) loadLocalApis(routers *map[string]*Router) {
+func (oap *openAPIProcessor) loadLocalApis(routers *map[string]*Router, serviceHostMapping *map[string]string) {
 
 	if len(oap.cfg.OpenAPISpecs) > 0 {
 		for _, spec := range oap.cfg.OpenAPISpecs {
 			doc := oap.loadAPIFromData([]byte(spec))
 			if doc != nil {
-				oap.addRouter(doc, routers)
+				oap.addRouter(doc, routers, serviceHostMapping)
 			}
 		}
 	}
@@ -257,26 +311,26 @@ func (oap *openAPIProcessor) loadLocalApis(routers *map[string]*Router) {
 		for _, path := range oap.cfg.OpenAPIFilePaths {
 			doc := oap.loadAPIFromFile(path)
 			if doc != nil {
-				oap.addRouter(doc, routers)
+				oap.addRouter(doc, routers, serviceHostMapping)
 			}
 		}
 	}
 }
 
-func (oap *openAPIProcessor) loadRemoteApis(routers *map[string]*Router) {
+func (oap *openAPIProcessor) loadRemoteApis(routers *map[string]*Router, serviceHostMapping *map[string]string) {
 
 	if len(oap.cfg.OpenAPIEndpoints) > 0 {
 		for _, endpoint := range oap.cfg.OpenAPIEndpoints {
 			doc := oap.loadAPIFromURI(endpoint)
 			if doc != nil {
-				oap.addRouter(doc, routers)
+				oap.addRouter(doc, routers, serviceHostMapping)
 			}
 		}
 	}
 
 	if len(oap.cfg.OpenAPIDirectories) > 0 {
 		for _, directory := range oap.cfg.OpenAPIDirectories {
-			oap.loadAPIDirectory(directory, routers)
+			oap.loadAPIDirectory(directory, routers, serviceHostMapping)
 		}
 	}
 }
@@ -284,14 +338,16 @@ func (oap *openAPIProcessor) loadRemoteApis(routers *map[string]*Router) {
 func (oap *openAPIProcessor) loadApis() {
 
 	routers := make(map[string]*Router)
+	serviceHostMapping := make(map[string]string)
 
-	oap.loadRemoteApis(&routers)
-	oap.loadLocalApis(&routers)
+	oap.loadRemoteApis(&routers, &serviceHostMapping)
+	oap.loadLocalApis(&routers, &serviceHostMapping)
 
 	oap.swapRouters(&routers)
+	oap.swapServiceHostMapping(&serviceHostMapping)
 }
 
-func (oap *openAPIProcessor) loadAPIDirectory(endpoint string, routers *map[string]*Router) {
+func (oap *openAPIProcessor) loadAPIDirectory(endpoint string, routers *map[string]*Router, serviceHostMapping *map[string]string) {
 
 	res, err := http.Get(endpoint) //nolint
 	if err != nil {
@@ -316,7 +372,7 @@ func (oap *openAPIProcessor) loadAPIDirectory(endpoint string, routers *map[stri
 	for _, item := range apiDirectory.Items {
 		doc := oap.loadAPIFromURI(item)
 		if doc != nil {
-			oap.addRouter(doc, routers)
+			oap.addRouter(doc, routers, serviceHostMapping)
 		}
 	}
 }

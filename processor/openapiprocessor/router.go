@@ -39,6 +39,10 @@ type srv struct {
 	varsUpdater varsf
 }
 
+const (
+	serviceNameExtensionAttribute = "x-service-name"
+)
+
 var singleVariableMatcher = regexp.MustCompile(`^\{([^{}]+)\}$`)
 
 // TODO: Handle/HandlerFunc + ServeHTTP (When there is a match, the route variables can be retrieved calling mux.Vars(request))
@@ -46,14 +50,13 @@ var singleVariableMatcher = regexp.MustCompile(`^\{([^{}]+)\}$`)
 // NewRouter creates a gorilla/mux router.
 // Assumes spec is .Validate()d
 // Note that a variable for the port number MUST have a default value and only this value will match as the port (see issue #367).
-func addRoutersFromAPI(doc *openapi3.T, existingRouters *map[string]*Router, allowHTTPAndHTTPS bool) error {
+func addRoutersFromAPI(doc *openapi3.T, existingRouters *map[string]*Router, serviceHostMapping *map[string]string, allowHTTPAndHTTPS bool) error {
 	servers, err := makeServers(doc.Servers)
 	if err != nil {
 		return err
 	}
 
 	muxRouter := mux.NewRouter().UseEncodedPath()
-	// r := &Router{}
 	for _, path := range doc.Paths.InMatchingOrder() {
 		pathItem := doc.Paths.Value(path)
 		if len(pathItem.Servers) > 0 {
@@ -82,7 +85,14 @@ func addRoutersFromAPI(doc *openapi3.T, existingRouters *map[string]*Router, all
 			host := s.host
 			if host != "" {
 				muxRoute.Host(host)
+				serviceNameExtension, ok := s.server.Extensions[serviceNameExtensionAttribute]
+				if ok {
+					if str, ok := serviceNameExtension.(string); ok {
+						(*serviceHostMapping)[str] = host
+					}
+				}
 			}
+
 			if err := muxRoute.GetError(); err != nil {
 				return err
 			}
