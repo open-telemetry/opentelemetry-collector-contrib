@@ -13,10 +13,11 @@ import (
 )
 
 type ReplacePatternArguments[K any] struct {
-	Target       ottl.GetSetter[K]
-	RegexPattern string
-	Replacement  ottl.StringGetter[K]
-	Function     ottl.Optional[ottl.FunctionGetter[K]]
+	Target            ottl.GetSetter[K]
+	RegexPattern      string
+	Replacement       ottl.StringGetter[K]
+	Function          ottl.Optional[ottl.FunctionGetter[K]]
+	IncludeNonCapture ottl.Optional[bool]
 }
 
 type replacePatternFuncArgs[K any] struct {
@@ -34,7 +35,7 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 		return nil, fmt.Errorf("ReplacePatternFactory args must be of type *ReplacePatternArguments[K]")
 	}
 
-	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function)
+	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function, args.IncludeNonCapture)
 }
 
 func executeFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string, submatch []int) (string, error) {
@@ -60,7 +61,7 @@ func executeFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp
 	return replacementValStr, nil
 }
 
-func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string) (string, error) {
+func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string, includeNonCapture ottl.Optional[bool]) (string, error) {
 	var updatedString string
 	var captureGroups []string
 	var replacementValStr string
@@ -78,21 +79,25 @@ func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern
 	}
 	for _, submatch := range submatches {
 		fullMatch := originalValStr[submatch[0]:submatch[1]]
-		if len(captureGroups) > 0 {
+		// If the replacement value contains capture groups, apply the function on each capture group
+		if len(captureGroups) > 0 && includeNonCapture.IsEmpty() && !includeNonCapture.Get() {
 			for _, captureGroup := range captureGroups {
+				// Replace the capture group with the replacement value
 				replacementValStr, err = executeFunction(ctx, tCtx, compiledPattern, fn, originalValStr, captureGroup, submatch)
 				if err != nil {
 					return "", err
 				}
+				// Store the capture group and its replacement value in a map
 				captureGroupMap[captureGroup] = replacementValStr
 			}
+			// Replace the full match with the replacement value
 			switch {
+			// If the replacement value contains multiple capture groups, replace each capture group with its replacement value
 			case len(captureGroupMap) > 1:
 				for key, value := range captureGroupMap {
 					replacementVal = strings.ReplaceAll(replacementVal, key, value)
 				}
 				updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementVal)
-
 			case len(captureGroupMap) == 1:
 				for key, value := range captureGroupMap {
 					replacementValStr = strings.ReplaceAll(replacementVal, key, value)
@@ -103,17 +108,19 @@ func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern
 				updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementValStr)
 			}
 		} else {
+			// Replace the capture group with the replacement value
 			replacementValStr, err = executeFunction(ctx, tCtx, compiledPattern, fn, originalValStr, replacementVal, submatch)
 			if err != nil {
 				return "", err
 			}
+			// Replace the full match with the replacement value
 			updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementValStr)
 		}
 	}
 	return updatedString, nil
 }
 
-func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
+func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]], includeNonCapture ottl.Optional[bool]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)
@@ -135,7 +142,7 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 			if compiledPattern.MatchString(originalValStr) {
 				if !fn.IsEmpty() {
 					var updatedString string
-					updatedString, err = applyOptReplaceFunction[K](ctx, tCtx, compiledPattern, fn, originalValStr, replacementVal)
+					updatedString, err = applyOptReplaceFunction[K](ctx, tCtx, compiledPattern, fn, originalValStr, replacementVal, includeNonCapture)
 					if err != nil {
 						return nil, err
 					}
