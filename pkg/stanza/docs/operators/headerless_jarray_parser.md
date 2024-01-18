@@ -52,7 +52,6 @@ This parser can parse such headerless json array strings and match headers to th
 | `output`           | Next in pipeline                         | The connected operator(s) that will receive all outbound entries.                                                                                 |
 | `header`           | required when `header_attribute` not set | A string of delimited field names                                                                                                                 |
 | `header_attribute` | required when `header` not set           | An attribute name to read the header field from, to support dynamic field names                                                                   |
-| `header_delimiter` | value of `delimiter`                     | A character that will be used as a delimiter for headers. Values `\r` and `\n` cannot be used as a delimiter.                                       |
 | `parse_from`       | `body`                                   | The [field](../types/field.md) from which the value will be parsed.                                                                               |
 | `parse_to`         | `attributes`                             | The [field](../types/field.md) to which the value will be parsed.                                                                                 |
 | `on_error`         | `send`                                   | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md).                                                     |
@@ -74,47 +73,6 @@ Configuration:
   parse_from: body
   parse_to: attributes
   header: id,severity,message,isExample
-```
-
-<table>
-<tr><td> Input Entry </td> <td> Output Entry </td></tr>
-<tr>
-<td>
-
-```json
-{
-  "body": "[1,\"debug\",\"Debug Message\", true]"
-}
-```
-
-</td>
-<td>
-
-```json
-{
-  "attributes": {
-    "id": 1,
-    "severity": "debug",
-    "message": "Debug Message",
-    "isExample": true
-  }
-}
-```
-
-</td>
-</tr>
-</table>
-
-#### Parse the field `body` with a headerless jarray parser into attributes using | as header delimiter
-
-Configuration:
-
-```yaml
-- type: headerless_jarray_parser
-  parse_from: body
-  parse_to: attributes
-  header: id|severity|message|isExample
-  header_delimiter: "|"
 ```
 
 <table>
