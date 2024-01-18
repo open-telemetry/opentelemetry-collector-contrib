@@ -1,77 +1,74 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tracker
+package fileset
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
-type fileset struct {
-	readers []*reader.Reader
+var errFilesetEmpty = errors.New("pop() on empty Fileset")
+
+type Matchable interface {
+	GetFingerprint() *fingerprint.Fingerprint
 }
 
-func New(cap int) *fileset {
-	return &fileset{readers: make([]*reader.Reader, 0, cap)}
+type Fileset[T Matchable] struct {
+	readers []T
 }
 
-func (set *fileset) Len() int {
+func New[T Matchable](cap int) *Fileset[T] {
+	return &Fileset[T]{readers: make([]T, 0, cap)}
+}
+
+func (set *Fileset[T]) Len() int {
 	return len(set.readers)
 }
 
-func (set *fileset) Get() []*reader.Reader {
+func (set *Fileset[T]) Get() []T {
 	return set.readers
 }
 
-func (set *fileset) Pop() (*reader.Reader, error) {
-	// closes one file and returns metadata wrapped with a nil reader
+func (set *Fileset[T]) Pop() (T, error) {
+	// return first element from the array and remove it
+	var val T
 	if len(set.readers) == 0 {
-		return nil, errors.New("pop() on empty fileset")
+		return val, errFilesetEmpty
 	}
-	m := set.readers[0].Close()
-	set.readers = set.readers[1:]
-	return &reader.Reader{Metadata: m}, nil
+	r := set.readers[0]
+	set.readers = slices.Delete(set.readers, 0, 1)
+	return r, nil
 }
 
-func (set *fileset) Add(readers ...*reader.Reader) {
+func (set *Fileset[T]) Add(readers ...T) {
 	// add open readers
 	set.readers = append(set.readers, readers...)
 }
 
-func (set *fileset) Clear() {
+func (set *Fileset[T]) Clear() {
 	// clear the underlying readers
-	set.readers = make([]*reader.Reader, 0, cap(set.readers))
+	set.readers = make([]T, 0, cap(set.readers))
 }
 
-func (set *fileset) Reset(readers ...*reader.Reader) []*reader.Reader {
-	// empty the underlying set and return the metadata wrapped with a nil reader
-	metadata := make([]*reader.Reader, 0)
-	for _, r := range set.readers {
-		metadata = append(metadata, &reader.Reader{Metadata: r.Close()})
-	}
+func (set *Fileset[T]) Reset(readers ...T) []T {
+	// empty the underlying set and return the old array
+	arr := make([]T, len(set.readers))
+	copy(arr, set.readers)
 	set.Clear()
 	set.readers = append(set.readers, readers...)
-	return metadata
+	return arr
 }
 
-func (set *fileset) HasMatch(fp *fingerprint.Fingerprint, cmp func(a, b *fingerprint.Fingerprint) bool) (int, bool) {
-	// can be called to detect exact or partial fingerprint match
+func (set *Fileset[T]) Match(fp *fingerprint.Fingerprint) T {
+	var val T
 	for idx, r := range set.readers {
-		if cmp(fp, r.fingerprint) {
-			return idx, true
+		if fp.StartsWith(r.GetFingerprint()) {
+			set.readers = append(set.readers[:idx], set.readers[idx+1:]...)
+			return r
 		}
 	}
-	return -1, false
-}
-
-func (set *fileset) RemoveMatch(fp *fingerprint.Fingerprint) *reader.Metadata {
-	if idx, ok := set.HasMatch(fp, func(a, b *fingerprint.Fingerprint) bool { return a.StartsWith(b) }); ok {
-		m := set.readers[idx].Close()
-		set.readers = append(set.readers[:idx], set.readers[idx+1:]...)
-		return m
-	}
-	return nil
+	return val
 }
