@@ -88,13 +88,13 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		client := getHTTPClientSettings(ctx, d.logger)
 		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes, client)
 		if err != nil {
-			return res, "", fmt.Errorf("failed fetching ec2 instance tags: %w", err)
-		}
-		for key, val := range tags {
-			res.Attributes().PutStr(tagPrefix+key, val)
+			d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
+		} else {
+			for key, val := range tags {
+				res.Attributes().PutStr(tagPrefix+key, val)
+			}
 		}
 	}
-
 	return res, conventions.SchemaURL, nil
 }
 
