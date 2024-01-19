@@ -103,7 +103,7 @@ func TestScrape(t *testing.T) {
 
 			if test.bootTimeFunc != nil {
 				actualBootTime, err := scraper.bootTime(context.Background())
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.Equal(t, uint64(bootTime), actualBootTime)
 			}
 			// expect 3 metrics

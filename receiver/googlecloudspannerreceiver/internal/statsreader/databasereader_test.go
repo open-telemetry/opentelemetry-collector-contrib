@@ -44,7 +44,7 @@ func TestNewDatabaseReader(t *testing.T) {
 
 	reader, err := NewDatabaseReader(ctx, parsedMetadata, databaseID, serviceAccountPath, readerConfig, logger)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	defer executeShutdown(reader)
 
@@ -66,7 +66,7 @@ func TestNewDatabaseReaderWithError(t *testing.T) {
 
 	reader, err := NewDatabaseReader(ctx, parsedMetadata, databaseID, serviceAccountPath, readerConfig, logger)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	// Do not call executeShutdown() here because reader hasn't been created
 	assert.Nil(t, reader)
 }
