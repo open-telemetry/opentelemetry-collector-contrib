@@ -44,6 +44,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := io.Copy(buf, r.Body)
 		sizes = append(sizes, s)
+		r.Body.Close()
 	}))
 	defer cst.Close()
 
