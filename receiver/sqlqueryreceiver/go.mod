@@ -3,17 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 go 1.20
 
 require (
-	github.com/SAP/go-hdb v1.7.4
 	github.com/docker/go-connections v0.5.0
-	github.com/go-sql-driver/mysql v1.7.1
-	github.com/lib/pq v1.10.9
-	github.com/microsoft/go-mssqldb v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.92.0
-	github.com/sijms/go-ora/v2 v2.8.6
-	github.com/snowflakedb/gosnowflake v1.7.1
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.27.0
 	go.opentelemetry.io/collector/component v0.92.1-0.20240118172122-8131d31601b8
@@ -40,6 +35,7 @@ require (
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
+	github.com/SAP/go-hdb v1.7.4 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/apache/arrow/go/v12 v12.0.1 // indirect
 	github.com/apache/thrift v0.19.0 // indirect
@@ -76,6 +72,7 @@ require (
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -105,8 +102,10 @@ require (
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20181214104525-299bdde78165 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/microsoft/go-mssqldb v1.6.0 // indirect
 	github.com/minio/asm2plan9s v0.0.0-20200509001527-cdd76441f9d8 // indirect
 	github.com/minio/c2goasm v0.0.0-20190812172519-36a3d3bbc4f3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -136,7 +135,9 @@ require (
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
+	github.com/sijms/go-ora/v2 v2.8.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/snowflakedb/gosnowflake v1.7.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
@@ -177,6 +178,8 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 

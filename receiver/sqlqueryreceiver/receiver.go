@@ -12,16 +12,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sqlquery"
 )
 
-type sqlOpenerFunc func(driverName, dataSourceName string) (*sql.DB, error)
-
-type dbProviderFunc func() (*sql.DB, error)
-
-type clientProviderFunc func(db, string, *zap.Logger, TelemetryConfig) dbClient
-
-func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateLogsFunc {
+func createLogsReceiverFunc(sqlOpenerFunc sqlquery.SqlOpenerFunc, clientProviderFunc sqlquery.ClientProviderFunc) receiver.CreateLogsFunc {
 	return func(
 		ctx context.Context,
 		settings receiver.CreateSettings,
@@ -33,7 +28,7 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clie
 	}
 }
 
-func createMetricsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
+func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SqlOpenerFunc, clientProviderFunc sqlquery.ClientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
 		ctx context.Context,
 		settings receiver.CreateSettings,
@@ -47,16 +42,16 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc c
 				continue
 			}
 			id := component.NewIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
-			mp := &scraper{
-				id:        id,
-				query:     query,
-				scrapeCfg: sqlCfg.ScraperControllerSettings,
-				logger:    settings.TelemetrySettings.Logger,
-				telemetry: sqlCfg.Telemetry,
-				dbProviderFunc: func() (*sql.DB, error) {
+			mp := &sqlquery.Scraper{
+				Id:        id,
+				Query:     query,
+				ScrapeCfg: sqlCfg.ScraperControllerSettings,
+				Logger:    settings.TelemetrySettings.Logger,
+				Telemetry: sqlCfg.Config.Telemetry,
+				DbProviderFunc: func() (*sql.DB, error) {
 					return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
 				},
-				clientProviderFunc: clientProviderFunc,
+				ClientProviderFunc: clientProviderFunc,
 			}
 			opt := scraperhelper.AddScraper(mp)
 			opts = append(opts, opt)
