@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelar
 go 1.20
 
 require (
-	github.com/open-telemetry/otel-arrow v0.14.0
-	github.com/open-telemetry/otel-arrow/collector v0.14.0
+	github.com/open-telemetry/otel-arrow v0.15.0
+	github.com/open-telemetry/otel-arrow/collector v0.15.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.92.1-0.20240118172122-8131d31601b8
 	go.opentelemetry.io/collector/config/configauth v0.92.1-0.20240118172122-8131d31601b8
