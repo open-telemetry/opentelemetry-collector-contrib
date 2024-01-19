@@ -26,6 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for kubeletstats metrics.
 type MetricsConfig struct {
 	ContainerCPUTime                     MetricConfig `mapstructure:"container.cpu.time"`
+	ContainerCPUUsage                    MetricConfig `mapstructure:"container.cpu.usage"`
 	ContainerCPUUtilization              MetricConfig `mapstructure:"container.cpu.utilization"`
 	ContainerFilesystemAvailable         MetricConfig `mapstructure:"container.filesystem.available"`
 	ContainerFilesystemCapacity          MetricConfig `mapstructure:"container.filesystem.capacity"`
@@ -42,6 +43,7 @@ type MetricsConfig struct {
 	K8sContainerMemoryLimitUtilization   MetricConfig `mapstructure:"k8s.container.memory_limit_utilization"`
 	K8sContainerMemoryRequestUtilization MetricConfig `mapstructure:"k8s.container.memory_request_utilization"`
 	K8sNodeCPUTime                       MetricConfig `mapstructure:"k8s.node.cpu.time"`
+	K8sNodeCPUUsage                      MetricConfig `mapstructure:"k8s.node.cpu.usage"`
 	K8sNodeCPUUtilization                MetricConfig `mapstructure:"k8s.node.cpu.utilization"`
 	K8sNodeFilesystemAvailable           MetricConfig `mapstructure:"k8s.node.filesystem.available"`
 	K8sNodeFilesystemCapacity            MetricConfig `mapstructure:"k8s.node.filesystem.capacity"`
@@ -56,6 +58,7 @@ type MetricsConfig struct {
 	K8sNodeNetworkIo                     MetricConfig `mapstructure:"k8s.node.network.io"`
 	K8sNodeUptime                        MetricConfig `mapstructure:"k8s.node.uptime"`
 	K8sPodCPUTime                        MetricConfig `mapstructure:"k8s.pod.cpu.time"`
+	K8sPodCPUUsage                       MetricConfig `mapstructure:"k8s.pod.cpu.usage"`
 	K8sPodCPUUtilization                 MetricConfig `mapstructure:"k8s.pod.cpu.utilization"`
 	K8sPodCPULimitUtilization            MetricConfig `mapstructure:"k8s.pod.cpu_limit_utilization"`
 	K8sPodCPURequestUtilization          MetricConfig `mapstructure:"k8s.pod.cpu_request_utilization"`
@@ -84,6 +87,9 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		ContainerCPUTime: MetricConfig{
 			Enabled: true,
+		},
+		ContainerCPUUsage: MetricConfig{
+			Enabled: false,
 		},
 		ContainerCPUUtilization: MetricConfig{
 			Enabled: true,
@@ -133,6 +139,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNodeCPUTime: MetricConfig{
 			Enabled: true,
 		},
+		K8sNodeCPUUsage: MetricConfig{
+			Enabled: false,
+		},
 		K8sNodeCPUUtilization: MetricConfig{
 			Enabled: true,
 		},
@@ -174,6 +183,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sPodCPUTime: MetricConfig{
 			Enabled: true,
+		},
+		K8sPodCPUUsage: MetricConfig{
+			Enabled: false,
 		},
 		K8sPodCPUUtilization: MetricConfig{
 			Enabled: true,

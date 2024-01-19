@@ -7,3 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [hanjm, dmitryax, Frapschen]
+
+tests:
+  config:
+  skip_lifecycle: true

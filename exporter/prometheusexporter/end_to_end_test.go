@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -88,7 +87,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
               static_configs:
                 - targets: ['%s']
         `, srvURL.Host))
-	receiverConfig := new(promconfig.Config)
+	receiverConfig := new(prometheusreceiver.PromConfig)
 	if err = yaml.Unmarshal(yamlConfig, receiverConfig); err != nil {
 		t.Fatal(err)
 	}

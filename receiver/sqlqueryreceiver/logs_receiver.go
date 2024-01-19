@@ -115,6 +115,7 @@ func (receiver *logsReceiver) createQueryReceivers() error {
 			receiver.createConnection,
 			receiver.createClient,
 			receiver.settings.Logger,
+			receiver.config.Telemetry,
 			receiver.storageClient,
 		)
 		receiver.queryReceivers = append(receiver.queryReceivers, queryReceiver)
@@ -202,6 +203,7 @@ type logsQueryReceiver struct {
 	createDb     dbProviderFunc
 	createClient clientProviderFunc
 	logger       *zap.Logger
+	telemetry    TelemetryConfig
 
 	db            *sql.DB
 	client        dbClient
@@ -217,6 +219,7 @@ func newLogsQueryReceiver(
 	dbProviderFunc dbProviderFunc,
 	clientProviderFunc clientProviderFunc,
 	logger *zap.Logger,
+	telemetry TelemetryConfig,
 	storageClient storage.Client,
 ) *logsQueryReceiver {
 	queryReceiver := &logsQueryReceiver{
@@ -225,6 +228,7 @@ func newLogsQueryReceiver(
 		createDb:      dbProviderFunc,
 		createClient:  clientProviderFunc,
 		logger:        logger,
+		telemetry:     telemetry,
 		storageClient: storageClient,
 	}
 	queryReceiver.trackingValue = queryReceiver.query.TrackingStartValue
@@ -242,7 +246,7 @@ func (queryReceiver *logsQueryReceiver) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to open db connection: %w", err)
 	}
-	queryReceiver.client = queryReceiver.createClient(dbWrapper{queryReceiver.db}, queryReceiver.query.SQL, queryReceiver.logger)
+	queryReceiver.client = queryReceiver.createClient(dbWrapper{queryReceiver.db}, queryReceiver.query.SQL, queryReceiver.logger, queryReceiver.telemetry)
 
 	queryReceiver.trackingValue = queryReceiver.retrieveTrackingValue(ctx)
 

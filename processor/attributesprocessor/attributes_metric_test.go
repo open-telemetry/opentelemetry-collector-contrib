@@ -89,7 +89,7 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 	}
 
 	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, mp)
 	for i := range metricTestCases {
 		tc := metricTestCases[i]
@@ -217,7 +217,7 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 		Config:    *createConfig(filterset.Strict),
 	}
 	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, mp)
 
 	for _, tc := range testCases {
@@ -281,7 +281,7 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 		Config:    *createConfig(filterset.Regexp),
 	}
 	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, mp)
 
 	for _, tc := range testCases {
@@ -340,7 +340,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 	}
 
 	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, mp)
 
 	for _, tc := range testCases {
@@ -397,7 +397,7 @@ func TestMetricAttributes_Convert(t *testing.T) {
 	}
 
 	tp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
