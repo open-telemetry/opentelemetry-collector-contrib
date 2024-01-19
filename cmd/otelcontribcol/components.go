@@ -168,6 +168,7 @@ import (
 	mongodbatlasreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	mongodbreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	mysqlreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	namedpipereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver"
 	nginxreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 	nsxtreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 	opencensusreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
@@ -296,6 +297,7 @@ func components() (otelcol.Factories, error) {
 		mongodbatlasreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),
+		namedpipereceiver.NewFactory(),
 		nginxreceiver.NewFactory(),
 		nsxtreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),

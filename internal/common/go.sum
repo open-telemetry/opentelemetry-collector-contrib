@@ -9,8 +9,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee h1:q90UAvt5GVFtjI9FTuBNJLUJ1gwNf9R/IEAbaYayTLA=
-go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee/go.mod h1:QQXjP4etmJQhkQ20j4P/rapWuItYxoFozg/iIwuKnYg=
+go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8 h1:CjfhuI22zntWF6c+PNhEMO3WNBh0OmKvv3e7tHcuIg4=
+go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8/go.mod h1:QQXjP4etmJQhkQ20j4P/rapWuItYxoFozg/iIwuKnYg=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
