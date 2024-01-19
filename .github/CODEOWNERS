@@ -299,10 +299,10 @@ testbed/mockdatasenders/mockdatadogagentexporter/                   @open-teleme
 # List of distribution maintainers for OpenTelemetry Collector Contrib
 #
 #####################################################
-reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers 
-reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers 
+reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers
+reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
 
 
 ## UNMAINTAINED components
 
-receiver/googlecloudspannerreceiver/                                @open-telemetry/collector-contrib-approvers 
+receiver/googlecloudspannerreceiver/                                @open-telemetry/collector-contrib-approvers
