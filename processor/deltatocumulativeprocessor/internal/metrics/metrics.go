@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -11,82 +12,39 @@ type Metric struct {
 	pmetric.Metric
 }
 
-func (m *Metric) Meta() Meta {
-	meta := Meta{
-		resource: m.res,
-		scope:    m.scope,
+func (m *Metric) Identity() Ident {
+	id := Ident{
+		ScopeIdent: ScopeIdent{
+			ResourceIdent: ResourceIdent{
+				attrs: pdatautil.MapHash(m.res.Attributes()),
+			},
+			name:    m.scope.Name(),
+			version: m.scope.Version(),
+			attrs:   pdatautil.MapHash(m.scope.Attributes()),
+		},
+		name: m.Metric.Name(),
+		unit: m.Metric.Unit(),
+		ty:   m.Metric.Type().String(),
 	}
-	m.CopyTo(meta.metric)
-	metric := &meta.metric
 
-	// drop samples, gather intrinsics
-	switch metric.Type() {
+	switch m.Type() {
 	case pmetric.MetricTypeSum:
-		sum := metric.Sum()
-		meta.monotonic = sum.IsMonotonic()
-		meta.temporality = sum.AggregationTemporality()
-		metric.SetEmptySum()
-	case pmetric.MetricTypeGauge:
-		metric.SetEmptyGauge()
-	case pmetric.MetricTypeHistogram:
-		meta.temporality = metric.Histogram().AggregationTemporality()
-		meta.monotonic = true
-		metric.SetEmptyHistogram()
+		sum := m.Sum()
+		id.monotonic = sum.IsMonotonic()
+		id.temporality = sum.AggregationTemporality()
 	case pmetric.MetricTypeExponentialHistogram:
-		meta.temporality = metric.ExponentialHistogram().AggregationTemporality()
-		meta.monotonic = true
-		metric.SetEmptyExponentialHistogram()
+		exp := m.ExponentialHistogram()
+		id.monotonic = true
+		id.temporality = exp.AggregationTemporality()
+	case pmetric.MetricTypeHistogram:
+		hist := m.Histogram()
+		id.monotonic = true
+		id.temporality = hist.AggregationTemporality()
 	}
 
-	return meta
+	return id
 }
-
-// type Metric struct {
-// 	Meta
-// 	Data
-// }
-
-// type Data struct {
-// 	Type pmetric.MetricType
-
-// 	Sum   pmetric.Sum
-// 	Gauge pmetric.Gauge
-// 	Hist  pmetric.Histogram
-// 	Exp   pmetric.ExponentialHistogram
-// }
 
 func From(res pcommon.Resource, scope pcommon.InstrumentationScope, metric pmetric.Metric) Metric {
 	return Metric{res: res, scope: scope, Metric: metric}
-	// var data Data
-	// meta := Meta{
-	// 	resource: res,
-	// 	scope:    scope,
-	// }
-
-	// metric.CopyTo(meta.metric)
-	// metric = meta.metric
-
-	// // split meta and data
-	// switch metric.Type() {
-	// case pmetric.MetricTypeSum:
-	// 	data.Sum = metric.Sum()
-	// 	meta.monotonic = data.Sum.IsMonotonic()
-	// 	meta.temporality = data.Sum.AggregationTemporality()
-	// 	metric.SetEmptySum()
-	// case pmetric.MetricTypeGauge:
-	// 	data.Gauge = metric.Gauge()
-	// 	metric.SetEmptyGauge()
-	// case pmetric.MetricTypeHistogram:
-	// 	data.Hist = metric.Histogram()
-	// 	meta.temporality = data.Hist.AggregationTemporality()
-	// 	meta.monotonic = true
-	// 	metric.SetEmptyHistogram()
-	// case pmetric.MetricTypeExponentialHistogram:
-	// 	data.Exp = metric.ExponentialHistogram()
-	// 	meta.temporality = data.Exp.AggregationTemporality()
-	// 	meta.monotonic = true
-	// 	metric.SetEmptyExponentialHistogram()
-	// }
-
-	// return Metric{Meta: meta, Data: data}
 }
