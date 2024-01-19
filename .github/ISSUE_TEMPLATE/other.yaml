@@ -87,6 +87,7 @@ body:
       - extension/encoding/zipkinencoding
       - extension/headerssetter
       - extension/healthcheck
+      - extension/healthcheckextensionv2
       - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
