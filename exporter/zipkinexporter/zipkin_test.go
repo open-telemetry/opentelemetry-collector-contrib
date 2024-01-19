@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -43,13 +44,13 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := io.Copy(buf, r.Body)
 		sizes = append(sizes, s)
-		r.Body.Close()
 	}))
 	defer cst.Close()
 
 	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: cst.URL,
+			Headers:  map[string]configopaque.String{"extra-header": "header-value"},
 		},
 		Format: "json",
 	}

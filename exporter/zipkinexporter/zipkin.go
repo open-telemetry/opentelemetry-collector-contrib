@@ -78,6 +78,9 @@ func (ze *zipkinExporter) pushTraces(ctx context.Context, td ptrace.Traces) erro
 	if err != nil {
 		return fmt.Errorf("failed to push trace data via Zipkin exporter: %w", err)
 	}
+	for k, v := range ze.clientSettings.Headers {
+		req.Header.Set(k, string(v))
+	}
 	req.Header.Set("Content-Type", ze.serializer.ContentType())
 
 	resp, err := ze.client.Do(req)
