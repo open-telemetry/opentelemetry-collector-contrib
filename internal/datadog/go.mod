@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
+	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-devel
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240117180253-4371e14440ee
@@ -12,14 +12,14 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.52.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.52.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.52.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.52.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.52.0-devel // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
-	github.com/DataDog/go-sqllexer v0.0.8 // indirect
+	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.0 // indirect
@@ -80,7 +80,7 @@ require (
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
-	golang.org/x/tools v0.15.0 // indirect
+	golang.org/x/tools v0.16.1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
