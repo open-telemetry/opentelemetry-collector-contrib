@@ -39,6 +39,8 @@ ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS
 # find -exec dirname cannot be used to process multiple matching patterns
 FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
 INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | xargs $(TO_MOD_DIR) | uniq)
+COMPONENT_CONFIG_SCHEMAS := $(shell find . -name 'configgen')
+
 
 ifeq ($(GOOS),windows)
 	EXTENSION := .exe
@@ -225,6 +227,15 @@ docker-telemetrygen:
 generate: install-tools
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	$(MAKE) gendocs
+
+.PHONY: gendocs
+gendocs: $(COMPONENT_CONFIG_SCHEMAS)
+
+.PHONY: $(COMPONENT_CONFIG_SCHEMAS)
+$(COMPONENT_CONFIG_SCHEMAS):
+	cd $(subst internal/configgen,,$@) && $(GOCMD) run internal/configgen/component_config_gen.go .
+
 
 .PHONY: mdatagen-test
 mdatagen-test:

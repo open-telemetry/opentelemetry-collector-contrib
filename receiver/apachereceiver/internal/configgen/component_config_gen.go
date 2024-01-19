@@ -3,25 +3,23 @@
 package main
 
 import (
+	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/configschema"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 )
 
-//go:generate go run ./component_config_gen.go
-
 func main() {
+	if len(os.Args) == 1 {
+		panic(fmt.Sprintf("[USAGE] %s <path_to_component>", os.Args[0]))
+	}
 	f := apachereceiver.NewFactory()
-	path, err := os.Getwd()
-	if err != nil {
+	path := os.Args[1]
+	if err := configschema.GenerateConfigDoc(path, f); err != nil {
 		panic(err)
 	}
-	if err := configschema.GenerateConfigDoc(filepath.Join(path, "..", ".."), f); err != nil {
-		panic(err)
-	}
-	if err := configschema.GenerateMetadata(f, filepath.Join(path, "..", ".."), filepath.Join(path, "..", ".."), "config_schema.yaml"); err != nil {
+	if err := configschema.GenerateMetadata(f, path, path, "config_schema.yaml"); err != nil {
 		panic(err)
 	}
 }
