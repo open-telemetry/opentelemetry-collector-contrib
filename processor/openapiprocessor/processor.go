@@ -53,12 +53,12 @@ func buildFullTarget(scheme string, host string, target string, query string) st
 		return scheme + "://" + target
 	}
 
-	fullUrl := scheme + "://" + host + target
+	fullURL := scheme + "://" + host + target
 	if query != "" {
-		fullUrl += "?" + query
+		fullURL += "?" + query
 	}
 
-	return fullUrl
+	return fullURL
 }
 
 type apiDirectoryResponse struct {
@@ -207,32 +207,32 @@ func (oap *openAPIProcessor) processTraces(_ context.Context, td ptrace.Traces) 
 				var fullTarget string
 				if span.Kind() == ptrace.SpanKindServer {
 
-					urlScheme, ok := span.Attributes().Get(urlSchemeAttributeKey)
-					if !ok {
+					urlScheme, schemeOk := span.Attributes().Get(urlSchemeAttributeKey)
+					if !schemeOk {
 						continue
 					}
 
 					// Get the http target attribute
-					urlPath, ok := span.Attributes().Get(urlPathAttributeKey)
-					if !ok {
+					urlPath, pathOk := span.Attributes().Get(urlPathAttributeKey)
+					if !pathOk {
 						continue
 					}
 
 					var query string
-					urlQuery, ok := span.Attributes().Get(urlQueryAttributeKey)
-					if ok {
+					urlQuery, queryOk := span.Attributes().Get(urlQueryAttributeKey)
+					if queryOk {
 						query = urlQuery.AsString()
 					}
 
 					fullTarget = buildFullTarget(urlScheme.AsString(), host, urlPath.AsString(), query)
 
 				} else {
-					urlFullAttr, ok := span.Attributes().Get(urlFullAttributeKey)
-					if !ok {
+					urlFullAttr, urlFullOk := span.Attributes().Get(urlFullAttributeKey)
+					if !urlFullOk {
 						continue
-					} else {
-						fullTarget = urlFullAttr.AsString()
 					}
+
+					fullTarget = urlFullAttr.AsString()
 				}
 
 				// Get the router based on the host
