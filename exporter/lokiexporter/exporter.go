@@ -40,20 +40,24 @@ type lokiExporter struct {
 	lokiExporterFailedToSendLogRecordsDueToMissingLabels metric.Int64Counter
 }
 
-func newExporter(config *Config, settings component.TelemetrySettings) *lokiExporter {
+func newExporter(config *Config, settings component.TelemetrySettings) (*lokiExporter, error) {
 	settings.Logger.Info("using the new Loki exporter")
 
-	count, _ := metadata.Meter(settings).Int64Counter(
+	count, err := metadata.Meter(settings).Int64Counter(
 		"lokiexporter_send_failed_due_to_missing_labels",
 		metric.WithDescription("Number of log records failed to send because labels were missing"),
 		metric.WithUnit("1"),
 	)
 
+	if err != nil {
+		return nil, err
+	}
+
 	return &lokiExporter{
 		config:   config,
 		settings: settings,
 		lokiExporterFailedToSendLogRecordsDueToMissingLabels: count,
-	}
+	}, nil
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {

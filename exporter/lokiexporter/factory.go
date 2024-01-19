@@ -50,7 +50,11 @@ func createDefaultConfig() component.Config {
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	exporterConfig := config.(*Config)
-	exp := newExporter(exporterConfig, set.TelemetrySettings)
+	exp, err := newExporter(exporterConfig, set.TelemetrySettings)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
