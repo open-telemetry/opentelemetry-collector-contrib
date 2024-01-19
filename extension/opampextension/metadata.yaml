@@ -6,3 +6,6 @@ status:
     development: [extension]
   codeowners:
     active: [portertech, evan-bradley, tigrannajaryan]
+
+tests:
+  config:

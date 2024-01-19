@@ -310,7 +310,7 @@ otel-from-tree:
 	# 2. Run `make otel-from-tree` (only need to run it once to remap go modules)
 	# 3. You can now build contrib and it will use your local otel core changes.
 	# 4. Before committing/pushing your contrib changes, undo by running `make otel-from-lib`.
-	$(MAKE) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(SRC_ROOT)/../opentelemetry-collector"
+	$(MAKE) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(SRC_PARENT_DIR)/opentelemetry-collector"
 
 .PHONY: otel-from-lib
 otel-from-lib:
@@ -320,6 +320,7 @@ otel-from-lib:
 .PHONY: build-examples
 build-examples:
 	docker-compose -f examples/demo/docker-compose.yaml build
+	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker-compose -f ../docker-compose.yaml build
 	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package

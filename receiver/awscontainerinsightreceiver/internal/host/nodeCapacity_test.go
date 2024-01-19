@@ -24,7 +24,7 @@ func TestNodeCapacity(t *testing.T) {
 	}
 	nc, err := newNodeCapacity(zap.NewNop(), lstatOption)
 	assert.Nil(t, nc)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	// can't set environment variables
 	lstatOption = func(nc *nodeCapacity) {
@@ -33,12 +33,6 @@ func TestNodeCapacity(t *testing.T) {
 		}
 	}
 
-	// can't parse cpu and mem info
-	setEnvOption := func(nc *nodeCapacity) {
-		nc.osSetenv = func(key, value string) error {
-			return nil
-		}
-	}
 	virtualMemOption := func(nc *nodeCapacity) {
 		nc.virtualMemory = func(ctx context.Context) (*mem.VirtualMemoryStat, error) {
 			return nil, errors.New("error")
@@ -49,9 +43,9 @@ func TestNodeCapacity(t *testing.T) {
 			return nil, errors.New("error")
 		}
 	}
-	nc, err = newNodeCapacity(zap.NewNop(), lstatOption, setEnvOption, virtualMemOption, cpuInfoOption)
+	nc, err = newNodeCapacity(zap.NewNop(), lstatOption, virtualMemOption, cpuInfoOption)
 	assert.NotNil(t, nc)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, int64(0), nc.getMemoryCapacity())
 	assert.Equal(t, int64(0), nc.getNumCores())
 
@@ -71,9 +65,9 @@ func TestNodeCapacity(t *testing.T) {
 			}, nil
 		}
 	}
-	nc, err = newNodeCapacity(zap.NewNop(), lstatOption, setEnvOption, virtualMemOption, cpuInfoOption)
+	nc, err = newNodeCapacity(zap.NewNop(), lstatOption, virtualMemOption, cpuInfoOption)
 	assert.NotNil(t, nc)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, int64(1024), nc.getMemoryCapacity())
 	assert.Equal(t, int64(2), nc.getNumCores())
 }

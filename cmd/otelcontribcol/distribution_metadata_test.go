@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
@@ -35,25 +36,30 @@ func TestComponentsArePresent(t *testing.T) {
 				tt.Skip("no status present, skipping", metadataComponent)
 				return
 			}
-			inDevelopment := true
-			deprecated := true
+			inDevelopment := len(m.Status.Stability) == 0
+			deprecated := false
+			inUse := false
 			for stability, pipelines := range m.Status.Stability {
-				if stability != "development" && len(pipelines) > 0 {
-					inDevelopment = false
-					break
-				}
-				if stability != "deprecated" && len(pipelines) > 0 {
-					deprecated = false
-					break
+				if len(pipelines) > 0 {
+					switch stability {
+					case "development":
+						inDevelopment = true
+					case "deprecated":
+						deprecated = true
+					case "unmaintained":
+						// consider not in use.
+					default: // alpha, beta, stable
+						inUse = true
+					}
 				}
 			}
 
-			if inDevelopment {
+			if inDevelopment && !inUse {
 				tt.Skip("component in development, skipping", metadataComponent)
 				return
 			}
 
-			if deprecated {
+			if deprecated && !inUse {
 				tt.Skip("component deprecated, skipping", metadataComponent)
 				return
 			}
@@ -85,7 +91,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	md := metadata{}
-	if err := conf.Unmarshal(&md); err != nil {
+	if err := conf.Unmarshal(&md, confmap.WithIgnoreUnused()); err != nil {
 		return md, err
 	}
 

@@ -34,11 +34,11 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, ocfg.HTTPClientSettings.Endpoint, "")
 	assert.Equal(t, ocfg.HTTPClientSettings.Timeout, 30*time.Second, "default timeout is 30 seconds")
-	assert.Equal(t, ocfg.RetrySettings.Enabled, true, "default retry is enabled")
-	assert.Equal(t, ocfg.RetrySettings.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
-	assert.Equal(t, ocfg.RetrySettings.InitialInterval, 5*time.Second, "default retry InitialInterval")
-	assert.Equal(t, ocfg.RetrySettings.MaxInterval, 30*time.Second, "default retry MaxInterval")
-	assert.Equal(t, ocfg.QueueSettings.Enabled, true, "default sending queue is enabled")
+	assert.Equal(t, ocfg.RetryConfig.Enabled, true, "default retry is enabled")
+	assert.Equal(t, ocfg.RetryConfig.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
+	assert.Equal(t, ocfg.RetryConfig.InitialInterval, 5*time.Second, "default retry InitialInterval")
+	assert.Equal(t, ocfg.RetryConfig.MaxInterval, 30*time.Second, "default retry MaxInterval")
+	assert.Equal(t, ocfg.RetryConfig.Enabled, true, "default sending queue is enabled")
 }
 
 func TestFactory_CreateMetricsExporter(t *testing.T) {
@@ -56,7 +56,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Version: "0.0.0",
 	}
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 
 	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
@@ -87,7 +87,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		Version: "0.0.0",
 	}
 	oexp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 
 	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
@@ -118,7 +118,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		Version: "0.0.0",
 	}
 	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 
 	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])

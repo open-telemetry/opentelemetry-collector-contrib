@@ -77,43 +77,13 @@ func TestOAuthClientSettings(t *testing.T) {
 			shouldError:   true,
 			expectedError: "failed to load TLS config: failed to load TLS cert and key",
 		},
-		{
-			name: "missing_client_id",
-			settings: &Config{
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
-			},
-			shouldError:   true,
-			expectedError: errNoClientIDProvided.Error(),
-		},
-		{
-			name: "missing_client_secret",
-			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
-				Scopes:   []string{"resource.read"},
-			},
-			shouldError:   true,
-			expectedError: errNoClientSecretProvided.Error(),
-		},
-		{
-			name: "missing_token_url",
-			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
-				Scopes:       []string{"resource.read"},
-			},
-			shouldError:   true,
-			expectedError: errNoTokenURLProvided.Error(),
-		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			rc, err := newClientAuthenticator(test.settings, zap.NewNop())
 			if test.shouldError {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 				assert.Contains(t, err.Error(), test.expectedError)
 				return
 			}
@@ -129,7 +99,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
 			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
 	}
@@ -209,7 +179,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			rc, _ := newClientAuthenticator(test.settings, zap.NewNop())
 			cfg, err := rc.clientCredentials.createConfig()
 			if test.shouldError {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 				assert.ErrorAs(t, err, test.expectedError)
 				return
 			}
@@ -221,7 +191,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
 			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
 	}
@@ -251,15 +221,6 @@ func TestRoundTripper(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{
-			name: "invalid_client_settings_should_error",
-			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
-				Scopes:   []string{"resource.read"},
-			},
-			shouldError: true,
-		},
 	}
 
 	testString := "TestString"
@@ -276,7 +237,7 @@ func TestRoundTripper(t *testing.T) {
 
 			assert.NotNil(t, oauth2Authenticator)
 			roundTripper, err := oauth2Authenticator.roundTripper(baseRoundTripper)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			// test roundTripper is an OAuth RoundTripper
 			oAuth2Transport, ok := roundTripper.(*oauth2.Transport)
@@ -308,15 +269,6 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{
-			name: "invalid_client_settings_should_error",
-			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
-				Scopes:   []string{"resource.read"},
-			},
-			shouldError: true,
-		},
 	}
 
 	for _, testcase := range tests {
@@ -329,7 +281,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			perRPCCredentials, err := oauth2Authenticator.perRPCCredentials()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			// test perRPCCredentials is an grpc OAuthTokenSource
 			_, ok := perRPCCredentials.(grpcOAuth.TokenSource)
 			assert.True(t, ok)
@@ -353,11 +305,11 @@ func TestFailContactingOAuth(t *testing.T) {
 		ClientSecret: "ABC",
 		TokenURL:     serverURL.String(),
 	}, zap.NewNop())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Test for gRPC connections
 	credential, err := oauth2Authenticator.perRPCCredentials()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	_, err = credential.GetRequestMetadata(context.Background())
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)

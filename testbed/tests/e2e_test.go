@@ -29,7 +29,8 @@ func TestIdleMode(t *testing.T) {
 	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 	cfg := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
-	cp := testbed.NewChildProcessCollector()
+	cp := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
 	cleanup, err := cp.PrepareConfig(cfg)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
@@ -45,10 +46,9 @@ func TestIdleMode(t *testing.T) {
 		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 20, ExpectedMaxRAM: 83}),
 	)
 	tc.StartAgent()
+	t.Cleanup(tc.Stop)
 
 	tc.Sleep(tc.Duration)
-
-	tc.Stop()
 }
 
 const ballastConfig = `
@@ -78,9 +78,11 @@ func TestBallastMemory(t *testing.T) {
 			ballastCfg := createConfigYaml(
 				t, sender, receiver, resultDir, nil,
 				map[string]string{"memory_ballast": fmt.Sprintf(ballastConfig, test.ballastSize)})
-			cp := testbed.NewChildProcessCollector()
+			cp := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 			cleanup, err := cp.PrepareConfig(ballastCfg)
 			require.NoError(t, err)
+			t.Cleanup(cleanup)
+
 			tc := testbed.NewTestCase(
 				t,
 				dataProvider,
@@ -99,6 +101,7 @@ func TestBallastMemory(t *testing.T) {
 				),
 			)
 			tc.StartAgent()
+			t.Cleanup(tc.Stop)
 
 			var rss, vms uint32
 			// It is possible that the process is not ready or the ballast code path
@@ -128,9 +131,6 @@ func TestBallastMemory(t *testing.T) {
 			} else {
 				assert.LessOrEqual(t, float32(rss), lenientMax, rssTooHigh)
 			}
-
-			cleanup()
-			tc.Stop()
 		})
 	}
 }
