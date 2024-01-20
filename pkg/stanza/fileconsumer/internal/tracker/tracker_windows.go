@@ -4,17 +4,13 @@
 //go:build windows
 // +build windows
 
-package tracker
+package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
 	"context"
 )
 
 func (t *Tracker) PreConsume(ctx context.Context) {
-}
-
-func (t *Tracker) Rotate() {
-
 }
 
 // On windows, we close files immediately after reading becauase they cannot be moved while open.

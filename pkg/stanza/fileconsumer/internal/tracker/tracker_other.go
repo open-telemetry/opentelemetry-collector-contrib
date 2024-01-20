@@ -3,7 +3,7 @@
 
 //go:build !windows
 
-package tracker
+package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
 	"context"
