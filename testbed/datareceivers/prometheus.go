@@ -33,7 +33,7 @@ func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
 	addr := fmt.Sprintf("127.0.0.1:%d", dr.Port)
-	cfg.PrometheusConfig = &promconfig.Config{
+	cfg.PrometheusConfig = &prometheusreceiver.PromConfig{
 		ScrapeConfigs: []*promconfig.ScrapeConfig{{
 			JobName:        "testbed-job",
 			ScrapeInterval: model.Duration(100 * time.Millisecond),

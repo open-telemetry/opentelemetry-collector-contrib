@@ -9,3 +9,15 @@ status:
   codeowners:
     active: [mx-psi, dineshg13, liustanley, songy23, mackjmr]
     emeritus: [gbbr]
+
+tests:
+  config:
+    hostname: customhostname
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      site: datadoghq.eu
+    sending_queue:
+      enabled: false
+    retry_on_failure:
+      enabled: false
+  expect_consumer_error: true

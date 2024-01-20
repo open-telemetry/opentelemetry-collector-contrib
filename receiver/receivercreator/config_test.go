@@ -137,7 +137,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 
@@ -150,7 +150,7 @@ func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 
 func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 

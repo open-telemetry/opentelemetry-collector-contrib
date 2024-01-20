@@ -41,7 +41,7 @@ func TestFactory_CreateTracesProcessor(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"test-key"}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tp)
 }
 
