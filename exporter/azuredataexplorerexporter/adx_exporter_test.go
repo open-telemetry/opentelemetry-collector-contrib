@@ -66,7 +66,7 @@ func TestMetricsDataPusherStreaming(t *testing.T) {
 	}
 	assert.NotNil(t, adxDataProducer)
 	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(10))
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestMetricsDataPusherQueued(t *testing.T) {
@@ -84,7 +84,7 @@ func TestMetricsDataPusherQueued(t *testing.T) {
 	}
 	assert.NotNil(t, adxDataProducer)
 	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(10))
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestLogsDataPusher(t *testing.T) {
@@ -102,7 +102,7 @@ func TestLogsDataPusher(t *testing.T) {
 	}
 	assert.NotNil(t, adxDataProducer)
 	err := adxDataProducer.logsDataPusher(context.Background(), createLogsData())
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestTracesDataPusher(t *testing.T) {
@@ -120,7 +120,7 @@ func TestTracesDataPusher(t *testing.T) {
 	}
 	assert.NotNil(t, adxDataProducer)
 	err := adxDataProducer.tracesDataPusher(context.Background(), createTracesData())
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestClose(t *testing.T) {
@@ -137,7 +137,7 @@ func TestClose(t *testing.T) {
 		logger:        logger,
 	}
 	err := adxDataProducer.Close(context.Background())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestIngestedDataRecordCount(t *testing.T) {
@@ -159,7 +159,7 @@ func TestIngestedDataRecordCount(t *testing.T) {
 	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(recordstoingest))
 	ingestedrecordsactual := ingestor.Records()
 	assert.Equal(t, recordstoingest, len(ingestedrecordsactual), "Number of metrics created should match number of records ingested")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestCreateKcsb(t *testing.T) {

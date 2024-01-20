@@ -114,7 +114,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 					nil,
 					testCfg,
 					emfCalcs)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 
 			assert.Equal(t, 1, len(groupedMetrics))
@@ -157,7 +157,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 				nil,
 				testCfg,
 				emfCalcs)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 
 		assert.Equal(t, 4, len(groupedMetrics))
@@ -230,7 +230,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 				nil,
 				testCfg,
 				emfCalcs)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 
 		assert.Equal(t, 4, len(groupedMetrics))
@@ -281,7 +281,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			nil,
 			testCfg,
 			emfCalcs)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		metricMetadata2 := generateTestMetricMetadata(namespace,
 			timestamp,
@@ -291,7 +291,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			metric.Type(),
 		)
 		err = addToGroupedMetric(metric, groupedMetrics, metricMetadata2, true, logger, nil, testCfg, emfCalcs)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		assert.Len(t, groupedMetrics, 2)
 		seenLogGroup1 := false
@@ -349,7 +349,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 				testCfg,
 				emfCalcs,
 			)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 		assert.Equal(t, 1, len(groupedMetrics))
 
@@ -392,7 +392,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			testCfg,
 			emfCalcs,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 
 		// Test output warning logs

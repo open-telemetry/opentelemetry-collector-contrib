@@ -27,33 +27,43 @@ func newGohai(logger *zap.Logger) *gohai.Gohai {
 
 	if p, err := new(cpu.Cpu).Collect(); err != nil {
 		logger.Info("Failed to retrieve cpu metadata", zap.Error(err))
+	} else if cpu, ok := p.(map[string]string); !ok {
+		logger.Warn("Internal error: Failed to cast cpu metadata to map[string]string", zap.Any("cpu", p))
 	} else {
-		res.CPU = p
+		res.CPU = cpu
 	}
 
 	if p, err := new(filesystem.FileSystem).Collect(); err != nil {
 		logger.Info("Failed to retrieve filesystem metadata", zap.Error(err))
+	} else if fs, ok := p.([]any); !ok {
+		logger.Warn("Internal error: Failed to cast filesystem metadata to []any", zap.Any("filesystem", p))
 	} else {
-		res.FileSystem = p
+		res.FileSystem = fs
 	}
 
 	if p, err := new(memory.Memory).Collect(); err != nil {
 		logger.Info("Failed to retrieve memory metadata", zap.Error(err))
+	} else if mem, ok := p.(map[string]string); !ok {
+		logger.Warn("Internal error: Failed to cast memory metadata to map[string]string", zap.Any("memory", p))
 	} else {
-		res.Memory = p
+		res.Memory = mem
 	}
 
 	// in case of containerized environment, this would return pod id not node's ip
 	if p, err := new(network.Network).Collect(); err != nil {
 		logger.Info("Failed to retrieve network metadata", zap.Error(err))
+	} else if net, ok := p.(map[string]any); !ok {
+		logger.Warn("Internal error: Failed to cast network metadata to map[string]any", zap.Any("network", p))
 	} else {
-		res.Network = p
+		res.Network = net
 	}
 
 	if p, err := new(platform.Platform).Collect(); err != nil {
 		logger.Info("Failed to retrieve platform metadata", zap.Error(err))
+	} else if platform, ok := p.(map[string]string); !ok {
+		logger.Warn("Internal error: Failed to cast platform metadata to map[string]string", zap.Any("platform", p))
 	} else {
-		res.Platform = p
+		res.Platform = platform
 	}
 
 	return res

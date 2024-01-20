@@ -5,11 +5,11 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
@@ -39,7 +39,7 @@ type Config struct {
 	ExcludedImages []string `mapstructure:"excluded_images"`
 
 	// Docker client API version. Default is 1.22
-	DockerAPIVersion float64 `mapstructure:"api_version"`
+	DockerAPIVersion string `mapstructure:"api_version"`
 
 	// MetricsBuilderConfig config. Enable or disable stats by name.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
@@ -49,11 +49,8 @@ func (config Config) Validate() error {
 	if config.Endpoint == "" {
 		return errors.New("endpoint must be specified")
 	}
-	if config.CollectionInterval == 0 {
-		return errors.New("collection_interval must be a positive duration")
-	}
-	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
-		return fmt.Errorf("api_version must be at least %v", minimalRequiredDockerAPIVersion)
+	if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
+		return err
 	}
 	return nil
 }
