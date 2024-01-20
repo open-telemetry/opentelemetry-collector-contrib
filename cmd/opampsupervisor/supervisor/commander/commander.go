@@ -109,6 +109,10 @@ func (c *Commander) Done() <-chan struct{} {
 	return c.doneCh
 }
 
+func (c *Commander) ResetDone() {
+	c.doneCh = make(chan struct{})
+}
+
 // Pid returns Agent process PID if it is started or 0 if it is not.
 func (c *Commander) Pid() int {
 	if c.cmd == nil || c.cmd.Process == nil {

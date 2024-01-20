@@ -717,9 +717,13 @@ func (s *Supervisor) runAgentProcess() {
 
 			// Wait 5 seconds before starting again.
 			if !restartTimer.Stop() {
-				<-restartTimer.C
+				select {
+				case <-restartTimer.C: // Try to drain the channel
+				default:
+				}
 			}
 			restartTimer.Reset(5 * time.Second)
+			s.commander.ResetDone()
 
 		case <-restartTimer.C:
 			s.startAgent()
