@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -20,9 +21,9 @@ var errTooManyActiveFiles = errors.New("number of actively read files exceeds ma
 
 type Tracker struct {
 	*zap.SugaredLogger
-	activeFiles        *Fileset
-	openFiles          *Fileset
-	closedFiles        *Fileset
+	activeFiles        *fileset.Fileset[*reader.Reader]
+	openFiles          *fileset.Fileset[*reader.Reader]
+	closedFiles        *fileset.Fileset[*reader.Metadata]
 	ReaderFactory      reader.Factory
 	maxConcurrentFiles int
 
@@ -38,18 +39,18 @@ func New(logger *zap.SugaredLogger, maxConcurrentFiles int, readerFactory reader
 	return &Tracker{
 		SugaredLogger:      logger,
 		ReaderFactory:      readerFactory,
-		openFiles:          newFileset(0),
-		activeFiles:        newFileset(maxConcurrentFiles),
-		closedFiles:        newFileset(0),
+		openFiles:          fileset.New[*reader.Reader](100),
+		activeFiles:        fileset.New[*reader.Reader](maxConcurrentFiles),
+		closedFiles:        fileset.New[*reader.Metadata](100),
 		maxConcurrentFiles: maxConcurrentFiles,
 	}
 }
 
 func (t *Tracker) ReadFile(path string) {
-	if t.activeFiles.Len()+t.openFiles.Len() >= t.maxConcurrentFiles {
-		// pop one of the open files and add them to history
-		if r, err := t.openFiles.Pop(); err == nil {
-			t.closedFiles.Add(r)
+	if t.activeFiles.Len()+t.openFiles.Len() > t.maxConcurrentFiles {
+		// pop the oldest open files and add them to closed filelist
+		if r, err := t.openFiles.PopN(1); err == nil {
+			t.closedFiles.Add(r[0].Close())
 		} else {
 			t.Errorw("cannot open file", zap.Error(errTooManyActiveFiles))
 			return
@@ -61,11 +62,13 @@ func (t *Tracker) ReadFile(path string) {
 	}
 	// Exclude duplicate paths with the same content. This can happen when files are
 	// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
-	if t.activeFiles.HasExactMatch(fp) {
-		if err := file.Close(); err != nil {
-			t.Debugw("problem closing file", zap.Error(err))
+	for _, r := range t.activeFiles.Get() {
+		if fp.Equal(r.Fingerprint) {
+			if err := file.Close(); err != nil {
+				t.Debugw("problem closing file", zap.Error(err))
+			}
+			return
 		}
-		return
 	}
 	r, err := t.newReader(file, fp)
 	if err != nil {
@@ -76,7 +79,15 @@ func (t *Tracker) ReadFile(path string) {
 }
 
 func (t *Tracker) ActiveFiles() []*reader.Reader {
-	return t.activeFiles.readers
+	return t.activeFiles.Get()
+}
+
+func (t *Tracker) OpenFiles() []*reader.Reader {
+	return t.openFiles.Get()
+}
+
+func (t *Tracker) ClosedFiles() []*reader.Metadata {
+	return t.closedFiles.Get()
 }
 
 func (t *Tracker) FromBeginning() {
@@ -85,12 +96,12 @@ func (t *Tracker) FromBeginning() {
 
 func (t *Tracker) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Find a prefix match in previous poll's open fileset
-	if m := t.openFiles.HasPrefix(fp); m != nil {
-		return t.ReaderFactory.NewReaderFromMetadata(file, m)
+	if reader := t.openFiles.Match(fp); reader != nil {
+		return t.ReaderFactory.NewReaderFromMetadata(file, reader.Close())
 	}
 	// Find a prefix match in previous known files
-	if m := t.closedFiles.HasPrefix(fp); m != nil {
-		r, err := t.ReaderFactory.NewReaderFromMetadata(file, m)
+	if metadata := t.closedFiles.Match(fp); metadata != nil {
+		r, err := t.ReaderFactory.NewReaderFromMetadata(file, metadata)
 		return r, err
 	}
 	// If we don't match any previously known files, create a new reader from scratch
@@ -125,11 +136,11 @@ func (t *Tracker) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 
 func (t *Tracker) Persist(persister operator.Persister) {
 	allCheckpoints := make([]*reader.Metadata, 0, t.closedFiles.Len()+t.openFiles.Len())
-	for _, r := range t.openFiles.readers {
+	for _, r := range t.openFiles.Get() {
 		allCheckpoints = append(allCheckpoints, r.Metadata)
 	}
-	for _, r := range t.closedFiles.readers {
-		allCheckpoints = append(allCheckpoints, r.Metadata)
+	for _, r := range t.closedFiles.Get() {
+		allCheckpoints = append(allCheckpoints, r)
 	}
 	if err := checkpoint.Save(context.Background(), persister, allCheckpoints); err != nil {
 		t.Errorw("save offsets", zap.Error(err))
@@ -145,17 +156,16 @@ func (t *Tracker) Load(persister operator.Persister) error {
 		t.ReaderFactory.FromBeginning = true
 		t.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
 	}
-	readers := make([]*reader.Reader, 0)
-	for _, m := range offsets {
-		readers = append(readers, &reader.Reader{Metadata: m})
-	}
-	t.closedFiles.Add(readers...)
+	t.closedFiles.Add(offsets...)
 	return nil
 }
 
 func (t *Tracker) closePreviousFiles() {
 	if t.closedFiles.Len() > 4*t.MovingAverageMatches {
-		t.closedFiles.RemoveOld(t.MovingAverageMatches)
+		t.closedFiles.PopN(t.MovingAverageMatches)
 	}
-	t.closedFiles.Add(t.openFiles.Reset()...)
+	readers := t.openFiles.Reset()
+	for _, r := range readers {
+		t.closedFiles.Add(r.Close())
+	}
 }

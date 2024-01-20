@@ -13,7 +13,7 @@ import (
 )
 
 func (t *Tracker) PreConsume(ctx context.Context) {
-	previousPollFiles := t.openFiles.readers
+	previousPollFiles := t.openFiles.Get()
 	lostReaders := make([]*reader.Reader, 0, len(previousPollFiles))
 OUTER:
 	for _, oldReader := range previousPollFiles {
@@ -55,6 +55,5 @@ func (t *Tracker) PostConsume() {
 	// move active fileset to open fileset
 	// empty out active fileset
 	t.closePreviousFiles()
-	t.openFiles.readers = t.activeFiles.readers
-	t.activeFiles.Clear()
+	t.openFiles.Add(t.activeFiles.Reset()...)
 }

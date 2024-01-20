@@ -164,11 +164,10 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		HeaderConfig:    hCfg,
 		DeleteAtEOF:     c.DeleteAfterRead,
 	}
-	tracker := tracker.New(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles, readerFactory)
 
 	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
-		tracker:       tracker,
+		tracker:       tracker.New(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles, readerFactory),
 		fileMatcher:   fileMatcher,
 		pollInterval:  c.PollInterval,
 		maxBatchFiles: c.MaxConcurrentFiles / 2,
