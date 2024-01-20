@@ -14,6 +14,7 @@ import (
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
@@ -56,29 +57,28 @@ func NewConfig() *Config {
 		MaxLogSize:         reader.DefaultMaxLogSize,
 		Encoding:           defaultEncoding,
 		FlushPeriod:        reader.DefaultFlushPeriod,
-		IncludeFileName:    true,
+		Resolver: attrs.Resolver{
+			IncludeFileName: true,
+		},
 	}
 }
 
 // Config is the configuration of a file input operator
 type Config struct {
-	matcher.Criteria        `mapstructure:",squash"`
-	PollInterval            time.Duration   `mapstructure:"poll_interval,omitempty"`
-	MaxConcurrentFiles      int             `mapstructure:"max_concurrent_files,omitempty"`
-	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
-	StartAt                 string          `mapstructure:"start_at,omitempty"`
-	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
-	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
-	Encoding                string          `mapstructure:"encoding,omitempty"`
-	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
-	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
-	FlushPeriod             time.Duration   `mapstructure:"force_flush_period,omitempty"`
-	IncludeFileName         bool            `mapstructure:"include_file_name,omitempty"`
-	IncludeFilePath         bool            `mapstructure:"include_file_path,omitempty"`
-	IncludeFileNameResolved bool            `mapstructure:"include_file_name_resolved,omitempty"`
-	IncludeFilePathResolved bool            `mapstructure:"include_file_path_resolved,omitempty"`
-	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
-	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
+	matcher.Criteria   `mapstructure:",squash"`
+	attrs.Resolver     `mapstructure:",squash"`
+	PollInterval       time.Duration   `mapstructure:"poll_interval,omitempty"`
+	MaxConcurrentFiles int             `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches         int             `mapstructure:"max_batches,omitempty"`
+	StartAt            string          `mapstructure:"start_at,omitempty"`
+	FingerprintSize    helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	MaxLogSize         helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	Encoding           string          `mapstructure:"encoding,omitempty"`
+	SplitConfig        split.Config    `mapstructure:"multiline,omitempty"`
+	TrimConfig         trim.Config     `mapstructure:",squash,omitempty"`
+	FlushPeriod        time.Duration   `mapstructure:"force_flush_period,omitempty"`
+	Header             *HeaderConfig   `mapstructure:"header,omitempty"`
+	DeleteAfterRead    bool            `mapstructure:"delete_after_read,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -151,21 +151,18 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 	}
 
 	readerFactory := reader.Factory{
-		SugaredLogger:           logger.With("component", "fileconsumer"),
-		FromBeginning:           startAtBeginning,
-		FingerprintSize:         int(c.FingerprintSize),
-		MaxLogSize:              int(c.MaxLogSize),
-		Encoding:                enc,
-		SplitFunc:               splitFunc,
-		TrimFunc:                trimFunc,
-		FlushTimeout:            c.FlushPeriod,
-		EmitFunc:                emit,
-		IncludeFileName:         c.IncludeFileName,
-		IncludeFilePath:         c.IncludeFilePath,
-		IncludeFileNameResolved: c.IncludeFileNameResolved,
-		IncludeFilePathResolved: c.IncludeFilePathResolved,
-		HeaderConfig:            hCfg,
-		DeleteAtEOF:             c.DeleteAfterRead,
+		SugaredLogger:   logger.With("component", "fileconsumer"),
+		FromBeginning:   startAtBeginning,
+		FingerprintSize: int(c.FingerprintSize),
+		MaxLogSize:      int(c.MaxLogSize),
+		Encoding:        enc,
+		SplitFunc:       splitFunc,
+		TrimFunc:        trimFunc,
+		FlushTimeout:    c.FlushPeriod,
+		EmitFunc:        emit,
+		Attributes:      c.Resolver,
+		HeaderConfig:    hCfg,
+		DeleteAtEOF:     c.DeleteAfterRead,
 	}
 	tracker := tracker.New(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles, readerFactory)
 

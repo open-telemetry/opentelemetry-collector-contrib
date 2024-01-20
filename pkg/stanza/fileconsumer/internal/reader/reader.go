@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"os"
 
 	"go.uber.org/zap"
@@ -43,23 +42,6 @@ type Reader struct {
 	processFunc     emit.Callback
 	emitFunc        emit.Callback
 	deleteAtEOF     bool
-}
-
-// offsetToEnd sets the starting offset
-func (r *Reader) offsetToEnd() error {
-	info, err := r.file.Stat()
-	if err != nil {
-		return fmt.Errorf("stat: %w", err)
-	}
-	r.Offset = info.Size()
-	return nil
-}
-
-func (r *Reader) NewFingerprintFromFile() (*fingerprint.Fingerprint, error) {
-	if r.file == nil {
-		return nil, errors.New("file is nil")
-	}
-	return fingerprint.New(r.file, r.fingerprintSize)
 }
 
 // ReadToEnd will read until the end of the file
@@ -196,4 +178,8 @@ func (r *Reader) Validate() bool {
 		return true
 	}
 	return false
+}
+
+func (m Metadata) GetFingerprint() *fingerprint.Fingerprint {
+	return m.Fingerprint
 }

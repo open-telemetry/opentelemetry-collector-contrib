@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -96,6 +97,29 @@ func TestExporter_pushMetricsData(t *testing.T) {
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 
 		require.Equal(t, int32(15), items.Load())
+	})
+	t.Run("check traceID and spanID", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT INTO otel_metrics_gauge") {
+				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[18])
+				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[19])
+			}
+			if strings.HasPrefix(query, "INSERT INTO otel_metrics_histogram") {
+				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[20])
+				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[21])
+			}
+			if strings.HasPrefix(query, "INSERT INTO otel_metrics_sum ") {
+				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[18])
+				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[19])
+			}
+			if strings.HasPrefix(query, "INSERT INTO otel_metrics_exponential_histogram") {
+				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[24])
+				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[25])
+			}
+			return nil
+		})
+		exporter := newTestMetricsExporter(t)
+		mustPushMetricsData(t, exporter, simpleMetrics(1))
 	})
 }
 
