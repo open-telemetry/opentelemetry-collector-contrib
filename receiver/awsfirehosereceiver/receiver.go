@@ -105,7 +105,7 @@ var _ http.Handler = (*firehoseReceiver)(nil)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
 // its processing.
-func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error {
+func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) error {
 	if host == nil {
 		return errMissingHost
 	}
@@ -126,12 +126,13 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 		defer fmr.shutdownWG.Done()
 
 		if errHTTP := fmr.server.Serve(listener); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			host.ReportFatalError(errHTTP)
+			fmr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
 	return nil
 }
+
 
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up and

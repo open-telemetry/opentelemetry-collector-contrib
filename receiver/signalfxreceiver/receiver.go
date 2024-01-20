@@ -115,7 +115,7 @@ func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 // Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
-func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
+func (r *sfxReceiver) Start(ctx context.Context, host component.Host) error {
 	if r.metricsConsumer == nil && r.logsConsumer == nil {
 		return component.ErrNilNextConsumer
 	}
@@ -148,7 +148,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		defer r.shutdownWG.Done()
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil

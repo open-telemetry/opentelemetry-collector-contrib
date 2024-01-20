@@ -47,35 +47,35 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params rec
 }
 
 func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error {
-	ddmux := http.NewServeMux()
-	ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
-	ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
-	ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
-	ddmux.HandleFunc("/v0.7/traces", ddr.handleTraces)
-	ddmux.HandleFunc("/api/v0.2/traces", ddr.handleTraces)
+    ddmux := http.NewServeMux()
+    ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
+    ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
+    ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
+    ddmux.HandleFunc("/v0.7/traces", ddr.handleTraces)
+    ddmux.HandleFunc("/api/v0.2/traces", ddr.handleTraces)
 
-	var err error
-	ddr.server, err = ddr.config.HTTPServerSettings.ToServer(
-		host,
-		ddr.params.TelemetrySettings,
-		ddmux,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create server definition: %w", err)
-	}
-	hln, err := ddr.config.HTTPServerSettings.ToListener()
-	if err != nil {
-		return fmt.Errorf("failed to create datadog listener: %w", err)
-	}
+    var err error
+    ddr.server, err = ddr.config.HTTPServerSettings.ToServer(
+        host,
+        ddr.params.TelemetrySettings,
+        ddmux,
+    )
+    if err != nil {
+        return fmt.Errorf("failed to create server definition: %w", err)
+    }
+    hln, err := ddr.config.HTTPServerSettings.ToListener()
+    if err != nil {
+        return fmt.Errorf("failed to create datadog listener: %w", err)
+    }
 
-	ddr.address = hln.Addr().String()
+    ddr.address = hln.Addr().String()
 
-	go func() {
-		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
-		}
-	}()
-	return nil
+    go func() {
+        if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+            ddr.params.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+        }
+    }()
+    return nil
 }
 
 func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
