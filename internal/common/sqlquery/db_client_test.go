@@ -19,7 +19,7 @@ func TestDBSQLClient_SingleRow(t *testing.T) {
 	cl := DbSQLClient{
 		Db:     fakeDB{rowVals: [][]any{{42, 123.4, "hello", true, []uint8{52, 46, 49}}}},
 		Logger: zap.NewNop(),
-		Sql:    "",
+		SQL:    "",
 	}
 	rows, err := cl.QueryRows(context.Background())
 	require.NoError(t, err)
@@ -40,7 +40,7 @@ func TestDBSQLClient_MultiRow(t *testing.T) {
 			{43, 123.5, "goodbye", false, []uint8{52, 46, 50}},
 		}},
 		Logger: zap.NewNop(),
-		Sql:    "",
+		SQL:    "",
 	}
 	rows, err := cl.QueryRows(context.Background())
 	require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestDBSQLClient_Nulls(t *testing.T) {
 			{42, nil, 111}, // NULLs from the DB map to nil here
 		}},
 		Logger: zap.NewNop(),
-		Sql:    "",
+		SQL:    "",
 	}
 	rows, err := cl.QueryRows(context.Background())
 	assert.Error(t, err)
@@ -86,7 +86,7 @@ func TestDBSQLClient_Nulls_MultiRow(t *testing.T) {
 			{43, nil},
 		}},
 		Logger: zap.NewNop(),
-		Sql:    "",
+		SQL:    "",
 	}
 	rows, err := cl.QueryRows(context.Background())
 	assert.Error(t, err)

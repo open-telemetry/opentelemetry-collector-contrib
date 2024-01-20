@@ -8,7 +8,7 @@ import (
 	"database/sql"
 )
 
-// These are wrappers and interfaces around Sql.DB so that it can be swapped out for testing.
+// These are wrappers and interfaces around SQL.DB so that it can be swapped out for testing.
 
 type Db interface {
 	QueryContext(ctx context.Context, query string, args ...any) (rows, error)

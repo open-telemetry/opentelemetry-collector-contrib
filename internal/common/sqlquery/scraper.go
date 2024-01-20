@@ -19,14 +19,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type SqlOpenerFunc func(driverName, dataSourceName string) (*sql.DB, error)
+type SQLOpenerFunc func(driverName, dataSourceName string) (*sql.DB, error)
 
 type DbProviderFunc func() (*sql.DB, error)
 
 type ClientProviderFunc func(Db, string, *zap.Logger, TelemetryConfig) DbClient
 
 type Scraper struct {
-	Id                 component.ID
+	id                 component.ID
 	Query              Query
 	ScrapeCfg          scraperhelper.ScraperControllerSettings
 	StartTime          pcommon.Timestamp
@@ -41,7 +41,7 @@ type Scraper struct {
 var _ scraperhelper.Scraper = (*Scraper)(nil)
 
 func (s *Scraper) ID() component.ID {
-	return s.Id
+	return s.id
 }
 
 func (s *Scraper) Start(context.Context, component.Host) error {

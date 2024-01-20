@@ -28,21 +28,21 @@ type DbSQLClient struct {
 	Db        Db
 	Logger    *zap.Logger
 	Telemetry TelemetryConfig
-	Sql       string
+	SQL       string
 }
 
 func NewDbClient(db Db, sql string, logger *zap.Logger, telemetry TelemetryConfig) DbClient {
 	return DbSQLClient{
 		Db:        db,
-		Sql:       sql,
+		SQL:       sql,
 		Logger:    logger,
 		Telemetry: telemetry,
 	}
 }
 
 func (cl DbSQLClient) QueryRows(ctx context.Context, args ...any) ([]StringMap, error) {
-	cl.Logger.Debug("Running query", cl.prepareQueryFields(cl.Sql, args)...)
-	sqlRows, err := cl.Db.QueryContext(ctx, cl.Sql, args...)
+	cl.Logger.Debug("Running query", cl.prepareQueryFields(cl.SQL, args)...)
+	sqlRows, err := cl.Db.QueryContext(ctx, cl.SQL, args...)
 	if err != nil {
 		return nil, err
 	}
