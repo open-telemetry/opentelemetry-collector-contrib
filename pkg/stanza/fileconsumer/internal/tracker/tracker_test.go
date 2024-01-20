@@ -8,11 +8,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"golang.org/x/text/encoding"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
-	"github.com/stretchr/testify/require"
-	"golang.org/x/text/encoding"
 )
 
 func TestTracker(t *testing.T) {

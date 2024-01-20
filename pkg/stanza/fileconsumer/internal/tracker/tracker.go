@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"go.uber.org/zap"
 )
 
 var errTooManyActiveFiles = errors.New("number of actively read files exceeds max_concurrent_files")
@@ -139,9 +140,7 @@ func (t *Tracker) Persist(persister operator.Persister) {
 	for _, r := range t.openFiles.Get() {
 		allCheckpoints = append(allCheckpoints, r.Metadata)
 	}
-	for _, r := range t.closedFiles.Get() {
-		allCheckpoints = append(allCheckpoints, r)
-	}
+	allCheckpoints = append(allCheckpoints, t.closedFiles.Get()...)
 	if err := checkpoint.Save(context.Background(), persister, allCheckpoints); err != nil {
 		t.Errorw("save offsets", zap.Error(err))
 	}
@@ -162,7 +161,9 @@ func (t *Tracker) Load(persister operator.Persister) error {
 
 func (t *Tracker) closePreviousFiles() {
 	if t.closedFiles.Len() > 4*t.MovingAverageMatches {
-		t.closedFiles.PopN(t.MovingAverageMatches)
+		if _, err := t.closedFiles.PopN(t.MovingAverageMatches); err != nil {
+			t.Errorw("Failed to remove closed files", zap.Error(err))
+		}
 	}
 	readers := t.openFiles.Reset()
 	for _, r := range readers {
