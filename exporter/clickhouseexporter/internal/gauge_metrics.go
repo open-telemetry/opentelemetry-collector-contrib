@@ -128,8 +128,8 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 					attrs,
 					times,
 					values,
-					traceIDs,
 					spanIDs,
+					traceIDs,
 				)
 				if err != nil {
 					return fmt.Errorf("ExecContext:%w", err)

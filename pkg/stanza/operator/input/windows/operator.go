@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
@@ -12,9 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"go.uber.org/zap"
 )
 
 func init() {
@@ -81,7 +81,7 @@ func (e *Input) Start(persister operator.Persister) error {
 	offsetXML, err := e.getBookmarkOffset(ctx)
 	if err != nil {
 		e.Errorf("Failed to open bookmark, continuing without previous bookmark: %s", err)
-		e.persister.Delete(ctx, e.channel)
+		_ = e.persister.Delete(ctx, e.channel)
 	}
 
 	if offsetXML != "" {

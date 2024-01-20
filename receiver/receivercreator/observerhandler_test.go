@@ -449,7 +449,7 @@ type mockHost struct {
 
 func newMockHost(t *testing.T) *mockHost {
 	factories, err := otelcoltest.NopFactories()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	factories.Receivers["with.endpoint"] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 	factories.Receivers["without.endpoint"] = &nopWithoutEndpointFactory{Factory: receivertest.NewNopFactory()}
 	return &mockHost{t: t, factories: factories}

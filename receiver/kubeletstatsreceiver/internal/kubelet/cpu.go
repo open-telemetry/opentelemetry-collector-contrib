@@ -24,6 +24,7 @@ func addCPUUsageMetric(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetri
 	}
 	value := float64(*s.UsageNanoCores) / 1_000_000_000
 	cpuMetrics.Utilization(mb, currentTime, value)
+	cpuMetrics.Usage(mb, currentTime, value)
 
 	if r.cpuLimit > 0 {
 		cpuMetrics.LimitUtilization(mb, currentTime, value/r.cpuLimit)

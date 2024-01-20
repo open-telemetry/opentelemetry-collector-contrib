@@ -12,6 +12,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
@@ -113,8 +114,19 @@ func (c *connectorImp) run() {
 			if len(stats.Stats) == 0 {
 				continue
 			}
+			var mx pmetric.Metrics
+			var err error
+			if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
+				c.logger.Debug("Received stats payload", zap.Any("stats", stats))
+				mx, err = c.translator.StatsToMetrics(stats)
+				if err != nil {
+					c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
+					continue
+				}
+			} else {
+				mx = c.translator.StatsPayloadToMetrics(stats)
+			}
 			// APM stats as metrics
-			mx := c.translator.StatsPayloadToMetrics(stats)
 			ctx := context.TODO()
 
 			// send metrics to the consumer or next component in pipeline

@@ -89,7 +89,7 @@ func TestScrape(t *testing.T) {
 		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 
 		_, err := scraper.scrape(context.Background())
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Equal(t, err, errors.New("no client available"))
 	})
 
@@ -103,7 +103,7 @@ func TestScrape(t *testing.T) {
 		scraper.client = mockClient
 
 		_, err := scraper.scrape(context.Background())
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Equal(t, 1, logs.Len())
 		require.Equal(t, []observer.LoggedEntry{
 			{
@@ -139,7 +139,7 @@ func TestStart(t *testing.T) {
 
 		scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
-		require.NotNil(t, err)
+		require.Error(t, err)
 	})
 }
 
