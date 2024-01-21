@@ -470,3 +470,40 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 		}
 	}
 }
+
+func TestSupervisorRestartCommand(t *testing.T) {
+
+	var connectedCount atomic.Int32
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnConnectedFunc: func(_ types.Connection) {
+				connectedCount.Add(1)
+			},
+			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.Eventually(t, func() bool {
+
+		return connectedCount.Load() == 1
+
+	}, 5*time.Second, 500*time.Millisecond, "Collector never connected")
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		Command: &protobufs.ServerToAgentCommand{
+			Type: protobufs.CommandType_CommandType_Restart,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		return s.LastRestartError() == nil
+	}, 10*time.Second, 250*time.Millisecond, "Collector didn't connect after restart")
+}

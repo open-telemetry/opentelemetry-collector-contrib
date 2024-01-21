@@ -9,6 +9,7 @@ capabilities:
   reports_health: true
   accepts_remote_config: true
   reports_remote_config: true
+  accepts_restart_command: true
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
