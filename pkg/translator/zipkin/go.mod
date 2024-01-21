@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240117180253-4371e14440ee
-	go.opentelemetry.io/collector/semconv v0.92.1-0.20240117180253-4371e14440ee
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240118172122-8131d31601b8
+	go.opentelemetry.io/collector/semconv v0.92.1-0.20240118172122-8131d31601b8
 	go.uber.org/goleak v1.3.0
 )
 
@@ -21,8 +21,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	go.opentelemetry.io/otel v1.21.0 // indirect
-	go.opentelemetry.io/otel/trace v1.21.0 // indirect
+	go.opentelemetry.io/otel v1.22.0 // indirect
+	go.opentelemetry.io/otel/trace v1.22.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
