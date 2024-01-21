@@ -14,11 +14,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-var testHeader = "name,sev,msg,count,isBool"
-
 func newTestParser(t *testing.T) *Parser {
 	cfg := NewConfigWithID("test")
-	cfg.Header = testHeader
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	return op.(*Parser)
@@ -30,29 +27,6 @@ func TestParserBuildFailure(t *testing.T) {
 	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
-}
-
-func TestParserBuildFailureBadHeaderConfig(t *testing.T) {
-	cfg := NewConfigWithID("test")
-	cfg.Header = "testheader"
-	cfg.HeaderAttribute = "testheader"
-	_, err := cfg.Build(testutil.Logger(t))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "only one header parameter can be set: 'header' or 'header_attribute'")
-}
-
-func TestParserByteFailure(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parse([]byte("[\"invalid\"]"))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "wrong number of fields: expected 5, found 1")
-}
-
-func TestParserStringFailure(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parse("[\"invalid\"]")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "wrong number of fields: expected 5, found 1")
 }
 
 func TestParserInvalidType(t *testing.T) {
@@ -74,7 +48,42 @@ func TestParserJarray(t *testing.T) {
 		{
 			"basic",
 			func(p *Config) {
-				p.Header = testHeader
+				p.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
+			},
+			[]entry.Entry{
+				{
+					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
+				},
+			},
+			[]entry.Entry{
+				{
+					Body: []any{"stanza", "INFO", "started agent", int64(42), true},
+				},
+			},
+			false,
+			false,
+		},
+		{
+			"basic-no-parse_to-fail",
+			func(p *Config) {
+			},
+			[]entry.Entry{
+				{
+					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
+				},
+			},
+			[]entry.Entry{
+				{
+					Body: []any{"stanza", "INFO", "started agent", int64(42), true},
+				},
+			},
+			false,
+			true,
+		},
+		{
+			"parse-to-attributes",
+			func(p *Config) {
+				p.ParseTo = entry.RootableField{Field: entry.NewAttributeField("output")}
 			},
 			[]entry.Entry{
 				{
@@ -85,11 +94,33 @@ func TestParserJarray(t *testing.T) {
 				{
 					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
 					Attributes: map[string]interface{}{
-						"name":   "stanza",
-						"sev":    "INFO",
-						"msg":    "started agent",
-						"count":  int64(42),
-						"isBool": true,
+						"output": []any{"stanza", "INFO", "started agent", int64(42), true},
+					},
+				},
+			},
+			false,
+			false,
+		},
+		{
+			"parse-to-and-from-attributes",
+			func(p *Config) {
+				p.ParseTo = entry.RootableField{Field: entry.NewAttributeField("output")}
+				p.ParseFrom = entry.NewAttributeField("input")
+			},
+			[]entry.Entry{
+				{
+					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
+					Attributes: map[string]interface{}{
+						"input": "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
+					},
+				},
+			},
+			[]entry.Entry{
+				{
+					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
+					Attributes: map[string]interface{}{
+						"input":  "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
+						"output": []any{"stanza", "INFO", "started agent", int64(42), true},
 					},
 				},
 			},
@@ -99,7 +130,7 @@ func TestParserJarray(t *testing.T) {
 		{
 			"nested-object",
 			func(p *Config) {
-				p.Header = "name,age,nested"
+				p.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 			},
 			[]entry.Entry{
 				{
@@ -108,12 +139,7 @@ func TestParserJarray(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Body: "[\"stanza\", 42, {\"city\": \"New York\", \"zip\": 10001}]",
-					Attributes: map[string]interface{}{
-						"name":   "stanza",
-						"age":    int64(42),
-						"nested": "{\"city\":\"New York\",\"zip\":10001}",
-					},
+					Body: []any{"stanza", int64(42), "{\"city\":\"New York\",\"zip\":10001}"},
 				},
 			},
 			false,
@@ -122,7 +148,7 @@ func TestParserJarray(t *testing.T) {
 		{
 			"basic-multiple-static-bodies",
 			func(p *Config) {
-				p.Header = testHeader
+				p.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 			},
 			[]entry.Entry{
 				{
@@ -137,226 +163,22 @@ func TestParserJarray(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
-					Attributes: map[string]interface{}{
-						"name":   "stanza",
-						"sev":    "INFO",
-						"msg":    "started agent",
-						"count":  int64(42),
-						"isBool": true,
-					},
+					Body: []any{"stanza", "INFO", "started agent", int64(42), true},
 				},
 				{
-					Body: "[\"stanza\",\"ERROR\",\"agent killed\", 9999999, false]",
-					Attributes: map[string]interface{}{
-						"name":   "stanza",
-						"sev":    "ERROR",
-						"msg":    "agent killed",
-						"count":  int64(9999999),
-						"isBool": false,
-					},
+					Body: []any{"stanza", "ERROR", "agent killed", int64(9999999), false},
 				},
 				{
-					Body: "[\"stanza\",\"INFO\",\"started agent\", 0, null]",
-					Attributes: map[string]interface{}{
-						"name":   "stanza",
-						"sev":    "INFO",
-						"msg":    "started agent",
-						"count":  int64(0),
-						"isBool": nil,
-					},
+					Body: []any{"stanza", "INFO", "started agent", int64(0), nil},
 				},
 			},
 			false,
 			false,
-		},
-		{
-			"advanced",
-			func(p *Config) {
-				p.Header = "name,address,age,phone,position"
-			},
-			[]entry.Entry{
-				{
-					Body: "[\"stanza\",\"Evergreen\",1,\"555-5555\",\"agent\"]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Body: "[\"stanza\",\"Evergreen\",1,\"555-5555\",\"agent\"]",
-					Attributes: map[string]interface{}{
-						"name":     "stanza",
-						"address":  "Evergreen",
-						"age":      int64(1),
-						"phone":    "555-5555",
-						"position": "agent",
-					},
-				},
-			},
-			false,
-			false,
-		},
-		{
-			"dynamic-fields",
-			func(p *Config) {
-				p.HeaderAttribute = "Fields"
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "name,age,height,number",
-					},
-					Body: "[\"stanza dev\",1,400,\"555-555-5555\"]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "name,age,height,number",
-						"name":   "stanza dev",
-						"age":    int64(1),
-						"height": int64(400),
-						"number": "555-555-5555",
-					},
-					Body: "[\"stanza dev\",1,400,\"555-555-5555\"]",
-				},
-			},
-			false,
-			false,
-		},
-		{
-			"dynamic-fields-multiple-entries",
-			func(p *Config) {
-				p.HeaderAttribute = "Fields"
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "name,age,height,number",
-					},
-					Body: "[\"stanza dev\",1,400,\"555-555-5555\"]",
-				},
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "x,y",
-					},
-					Body: "[\"000100\",2]",
-				},
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "a,b,c,d,e,f",
-					},
-					Body: "[1,2,3,4,5,6]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "name,age,height,number",
-						"name":   "stanza dev",
-						"age":    int64(1),
-						"height": int64(400),
-						"number": "555-555-5555",
-					},
-					Body: "[\"stanza dev\",1,400,\"555-555-5555\"]",
-				},
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "x,y",
-						"x":      "000100",
-						"y":      int64(2),
-					},
-					Body: "[\"000100\",2]",
-				},
-				{
-					Attributes: map[string]interface{}{
-						"Fields": "a,b,c,d,e,f",
-						"a":      int64(1),
-						"b":      int64(2),
-						"c":      int64(3),
-						"d":      int64(4),
-						"e":      int64(5),
-						"f":      int64(6),
-					},
-					Body: "[1,2,3,4,5,6]",
-				},
-			},
-			false,
-			false,
-		},
-		{
-			"dynamic-fields-label-missing",
-			func(p *Config) {
-				p.HeaderAttribute = "Fields"
-			},
-			[]entry.Entry{
-				{
-					Body: "[\"stanza dev\",1,400,\"555-555-5555\"]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Body: map[string]interface{}{
-						"name":   "stanza dev",
-						"age":    int64(1),
-						"height": int64(400),
-						"number": "555-555-5555",
-					},
-				},
-			},
-			false,
-			true,
-		},
-		{
-			"missing-header-field",
-			func(p *Config) {
-			},
-			[]entry.Entry{
-				{
-					Body: "[\"stanza\",1,400,\"555-555-5555\"]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Body: map[string]interface{}{
-						"name":   "stanza",
-						"age":    int64(1),
-						"height": int64(400),
-						"number": "555-555-5555",
-					},
-				},
-			},
-			true,
-			false,
-		},
-		{
-			"empty field",
-			func(p *Config) {
-				p.Header = "name,address,age,phone,position"
-			},
-			[]entry.Entry{
-				{
-					Body: "[\"stanza\",\"Evergreen\",,\"555-5555\",\"agent\"]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"name":     "stanza",
-						"address":  "Evergreen",
-						"age":      "",
-						"phone":    "555-5555",
-						"position": "agent",
-					},
-					Body: "stanza,Evergreen,,555-5555,agent",
-				},
-			},
-			false,
-			true,
 		},
 		{
 			"comma in quotes",
 			func(p *Config) {
-				p.Header = "name,address,age,phone,position"
+				p.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 			},
 			[]entry.Entry{
 				{
@@ -365,67 +187,11 @@ func TestParserJarray(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
-						"name":     "stanza",
-						"address":  "Evergreen,49508",
-						"age":      int64(1),
-						"phone":    "555-5555",
-						"position": "agent",
-					},
-					Body: "[\"stanza\",\"Evergreen,49508\",1,\"555-5555\",\"agent\"]",
+					Body: []any{"stanza", "Evergreen,49508", int64(1), "555-5555", "agent"},
 				},
 			},
 			false,
 			false,
-		},
-		{
-			"invalid-delimiter",
-			func(p *Config) {
-				// expect []rune of length 1
-				p.Header = "name,,age,,height,,number"
-			},
-			[]entry.Entry{
-				{
-					Body: "[\"stanza\",1,400,\"555-555-5555\"]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"name":   "stanza",
-						"age":    int64(1),
-						"height": int64(400),
-						"number": "555-555-5555",
-					},
-					Body: "[\"stanza\",1,400,\"555-555-5555\"]",
-				},
-			},
-			false,
-			true,
-		},
-		{
-			"parse-failure-num-fields-mismatch",
-			func(p *Config) {
-				p.Header = "name,age,height,number"
-			},
-			[]entry.Entry{
-				{
-					Body: "[1,400,\"555-555-5555\"]",
-				},
-			},
-			[]entry.Entry{
-				{
-					Attributes: map[string]interface{}{
-						"name":   "stanza",
-						"age":    int64(1),
-						"height": int64(400),
-						"number": "555-555-5555",
-					},
-					Body: "[1,400,\"555-555-5555\"]",
-				},
-			},
-			false,
-			true,
 		},
 	}
 
@@ -468,174 +234,84 @@ func TestParserJarrayMultiline(t *testing.T) {
 	cases := []struct {
 		name     string
 		input    string
-		expected map[string]interface{}
+		expected []any
 	}{
 		{
 			"no_newlines",
 			"[\"aaaa\",\"bbbb\",12,true,\"eeee\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bbbb",
-				"C": int64(12),
-				"D": true,
-				"E": "eeee",
-			},
+			[]any{"aaaa", "bbbb", int64(12), true, "eeee"},
 		},
 		{
 			"first_field",
 			"[\"aa\naa\",\"bbbb\",12,true,\"eeee\"]",
-			map[string]interface{}{
-				"A": "aa\naa",
-				"B": "bbbb",
-				"C": int64(12),
-				"D": true,
-				"E": "eeee",
-			},
+			[]any{"aa\naa", "bbbb", int64(12), true, "eeee"},
 		},
 		{
 			"middle_field",
 			"[\"aaaa\",\"bb\nbb\",12,true,\"eeee\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bb\nbb",
-				"C": int64(12),
-				"D": true,
-				"E": "eeee",
-			},
+			[]any{"aaaa", "bb\nbb", int64(12), true, "eeee"},
 		},
 		{
 			"last_field",
 			"[\"aaaa\",\"bbbb\",12,true,\"e\neee\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bbbb",
-				"C": int64(12),
-				"D": true,
-				"E": "e\neee",
-			},
+			[]any{"aaaa", "bbbb", int64(12), true, "e\neee"},
 		},
 		{
 			"multiple_fields",
 			"[\"aaaa\",\"bb\nbb\",12,true,\"e\neee\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bb\nbb",
-				"C": int64(12),
-				"D": true,
-				"E": "e\neee",
-			},
+			[]any{"aaaa", "bb\nbb", int64(12), true, "e\neee"},
 		},
 		{
 			"multiple_first_field",
 			"[\"a\na\na\na\",\"bbbb\",\"cccc\",\"dddd\",\"eeee\"]",
-			map[string]interface{}{
-				"A": "a\na\na\na",
-				"B": "bbbb",
-				"C": "cccc",
-				"D": "dddd",
-				"E": "eeee",
-			},
+			[]any{"a\na\na\na", "bbbb", "cccc", "dddd", "eeee"},
 		},
 		{
 			"multiple_middle_field",
 			"[\"aaaa\",\"bbbb\",\"c\nc\nc\nc\",\"dddd\",\"eeee\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bbbb",
-				"C": "c\nc\nc\nc",
-				"D": "dddd",
-				"E": "eeee",
-			},
+			[]any{"aaaa", "bbbb", "c\nc\nc\nc", "dddd", "eeee"},
 		},
 		{
 			"multiple_last_field",
 			"[\"aaaa\",\"bbbb\",\"cccc\",\"dddd\",\"e\ne\ne\ne\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bbbb",
-				"C": "cccc",
-				"D": "dddd",
-				"E": "e\ne\ne\ne",
-			},
+			[]any{"aaaa", "bbbb", "cccc", "dddd", "e\ne\ne\ne"},
 		},
 		{
 			"leading_newline",
 			"[\"\naaaa\",\"bbbb\",\"cccc\",\"dddd\",\"eeee\"]",
-			map[string]interface{}{
-				"A": "\naaaa",
-				"B": "bbbb",
-				"C": "cccc",
-				"D": "dddd",
-				"E": "eeee",
-			},
+			[]any{"\naaaa", "bbbb", "cccc", "dddd", "eeee"},
 		},
 		{
 			"trailing_newline",
 			"[\"aaaa\",\"bbbb\",\"cccc\",\"dddd\",\"eeee\n\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bbbb",
-				"C": "cccc",
-				"D": "dddd",
-				"E": "eeee\n",
-			},
+			[]any{"aaaa", "bbbb", "cccc", "dddd", "eeee\n"},
 		},
 		{
 			"leading_newline_field",
 			"[\"aaaa\",\"\nbbbb\",\"\ncccc\",\"\ndddd\",\"eeee\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "\nbbbb",
-				"C": "\ncccc",
-				"D": "\ndddd",
-				"E": "eeee",
-			},
+			[]any{"aaaa", "\nbbbb", "\ncccc", "\ndddd", "eeee"},
 		},
 		{
 			"trailing_newline_field",
 			"[\"aaaa\",\"bbbb\n\",\"cccc\n\",\"dddd\n\",\"eeee\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bbbb\n",
-				"C": "cccc\n",
-				"D": "dddd\n",
-				"E": "eeee",
-			},
+			[]any{"aaaa", "bbbb\n", "cccc\n", "dddd\n", "eeee"},
 		},
 		{
 			"empty_lines_unquoted",
 			"[\"aa\naa\",\"bbbb\",\"c\nccc\",\"dddd\",\"eee\ne\"]",
-			map[string]interface{}{
-				"A": "aa\naa",
-				"B": "bbbb",
-				"C": "c\nccc",
-				"D": "dddd",
-				"E": "eee\ne",
-			},
+			[]any{"aa\naa", "bbbb", "c\nccc", "dddd", "eee\ne"},
 		},
 		{
 			"literal_return",
 			`["aaaa","bb
 bb","cccc","dd
 dd","eeee"]`,
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bb\nbb",
-				"C": "cccc",
-				"D": "dd\ndd",
-				"E": "eeee",
-			},
+			[]any{"aaaa", "bb\nbb", "cccc", "dd\ndd", "eeee"},
 		},
 		{
 			"return_in_quotes",
 			"[\"aaaa\",\"bbbb\",\"cc\ncc\",\"dddd\",\"eeee\"]",
-			map[string]interface{}{
-				"A": "aaaa",
-				"B": "bbbb",
-				"C": "cc\ncc",
-				"D": "dddd",
-				"E": "eeee",
-			},
+			[]any{"aaaa", "bbbb", "cc\ncc", "dddd", "eeee"},
 		},
 	}
 	for _, tc := range cases {
@@ -643,7 +319,6 @@ dd","eeee"]`,
 			cfg := NewConfigWithID("test")
 			cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 			cfg.OutputIDs = []string{"fake"}
-			cfg.Header = "A,B,C,D,E"
 
 			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
@@ -665,7 +340,6 @@ func TestBuildParserJarray(t *testing.T) {
 	newBasicParser := func() *Config {
 		cfg := NewConfigWithID("test")
 		cfg.OutputIDs = []string{"test"}
-		cfg.Header = "name,position,number"
 		return cfg
 	}
 
@@ -673,20 +347,5 @@ func TestBuildParserJarray(t *testing.T) {
 		c := newBasicParser()
 		_, err := c.Build(testutil.Logger(t))
 		require.NoError(t, err)
-	})
-
-	t.Run("MissingHeaderField", func(t *testing.T) {
-		c := newBasicParser()
-		c.Header = ""
-		_, err := c.Build(testutil.Logger(t))
-		require.Error(t, err)
-	})
-
-	t.Run("InvalidHeaderFieldMissingDelimiter", func(t *testing.T) {
-		c := newBasicParser()
-		c.Header = "name"
-		_, err := c.Build(testutil.Logger(t))
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "missing field delimiter in header")
 	})
 }

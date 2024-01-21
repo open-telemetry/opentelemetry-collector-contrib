@@ -19,17 +19,8 @@ func TestConfig(t *testing.T) {
 				Name: "basic",
 				Expect: func() *Config {
 					p := NewConfig()
-					p.Header = "id,severity,message"
 					p.ParseFrom = entry.NewBodyField("message")
-					return p
-				}(),
-			},
-			{
-				Name: "header_attribute",
-				Expect: func() *Config {
-					p := NewConfig()
-					p.HeaderAttribute = "header_field"
-					p.ParseFrom = entry.NewBodyField("message")
+					p.ParseTo = entry.RootableField{Field: entry.NewBodyField("messageParsed")}
 					return p
 				}(),
 			},
@@ -37,7 +28,8 @@ func TestConfig(t *testing.T) {
 				Name: "parse_to_attributes",
 				Expect: func() *Config {
 					p := NewConfig()
-					p.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
+					p.ParseFrom = entry.NewBodyField()
+					p.ParseTo = entry.RootableField{Field: entry.NewAttributeField("output")}
 					return p
 				}(),
 			},
@@ -53,7 +45,7 @@ func TestConfig(t *testing.T) {
 				Name: "parse_to_resource",
 				Expect: func() *Config {
 					p := NewConfig()
-					p.ParseTo = entry.RootableField{Field: entry.NewResourceField()}
+					p.ParseTo = entry.RootableField{Field: entry.NewResourceField("output")}
 					return p
 				}(),
 			},
