@@ -49,9 +49,10 @@ func New(logger *zap.SugaredLogger, maxConcurrentFiles int, readerFactory reader
 
 func (t *Tracker) ReadFile(path string) {
 	if t.activeFiles.Len()+t.openFiles.Len() > t.maxConcurrentFiles {
+		toPop := t.maxConcurrentFiles - (t.activeFiles.Len() + t.openFiles.Len())
 		// pop the oldest open files and add them to closed filelist
-		if r, err := t.openFiles.PopN(1); err == nil {
-			t.closedFiles.Add(r[0].Close())
+		if readers, err := t.openFiles.PopN(toPop); err == nil {
+			t.closeAll(readers)
 		} else {
 			t.Errorw("cannot open file", zap.Error(errTooManyActiveFiles))
 			return
@@ -165,7 +166,10 @@ func (t *Tracker) closePreviousFiles() {
 			t.Errorw("Failed to remove closed files", zap.Error(err))
 		}
 	}
-	readers := t.openFiles.Reset()
+	t.closeAll(t.openFiles.Reset())
+}
+
+func (t *Tracker) closeAll(readers []*reader.Reader) {
 	for _, r := range readers {
 		t.closedFiles.Add(r.Close())
 	}

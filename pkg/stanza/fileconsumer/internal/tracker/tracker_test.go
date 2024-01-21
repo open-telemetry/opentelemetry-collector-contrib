@@ -25,6 +25,7 @@ func TestTracker(t *testing.T) {
 
 	tempDir := t.TempDir()
 	tracker := New(testutil.Logger(t), 1024, readerFactory)
+	tracker.MovingAverageMatches = 10
 	temps := make([]*os.File, 0, 10)
 	for i := 0; i < 10; i++ {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
