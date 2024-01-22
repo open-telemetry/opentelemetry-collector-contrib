@@ -63,6 +63,12 @@ The maximum amount of time to wait for docker API responses.
 
 default: `5s`
 
+### `api_version`
+
+The client API version. If using one with a terminating zero, input as a string to prevent undesired truncation (e.g. `"1.40"` instead of `1.40`, which is parsed as `1.4`).
+
+default: `1.22`
+
 ### `excluded_images`
 
 A list of filters whose matching images are to be excluded. Supports literals, globs, and regex.

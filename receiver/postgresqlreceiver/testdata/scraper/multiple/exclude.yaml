@@ -898,7 +898,7 @@ resourceMetrics:
             stringValue: otel_test1_pkey
         - key: postgresql.table.name
           value:
-            stringValue: public.table1
+            stringValue: table1
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -932,7 +932,7 @@ resourceMetrics:
             stringValue: otel_test2_pkey
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -966,7 +966,7 @@ resourceMetrics:
             stringValue: telemetry_test1_pkey
         - key: postgresql.table.name
           value:
-            stringValue: public.table1
+            stringValue: table1
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1000,7 +1000,7 @@ resourceMetrics:
             stringValue: telemetry_test2_pkey
         - key: postgresql.table.name
           value:
-            stringValue: public.table2
+            stringValue: table2
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.

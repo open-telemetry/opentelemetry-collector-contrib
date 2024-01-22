@@ -273,10 +273,10 @@ func (rb *ResourceBuilder) SetOsDescription(val string) {
 	}
 }
 
-// SetOsVersion sets provided value as "os.version" attribute.
-func (rb *ResourceBuilder) SetOsVersion(val string) {
-	if rb.config.OsVersion.Enabled {
-		rb.res.Attributes().PutStr("os.version", val)
+// SetOsType sets provided value as "os.type" attribute.
+func (rb *ResourceBuilder) SetOsType(val string) {
+	if rb.config.OsType.Enabled {
+		rb.res.Attributes().PutStr("os.type", val)
 	}
 }
 

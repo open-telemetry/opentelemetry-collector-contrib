@@ -66,7 +66,7 @@ func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NotNil(t, ms)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	_, err = ms.Scrape(context.Background())
 	assert.Error(t, err)
 }
@@ -78,7 +78,7 @@ func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NotNil(t, ms)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = ms.Shutdown(context.Background())
 	assert.NoError(t, err)
 }

@@ -41,7 +41,7 @@ only unmatched container image names should be excluded.
     - Globs are non-regex items (e.g. `/items/`) containing any of the following: `*[]{}?`.  Negations are supported:
     `!my*container` will exclude all containers whose image name doesn't match the blob `my*container`.
 - `timeout` (default = `5s`): The request timeout for any docker daemon query.
-- `api_version` (default = `1.22`): The Docker client API version (must be 1.22+). [Docker API versions](https://docs.docker.com/engine/api/).
+- `api_version` (default = `1.25`): The Docker client API version (must be 1.25+). If using one with a terminating zero, input as a string to prevent undesired truncation (e.g. `"1.40"` instead of `1.40`, which is parsed as `1.4`). [Docker API versions](https://docs.docker.com/engine/api/).
 - `metrics` (defaults at [./documentation.md](./documentation.md)): Enables/disables individual metrics. See [./documentation.md](./documentation.md) for full detail.
 
 Example:

@@ -132,8 +132,8 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 					attrs,
 					times,
 					values,
-					traceIDs,
 					spanIDs,
+					traceIDs,
 					int32(model.sum.AggregationTemporality()),
 					model.sum.IsMonotonic(),
 				)

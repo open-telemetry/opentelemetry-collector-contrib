@@ -198,7 +198,7 @@ func TestShutdown(t *testing.T) {
 	}
 
 	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	// test
