@@ -42,6 +42,7 @@ MetricsBuilderConfig is a configuration for apache metrics builder.
 | key_pem |configopaque.String|  |  |
 | min_version |string|  |  |
 | max_version |string|  |  |
+| cipher_suites |[]string| <no value> |  |
 | reload_interval |[time-Duration](#time-Duration)| <no value> |  |
 | insecure |bool| false |  |
 | insecure_skip_verify |bool| false |  |

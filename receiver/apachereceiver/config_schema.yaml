@@ -50,6 +50,9 @@ fields:
   - name: max_version
     kind: string
     default: ""
+  - name: cipher_suites
+    type: '[]string'
+    kind: slice
   - name: reload_interval
     type: time.Duration
     kind: int64
