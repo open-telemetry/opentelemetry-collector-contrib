@@ -145,6 +145,7 @@ body:
       - processor/attributes
       - processor/cumulativetodelta
       - processor/datadog
+      - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs

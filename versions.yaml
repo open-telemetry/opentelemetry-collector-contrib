@@ -140,6 +140,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
@@ -262,4 +263,3 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
-
