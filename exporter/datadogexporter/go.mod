@@ -4,15 +4,15 @@ go 1.20
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.102
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
 	github.com/DataDog/datadog-api-client-go/v2 v2.21.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.11.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.11.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.11.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.11.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.11.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.0
 	github.com/DataDog/sketches-go v1.4.4
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
 	github.com/aws/aws-sdk-go v1.49.22
