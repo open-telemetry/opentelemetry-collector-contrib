@@ -10,6 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.93.0
