@@ -790,7 +790,7 @@ type metricSplunkIndexesAvgSize struct {
 func (m *metricSplunkIndexesAvgSize) init() {
 	m.data.SetName("splunk.indexes.avg.size")
 	m.data.SetDescription("Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.")
-	m.data.SetUnit("{count}")
+	m.data.SetUnit("Gb")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -841,7 +841,7 @@ type metricSplunkIndexesAvgUsage struct {
 func (m *metricSplunkIndexesAvgUsage) init() {
 	m.data.SetName("splunk.indexes.avg.usage")
 	m.data.SetDescription("Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.")
-	m.data.SetUnit("{count}")
+	m.data.SetUnit("{%}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -943,7 +943,7 @@ type metricSplunkIndexesMedianDataAge struct {
 func (m *metricSplunkIndexesMedianDataAge) init() {
 	m.data.SetName("splunk.indexes.median.data.age")
 	m.data.SetDescription("Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.")
-	m.data.SetUnit("{count}")
+	m.data.SetUnit("{days}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -994,7 +994,7 @@ type metricSplunkIndexesSize struct {
 func (m *metricSplunkIndexesSize) init() {
 	m.data.SetName("splunk.indexes.size")
 	m.data.SetDescription("Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.")
-	m.data.SetUnit("{count}")
+	m.data.SetUnit("Gb")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }

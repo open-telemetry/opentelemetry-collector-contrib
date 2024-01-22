@@ -117,7 +117,7 @@ Gauge tracking the indexes and their average size (gb). *Note:** Search is best 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {count} | Gauge | Double |
+| Gb | Gauge | Double |
 
 #### Attributes
 
@@ -131,7 +131,7 @@ Gauge tracking the indexes and their average usage (%). *Note:** Search is best 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {count} | Gauge | Double |
+| {%} | Gauge | Double |
 
 #### Attributes
 
@@ -159,7 +159,7 @@ Gauge tracking the indexes and their median data age (days). *Note:** Search is 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {count} | Gauge | Int |
+| {days} | Gauge | Int |
 
 #### Attributes
 
@@ -173,7 +173,7 @@ Gauge tracking the indexes and their total size (gb). *Note:** Search is best ru
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {count} | Gauge | Double |
+| Gb | Gauge | Double |
 
 #### Attributes
 
