@@ -24,6 +24,7 @@ const (
 var (
 	errCtxMissingEndpointType = errors.New("context was passed without the endpoint type included")
 	errEndpointTypeNotFound   = errors.New("requested client is not configured and could not be found in splunkEntClient")
+	errNoClientFound          = errors.New("no client corresponding to the endpoint type was found")
 )
 
 // Type wrapper for accessing context value
@@ -40,7 +41,7 @@ type splunkClient struct {
 	endpoint *url.URL
 }
 
-func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
+func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
 	var err error
 	var e *url.URL
 	var c *http.Client
@@ -86,7 +87,7 @@ func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s co
 }
 
 // For running ad hoc searches only
-func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse) (*http.Request, error) {
+func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse) (req *http.Request, err error) {
 	// get endpoint type from the context
 	eptType := ctx.Value(endpointType("type"))
 	if eptType == nil {
@@ -96,14 +97,22 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 	// Running searches via Splunk's REST API is a two step process: First you submit the job to run
 	// this returns a jobid which is then used in the second part to retrieve the search results
 	if sr.Jobid == nil {
+		var u string
 		path := "/services/search/jobs/"
-		url, _ := url.JoinPath((*c)[eptType].endpoint.String(), path)
+		if e, ok := (*c)[eptType]; !ok {
+			return nil, errNoClientFound
+		} else {
+			u, err = url.JoinPath(e.endpoint.String(), path)
+			if err != nil {
+				return nil, err
+			}
+		}
 
 		// reader for the response data
 		data := strings.NewReader(sr.search)
 
 		// return the build request, ready to be run by makeRequest
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, data)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, data)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +122,7 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 	path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
 	url, _ := url.JoinPath((*c)[eptType].endpoint.String(), path)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,16 +131,24 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 }
 
 // forms an *http.Request for use with Splunk built-in API's (like introspection).
-func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint string) (*http.Request, error) {
+func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint string) (req *http.Request, err error) {
+	var u string
+
 	// get endpoint type from the context
 	eptType := ctx.Value(endpointType("type"))
 	if eptType == nil {
 		return nil, errCtxMissingEndpointType
 	}
 
-	url := (*c)[eptType].endpoint.String() + apiEndpoint
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if e, ok := (*c)[eptType]; !ok {
+		return nil, errNoClientFound
+	} else {
+		u, err = url.JoinPath(e.endpoint.String(), apiEndpoint)
+		if err != nil {
+			return nil, err
+		}
+	}
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}

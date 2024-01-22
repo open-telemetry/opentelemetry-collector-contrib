@@ -37,18 +37,12 @@ func TestEndpointCorrectness(t *testing.T) {
 	errBad = multierr.Append(errBad, errMissingAuthExtension)
 
 	// Errors related to setting the wrong endpoint field (i.e. the one from httpconfig)
-	errMisconf = multierr.Append(errMisconf, errUnspecifiedEndpoint)
 	errMisconf = multierr.Append(errMisconf, errMissingAuthExtension)
+	errMisconf = multierr.Append(errMisconf, errUnspecifiedEndpoint)
 
 	// Error related to bad scheme (not http/s)
 	errScheme = multierr.Append(errScheme, errBadScheme)
 	errScheme = multierr.Append(errScheme, errMissingAuthExtension)
-
-	httpCfg := confighttp.NewDefaultHTTPClientSettings()
-	httpCfg.Auth = &configauth.Authentication{AuthenticatorID: component.NewID("dummy")}
-	httpCfgWithEndpoint := httpCfg
-	httpCfgWithEndpoint.Endpoint = "https://123.123.32.2:2093"
-	httpCfgWithEndpoint.Auth = &configauth.Authentication{AuthenticatorID: component.NewID("dummy")}
 
 	tests := []struct {
 		desc     string
@@ -59,38 +53,44 @@ func TestEndpointCorrectness(t *testing.T) {
 			desc:     "missing any endpoint setting",
 			expected: errBad,
 			config: &Config{
-				HTTPClientSettings: httpCfg,
-			},
-		},
-		{
-			desc:     "configured the wrong endpoint field (httpconfig.Endpoint)",
-			expected: errMisconf,
-			config: &Config{
-				HTTPClientSettings: httpCfgWithEndpoint,
+				IdxEndpoint: confighttp.HTTPClientSettings{
+					Auth: &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+				},
+				SHEndpoint: confighttp.HTTPClientSettings{
+					Auth: &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+				},
+				CMEndpoint: confighttp.HTTPClientSettings{
+					Auth: &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+				},
 			},
 		},
 		{
 			desc:     "properly configured invalid endpoint",
 			expected: errBad,
 			config: &Config{
-				HTTPClientSettings: httpCfg,
-				IdxEndpoint:        "123.12.23.43:80",
+				IdxEndpoint: confighttp.HTTPClientSettings{
+					Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+					Endpoint: "123.321.12.1:1",
+				},
 			},
 		},
 		{
 			desc:     "properly configured endpoint has bad scheme",
 			expected: errScheme,
 			config: &Config{
-				HTTPClientSettings: httpCfg,
-				IdxEndpoint:        "gss://123.124.32.12:90",
+				IdxEndpoint: confighttp.HTTPClientSettings{
+					Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+					Endpoint: "gss://123.124.32.12:90",
+				},
 			},
 		},
 		{
-			desc:     "properly configured endpoint",
+			desc:     "properly configured endpoint missing auth",
 			expected: errMissingAuthExtension,
 			config: &Config{
-				HTTPClientSettings: httpCfg,
-				IdxEndpoint:        "https://123.123.32.2:2093",
+				IdxEndpoint: confighttp.HTTPClientSettings{
+					Endpoint: "https://123.123.32.2:2093",
+				},
 			},
 		},
 	}
