@@ -30,9 +30,11 @@ func TestCreateTracesReceiver(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
+	set := receivertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("solace", "factory")
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		set,
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -92,10 +94,11 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "primary").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-
+	set := receivertest.NewNopCreateSettings()
+	set.ID = component.NewIDWithName("solace", "factory")
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		set,
 		cfg,
 		consumertest.NewNop(),
 	)

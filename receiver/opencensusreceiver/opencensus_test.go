@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
@@ -405,7 +404,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
+				testTel, err := componenttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))
@@ -414,8 +413,8 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, opts...)
-				require.Nil(t, err)
+				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
+				require.NoError(t, err)
 				require.NotNil(t, ocr)
 
 				ocr.traceConsumer = sink
@@ -556,7 +555,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
+				testTel, err := componenttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))
@@ -565,8 +564,8 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, opts...)
-				require.Nil(t, err)
+				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
+				require.NoError(t, err)
 				require.NotNil(t, ocr)
 
 				ocr.metricsConsumer = sink

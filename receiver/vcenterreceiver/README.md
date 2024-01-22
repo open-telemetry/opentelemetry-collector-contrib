@@ -78,17 +78,12 @@ These metrics were incorrectly dimensioned previously but the desired fix is a b
 
 These metrics were improperly dimensioned and needed another metric attribute `object` in order to properly dimension the data.
 
-1. v0.84.0, August 2023:
-
-- The version of the receiver will keep default behavior.
-- `receiver.vcenter.emitPerfMetricsWithObjects` is *disabled* by default.
-
-2. v0.86.0, September 2023:
+#### v0.93.0, January 2024
 
 - The receiver will emit the `object` metric attribute by default
 - `receiver.vcenter.emitPerfMetricsWithObjects` is *enabled* by default.
 
-3. v0.88.0, October 2023:
+#### v0.95.0, February 2024
 
 - The feature gates are removed.
 - Performance metrics will always include the `object` metric attribute.

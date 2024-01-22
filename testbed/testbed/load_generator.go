@@ -58,6 +58,7 @@ type ProviderSender struct {
 	// Number of data items (spans or metric data points) sent.
 	dataItemsSent atomic.Uint64
 	startedAt     time.Time
+	startMutex    sync.Mutex
 
 	// Number of permanent errors received
 	permanentErrors    atomic.Uint64
@@ -116,6 +117,8 @@ func (ps *ProviderSender) Start(options LoadOptions) {
 
 	// Begin generation
 	go ps.generate()
+	ps.startMutex.Lock()
+	defer ps.startMutex.Unlock()
 	ps.startedAt = time.Now()
 }
 
@@ -148,6 +151,8 @@ func (ps *ProviderSender) IsReady() bool {
 
 // GetStats returns the stats as a printable string.
 func (ps *ProviderSender) GetStats() string {
+	ps.startMutex.Lock()
+	defer ps.startMutex.Unlock()
 	sent := ps.DataItemsSent()
 	return printer.Sprintf("Sent:%10d %s (%d/sec)", sent, ps.sendType, int(float64(sent)/time.Since(ps.startedAt).Seconds()))
 }

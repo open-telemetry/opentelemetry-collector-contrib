@@ -25,7 +25,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 
 	// verify
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
 
@@ -43,6 +43,6 @@ func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 
 	// verify
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
