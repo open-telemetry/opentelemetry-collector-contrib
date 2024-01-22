@@ -58,6 +58,13 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	s.scrapeLicenseUsageByIndex(ctx, now, errs)
+	s.scrapeAvgExecLatencyByHost(ctx, now, errs)
+	s.scrapeSchedulerCompletionRatioByHost(ctx, now, errs)
+	s.scrapeIndexerAvgRate(ctx, now, errs)
+	s.scrapeSchedulerRunTimeByHost(ctx, now, errs)
+	s.scrapeIndexerRawWriteSecondsByHost(ctx, now, errs)
+	s.scrapeIndexerCpuSecondsByHost(ctx, now, errs)
+	s.scrapeAvgIopsByHost(ctx, now, errs)
 	s.scrapeIndexThroughput(ctx, now, errs)
 	s.scrapeIndexesTotalSize(ctx, now, errs)
 	s.scrapeIndexesEventCount(ctx, now, errs)
@@ -67,6 +74,9 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.scrapeIndexesBucketHotWarmCount(ctx, now, errs)
 	s.scrapeIntrospectionQueues(ctx, now, errs)
 	s.scrapeIntrospectionQueuesBytes(ctx, now, errs)
+	s.scrapeIndexerPipelineQueues(ctx, now, errs)
+	s.scrapeBucketsSearchableStatus(ctx, now, errs)
+	s.scrapeIndexesBucketCountAdHoc(ctx, now, errs)
 	return s.mb.Emit(), errs.Combine()
 }
 
@@ -141,6 +151,884 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 				continue
 			}
 			s.mb.RecordSplunkLicenseIndexUsageDataPoint(now, int64(v), indexName)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkSchedulerAvgExecLatencySearch`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+		res.Body.Close()
+
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+
+	// Record the results
+	var host string
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "host":
+			host = f.Value
+			continue
+		case "latency_avg_exec":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkAverageSchedulerExecutionLatencyDataPoint(now, v, host)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkIndexerAvgRate`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+		res.Body.Close()
+
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
+
+		if sr.Return == 200 {
+			break
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+	// Record the results
+	var host string
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "host":
+			host = f.Value
+			continue
+		case "indexer_avg_kbps":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkAvgIndexerRateDataPoint(now, v, host)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkPipelineQueues`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+
+		res.Body.Close()
+
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
+
+		if sr.Return == 200 {
+			break
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+	// Record the results
+	var host string
+	var ps int64
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "host":
+			host = f.Value
+			continue
+		case "agg_queue_ratio":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkAggregationQueueRatioDataPoint(now, v, host)
+		case "index_queue_ratio":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkIndexQueueRatioDataPoint(now, v, host)
+		case "parse_queue_ratio":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkParseQueueRatioDataPoint(now, v, host)
+		case "pipeline_sets":
+			v, err := strconv.ParseInt(f.Value, 10, 64)
+			ps = v
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkPipelineSetCountDataPoint(now, ps, host)
+		case "typing_queue_ratio":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkTypingQueueRatioDataPoint(now, v, host)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkBucketsSearchableStatus`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+
+		res.Body.Close()
+
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
+
+		if sr.Return == 200 {
+			break
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+	// Record the results
+	var host string
+	var searchable string
+	var bc int64
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "host":
+			host = f.Value
+			continue
+		case "is_searchable":
+			searchable = f.Value
+			continue
+		case "bucket_count":
+			v, err := strconv.ParseInt(f.Value, 10, 64)
+			bc = v
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkBucketsSearchableStatusDataPoint(now, bc, host, searchable)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkIndexesData`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+		// body, err := io.ReadAll(res.Body)
+    // if err != nil {
+    //     fmt.Printf("%v", err)
+    //     return
+    // }
+    // fmt.Printf("res:\t%v\n", string(body[:]))
+		res.Body.Close()
+		
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		// fmt.Printf("JobId: %v\n", *sr.Jobid)
+		
+		if sr.Return == 200 && sr.Jobid != nil {
+			fmt.Println("200")
+			break
+		}
+
+		if sr.Return == 200 {
+			break
+		}
+
+		if sr.Return == 204 {
+			fmt.Println("204")
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			fmt.Println("400")
+			fmt.Println(sr.search)
+			break
+		}
+		fmt.Println("time?")
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+	fmt.Println("arroooo?")
+	// Record the results
+	// fmt.Printf("JobId: %v\n", *sr.Jobid)
+	fmt.Println("beep")
+	var indexer string
+	var bc int64
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "title":
+			indexer = f.Value
+			continue
+		case "total_size_gb":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkIndexesSizeDataPoint(now, v, indexer)
+		case "average_size_gb":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkIndexesAvgSizeDataPoint(now, v, indexer)
+		case "average_usage_perc":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkIndexesAvgUsageDataPoint(now, v, indexer)
+		case "median_data_age":
+			fmt.Println(f.Value)
+			v, err := strconv.ParseInt(f.Value, 10, 64)
+			bc = v
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkIndexesMedianDataAgeDataPoint(now, bc, indexer)
+		case "warm_bucket_count":
+			v, err := strconv.ParseInt(f.Value, 10, 64)
+			bc = v
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkIndexesBucketCountDataPoint(now, bc, indexer)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkSchedulerCompletionRatio`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+		res.Body.Close()
+
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+
+	// Record the results
+	var host string
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "host":
+			host = f.Value
+			continue
+		case "completion_ratio":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkSchedulerCompletionRatioDataPoint(now, v, host)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkIndexerRawWriteSeconds`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+		res.Body.Close()
+
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+
+	// Record the results
+	var host string
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "host":
+			host = f.Value
+			continue
+		case "raw_data_write_seconds":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkIndexerRawWriteSecondsDataPoint(now, v, host)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeIndexerCpuSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkIndexerCpuSeconds`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+		res.Body.Close()
+
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+
+	// Record the results
+	var host string
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "host":
+			host = f.Value
+			continue
+		case "service_cpu_seconds":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkIndexerCPUSecondsDataPoint(now, v, host)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkIoAvgIops`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+		res.Body.Close()
+
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+
+	// Record the results
+	var host string
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "host":
+			host = f.Value
+			continue
+		case "iops":
+			v, err := strconv.ParseInt(f.Value, 10, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkIoAverageIopsDataPoint(now, v, host)
+		}
+	}
+}
+
+func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	var sr searchResponse
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAverageSchedulerExecutionLatency.Enabled {
+		return
+	}
+
+	sr = searchResponse{
+		search: searchDict[`SplunkSchedulerAvgRunTime`],
+	}
+
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
+
+	start := time.Now()
+
+	for {
+		req, err = s.splunkClient.createRequest(ctx, &sr)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		res, err = s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs.Add(err)
+			return
+		}
+
+		// if its a 204 the body will be empty because we are still waiting on search results
+		err = unmarshallSearchReq(res, &sr)
+		if err != nil {
+			errs.Add(err)
+		}
+		res.Body.Close()
+
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
+			errs.Add(errMaxSearchWaitTimeExceeded)
+			return
+		}
+	}
+
+	// Record the results
+	var host string
+	for _, f := range sr.Fields {
+		switch fieldName := f.FieldName; fieldName {
+		case "host":
+			host = f.Value
+			continue
+		case "run_time_avg":
+			v, err := strconv.ParseFloat(f.Value, 64)
+			if err != nil {
+				errs.Add(err)
+				continue
+			}
+			s.mb.RecordSplunkSchedulerAverageRunTimeDataPoint(now, v, host)
 		}
 	}
 }
