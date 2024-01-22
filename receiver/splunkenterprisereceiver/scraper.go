@@ -63,7 +63,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.scrapeIndexerAvgRate(ctx, now, errs)
 	s.scrapeSchedulerRunTimeByHost(ctx, now, errs)
 	s.scrapeIndexerRawWriteSecondsByHost(ctx, now, errs)
-	s.scrapeIndexerCpuSecondsByHost(ctx, now, errs)
+	s.scrapeIndexerCPUSecondsByHost(ctx, now, errs)
 	s.scrapeAvgIopsByHost(ctx, now, errs)
 	s.scrapeIndexThroughput(ctx, now, errs)
 	s.scrapeIndexesTotalSize(ctx, now, errs)
@@ -552,20 +552,12 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 		if err != nil {
 			errs.Add(err)
 		}
-		// body, err := io.ReadAll(res.Body)
-    // if err != nil {
-    //     fmt.Printf("%v", err)
-    //     return
-    // }
-    // fmt.Printf("res:\t%v\n", string(body[:]))
 		res.Body.Close()
-		
+
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		// fmt.Printf("JobId: %v\n", *sr.Jobid)
-		
+
 		if sr.Return == 200 && sr.Jobid != nil {
-			fmt.Println("200")
 			break
 		}
 
@@ -574,26 +566,20 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 		}
 
 		if sr.Return == 204 {
-			fmt.Println("204")
 			time.Sleep(2 * time.Second)
 		}
 
 		if sr.Return == 400 {
-			fmt.Println("400")
 			fmt.Println(sr.search)
 			break
 		}
-		fmt.Println("time?")
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
 			errs.Add(errMaxSearchWaitTimeExceeded)
 			return
 		}
 	}
-	fmt.Println("arroooo?")
 	// Record the results
-	// fmt.Printf("JobId: %v\n", *sr.Jobid)
-	fmt.Println("beep")
 	var indexer string
 	var bc int64
 	for _, f := range sr.Fields {
@@ -623,7 +609,6 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 			}
 			s.mb.RecordSplunkIndexesAvgUsageDataPoint(now, v, indexer)
 		case "median_data_age":
-			fmt.Println(f.Value)
 			v, err := strconv.ParseInt(f.Value, 10, 64)
 			bc = v
 			if err != nil {
@@ -799,7 +784,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 	}
 }
 
-func (s *splunkScraper) scrapeIndexerCpuSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
