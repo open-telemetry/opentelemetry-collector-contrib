@@ -18,7 +18,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultClientConnectRetries = 3
+const (
+	defaultClientConnectRetries = 3
+	defaultReconnectTimeout     = time.Millisecond * 200
+)
 
 type osQueryReceiver struct {
 	config       *Config
@@ -69,14 +72,14 @@ func newLog(ld plog.Logs, query string, row map[string]string) plog.Logs {
 
 func (or *osQueryReceiver) connect(retries int) (*osquery.ExtensionManagerClient, error) {
 	client, err := or.config.getOsQueryClient()
-	if err != nil && retries > 0 {
-		or.logger.Info("Error connecting to osquery socket, retrying", zap.Error(err))
-		return or.connect(retries - 1)
-	} else if err != nil {
-		return nil, err
+	for err != nil && retries > 0 {
+		or.logger.Error("Could not connect to osquery socket, retrying", zap.Error(err))
+		time.Sleep(defaultReconnectTimeout)
+		client, err = or.config.getOsQueryClient()
+		retries--
 	}
 
-	return client, nil
+	return client, err
 }
 
 func (or *osQueryReceiver) runQuery(ctx context.Context, query string) {
