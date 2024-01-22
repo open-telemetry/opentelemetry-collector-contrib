@@ -225,6 +225,7 @@ body:
       - receiver/nsxt
       - receiver/opencensus
       - receiver/oracledb
+      - receiver/osquery
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
@@ -261,7 +262,6 @@ body:
       - receiver/zipkin
       - receiver/zookeeper
       - testbed
-      - testbed/mockdatareceivers/mockawsxrayreceiver
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
   - type: textarea

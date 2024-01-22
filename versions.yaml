@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.91.0
+    version: v0.92.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -217,6 +217,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
@@ -254,7 +255,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
-      - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter
 
 excluded-modules:

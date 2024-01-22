@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
@@ -18,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-var errConfigNotSqlServer = errors.New("config was not a sqlserver receiver config")
+var errConfigNotSQLServer = errors.New("config was not a sqlserver receiver config")
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
@@ -29,9 +28,9 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg, ok := receiverCfg.(*Config)
 	if !ok {
-		return nil, errConfigNotSqlServer
+		return nil, errConfigNotSQLServer
 	}
-	sqlServerScraper := newSqlServerScraper(params, cfg)
+	sqlServerScraper := newSQLServerScraper(params, cfg)
 
 	scraper, err := scraperhelper.NewScraper(metadata.Type, sqlServerScraper.scrape,
 		scraperhelper.WithStart(sqlServerScraper.start),

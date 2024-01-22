@@ -29,7 +29,7 @@ func newPath[K any](fields []field) (*basePath[K], error) {
 	for i := len(fields) - 1; i >= 0; i-- {
 		current = &basePath[K]{
 			name:     fields[i].Name,
-			key:      newKey[K](fields[i].Keys),
+			keys:     newKeys[K](fields[i].Keys),
 			nextPath: current,
 		}
 	}
@@ -48,18 +48,19 @@ type Path[K any] interface {
 	// Will return nil if there is no next path.
 	Next() Path[K]
 
-	// Key provides the Key for this Path.
-	// Will return nil if there is no Key.
-	Key() Key[K]
+	// Keys provides the Keys for this Path.
+	// Will return nil if there are no Keys.
+	Keys() []Key[K]
 }
 
 var _ Path[any] = &basePath[any]{}
 
 type basePath[K any] struct {
-	name     string
-	key      *baseKey[K]
-	nextPath *basePath[K]
-	fetched  bool
+	name        string
+	keys        []Key[K]
+	nextPath    *basePath[K]
+	fetched     bool
+	fetchedKeys bool
 }
 
 func (p *basePath[K]) Name() string {
@@ -74,16 +75,20 @@ func (p *basePath[K]) Next() Path[K] {
 	return p.nextPath
 }
 
-func (p *basePath[K]) Key() Key[K] {
-	if p.key == nil {
+func (p *basePath[K]) Keys() []Key[K] {
+	if p.keys == nil {
 		return nil
 	}
-	return p.key
+	p.fetchedKeys = true
+	return p.keys
 }
 
 func (p *basePath[K]) isComplete() error {
 	if !p.fetched {
 		return fmt.Errorf("the path section %q was not used by the context - this likely means you are using extra path sections", p.name)
+	}
+	if p.keys != nil && !p.fetchedKeys {
+		return fmt.Errorf("the keys indexing %q were not used by the context - this likely means you are trying to index a path that does not support indexing", p.name)
 	}
 	if p.nextPath == nil {
 		return nil
@@ -91,19 +96,18 @@ func (p *basePath[K]) isComplete() error {
 	return p.nextPath.isComplete()
 }
 
-func newKey[K any](keys []key) *baseKey[K] {
+func newKeys[K any](keys []key) []Key[K] {
 	if len(keys) == 0 {
 		return nil
 	}
-	var current *baseKey[K]
-	for i := len(keys) - 1; i >= 0; i-- {
-		current = &baseKey[K]{
-			s:       keys[i].String,
-			i:       keys[i].Int,
-			nextKey: current,
+	ks := make([]Key[K], len(keys))
+	for i := range keys {
+		ks[i] = &baseKey[K]{
+			s: keys[i].String,
+			i: keys[i].Int,
 		}
 	}
-	return current
+	return ks
 }
 
 // Key represents a chain of keys in an OTTL statement, such as `attributes["foo"]["bar"]`.
@@ -119,18 +123,13 @@ type Key[K any] interface {
 	// If the Key does not have a int value the returned value is nil.
 	// If Key experiences an error retrieving the value it is returned.
 	Int(context.Context, K) (*int64, error)
-
-	// Next provides the next Key.
-	// Will return nil if there is no next Key.
-	Next() Key[K]
 }
 
 var _ Key[any] = &baseKey[any]{}
 
 type baseKey[K any] struct {
-	s       *string
-	i       *int64
-	nextKey *baseKey[K]
+	s *string
+	i *int64
 }
 
 func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
@@ -139,13 +138,6 @@ func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
 
 func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.i, nil
-}
-
-func (k *baseKey[K]) Next() Key[K] {
-	if k.nextKey == nil {
-		return nil
-	}
-	return k.nextKey
 }
 
 func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {

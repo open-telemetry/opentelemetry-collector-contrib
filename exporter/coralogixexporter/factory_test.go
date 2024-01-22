@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -28,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetrySettings, exporterhelper.NewDefaultRetrySettings())
+	assert.Equal(t, ocfg.BackOffConfig, configretry.NewDefaultBackOffConfig())
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
 }
@@ -40,7 +41,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
@@ -51,7 +52,7 @@ func TestCreateMetricsExporterWithDomain(t *testing.T) {
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
@@ -62,7 +63,7 @@ func TestCreateLogsExporter(t *testing.T) {
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
@@ -72,7 +73,7 @@ func TestCreateLogsExporterWithDomain(t *testing.T) {
 	cfg.Domain = "localhost"
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
@@ -197,7 +198,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			set := exportertest.NewNopCreateSettings()
 			consumer, err := factory.CreateTracesExporter(context.Background(), set, tt.config)
 			if tt.mustFailOnCreate {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
@@ -227,7 +228,7 @@ func TestCreateLogsExporterWithDomainAndEndpoint(t *testing.T) {
 
 	set := exportertest.NewNopCreateSettings()
 	consumer, err := factory.CreateLogsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, consumer)
 
 	err = consumer.Start(context.Background(), componenttest.NewNopHost())

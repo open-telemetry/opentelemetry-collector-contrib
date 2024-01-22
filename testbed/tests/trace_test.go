@@ -380,7 +380,7 @@ func verifySingleSpan(
 	span.SetSpanID(idutils.UInt64ToSpanID(1))
 	span.SetName(spanName)
 
-	sender := tc.Sender.(testbed.TraceDataSender)
+	sender := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.TraceDataSender)
 	require.NoError(t, sender.ConsumeTraces(context.Background(), td))
 
 	// We bypass the load generator in this test, but make sure to increment the
@@ -445,7 +445,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 `,
 			}
 
-			agentProc := testbed.NewChildProcessCollector()
+			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 			configStr := createConfigYaml(t, test.sender, test.receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)
@@ -531,7 +531,7 @@ func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
 `,
 	}
 
-	agentProc := testbed.NewChildProcessCollector()
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
 	configCleanup, err := agentProc.PrepareConfig(configStr)
 	require.NoError(t, err)
