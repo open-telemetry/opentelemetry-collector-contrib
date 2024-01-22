@@ -24,16 +24,12 @@ const (
 var (
 	errCtxMissingEndpointType = errors.New("context was passed without the endpoint type included")
 	errEndpointTypeNotFound   = errors.New("requested client is not configured and could not be found in splunkEntClient")
-<<<<<<< HEAD
 	errNoClientFound          = errors.New("no client corresponding to the endpoint type was found")
-=======
->>>>>>> d22d920047 (refactored client)
 )
 
 // Type wrapper for accessing context value
 type endpointType string
 
-<<<<<<< HEAD
 // Wrapper around splunkClientMap to avoid awkward reference/dereference stuff that arises when using maps in golang
 type splunkEntClient struct {
 	clients splunkClientMap
@@ -55,24 +51,6 @@ func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySett
 	var e *url.URL
 	var c *http.Client
 	clientMap := make(splunkClientMap)
-=======
-// The splunkEntClient is made up of a number of splunkClients defined for each configured endpoint
-type splunkEntClient map[any]*splunkClient
-
-// The client does not carry the endpoint that is configured with it and golang does not support mixed
-// type arrays so this struct contains the pair: the client configured for the endpoint and the endpoint
-// itself
-type splunkClient struct {
-	client   *http.Client
-	endpoint *url.URL
-}
-
-func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
-	var err error
-	var e *url.URL
-	var c *http.Client
-	splunkEntClient := make(splunkEntClient)
->>>>>>> d22d920047 (refactored client)
 
 	// if the endpoint is defined, put it in the endpoints map for later use
 	// we already checked that url.Parse does not fail in cfg.Validate()
@@ -82,11 +60,7 @@ func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s co
 		if err != nil {
 			return nil, err
 		}
-<<<<<<< HEAD
 		clientMap[typeIdx] = splunkClient{
-=======
-		splunkEntClient[typeIdx] = &splunkClient{
->>>>>>> d22d920047 (refactored client)
 			client:   c,
 			endpoint: e,
 		}
@@ -97,11 +71,7 @@ func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s co
 		if err != nil {
 			return nil, err
 		}
-<<<<<<< HEAD
 		clientMap[typeSh] = splunkClient{
-=======
-		splunkEntClient[typeSh] = &splunkClient{
->>>>>>> d22d920047 (refactored client)
 			client:   c,
 			endpoint: e,
 		}
