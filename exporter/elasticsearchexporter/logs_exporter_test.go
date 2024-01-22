@@ -55,8 +55,10 @@ func TestExporter_New(t *testing.T) {
 
 	failWithMessage := func(msg string) validate {
 		return func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
-			require.Nil(t, exporter)
-			require.Error(t, err)
+			require.NotNil(t, exporter)
+			require.NoError(t, err)
+
+			err = exporter.start(context.Background(), nil)
 			require.Contains(t, err.Error(), msg)
 		}
 	}
@@ -143,7 +145,6 @@ func TestExporter_New(t *testing.T) {
 					require.NoError(t, exporter.Shutdown(context.TODO()))
 				}()
 			}
-
 			test.want(t, exporter, err)
 		})
 	}
@@ -449,6 +450,9 @@ func TestExporter_PushEvent(t *testing.T) {
 
 func newTestExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchLogsExporter {
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(url))
+	require.NoError(t, err)
+
+	err = exporter.start(context.Background(), nil)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

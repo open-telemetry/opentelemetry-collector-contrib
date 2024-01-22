@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -27,6 +28,8 @@ type elasticsearchLogsExporter struct {
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
 	model       mappingModel
+
+	config *Config
 }
 
 var retryOnStatus = []int{500, 502, 503, 504, 429}
@@ -35,16 +38,6 @@ const createAction = "create"
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporter, error) {
 	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	client, err := newElasticsearchClient(logger, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	bulkIndexer, err := newBulkIndexer(logger, client, cfg)
-	if err != nil {
 		return nil, err
 	}
 
@@ -60,9 +53,8 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		indexStr = cfg.Index
 	}
 	esLogsExp := &elasticsearchLogsExporter{
-		logger:      logger,
-		client:      client,
-		bulkIndexer: bulkIndexer,
+		logger: logger,
+		config: cfg,
 
 		index:          indexStr,
 		dynamicIndex:   cfg.LogsDynamicIndex.Enabled,
@@ -73,8 +65,28 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 	return esLogsExp, nil
 }
 
+func (e *elasticsearchLogsExporter) start(_ context.Context, host component.Host) (err error) {
+	client, err := newElasticsearchClient(e.logger, e.config, host)
+	if err != nil {
+		return err
+	}
+
+	bulkIndexer, err := newBulkIndexer(e.logger, client, e.config)
+	if err != nil {
+		return err
+	}
+
+	e.client = client
+	e.bulkIndexer = bulkIndexer
+
+	return nil
+}
+
 func (e *elasticsearchLogsExporter) Shutdown(ctx context.Context) error {
-	return e.bulkIndexer.Close(ctx)
+	if e.bulkIndexer != nil {
+		return e.bulkIndexer.Close(ctx)
+	}
+	return nil
 }
 
 func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {

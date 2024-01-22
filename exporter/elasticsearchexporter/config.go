@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -105,6 +106,9 @@ type AuthenticationSettings struct {
 	//
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html
 	APIKey configopaque.String `mapstructure:"api_key"`
+
+	// OAuth is used for OAuth based client_credentials Authentication
+	OAuth *configauth.Authentication `mapstructure:"oauth"`
 }
 
 // DiscoverySettings defines Elasticsearch node discovery related settings.

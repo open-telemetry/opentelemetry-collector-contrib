@@ -48,8 +48,10 @@ func TestTracesExporter_New(t *testing.T) {
 
 	failWithMessage := func(msg string) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
-			require.Nil(t, exporter)
-			require.Error(t, err)
+			require.NotNil(t, exporter)
+			require.NoError(t, err)
+
+			err = exporter.start(context.Background(), nil)
 			require.Contains(t, err.Error(), msg)
 		}
 	}
@@ -431,6 +433,9 @@ func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) *elasti
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
 	require.NoError(t, err)
 
+	err = exporter.start(context.Background(), nil)
+	require.NoError(t, err)
+
 	t.Cleanup(func() {
 		require.NoError(t, exporter.Shutdown(context.TODO()))
 	})
@@ -439,6 +444,9 @@ func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) *elasti
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchTracesExporter {
 	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
+	require.NoError(t, err)
+
+	err = exporter.start(context.Background(), nil)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

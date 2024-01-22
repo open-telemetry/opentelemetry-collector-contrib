@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	esutil7 "github.com/elastic/go-elasticsearch/v7/esutil"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -64,13 +66,32 @@ func (*clientLogger) ResponseBodyEnabled() bool {
 	return false
 }
 
-func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurrent, error) {
+func newElasticsearchClient(logger *zap.Logger, config *Config, host component.Host) (*esClientCurrent, error) {
 	tlsCfg, err := config.TLSClientSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	transport := newTransport(config, tlsCfg)
+	var transport http.RoundTripper = newTransport(config, tlsCfg)
+
+	if config.Authentication.OAuth != nil {
+		ext := host.GetExtensions()
+		if ext == nil {
+			return nil, errors.New("extensions configuration not found")
+		}
+
+		httpCustomAuthRoundTripper, aerr := config.Authentication.OAuth.GetClientAuthenticator(ext)
+		if aerr != nil {
+			return nil, err
+		}
+
+		transport, err = httpCustomAuthRoundTripper.RoundTripper(transport)
+		if err != nil {
+			return nil, err
+		}
+
+		transport = &oauthTransport{transport: transport}
+	}
 
 	headers := make(http.Header)
 	for k, v := range config.Headers {
@@ -134,6 +155,20 @@ func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
 	}
 
 	return transport
+}
+
+// When authenticating request using oauth2 extension, it overwrites Authorization headers.
+// oauthTransport copies Authorization header to X-Original-Authorization
+type oauthTransport struct {
+	transport http.RoundTripper
+}
+
+func (t *oauthTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+		r.Header.Set("X-Original-Authorization", authHeader)
+	}
+
+	return t.transport.RoundTrip(r)
 }
 
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (esBulkIndexerCurrent, error) {

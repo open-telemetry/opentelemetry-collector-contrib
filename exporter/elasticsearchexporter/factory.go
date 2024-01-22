@@ -90,6 +90,7 @@ func createLogsExporter(
 		set,
 		cfg,
 		logsExporter.pushLogsData,
+		exporterhelper.WithStart(logsExporter.start),
 		exporterhelper.WithShutdown(logsExporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
 	)
@@ -112,6 +113,7 @@ func createTracesExporter(ctx context.Context,
 		set,
 		cfg,
 		tracesExporter.pushTraceData,
+		exporterhelper.WithStart(tracesExporter.start),
 		exporterhelper.WithShutdown(tracesExporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings))
 }

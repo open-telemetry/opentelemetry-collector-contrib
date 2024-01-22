@@ -44,3 +44,9 @@ elasticsearch/logstash_format:
   endpoints: [http://localhost:9200]
   logstash_format:
     enabled: true
+elasticsearch/oauth:
+  endpoints: [http://localhost:9200]
+  oauth:
+    authenticator: oauth2client
+
+

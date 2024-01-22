@@ -92,6 +92,7 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 - `user` (optional): Username used for HTTP Basic Authentication.
 - `password` (optional): Password used for HTTP Basic Authentication.
 - `api_key` (optional):  Authorization [API Key](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html).
+- `oauth` (optional): OAuth2 Client Authentication using [oauth2clientauthextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/oauth2clientauthextension/README.md).
 
 ### TLS settings
 - `ca_file` (optional): Root Certificate Authority (CA) certificate, for

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -18,6 +19,7 @@ import (
 
 type elasticsearchTracesExporter struct {
 	logger *zap.Logger
+	config *Config
 
 	index          string
 	logstashFormat LogstashFormatSettings
@@ -34,16 +36,6 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		return nil, err
 	}
 
-	client, err := newElasticsearchClient(logger, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	bulkIndexer, err := newBulkIndexer(logger, client, cfg)
-	if err != nil {
-		return nil, err
-	}
-
 	maxAttempts := 1
 	if cfg.Retry.Enabled {
 		maxAttempts = cfg.Retry.MaxRequests
@@ -52,9 +44,8 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 	model := &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
 
 	return &elasticsearchTracesExporter{
-		logger:      logger,
-		client:      client,
-		bulkIndexer: bulkIndexer,
+		logger: logger,
+		config: cfg,
 
 		index:          cfg.TracesIndex,
 		dynamicIndex:   cfg.TracesDynamicIndex.Enabled,
@@ -64,8 +55,27 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 	}, nil
 }
 
+func (e *elasticsearchTracesExporter) start(_ context.Context, host component.Host) (err error) {
+	client, err := newElasticsearchClient(e.logger, e.config, host)
+	if err != nil {
+		return err
+	}
+	bulkIndexer, err := newBulkIndexer(e.logger, client, e.config)
+	if err != nil {
+		return err
+	}
+
+	e.client = client
+	e.bulkIndexer = bulkIndexer
+
+	return nil
+}
+
 func (e *elasticsearchTracesExporter) Shutdown(ctx context.Context) error {
-	return e.bulkIndexer.Close(ctx)
+	if e.bulkIndexer != nil {
+		return e.bulkIndexer.Close(ctx)
+	}
+	return nil
 }
 
 func (e *elasticsearchTracesExporter) pushTraceData(
