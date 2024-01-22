@@ -5,7 +5,7 @@ change_type: enhancement
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a headerless jarray parser operator.
+note: Add a jarray parser operator and an assign keys transformer.
 
 # One or more tracking issues related to the change
 issues: [30321]
@@ -14,4 +14,5 @@ issues: [30321]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This opreator can be used to parse headrless jarray inputs and add headers from the configuration for each field.
+  Jarray parser opreator can be used to parse a jarray string input into a list of objects. |
+  Assign keys transformer can be used to assigns keys from the configuration to an input list
