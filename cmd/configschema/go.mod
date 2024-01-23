@@ -6,7 +6,7 @@ go 1.20
 
 require (
 	github.com/fatih/structtag v1.2.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.92.0
 	github.com/stretchr/testify v1.8.4
