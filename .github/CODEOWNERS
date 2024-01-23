@@ -107,6 +107,7 @@ extension/opampextension/                                @open-telemetry/collect
 extension/pprofextension/                                @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/remotetapextension/                            @open-telemetry/collector-contrib-approvers @atoulme
 extension/sigv4authextension/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
+extension/solarwindsapmsettingsextension/                @open-telemetry/collector-contrib-approvers @jerrytfleung @cheempz
 extension/storage/                                       @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                             @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 extension/storage/filestorage/                           @open-telemetry/collector-contrib-approvers @djaglowski
