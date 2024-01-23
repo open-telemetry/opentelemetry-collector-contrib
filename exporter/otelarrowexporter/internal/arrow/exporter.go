@@ -10,7 +10,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Exporter is 1:1 with exporter, isolates arrow-specific functionality.
+// Exporter exports OpenTelemetry Protocol with Apache Arrow protocol
+// data for a specific signal.  One of these structs is created per
+// baseExporter, in the top-level module, when Arrow is enabled.
 type Exporter struct {
 	// TODO: Implementation
 }
@@ -24,7 +26,7 @@ type AnyStreamClient interface {
 	grpc.ClientStream
 }
 
-// streamClientFunc is a constructor for AnyStreamClients.  These return
+// StreamClientFunc is a constructor for AnyStreamClients.  These return
 // the method name to assist with instrumentation, since the gRPC stats
 // handler isn't able to see the correct uncompressed size.
 type StreamClientFunc func(context.Context, ...grpc.CallOption) (AnyStreamClient, string, error)
