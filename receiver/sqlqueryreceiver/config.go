@@ -18,7 +18,7 @@ type Config struct {
 }
 
 func (c Config) Validate() error {
-	return c.Config.Validate()
+	return nil
 }
 
 func createDefaultConfig() component.Config {
