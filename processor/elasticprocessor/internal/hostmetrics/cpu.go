@@ -5,7 +5,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func transformCPUMetrics(metrics pmetric.MetricSlice) error {
+func addCPUMetrics(metrics pmetric.MetricSlice) error {
 	var timestamp pcommon.Timestamp
 	var numCores int64
 	var totalPercent, idlePercent, systemPercent, userPercent, stealPercent,

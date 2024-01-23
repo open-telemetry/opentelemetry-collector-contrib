@@ -27,7 +27,9 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		AddSystemMetrics: true,
+	}
 }
 
 func createMetricsProcessor(
@@ -36,7 +38,7 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	elasticProcessor := newProcessor(set)
+	elasticProcessor := newProcessor(set, cfg.(*Config))
 	return processorhelper.NewMetricsProcessor(
 		ctx,
 		set,
@@ -52,7 +54,7 @@ func createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	elasticProcessor := newProcessor(set)
+	elasticProcessor := newProcessor(set, cfg.(*Config))
 	return processorhelper.NewLogsProcessor(
 		ctx,
 		set,
@@ -68,7 +70,7 @@ func createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	elasticProcessor := newProcessor(set)
+	elasticProcessor := newProcessor(set, cfg.(*Config))
 	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,

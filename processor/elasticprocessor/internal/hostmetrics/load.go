@@ -5,7 +5,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func transformLoadMetrics(metrics pmetric.MetricSlice) error {
+func addLoadMetrics(metrics pmetric.MetricSlice) error {
 	var timestamp pcommon.Timestamp
 	var l1, l5, l15 float64
 	cpus := map[string]bool{}
