@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"go.opentelemetry.io/collector/featuregate"
@@ -57,26 +56,26 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("assign_keys missing required field keys")
 	}
 
-	if e, ok := c.Field.FieldInterface.(entry.BodyField); ok {
-		return &Transformer[entry.BodyField]{
+	if _, ok := c.Field.FieldInterface.(entry.BodyField); ok {
+		return &Transformer{
 			TransformerOperator: transformerOperator,
-			Field:               e,
+			Field:               c.Field,
 			Keys:                c.Keys,
 		}, nil
 	}
 
-	if e, ok := c.Field.FieldInterface.(entry.ResourceField); ok {
-		return &Transformer[entry.ResourceField]{
+	if _, ok := c.Field.FieldInterface.(entry.ResourceField); ok {
+		return &Transformer{
 			TransformerOperator: transformerOperator,
-			Field:               e,
+			Field:               c.Field,
 			Keys:                c.Keys,
 		}, nil
 	}
 
-	if e, ok := c.Field.FieldInterface.(entry.AttributeField); ok {
-		return &Transformer[entry.AttributeField]{
+	if _, ok := c.Field.FieldInterface.(entry.AttributeField); ok {
+		return &Transformer{
 			TransformerOperator: transformerOperator,
-			Field:               e,
+			Field:               c.Field,
 			Keys:                c.Keys,
 		}, nil
 	}
@@ -85,23 +84,20 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 }
 
 // Transformer transforms a list in the entry field into a map. Each value is assigned a key from configuration keys
-type Transformer[T interface {
-	entry.BodyField | entry.ResourceField | entry.AttributeField
-	entry.FieldInterface
-}] struct {
+type Transformer struct {
 	helper.TransformerOperator
-	Field T
+	Field entry.Field
 	Keys  []string
 }
 
 // Process will process an entry with AssignKeys transformation.
-func (p *Transformer[T]) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 
 // Transform will apply AssignKeys to an entry
-func (p *Transformer[T]) Transform(entry *entry.Entry) error {
-	inputListInterface, ok := entry.Delete(p.Field)
+func (p *Transformer) Transform(entry *entry.Entry) error {
+	inputListInterface, ok := entry.Get(p.Field)
 	if !ok {
 		// The field doesn't exist, so ignore it
 		return fmt.Errorf("apply assign_keys: field %s does not exist on entry", p.Field)
@@ -109,10 +105,10 @@ func (p *Transformer[T]) Transform(entry *entry.Entry) error {
 
 	inputList, ok := inputListInterface.([]any)
 	if !ok {
-		return p.rollbackTransformAndGetError(entry, inputListInterface, fmt.Sprintf("apply assign_keys: couldn't convert field %s to []any", p.Field))
+		return fmt.Errorf("apply assign_keys: couldn't convert field %s to []any", p.Field)
 	}
 	if len(inputList) != len(p.Keys) {
-		return p.rollbackTransformAndGetError(entry, inputListInterface, fmt.Sprintf("apply assign_keys: field %s contains %d values while expected keys are %s contain %d keys", p.Field, len(inputList), p.Keys, len(p.Keys)))
+		return fmt.Errorf("apply assign_keys: field %s contains %d values while expected keys are %s contain %d keys", p.Field, len(inputList), p.Keys, len(p.Keys))
 	}
 
 	assignedMap := p.AssignKeys(p.Keys, inputList)
@@ -124,19 +120,11 @@ func (p *Transformer[T]) Transform(entry *entry.Entry) error {
 	return nil
 }
 
-func (p *Transformer[T]) AssignKeys(keys []string, values []any) map[string]any {
+func (p *Transformer) AssignKeys(keys []string, values []any) map[string]any {
 	outputMap := make(map[string]any, len(keys))
 	for i, key := range keys {
 		outputMap[key] = values[i]
 	}
 
 	return outputMap
-}
-
-func (p *Transformer[T]) rollbackTransformAndGetError(entry *entry.Entry, originalValue interface{}, rollbackReasonMessage string) error {
-	err := entry.Set(p.Field, originalValue)
-	if err != nil {
-		return errors.Wrap(err, "reset assign_keys field due to: "+rollbackReasonMessage+" has failed")
-	}
-	return fmt.Errorf(rollbackReasonMessage, p.Field)
 }
