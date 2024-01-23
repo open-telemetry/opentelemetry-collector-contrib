@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
@@ -69,7 +70,10 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: expected.metricDataPointsFiltered},
+					{
+						Value:      expected.metricDataPointsFiltered,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
 				},
 			},
 		}
@@ -86,7 +90,10 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: expected.logsFiltered},
+					{
+						Value:      expected.logsFiltered,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
 				},
 			},
 		}
@@ -103,7 +110,10 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: expected.spansFiltered},
+					{
+						Value:      expected.spansFiltered,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
 				},
 			},
 		}

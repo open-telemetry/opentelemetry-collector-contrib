@@ -84,5 +84,5 @@ func (fpt *filterProcessorTelemetry) record(trigger trigger, dropped int64) {
 		triggerMeasure = fpt.spansFiltered
 	}
 
-	triggerMeasure.Add(fpt.exportCtx, dropped)
+	triggerMeasure.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
 }
