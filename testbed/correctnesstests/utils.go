@@ -54,14 +54,12 @@ func CreateConfigYaml(
 		pipeline1 = "logs"
 	default:
 		t.Error("Invalid DataSender type")
-	}
-
-	// Need better var name
-	var pipeline2 string
-	pipeline2 = connector.GetReceiverType()
-
+	}	
 
 	if (connector != nil) {
+		var pipeline2 string
+		pipeline2 = connector.GetReceiverType()
+		
 		format := `
 receivers:%v
 exporters:%v
