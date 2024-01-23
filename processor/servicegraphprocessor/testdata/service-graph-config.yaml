@@ -19,6 +19,7 @@ processors:
     virtual_node_peer_attributes:
       - db.name
       - rpc.service
+    database_name_attribute: net.peer.name
 
 service:
   pipelines:

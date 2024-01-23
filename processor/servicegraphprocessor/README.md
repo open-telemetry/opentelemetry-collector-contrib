@@ -127,6 +127,8 @@ The following settings can be optionally configured:
 - `virtual_node_peer_attributes`: the list of attributes need to match for building virtual server node, the higher the front, the higher the priority.
   - Default: `[db.name, net.sock.peer.addr, net.peer.name, rpc.service, net.sock.peer.name, net.peer.name, http.url, http.target]`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter. Metrics are flush on every received batch of traces by default.
+- `database_name_attribute`: the attribute name used to identify the database name from span attributes.
+    - Default: `db.name`
 
 ## Example configuration
 
@@ -153,6 +155,7 @@ processors:
     virtual_node_peer_attributes:
       - db.name
       - rpc.service
+    database_name_attribute: db.name
 exporters:
   prometheus/servicegraph:
     endpoint: localhost:9090
