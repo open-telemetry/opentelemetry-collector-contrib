@@ -3,32 +3,32 @@
 The `json_array_parser` operator parses the string-type field selected by `parse_from` assumed to be of a json array format into a list.
 A JArray string (or a json array string) is a string that represents a JSON array. A JSON array is a type of data structure that is used to store data in a structured way. It consists of an ordered list of values that can be either strings, numbers, objects, or even other arrays.
 #### Examples:
-a simple Jarray string with strictly strings in it:
+a simple json array string with strictly strings in it:
 ```
 "[\"Foo\", \"Bar\", \"Charlie\"]"
 ```
 
-Jarray after parsing:
+json array after parsing:
 ```json
 ["Foo", "Bar", "Charlie"]
 ```
 
-a more complex Jarray string with different types in it without nested objects:
+a more complex json array string with different types in it without nested objects:
 ```
 "[\"Hello\", 42, true, null]"
 ```
 
-Jarray after parsing:
+json array after parsing:
 ```json
 ["Hello", 42, true, null]
 ```
 
-a more complex Jarray string with different types in it with nested objects:
+a more complex json array string with different types in it with nested objects:
 ```
 "[\"Hello\", 42, {\"name\": \"Alice\", \"age\": 25}, [1, 2, 3], true, null]"
 ```
 
-Jarray after parsing:
+json array after parsing:
 ```json
 ["Hello", 42, {"name": "Alice", "age": 25}, [1, 2, 3], true, null]
 ```
@@ -95,7 +95,7 @@ Configuration:
 </tr>
 </table>
 
-#### Parse the field `body` with a jarray parser
+#### Parse the field `body` with a json array parser
 
 Configuration:
 

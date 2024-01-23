@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package json_array // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jarray"
+package json_array // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json_array"
 
 import (
 	"context"
@@ -32,24 +32,24 @@ func init() {
 	}
 }
 
-// NewConfig creates a new jarray parser config with default values
+// NewConfig creates a new json array parser config with default values
 func NewConfig() *Config {
 	return NewConfigWithID(operatorType)
 }
 
-// NewConfigWithID creates a new jarray parser config with default values
+// NewConfigWithID creates a new json array parser config with default values
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
 	}
 }
 
-// Config is the configuration of a jarray parser operator.
+// Config is the configuration of a json array parser operator.
 type Config struct {
 	helper.ParserConfig `mapstructure:",squash"`
 }
 
-// Build will build a jarray parser operator.
+// Build will build a json array parser operator.
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
@@ -62,13 +62,13 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}, nil
 }
 
-// Parser is an operator that parses jarray in an entry.
+// Parser is an operator that parses json array in an entry.
 type Parser struct {
 	helper.ParserOperator
 	pool *fastjson.ParserPool
 }
 
-// Process will parse an entry for jarray.
+// Process will parse an entry for json array.
 func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
 	return r.ParserOperator.ProcessWith(ctx, e, r.parse)
 }
@@ -120,7 +120,7 @@ func valueAsString(value any) (string, error) {
 	case []byte:
 		s += string(t)
 	default:
-		return s, fmt.Errorf("type '%T' cannot be parsed as jarray", value)
+		return s, fmt.Errorf("type '%T' cannot be parsed as json array", value)
 	}
 
 	return s, nil

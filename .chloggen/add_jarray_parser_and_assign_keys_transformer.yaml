@@ -5,7 +5,7 @@ change_type: enhancement
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a jarray parser operator and an assign keys transformer.
+note: Add a json array parser operator and an assign keys transformer.
 
 # One or more tracking issues related to the change
 issues: [30321]
@@ -14,5 +14,5 @@ issues: [30321]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Jarray parser opreator can be used to parse a jarray string input into a list of objects. |
+  Json array parser opreator can be used to parse a json array string input into a list of objects. |
   Assign keys transformer can be used to assigns keys from the configuration to an input list
