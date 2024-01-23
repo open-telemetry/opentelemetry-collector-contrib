@@ -24,7 +24,7 @@ import (
 type worker struct {
 	running          *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
 	numTraces        int             // how many traces the worker has to generate (only when duration==0)
-	numSpans         int             // how many spans the worker has to generate per trace
+	numChildSpans    int             // how many child spans the worker has to generate per trace
 	propagateContext bool            // whether the worker needs to propagate the trace context via HTTP headers
 	statusCode       codes.Code      // the status code set for the child and parent spans
 	totalDuration    time.Duration   // how long to run the test for (overrides `numTraces`)
@@ -73,7 +73,7 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		}
 		var endTimestamp trace.SpanEventOption
 
-		for j := 0; j < w.numSpans; j++ {
+		for j := 0; j < w.numChildSpans; j++ {
 			_, child := tracer.Start(childCtx, "okey-dokey-"+strconv.Itoa(j), trace.WithAttributes(
 				semconv.NetPeerIPKey.String(fakeIP),
 				semconv.PeerServiceKey.String("telemetrygen-client"),

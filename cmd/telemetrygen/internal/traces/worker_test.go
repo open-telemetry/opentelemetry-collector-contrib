@@ -63,16 +63,16 @@ func TestNumberOfSpans(t *testing.T) {
 		Config: common.Config{
 			WorkerCount: 1,
 		},
-		NumTraces: 1,
-		NumSpans:  5,
+		NumTraces:     1,
+		NumChildSpans: 5,
 	}
-	expectedNumberSpans := cfg.NumSpans + 1 // each trace has NumSpans + 1 spans
+	expectedNumSpans := cfg.NumChildSpans + 1 // each trace has 1 + NumChildSpans spans
 
 	// test
 	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
-	assert.Len(t, syncer.spans, expectedNumberSpans)
+	assert.Len(t, syncer.spans, expectedNumSpans)
 }
 
 func TestRateOfSpans(t *testing.T) {
