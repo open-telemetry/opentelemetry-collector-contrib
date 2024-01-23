@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/aws/aws-sdk-go v1.50.2
 	github.com/google/go-cmp v0.6.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.92.0
