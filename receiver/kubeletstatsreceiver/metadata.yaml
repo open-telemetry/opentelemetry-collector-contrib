@@ -81,16 +81,25 @@ attributes:
     enum: [receive, transmit]
 
 metrics:
+  k8s.node.cpu.usage:
+    enabled: false
+    description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
+    unit: "{cpu}"
+    gauge:
+      value_type: double
+    attributes: []
   k8s.node.cpu.utilization:
     enabled: true
     description: "Node CPU utilization"
+    warnings:
+      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead."
     unit: 1
     gauge:
       value_type: double
     attributes: []
   k8s.node.cpu.time:
     enabled: true
-    description: "Node CPU time"
+    description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
     sum:
       value_type: double
@@ -187,16 +196,25 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
+  k8s.pod.cpu.usage:
+    enabled: false
+    description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
+    unit: "{cpu}"
+    gauge:
+      value_type: double
+    attributes: [ ]
   k8s.pod.cpu.utilization:
     enabled: true
     description: "Pod CPU utilization"
+    warnings:
+      if_enabled: "This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead."
     unit: 1
     gauge:
       value_type: double
     attributes: [ ]
   k8s.pod.cpu.time:
     enabled: true
-    description: "Pod CPU time"
+    description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
     sum:
       value_type: double
@@ -321,16 +339,25 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
+  container.cpu.usage:
+    enabled: false
+    description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
+    unit: "{cpu}"
+    gauge:
+      value_type: double
+    attributes: [ ]
   container.cpu.utilization:
     enabled: true
     description: "Container CPU utilization"
+    warnings:
+      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead."
     unit: 1
     gauge:
       value_type: double
     attributes: [ ]
   container.cpu.time:
     enabled: true
-    description: "Container CPU time"
+    description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
     sum:
       value_type: double

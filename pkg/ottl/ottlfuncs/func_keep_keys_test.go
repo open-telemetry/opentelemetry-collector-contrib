@@ -69,7 +69,7 @@ func Test_keepKeys(t *testing.T) {
 			exprFunc := keepKeys(tt.target, tt.keys)
 
 			_, err := exprFunc(nil, scenarioMap)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
