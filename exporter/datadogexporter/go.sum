@@ -92,25 +92,15 @@ github.com/DataDog/go-tuf v1.0.2-0.5.2 h1:EeZr937eKAWPxJ26IykAdWA4A0jQXJgkhUjqEI
 github.com/DataDog/go-tuf v1.0.2-0.5.2/go.mod h1:zBcq6f654iVqmkk8n2Cx81E1JnNTMOAx1UEO/wZR+P0=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee h1:tXibLZk3G6HncIFJKaNItsdzcrk4YqILNDZlXPTNt4k=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee/go.mod h1:nTot/Iy0kW16bXgXr6blEc8gFeAS7vTqYlhAxh+dbc0=
-github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.0 h1:lr/KfZBN9/Gy2MdKPNJiXZH8iz2BaFIW8+QRfIERn9I=
-github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.0/go.mod h1:WUCAKoHIvhHFgIjsRa2Kaunv9gbmpqsUaltMhB2Y0I4=
 github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.1 h1:MwXEMqL/aThmkdLKSABXRb+/qoyCq5Z3+1IPPB6L/m0=
 github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.1/go.mod h1:ODbHm4iVWmn16ruFXY7uMC0LNaZaGWHBqu0VR8efIsk=
-github.com/DataDog/opentelemetry-mapping-go/pkg/internal/sketchtest v0.13.0 h1:EatE0Se2D+neaCHyA4UGmm25LTZIPfns9NXo3Wz62I0=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.0 h1:iNB43SdjqplTqzyusfTSQq5GBo57lS8COqhEqyxkDGM=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.0/go.mod h1:NRv/hOlGq1LrJN1bbY7gJa4upTDTh5ZRW19U5w/wuNQ=
+github.com/DataDog/opentelemetry-mapping-go/pkg/internal/sketchtest v0.13.1 h1:0ugsTkWG1SrU8WR9sDGhOy4M/iqHY+w5Ali+jzMGetg=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.1 h1:mOfJySl1BbvgVHgLsA1ouWHN2QKyd+xksy3hG2TeD68=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.1/go.mod h1:NRv/hOlGq1LrJN1bbY7gJa4upTDTh5ZRW19U5w/wuNQ=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.0 h1:UkraFhhKe11O1BmNHrBGfMMcJpmsZ/6kzU4FGyG8wWU=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.0/go.mod h1:FhHNEP2Ca9C9tNIcmC85JJd5Vpwxo16MNrlLvAc4588=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.1 h1:S9pLye2reYfPUOV4FXSkRvsDt6OwIGyGAIgXTNErhL4=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.1/go.mod h1:3luUUR9mBoHiMRh+PrWmySpXMOntTd/7fCl2UTu4Axg=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.0 h1:AQDXcQK7L5e4WPhc/wNyeUSy/ew/tSV/EReM+V6S298=
-github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.0/go.mod h1:ilNWHsAKu6SJ6rl8w7DcrBWDuQzVaXLWV/gpsvwTbTk=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.1 h1:z0QDSV9lQbTVoAnOkKiu7SWElWKPwpqGI7OE+OYNCIs=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.1/go.mod h1:As+hEGB+/quKDMjxLtMKU9ucSsjrpdk1pXnMNqfwGoU=
-github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.0 h1:09d5bGyysT7lbX0gx8sT8f08ftQKO+fswjP9GTRgXaI=
-github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.0/go.mod h1:Ni+/S5Efqm2MiNxRMm8zsgDt/Xn/7lxCvewkassHXNI=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.1 h1:nd3Zch8xtTALM3ObZ3jBwzbDFtARTN/QVoDCCWXubJE=
 github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.1/go.mod h1:xF6NyzghnEeQe9+9d8XiiOzxhDAdvOWOF8dR4dq5DqI=
 github.com/DataDog/sketches-go v1.4.4 h1:dF52vzXRFSPOj2IjXSWLvXq3jubL4CI69kwYjJ1w5Z8=
@@ -135,7 +125,6 @@ github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
 github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 h1:s6gZFSlWYmbqAuRjVTiNNhvNRfY2Wxp9nhfyel4rklc=
 github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137/go.mod h1:OMCwj8VM1Kc9e19TLln2VL61YJF0x1XFtfdL4JdbSyE=
-github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-metrics v0.4.1 h1:hR91U9KYmb6bLBYLQjyM+3j+rcd/UhE+G78SFnF8gJA=
@@ -234,7 +223,6 @@ github.com/form3tech-oss/jwt-go v3.2.2+incompatible/go.mod h1:pbq4aXjuKjdthFRnoD
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
-github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
@@ -389,7 +377,6 @@ github.com/gorilla/websocket v1.5.0/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/ad
 github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd h1:PpuIBO5P3e9hpqBD0O/HjhShYuM6XE0i/lbE6J94kww=
 github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd/go.mod h1:M5qHK+eWfAv8VR/265dIuEpL3fNfeC21tXXp9itM24A=
 github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
-github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1 h1:6UKoz5ujsI55KNpsJH3UwCq3T8kKbZwNZBNPuTTje8U=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1/go.mod h1:YvJ2f6MplWDhfxiUC3KpyTy76kYUZA4W3pTv/wdKQ9Y=
 github.com/hashicorp/consul/api v1.27.0 h1:gmJ6DPKQog1426xsdmgk5iqDyoRiNc+ipBdJOqKQFjc=
@@ -666,7 +653,6 @@ github.com/prometheus/prometheus v0.48.1 h1:CTszphSNTXkuCG6O0IfpKdHcJkvvnAAE1GbE
 github.com/prometheus/prometheus v0.48.1/go.mod h1:SRw624aMAxTfryAcP8rOjg4S/sHHaetx2lyJJ2nM83g=
 github.com/prometheus/statsd_exporter v0.22.7 h1:7Pji/i2GuhK6Lu7DHrtTkFmNBCudCPT1pX2CziuyQR0=
 github.com/prometheus/statsd_exporter v0.22.7/go.mod h1:N/TevpjkIh9ccs6nuzY3jQn9dFqnUakOjnEuMPJJJnI=
-github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
 github.com/rs/cors v1.10.1 h1:L0uuZVXIKlI1SShY2nhFfo44TYvDPQ1w4oFkUJNfhyo=
@@ -692,7 +678,6 @@ github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrf
 github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
-github.com/spf13/afero v1.3.3/go.mod h1:5KUK8ByomD5Ti5Artl0RtHeI5pTF7MIDuXL3yY520V4=
 github.com/spf13/cobra v1.8.0 h1:7aJaZx1B85qltLMc546zn58BxxfZdR/W22ej9CFoEf0=
 github.com/spf13/cobra v1.8.0/go.mod h1:WXLWApfZ71AjXPya3WOlMsY9yMs7YeiHhFVlvLyhcho=
 github.com/spf13/pflag v0.0.0-20170130214245-9ff6c6923cff/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
@@ -898,7 +883,6 @@ golang.org/x/lint v0.0.0-20190930215403-16217165b5de/go.mod h1:6SW0HCj/g11FgYtHl
 golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f/go.mod h1:5qLYkcX4OjUUV8bRuDixDT3tpyyb+LUpUlRWLxfhWrs=
 golang.org/x/lint v0.0.0-20200130185559-910be7a94367/go.mod h1:3xt1FjdF8hUf6vQPIChWIBhFzV8gjjsPE/fR3IyQdNY=
 golang.org/x/lint v0.0.0-20200302205851-738671d3881b/go.mod h1:3xt1FjdF8hUf6vQPIChWIBhFzV8gjjsPE/fR3IyQdNY=
-golang.org/x/lint v0.0.0-20210508222113-6edffad5e616/go.mod h1:3xt1FjdF8hUf6vQPIChWIBhFzV8gjjsPE/fR3IyQdNY=
 golang.org/x/mobile v0.0.0-20190312151609-d3739f865fa6/go.mod h1:z+o9i4GpDbdi3rU15maQ/Ox0txvL9dWGYEHz965HBQE=
 golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028/go.mod h1:E/iHnbuqvinMTCcRqshq8CkpyQDoeVncDDYHnLhea+o=
 golang.org/x/mod v0.0.0-20190513183733-4bf6d317e70e/go.mod h1:mXi4GBBbnImb6dmsKGUJ2LatrhH/nqhxcFungHvyanc=
