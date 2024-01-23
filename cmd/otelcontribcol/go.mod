@@ -544,6 +544,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.92.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.92.0 // indirect
@@ -951,6 +952,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azure
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../internal/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka => ../../pkg/kafka
 

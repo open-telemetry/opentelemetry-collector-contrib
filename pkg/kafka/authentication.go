@@ -11,7 +11,8 @@ import (
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/awsmsk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 // Authentication defines authentication.
@@ -106,10 +107,10 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 
 	switch config.Mechanism {
 	case "SCRAM-SHA-512":
-		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: sha512.New} }
+		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &kafka.XDGSCRAMClient{HashGeneratorFcn: sha512.New} }
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
 	case "SCRAM-SHA-256":
-		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: sha256.New} }
+		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &kafka.XDGSCRAMClient{HashGeneratorFcn: sha256.New} }
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
 	case "PLAIN":
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
