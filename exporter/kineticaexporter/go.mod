@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineti
 go 1.20
 
 require (
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/kineticadb/kinetica-api-go v0.0.3
 	github.com/samber/lo v1.39.0
 	github.com/stretchr/testify v1.8.4
