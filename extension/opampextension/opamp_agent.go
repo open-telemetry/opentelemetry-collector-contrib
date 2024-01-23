@@ -44,7 +44,7 @@ type opampAgent struct {
 
 func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 	// TODO: Add OpAMP HTTP transport support.
-	o.opampClient = client.NewWebSocket(o.logger.Sugar())
+	o.opampClient = client.NewWebSocket(newLoggerFromZap(o.logger))
 
 	header := http.Header{}
 	for k, v := range o.cfg.Server.WS.Headers {
