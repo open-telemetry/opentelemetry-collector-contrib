@@ -8,13 +8,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 )
 
 const operatorType = "assign_keys"
 
+var assignKeysTransformerFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.assignKeys",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of `assign_keys` transformer."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30321"),
+)
+
 func init() {
-	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
+	if assignKeysTransformerFeatureGate.IsEnabled() {
+		operator.Register(operatorType, func() operator.Builder { return NewConfig() })
+	}
 }
 
 // NewConfig creates a new assign_keys operator config with default values

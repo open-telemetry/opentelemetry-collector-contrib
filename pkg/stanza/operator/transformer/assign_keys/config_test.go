@@ -7,11 +7,15 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 // Test unmarshalling of values into config struct
 func TestUnmarshal(t *testing.T) {
+	// Manually adding operator to the Registry as its behind a feature gate
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
+
 	operatortest.ConfigUnmarshalTests{
 		DefaultConfig: NewConfig(),
 		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),

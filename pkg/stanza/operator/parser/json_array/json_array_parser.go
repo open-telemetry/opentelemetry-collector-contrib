@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -18,8 +19,17 @@ import (
 
 const operatorType = "json_array_parser"
 
+var jsonArrayParserFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.jsonParserArray",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of `json_array_parser`."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30321"),
+)
+
 func init() {
-	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
+	if jsonArrayParserFeatureGate.IsEnabled() {
+		operator.Register(operatorType, func() operator.Builder { return NewConfig() })
+	}
 }
 
 // NewConfig creates a new jarray parser config with default values
