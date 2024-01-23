@@ -1,16 +1,16 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 
 import (
 	"context"
 	"database/sql"
 )
 
-// These are wrappers and interfaces around sql.DB so that it can be swapped out for testing.
+// These are wrappers and interfaces around SQL.DB so that it can be swapped out for testing.
 
-type db interface {
+type Db interface {
 	QueryContext(ctx context.Context, query string, args ...any) (rows, error)
 }
 
@@ -24,12 +24,12 @@ type colType interface {
 	Name() string
 }
 
-type dbWrapper struct {
-	db *sql.DB
+type DbWrapper struct {
+	Db *sql.DB
 }
 
-func (d dbWrapper) QueryContext(ctx context.Context, query string, args ...any) (rows, error) {
-	rows, err := d.db.QueryContext(ctx, query, args...)
+func (d DbWrapper) QueryContext(ctx context.Context, query string, args ...any) (rows, error) {
+	rows, err := d.Db.QueryContext(ctx, query, args...)
 	return rowsWrapper{rows}, err
 }
 

@@ -119,6 +119,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal

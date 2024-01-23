@@ -124,6 +124,7 @@ body:
       - internal/metadataproviders
       - internal/sharedcomponent
       - internal/splunk
+      - internal/sqlquery
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal

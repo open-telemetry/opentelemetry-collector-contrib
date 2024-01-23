@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sqlqueryreceiver
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 
 import (
 	"testing"

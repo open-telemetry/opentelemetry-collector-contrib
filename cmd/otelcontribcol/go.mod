@@ -547,6 +547,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.93.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.93.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.93.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.93.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.93.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.93.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.93.0 // indirect
@@ -1191,3 +1192,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opam
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension => ../../extension/solarwindsapmsettingsextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery

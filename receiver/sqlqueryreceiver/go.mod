@@ -10,6 +10,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.93.0
 	github.com/sijms/go-ora/v2 v2.8.6
@@ -178,3 +179,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => 
 replace github.com/docker/docker v24.0.4+incompatible => github.com/docker/docker v24.0.5-0.20230719162248-f022632503d1+incompatible
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
