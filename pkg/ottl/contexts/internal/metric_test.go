@@ -116,11 +116,11 @@ func Test_MetricPathGetSetter(t *testing.T) {
 			metric := createMetricTelemetry()
 
 			got, err := accessor.Get(context.Background(), newMetricContext(metric))
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), newMetricContext(metric), tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			expectedMetric := createMetricTelemetry()
 			tt.modified(expectedMetric)

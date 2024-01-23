@@ -881,10 +881,10 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 
 		assert.NotNil(t, logs)
 		err = logs.ConsumeLogs(context.Background(), ld)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		time.Sleep(time.Second)
 		err = logs.Shutdown(context.Background())
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 
 	assert.True(t, wasSuccessful.Load())

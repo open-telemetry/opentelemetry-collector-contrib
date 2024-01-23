@@ -80,14 +80,8 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			SendMetadata:        cfg.SendMetadata,
 		},
 	}
-	if cfg.WAL == nil {
-		return prwe, nil
-	}
 
-	prwe.wal, err = newWAL(cfg.WAL, prwe.export)
-	if err != nil {
-		return nil, err
-	}
+	prwe.wal = newWAL(cfg.WAL, prwe.export)
 	return prwe, nil
 }
 

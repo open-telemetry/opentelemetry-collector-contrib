@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
@@ -17,7 +16,7 @@ import (
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,

@@ -89,10 +89,13 @@ func (s *solaceTracesReceiver) Start(_ context.Context, _ component.Host) error 
 
 // Shutdown implements component.Receiver::Shutdown
 func (s *solaceTracesReceiver) Shutdown(_ context.Context) error {
+	if s.cancel == nil {
+		return nil
+	}
 	s.terminating.Store(true)
 	s.metrics.recordReceiverStatus(receiverStateTerminating)
 	s.settings.Logger.Info("Shutdown waiting for all components to complete")
-	s.cancel() // cancels the context passed to the reconneciton loop
+	s.cancel() // cancels the context passed to the reconnection loop
 	s.shutdownWaitGroup.Wait()
 	s.settings.Logger.Info("Receiver shutdown successfully")
 	s.metrics.recordReceiverStatus(receiverStateTerminated)

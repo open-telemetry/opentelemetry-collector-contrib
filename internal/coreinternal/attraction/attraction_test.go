@@ -77,7 +77,7 @@ func TestAttributes_InsertValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -135,7 +135,7 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -181,7 +181,7 @@ func TestAttributes_UpdateValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -239,7 +239,7 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -289,7 +289,7 @@ func TestAttributes_UpsertValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -409,7 +409,7 @@ func TestAttributes_Extract(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -472,7 +472,7 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -533,7 +533,7 @@ func TestAttributes_Delete(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -579,7 +579,7 @@ func TestAttributes_Delete_Regexp(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -684,7 +684,7 @@ func TestAttributes_HashValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -712,7 +712,7 @@ func TestAttributes_FromAttributeNoChange(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	runIndividualTestCase(t, tc, ap)
@@ -793,7 +793,7 @@ func TestAttributes_Ordering(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -1030,7 +1030,7 @@ func TestFromContext(t *testing.T) {
 			ap, err := NewAttrProc(&Settings{
 				Actions: []ActionKeyValue{*tc.action},
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, ap)
 			attrMap := pcommon.NewMap()
 			ap.Process(tc.ctx, nil, attrMap)

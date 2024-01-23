@@ -24,14 +24,14 @@ func TestLogsExporter_New(t *testing.T) {
 	type validate func(*testing.T, *logsExporter, error)
 
 	_ = func(t *testing.T, exporter *logsExporter, err error) {
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	}
 
 	_ = func(want error) validate {
 		return func(t *testing.T, exporter *logsExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			if !errors.Is(err, want) {
 				t.Fatalf("Expected error '%v', but got '%v'", want, err)
 			}
@@ -40,7 +40,7 @@ func TestLogsExporter_New(t *testing.T) {
 
 	failWithMsg := func(msg string) validate {
 		return func(t *testing.T, exporter *logsExporter, err error) {
-			require.NotNil(t, err)
+			require.Error(t, err)
 			require.Contains(t, err.Error(), msg)
 		}
 	}

@@ -56,7 +56,7 @@ func TestNewConnector(t *testing.T) {
 			smc := traceConnector.(*connectorImp)
 
 			// Verify
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, smc)
 
 			assert.Equal(t, tc.wantDimensions, smc.dimensions)
