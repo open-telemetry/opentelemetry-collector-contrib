@@ -113,7 +113,7 @@ func (cfg *ArrowSettings) Validate() error {
 	return nil
 }
 
-func (cfg *ArrowSettings) ToArrowProducerOptions() (arrowOpts []config.Option) {
+func (cfg *ArrowSettings) toArrowProducerOptions() (arrowOpts []config.Option) {
 	switch cfg.PayloadCompression {
 	case configcompression.Zstd:
 		arrowOpts = append(arrowOpts, config.WithZstd())

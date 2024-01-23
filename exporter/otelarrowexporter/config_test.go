@@ -131,7 +131,7 @@ func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
 		PayloadCompression: configcompression.Zstd,
 	}
 	var config config.Config
-	for _, opt := range settings.ToArrowProducerOptions() {
+	for _, opt := range settings.toArrowProducerOptions() {
 		opt(&config)
 	}
 	require.True(t, config.Zstd)
@@ -143,7 +143,7 @@ func TestArrowSettingsPayloadCompressionNone(t *testing.T) {
 			PayloadCompression: configcompression.CompressionType(value),
 		}
 		var config config.Config
-		for _, opt := range settings.ToArrowProducerOptions() {
+		for _, opt := range settings.toArrowProducerOptions() {
 			opt(&config)
 		}
 		require.False(t, config.Zstd)
