@@ -35,11 +35,11 @@ type expectedMetrics struct {
 
 func telemetryTest(t *testing.T, name string, testFunc func(t *testing.T, tel testTelemetry)) {
 	t.Run(name, func(t *testing.T) {
-		testFunc(t, setupTelemetry(t))
+		testFunc(t, setupTelemetry())
 	})
 }
 
-func setupTelemetry(t *testing.T) testTelemetry {
+func setupTelemetry() testTelemetry {
 	reader := sdkmetric.NewManualReader()
 	return testTelemetry{
 		reader:        reader,
@@ -61,7 +61,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 
 	if expected.metricDataPointsFiltered > 0 {
 		name := "processor/filter/datapoints.filtered"
-		got := tt.getMetric(t, name, md)
+		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
 			Description: "Number of metric data points dropped by the filter processor",
@@ -81,7 +81,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	}
 	if expected.logsFiltered > 0 {
 		name := "processor/filter/logs.filtered"
-		got := tt.getMetric(t, name, md)
+		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
 			Description: "Number of logs dropped by the filter processor",
@@ -101,7 +101,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	}
 	if expected.spansFiltered > 0 {
 		name := "processor/filter/spans.filtered"
-		got := tt.getMetric(t, name, md)
+		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
 			Description: "Number of spans dropped by the filter processor",
@@ -121,7 +121,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	}
 }
 
-func (tt *testTelemetry) getMetric(t *testing.T, name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {
