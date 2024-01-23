@@ -55,7 +55,7 @@ func reset[T Matchable](ele ...T) func(t *testing.T, fileset *Fileset[T]) {
 func match[T Matchable](ele T, expect bool) func(t *testing.T, fileset *Fileset[T]) {
 	return func(t *testing.T, fileset *Fileset[T]) {
 		pr := fileset.Len()
-		r := fileset.Match(ele.GetFingerprint())
+		r := fileset.Match(ele.GetFingerprint(), StartsWith)
 		if expect {
 			require.NotNil(t, r)
 			require.Equal(t, pr-1, fileset.Len())

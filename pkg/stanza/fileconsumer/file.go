@@ -216,7 +216,6 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // been read this polling interval
 func (m *Manager) makeReaders(paths []string) {
 	m.activeFiles.Clear()
-OUTER:
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
@@ -224,14 +223,13 @@ OUTER:
 		}
 
 		// Exclude duplicate paths with the same content. This can happen when files are
-		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
-		for _, r := range m.activeFiles.Get() {
-			if fp.Equal(r.Fingerprint) {
-				if err := file.Close(); err != nil {
-					m.Debugw("problem closing file", zap.Error(err))
-				}
-				continue OUTER
+		if r := m.activeFiles.Match(fp, fileset.Equal); r != nil {
+			// re-add the reader as Match() removes duplicates
+			m.activeFiles.Add(r)
+			if err := file.Close(); err != nil {
+				m.Debugw("problem closing file", zap.Error(err))
 			}
+			continue
 		}
 
 		r, err := m.newReader(file, fp)
@@ -246,12 +244,12 @@ OUTER:
 
 func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Check previous poll cycle for match
-	if oldReader := m.previousPollFiles.Match(fp); oldReader != nil {
+	if oldReader := m.previousPollFiles.Match(fp, fileset.StartsWith); oldReader != nil {
 		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
 	}
 
 	// Iterate backwards to match newest first
-	if oldMetadata := m.knownFiles.Match(fp); oldMetadata != nil {
+	if oldMetadata := m.knownFiles.Match(fp, fileset.StartsWith); oldMetadata != nil {
 		return m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
 	}
 

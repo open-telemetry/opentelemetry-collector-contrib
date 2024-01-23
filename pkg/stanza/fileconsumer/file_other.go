@@ -17,7 +17,7 @@ import (
 // this can mean either files which were removed, or rotated into a name not matching the pattern
 // we do this before reading existing files to ensure we emit older log lines before newer ones
 func (m *Manager) preConsume(ctx context.Context) {
-	lostReaders := make([]*reader.Reader, 0, len(previousPollFiles))
+	lostReaders := make([]*reader.Reader, 0, m.previousPollFiles.Len())
 OUTER:
 	for _, oldReader := range m.previousPollFiles.Get() {
 		for _, newReader := range m.activeFiles.Get() {

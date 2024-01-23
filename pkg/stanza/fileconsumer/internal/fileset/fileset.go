@@ -72,13 +72,22 @@ func (set *Fileset[T]) Reset(readers ...T) []T {
 	return arr
 }
 
-func (set *Fileset[T]) Match(fp *fingerprint.Fingerprint) T {
+func (set *Fileset[T]) Match(fp *fingerprint.Fingerprint, cmp func(a, b *fingerprint.Fingerprint) bool) T {
 	var val T
 	for idx, r := range set.readers {
-		if fp.StartsWith(r.GetFingerprint()) {
+		if cmp(fp, r.GetFingerprint()) {
 			set.readers = append(set.readers[:idx], set.readers[idx+1:]...)
 			return r
 		}
 	}
 	return val
+}
+
+// comparators
+func StartsWith(a, b *fingerprint.Fingerprint) bool {
+	return a.StartsWith(b)
+}
+
+func Equal(a, b *fingerprint.Fingerprint) bool {
+	return a.Equal(b)
 }
