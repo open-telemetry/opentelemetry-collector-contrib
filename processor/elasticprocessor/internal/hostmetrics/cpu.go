@@ -6,7 +6,7 @@ import (
 )
 
 func transformCPUMetrics(metrics pmetric.MetricSlice) error {
-	var timestamp, startTimestamp pcommon.Timestamp
+	var timestamp pcommon.Timestamp
 	var numCores int64
 	var totalPercent, idlePercent, systemPercent, userPercent, stealPercent,
 		iowaitPercent, nicePercent, irqPercent, softirqPercent float64
@@ -18,7 +18,6 @@ func transformCPUMetrics(metrics pmetric.MetricSlice) error {
 			dp := metric.Sum().DataPoints().At(0)
 			numCores = dp.IntValue()
 			timestamp = dp.Timestamp()
-			startTimestamp = dp.StartTimestamp()
 		} else if metric.Name() == "system.cpu.utilization" {
 			dataPoints := metric.Gauge().DataPoints()
 			for j := 0; j < dataPoints.Len(); j++ {
@@ -56,143 +55,132 @@ func transformCPUMetrics(metrics pmetric.MetricSlice) error {
 		}
 	}
 
-	numCoresScaler := float64(numCores)
+	totalNorm := totalPercent / float64(numCores)
+	idleNorm := idlePercent / float64(numCores)
+	systemNorm := systemPercent / float64(numCores)
+	userNorm := userPercent / float64(numCores)
+	stealNorm := stealPercent / float64(numCores)
+	iowaitNorm := iowaitPercent / float64(numCores)
+	niceNorm := nicePercent / float64(numCores)
+	irqNorm := irqPercent / float64(numCores)
+	softirqNorm := softirqPercent / float64(numCores)
 
-	// add number of new metrics added below
-	metrics.EnsureCapacity(metrics.Len() + 19)
-
-	m := metrics.AppendEmpty()
-	m.SetName("system.cpu.cores")
-	dp := m.SetEmptySum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetIntValue(numCores)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.total.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(totalPercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.total.norm.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(totalPercent / numCoresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.idle.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(idlePercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.idle.norm.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(idlePercent / numCoresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.system.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(systemPercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.system.norm.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(systemPercent / numCoresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.user.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(userPercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.user.norm.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(userPercent / numCoresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.steal.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(stealPercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.steal.norm.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(stealPercent / numCoresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.wait.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(iowaitPercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.wait.norm.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(iowaitPercent / numCoresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.nice.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(nicePercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.nice.norm.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(nicePercent / numCoresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.irq.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(irqPercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.irq.norm.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(irqPercent / numCoresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.softirq.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(softirqPercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.cpu.softirq.norm.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(softirqPercent / numCoresScaler)
+	addMetrics(metrics,
+		metric{
+			dataType:  Sum,
+			name:      "system.cpu.cores",
+			timestamp: timestamp,
+			intValue:  &numCores,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.total.pct",
+			timestamp:   timestamp,
+			doubleValue: &totalPercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.idle.pct",
+			timestamp:   timestamp,
+			doubleValue: &idlePercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.system.pct",
+			timestamp:   timestamp,
+			doubleValue: &systemPercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.user.pct",
+			timestamp:   timestamp,
+			doubleValue: &userPercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.steal.pct",
+			timestamp:   timestamp,
+			doubleValue: &stealPercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.wait.pct",
+			timestamp:   timestamp,
+			doubleValue: &iowaitPercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.nice.pct",
+			timestamp:   timestamp,
+			doubleValue: &nicePercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.irq.pct",
+			timestamp:   timestamp,
+			doubleValue: &irqPercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.softirq.pct",
+			timestamp:   timestamp,
+			doubleValue: &softirqPercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.total.norm.pct",
+			timestamp:   timestamp,
+			doubleValue: &totalNorm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.idle.norm.pct",
+			timestamp:   timestamp,
+			doubleValue: &idleNorm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.system.norm.pct",
+			timestamp:   timestamp,
+			doubleValue: &systemNorm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.user.norm.pct",
+			timestamp:   timestamp,
+			doubleValue: &userNorm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.steal.norm.pct",
+			timestamp:   timestamp,
+			doubleValue: &stealNorm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.wait.norm.pct",
+			timestamp:   timestamp,
+			doubleValue: &iowaitNorm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.nice.norm.pct",
+			timestamp:   timestamp,
+			doubleValue: &niceNorm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.irq.norm.pct",
+			timestamp:   timestamp,
+			doubleValue: &irqNorm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.cpu.softirq.norm.pct",
+			timestamp:   timestamp,
+			doubleValue: &softirqNorm,
+		},
+	)
 
 	return nil
 }

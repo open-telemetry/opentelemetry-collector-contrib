@@ -6,7 +6,7 @@ import (
 )
 
 func transformLoadMetrics(metrics pmetric.MetricSlice) error {
-	var timestamp, startTimestamp pcommon.Timestamp
+	var timestamp pcommon.Timestamp
 	var l1, l5, l15 float64
 	cpus := map[string]bool{}
 
@@ -18,7 +18,6 @@ func transformLoadMetrics(metrics pmetric.MetricSlice) error {
 
 			// common values
 			timestamp = dp.Timestamp()
-			startTimestamp = dp.StartTimestamp()
 			if cpu, ok := dp.Attributes().Get("cpu"); ok {
 				cpus[cpu.Str()] = true
 			}
@@ -30,39 +29,56 @@ func transformLoadMetrics(metrics pmetric.MetricSlice) error {
 			l15 = dp.DoubleValue()
 		}
 	}
-	
+
 	cores := int64(len(cpus))
-	coresScaler := float64(cores)
-	
-	// add number of new metrics added below
-	metrics.EnsureCapacity(metrics.Len() + 4)
+	l1norm := l1 / float64(cores)
+	l5norm := l5 / float64(cores)
+	l15norm := l15 / float64(cores)
 
-	m := metrics.AppendEmpty()
-	m.SetName("system.load.cores")
-	dp := m.SetEmptySum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetIntValue(cores)
+	addMetrics(metrics,
+		metric{
+			dataType:  Sum,
+			name:      "system.load.cores",
+			timestamp: timestamp,
+			intValue:  &cores,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.load.1",
+			timestamp:   timestamp,
+			doubleValue: &l1,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.load.5",
+			timestamp:   timestamp,
+			doubleValue: &l5,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.load.15",
+			timestamp:   timestamp,
+			doubleValue: &l15,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.load.norm.1",
+			timestamp:   timestamp,
+			doubleValue: &l1norm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.load.norm.5",
+			timestamp:   timestamp,
+			doubleValue: &l5norm,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.load.norm.15",
+			timestamp:   timestamp,
+			doubleValue: &l15norm,
+		},
+	)
 
-	m = metrics.AppendEmpty()
-	m.SetName("system.load.norm.1")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(l1 / coresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.load.norm.5")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(l5 / coresScaler)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.load.norm.15")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(l15 / coresScaler)
 	return nil
 }

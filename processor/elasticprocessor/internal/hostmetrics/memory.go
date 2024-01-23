@@ -6,7 +6,7 @@ import (
 )
 
 func transformMemoryMetrics(metrics pmetric.MetricSlice) error {
-	var timestamp, startTimestamp pcommon.Timestamp
+	var timestamp pcommon.Timestamp
 	var total, free, cached, usedBytes, actualFree, actualUsedBytes int64
 	var usedPercent, actualUsedPercent float64
 
@@ -19,10 +19,8 @@ func transformMemoryMetrics(metrics pmetric.MetricSlice) error {
 				dp := dataPoints.At(j)
 
 				timestamp = dp.Timestamp()
-				startTimestamp = dp.StartTimestamp()
 
 				value := dp.IntValue()
-
 				if state, ok := dp.Attributes().Get("state"); ok {
 					switch state.Str() {
 					case "cached":
@@ -72,64 +70,56 @@ func transformMemoryMetrics(metrics pmetric.MetricSlice) error {
 	usedBytes += total
 	actualFree = total - actualUsedBytes
 
-	// add number of new metrics added below
-	metrics.EnsureCapacity(metrics.Len() + 8)
-
-	m := metrics.AppendEmpty()
-	m.SetName("system.memory.total")
-	dp := m.SetEmptySum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetIntValue(total)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.memory.free")
-	dp = m.SetEmptySum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetIntValue(free)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.memory.cached")
-	dp = m.SetEmptySum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetIntValue(cached)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.memory.used.bytes")
-	dp = m.SetEmptySum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetIntValue(usedBytes)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.memory.actual.used.bytes")
-	dp = m.SetEmptySum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetIntValue(actualUsedBytes)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.memory.actual.free")
-	dp = m.SetEmptySum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetIntValue(actualFree)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.memory.used.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(usedPercent)
-
-	m = metrics.AppendEmpty()
-	m.SetName("system.memory.actual.used.pct")
-	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(timestamp)
-	dp.SetStartTimestamp(startTimestamp)
-	dp.SetDoubleValue(actualUsedPercent)
+	addMetrics(metrics,
+		metric{
+			dataType:  Sum,
+			name:      "system.memory.total",
+			timestamp: timestamp,
+			intValue:  &total,
+		},
+		metric{
+			dataType:  Sum,
+			name:      "system.memory.free",
+			timestamp: timestamp,
+			intValue:  &free,
+		},
+		metric{
+			dataType:  Sum,
+			name:      "system.memory.cached",
+			timestamp: timestamp,
+			intValue:  &cached,
+		},
+		metric{
+			dataType:  Sum,
+			name:      "system.memory.used.bytes",
+			timestamp: timestamp,
+			intValue:  &usedBytes,
+		},
+		metric{
+			dataType:  Sum,
+			name:      "system.memory.actual.used.bytes",
+			timestamp: timestamp,
+			intValue:  &actualUsedBytes,
+		},
+		metric{
+			dataType:  Sum,
+			name:      "system.memory.actual.free",
+			timestamp: timestamp,
+			intValue:  &actualFree,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.memory.used.pct",
+			timestamp:   timestamp,
+			doubleValue: &usedPercent,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "system.memory.actual.used.pct",
+			timestamp:   timestamp,
+			doubleValue: &actualUsedPercent,
+		},
+	)
 
 	return nil
 }
