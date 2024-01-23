@@ -30,7 +30,6 @@ type DataReceiver interface {
 
 	// ProtocolName returns exporterType name to use in collector config pipeline.
 	ProtocolName() string
-
 }
 
 // DataReceiverBase implement basic functions needed by all receivers.

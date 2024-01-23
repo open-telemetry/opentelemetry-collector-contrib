@@ -57,4 +57,3 @@ func (dd *datadogDataReceiver) GenConfigYAMLStr() string {
 func (dd *datadogDataReceiver) ProtocolName() string {
 	return "datadog"
 }
-

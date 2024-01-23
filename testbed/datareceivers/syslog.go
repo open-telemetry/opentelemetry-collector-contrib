@@ -70,4 +70,3 @@ func (cr *SyslogDataReceiver) GenConfigYAMLStr() string {
 func (cr *SyslogDataReceiver) ProtocolName() string {
 	return "tcp"
 }
-

@@ -75,4 +75,3 @@ func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
 func (sr *SapmDataReceiver) ProtocolName() string {
 	return "sapm"
 }
-

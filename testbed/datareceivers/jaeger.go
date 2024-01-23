@@ -64,4 +64,3 @@ func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
 func (jr *jaegerDataReceiver) ProtocolName() string {
 	return "otlp/jaeger"
 }
-

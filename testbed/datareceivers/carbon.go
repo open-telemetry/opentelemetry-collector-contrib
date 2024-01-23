@@ -64,4 +64,3 @@ func (cr *CarbonDataReceiver) GenConfigYAMLStr() string {
 func (cr *CarbonDataReceiver) ProtocolName() string {
 	return "carbon"
 }
-

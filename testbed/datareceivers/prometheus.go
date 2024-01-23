@@ -75,4 +75,3 @@ func (dr *prometheusDataReceiver) GenConfigYAMLStr() string {
 func (dr *prometheusDataReceiver) ProtocolName() string {
 	return "prometheus"
 }
-

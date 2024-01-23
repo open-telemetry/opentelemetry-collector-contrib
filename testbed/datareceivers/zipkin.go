@@ -59,4 +59,3 @@ func (zr *zipkinDataReceiver) GenConfigYAMLStr() string {
 func (zr *zipkinDataReceiver) ProtocolName() string {
 	return "zipkin"
 }
-

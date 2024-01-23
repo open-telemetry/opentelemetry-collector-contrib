@@ -67,4 +67,3 @@ func (sr *SplunkHECDataReceiver) GenConfigYAMLStr() string {
 func (sr *SplunkHECDataReceiver) ProtocolName() string {
 	return "splunk_hec"
 }
-

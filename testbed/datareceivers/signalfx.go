@@ -68,4 +68,3 @@ func (sr *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
 func (sr *SFxMetricsDataReceiver) ProtocolName() string {
 	return "signalfx"
 }
-
