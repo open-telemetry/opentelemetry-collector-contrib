@@ -427,7 +427,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gophercloud/gophercloud v1.7.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/gosnmp/gosnmp v1.37.0 // indirect
 	github.com/grafana/loki/pkg/push v0.0.0-20231127162423-bd505f8e2d37 // indirect
 	github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd // indirect
@@ -527,7 +527,7 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19 // indirect
 	github.com/oklog/ulid/v2 v2.1.0 // indirect
-	github.com/open-telemetry/opamp-go v0.10.0 // indirect
+	github.com/open-telemetry/opamp-go v0.11.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.92.0 // indirect
@@ -678,7 +678,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.22.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.22.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.22.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.44.1-0.20231201153405-6027c1ae76f2 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.45.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.45.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
