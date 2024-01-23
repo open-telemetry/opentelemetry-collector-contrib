@@ -61,8 +61,8 @@ var (
 	// modified.  Preferably, Samplers will avoid seeing this
 	// error by using a ThresholdGreater() test, which allows them
 	// to report a more clear error to the user.  For example, if
-	// data arrives sampled at 1/100 and an eqalizing sampler is
-	// configureed for 1/2 sampling, the Sampler may detect the
+	// data arrives sampled at 1/100 and an equalizing sampler is
+	// configured for 1/2 sampling, the Sampler may detect the
 	// illogical condition itself using ThresholdGreater and skip
 	// the call to UpdateTValueWithSampling, which will have no
 	// effect and return this error.  How a sampler decides to
@@ -72,7 +72,7 @@ var (
 	ErrInconsistentSampling = errors.New("cannot raise existing sampling probability")
 )
 
-// NewOTelTraceState returns a parsed reprseentation of the
+// NewOTelTraceState returns a parsed representation of the
 // OpenTelemetry tracestate section.  Errors indicate an invalid
 // tracestate was received.
 func NewOTelTraceState(input string) (OTelTraceState, error) {
@@ -184,7 +184,7 @@ func (otts *OTelTraceState) ClearTValue() {
 	otts.threshold = Threshold{}
 }
 
-// SetRValue establishes explciit randomness for this TraceState.
+// SetRValue establishes explicit randomness for this TraceState.
 func (otts *OTelTraceState) SetRValue(randomness Randomness) {
 	otts.rnd = randomness
 	otts.rvalue = randomness.RValue()

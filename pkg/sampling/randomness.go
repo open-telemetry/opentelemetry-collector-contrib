@@ -67,7 +67,7 @@ func RValueToRandomness(s string) (Randomness, error) {
 	}, nil
 }
 
-// ToRValue formats the r-value encoding.
+// RValue formats the r-value encoding.
 func (rnd Randomness) RValue() string {
 	// The important part here is to format a full 14-byte hex
 	// string, including leading zeros.  We could accomplish the

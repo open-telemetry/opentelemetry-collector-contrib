@@ -48,7 +48,7 @@ and pass through unrecognized fields.
 
 The `W3CTraceState` accessor methods are:
 
-- `W3CTraceState.HasOTelValue`: Returns true when the `tracestate` is
+- `W3CTraceState.HasOTelValue`: Returns true when the `tracestate`
   contains an `ot` field representing the OpenTelemetry trace state.
   Callers may opt to take a fast path when the OpenTelemetry
   tracestate is empty.
