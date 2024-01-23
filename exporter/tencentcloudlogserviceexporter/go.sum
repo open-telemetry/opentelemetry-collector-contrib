@@ -259,8 +259,8 @@ github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/stvp/go-udp-testing v0.0.0-20201019212854-469649b16807/go.mod h1:7jxmlfBCDBXRzr0eAQJ48XC1hBu1np4CS5+cHEYfwpc=
-github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.843 h1:ewSxQuJAqdjE3RqFIaDhM/88lIe10JfUFbS4hMQHK5M=
-github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.843/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.847 h1:ITZmxAWfbr5yikJ4T30yVYMW3jpa/oTmNbPnw/h1Vq0=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.847/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
