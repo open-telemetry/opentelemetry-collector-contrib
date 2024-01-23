@@ -484,7 +484,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 
 		texp, err := factory.CreateTracesExporter(
@@ -492,7 +492,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, texp)
 
 		lexp, err := factory.CreateLogsExporter(
@@ -500,7 +500,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
 }
@@ -564,7 +564,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 
 		texp, err := factory.CreateTracesExporter(
@@ -572,7 +572,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, texp)
 
 		lexp, err := factory.CreateLogsExporter(
@@ -580,7 +580,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
 }

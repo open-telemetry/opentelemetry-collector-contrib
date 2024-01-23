@@ -68,7 +68,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)

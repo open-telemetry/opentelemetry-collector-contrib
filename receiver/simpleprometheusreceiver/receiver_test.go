@@ -86,7 +86,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 				Params:             url.Values{"foo": []string{"bar", "foobar"}},
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
+				PrometheusConfig: &prometheusreceiver.PromConfig{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -126,7 +126,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 				MetricsPath:        "/metrics",
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
+				PrometheusConfig: &prometheusreceiver.PromConfig{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							JobName:         "prometheus_simple/localhost:1234",
@@ -168,7 +168,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 				},
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
+				PrometheusConfig: &prometheusreceiver.PromConfig{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							JobName:         "prometheus_simple/localhost:1234",
@@ -230,7 +230,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				Params:             url.Values{"foo": []string{"bar", "foobar"}},
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
+				PrometheusConfig: &prometheusreceiver.PromConfig{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -277,7 +277,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				Params:             url.Values{"foo": []string{"bar", "foobar"}},
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
+				PrometheusConfig: &prometheusreceiver.PromConfig{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -318,7 +318,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				Params:             url.Values{"foo": []string{"bar", "foobar"}},
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
+				PrometheusConfig: &prometheusreceiver.PromConfig{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -362,7 +362,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				Params:             url.Values{"foo": []string{"bar", "foobar"}},
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
+				PrometheusConfig: &prometheusreceiver.PromConfig{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
