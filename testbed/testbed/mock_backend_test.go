@@ -21,12 +21,12 @@ func TestGeneratorAndBackend(t *testing.T) {
 	}{
 		{
 			name:     "OTLP-OTLP",
-			receiver: NewOTLPDataReceiver(port, "traces"),
+			receiver: NewOTLPDataReceiver(port),
 			sender:   NewOTLPTraceDataSender(DefaultHost, port),
 		},
 		{
 			name:     "OTLP/HTTP-OTLP/HTTP",
-			receiver: NewOTLPHTTPDataReceiver(port, "traces"),
+			receiver: NewOTLPHTTPDataReceiver(port),
 			sender:   NewOTLPHTTPTraceDataSender(DefaultHost, port, ""),
 		},
 	}

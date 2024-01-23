@@ -8,4 +8,13 @@ type DataConnector interface {
 	// ProtocolName returns exporter name to use in collector config pipeline.
 	ProtocolName() string
 
+	// GetReceiverType returns the data type for the DataReceiver in the second pipeline when using connectors
+	GetReceiverType() string
+
+}
+
+// DataReceiverBase implement basic functions needed by all receivers.
+type DataConnectorBase struct {
+	// The data type of the receiver in second pipeline.
+	ReceiverDataType string
 }

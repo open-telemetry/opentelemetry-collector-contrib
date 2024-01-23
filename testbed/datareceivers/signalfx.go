@@ -69,7 +69,3 @@ func (sr *SFxMetricsDataReceiver) ProtocolName() string {
 	return "signalfx"
 }
 
-// PipelineType
-func (sr *SFxMetricsDataReceiver) PipelineType() string {
-	return "metrics"	
-}

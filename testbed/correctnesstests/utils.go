@@ -17,17 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-/*
-
-Comments:
-Using an if statement to check if the connector is defined and if so then use a config with two pipelines.
-This can probably be improved to not just be a simply fork.
-
-This CreateConfigYaml method is also very similar to the one for performance tests so this could be an opportunity to reuse code.
-
-
-*/
-
 // CreateConfigYaml creates a yaml config for an otel collector given a testbed sender, testbed receiver, any
 // processors, and a pipeline type. A collector created from the resulting yaml string should be able to talk
 // the specified sender and receiver.
@@ -69,7 +58,7 @@ func CreateConfigYaml(
 
 	// Need better var name
 	var pipeline2 string
-	pipeline2 = receiver.PipelineType()
+	pipeline2 = connector.GetReceiverType()
 
 
 	if (connector != nil) {
@@ -91,11 +80,11 @@ service:
       level: "debug"
   extensions:
   pipelines:
-    %s:
+    %s/in:
       receivers: [%v]
       processors: [%s]
       exporters: [%v]
-    %s:
+    %s/out:
       receivers: [%v]
       exporters: [%v]
 `
@@ -153,11 +142,11 @@ service:
 type PipelineDef struct {
 	Receiver         string
 	Exporter         string
+	Connector		 string
 	TestName         string
 	DataSender       testbed.DataSender
-	DataSenderType   string
 	DataReceiver     testbed.DataReceiver
-	DataReceiverType string
+	DataConnector	 testbed.DataConnector
 	ResourceSpec     testbed.ResourceSpec
 }
 
@@ -228,7 +217,7 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	var receiver testbed.DataReceiver
 	switch exporter {
 	case "otlp":
-		receiver = testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t), "metrics")
+		receiver = testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 	case "opencensus":
 		receiver = datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t))
 	case "jaeger":
@@ -243,11 +232,13 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	return receiver
 }
 
-func ConstructConnector(t *testing.T, connector string) testbed.DataConnector {
+func ConstructConnector(t *testing.T, connector string, receiverType string) testbed.DataConnector {
 	var dataconnector testbed.DataConnector
 	switch connector {
 	case "spanmetrics":
-		dataconnector = dataconnectors.NewSpanMetricDataConnector()
+		dataconnector = dataconnectors.NewSpanMetricDataConnector(receiverType)
+	case "routing":
+		dataconnector = dataconnectors.NewRoutingDataConnector(receiverType)
 	default:
 		t.Errorf("unknown connector type: %s", connector)
 	}

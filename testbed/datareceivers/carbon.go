@@ -65,7 +65,3 @@ func (cr *CarbonDataReceiver) ProtocolName() string {
 	return "carbon"
 }
 
-// PipelineType
-func (cr *CarbonDataReceiver) PipelineType() string {
-	return "metrics"
-}

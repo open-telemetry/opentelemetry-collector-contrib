@@ -15,14 +15,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-/*
-
-Comments:
-Is there an easier way to know the pipeline type other than adding the var to the struct?  The senders
-uses different kind of data senders for each data type so can it be replicated for receivers too?
-
-*/
-
 // DataReceiver allows to receive traces or metrics. This is an interface that must
 // be implemented by all protocols that want to be used in MockBackend.
 // Note the terminology: DataReceiver is something that can listen and receive data
@@ -39,7 +31,6 @@ type DataReceiver interface {
 	// ProtocolName returns exporterType name to use in collector config pipeline.
 	ProtocolName() string
 
-	PipelineType() string
 }
 
 // DataReceiverBase implement basic functions needed by all receivers.
@@ -65,7 +56,6 @@ type BaseOTLPDataReceiver struct {
 	compression     string
 	retry           string
 	sendingQueue    string
-	pipelineType    string
 }
 
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
@@ -151,28 +141,22 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	return str
 }
 
-func (bor *BaseOTLPDataReceiver) PipelineType() string {
-	return bor.pipelineType
-}
-
 var _ DataReceiver = (*BaseOTLPDataReceiver)(nil)
 
 // NewOTLPDataReceiver creates a new OTLP DataReceiver that will listen on the specified port after Start
 // is called.
-func NewOTLPDataReceiver(port int, pipelineType string) *BaseOTLPDataReceiver {
+func NewOTLPDataReceiver(port int) *BaseOTLPDataReceiver {
 	return &BaseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
 		exporterType:     "otlp",
-		pipelineType:     pipelineType,
 	}
 }
 
 // NewOTLPHTTPDataReceiver creates a new OTLP/HTTP DataReceiver that will listen on the specified port after Start
 // is called.
-func NewOTLPHTTPDataReceiver(port int, pipelineType string) *BaseOTLPDataReceiver {
+func NewOTLPHTTPDataReceiver(port int) *BaseOTLPDataReceiver {
 	return &BaseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
 		exporterType:     "otlphttp",
-		pipelineType:     pipelineType,
 	}
 }

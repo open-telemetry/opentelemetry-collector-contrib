@@ -10,13 +10,13 @@ import (
 )
 
 type SpanMetricDataConnector struct {
-	testbed.DataConnector
+	testbed.DataConnectorBase
 }
 
 var _ testbed.DataConnector = (*SpanMetricDataConnector)(nil)
 
-func NewSpanMetricDataConnector() *SpanMetricDataConnector {
-	return &SpanMetricDataConnector{}
+func NewSpanMetricDataConnector(receiverDataType string) *SpanMetricDataConnector {
+	return &SpanMetricDataConnector{DataConnectorBase: testbed.DataConnectorBase{ReceiverDataType: receiverDataType}}
 }
 
 func (smc *SpanMetricDataConnector) GenConfigYAMLStr() string {
@@ -28,4 +28,8 @@ func (smc *SpanMetricDataConnector) GenConfigYAMLStr() string {
 // ProtocolName returns protocol name as it is specified in Collector config.
 func (smc *SpanMetricDataConnector) ProtocolName() string {
 	return "spanmetrics"
+}
+
+func (smc *SpanMetricDataConnector) GetReceiverType() string {
+	return smc.ReceiverDataType
 }

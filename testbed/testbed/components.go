@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
@@ -29,12 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 )
-
-/*
-
-Have to add connectors here as well for components accepted by otel runner
-
-*/
 
 // Components returns the set of components for tests
 func Components() (
@@ -76,6 +71,7 @@ func Components() (
 
 	connectors, err := connector.MakeFactoryMap(
 		spanmetricsconnector.NewFactory(),
+		routingconnector.NewFactory(),
 	)
 
 	factories := otelcol.Factories{

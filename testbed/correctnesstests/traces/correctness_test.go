@@ -114,7 +114,7 @@ func TestSporadicGoldenDataset(t *testing.T) {
 			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
 			"")
 		sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-		receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t), "traces")
+		receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 		receiver.WithRetry(`
     retry_on_failure:
       enabled: false

@@ -225,6 +225,7 @@ func (p *connectorImp) Capabilities() consumer.Capabilities {
 // ConsumeTraces implements the consumer.Traces interface.
 // It aggregates the trace data to generate metrics.
 func (p *connectorImp) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
+	p.logger.Info("Consuming Traces")
 	p.lock.Lock()
 	p.aggregateMetrics(traces)
 	p.lock.Unlock()
@@ -232,6 +233,7 @@ func (p *connectorImp) ConsumeTraces(_ context.Context, traces ptrace.Traces) er
 }
 
 func (p *connectorImp) exportMetrics(ctx context.Context) {
+	p.logger.Info("Exporting Metrics")
 	p.lock.Lock()
 
 	m := p.buildMetrics()
@@ -355,6 +357,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
 				s.Add(1)
+
 
 				// aggregate events metrics
 				if p.events.Enabled {

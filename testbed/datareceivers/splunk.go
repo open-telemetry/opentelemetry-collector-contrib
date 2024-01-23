@@ -68,7 +68,3 @@ func (sr *SplunkHECDataReceiver) ProtocolName() string {
 	return "splunk_hec"
 }
 
-// PipelineType
-func (sr *SplunkHECDataReceiver) PipelineType() string {
-	return "logs"	
-}

@@ -13,19 +13,6 @@ import (
 
 var correctnessResults testbed.TestResultsSummary = &testbed.CorrectnessResults{}
 
-type test struct {
-	Receiver         string
-	Exporter         string
-	Connector		 string
-	TestName		 string
-	DataSender       testbed.DataSender
-	DataSenderType   string
-	DataReceiver     testbed.DataReceiver
-	DataReceiverType string
-	ResourceSpec     testbed.ResourceSpec
-	DataConnector testbed.DataConnector
-}
-
 func TestMain(m *testing.M) {
 	testbed.DoTestMain(m, correctnessResults)
 }
@@ -37,16 +24,16 @@ func TestGoldenData(t *testing.T) {
     send_batch_size: 1024
 `,
 	}
-	sampleTest := test{
-		TestName: "test spanmetrics",
+	sampleTest := correctnesstests.PipelineDef{
+		TestName: "test routing",
 		Receiver: "otlp",
 		Exporter: "otlp",
-		Connector: "spanmetrics",
+		Connector: "routing",
 	}
 	
 	sampleTest.DataSender = correctnesstests.ConstructTraceSender(t, sampleTest.Receiver)
 	sampleTest.DataReceiver = correctnesstests.ConstructReceiver(t, sampleTest.Exporter)
-	sampleTest.DataConnector = correctnesstests.ConstructConnector(t, sampleTest.Connector)
+	sampleTest.DataConnector = correctnesstests.ConstructConnector(t, sampleTest.Connector, "traces")
 	t.Run(sampleTest.TestName, func(t *testing.T) {
 		testWithGoldenDataset(t, sampleTest.DataSender, sampleTest.DataReceiver, sampleTest.ResourceSpec, sampleTest.DataConnector, processors)
 	})
@@ -104,5 +91,4 @@ func testWithGoldenDataset(
 
 	tc.StopAgent()
 
-	//tc.ValidateData()
 }
