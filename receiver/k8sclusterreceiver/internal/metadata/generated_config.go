@@ -265,7 +265,7 @@ type ResourceAttributesConfig struct {
 	OpenshiftClusterquotaName    ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID     ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
 	OsDescription                ResourceAttributeConfig `mapstructure:"os.description"`
-	OsVersion                    ResourceAttributeConfig `mapstructure:"os.version"`
+	OsType                       ResourceAttributeConfig `mapstructure:"os.type"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -378,7 +378,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		OsDescription: ResourceAttributeConfig{
 			Enabled: false,
 		},
-		OsVersion: ResourceAttributeConfig{
+		OsType: ResourceAttributeConfig{
 			Enabled: false,
 		},
 	}

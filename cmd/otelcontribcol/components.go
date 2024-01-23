@@ -95,6 +95,7 @@ import (
 	pprofextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 	remotetapextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension"
 	sigv4authextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
+	solarwindsapmsettingsextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension"
 	dbstorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	filestorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	attributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -168,6 +169,7 @@ import (
 	mongodbatlasreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	mongodbreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	mysqlreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	namedpipereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver"
 	nginxreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 	nsxtreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 	opencensusreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
@@ -233,6 +235,7 @@ func components() (otelcol.Factories, error) {
 		pprofextension.NewFactory(),
 		remotetapextension.NewFactory(),
 		sigv4authextension.NewFactory(),
+		solarwindsapmsettingsextension.NewFactory(),
 		filestorage.NewFactory(),
 		dbstorage.NewFactory(),
 		otlpencodingextension.NewFactory(),
@@ -296,6 +299,7 @@ func components() (otelcol.Factories, error) {
 		mongodbatlasreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),
+		namedpipereceiver.NewFactory(),
 		nginxreceiver.NewFactory(),
 		nsxtreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),

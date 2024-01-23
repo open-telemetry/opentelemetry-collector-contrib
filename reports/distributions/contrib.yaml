@@ -44,6 +44,7 @@ components:
         - mezmo
         - opencensus
         - opensearch
+        - otelarrow
         - prometheus
         - prometheusremotewrite
         - pulsar
