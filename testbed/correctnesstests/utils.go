@@ -126,6 +126,8 @@ func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 		sender = datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "zipkin":
 		sender = datasenders.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+	case "splunk_hec":
+		sender = datasenders.NewSplunkHecMetricsDataSender(testbed.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown receiver type: %s", receiver)
 	}
@@ -142,6 +144,8 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 		sender = datasenders.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	case "prometheus":
 		sender = datasenders.NewPrometheusDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+	case "splunk_hec":
+		sender = datasenders.NewSplunkHecMetricsDataSender(testbed.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown receiver type: %s", receiver)
 	}
@@ -162,6 +166,8 @@ func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 		receiver = datareceivers.NewZipkinDataReceiver(testbed.GetAvailablePort(t))
 	case "prometheus":
 		receiver = datareceivers.NewPrometheusDataReceiver(testbed.GetAvailablePort(t))
+	case "splunk_hec":
+		receiver = datareceivers.NewSplunkHECDataReceiver(testbed.GetAvailablePort(t))
 	default:
 		t.Errorf("unknown exporter type: %s", exporter)
 	}

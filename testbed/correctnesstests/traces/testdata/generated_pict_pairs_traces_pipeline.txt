@@ -11,3 +11,4 @@ otlp	otlp
 jaeger	otlp
 opencensus	otlp
 zipkin	zipkin
+otlp	splunk_hec

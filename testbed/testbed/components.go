@@ -4,6 +4,8 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -47,6 +49,7 @@ func Components() (
 		otlpreceiver.NewFactory(),
 		syslogreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
+		splunkhecreceiver.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 
@@ -57,6 +60,7 @@ func Components() (
 		otlphttpexporter.NewFactory(),
 		syslogexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
+		splunkhecexporter.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 
