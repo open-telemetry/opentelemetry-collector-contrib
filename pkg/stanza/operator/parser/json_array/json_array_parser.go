@@ -46,66 +46,59 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	pp := &fastjson.ParserPool{}
 	return &Parser{
 		ParserOperator: parserOperator,
-		pp:             pp,
-		parse:          generateJarrayParseFunc(pp),
+		pool:           new(fastjson.ParserPool),
 	}, nil
 }
 
 // Parser is an operator that parses jarray in an entry.
 type Parser struct {
 	helper.ParserOperator
-	parse parseFunc
-	pp    *fastjson.ParserPool
+	pool *fastjson.ParserPool
 }
-
-type parseFunc func(any) (any, error)
 
 // Process will parse an entry for jarray.
 func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
 	return r.ParserOperator.ProcessWith(ctx, e, r.parse)
 }
 
-func generateJarrayParseFunc(pp *fastjson.ParserPool) parseFunc {
-	return func(value any) (any, error) {
-		jArrayLine, err := valueAsString(value)
-		if err != nil {
-			return nil, err
-		}
-
-		p := pp.Get()
-		v, err := p.Parse(jArrayLine)
-		pp.Put(p)
-		if err != nil {
-			return nil, errors.New("failed to parse entry")
-		}
-
-		jArray := v.GetArray() // a is a []*Value slice
-		parsedValues := make([]any, len(jArray))
-		for i := range jArray {
-			switch jArray[i].Type() {
-			case fastjson.TypeNumber:
-				parsedValues[i] = jArray[i].GetInt64()
-			case fastjson.TypeString:
-				parsedValues[i] = string(jArray[i].GetStringBytes())
-			case fastjson.TypeTrue:
-				parsedValues[i] = true
-			case fastjson.TypeFalse:
-				parsedValues[i] = false
-			case fastjson.TypeNull:
-				parsedValues[i] = nil
-			case fastjson.TypeObject:
-				// Nested objects handled as a string since this parser doesn't support nested headers
-				parsedValues[i] = jArray[i].String()
-			default:
-				return nil, errors.New("failed to parse entry: " + string(jArray[i].MarshalTo(nil)))
-			}
-		}
-
-		return parsedValues, nil
+func (r *Parser) parse(value any) (any, error) {
+	jArrayLine, err := valueAsString(value)
+	if err != nil {
+		return nil, err
 	}
+
+	p := r.pool.Get()
+	v, err := p.Parse(jArrayLine)
+	r.pool.Put(p)
+	if err != nil {
+		return nil, errors.New("failed to parse entry")
+	}
+
+	jArray := v.GetArray() // a is a []*Value slice
+	parsedValues := make([]any, len(jArray))
+	for i := range jArray {
+		switch jArray[i].Type() {
+		case fastjson.TypeNumber:
+			parsedValues[i] = jArray[i].GetInt64()
+		case fastjson.TypeString:
+			parsedValues[i] = string(jArray[i].GetStringBytes())
+		case fastjson.TypeTrue:
+			parsedValues[i] = true
+		case fastjson.TypeFalse:
+			parsedValues[i] = false
+		case fastjson.TypeNull:
+			parsedValues[i] = nil
+		case fastjson.TypeObject:
+			// Nested objects handled as a string since this parser doesn't support nested headers
+			parsedValues[i] = jArray[i].String()
+		default:
+			return nil, errors.New("failed to parse entry: " + string(jArray[i].MarshalTo(nil)))
+		}
+	}
+
+	return parsedValues, nil
 }
 
 // valueAsString interprets the given value as a string.
