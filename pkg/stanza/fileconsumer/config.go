@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
@@ -171,8 +172,9 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		pollInterval:      c.PollInterval,
 		maxBatchFiles:     c.MaxConcurrentFiles / 2,
 		maxBatches:        c.MaxBatches,
-		previousPollFiles: make([]*reader.Reader, 0, c.MaxConcurrentFiles/2),
-		knownFiles:        []*reader.Metadata{},
+		activeFiles:       fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
+		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
+		knownFiles:        fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2),
 	}, nil
 }
 
