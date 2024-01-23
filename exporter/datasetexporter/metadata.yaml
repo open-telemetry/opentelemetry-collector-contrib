@@ -6,7 +6,7 @@ status:
     alpha: [logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, martin-majlis-s1, zdaratom, tomaz-s1]
+    active: [atoulme, martin-majlis-s1, zdaratom-s1, tomaz-s1]
 
 tests:
   config:
