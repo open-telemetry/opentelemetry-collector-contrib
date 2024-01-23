@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package assign_keys
+package assignkeys
 
 import (
 	"path/filepath"

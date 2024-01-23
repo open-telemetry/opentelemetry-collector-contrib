@@ -1,20 +1,19 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package json_array // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json_array"
+package jsonarray // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonarray"
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
+	"github.com/valyala/fastjson"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-
-	"github.com/valyala/fastjson"
 )
 
 const operatorType = "json_array_parser"

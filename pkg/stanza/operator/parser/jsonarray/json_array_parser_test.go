@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package json_array
+package jsonarray
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as jarray")
+	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as json array")
 }
 
 func TestParserJarray(t *testing.T) {
@@ -93,7 +93,7 @@ func TestParserJarray(t *testing.T) {
 			[]entry.Entry{
 				{
 					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"output": []any{"stanza", "INFO", "started agent", int64(42), true},
 					},
 				},
@@ -110,7 +110,7 @@ func TestParserJarray(t *testing.T) {
 			[]entry.Entry{
 				{
 					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"input": "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
 					},
 				},
@@ -118,7 +118,7 @@ func TestParserJarray(t *testing.T) {
 			[]entry.Entry{
 				{
 					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"input":  "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
 						"output": []any{"stanza", "INFO", "started agent", int64(42), true},
 					},

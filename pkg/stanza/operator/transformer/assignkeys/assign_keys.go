@@ -1,14 +1,17 @@
-package assign_keys
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+package assignkeys // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/assignkeys"
 
 import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
 )
 
 const operatorType = "assign_keys"

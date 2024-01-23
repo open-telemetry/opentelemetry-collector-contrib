@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package assign_keys
+package assignkeys
 
 import (
 	"context"
@@ -136,13 +136,13 @@ func TestBuildAndProcess(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			assign_keys := op.(interface {
+			assignKeys := op.(interface {
 				Process(ctx context.Context, entry *entry.Entry) error
 			})
 			fake := testutil.NewFakeOutput(t)
 			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
-			err = assign_keys.Process(context.Background(), val)
+			err = assignKeys.Process(context.Background(), val)
 
 			if tc.expectErr {
 				require.Error(t, err)
