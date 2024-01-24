@@ -1,8 +1,8 @@
 otlpjsonfile:
   include:
-    - "/var/log/*.log"
+  - "/var/log/*.log"
   exclude:
-    - "/var/log/example.log"
+  - "/var/log/example.log"
 otlpjsonfile/all:
   include_file_name: true
   include_file_path: true
@@ -17,7 +17,7 @@ otlpjsonfile/all:
     line_start_pattern: "<"
     line_end_pattern: ">"
   include:
-    - "/var/log/*.log"
-    - "/tmp/*.log"
+  - "/var/log/*.log"
+  - "/tmp/*.log"
   exclude:
-    - "/var/log/example.log"
+  - "/var/log/example.log"

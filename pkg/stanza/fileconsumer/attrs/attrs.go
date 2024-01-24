@@ -5,8 +5,11 @@ package attrs // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
+	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
+	"syscall"
 )
 
 const (
@@ -14,6 +17,8 @@ const (
 	LogFilePath         = "log.file.path"
 	LogFileNameResolved = "log.file.name_resolved"
 	LogFilePathResolved = "log.file.path_resolved"
+	LogFileOwner        = "log.file.owner"
+	LogFileGroup        = "log.file.group"
 )
 
 type Resolver struct {
@@ -21,6 +26,7 @@ type Resolver struct {
 	IncludeFilePath         bool `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool `mapstructure:"include_file_name_resolved,omitempty"`
 	IncludeFilePathResolved bool `mapstructure:"include_file_path_resolved,omitempty"`
+	IncludeFileInfos        bool `mapstructure:"include_file_infos,omitempty"`
 }
 
 func (r *Resolver) Resolve(path string) (attributes map[string]any, err error) {
@@ -31,6 +37,24 @@ func (r *Resolver) Resolve(path string) (attributes map[string]any, err error) {
 	}
 	if r.IncludeFilePath {
 		attributes[LogFilePath] = path
+	}
+	if r.IncludeFileInfos {
+		var file, fileErr = os.OpenFile(fmt.Sprint(path), os.O_RDONLY, 0000)
+		if fileErr == nil {
+			var fileInfo, errStat = file.Stat()
+			if errStat == nil {
+				var fileStat = fileInfo.Sys().(*syscall.Stat_t)
+				var fileOwner, errFileUser = user.LookupId(fmt.Sprint(fileStat.Uid))
+				if errFileUser == nil {
+					attributes[LogFileOwner] = fileOwner.Username
+				}
+				var fileGroup, errFileGroup = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
+				if errFileGroup == nil {
+					attributes[LogFileGroup] = fileGroup.Name
+				}
+			}
+			defer file.Close()
+		}
 	}
 	if !r.IncludeFileNameResolved && !r.IncludeFilePathResolved {
 		return attributes, nil

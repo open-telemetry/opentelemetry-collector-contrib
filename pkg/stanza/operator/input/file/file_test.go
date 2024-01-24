@@ -4,9 +4,12 @@
 package file
 
 import (
+	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
+	"syscall"
 	"testing"
 	"time"
 
@@ -28,6 +31,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
 		cfg.IncludeFilePathResolved = true
+		cfg.IncludeFileInfos = true
 	})
 
 	// Create temp dir with log file
@@ -63,6 +67,12 @@ func TestAddFileResolvedFields(t *testing.T) {
 	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
 	require.Equal(t, filepath.Base(resolved), e.Attributes["log.file.name_resolved"])
 	require.Equal(t, resolved, e.Attributes["log.file.path_resolved"])
+	var fileInfo, _ = file.Stat()
+	var fileStat = fileInfo.Sys().(*syscall.Stat_t)
+	var fileOwner, _ = user.LookupId(fmt.Sprint(fileStat.Uid))
+	require.Equal(t, fileOwner.Username, e.Attributes["log.file.owner"])
+	var fileGroup, _ = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
+	require.Equal(t, fileGroup.Name, e.Attributes["log.file.group"])
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we
