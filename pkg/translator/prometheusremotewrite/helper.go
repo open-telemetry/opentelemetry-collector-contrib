@@ -26,6 +26,7 @@ import (
 )
 
 const (
+	nameStr       = "__name__"
 	sumStr        = "_sum"
 	countStr      = "_count"
 	bucketStr     = "_bucket"
@@ -69,14 +70,15 @@ func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 // tsMap will be unmodified if either labels or sample is nil, but can still be modified if the exemplar is nil.
 func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, labels []prompb.Label,
 	datatype string) string {
+
 	if sample == nil || labels == nil || tsMap == nil {
-		// This shouldn't happen
 		return ""
 	}
 
-	sig := timeSeriesSignature(datatype, labels)
-	ts := tsMap[sig]
-	if ts != nil {
+	sig := timeSeriesSignature(datatype, &labels)
+	ts, ok := tsMap[sig]
+
+	if ok {
 		ts.Samples = append(ts.Samples, *sample)
 	} else {
 		newTs := &prompb.TimeSeries{
@@ -93,7 +95,7 @@ func addSample(tsMap map[string]*prompb.TimeSeries, sample *prompb.Sample, label
 // we only add exemplars if samples are presents
 // tsMap is unmodified if either of its parameters is nil and samples are nil.
 func addExemplars(tsMap map[string]*prompb.TimeSeries, exemplars []prompb.Exemplar, bucketBoundsData []bucketBoundsData) {
-	if len(tsMap) == 0 || len(bucketBoundsData) == 0 || len(exemplars) == 0 {
+	if tsMap == nil || bucketBoundsData == nil || exemplars == nil {
 		return
 	}
 
@@ -109,10 +111,14 @@ func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBound
 		sig := bucketBound.sig
 		bound := bucketBound.bound
 
-		ts := tsMap[sig]
-		if ts != nil && len(ts.Samples) > 0 && exemplar.Value <= bound {
-			ts.Exemplars = append(ts.Exemplars, exemplar)
-			return
+		_, ok := tsMap[sig]
+		if ok {
+			if tsMap[sig].Samples != nil {
+				if exemplar.Value <= bound {
+					tsMap[sig].Exemplars = append(tsMap[sig].Exemplars, exemplar)
+					return
+				}
+			}
 		}
 	}
 }
@@ -123,10 +129,10 @@ func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBound
 //
 // the label slice should not contain duplicate label names; this method sorts the slice by label name before creating
 // the signature.
-func timeSeriesSignature(datatype string, labels []prompb.Label) string {
+func timeSeriesSignature(datatype string, labels *[]prompb.Label) string {
 	length := len(datatype)
 
-	for _, lb := range labels {
+	for _, lb := range *labels {
 		length += 2 + len(lb.GetName()) + len(lb.GetValue())
 	}
 
@@ -134,9 +140,9 @@ func timeSeriesSignature(datatype string, labels []prompb.Label) string {
 	b.Grow(length)
 	b.WriteString(datatype)
 
-	sort.Sort(ByLabelName(labels))
+	sort.Sort(ByLabelName(*labels))
 
-	for _, lb := range labels {
+	for _, lb := range *labels {
 		b.WriteString("-")
 		b.WriteString(lb.GetName())
 		b.WriteString("-")
@@ -146,9 +152,9 @@ func timeSeriesSignature(datatype string, labels []prompb.Label) string {
 	return b.String()
 }
 
-// createAttributes creates a slice of Prometheus Labels with OTLP attributes and pairs of string values.
-// Unpaired string values are ignored. String pairs overwrite OTLP labels if collisions happen, and overwrites are
-// logged. Resulting label names are sanitized.
+// createAttributes creates a slice of Cortex Label with OTLP attributes and pairs of string values.
+// Unpaired string value is ignored. String pairs overwrites OTLP labels if collision happens, and the overwrite is
+// logged. Resultant label names are sanitized.
 func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externalLabels map[string]string, extras ...string) []prompb.Label {
 	serviceName, haveServiceName := resource.Attributes().Get(conventions.AttributeServiceName)
 	instance, haveInstanceID := resource.Attributes().Get(conventions.AttributeServiceInstanceID)
@@ -178,8 +184,8 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 
 	for _, label := range labels {
 		var finalKey = prometheustranslator.NormalizeLabel(label.Name)
-		if existingValue, alreadyExists := l[finalKey]; alreadyExists {
-			l[finalKey] = existingValue + ";" + label.Value
+		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
+			l[finalKey] = existingLabel + ";" + label.Value
 		} else {
 			l[finalKey] = label.Value
 		}
@@ -263,7 +269,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		}
 
 		// sum, count, and buckets of the histogram should append suffix to baseName
-		labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: baseName + nameSuffix})
+		labels = append(labels, prompb.Label{Name: nameStr, Value: baseName + nameSuffix})
 
 		return labels
 	}
@@ -355,7 +361,7 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 		exemplar := pt.Exemplars().At(i)
 		exemplarRunes := 0
 
-		promExemplar := prompb.Exemplar{
+		promExemplar := &prompb.Exemplar{
 			Value:     exemplar.DoubleValue(),
 			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 		}
@@ -398,7 +404,7 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 			promExemplar.Labels = append(promExemplar.Labels, labelsFromAttributes...)
 		}
 
-		promExemplars = append(promExemplars, promExemplar)
+		promExemplars = append(promExemplars, *promExemplar)
 	}
 
 	return promExemplars
@@ -461,7 +467,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 			labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
 		}
 
-		labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: name})
+		labels = append(labels, prompb.Label{Name: nameStr, Value: name})
 
 		return labels
 	}
@@ -521,7 +527,7 @@ func addCreatedTimeSeriesIfNeeded(
 	timestamp pcommon.Timestamp,
 	metricType string,
 ) {
-	sig := timeSeriesSignature(metricType, labels)
+	sig := timeSeriesSignature(metricType, &labels)
 	if _, ok := series[sig]; !ok {
 		series[sig] = &prompb.TimeSeries{
 			Labels: labels,
@@ -562,7 +568,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 	if len(settings.Namespace) > 0 {
 		name = settings.Namespace + "_" + name
 	}
-	labels := createAttributes(resource, attributes, settings.ExternalLabels, model.MetricNameLabel, name)
+	labels := createAttributes(resource, attributes, settings.ExternalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		Value: float64(1),
 		// convert ns to ms
