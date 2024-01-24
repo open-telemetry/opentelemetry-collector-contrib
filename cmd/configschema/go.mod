@@ -469,7 +469,7 @@ require (
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19 // indirect
+	github.com/nginxinc/nginx-prometheus-exporter v0.11.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.92.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.92.0 // indirect
