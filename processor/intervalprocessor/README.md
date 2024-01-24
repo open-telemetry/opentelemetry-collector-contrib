@@ -15,7 +15,18 @@
 
 ## Description
 
-The interval processor (`intervalprocessor`) aggregates monotonic, cumulative sum and histogram metrics and periodically forwards the latest values to the next component in the pipeline. Non-monotonic sums, gauges, exponential histograms, summaries, and delta metrics are passed to the next component in the pipeline unchanged.
+The interval processor (`intervalprocessor`) aggregates metrics and periodically forwards the latest values to the next component in the pipeline. The processor supports aggregating the following metric types:
+
+* Monotonically increasing, cumulative sums
+* Monotonically increasing, cumulative histograms
+* Monotonically increasing, cumulative exponential histograms
+
+The following metric types will *not* be aggregated, and will instead be passed, unchanged, to the next component in the pipeline:
+
+* All delta metrics
+* Non-monotonically increasing sums
+* Gauges
+* Summaries
 
 ## Configuration
 
