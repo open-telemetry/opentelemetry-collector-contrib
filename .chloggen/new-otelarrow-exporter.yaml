@@ -1,6 +1,0 @@
-change_type: new_component
-component: otelarrow
-note: Skeleton of new OpenTelemetry Protocol with Apache Arrow Exporter.
-issues: [26491]
-subtext:
-change_logs: [user]
