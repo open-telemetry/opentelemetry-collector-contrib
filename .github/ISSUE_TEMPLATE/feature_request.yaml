@@ -62,6 +62,7 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
+      - exporter/otelarrow
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
@@ -100,6 +101,7 @@ body:
       - extension/pprof
       - extension/remotetap
       - extension/sigv4auth
+      - extension/solarwindsapmsettings
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
@@ -219,6 +221,7 @@ body:
       - receiver/nsxt
       - receiver/opencensus
       - receiver/oracledb
+      - receiver/osquery
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql

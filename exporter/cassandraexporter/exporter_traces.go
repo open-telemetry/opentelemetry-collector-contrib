@@ -23,13 +23,16 @@ type tracesExporter struct {
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-	cluster := gocql.NewCluster(cfg.DSN)
-	session, err := cluster.CreateSession()
+	cluster, err := newCluster(cfg)
+	if err != nil {
+		return nil, err
+	}
 	cluster.Keyspace = cfg.Keyspace
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 	cluster.Timeout = cfg.Timeout
 
+	session, err := cluster.CreateSession()
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +42,10 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 
 func initializeTraceKernel(cfg *Config) error {
 	ctx := context.Background()
-	cluster := gocql.NewCluster(cfg.DSN)
+	cluster, err := newCluster(cfg)
+	if err != nil {
+		return err
+	}
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 	cluster.Timeout = cfg.Timeout

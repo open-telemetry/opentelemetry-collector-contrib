@@ -138,7 +138,7 @@ func TestStartTraceReception(t *testing.T) {
 				},
 			}
 			zr, err := newReceiver(cfg, sink, receivertest.NewNopCreateSettings())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, zr)
 
 			err = zr.Start(context.Background(), tt.host)

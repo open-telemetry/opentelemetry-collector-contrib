@@ -7,3 +7,7 @@ status:
   distributions: [contrib, aws, observiq]
   codeowners:
     active: [dyladan, arminru, evan-bradley]
+
+tests:
+  config:
+  expect_consumer_error: true
