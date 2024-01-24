@@ -7,6 +7,24 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.93.0
+
+### 🛑 Breaking changes 🛑
+
+- `testbed`: Remove unused AWS XRay mock receiver (#30381)
+- `docker`: Adopt api_version as strings to correct invalid float truncation (#24025)
+- `prometheusreceiver`: Consolidate Config members and remove the need of placeholders. (#29901)
+- `all`: Remove obsolete "// +build" directive (#30651)
+- `testbed`: Expand TestCase capabilities with broken out LoadGenerator interface (#30303)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate pkg/stanza/attrs package in favor of pkg/stanza/fileconsumer/attrs (#30449)
+
+### 💡 Enhancements 💡
+
+- `testbed`: Adds and adopts new WithEnvVar child process option, moving GOMAXPROCS=2 to initializations (#30491)
+
 ## v0.92.0
 
 ### 🛑 Breaking changes 🛑

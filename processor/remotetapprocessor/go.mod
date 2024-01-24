@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/remot
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.93.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.93.0
 	go.opentelemetry.io/collector/config/confighttp v0.93.0

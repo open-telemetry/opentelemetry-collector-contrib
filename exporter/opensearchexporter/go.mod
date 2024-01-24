@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opense
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.93.0
 	github.com/opensearch-project/opensearch-go/v2 v2.3.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.93.0
@@ -28,7 +28,7 @@ require (
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.92.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.93.0 // indirect
 	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.46.0 // indirect
