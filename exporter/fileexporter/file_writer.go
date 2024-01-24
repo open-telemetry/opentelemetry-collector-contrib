@@ -94,7 +94,7 @@ func (e *fileWriter) start(context.Context) error {
 
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops the flush ticker if set.
-func (e *fileWriter) shutdown(context.Context) error {
+func (e *fileWriter) shutdown() error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	// Stop the flush ticker.

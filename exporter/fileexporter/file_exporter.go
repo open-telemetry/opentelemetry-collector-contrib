@@ -50,5 +50,5 @@ func (e *fileExporter) Start(ctx context.Context, _ component.Host) error {
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops the flush ticker if set.
 func (e *fileExporter) Shutdown(ctx context.Context) error {
-	return e.writer.shutdown(ctx)
+	return e.writer.shutdown()
 }

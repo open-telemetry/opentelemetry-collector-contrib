@@ -666,7 +666,7 @@ func TestFlushing(t *testing.T) {
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
-	fe := newFileExporter(cfg, bwc)
+	fe := getOrCreateFileExporter(cfg, bwc)
 
 	// Start the flusher.
 	ctx := context.Background()

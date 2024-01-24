@@ -38,6 +38,9 @@ type Config struct {
 	// FlushInterval is the duration between flushes.
 	// See time.ParseDuration for valid values.
 	FlushInterval time.Duration `mapstructure:"flush_interval"`
+
+	// GroupByAttribute enables writing to separate files based on a resource attribute.
+	GroupByAttribute *GroupByAttribute `mapstructure:"group_by_attribute"`
 }
 
 // Rotation an option to rolling log files
@@ -61,6 +64,32 @@ type Rotation struct {
 	// backup files is the computer's local time.  The default is to use UTC
 	// time.
 	LocalTime bool `mapstructure:"localtime"`
+}
+
+type GroupByAttribute struct {
+	// SubPathResourceAttribute specifies the name of the resource attribute that
+	// contains the subpath of the file to write to. The final path will be
+	// prefixed with the 'path' config value. There is no default for this setting.
+	SubPathResourceAttribute string `mapstructure:"sub_path_resource_attribute"`
+
+	// DeleteSubPathResourceAttribute if set to true, the resource attribute
+	// specified in sub_path_resource_attribute config value is removed from the
+	// telemetry data before writing it to a file. Default is false.
+	DeleteSubPathResourceAttribute bool `mapstructure:"delete_sub_path_resource_attribute"`
+
+	// Maximum number of open file descriptors for the output files. The fefaults is 100.
+	MaxOpenFiles int `mapstructure:"max_open_files"`
+
+	// DiscardIfAttributeNotFound if set to true, and the processed resource does not have the
+	// resource attribute specified in 'sub_path_resource_attribute', the telemetry data is
+	// discarded. Default is false.
+	DiscardIfAttributeNotFound bool `mapstructure:"discard_if_attribute_not_found"`
+
+	// DefaultSubPath value is used when the processed resource does not have the resource
+	// attribute specified in 'sub_path_resource_attribute', and 'discard_if_attribute_not_found'
+	// is set to false. If 'discard_if_attribute_not_found' is set to true, this setting is
+	// ignored. Default is "MISSING".
+	DefaultSubPath string `mapstructure:"default_sub_path"`
 }
 
 var _ component.Config = (*Config)(nil)
