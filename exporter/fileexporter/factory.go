@@ -121,16 +121,20 @@ func createLogsExporter(
 
 func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
 	return &fileExporter{
-		path:             conf.Path,
-		formatType:       conf.FormatType,
-		file:             writer,
-		tracesMarshaler:  tracesMarshalers[conf.FormatType],
-		metricsMarshaler: metricsMarshalers[conf.FormatType],
-		logsMarshaler:    logsMarshalers[conf.FormatType],
-		exporter:         buildExportFunc(conf),
-		compression:      conf.Compression,
-		compressor:       buildCompressor(conf.Compression),
-		flushInterval:    conf.FlushInterval,
+		marshaller: &marshaller{
+			formatType:       conf.FormatType,
+			tracesMarshaler:  tracesMarshalers[conf.FormatType],
+			metricsMarshaler: metricsMarshalers[conf.FormatType],
+			logsMarshaler:    logsMarshalers[conf.FormatType],
+			compression:      conf.Compression,
+			compressor:       buildCompressor(conf.Compression),
+		},
+		writer: &fileWriter{
+			path:          conf.Path,
+			file:          writer,
+			exporter:      buildExportFunc(conf),
+			flushInterval: conf.FlushInterval,
+		},
 	}
 }
 
