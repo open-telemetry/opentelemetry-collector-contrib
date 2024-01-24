@@ -1,4 +1,4 @@
-package elasticconnector
+package elasticprocessor
 
 type Config struct {
 	AddSystemMetrics bool `mapstructure:"add_system_metrics"`

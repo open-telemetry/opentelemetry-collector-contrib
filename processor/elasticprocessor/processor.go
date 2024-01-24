@@ -1,4 +1,4 @@
-package elasticconnector
+package elasticprocessor
 
 import (
 	"context"
