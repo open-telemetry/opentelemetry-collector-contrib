@@ -131,7 +131,7 @@ For more details, see the following issues:
 The schedule for this feature gate is:
 
 - Introduced in v0.87.0 (October 2023) as `alpha` - disabled by default.
-- Moved to `beta` in January 2024 - enabled by default.
+- Moved to `beta` in v0.92.0 (January 2024) - enabled by default.
 - Moved to `stable` in April 2024 - cannot be disabled.
 - Removed three releases after `stable`.
 
