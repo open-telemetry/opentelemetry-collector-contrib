@@ -35,13 +35,26 @@ extensions:
 receivers:
     splunkenterprise:
         indexer:
-            auth: basicauth/indexer
+            auth: 
+              authenticator: basicauth/indexer
             endpoint: "https://localhost:8089"
             timeout: 45s
         cluster_master:
-            auth: basicauth/cluster_master
+            auth: 
+              authenticator: basicauth/cluster_master
             endpoint: "https://localhost:8089"
             timeout: 45s
+
+exporters:
+  logging:
+    loglevel: info
+
+service:
+  extensions: [basicauth/indexer, basicauth/cluster_master]
+  pipelines:
+    metrics:
+      receivers: [splunkenterprise]
+      exporters: [logging]
 ```
 
 For a full list of settings exposed by this receiver please look [here](./config.go) with a detailed configuration [here](./testdata/config.yaml).
