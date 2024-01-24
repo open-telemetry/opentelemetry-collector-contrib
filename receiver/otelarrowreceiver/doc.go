@@ -3,8 +3,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package otelarrowexporter receives telemetry using OpenTelemetry
-// Protocol with Apache Arrow and/or standard OpenTelemetry Protocol
-// data using configuration structures similar to the core OTLP/gRPC
-// receiver.
-package otelarrowreceiver
+package otelarrowreceiver // import "github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver"

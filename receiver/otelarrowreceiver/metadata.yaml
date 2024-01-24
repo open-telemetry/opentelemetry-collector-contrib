@@ -3,7 +3,5 @@ type: otelarrow
 status:
   class: receiver
   stability:
-    development: [traces, metrics, logs]
-  distributions: [contrib]
-  codeowners:
-    active: [jmacd, moh-osman3]
+    development: [metrics, traces, logs]
+  distributions: [otelarrow]
