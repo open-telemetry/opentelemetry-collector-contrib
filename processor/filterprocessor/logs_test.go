@@ -585,7 +585,7 @@ func TestFilterLogProcessor(t *testing.T) {
 				next,
 			)
 			assert.NotNil(t, flp)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			caps := flp.Capabilities()
 			assert.True(t, caps.MutatesData)
