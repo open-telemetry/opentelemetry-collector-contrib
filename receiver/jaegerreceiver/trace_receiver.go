@@ -124,12 +124,12 @@ func newJaegerReceiver(
 	}, nil
 }
 
-func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
+func (jr *jReceiver) Start(ctx context.Context, host component.Host) error {
 	if err := jr.startAgent(); err != nil {
 		return err
 	}
 
-	return jr.startCollector(host)
+	return jr.startCollector(ctx, host)
 }
 
 func (jr *jReceiver) Shutdown(ctx context.Context) error {
@@ -368,7 +368,7 @@ func (jr *jReceiver) HandleThriftHTTPBatch(w http.ResponseWriter, r *http.Reques
 	jr.httpObsrecv.EndTracesOp(ctx, thriftFormat, numSpans, err)
 }
 
-func (jr *jReceiver) startCollector(host component.Host) error {
+func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) error {
 	if jr.config == nil {
 		return nil
 	}
@@ -403,7 +403,7 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %w", err)
 		}
 
-		ln, err := jr.config.CollectorGRPCServerSettings.ToListener()
+		ln, err := jr.config.CollectorGRPCServerSettings.ToListenerContext(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to bind to gRPC address %q: %w", jr.config.CollectorGRPCServerSettings.NetAddr, err)
 		}

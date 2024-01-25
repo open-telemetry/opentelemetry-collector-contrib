@@ -5,14 +5,14 @@ go 1.20
 require (
 	github.com/IBM/sarama v1.42.1
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.93.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.93.0
-	go.opentelemetry.io/collector/config/configtls v0.93.0
-	go.opentelemetry.io/collector/confmap v0.93.0
-	go.opentelemetry.io/collector/consumer v0.93.0
-	go.opentelemetry.io/collector/pdata v1.0.1
-	go.opentelemetry.io/collector/receiver v0.93.0
+	go.opentelemetry.io/collector/component v0.93.1-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/confmap v0.93.1-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/consumer v0.93.1-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/receiver v0.93.1-0.20240125183026-3cacd40b27e8
 	go.opentelemetry.io/otel/metric v1.22.0
 	go.opentelemetry.io/otel/trace v1.22.0
 	go.uber.org/goleak v1.3.0
@@ -22,7 +22,7 @@ require (
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
-	github.com/aws/aws-sdk-go v1.50.2 // indirect
+	github.com/aws/aws-sdk-go v1.50.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -41,7 +41,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
-	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -71,10 +70,9 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.93.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.93.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.93.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.1 // indirect
+	go.opentelemetry.io/collector v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/otel v1.22.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.22.0 // indirect
