@@ -10,7 +10,7 @@ import (
 
 const (
 	Type             = "interval"
-	MetricsStability = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelDevelopment
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {

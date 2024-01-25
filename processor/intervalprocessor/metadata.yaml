@@ -2,7 +2,8 @@ type: interval
 
 status:
   class: processor
-  stability: {}
+  stability:
+    development: [metrics]
   distributions: [contrib]
   warnings: [Statefulness]
   codeowners:
