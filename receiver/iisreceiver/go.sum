@@ -187,7 +187,6 @@ github.com/google/uuid v1.4.0 h1:MtMxsa51/r9yyhkyLsVeVt0B+BGQZzpQiTQ4eHZ8bc4=
 github.com/google/uuid v1.4.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
-github.com/hashicorp/go-version v1.6.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
@@ -365,7 +364,6 @@ go.opentelemetry.io/collector/confmap v0.93.1-0.20240125183026-3cacd40b27e8 h1:w
 go.opentelemetry.io/collector/confmap v0.93.1-0.20240125183026-3cacd40b27e8/go.mod h1:KjHrfxKKojaLDc9zDPfVuyp8765AH+XfcoPWMLMiuHU=
 go.opentelemetry.io/collector/consumer v0.93.1-0.20240125183026-3cacd40b27e8 h1:349glRI38DLVCtwYzY2464v9X6b2GvNWR3bZaVOPYRY=
 go.opentelemetry.io/collector/consumer v0.93.1-0.20240125183026-3cacd40b27e8/go.mod h1:6BI1qsWw89DmTjoEu/acTcvTLISt3Y0lHioUfafpsAE=
-go.opentelemetry.io/collector/featuregate v1.0.2-0.20240125183026-3cacd40b27e8/go.mod h1:QQXjP4etmJQhkQ20j4P/rapWuItYxoFozg/iIwuKnYg=
 go.opentelemetry.io/collector/pdata v1.0.2-0.20240125183026-3cacd40b27e8 h1:TCr0cgIqNSQeRjf2HUqKpMIVpb+C/NVNTReeebysW6c=
 go.opentelemetry.io/collector/pdata v1.0.2-0.20240125183026-3cacd40b27e8/go.mod h1:jutXeu0QOXYY8wcZ/hege+YAnSBP3+jpTqYU1+JTI5Y=
 go.opentelemetry.io/collector/receiver v0.93.1-0.20240125183026-3cacd40b27e8 h1:3zKfC0WFSTq0a/ZQVS6zGIA0wxHRVVrtSfzj5crc2zc=
