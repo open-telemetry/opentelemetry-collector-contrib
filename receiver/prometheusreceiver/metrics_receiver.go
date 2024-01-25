@@ -178,7 +178,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash string, allocConf *TargetAll
 		return "", err
 	}
 
-	return "", nil
+	return hash, nil
 }
 
 // instantiateShard inserts the SHARD environment variable in the returned configuration
