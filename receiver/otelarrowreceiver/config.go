@@ -12,12 +12,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-const (
-	// Confmap values.
-	protoGRPC                = "protocols::grpc"
-	protoArrowMemoryLimitMiB = "protocols::arrow::memory_limit_mib"
-)
-
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC  configgrpc.GRPCServerSettings `mapstructure:"grpc"`
