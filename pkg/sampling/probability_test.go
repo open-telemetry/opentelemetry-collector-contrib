@@ -21,12 +21,16 @@ func ExampleProbabilityToThresholdWithPrecision() {
 		fmt.Println(tval.TValue())
 	}
 
-	// Output: aab
+	// Output:
+	// aab
 	// 555
 	// 0
 }
 
-func ExampleProbabilityToThreshold() {
+// ExampleProbabilityToThreshold_rounding demonstrates that with full
+// precision, the resulting t-value appears to round in an unexpected
+// way.
+func ExampleProbabilityToThreshold_rounding() {
 	// 1/3 sampling corresponds with a rejection threshold of (1 - 1/3).
 	const exampleProb = 1.0 / 3.0
 
@@ -34,18 +38,41 @@ func ExampleProbabilityToThreshold() {
 	// hexadecimal it is the repeating fraction of a (0x0.555555).
 	tval, _ := ProbabilityToThreshold(exampleProb)
 
-	// Note the trailing c below, which seems out of place-- for a
-	// repeating fraction of hex as it makes intuitive sense to
-	// have the final digit be b, right?  The reason it is "c" is
-	// that ProbabilityToThreshold computes the number of spans
+	// Note the trailing hex "c" below, which does not match
+	// intuition for a repeating pattern of hex "a" digits.  Why
+	// is the final digit not hex "b"?  The reason it is hex "c"
+	// is that ProbabilityToThreshold computes the number of spans
 	// selected as a 56-bit integer using a 52-bit significand.
 	// Because the fraction uses fewer bits than the threshold,
 	// the last digit rounds down, with 0x55555555555554 spans
-	// rejected out of 0x100000000000000.  The subtraction of
-	// 0x4 from 0x10 leads to a trailing "c".
+	// rejected out of 0x100000000000000.  The subtraction of 0x4
+	// from 0x10 leads to a trailing hex "c".
 	fmt.Println(tval.TValue())
 
-	// Output: aaaaaaaaaaaaac
+	// Output:
+	// aaaaaaaaaaaaac
+}
+
+func ExampleProbabilityToThreshold_verysmall() {
+	for _, prob := range []float64{
+		MinSamplingProbability, // Skip 1 out of 2**56
+		0x2p-56,                // Skip 2 out of 2**56
+		0x3p-56,                // Skip 3 out of 2**56
+		0x4p-56,                // Skip 4 out of 2**56
+		0x8p-56,                // Skip 8 out of 2**56
+		0x10p-56,               // Skip 16 out of 2**56
+	} {
+		tval, _ := ProbabilityToThreshold(prob)
+		fmt.Println(tval.TValue())
+	}
+
+	// Output:
+	// ffffffffffffff
+	// fffffffffffffe
+	// fffffffffffffd
+	// fffffffffffffc
+	// fffffffffffff8
+	// fffffffffffff
 }
 
 func TestProbabilityToThresholdWithPrecision(t *testing.T) {
