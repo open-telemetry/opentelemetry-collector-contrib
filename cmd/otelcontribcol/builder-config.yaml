@@ -27,6 +27,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.92.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension v0.92.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.92.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.92.0
@@ -449,6 +450,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension => ../../extension/encoding/jaegerencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension => ../../extension/remotetapextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension => ../../extension/opampextension
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension => ../../extension/solarwindsapmsettingsextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter => ../../testbed/mockdatasenders/mockdatadogagentexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../testbed
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver

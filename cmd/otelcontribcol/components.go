@@ -95,6 +95,7 @@ import (
 	pprofextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 	remotetapextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension"
 	sigv4authextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
+	solarwindsapmsettingsextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension"
 	dbstorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	filestorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	attributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -234,6 +235,7 @@ func components() (otelcol.Factories, error) {
 		pprofextension.NewFactory(),
 		remotetapextension.NewFactory(),
 		sigv4authextension.NewFactory(),
+		solarwindsapmsettingsextension.NewFactory(),
 		filestorage.NewFactory(),
 		dbstorage.NewFactory(),
 		otlpencodingextension.NewFactory(),

@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/cmd/builder v0.92.1-0.20240118172122-8131d31601b8
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.17.0
-	golang.org/x/vuln v1.0.2
+	golang.org/x/vuln v1.0.3
 )
 
 require (

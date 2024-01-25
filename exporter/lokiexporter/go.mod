@@ -10,7 +10,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.92.0
 	github.com/prometheus/common v0.46.0
 	github.com/stretchr/testify v1.8.4
-	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.92.1-0.20240118172122-8131d31601b8
 	go.opentelemetry.io/collector/component v0.92.1-0.20240118172122-8131d31601b8
 	go.opentelemetry.io/collector/config/confighttp v0.92.1-0.20240118172122-8131d31601b8
@@ -64,6 +63,7 @@ require (
 	github.com/prometheus/prometheus v0.48.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rs/cors v1.10.1 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.92.1-0.20240118172122-8131d31601b8 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240118172122-8131d31601b8 // indirect

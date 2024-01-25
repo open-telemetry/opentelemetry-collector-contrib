@@ -6,6 +6,7 @@ package traces
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -139,6 +140,7 @@ func Run(c *Config, logger *zap.Logger) error {
 		wg.Add(1)
 		w := worker{
 			numTraces:        c.NumTraces,
+			numChildSpans:    int(math.Max(1, float64(c.NumChildSpans))),
 			propagateContext: c.PropagateContext,
 			statusCode:       statusCode,
 			limitPerSecond:   limit,
