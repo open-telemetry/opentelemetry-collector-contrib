@@ -59,11 +59,11 @@ func (wc *WALConfig) truncateFrequency() time.Duration {
 	return defaultWALTruncateFrequency
 }
 
-func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
+func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) error) *prweWAL {
 	if walConfig == nil {
 		// There are cases for which the WAL can be disabled.
 		// TODO: Perhaps log that the WAL wasn't enabled.
-		return nil, errNilConfig
+		return nil
 	}
 
 	return &prweWAL{
@@ -72,7 +72,7 @@ func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.Wri
 		stopChan:   make(chan struct{}),
 		rWALIndex:  &atomic.Uint64{},
 		wWALIndex:  &atomic.Uint64{},
-	}, nil
+	}
 }
 
 func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
@@ -90,7 +90,6 @@ func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 var (
 	errAlreadyClosed = errors.New("already closed")
 	errNilWAL        = errors.New("wal is nil")
-	errNilConfig     = errors.New("expecting a non-nil configuration")
 )
 
 // retrieveWALIndices queries the WriteAheadLog for its current first and last indices.

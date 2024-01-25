@@ -27,6 +27,7 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
+	clientTypes "github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
 	"github.com/open-telemetry/opamp-go/server/types"
@@ -39,15 +40,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
+var _ clientTypes.Logger = testLogger{}
+
 type testLogger struct {
 	t *testing.T
 }
 
-func (tl testLogger) Debugf(format string, args ...any) {
+func (tl testLogger) Debugf(_ context.Context, format string, args ...any) {
 	tl.t.Logf(format, args...)
 }
 
-func (tl testLogger) Errorf(format string, args ...any) {
+func (tl testLogger) Errorf(_ context.Context, format string, args ...any) {
 	tl.t.Logf(format, args...)
 }
 
