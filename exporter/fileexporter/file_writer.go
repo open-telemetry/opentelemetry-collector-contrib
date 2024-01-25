@@ -26,29 +26,29 @@ type fileWriter struct {
 	stopTicker    chan struct{}
 }
 
-func exportMessageAsLine(e *fileWriter, buf []byte) error {
+func exportMessageAsLine(w *fileWriter, buf []byte) error {
 	// Ensure only one write operation happens at a time.
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-	if _, err := e.file.Write(buf); err != nil {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	if _, err := w.file.Write(buf); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(e.file, "\n"); err != nil {
+	if _, err := io.WriteString(w.file, "\n"); err != nil {
 		return err
 	}
 	return nil
 }
 
-func exportMessageAsBuffer(e *fileWriter, buf []byte) error {
+func exportMessageAsBuffer(w *fileWriter, buf []byte) error {
 	// Ensure only one write operation happens at a time.
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
 	// each encoded object is preceded by 4 bytes (an unsigned 32 bit integer)
 	data := make([]byte, 4, 4+len(buf))
 	binary.BigEndian.PutUint32(data, uint32(len(buf)))
 
-	return binary.Write(e.file, binary.BigEndian, append(data, buf...))
+	return binary.Write(w.file, binary.BigEndian, append(data, buf...))
 }
 
 func (w *fileWriter) export(buf []byte) error {
@@ -57,27 +57,27 @@ func (w *fileWriter) export(buf []byte) error {
 
 // startFlusher starts the flusher.
 // It does not check the flushInterval
-func (e *fileWriter) startFlusher() {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-	ff, ok := e.file.(interface{ flush() error })
+func (w *fileWriter) startFlusher() {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	ff, ok := w.file.(interface{ flush() error })
 	if !ok {
 		// Just in case.
 		return
 	}
 
 	// Create the stop channel.
-	e.stopTicker = make(chan struct{})
+	w.stopTicker = make(chan struct{})
 	// Start the ticker.
-	e.flushTicker = time.NewTicker(e.flushInterval)
+	w.flushTicker = time.NewTicker(w.flushInterval)
 	go func() {
 		for {
 			select {
-			case <-e.flushTicker.C:
-				e.mutex.Lock()
+			case <-w.flushTicker.C:
+				w.mutex.Lock()
 				ff.flush()
-				e.mutex.Unlock()
-			case <-e.stopTicker:
+				w.mutex.Unlock()
+			case <-w.stopTicker:
 				return
 			}
 		}
@@ -85,28 +85,28 @@ func (e *fileWriter) startFlusher() {
 }
 
 // Start starts the flush timer if set.
-func (e *fileWriter) start(context.Context) error {
-	if e.flushInterval > 0 {
-		e.startFlusher()
+func (w *fileWriter) start(context.Context) error {
+	if w.flushInterval > 0 {
+		w.startFlusher()
 	}
 	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops the flush ticker if set.
-func (e *fileWriter) shutdown() error {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+func (w *fileWriter) shutdown() error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	// Stop the flush ticker.
-	if e.flushTicker != nil {
-		e.flushTicker.Stop()
+	if w.flushTicker != nil {
+		w.flushTicker.Stop()
 		// Stop the go routine.
-		close(e.stopTicker)
+		close(w.stopTicker)
 	}
-	return e.file.Close()
+	return w.file.Close()
 }
 
-func buildExportFunc(cfg *Config) func(e *fileWriter, buf []byte) error {
+func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
 	if cfg.FormatType == formatTypeProto {
 		return exportMessageAsBuffer
 	}

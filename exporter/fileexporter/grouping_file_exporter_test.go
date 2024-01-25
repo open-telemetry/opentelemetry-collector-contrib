@@ -788,8 +788,8 @@ func BenchmarkExporters(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 				ctx := context.Background()
-				fe.consumeTraces(ctx, traces[i%len(traces)])
-				fe.consumeLogs(ctx, logs[i%len(logs)])
+				require.NoError(b, fe.consumeTraces(ctx, traces[i%len(traces)]))
+				require.NoError(b, fe.consumeLogs(ctx, logs[i%len(logs)]))
 			}
 		})
 

@@ -148,7 +148,7 @@ func (e *groupingFileExporter) getWriter(ctx context.Context, subPath string) (*
 	var err error
 	if !ok {
 		if e.createDirs {
-			err := os.MkdirAll(path.Dir(fullPath), 0755)
+			err = os.MkdirAll(path.Dir(fullPath), 0755)
 			if err != nil {
 				return nil, err
 			}
@@ -170,7 +170,7 @@ func (e *groupingFileExporter) getWriter(ctx context.Context, subPath string) (*
 	return writer, nil
 }
 
-func (e *groupingFileExporter) onEnvict(fullPath string, writer *fileWriter) {
+func (e *groupingFileExporter) onEnvict(_ string, writer *fileWriter) {
 	_ = writer.shutdown() // TODO: should we log this error?
 }
 
@@ -192,22 +192,22 @@ func group[T any](e *groupingFileExporter, groups map[string][]T, resource pcomm
 	if !ok {
 		if e.discardIfAttributeNotFound {
 			return
-		} else {
-			subPath = e.defaultSubPath
 		}
+
+		subPath = e.defaultSubPath
 	}
 
 	groups[subPath] = append(groups[subPath], resourceEntries)
 }
 
 // Start is a noop.
-func (e *groupingFileExporter) Start(ctx context.Context, _ component.Host) error {
+func (e *groupingFileExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops flushes and closes all underlying writers.
-func (e *groupingFileExporter) Shutdown(ctx context.Context) error {
+func (e *groupingFileExporter) Shutdown(context.Context) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
