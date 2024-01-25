@@ -18,7 +18,7 @@ import (
 
 var replaceUnsafeCharactersFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.filestorage.replaceUnsafeCharacters",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, characters that are not safe in file paths are replaced in component name using the extension. For example, the data for component `filelog/logs/json` will be stored in file `receiver_filelog_logs~007Ejson` and not in `receiver_filelog_logs/json`."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3148"),
 	featuregate.WithRegisterFromVersion("v0.87.0"),
