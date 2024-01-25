@@ -5,7 +5,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func addLoadMetrics(metrics pmetric.MetricSlice) error {
+func addLoadMetrics(metrics pmetric.MetricSlice, dataset string) error {
 	var timestamp pcommon.Timestamp
 	var l1, l5, l15 float64
 
@@ -24,7 +24,7 @@ func addLoadMetrics(metrics pmetric.MetricSlice) error {
 		}
 	}
 
-	addMetrics(metrics,
+	addMetrics(metrics, dataset,
 		metric{
 			dataType:    Gauge,
 			name:        "system.load.1",

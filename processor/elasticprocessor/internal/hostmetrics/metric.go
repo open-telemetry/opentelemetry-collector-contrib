@@ -21,7 +21,7 @@ type metric struct {
 	doubleValue    *float64
 }
 
-func addMetrics(ms pmetric.MetricSlice, metrics ...metric) {
+func addMetrics(ms pmetric.MetricSlice, dataset string, metrics ...metric) {
 	ms.EnsureCapacity(ms.Len() + len(metrics))
 
 	for _, metric := range metrics {
@@ -47,6 +47,6 @@ func addMetrics(ms pmetric.MetricSlice, metrics ...metric) {
 			dp.SetStartTimestamp(metric.startTimestamp)
 		}
 
-		dp.Attributes().PutStr("event.provider", "elasticprocessor.hostmetrics")
+		dp.Attributes().PutStr("data_stream.dataset", dataset)
 	}
 }

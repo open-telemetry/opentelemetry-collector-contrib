@@ -5,7 +5,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func addCPUMetrics(metrics pmetric.MetricSlice) error {
+func addCPUMetrics(metrics pmetric.MetricSlice, dataset string) error {
 	var timestamp pcommon.Timestamp
 	var numCores int64
 	var totalPercent, idlePercent, systemPercent, userPercent, stealPercent,
@@ -65,7 +65,7 @@ func addCPUMetrics(metrics pmetric.MetricSlice) error {
 	irqNorm := irqPercent / float64(numCores)
 	softirqNorm := softirqPercent / float64(numCores)
 
-	addMetrics(metrics,
+	addMetrics(metrics, dataset,
 		metric{
 			dataType:  Sum,
 			name:      "system.cpu.cores",

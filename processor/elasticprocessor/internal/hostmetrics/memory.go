@@ -5,7 +5,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func addMemoryMetrics(metrics pmetric.MetricSlice) error {
+func addMemoryMetrics(metrics pmetric.MetricSlice, dataset string) error {
 	var timestamp pcommon.Timestamp
 	var total, free, cached, usedBytes, actualFree, actualUsedBytes int64
 	var usedPercent, actualUsedPercent float64
@@ -70,7 +70,7 @@ func addMemoryMetrics(metrics pmetric.MetricSlice) error {
 	usedBytes += total
 	actualFree = total - actualUsedBytes
 
-	addMetrics(metrics,
+	addMetrics(metrics, dataset,
 		metric{
 			dataType:  Sum,
 			name:      "system.memory.total",

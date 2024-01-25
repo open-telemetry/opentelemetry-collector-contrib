@@ -26,17 +26,18 @@ func AddElasticSystemMetrics(scopeMetrics pmetric.ScopeMetrics) error {
 	scope := scopeMetrics.Scope()
 	scraper := path.Base(scope.Name())
 
-	if dataset, ok := scraperToElasticDataset[scraper]; ok {
-		scope.Attributes().PutStr("dataset", dataset)
+	dataset, ok := scraperToElasticDataset[scraper]
+	if !ok {
+		return fmt.Errorf("no dataset defined for scaper '%s'", scraper)
 	}
 
 	switch scraper {
 	case "cpu":
-		return addCPUMetrics(scopeMetrics.Metrics())
+		return addCPUMetrics(scopeMetrics.Metrics(), dataset)
 	case "memory":
-		return addMemoryMetrics(scopeMetrics.Metrics())
+		return addMemoryMetrics(scopeMetrics.Metrics(), dataset)
 	case "load":
-		return addLoadMetrics(scopeMetrics.Metrics())
+		return addLoadMetrics(scopeMetrics.Metrics(), dataset)
 	default:
 		return fmt.Errorf("no matching transform function found for scope '%s'", scope.Name())
 	}
