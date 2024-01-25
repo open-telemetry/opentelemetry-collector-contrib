@@ -25,6 +25,7 @@ type Commander struct {
 	cfg     *config.Agent
 	args    []string
 	cmd     *exec.Cmd
+	exitCh  chan struct{}
 	doneCh  chan struct{}
 	running *atomic.Int64
 }
@@ -68,6 +69,7 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.cmd.Stderr = logFile
 
 	c.doneCh = make(chan struct{})
+	c.exitCh = make(chan struct{})
 
 	if err := c.cmd.Start(); err != nil {
 		return err
@@ -102,15 +104,17 @@ func (c *Commander) watch() {
 
 	c.running.Store(0)
 	close(c.doneCh)
+	c.exitCh <- struct{}{}
+}
+
+// Exited returns a channel that will send a signal when the Agent process exits.
+func (c *Commander) Exited() <-chan struct{} {
+	return c.exitCh
 }
 
 // Done returns a channel that will send a signal when the Agent process is finished.
 func (c *Commander) Done() <-chan struct{} {
 	return c.doneCh
-}
-
-func (c *Commander) ResetDone() {
-	c.doneCh = make(chan struct{})
 }
 
 // Pid returns Agent process PID if it is started or 0 if it is not.

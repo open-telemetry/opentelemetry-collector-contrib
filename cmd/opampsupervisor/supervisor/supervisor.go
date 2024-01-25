@@ -696,7 +696,7 @@ func (s *Supervisor) runAgentProcess() {
 			s.stopAgentApplyConfig()
 			s.startAgent()
 
-		case <-s.commander.Done():
+		case <-s.commander.Exited():
 			if s.shuttingDown {
 				break
 			}
@@ -723,7 +723,6 @@ func (s *Supervisor) runAgentProcess() {
 				}
 			}
 			restartTimer.Reset(5 * time.Second)
-			s.commander.ResetDone()
 
 		case <-restartTimer.C:
 			s.startAgent()
