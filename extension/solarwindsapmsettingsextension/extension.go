@@ -6,7 +6,6 @@ package solarwindsapmsettingsextension // import "github.com/open-telemetry/open
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"time"
@@ -44,59 +43,61 @@ func (extension *solarwindsapmSettingsExtension) Start(ctx context.Context, _ co
 	extension.logger.Debug("Starting up solarwinds apm settings extension")
 	ctx = context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
-
-	var err error
-	extension.conn, err = grpc.Dial(extension.config.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-	if err != nil {
-		return errors.New("Failed to dial: " + err.Error())
-	} else {
+	configOk := validateSolarwindsApmSettingsExtensionConfiguration(extension.config, extension.logger)
+	if configOk {
+		extension.conn, _ = grpc.Dial(extension.config.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 		extension.logger.Info("Dailed to " + extension.config.Endpoint)
-	}
-	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
-
-	task(extension)
-
-	// setup lightweight thread to refresh
-	interval, _ := time.ParseDuration(extension.config.Interval)
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				task(extension)
-			case <-ctx.Done():
-				extension.logger.Info("Received ctx.Done() from ticker")
-				return
+		extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
+		go func() {
+			ticker := newTicker(extension.config.Interval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					refresh(extension)
+				case <-ctx.Done():
+					extension.logger.Debug("Received ctx.Done() from ticker")
+					return
+				}
 			}
-		}
-	}()
-
+		}()
+	} else {
+		extension.logger.Warn("solarwindsapmsettingsextension is in noop. Please check config")
+	}
 	return nil
 }
 
 func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) error {
 	extension.logger.Debug("Shutting down solarwinds apm settings extension")
-	err := extension.conn.Close()
-	if err != nil {
-		return errors.New("Failed to close the gRPC connection to solarwinds APM collector " + err.Error())
-	}
-	return nil
-}
-
-func task(extension *solarwindsapmSettingsExtension) {
-	if validateSolarwindsApmSettingsExtensionConfiguration(extension.config, extension.logger) {
-		refresh(extension)
+	if extension.conn != nil {
+		return extension.conn.Close()
 	} else {
-		extension.logger.Warn("No refresh due to invalid config value")
+		return nil
 	}
 }
 
 func validateSolarwindsApmSettingsExtensionConfiguration(extensionCfg *Config, logger *zap.Logger) bool {
-	// Concrete implementation will be available in next PR
-	return false
+	// Concrete implementation will be available in later PR
+	return true
 }
 
 func refresh(extension *solarwindsapmSettingsExtension) {
-	// Concrete implementation will be available in next PR
+	// Concrete implementation will be available in later PR
+	extension.logger.Info("refresh task")
+}
+
+// Start ticking immediately.
+// Ref: https://stackoverflow.com/questions/32705582/how-to-get-time-tick-to-tick-immediately
+func newTicker(repeat time.Duration) *time.Ticker {
+	ticker := time.NewTicker(repeat)
+	oc := ticker.C
+	nc := make(chan time.Time, 1)
+	go func() {
+		nc <- time.Now()
+		for tm := range oc {
+			nc <- tm
+		}
+	}()
+	ticker.C = nc
+	return ticker
 }

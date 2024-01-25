@@ -5,6 +5,7 @@ package solarwindsapmsettingsextension // import "github.com/open-telemetry/open
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -13,7 +14,7 @@ import (
 )
 
 const (
-	DefaultInterval = "10s"
+	DefaultInterval = time.Duration(10000000000)
 )
 
 func createDefaultConfig() component.Config {

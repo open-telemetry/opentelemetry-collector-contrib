@@ -2,4 +2,4 @@ solarwindsapmsettings:
 solarwindsapmsettings/1:
   endpoint: "0.0.0.0:1234"
   key: "something"
-  interval: "10s"
+  interval: 10s

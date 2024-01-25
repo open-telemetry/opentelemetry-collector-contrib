@@ -6,6 +6,7 @@ package solarwindsapmsettingsextension
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Endpoint: "0.0.0.0:1234",
 				Key:      "something",
-				Interval: "10s",
+				Interval: time.Duration(10000000000),
 			},
 		},
 	}
@@ -44,7 +45,6 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
-
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})

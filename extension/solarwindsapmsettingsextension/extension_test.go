@@ -6,6 +6,7 @@ package solarwindsapmsettingsextension
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/extension"
@@ -16,7 +17,7 @@ func TestCreateExtension(t *testing.T) {
 	conf := &Config{
 		Endpoint: "apm-testcollector.click:443",
 		Key:      "valid:unittest",
-		Interval: "1s",
+		Interval: time.Duration(10000000000),
 	}
 	ex := createAnExtension(conf, t)
 	require.NoError(t, ex.Shutdown(context.TODO()))
@@ -26,7 +27,7 @@ func TestCreateExtensionWrongEndpoint(t *testing.T) {
 	conf := &Config{
 		Endpoint: "apm-testcollector.nothing:443",
 		Key:      "valid:unittest",
-		Interval: "1s",
+		Interval: time.Duration(10000000000),
 	}
 	ex := createAnExtension(conf, t)
 	require.NoError(t, ex.Shutdown(context.TODO()))
@@ -36,7 +37,7 @@ func TestCreateExtensionWrongKey(t *testing.T) {
 	conf := &Config{
 		Endpoint: "apm-testcollector.click:443",
 		Key:      "invalid",
-		Interval: "1s",
+		Interval: time.Duration(10000000000),
 	}
 	ex := createAnExtension(conf, t)
 	require.NoError(t, ex.Shutdown(context.TODO()))

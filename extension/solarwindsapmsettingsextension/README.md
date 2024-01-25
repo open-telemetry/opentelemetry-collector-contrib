@@ -23,7 +23,7 @@ extensions:
   solarwindsapmsettings:
     endpoint: "<endpoint>"
     key: "<token>:<name>"
-    interval: "10s"
+    interval: 10s
 ```
 
 ### endpoint (Required)
