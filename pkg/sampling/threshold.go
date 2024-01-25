@@ -21,7 +21,19 @@ const (
 	hexBase = 16
 )
 
-// Threshold used to compare with the least-significant 7 bytes of the TraceID.
+// Threshold represents an exact sampling probability using 56 bits of
+// precision.  A Threshold expresses the number of spans, out of 2**56,
+// that are rejected.
+//
+// These 56 bits are compared against 56 bits of randomness, either
+// extracted from an R-value or a TraceID having the W3C-specified
+// randomness bit set.
+//
+// Because Thresholds store 56 bits of information and floating point
+// values store 52 bits of significand, some conversions between
+// Threshold and probability values are lossy.  The kinds of loss that
+// occur depend on where in the probability scale it happens, as the
+// step between adjacent floating point values adjusts with the exponent.
 type Threshold struct {
 	// unsigned is in the range [0, MaxAdjustedCount]
 	// - 0 represents always sampling (0 Random values are less-than)

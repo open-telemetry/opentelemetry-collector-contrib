@@ -10,9 +10,13 @@ import (
 	"strconv"
 )
 
-// OTelTraceState represents the `ot` section of the W3C tracestate
+// OpenTelemetryTraceState represents the `ot` section of the W3C tracestate
 // which is specified generically in https://opentelemetry.io/docs/specs/otel/trace/tracestate-handling/.
-type OTelTraceState struct {
+//
+// OpenTelemetry defines two specific values that convey sampling
+// probability, known as T-Value (with "th", for threshold), R-Value
+// (with key "rv", for random value), and extra values.
+type OpenTelemetryTraceState struct {
 	commonTraceState
 
 	// sampling r and t-values
@@ -72,15 +76,15 @@ var (
 	ErrInconsistentSampling = errors.New("cannot raise existing sampling probability")
 )
 
-// NewOTelTraceState returns a parsed representation of the
+// NewOpenTelemetryTraceState returns a parsed representation of the
 // OpenTelemetry tracestate section.  Errors indicate an invalid
 // tracestate was received.
-func NewOTelTraceState(input string) (OTelTraceState, error) {
+func NewOpenTelemetryTraceState(input string) (OpenTelemetryTraceState, error) {
 	// Note: the default value has threshold == 0 and tvalue == "".
 	// It is important to recognize this as always-sample, meaning
 	// to check HasTValue() before using TValueThreshold(), since
 	// TValueThreshold() == NeverSampleThreshold when !HasTValue().
-	otts := OTelTraceState{}
+	otts := OpenTelemetryTraceState{}
 
 	if len(input) > hardMaxOTelLength {
 		return otts, ErrTraceStateSize
@@ -123,34 +127,34 @@ func NewOTelTraceState(input string) (OTelTraceState, error) {
 }
 
 // HasRValue indicates whether the tracestate contained an `rv` value.
-func (otts *OTelTraceState) HasRValue() bool {
+func (otts *OpenTelemetryTraceState) HasRValue() bool {
 	return otts.rvalue != ""
 }
 
 // RValue returns the `rv` value as a string or empty if !HasRValue().
-func (otts *OTelTraceState) RValue() string {
+func (otts *OpenTelemetryTraceState) RValue() string {
 	return otts.rvalue
 }
 
 // RValueRandomness returns the randomness object corresponding with
 // RValue().  Requires HasRValue().
-func (otts *OTelTraceState) RValueRandomness() Randomness {
+func (otts *OpenTelemetryTraceState) RValueRandomness() Randomness {
 	return otts.rnd
 }
 
 // HasTValue indicates whether the tracestate contained a `th` value.
-func (otts *OTelTraceState) HasTValue() bool {
+func (otts *OpenTelemetryTraceState) HasTValue() bool {
 	return otts.tvalue != ""
 }
 
 // TValue returns the `th` value as a string or empty if !HasTValue().
-func (otts *OTelTraceState) TValue() string {
+func (otts *OpenTelemetryTraceState) TValue() string {
 	return otts.tvalue
 }
 
 // TValueThreshold returns the threshold object corresponding with
 // TValue().  Requires HasTValue().
-func (otts *OTelTraceState) TValueThreshold() Threshold {
+func (otts *OpenTelemetryTraceState) TValueThreshold() Threshold {
 	return otts.threshold
 }
 
@@ -158,7 +162,7 @@ func (otts *OTelTraceState) TValueThreshold() Threshold {
 // changes its adjusted count.  If the change of TValue leads to
 // inconsistency (i.e., raising sampling probability), an error is
 // returned.
-func (otts *OTelTraceState) UpdateTValueWithSampling(sampledThreshold Threshold, encodedTValue string) error {
+func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold Threshold, encodedTValue string) error {
 	if otts.HasTValue() && ThresholdGreater(otts.threshold, sampledThreshold) {
 		return ErrInconsistentSampling
 	}
@@ -170,7 +174,7 @@ func (otts *OTelTraceState) UpdateTValueWithSampling(sampledThreshold Threshold,
 // AdjustedCount returns the adjusted count implied by this TValue.
 // This term is defined here:
 // https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/
-func (otts *OTelTraceState) AdjustedCount() float64 {
+func (otts *OpenTelemetryTraceState) AdjustedCount() float64 {
 	if !otts.HasTValue() {
 		return 0
 	}
@@ -179,31 +183,31 @@ func (otts *OTelTraceState) AdjustedCount() float64 {
 
 // ClearTValue is used to unset TValue, in cases where it is
 // inconsistent on arrival.
-func (otts *OTelTraceState) ClearTValue() {
+func (otts *OpenTelemetryTraceState) ClearTValue() {
 	otts.tvalue = ""
 	otts.threshold = Threshold{}
 }
 
 // SetRValue establishes explicit randomness for this TraceState.
-func (otts *OTelTraceState) SetRValue(randomness Randomness) {
+func (otts *OpenTelemetryTraceState) SetRValue(randomness Randomness) {
 	otts.rnd = randomness
 	otts.rvalue = randomness.RValue()
 }
 
 // ClearRValue unsets explicit randomness.
-func (otts *OTelTraceState) ClearRValue() {
+func (otts *OpenTelemetryTraceState) ClearRValue() {
 	otts.rvalue = ""
 	otts.rnd = Randomness{}
 }
 
 // HasAnyValue returns true if there are any fields in this
 // tracestate, including any extra values.
-func (otts *OTelTraceState) HasAnyValue() bool {
+func (otts *OpenTelemetryTraceState) HasAnyValue() bool {
 	return otts.HasRValue() || otts.HasTValue() || otts.HasExtraValues()
 }
 
 // Serialize encodes this TraceState object.
-func (otts *OTelTraceState) Serialize(w io.StringWriter) error {
+func (otts *OpenTelemetryTraceState) Serialize(w io.StringWriter) error {
 	ser := serializer{writer: w}
 	cnt := 0
 	sep := func() {

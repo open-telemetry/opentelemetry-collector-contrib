@@ -10,9 +10,16 @@ import (
 	"strings"
 )
 
+// W3CTraceState represents the a parsed W3C `tracestate` header.
+//
+// This type receives and passes through `tracestate` fields defined
+// by all vendors, while it parses and validates the
+// [OpenTelemetryTraceState] field.  After parsing the W3CTraceState,
+// access the OpenTelemetry-defined fields using
+// [W3CTraceState.OTelValue].
 type W3CTraceState struct {
 	commonTraceState
-	otts OTelTraceState
+	otts OpenTelemetryTraceState
 }
 
 const (
@@ -109,7 +116,7 @@ func NewW3CTraceState(input string) (w3c W3CTraceState, _ error) {
 		switch key {
 		case otelVendorCode:
 			var err error
-			w3c.otts, err = NewOTelTraceState(value)
+			w3c.otts, err = NewOpenTelemetryTraceState(value)
 			return err
 		default:
 			w3c.kvs = append(w3c.kvs, KV{
@@ -129,7 +136,7 @@ func (w3c *W3CTraceState) HasAnyValue() bool {
 }
 
 // OTelValue returns the OpenTelemetry tracestate value.
-func (w3c *W3CTraceState) OTelValue() *OTelTraceState {
+func (w3c *W3CTraceState) OTelValue() *OpenTelemetryTraceState {
 	return &w3c.otts
 }
 

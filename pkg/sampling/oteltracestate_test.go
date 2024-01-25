@@ -19,15 +19,15 @@ func testName(in string) string {
 	return in
 }
 
-func TestEmptyOTelTraceState(t *testing.T) {
+func TestEmptyOpenTelemetryTraceState(t *testing.T) {
 	// Empty value is invalid
-	_, err := NewOTelTraceState("")
+	_, err := NewOpenTelemetryTraceState("")
 	require.Error(t, err)
 }
 
-func TestOTelTraceStateTValueSerialize(t *testing.T) {
+func TestOpenTelemetryTraceStateTValueSerialize(t *testing.T) {
 	const orig = "rv:10000000000000;th:3;a:b;c:d"
-	otts, err := NewOTelTraceState(orig)
+	otts, err := NewOpenTelemetryTraceState(orig)
 	require.NoError(t, err)
 	require.True(t, otts.HasTValue())
 	require.Equal(t, "3", otts.TValue())
@@ -43,9 +43,9 @@ func TestOTelTraceStateTValueSerialize(t *testing.T) {
 	require.Equal(t, orig, w.String())
 }
 
-func TestOTelTraceStateZero(t *testing.T) {
+func TestOpenTelemetryTraceStateZero(t *testing.T) {
 	const orig = "th:0"
-	otts, err := NewOTelTraceState(orig)
+	otts, err := NewOpenTelemetryTraceState(orig)
 	require.NoError(t, err)
 	require.True(t, otts.HasAnyValue())
 	require.True(t, otts.HasTValue())
@@ -57,11 +57,11 @@ func TestOTelTraceStateZero(t *testing.T) {
 	require.Equal(t, orig, w.String())
 }
 
-func TestOTelTraceStateRValuePValue(t *testing.T) {
+func TestOpenTelemetryTraceStateRValuePValue(t *testing.T) {
 	// Ensures the caller can handle RValueSizeError and search
 	// for p-value in extra-values.
 	const orig = "rv:3;p:2"
-	otts, err := NewOTelTraceState(orig)
+	otts, err := NewOpenTelemetryTraceState(orig)
 	require.Error(t, err)
 	require.Equal(t, ErrRValueSize, err)
 	require.False(t, otts.HasRValue())
@@ -76,9 +76,9 @@ func TestOTelTraceStateRValuePValue(t *testing.T) {
 	require.Equal(t, "p:2", w.String())
 }
 
-func TestOTelTraceStateTValueUpdate(t *testing.T) {
+func TestOpenTelemetryTraceStateTValueUpdate(t *testing.T) {
 	const orig = "rv:abcdefabcdefab"
-	otts, err := NewOTelTraceState(orig)
+	otts, err := NewOpenTelemetryTraceState(orig)
 	require.NoError(t, err)
 	require.False(t, otts.HasTValue())
 	require.True(t, otts.HasRValue())
@@ -95,8 +95,8 @@ func TestOTelTraceStateTValueUpdate(t *testing.T) {
 	require.Equal(t, updated, w.String())
 }
 
-func TestOTelTraceStateRTUpdate(t *testing.T) {
-	otts, err := NewOTelTraceState("a:b")
+func TestOpenTelemetryTraceStateRTUpdate(t *testing.T) {
+	otts, err := NewOpenTelemetryTraceState("a:b")
 	require.NoError(t, err)
 	require.False(t, otts.HasTValue())
 	require.False(t, otts.HasRValue())
@@ -112,8 +112,8 @@ func TestOTelTraceStateRTUpdate(t *testing.T) {
 	require.Equal(t, updated, w.String())
 }
 
-func TestOTelTraceStateRTClear(t *testing.T) {
-	otts, err := NewOTelTraceState("a:b;rv:12341234123412;th:1234")
+func TestOpenTelemetryTraceStateRTClear(t *testing.T) {
+	otts, err := NewOpenTelemetryTraceState("a:b;rv:12341234123412;th:1234")
 	require.NoError(t, err)
 
 	otts.ClearTValue()
@@ -125,7 +125,7 @@ func TestOTelTraceStateRTClear(t *testing.T) {
 	require.Equal(t, updated, w.String())
 }
 
-func TestParseOTelTraceState(t *testing.T) {
+func TestParseOpenTelemetryTraceState(t *testing.T) {
 	type testCase struct {
 		in        string
 		rval      string
@@ -210,7 +210,7 @@ func TestParseOTelTraceState(t *testing.T) {
 		{"x:" + strings.Repeat("_", 254), ns, ns, []string{"x:" + strings.Repeat("_", 254)}, nil},
 	} {
 		t.Run(testName(test.in), func(t *testing.T) {
-			otts, err := NewOTelTraceState(test.in)
+			otts, err := NewOpenTelemetryTraceState(test.in)
 
 			if test.expectErr != nil {
 				require.True(t, errors.Is(err, test.expectErr), "%q: not expecting %v wanted %v", test.in, err, test.expectErr)
@@ -246,7 +246,7 @@ func TestParseOTelTraceState(t *testing.T) {
 			// test by re-parsing
 			var w strings.Builder
 			require.NoError(t, otts.Serialize(&w))
-			cpy, err := NewOTelTraceState(w.String())
+			cpy, err := NewOpenTelemetryTraceState(w.String())
 			require.NoError(t, err)
 			require.Equal(t, otts, cpy)
 		})
@@ -307,10 +307,10 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 		{"th:555", 1 / (1 - 0x555p-12), 0x555p-12, nil, "th:aab", 1 / (1 - 0xaabp-12)},
 	} {
 		t.Run(test.in+"/"+test.out, func(t *testing.T) {
-			otts := OTelTraceState{}
+			otts := OpenTelemetryTraceState{}
 			if test.in != "" {
 				var err error
-				otts, err = NewOTelTraceState(test.in)
+				otts, err = NewOpenTelemetryTraceState(test.in)
 				require.NoError(t, err)
 			}
 

@@ -5,13 +5,17 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 // ExampleProbabilityToThresholdWithPrecision demonstrates how 1/3,
-// 2/3, and 3/3 are encoded with precision 3.
+// 2/3, and 3/3 are encoded with precision 3.  When working with
+// arbitrary floating point values, it is recommended to use an
+// explicit precision parameter so that T-values are both reasonably
+// compact and accurate.
 func ExampleProbabilityToThresholdWithPrecision() {
 	const divisor = 3.0
 	const precision = 3
@@ -51,6 +55,105 @@ func ExampleProbabilityToThreshold_rounding() {
 
 	// Output:
 	// aaaaaaaaaaaaac
+}
+
+// ExampleProbabilityToThreshold_limitedprecision demonstrates the
+// gap between Threshold values and probability values is not equal,
+// clarifying which conversions are lossy.
+func ExampleProbabilityToThreshold_limitedprecision() {
+	next := func(x float64, n int) float64 {
+		for ; n < 0; n++ {
+			x = math.Nextafter(x, 0)
+		}
+		return x
+	}
+
+	// At probability 50% or above, only 52 bits of precision are
+	// available for floating point representation.
+	//
+	// In the range 1/2 to 1: 52 bits of precision are available; 4 trailing zero bits;
+	// In the range 1/4 to 1/2: 52 bits of precision are available; 3 trailing zero bits;
+	// In the range 1/8 to 1/4: 52 bits of precision are available; 2 trailing zero bits;
+	// In the range 1/16 to 1/8: 52 bits of precision are available; 1 trailing zero bits;
+	// Probabilties less than 1/16: 51 bits of precision are available
+	// Probabilties less than 1/32: 50 bits of precision are available.
+	// ...
+	// Probabilties less than 0x1p-N: 55-N bits of precision are available.
+	// ...
+	// Probabilities less than 0x1p-55: 0 bits of precision.
+	const large = 15.0 / 16
+	const half = 8.0 / 16
+	const quarter = 4.0 / 16
+	const eighth = 2.0 / 16
+	const small = 1.0 / 16
+	for _, prob := range []float64{
+		// First 5: last T-value digit always "8" or "0"
+		next(large, 0),
+		next(large, -1),
+		next(large, -2),
+		next(large, -3),
+		0,
+		next(half, 0),
+		next(half, -1),
+		next(half, -2),
+		next(half, -3),
+		0,
+		// In this range, we have one bit less precision
+		next(quarter, 0),
+		next(quarter, -1),
+		next(quarter, -2),
+		next(quarter, -3),
+		0,
+		// In this range, we have full precision.  Every
+		// adjacent probability value maps to an exact
+		// Threshold.
+		next(eighth, 0),
+		next(eighth, -1),
+		next(eighth, -2),
+		next(eighth, -3),
+		0,
+		// Values less than 1/16 demonstrate a collision.
+		// Here probability values can express more values
+		// than Thresholds can, so multiple probability values
+		// map to the same Threshold.
+		next(small, 0),
+		next(small, -1),
+		next(small, -2),
+		next(small, -3),
+	} {
+		if prob == 0 {
+			fmt.Println("--")
+			continue
+		}
+		tval, _ := ProbabilityToThreshold(prob)
+		fmt.Println(tval.TValue())
+	}
+
+	// Output:
+	// 1
+	// 10000000000008
+	// 1000000000001
+	// 10000000000018
+	// --
+	// 8
+	// 80000000000004
+	// 80000000000008
+	// 8000000000000c
+	// --
+	// c
+	// c0000000000002
+	// c0000000000004
+	// c0000000000006
+	// --
+	// e
+	// e0000000000001
+	// e0000000000002
+	// e0000000000003
+	// --
+	// f
+	// f
+	// f0000000000001
+	// f0000000000001
 }
 
 func ExampleProbabilityToThreshold_verysmall() {
