@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cnf/structhash"
 	"github.com/mitchellh/hashstructure/v2"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
@@ -198,7 +199,7 @@ func BenchmarkStructHash(b *testing.B) {
 	s := benchDataPromConfig()
 
 	for i := 0; i < b.N; i++ {
-		Hash(s, 1)
+		structhash.Hash(s, 1)
 	}
 }
 
