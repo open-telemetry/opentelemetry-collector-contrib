@@ -176,11 +176,11 @@ func TestConsumeMetrics(t *testing.T) {
 	assert.Equal(t, p.routingKey, svcRouting)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1", "endpoint-2"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
-			return []string{"endpoint-1"}, nil
+			return []string{"endpoint-1", "endpoint-2"}, nil
 		},
 	}
 	p.loadBalancer = lb
@@ -378,10 +378,11 @@ func TestConsumeMetricsUnexpectedExporterType(t *testing.T) {
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
-			return []string{"endpoint-1"}, nil
+			return []string{"endpoint-1", "endpoint-2"}, nil
 		},
 	}
 	p.loadBalancer = lb
@@ -680,7 +681,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 func endpoint2Config() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-2"}},
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 		RoutingKey: "service",
 	}
@@ -689,7 +690,7 @@ func endpoint2Config() *Config {
 func resourceBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 		RoutingKey: resourceRouteKey,
 	}
@@ -698,7 +699,7 @@ func resourceBasedRoutingConfig() *Config {
 func metricNameBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 		RoutingKey: metricRouteKey,
 	}
@@ -728,7 +729,6 @@ func simpleMetricsWithServiceName() pmetric.Metrics {
 }
 
 func simpleMetricsWithResource() pmetric.Metrics {
-
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()

@@ -170,10 +170,11 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
-			return []string{"endpoint-1"}, nil
+			return []string{"endpoint-1", "endpoint-2"}, nil
 		},
 	}
 	p.loadBalancer = lb
@@ -345,7 +346,8 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, sink.AllTraces(), 2)
+	assert.Len(t, sink.AllTraces(), 1)
+	assert.Equal(t, sink.AllTraces()[0].SpanCount(), 2)
 }
 
 func TestNoTracesInBatch(t *testing.T) {
@@ -551,9 +553,19 @@ func simpleTraces() ptrace.Traces {
 func simpleTracesWithServiceName() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
+
 	rspans := traces.ResourceSpans().AppendEmpty()
 	rspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-1")
 	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+
+	bspans := traces.ResourceSpans().AppendEmpty()
+	bspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-2")
+	bspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+
+	aspans := traces.ResourceSpans().AppendEmpty()
+	aspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-3")
+	aspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 5})
+
 	return traces
 }
 
@@ -584,7 +596,7 @@ func simpleConfig() *Config {
 func serviceBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 		RoutingKey: "service",
 	}
