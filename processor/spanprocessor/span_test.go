@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
@@ -655,32 +654,4 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 				tc.outputStatusDescription, tc.inputAttributes), td))
 		})
 	}
-}
-
-func Test400(t *testing.T) {
-	cfg := &Config{
-		MatchConfig: filterconfig.MatchConfig{
-			Include: &filterconfig.MatchProperties{
-				Config: filterset.Config{MatchType: "strict"},
-				Attributes: []filterconfig.Attribute{
-					{Key: "http.status_code", Value: 400},
-				},
-			},
-		},
-		SetStatus: &Status{
-			Code: "Ok",
-		},
-	}
-	proc, err := NewFactory().CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.NoError(t, err)
-	err = proc.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	traces := ptrace.NewTraces()
-	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.Status().SetMessage("arglll")
-	span.Status().SetCode(40000)
-	span.Attributes().PutInt("http.status_code", 400)
-	err = proc.ConsumeTraces(context.Background(), traces)
-	require.NoError(t, err)
-	assert.Equal(t, ptrace.StatusCodeOk, span.Status().Code())
 }
