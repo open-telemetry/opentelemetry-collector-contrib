@@ -4,6 +4,7 @@
 package status_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/testhelpers"
 )
 
-func TestCollectorStatus(t *testing.T) {
+func TestAggregateStatus(t *testing.T) {
 	agg := status.NewAggregator()
 	traces := testhelpers.NewPipelineMetadata("traces")
 
 	t.Run("zero value", func(t *testing.T) {
-		assert.Equal(t, component.StatusNone, agg.CollectorStatus().Status())
+		st, ok := agg.AggregateStatus(status.ScopeAll, false)
+		require.True(t, ok)
+		assert.Equal(t, component.StatusNone, st.Status())
 	})
 
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline statuses all successful", func(t *testing.T) {
-		assert.Equal(t, component.StatusOK, agg.CollectorStatus().Status())
+		st, ok := agg.AggregateStatus(status.ScopeAll, false)
+		require.True(t, ok)
+		assert.Equal(t, component.StatusOK, st.Status())
 	})
 
 	agg.RecordStatus(
@@ -34,10 +39,12 @@ func TestCollectorStatus(t *testing.T) {
 	)
 
 	t.Run("pipeline with recoverable error", func(t *testing.T) {
+		st, ok := agg.AggregateStatus(status.ScopeAll, false)
+		require.True(t, ok)
 		assertErrorEventsMatch(t,
 			component.StatusRecoverableError,
 			assert.AnError,
-			agg.CollectorStatus(),
+			st,
 		)
 	})
 
@@ -47,43 +54,42 @@ func TestCollectorStatus(t *testing.T) {
 	)
 
 	t.Run("pipeline with permanent error", func(t *testing.T) {
+		st, ok := agg.AggregateStatus(status.ScopeAll, false)
+		require.True(t, ok)
 		assertErrorEventsMatch(t,
 			component.StatusPermanentError,
 			assert.AnError,
-			agg.CollectorStatus(),
+			st,
 		)
 	})
 }
 
-func TestCollectorStatusDetailed(t *testing.T) {
+func TestAggregateStatusDetailed(t *testing.T) {
 	agg := status.NewAggregator()
 	traces := testhelpers.NewPipelineMetadata("traces")
+	tracesKey := toPipelineKey(traces.PipelineID)
 
 	t.Run("zero value", func(t *testing.T) {
-		dst := agg.CollectorStatusDetailed()
-		assertEventsMatch(t, component.StatusNone, agg.CollectorStatus(), dst.OverallStatus)
-		assert.Empty(t, dst.PipelineStatusMap)
-		assert.Empty(t, dst.ComponentStatusMap)
+		st, ok := agg.AggregateStatus(status.ScopeAll, true)
+		require.True(t, ok)
+		assertEventsMatch(t, component.StatusNone, st)
+		assert.Empty(t, st.ComponentStatusMap)
 	})
 
 	// Seed aggregator with successful statuses for pipeline.
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline statuses all successful", func(t *testing.T) {
-		dst := agg.CollectorStatusDetailed()
+		st, ok := agg.AggregateStatus(status.ScopeAll, true)
+		require.True(t, ok)
 
-		// CollectorStatus, OverAllStatus, and PipelineStatus match.
-		assertEventsMatch(t,
-			component.StatusOK,
-			agg.CollectorStatus(),
-			dst.OverallStatus,
-			dst.PipelineStatusMap[traces.PipelineID],
-		)
+		// The top-level status and pipeline status match.
+		assertEventsMatch(t, component.StatusOK, st, st.ComponentStatusMap[tracesKey])
 
 		// Component statuses match
 		assertEventsMatch(t,
 			component.StatusOK,
-			collectEvents(dst.ComponentStatusMap[traces.PipelineID], traces.InstanceIDs()...)...,
+			collectStatuses(st.ComponentStatusMap[tracesKey], traces.InstanceIDs()...)...,
 		)
 	})
 
@@ -94,50 +100,49 @@ func TestCollectorStatusDetailed(t *testing.T) {
 	)
 
 	t.Run("pipeline with exporter error", func(t *testing.T) {
-		dst := agg.CollectorStatusDetailed()
-
-		// CollectorStatus, OverAllStatus, and PipelineStatus match.
+		st, ok := agg.AggregateStatus(status.ScopeAll, true)
+		require.True(t, ok)
+		// The top-level status and pipeline status match.
 		assertErrorEventsMatch(
 			t,
 			component.StatusRecoverableError,
 			assert.AnError,
-			agg.CollectorStatus(),
-			dst.OverallStatus,
-			dst.PipelineStatusMap[traces.PipelineID],
+			st,
+			st.ComponentStatusMap[tracesKey],
 		)
 
 		// Component statuses match
 		assertEventsMatch(t,
 			component.StatusOK,
-			collectEvents(
-				dst.ComponentStatusMap[traces.PipelineID], traces.ReceiverID, traces.ProcessorID,
+			collectStatuses(
+				st.ComponentStatusMap[tracesKey], traces.ReceiverID, traces.ProcessorID,
 			)...,
 		)
 		assertErrorEventsMatch(t,
 			component.StatusRecoverableError,
 			assert.AnError,
-			dst.ComponentStatusMap[traces.PipelineID][traces.ExporterID],
+			st.ComponentStatusMap[tracesKey].ComponentStatusMap[toComponentKey(traces.ExporterID)],
 		)
 	})
 
 }
 
-func TestPipelineStatus(t *testing.T) {
+func TestPipelineAggregateStatus(t *testing.T) {
 	agg := status.NewAggregator()
 	traces := testhelpers.NewPipelineMetadata("traces")
 
 	t.Run("non existent pipeline", func(t *testing.T) {
-		st, err := agg.PipelineStatus("doesnotexist")
-		assert.Nil(t, st)
-		assert.Error(t, err)
+		st, ok := agg.AggregateStatus("doesnotexist", false)
+		require.Nil(t, st)
+		require.False(t, ok)
 	})
 
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline exists / status successful", func(t *testing.T) {
-		st, err := agg.PipelineStatus(traces.PipelineID.String())
-		require.NoError(t, err)
-		assertEventsMatch(t, component.StatusOK, agg.CollectorStatus(), st)
+		st, ok := agg.AggregateStatus(traces.PipelineID.String(), false)
+		require.True(t, ok)
+		assertEventsMatch(t, component.StatusOK, st)
 	})
 
 	agg.RecordStatus(
@@ -146,75 +151,54 @@ func TestPipelineStatus(t *testing.T) {
 	)
 
 	t.Run("pipeline exists / exporter error", func(t *testing.T) {
-		st, err := agg.PipelineStatus(traces.PipelineID.String())
-		require.NoError(t, err)
-		assertErrorEventsMatch(t,
-			component.StatusRecoverableError,
-			assert.AnError,
-			agg.CollectorStatus(),
-			st,
-		)
+		st, ok := agg.AggregateStatus(traces.PipelineID.String(), false)
+		require.True(t, ok)
+		assertErrorEventsMatch(t, component.StatusRecoverableError, assert.AnError, st)
 	})
 }
 
-func TestPipelineStatusDetailed(t *testing.T) {
+func TestPipelineAggregateStatusDetailed(t *testing.T) {
 	agg := status.NewAggregator()
 	traces := testhelpers.NewPipelineMetadata("traces")
 
 	t.Run("non existent pipeline", func(t *testing.T) {
-		dst, err := agg.PipelineStatusDetailed("doesnotexist")
-		assert.Nil(t, dst)
-		assert.Error(t, err)
+		st, ok := agg.AggregateStatus("doesnotexist", true)
+		require.Nil(t, st)
+		require.False(t, ok)
 	})
 
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline exists / status successful", func(t *testing.T) {
-		dst, err := agg.PipelineStatusDetailed(traces.PipelineID.String())
-		require.NoError(t, err)
+		st, ok := agg.AggregateStatus(traces.PipelineID.String(), true)
+		require.True(t, ok)
 
-		// CollectorStatus, OverAllStatus, match.
-		assertEventsMatch(t,
-			component.StatusOK,
-			agg.CollectorStatus(),
-			dst.OverallStatus,
-		)
+		// Top-level status matches
+		assertEventsMatch(t, component.StatusOK, st)
 
 		// Component statuses match
-		assertEventsMatch(t,
-			component.StatusOK,
-			collectEvents(dst.ComponentStatusMap, traces.InstanceIDs()...)...,
-		)
+		assertEventsMatch(t, component.StatusOK, collectStatuses(st, traces.InstanceIDs()...)...)
 	})
 
-	agg.RecordStatus(
-		traces.ExporterID,
-		component.NewRecoverableErrorEvent(assert.AnError),
-	)
+	agg.RecordStatus(traces.ExporterID, component.NewRecoverableErrorEvent(assert.AnError))
 
 	t.Run("pipeline exists / exporter error", func(t *testing.T) {
-		dst, err := agg.PipelineStatusDetailed(traces.PipelineID.String())
-		require.NoError(t, err)
+		st, ok := agg.AggregateStatus(traces.PipelineID.String(), true)
+		require.True(t, ok)
 
-		// CollectorStatus, OverAllStatus, match.
-		assertErrorEventsMatch(t,
-			component.StatusRecoverableError,
-			assert.AnError,
-			agg.CollectorStatus(),
-			dst.OverallStatus,
-		)
+		// Top-level status matches
+		assertErrorEventsMatch(t, component.StatusRecoverableError, assert.AnError, st)
 
 		// Component statuses match
 		assertEventsMatch(t,
 			component.StatusOK,
-			collectEvents(dst.ComponentStatusMap, traces.ReceiverID, traces.ProcessorID)...,
+			collectStatuses(st, traces.ReceiverID, traces.ProcessorID)...,
 		)
 		assertErrorEventsMatch(t,
 			component.StatusRecoverableError,
 			assert.AnError,
-			dst.ComponentStatusMap[traces.ExporterID],
+			st.ComponentStatusMap[toComponentKey(traces.ExporterID)],
 		)
-
 	})
 }
 
@@ -225,12 +209,9 @@ func TestStreaming(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 	metrics := testhelpers.NewPipelineMetadata("metrics")
 
-	traceEvents, err := agg.Subscribe(traces.PipelineID.String())
-	require.NoError(t, err)
-	metricEvents, err := agg.Subscribe(metrics.PipelineID.String())
-	require.NoError(t, err)
-	allEvents, err := agg.Subscribe("")
-	require.NoError(t, err)
+	traceEvents := agg.Subscribe(traces.PipelineID.String(), false)
+	metricEvents := agg.Subscribe(metrics.PipelineID.String(), false)
+	allEvents := agg.Subscribe(status.ScopeAll, false)
 
 	assert.Nil(t, <-traceEvents)
 	assert.Nil(t, <-metricEvents)
@@ -261,11 +242,7 @@ func TestStreaming(t *testing.T) {
 
 	// Traces Pipeline Recover
 	agg.RecordStatus(traces.ExporterID, component.NewStatusEvent(component.StatusOK))
-	assertEventsRecvdMatch(t,
-		component.StatusOK,
-		traceEvents,
-		allEvents,
-	)
+	assertEventsRecvdMatch(t, component.StatusOK, traceEvents, allEvents)
 
 	// Stopping
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusStopping)
@@ -281,15 +258,75 @@ func TestStreaming(t *testing.T) {
 	assertEventsRecvdMatch(t, component.StatusStopped, metricEvents, allEvents)
 }
 
+func TestStreamingDetailed(t *testing.T) {
+	agg := status.NewAggregator()
+	defer agg.Close()
+
+	traces := testhelpers.NewPipelineMetadata("traces")
+	tracesKey := toPipelineKey(traces.PipelineID)
+
+	allEvents := agg.Subscribe(status.ScopeAll, true)
+
+	t.Run("zero value", func(t *testing.T) {
+		st := <-allEvents
+		assertEventsMatch(t, component.StatusNone, st)
+		assert.Empty(t, st.ComponentStatusMap)
+	})
+
+	// Seed aggregator with successful statuses for pipeline.
+	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
+
+	t.Run("pipeline statuses all successful", func(t *testing.T) {
+		st := <-allEvents
+		// The top-level status matches the pipeline status.
+		assertEventsMatch(t, component.StatusOK, st, st.ComponentStatusMap[tracesKey])
+
+		// Component statuses match
+		assertEventsMatch(t,
+			component.StatusOK,
+			collectStatuses(st.ComponentStatusMap[tracesKey], traces.InstanceIDs()...)...,
+		)
+	})
+
+	// Record an error in the traces exporter
+	agg.RecordStatus(traces.ExporterID, component.NewRecoverableErrorEvent(assert.AnError))
+
+	t.Run("pipeline with exporter error", func(t *testing.T) {
+		st := <-allEvents
+
+		// The top-level status and pipeline status match.
+		assertErrorEventsMatch(t,
+			component.StatusRecoverableError,
+			assert.AnError,
+			st,
+			st.ComponentStatusMap[tracesKey],
+		)
+
+		// Component statuses match
+		assertEventsMatch(t,
+			component.StatusOK,
+			collectStatuses(
+				st.ComponentStatusMap[tracesKey], traces.ReceiverID, traces.ProcessorID,
+			)...,
+		)
+		assertErrorEventsMatch(t,
+			component.StatusRecoverableError,
+			assert.AnError,
+			st.ComponentStatusMap[tracesKey].ComponentStatusMap[toComponentKey(traces.ExporterID)],
+		)
+	})
+}
+
 // assertEventMatches ensures one or more events share the expected status and are
 // otherwise equal, ignoring timestamp.
 func assertEventsMatch(
 	t *testing.T,
 	expectedStatus component.Status,
-	events ...*component.StatusEvent,
+	statuses ...*status.AggregateStatus,
 ) {
-	err0 := events[0].Err()
-	for _, ev := range events {
+	err0 := statuses[0].StatusEvent.Err()
+	for _, st := range statuses {
+		ev := st.StatusEvent
 		assert.Equal(t, expectedStatus, ev.Status())
 		assert.Equal(t, err0, ev.Err())
 	}
@@ -301,34 +338,35 @@ func assertErrorEventsMatch(
 	t *testing.T,
 	expectedStatus component.Status,
 	expectedErr error,
-	events ...*component.StatusEvent,
+	statuses ...*status.AggregateStatus,
 ) {
 	assert.True(t, component.StatusIsError(expectedStatus))
-	for _, ev := range events {
+	for _, st := range statuses {
+		ev := st.StatusEvent
 		assert.Equal(t, expectedStatus, ev.Status())
 		assert.Equal(t, expectedErr, ev.Err())
 	}
 }
 
-// collectEvents returns a slice of events collected from the componentMap using
-// the provided instanceIDs
-func collectEvents(
-	componentMap map[*component.InstanceID]*component.StatusEvent,
+func collectStatuses(
+	aggregateStatus *status.AggregateStatus,
 	instanceIDs ...*component.InstanceID,
-) (result []*component.StatusEvent) {
+) (result []*status.AggregateStatus) {
 	for _, id := range instanceIDs {
-		result = append(result, componentMap[id])
+		key := toComponentKey(id)
+		result = append(result, aggregateStatus.ComponentStatusMap[key])
 	}
 	return
 }
 
 func assertEventsRecvdMatch(t *testing.T,
 	expectedStatus component.Status,
-	chans ...<-chan *component.StatusEvent,
+	chans ...<-chan *status.AggregateStatus,
 ) {
 	var err0 error
-	for i, evCh := range chans {
-		ev := <-evCh
+	for i, stCh := range chans {
+		st := <-stCh
+		ev := st.StatusEvent
 		if i == 0 {
 			err0 = ev.Err()
 		}
@@ -340,12 +378,38 @@ func assertEventsRecvdMatch(t *testing.T,
 func assertErrorEventsRecvdMatch(t *testing.T,
 	expectedStatus component.Status,
 	expectedErr error,
-	chans ...<-chan *component.StatusEvent,
+	chans ...<-chan *status.AggregateStatus,
 ) {
 	assert.True(t, component.StatusIsError(expectedStatus))
-	for _, evCh := range chans {
-		ev := <-evCh
+	for _, stCh := range chans {
+		st := <-stCh
+		ev := st.StatusEvent
 		assert.Equal(t, expectedStatus, ev.Status())
 		assert.Equal(t, expectedErr, ev.Err())
 	}
+}
+
+// TODO: Implement stringer on Kind in core.
+func kindToString(k component.Kind) string {
+	switch k {
+	case component.KindReceiver:
+		return "receiver"
+	case component.KindProcessor:
+		return "processor"
+	case component.KindExporter:
+		return "exporter"
+	case component.KindExtension:
+		return "extension"
+	case component.KindConnector:
+		return "connector"
+	}
+	return ""
+}
+
+func toComponentKey(id *component.InstanceID) string {
+	return fmt.Sprintf("%s:%s", kindToString(id.Kind), id.ID.String())
+}
+
+func toPipelineKey(id component.ID) string {
+	return fmt.Sprintf("pipeline:%s", id.String())
 }
