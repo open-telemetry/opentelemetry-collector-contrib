@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DefaultInterval = "1m"
+	DefaultInterval = "10s"
 )
 
 func createDefaultConfig() component.Config {
