@@ -17,7 +17,7 @@ func ExampleTValueToThreshold() {
 	// Output: Probability("c") = 0.250000
 }
 
-func ExampleShouldSample() {
+func ExampleThreshold_ShouldSample() {
 	const exampleTvalue = "c"
 	const exampleRvalue = "d29d6a7215ced0"
 

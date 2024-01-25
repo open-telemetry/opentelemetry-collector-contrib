@@ -50,6 +50,11 @@ func ProbabilityToThresholdWithPrecision(prob float64, prec uint8) (Threshold, e
 	if !probabilityInRange(prob) {
 		return AlwaysSampleThreshold, ErrProbabilityRange
 	}
+	// Special case for prob == 1.  The logic for revising precision
+	// that follows requires 0 < 1 - prob < 1.
+	if prob == 1 {
+		return AlwaysSampleThreshold, nil
+	}
 
 	// Adjust precision considering the significance of leading
 	// zeros.  If we can multiply the rejection probability by 16
