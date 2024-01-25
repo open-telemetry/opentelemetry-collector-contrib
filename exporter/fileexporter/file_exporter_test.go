@@ -37,8 +37,6 @@ func buildUnCompressor(compressor string) func([]byte) ([]byte, error) {
 }
 
 func TestFileTracesExporter(t *testing.T) {
-	return
-
 	type args struct {
 		conf        *Config
 		unmarshaler ptrace.Unmarshaler
@@ -166,8 +164,6 @@ func TestFileTracesExporter(t *testing.T) {
 }
 
 func TestFileTracesExporterError(t *testing.T) {
-	return
-
 	mf := &errorWriter{}
 	fe := &fileExporter{
 		marshaller: &marshaller{
@@ -189,8 +185,6 @@ func TestFileTracesExporterError(t *testing.T) {
 }
 
 func TestFileMetricsExporter(t *testing.T) {
-	return
-
 	type args struct {
 		conf        *Config
 		unmarshaler pmetric.Unmarshaler
@@ -310,8 +304,6 @@ func TestFileMetricsExporter(t *testing.T) {
 }
 
 func TestFileMetricsExporterError(t *testing.T) {
-	return
-
 	mf := &errorWriter{}
 	fe := &fileExporter{
 		marshaller: &marshaller{
