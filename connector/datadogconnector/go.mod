@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
+	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.93.0
@@ -21,7 +22,6 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.50.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.2 // indirect
