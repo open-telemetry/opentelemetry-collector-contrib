@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package datasetexporter
 
@@ -108,7 +107,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 				expectedKeys[key] = 1
 			}
 			err = logs.ConsumeLogs(context.Background(), batch)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			time.Sleep(time.Duration(float64(maxDelay.Nanoseconds()) * 0.7))
 		}
 
@@ -116,7 +115,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 
 		time.Sleep(time.Second)
 		err = logs.Shutdown(context.Background())
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		lastProcessed := uint64(0)
 		sameNumber := 0
 		for {

@@ -25,7 +25,8 @@ func TestExporter_new(t *testing.T) {
 				Endpoint: validEndpoint,
 			},
 		}
-		exp := newExporter(config, componenttest.NewNopTelemetrySettings())
+		exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
+		require.NoError(t, err)
 		require.NotNil(t, exp)
 	})
 }
@@ -36,7 +37,8 @@ func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
 			Endpoint: validEndpoint,
 		},
 	}
-	exp := newExporter(config, componenttest.NewNopTelemetrySettings())
+	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 	require.NotNil(t, exp)
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 }
@@ -50,7 +52,8 @@ func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 			},
 		},
 	}
-	exp := newExporter(config, componenttest.NewNopTelemetrySettings())
+	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 	require.NotNil(t, exp)
 	require.Error(t, exp.start(context.Background(), componenttest.NewNopHost()))
 }
@@ -61,7 +64,8 @@ func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
 			Endpoint: validEndpoint,
 		},
 	}
-	exp := newExporter(config, componenttest.NewNopTelemetrySettings())
+	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 	require.NotNil(t, exp)
 	require.NoError(t, exp.stop(context.Background()))
 }

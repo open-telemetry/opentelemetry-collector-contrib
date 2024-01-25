@@ -66,7 +66,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
 				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
-				host.ReportFatalError(errors.New("failed to start receiver"))
+				kr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errors.New("failed to start receiver")))
 				return
 			}
 		}

@@ -125,7 +125,7 @@ func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		defer er.shutdownWG.Done()
 		if errHTTP := er.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			er.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 

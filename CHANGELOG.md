@@ -7,6 +7,76 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.93.0
+
+### 🛑 Breaking changes 🛑
+
+- `azuremonitorexporter`: Fixed an issue where span attributes with double and int values were incorrectly added to the `measurements` field in the Application Insights schema. These attributes are now correctly placed in the `properties` field. (#29683)
+- `vcenterreceiver`: Bump "receiver.vcenter.emitPerfMetricsWithObjects" feature gate (#30615)
+- `docker`: Adopt api_version as strings to correct invalid float truncation (#24025)
+- `extension/filestorage`: Replace path-unsafe characters in component names (#3148)
+  The feature gate `extension.filestorage.replaceUnsafeCharacters` is now enabled by default.
+  See the File Storage extension's README for details.
+  
+- `postgresqlreceiver`: add schema attribute to postgresqlreceiver (#29559)
+  Adds a new resource attribute to the PSQL receiver to store the schema of the table or index
+  Existing table attributes are adjusted to not include the schema, which was inconsistently used
+  
+
+### 🚩 Deprecations 🚩
+
+- `mdatagen`: Deprecate mdatagen in preparation for its move to opentelemetry-collector (#30497)
+
+### 🚀 New components 🚀
+
+- `solarwindsapmsettingsextension`: added configuration and readme (#27668)
+- `alertmanagerexporter`: Add Alertmanager exporter to builder config (#23569)
+- `otelarrow`: Skeleton of new OpenTelemetry Protocol with Apache Arrow Exporter. (#26491)
+- `osqueryreceiver`: Adds osquery receiver skeleton (#30375)
+
+### 💡 Enhancements 💡
+
+- `pkg/stanza`: Add a json array parser operator and an assign keys transformer. (#30321)
+  Json array parser opreator can be used to parse a json array string input into a list of objects. |
+  Assign keys transformer can be used to assigns keys from the configuration to an input list
+  
+- `splunkhecexporter`: Batch data according to access token and index, if present. (#30404)
+- `awscloudwatchlogsexporter`: Add instrumentation scope in log records exported to CloudWatch logs (#30316, #29884)
+- `cassandraexporter`: added authorization by username and password (#27827)
+- `lokiexporter`: migrate metrics to use OpenTelemetry (#30170)
+- `cmd/telemetrygen`: This updates telemetrygen to create multiple child spans per trace and enhances the tool's functionality for load testing the remote tracing backend. (#30687)
+- `cmd/telemetrygen`: This updates telemetrygen with TLS/mTLS options to test the security of telemetry ingestion services and infrastructure for secure communication. To illustrate the usage, a new example, secure-tracing is added to examples collection. (#29681)
+- `k8sattributesprocessor`: Apply lifecycle tests to k8sprocessor, change its behavior to report fatal error (#30387)
+- `k8sclusterreceiver`: add new disabled os.description, k8s.container_runtime.version resource attributes (#30342)
+- `k8sclusterreceiver`: add os.type resource attribute (#30342)
+- `kubeletstatsreceiver`: Add new `*.cpu.usage` metrics. (#25901)
+- `oidcauthextension`: Move validation logic outside of the extension creation, to the configuration validation (#30460)
+- `datadogexporter`: Add support for setting host tags via host metadata. (#30680)
+  When the `datadog.host.use_as_metadata` resource attribute is set to `true`:
+    - Nonempty string-value resource attributes starting with `datadog.host.tag.` will be added as host tags for the host associated with the resource.
+    - deployment.environment and k8s.cluster.name as mapped to Datadog names and added as host tags for the host associated with the resource.
+  
+- `opensearchexporter`: added opensearch exporter to the contrib distribution metadata (#30183)
+- `pkg/ottl`: Add `flatten` function for flattening maps (#30455)
+- `redisreciever`: adds metric for slave_repl_offset (#6942)
+  also adds a shell script to set up docker-compose integration test
+- `exporter/datadogexporter`: Add kafka metrics mapping. This allows users of the JMX Receiver/JMX Metrics Gatherer and kafka metrics receiver to have access to the OOTB kafka Dashboard. (#30731)
+- `receiver/sqlquery`: Add debug log when running SQL query (#29672)
+- `cmd/opampsupervisor`: Use a bootstrapping flow to get the Collector's agent description. (#21071)
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/filelog`: fix panic after upgrading from v0.71.0 when using storage (#30235)
+- `clickhouseexporter`: Fix clickhouse exporter insert metrics data bug (#30210)
+- `prometheusremotewriteexporter`: Check if the context was canceled by a timeout in the component level to avoid unnecessary retries. (#30308)
+- `elasticsearchreceifver`: Fix nil panic on non-linux systems (#30140)
+- `kafkareceiver`: The Kafka receiver now exports some partition-specific metrics per-partition, with a `partition` tag (#30177)
+  The following metrics now render per partition:
+    - kafka_receiver_messages
+    - kafka_receiver_current_offset
+    - kafka_receiver_offset_lag
+  
+
 ## v0.92.0
 
 ### 🛑 Breaking changes 🛑

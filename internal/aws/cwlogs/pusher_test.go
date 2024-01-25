@@ -30,7 +30,7 @@ func TestValidateLogEventWithMutating(t *testing.T) {
 	logEvent := NewEvent(0, "abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789")
 	logEvent.GeneratedTime = time.Now()
 	err := logEvent.Validate(zap.NewNop())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, *logEvent.InputLogEvent.Timestamp > int64(0))
 	assert.Equal(t, 64-perEventHeaderBytes, len(*logEvent.InputLogEvent.Message))
 
@@ -41,13 +41,13 @@ func TestValidateLogEventFailed(t *testing.T) {
 	logger := zap.NewNop()
 	logEvent := NewEvent(0, "")
 	err := logEvent.Validate(logger)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, "empty log event message", err.Error())
 
 	invalidTimestamp := time.Now().AddDate(0, -1, 0)
 	logEvent = NewEvent(invalidTimestamp.Unix()*1e3, "test")
 	err = logEvent.Validate(logger)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, "the log entry's timestamp is older than 14 days or more than 2 hours in the future", err.Error())
 }
 
