@@ -255,10 +255,8 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 
 // addSingleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
 // ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
-func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
+func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries, baseName string) {
 	timestamp := convertTimeStamp(pt.Timestamp())
-	// sum, count, and buckets of the histogram should append suffix to baseName
-	baseName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
 	baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels)
 
 	createLabels := func(nameSuffix string, extras ...string) []prompb.Label {
@@ -270,6 +268,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 			labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
 		}
 
+		// sum, count, and buckets of the histogram should append suffix to baseName
 		labels = append(labels, prompb.Label{Name: nameStr, Value: baseName + nameSuffix})
 
 		return labels
@@ -357,8 +356,7 @@ type exemplarType interface {
 }
 
 func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
-	var promExemplars []prompb.Exemplar
-
+	promExemplars := make([]prompb.Exemplar, 0, pt.Exemplars().Len())
 	for i := 0; i < pt.Exemplars().Len(); i++ {
 		exemplar := pt.Exemplars().At(i)
 		exemplarRunes := 0
@@ -385,9 +383,10 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 			}
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
 		}
-		var labelsFromAttributes []prompb.Label
 
-		exemplar.FilteredAttributes().Range(func(key string, value pcommon.Value) bool {
+		attrs := exemplar.FilteredAttributes()
+		labelsFromAttributes := make([]prompb.Label, 0, attrs.Len())
+		attrs.Range(func(key string, value pcommon.Value) bool {
 			val := value.AsString()
 			exemplarRunes += utf8.RuneCountInString(key) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
@@ -455,10 +454,8 @@ func maxTimestamp(a, b pcommon.Timestamp) pcommon.Timestamp {
 
 // addSingleSummaryDataPoint converts pt to len(QuantileValues) + 2 samples.
 func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings,
-	tsMap map[string]*prompb.TimeSeries) {
+	tsMap map[string]*prompb.TimeSeries, baseName string) {
 	timestamp := convertTimeStamp(pt.Timestamp())
-	// sum and count of the summary should append suffix to baseName
-	baseName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
 	baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels)
 
 	createLabels := func(name string, extras ...string) []prompb.Label {
@@ -483,6 +480,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 	if pt.Flags().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
+	// sum and count of the summary should append suffix to baseName
 	sumlabels := createLabels(baseName + sumStr)
 	addSample(tsMap, sum, sumlabels, metric.Type().String())
 
