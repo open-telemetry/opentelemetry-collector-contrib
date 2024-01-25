@@ -56,7 +56,7 @@ type SamplingGRPCServer struct {
 	grpcServer grpcServer
 }
 
-func (s *SamplingGRPCServer) Start(_ context.Context, host component.Host) error {
+func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) error {
 	server, err := s.settings.ToServer(host, s.telemetry)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func (s *SamplingGRPCServer) Start(_ context.Context, host component.Host) error
 	healthServer.SetServingStatus("jaeger.api_v2.SamplingManager", grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(server, healthServer)
 
-	listener, err := s.settings.ToListener()
+	listener, err := s.settings.ToListenerContext(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to listen on gRPC port: %w", err)
 	}
