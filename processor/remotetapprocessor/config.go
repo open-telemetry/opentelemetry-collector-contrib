@@ -9,7 +9,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-const defaultEndpoint = ":12001"
+const defaultEndpoint = "localhost:12001"
 
 type Config struct {
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
