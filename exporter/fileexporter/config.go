@@ -70,30 +70,31 @@ type Rotation struct {
 type GroupByAttribute struct {
 	// SubPathResourceAttribute specifies the name of the resource attribute that
 	// contains the subpath of the file to write to. The final path will be
-	// prefixed with the 'path' config value. When this value is set, Rotation setting
+	// prefixed with the Path config value. When this value is set, Rotation setting
 	// is ignored.
 	SubPathResourceAttribute string `mapstructure:"sub_path_resource_attribute"`
 
 	// DeleteSubPathResourceAttribute if set to true, the resource attribute
-	// specified in sub_path_resource_attribute config value is removed from the
+	// specified in SubPathResourceAttribute config value is removed from the
 	// telemetry data before writing it to a file. Default is false.
 	DeleteSubPathResourceAttribute bool `mapstructure:"delete_sub_path_resource_attribute"`
 
-	// Maximum number of open file descriptors for the output files. The fefaults is 100.
+	// MaxOpenFiles specifies the maximum number of open file descriptors for the output files.
+	// The fefaults is 100.
 	MaxOpenFiles int `mapstructure:"max_open_files"`
 
 	// DiscardIfAttributeNotFound if set to true, and the processed resource does not have the
-	// resource attribute specified in 'sub_path_resource_attribute', the telemetry data is
+	// resource attribute specified in SubPathResourceAttribute, the telemetry data is
 	// discarded. Default is false.
 	DiscardIfAttributeNotFound bool `mapstructure:"discard_if_attribute_not_found"`
 
 	// DefaultSubPath value is used when the processed resource does not have the resource
-	// attribute specified in 'sub_path_resource_attribute', and 'discard_if_attribute_not_found'
-	// is set to false. If 'discard_if_attribute_not_found' is set to true, this setting is
+	// attribute specified in SubPathResourceAttribute, and DiscardIfAttributeNotFound
+	// is set to false. If DiscardIfAttributeNotFound is set to true, this setting is
 	// ignored. Default is "MISSING".
 	DefaultSubPath string `mapstructure:"default_sub_path"`
 
-	// AutoCreateDirectories when enabled, if the directory of the destinatiob file does not exist,
+	// AutoCreateDirectories when enabled, if the directory of the destination file does not exist,
 	// will create the directory. If set to false and the directory does not exists, the write will
 	// fail and return an error. Default is true.
 	AutoCreateDirectories bool `mapstructure:"auto_create_directories"`

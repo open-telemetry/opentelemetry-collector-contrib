@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -238,7 +239,449 @@ func TestGroupingFileTracesExporter(t *testing.T) {
 	}
 }
 
-// TODO: write the above test for logs and traces as well
+func TestGroupingFileLogsExporter(t *testing.T) {
+	type args struct {
+		conf        *Config
+		unmarshaler plog.Unmarshaler
+	}
+
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "json: default configuration",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeJSON,
+					Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &plog.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "json: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:        t.TempDir(),
+					FormatType:  formatTypeJSON,
+					Compression: compressionZSTD,
+					Rotation:    &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &plog.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: default configuration",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeProto,
+					GroupByAttribute: &GroupByAttribute{
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &plog.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:        t.TempDir(),
+					FormatType:  formatTypeProto,
+					Compression: compressionZSTD,
+					Rotation:    &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &plog.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "json: max_open_files=1",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeJSON,
+					Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						MaxOpenFiles: 1,
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &plog.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "json: delete_sub_path_resource_attribute=true",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeJSON,
+					Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						DeleteSubPathResourceAttribute: true,
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &plog.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "json: discard_if_attribute_not_found=true",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeJSON,
+					Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						DiscardIfAttributeNotFound: true,
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &plog.JSONUnmarshaler{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := tt.args.conf
+			feI, err := newFileExporter(conf)
+			assert.NoError(t, err)
+			require.IsType(t, &groupingFileExporter{}, feI)
+			gfe := feI.(*groupingFileExporter)
+
+			testLogs := func() plog.Logs {
+				td := testdata.GenerateLogsTwoLogRecordsSameResource()
+				testdata.GenerateLogsOneLogRecord().ResourceLogs().At(0).CopyTo(td.ResourceLogs().AppendEmpty())
+				testdata.GenerateLogsOneLogRecord().ResourceLogs().At(0).CopyTo(td.ResourceLogs().AppendEmpty())
+				td.ResourceLogs().At(0).Resource().Attributes().PutStr("sub_path_attribute", "one")
+				td.ResourceLogs().At(1).Resource().Attributes().PutStr("sub_path_attribute", ".././two/two")
+				return td
+			}
+			td := testLogs()
+
+			assert.NoError(t, gfe.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, gfe.consumeLogs(context.Background(), td))
+			assert.LessOrEqual(t, gfe.writers.Len(), conf.GroupByAttribute.MaxOpenFiles)
+
+			assert.NoError(t, gfe.Shutdown(context.Background()))
+
+			removeAttr := func(rLogs plog.ResourceLogs) plog.ResourceLogs {
+				if conf.GroupByAttribute.DeleteSubPathResourceAttribute {
+					rLogs.Resource().Attributes().Remove("sub_path_attribute")
+				}
+				return rLogs
+			}
+
+			// the exporter may modify the test data, make sure we compare the results
+			// to the original input
+			td = testLogs()
+			pathResourceLogs := map[string][]plog.ResourceLogs{
+				conf.Path + "/one":     {removeAttr(td.ResourceLogs().At(0))},
+				conf.Path + "/two/two": {removeAttr(td.ResourceLogs().At(1))},
+				conf.Path + "/MISSING": {removeAttr(td.ResourceLogs().At(2))},
+			}
+
+			if conf.GroupByAttribute.DiscardIfAttributeNotFound {
+				pathResourceLogs[conf.Path+"/MISSING"] = []plog.ResourceLogs{}
+			}
+
+			for path, wantResourceLogs := range pathResourceLogs {
+				fi, err := os.Open(path)
+				if len(wantResourceLogs) == 0 {
+					assert.Error(t, err)
+					continue
+				}
+				assert.NoError(t, err)
+				br := bufio.NewReader(fi)
+				for {
+					buf, isEnd, err := func() ([]byte, bool, error) {
+						if gfe.marshaller.formatType == formatTypeJSON && gfe.marshaller.compression == "" {
+							return readJSONMessage(br)
+						}
+						return readMessageFromStream(br)
+					}()
+					assert.NoError(t, err)
+					if isEnd {
+						break
+					}
+					decoder := buildUnCompressor(gfe.marshaller.compression)
+					buf, err = decoder(buf)
+					assert.NoError(t, err)
+					got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
+					assert.NoError(t, err)
+
+					gotResourceLogs := make([]plog.ResourceLogs, 0)
+					for i := 0; i < got.ResourceLogs().Len(); i++ {
+						gotResourceLogs = append(gotResourceLogs, got.ResourceLogs().At(i))
+					}
+
+					assert.EqualValues(t, wantResourceLogs, gotResourceLogs)
+				}
+				fi.Close()
+			}
+		})
+	}
+}
+
+func TestGroupingFileMetricsExporter(t *testing.T) {
+	type args struct {
+		conf        *Config
+		unmarshaler pmetric.Unmarshaler
+	}
+
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "json: default configuration",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeJSON,
+					Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &pmetric.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "json: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:        t.TempDir(),
+					FormatType:  formatTypeJSON,
+					Compression: compressionZSTD,
+					Rotation:    &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &pmetric.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: default configuration",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeProto,
+					GroupByAttribute: &GroupByAttribute{
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &pmetric.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:        t.TempDir(),
+					FormatType:  formatTypeProto,
+					Compression: compressionZSTD,
+					Rotation:    &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &pmetric.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "json: max_open_files=1",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeJSON,
+					Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						MaxOpenFiles: 1,
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &pmetric.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "json: delete_sub_path_resource_attribute=true",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeJSON,
+					Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						DeleteSubPathResourceAttribute: true,
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &pmetric.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "json: discard_if_attribute_not_found=true",
+			args: args{
+				conf: &Config{
+					Path:       t.TempDir(),
+					FormatType: formatTypeJSON,
+					Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+					GroupByAttribute: &GroupByAttribute{
+						DiscardIfAttributeNotFound: true,
+						// defaults:
+						SubPathResourceAttribute: "sub_path_attribute",
+						MaxOpenFiles:             defaultMaxOpenFiles,
+						DefaultSubPath:           defaultSubPath,
+						AutoCreateDirectories:    true,
+					},
+				},
+				unmarshaler: &pmetric.JSONUnmarshaler{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := tt.args.conf
+			feI, err := newFileExporter(conf)
+			assert.NoError(t, err)
+			require.IsType(t, &groupingFileExporter{}, feI)
+			gfe := feI.(*groupingFileExporter)
+
+			testMetrics := func() pmetric.Metrics {
+				td := testdata.GenerateMetricsTwoMetrics()
+				testdata.GenerateMetricsOneCounterOneSummaryMetrics().ResourceMetrics().At(0).CopyTo(td.ResourceMetrics().AppendEmpty())
+				testdata.GenerateMetricsOneMetricNoAttributes().ResourceMetrics().At(0).CopyTo(td.ResourceMetrics().AppendEmpty())
+				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("sub_path_attribute", "one")
+				td.ResourceMetrics().At(1).Resource().Attributes().PutStr("sub_path_attribute", ".././two/two")
+				return td
+			}
+			td := testMetrics()
+
+			assert.NoError(t, gfe.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, gfe.consumeMetrics(context.Background(), td))
+			assert.LessOrEqual(t, gfe.writers.Len(), conf.GroupByAttribute.MaxOpenFiles)
+
+			assert.NoError(t, gfe.Shutdown(context.Background()))
+
+			removeAttr := func(rMetrics pmetric.ResourceMetrics) pmetric.ResourceMetrics {
+				if conf.GroupByAttribute.DeleteSubPathResourceAttribute {
+					rMetrics.Resource().Attributes().Remove("sub_path_attribute")
+				}
+				return rMetrics
+			}
+
+			// the exporter may modify the test data, make sure we compare the results
+			// to the original input
+			td = testMetrics()
+			pathResourceMetrics := map[string][]pmetric.ResourceMetrics{
+				conf.Path + "/one":     {removeAttr(td.ResourceMetrics().At(0))},
+				conf.Path + "/two/two": {removeAttr(td.ResourceMetrics().At(1))},
+				conf.Path + "/MISSING": {removeAttr(td.ResourceMetrics().At(2))},
+			}
+
+			if conf.GroupByAttribute.DiscardIfAttributeNotFound {
+				pathResourceMetrics[conf.Path+"/MISSING"] = []pmetric.ResourceMetrics{}
+			}
+
+			for path, wantResourceMetrics := range pathResourceMetrics {
+				fi, err := os.Open(path)
+				if len(wantResourceMetrics) == 0 {
+					assert.Error(t, err)
+					continue
+				}
+				assert.NoError(t, err)
+				br := bufio.NewReader(fi)
+				for {
+					buf, isEnd, err := func() ([]byte, bool, error) {
+						if gfe.marshaller.formatType == formatTypeJSON && gfe.marshaller.compression == "" {
+							return readJSONMessage(br)
+						}
+						return readMessageFromStream(br)
+					}()
+					assert.NoError(t, err)
+					if isEnd {
+						break
+					}
+					decoder := buildUnCompressor(gfe.marshaller.compression)
+					buf, err = decoder(buf)
+					assert.NoError(t, err)
+					got, err := tt.args.unmarshaler.UnmarshalMetrics(buf)
+					assert.NoError(t, err)
+
+					gotResourceMetrics := make([]pmetric.ResourceMetrics, 0)
+					for i := 0; i < got.ResourceMetrics().Len(); i++ {
+						gotResourceMetrics = append(gotResourceMetrics, got.ResourceMetrics().At(i))
+					}
+
+					assert.EqualValues(t, wantResourceMetrics, gotResourceMetrics)
+				}
+				fi.Close()
+			}
+		})
+	}
+}
 
 func TestGroupingFileExporterErrors(t *testing.T) {
 	fe, err := newFileExporter(&Config{

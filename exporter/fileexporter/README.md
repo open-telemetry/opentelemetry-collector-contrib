@@ -25,6 +25,7 @@ Exporter supports the following features：
 
 + Support for compressing the telemetry data before exporting.
 
++ Supports for writing into multiple files, where the file path is determined by a resource attribute.
 
 Please note that there is no guarantee that exact field names will remain stable.
 This intended for primarily for debugging Collector without setting up backends.
@@ -50,6 +51,15 @@ The following settings are optional:
 - `compression`[no default]: the compression algorithm used when exporting telemetry data to file. Supported compression algorithms:`zstd`
 - `flush_interval`[default: 1s]: `time.Duration` interval between flushes. See [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) for valid formats. 
 NOTE: a value without unit is in nanoseconds and `flush_interval` is ignored and writes are not buffered if `rotation` is set.
+
+- `group_by_attribute` enables writing to separate files based on a resource attribute.
+
+  - sub_path_resource_attribute: [no default]: specifies the name of the resource attribute that contains the subpath of the file to write to. The final path will be prefixed with the `path` config value. When this value is set, rotation setting is ignored.
+  - delete_sub_path_resource_attribute: [default: false]: if set to true, the resource attribute specified in `sub_path_resource_attribute` config value is removed from the telemetry data before writing it to a file.
+  - max_open_files: [default: 100]: specifies the maximum number of open file descriptors for the output files.
+  - discard_if_attribute_not_found: [default: false]: if set to true, and the processed resource does not have the resource attribute specified in `sub_path_resource_attribute`, the telemetry data is discarded.
+  - default_sub_path: [default: "MISSING"]: value is used when the processed resource does not have the resource attribute specified in `sub_path_resource_attribute`, and `discard_if_attribute_not_found` is set to false. If `discard_if_attribute_not_found` is set to true, this setting is ignored.
+  - auto_create_directories: [default: true] when enabled, if the directory of the destination file does not exist, will create the directory. If set to false and the directory does not exists, the write will fail and return an error.
 
 ## File Rotation
 Telemetry data is exported to a single file by default.
@@ -78,6 +88,15 @@ When `format` is json and `compression` is none , telemetry data is written to f
 
 Otherwise, when using `proto` format or any kind of encoding, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
 
+## Group by attribute
+
+By specifying `group_by_attribute.sub_path_resource_attribute` in the config, the exporter will determine a filepath for each telemetry record, by concatenating the value of the resource attribute to the `path` configuration value.
+
+The exporter will NOT write files outside of the `path` config value, eg: if `path` is "/data", and the resource attribute value is "../etc/my_config.yaml", then the final path will be sanitized to "/data/etc/my_config.yaml".
+
+The attribute value can contain path separators (`/`). By default, the exporter will create missing directories recursively (similarly to `mkdir -p`). This can be disabled by setting `group_by_attribute.auto_create_directories` to false.
+
+Grouping by attribute currently only supports a **single** **resource** attribute. If you would like to use multiple attributes, please use [Transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) create a routing key. The exporter can remove this key before writing the data to disk by setting `group_by_attribute.delete_sub_path_resource_attribute` to true. If you would like to use a non-resource level (eg: Log/Metric/DataPoint) attribute, please use [Group by Attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor) first.
 
 ## Example:
 
