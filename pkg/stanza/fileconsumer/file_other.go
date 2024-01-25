@@ -10,6 +10,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
@@ -55,5 +56,9 @@ OUTER:
 // and read "lost" files, which have been moved out of the matching pattern.
 func (m *Manager) postConsume() {
 	m.closePreviousFiles()
-	m.previousPollFiles.Add(m.activeFiles.Get()...)
+
+	// m.previousFiles -> m.activeFiles
+	// m.activeFiles will be reset
+	m.previousPollFiles = m.activeFiles
+	m.activeFiles = fileset.New[*reader.Reader](m.maxBatchFiles / 2)
 }

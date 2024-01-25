@@ -31,6 +31,12 @@ func New[T Matchable](capacity int) *Fileset[T] {
 	return &Fileset[T]{readers: make([]T, 0, capacity)}
 }
 
+func (set *Fileset[T]) Copy() *Fileset[T] {
+	readers := make([]T, len(set.readers), cap(set.readers))
+	n := copy(readers, set.readers)
+	return &Fileset[T]{readers: readers[:n]}
+}
+
 func (set *Fileset[T]) Len() int {
 	return len(set.readers)
 }

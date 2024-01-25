@@ -859,7 +859,6 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 
 	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
-	operator.movingAverageMatches = 10
 
 	temps := make([]*os.File, 0, initFiles+moreFiles)
 	for i := 0; i < initFiles; i++ {
@@ -890,6 +889,7 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 		require.NoError(t, err)
 		expectedTokens = append(expectedTokens, []byte(message))
 	}
+	fmt.Println(len(expectedTokens))
 
 	// Poll again and expect one line from each file.
 	operator.poll(context.Background())
@@ -1144,7 +1144,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, longFile.Close())
 
 	// Verify we have no checkpointed files
-	require.Equal(t, 0, operator.knownFiles.Len())
+	require.Equal(t, 0, operator.knownFiles[0].Len()+operator.knownFiles[1].Len())
 
 	// Wait until the only line in the short file and
 	// at least one line from the long file have been consumed

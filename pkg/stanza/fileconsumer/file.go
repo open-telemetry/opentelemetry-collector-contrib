@@ -35,25 +35,15 @@ type Manager struct {
 
 	activeFiles       *fileset.Fileset[*reader.Reader]
 	previousPollFiles *fileset.Fileset[*reader.Reader]
-	knownFiles        *fileset.Fileset[*reader.Metadata]
-
-	// This value approximates the expected number of files which we will find in a single poll cycle.
-	// It is updated each poll cycle using a simple moving average calculation which assigns 20% weight
-	// to the most recent poll cycle.
-	// It is used to regulate the size of knownFiles. The goal is to allow knownFiles
-	// to contain checkpoints from a few previous poll cycles, but not grow unbounded.
-	movingAverageMatches int
+	knownFiles        []*fileset.Fileset[*reader.Metadata]
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
-
-	if matches, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.Warnf("finding files: %v", err)
-	} else {
-		m.movingAverageMatches = len(matches)
-		m.knownFiles = fileset.New[*reader.Metadata](4 * len(matches))
+	m.knownFiles = make([]*fileset.Fileset[*reader.Metadata], 3)
+	for i := 0; i < len(m.knownFiles); i++ {
+		m.knownFiles[i] = fileset.New[*reader.Metadata](m.maxBatchFiles / 2)
 	}
 
 	if persister != nil {
@@ -65,7 +55,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 		if len(offsets) > 0 {
 			m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
 			m.readerFactory.FromBeginning = true
-			m.knownFiles.Add(offsets...)
+			m.knownFiles[1].Add(offsets...)
 		}
 	}
 
@@ -76,13 +66,22 @@ func (m *Manager) Start(persister operator.Persister) error {
 }
 
 func (m *Manager) closePreviousFiles() {
-	if m.knownFiles.Len() > 4*m.movingAverageMatches {
-		if _, err := m.knownFiles.PopN(m.movingAverageMatches); err != nil {
-			m.Errorw("Failed to remove closed files", zap.Error(err))
-		}
-	}
+	// rotate the filesets at end of every consume() call
+
+	// m.knownFiles[0] wil be removed
+	// m.knownFiles[1] -> m.knownFiles[0]
+	// m.previousPollFiles -> m.knownFiles[1]
+
 	for _, r := range m.previousPollFiles.Reset() {
-		m.knownFiles.Add(r.Close())
+		m.knownFiles[1].Add(r.Close())
+	}
+}
+
+func (m *Manager) rotateFilesets() {
+	for i := 1; i < len(m.knownFiles); i++ {
+		m.knownFiles[i-1].Clear()
+		m.knownFiles[i-1] = m.knownFiles[i].Copy()
+		m.knownFiles[i].Clear()
 	}
 }
 
@@ -95,7 +94,11 @@ func (m *Manager) Stop() error {
 	m.wg.Wait()
 	m.closePreviousFiles()
 	if m.persister != nil {
-		if err := checkpoint.Save(context.Background(), m.persister, m.knownFiles.Get()); err != nil {
+		checkpoints := make([]*reader.Metadata, 0, m.knownFiles[2].Len()*3)
+		for _, knownFiles := range m.knownFiles {
+			checkpoints = append(checkpoints, knownFiles.Get()...)
+		}
+		if err := checkpoint.Save(context.Background(), m.persister, checkpoints); err != nil {
 			m.Errorw("save offsets", zap.Error(err))
 		}
 	}
@@ -132,8 +135,6 @@ func (m *Manager) poll(ctx context.Context) {
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
 		m.Debugf("finding files: %v", err)
-	} else {
-		m.movingAverageMatches = (m.movingAverageMatches*3 + len(matches)) / 4
 	}
 	m.Debugf("matched files", zap.Strings("paths", matches))
 
@@ -155,11 +156,14 @@ func (m *Manager) poll(ctx context.Context) {
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.FromBeginning = true
 	if m.persister != nil {
-		allCheckpoints := make([]*reader.Metadata, 0, m.knownFiles.Len()+m.previousPollFiles.Len())
+		allCheckpoints := make([]*reader.Metadata, 0, m.knownFiles[2].Len()*3+m.previousPollFiles.Len())
+		for _, knownFiles := range m.knownFiles {
+			allCheckpoints = append(allCheckpoints, knownFiles.Get()...)
+		}
+
 		for _, r := range m.previousPollFiles.Get() {
 			allCheckpoints = append(allCheckpoints, r.Metadata)
 		}
-		allCheckpoints = append(allCheckpoints, m.knownFiles.Get()...)
 		if err := checkpoint.Save(context.Background(), m.persister, allCheckpoints); err != nil {
 			m.Errorw("save offsets", zap.Error(err))
 		}
@@ -249,8 +253,10 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 	}
 
 	// Iterate backwards to match newest first
-	if oldMetadata := m.knownFiles.Match(fp, fileset.StartsWith); oldMetadata != nil {
-		return m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
+	for i := len(m.knownFiles) - 1; i >= 0; i-- {
+		if oldMetadata := m.knownFiles[i].Match(fp, fileset.StartsWith); oldMetadata != nil {
+			return m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
+		}
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch

@@ -164,7 +164,10 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		HeaderConfig:    hCfg,
 		DeleteAtEOF:     c.DeleteAfterRead,
 	}
-
+	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
+	for i := 0; i < len(knownFiles); i++ {
+		knownFiles[i] = fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2)
+	}
 	return &Manager{
 		SugaredLogger:     logger.With("component", "fileconsumer"),
 		readerFactory:     readerFactory,
@@ -174,7 +177,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		maxBatches:        c.MaxBatches,
 		activeFiles:       fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
 		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
-		knownFiles:        fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2),
+		knownFiles:        knownFiles,
 	}, nil
 }
 
