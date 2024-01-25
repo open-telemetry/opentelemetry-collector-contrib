@@ -4,6 +4,7 @@ package fileexporter
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -18,6 +19,22 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
+
+type testMarshaller struct {
+	content []byte
+}
+
+func (m *testMarshaller) MarshalTraces(ptrace.Traces) ([]byte, error) {
+	return m.content, nil
+}
+
+func (m *testMarshaller) MarshalLogs(plog.Logs) ([]byte, error) {
+	return m.content, nil
+}
+
+func (m *testMarshaller) MarshalMetrics(pmetric.Metrics) ([]byte, error) {
+	return m.content, nil
+}
 
 func TestGroupingFileTracesExporter(t *testing.T) {
 	type args struct {
@@ -706,14 +723,6 @@ func TestGroupingFileExporterErrors(t *testing.T) {
 	assert.NoError(t, fe.Shutdown(context.Background()))
 }
 
-// func configWithDefaults(t testing.TB, data map[string]any) *Config {
-// 	cfg := createDefaultConfig().(*Config)
-// 	err := cfg.Unmarshal(confmap.NewFromStringMap(data))
-// 	require.NoError(t, err)
-
-// 	return cfg
-// }
-
 func BenchmarkExporters(b *testing.B) {
 	tests := []struct {
 		name string
@@ -781,14 +790,32 @@ func BenchmarkExporters(b *testing.B) {
 	for _, tc := range tests {
 		fe, err := newFileExporter(tc.conf)
 		require.NoError(b, err)
+
+		// remove marshaling time from the benchmark
+		tm := &testMarshaller{content: bytes.Repeat([]byte{'a'}, 512)}
+		marshaller := &marshaller{
+			tracesMarshaler:  tm,
+			metricsMarshaler: tm,
+			logsMarshaler:    tm,
+			compression:      "",
+			compressor:       noneCompress,
+			formatType:       "test",
+		}
+		switch fExp := fe.(type) {
+		case *fileExporter:
+			fExp.marshaller = marshaller
+		case *groupingFileExporter:
+			fExp.marshaller = marshaller
+		}
+
 		require.NoError(b, fe.Start(context.Background(), componenttest.NewNopHost()))
 
 		b.Run(tc.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 
+			ctx := context.Background()
 			for i := 0; i < b.N; i++ {
-				ctx := context.Background()
 				require.NoError(b, fe.consumeTraces(ctx, traces[i%len(traces)]))
 				require.NoError(b, fe.consumeLogs(ctx, logs[i%len(logs)]))
 			}

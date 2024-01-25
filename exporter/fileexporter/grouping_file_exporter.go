@@ -34,6 +34,10 @@ type groupingFileExporter struct {
 }
 
 func (e *groupingFileExporter) consumeTraces(ctx context.Context, td ptrace.Traces) error {
+	if td.ResourceSpans().Len() == 0 {
+		return nil
+	}
+
 	groups := make(map[string][]ptrace.ResourceSpans)
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -45,12 +49,13 @@ func (e *groupingFileExporter) consumeTraces(ctx context.Context, td ptrace.Trac
 	for subPath, rSpansSlice := range groups {
 		traces := ptrace.NewTraces()
 		for _, rSpans := range rSpansSlice {
-			rSpans.CopyTo(traces.ResourceSpans().AppendEmpty())
+			rSpans.MoveTo(traces.ResourceSpans().AppendEmpty())
 		}
 
 		buf, err := e.marshaller.marshalTraces(traces)
 		if err != nil {
 			errs = errors.Join(errs, err)
+			continue
 		}
 
 		err = e.write(ctx, subPath, buf)
@@ -63,6 +68,10 @@ func (e *groupingFileExporter) consumeTraces(ctx context.Context, td ptrace.Trac
 }
 
 func (e *groupingFileExporter) consumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if md.ResourceMetrics().Len() == 0 {
+		return nil
+	}
+
 	groups := make(map[string][]pmetric.ResourceMetrics)
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
@@ -74,12 +83,13 @@ func (e *groupingFileExporter) consumeMetrics(ctx context.Context, md pmetric.Me
 	for subPath, rMetricsSlice := range groups {
 		metrics := pmetric.NewMetrics()
 		for _, rMetrics := range rMetricsSlice {
-			rMetrics.CopyTo(metrics.ResourceMetrics().AppendEmpty())
+			rMetrics.MoveTo(metrics.ResourceMetrics().AppendEmpty())
 		}
 
 		buf, err := e.marshaller.marshalMetrics(metrics)
 		if err != nil {
 			errs = errors.Join(errs, err)
+			continue
 		}
 
 		err = e.write(ctx, subPath, buf)
@@ -92,6 +102,10 @@ func (e *groupingFileExporter) consumeMetrics(ctx context.Context, md pmetric.Me
 }
 
 func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
+	if ld.ResourceLogs().Len() == 0 {
+		return nil
+	}
+
 	groups := make(map[string][]plog.ResourceLogs)
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
@@ -103,12 +117,13 @@ func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) er
 	for subPath, rLogsSlice := range groups {
 		logs := plog.NewLogs()
 		for _, rlogs := range rLogsSlice {
-			rlogs.CopyTo(logs.ResourceLogs().AppendEmpty())
+			rlogs.MoveTo(logs.ResourceLogs().AppendEmpty())
 		}
 
 		buf, err := e.marshaller.marshalLogs(logs)
 		if err != nil {
 			errs = errors.Join(errs, err)
+			continue
 		}
 
 		err = e.write(ctx, subPath, buf)
@@ -145,26 +160,28 @@ func (e *groupingFileExporter) getWriter(ctx context.Context, subPath string) (*
 	defer e.mutex.Unlock()
 
 	writer, ok := e.writers.Get(fullPath)
+	if ok {
+		return writer, nil
+	}
+
 	var err error
-	if !ok {
-		if e.createDirs {
-			err = os.MkdirAll(path.Dir(fullPath), 0755)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		writer, err = e.newFileWriter(fullPath)
+	if e.createDirs {
+		err = os.MkdirAll(path.Dir(fullPath), 0755)
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		e.writers.Add(fullPath, writer)
+	writer, err = e.newFileWriter(fullPath)
+	if err != nil {
+		return nil, err
+	}
 
-		err = writer.start(ctx)
-		if err != nil {
-			return nil, err
-		}
+	e.writers.Add(fullPath, writer)
+
+	err = writer.start(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return writer, nil
