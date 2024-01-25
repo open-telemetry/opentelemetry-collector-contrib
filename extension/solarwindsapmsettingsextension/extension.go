@@ -34,7 +34,6 @@ func newSolarwindsApmSettingsExtension(extensionCfg *Config, logger *zap.Logger)
 
 func (extension *solarwindsapmSettingsExtension) Start(ctx context.Context, _ component.Host) error {
 	extension.logger.Debug("Starting up solarwinds apm settings extension")
-	ctx = context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
 	configOk := validateSolarwindsApmSettingsExtensionConfiguration(extension.config, extension.logger)
 	if configOk {
@@ -64,12 +63,11 @@ func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) err
 	extension.logger.Debug("Shutting down solarwinds apm settings extension")
 	if extension.conn != nil {
 		return extension.conn.Close()
-	} else {
-		return nil
 	}
+	return nil
 }
 
-func validateSolarwindsApmSettingsExtensionConfiguration(extensionCfg *Config, logger *zap.Logger) bool {
+func validateSolarwindsApmSettingsExtensionConfiguration(_ *Config, _ *zap.Logger) bool {
 	// Concrete implementation will be available in later PR
 	return true
 }
