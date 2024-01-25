@@ -34,8 +34,6 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	assert.Equal(t, map[string]any{
 		"cloud.provider": "azure",
 		"cloud.platform": "azure_aks",
-		// Cluster name will not be detected if resource grup is not set
-		"k8s.cluster.name": "",
 	}, res.Attributes().AsRaw(), "Resource attrs returned are incorrect")
 }
 
