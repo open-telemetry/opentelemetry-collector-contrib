@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// errorComponent is used to return error from a factory method. SharedComponent does
+// not handle errors, so wrapping the error into a component is necessary.
 type errorComponent struct {
 	err error
 }

@@ -22,7 +22,8 @@ type Config struct {
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
 
-	// Rotation defines an option about rotation of telemetry files
+	// Rotation defines an option about rotation of telemetry files. Ignored
+	// when GroupByAttribute is used.
 	Rotation *Rotation `mapstructure:"rotation"`
 
 	// FormatType define the data format of encoded telemetry data
@@ -69,7 +70,8 @@ type Rotation struct {
 type GroupByAttribute struct {
 	// SubPathResourceAttribute specifies the name of the resource attribute that
 	// contains the subpath of the file to write to. The final path will be
-	// prefixed with the 'path' config value. There is no default for this setting.
+	// prefixed with the 'path' config value. When this value is set, Rotation setting
+	// is ignored.
 	SubPathResourceAttribute string `mapstructure:"sub_path_resource_attribute"`
 
 	// DeleteSubPathResourceAttribute if set to true, the resource attribute
@@ -90,6 +92,11 @@ type GroupByAttribute struct {
 	// is set to false. If 'discard_if_attribute_not_found' is set to true, this setting is
 	// ignored. Default is "MISSING".
 	DefaultSubPath string `mapstructure:"default_sub_path"`
+
+	// AutoCreateDirectories when enabled, if the directory of the destinatiob file does not exist,
+	// will create the directory. If set to false and the directory does not exists, the write will
+	// fail and return an error. Default is true.
+	AutoCreateDirectories bool `mapstructure:"auto_create_directories"`
 }
 
 var _ component.Config = (*Config)(nil)

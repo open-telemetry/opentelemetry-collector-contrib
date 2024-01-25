@@ -55,3 +55,18 @@ file/flush_interval_500ms:
 file/flush_interval_negative_value:
   path: ./flushed
   flush_interval: "-1s"
+
+file/group_by_attr:
+  path: ./group_by_attr
+  group_by_attribute:
+    sub_path_resource_attribute: dummy
+    delete_sub_path_resource_attribute: true
+    max_open_files: 10
+    discard_if_attribute_not_found: true
+    default_sub_path: "/default"
+    auto_create_directories: false
+
+file/group_by_attr_sub_path_only:
+  path: ./group_by_attr_sub_path_only
+  group_by_attribute:
+    sub_path_resource_attribute: dummy

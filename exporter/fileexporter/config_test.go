@@ -39,6 +39,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				FormatType:    formatTypeJSON,
 				FlushInterval: time.Second,
+				GroupByAttribute: &GroupByAttribute{
+					MaxOpenFiles:          defaultMaxOpenFiles,
+					DefaultSubPath:        defaultSubPath,
+					AutoCreateDirectories: true,
+				},
 			},
 		},
 		{
@@ -54,6 +59,11 @@ func TestLoadConfig(t *testing.T) {
 				FormatType:    formatTypeProto,
 				Compression:   compressionZSTD,
 				FlushInterval: time.Second,
+				GroupByAttribute: &GroupByAttribute{
+					MaxOpenFiles:          defaultMaxOpenFiles,
+					DefaultSubPath:        defaultSubPath,
+					AutoCreateDirectories: true,
+				},
 			},
 		},
 		{
@@ -65,6 +75,11 @@ func TestLoadConfig(t *testing.T) {
 					MaxBackups: defaultMaxBackups,
 				},
 				FlushInterval: time.Second,
+				GroupByAttribute: &GroupByAttribute{
+					MaxOpenFiles:          defaultMaxOpenFiles,
+					DefaultSubPath:        defaultSubPath,
+					AutoCreateDirectories: true,
+				},
 			},
 		},
 		{
@@ -77,6 +92,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				FormatType:    formatTypeJSON,
 				FlushInterval: time.Second,
+				GroupByAttribute: &GroupByAttribute{
+					MaxOpenFiles:          defaultMaxOpenFiles,
+					DefaultSubPath:        defaultSubPath,
+					AutoCreateDirectories: true,
+				},
 			},
 		},
 		{
@@ -93,6 +113,11 @@ func TestLoadConfig(t *testing.T) {
 				Path:          "./flushed",
 				FlushInterval: 5,
 				FormatType:    formatTypeJSON,
+				GroupByAttribute: &GroupByAttribute{
+					MaxOpenFiles:          defaultMaxOpenFiles,
+					DefaultSubPath:        defaultSubPath,
+					AutoCreateDirectories: true,
+				},
 			},
 		},
 		{
@@ -101,6 +126,11 @@ func TestLoadConfig(t *testing.T) {
 				Path:          "./flushed",
 				FlushInterval: 5 * time.Second,
 				FormatType:    formatTypeJSON,
+				GroupByAttribute: &GroupByAttribute{
+					MaxOpenFiles:          defaultMaxOpenFiles,
+					DefaultSubPath:        defaultSubPath,
+					AutoCreateDirectories: true,
+				},
 			},
 		},
 		{
@@ -109,6 +139,41 @@ func TestLoadConfig(t *testing.T) {
 				Path:          "./flushed",
 				FlushInterval: 500 * time.Millisecond,
 				FormatType:    formatTypeJSON,
+				GroupByAttribute: &GroupByAttribute{
+					MaxOpenFiles:          defaultMaxOpenFiles,
+					DefaultSubPath:        defaultSubPath,
+					AutoCreateDirectories: true,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "group_by_attr"),
+			expected: &Config{
+				Path:          "./group_by_attr",
+				FlushInterval: time.Second,
+				FormatType:    formatTypeJSON,
+				GroupByAttribute: &GroupByAttribute{
+					SubPathResourceAttribute:       "dummy",
+					DeleteSubPathResourceAttribute: true,
+					MaxOpenFiles:                   10,
+					DiscardIfAttributeNotFound:     true,
+					DefaultSubPath:                 "/default",
+					AutoCreateDirectories:          false,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "group_by_attr_sub_path_only"),
+			expected: &Config{
+				Path:          "./group_by_attr_sub_path_only",
+				FlushInterval: time.Second,
+				FormatType:    formatTypeJSON,
+				GroupByAttribute: &GroupByAttribute{
+					SubPathResourceAttribute: "dummy",
+					MaxOpenFiles:             defaultMaxOpenFiles,
+					DefaultSubPath:           defaultSubPath,
+					AutoCreateDirectories:    true,
+				},
 			},
 		},
 		{

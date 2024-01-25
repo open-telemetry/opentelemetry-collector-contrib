@@ -6,6 +6,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"errors"
+	"os"
 	"path"
 	"sync"
 
@@ -21,10 +22,11 @@ type groupingFileExporter struct {
 	marshaller                 *marshaller
 	basePath                   string
 	attribute                  string
-	discardAtribute            bool
+	deleteAtribute             bool
 	discardIfAttributeNotFound bool
 	defaultSubPath             string
 	maxOpenFiles               int
+	createDirs                 bool
 	newFileWriter              func(path string) (*fileWriter, error)
 
 	mutex   sync.Mutex
@@ -145,6 +147,13 @@ func (e *groupingFileExporter) getWriter(ctx context.Context, subPath string) (*
 	writer, ok := e.writers.Get(fullPath)
 	var err error
 	if !ok {
+		if e.createDirs {
+			err := os.MkdirAll(path.Dir(fullPath), 0755)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		writer, err = e.newFileWriter(fullPath)
 		if err != nil {
 			return nil, err
@@ -162,30 +171,42 @@ func (e *groupingFileExporter) getWriter(ctx context.Context, subPath string) (*
 }
 
 func (e *groupingFileExporter) onEnvict(fullPath string, writer *fileWriter) {
-	writer.shutdown() // TODO: log error?
+	_ = writer.shutdown() // TODO: should we log this error?
 }
 
 func group[T any](e *groupingFileExporter, groups map[string][]T, resource pcommon.Resource, resourceEntries T) {
 	var subPath string
 	v, ok := resource.Attributes().Get(e.attribute)
-	if ok && v.Type() == pcommon.ValueTypeStr {
-		subPath = v.Str()
-	} else if e.discardIfAttributeNotFound {
-		return
-	} else {
-		subPath = e.defaultSubPath
+	if ok {
+		if v.Type() == pcommon.ValueTypeStr {
+			subPath = v.Str()
+		} else {
+			ok = false
+		}
+
+		if e.deleteAtribute {
+			resource.Attributes().Remove(e.attribute)
+		}
+	}
+
+	if !ok {
+		if e.discardIfAttributeNotFound {
+			return
+		} else {
+			subPath = e.defaultSubPath
+		}
 	}
 
 	groups[subPath] = append(groups[subPath], resourceEntries)
 }
 
-// Start starts the flush timer if set. TODO
+// Start is a noop.
 func (e *groupingFileExporter) Start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
-// It stops the flush ticker if set. TODO
+// It stops flushes and closes all underlying writers.
 func (e *groupingFileExporter) Shutdown(ctx context.Context) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()

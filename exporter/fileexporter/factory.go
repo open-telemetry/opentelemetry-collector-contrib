@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -59,6 +60,11 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		FormatType: formatTypeJSON,
 		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+		GroupByAttribute: &GroupByAttribute{
+			MaxOpenFiles:          defaultMaxOpenFiles,
+			DefaultSubPath:        defaultSubPath,
+			AutoCreateDirectories: true,
+		},
 	}
 }
 
@@ -154,9 +160,10 @@ func newFileExporter(conf *Config) (FileExporter, error) {
 		compression:      conf.Compression,
 		compressor:       buildCompressor(conf.Compression),
 	}
+	export := buildExportFunc(conf)
 
 	if conf.GroupByAttribute == nil || conf.GroupByAttribute.SubPathResourceAttribute == "" {
-		writer, err := newFileWriter(conf.Path, conf)
+		writer, err := newFileWriter(conf.Path, conf.Rotation, conf.FlushInterval, export)
 		if err != nil {
 			return nil, err
 		}
@@ -167,28 +174,21 @@ func newFileExporter(conf *Config) (FileExporter, error) {
 		}, nil
 	}
 
-	maxOpenFiles := conf.GroupByAttribute.MaxOpenFiles
-	if maxOpenFiles == 0 {
-		maxOpenFiles = defaultMaxOpenFiles // TODO: use createDefaultConfig instead if possible
-	}
-	if conf.GroupByAttribute.DefaultSubPath == "" {
-		conf.GroupByAttribute.DefaultSubPath = defaultSubPath // TODO: use createDefaultConfig instead if possible
-	}
-
 	e := &groupingFileExporter{
 		marshaller:                 marshaller,
 		basePath:                   conf.Path,
 		attribute:                  conf.GroupByAttribute.SubPathResourceAttribute,
-		discardAtribute:            conf.GroupByAttribute.DeleteSubPathResourceAttribute,
+		deleteAtribute:             conf.GroupByAttribute.DeleteSubPathResourceAttribute,
 		discardIfAttributeNotFound: conf.GroupByAttribute.DiscardIfAttributeNotFound,
 		defaultSubPath:             conf.GroupByAttribute.DefaultSubPath,
-		maxOpenFiles:               maxOpenFiles,
+		maxOpenFiles:               conf.GroupByAttribute.MaxOpenFiles,
+		createDirs:                 conf.GroupByAttribute.AutoCreateDirectories,
 		newFileWriter: func(path string) (*fileWriter, error) {
-			return newFileWriter(path, conf)
+			return newFileWriter(path, nil, conf.FlushInterval, export)
 		},
 	}
 
-	writers, err := simplelru.NewLRU[string, *fileWriter](1, e.onEnvict)
+	writers, err := simplelru.NewLRU[string, *fileWriter](conf.GroupByAttribute.MaxOpenFiles, e.onEnvict)
 	if err != nil {
 		return nil, err
 	}
@@ -198,9 +198,9 @@ func newFileExporter(conf *Config) (FileExporter, error) {
 	return e, nil
 }
 
-func newFileWriter(path string, conf *Config) (*fileWriter, error) {
+func newFileWriter(path string, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
 	var wc io.WriteCloser
-	if conf.Rotation == nil {
+	if rotation == nil {
 		f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			return nil, err
@@ -209,18 +209,18 @@ func newFileWriter(path string, conf *Config) (*fileWriter, error) {
 	} else {
 		wc = &lumberjack.Logger{
 			Filename:   path,
-			MaxSize:    conf.Rotation.MaxMegabytes,
-			MaxAge:     conf.Rotation.MaxDays,
-			MaxBackups: conf.Rotation.MaxBackups,
-			LocalTime:  conf.Rotation.LocalTime,
+			MaxSize:    rotation.MaxMegabytes,
+			MaxAge:     rotation.MaxDays,
+			MaxBackups: rotation.MaxBackups,
+			LocalTime:  rotation.LocalTime,
 		}
 	}
 
 	return &fileWriter{
 		path:          path,
 		file:          wc,
-		exporter:      buildExportFunc(conf),
-		flushInterval: conf.FlushInterval,
+		exporter:      export,
+		flushInterval: flushInterval,
 	}, nil
 }
 
