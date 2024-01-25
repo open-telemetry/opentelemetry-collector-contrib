@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mitchellh/hashstructure/v2"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
@@ -154,6 +155,59 @@ func labelSetTargetsToList(sets []model.LabelSet) []string {
 type Responses struct {
 	releaserMap map[string]int
 	responses   map[string][]mockTargetAllocatorResponseRaw
+}
+
+func benchDataPromConfig() map[string]*promConfig.ScrapeConfig {
+	jobToScrapeConfig := map[string]*promConfig.ScrapeConfig{}
+	jobToScrapeConfig["job1"] = &promConfig.ScrapeConfig{
+		JobName:         "job1",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		MetricRelabelConfigs: []*relabel.Config{
+			{
+				Separator: ";",
+				Regex:     relabel.MustNewRegexp("(.*)"),
+				Action:    relabel.Keep,
+			},
+		},
+	}
+
+	jobToScrapeConfig["job2"] = &promConfig.ScrapeConfig{
+		JobName:         "job2",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		MetricRelabelConfigs: []*relabel.Config{
+			{
+				Separator: ";",
+				Regex:     relabel.MustNewRegexp("(.*)"),
+				Action:    relabel.Keep,
+			},
+		},
+	}
+
+	return jobToScrapeConfig
+}
+
+func BenchmarkStructHash(b *testing.B) {
+	s := benchDataPromConfig()
+
+	for i := 0; i < b.N; i++ {
+		Hash(s, 1)
+	}
+}
+
+func BenchmarkHashStructure(b *testing.B) {
+	s := benchDataPromConfig()
+
+	for i := 0; i < b.N; i++ {
+		hashstructure.Hash(s, hashstructure.FormatV2, nil)
+	}
 }
 
 func TestTargetAllocatorJobRetrieval(t *testing.T) {
