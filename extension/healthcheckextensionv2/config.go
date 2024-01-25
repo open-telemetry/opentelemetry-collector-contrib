@@ -29,7 +29,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPSettings != nil && c.HTTPSettings.Endpoint == "" {
-		return errors.New("healthcheck extension: grpc endpoint required")
+		return errors.New("healthcheck extension: http endpoint required")
 	}
 
 	return nil
