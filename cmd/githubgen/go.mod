@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/google/go-github/v58 v58.0.0
-	go.opentelemetry.io/collector/confmap v0.93.1-0.20240124123350-9047c0e373f9
+	go.opentelemetry.io/collector/confmap v0.93.1-0.20240125183026-3cacd40b27e8
 	gopkg.in/yaml.v3 v3.0.1
 )
 
