@@ -21,11 +21,11 @@ all_set:
       enabled: true
     splunk.indexer.avg.rate:
       enabled: true
-    splunk.indexer.cpu.seconds:
+    splunk.indexer.cpu.time:
       enabled: true
     splunk.indexer.queue.ratio:
       enabled: true
-    splunk.indexer.raw.write.seconds:
+    splunk.indexer.raw.write.time:
       enabled: true
     splunk.indexer.throughput:
       enabled: true
@@ -81,11 +81,11 @@ none_set:
       enabled: false
     splunk.indexer.avg.rate:
       enabled: false
-    splunk.indexer.cpu.seconds:
+    splunk.indexer.cpu.time:
       enabled: false
     splunk.indexer.queue.ratio:
       enabled: false
-    splunk.indexer.raw.write.seconds:
+    splunk.indexer.raw.write.time:
       enabled: false
     splunk.indexer.throughput:
       enabled: false

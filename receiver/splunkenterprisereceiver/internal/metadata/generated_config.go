@@ -35,9 +35,9 @@ type MetricsConfig struct {
 	SplunkDataIndexesExtendedRawSize            MetricConfig `mapstructure:"splunk.data.indexes.extended.raw.size"`
 	SplunkDataIndexesExtendedTotalSize          MetricConfig `mapstructure:"splunk.data.indexes.extended.total.size"`
 	SplunkIndexerAvgRate                        MetricConfig `mapstructure:"splunk.indexer.avg.rate"`
-	SplunkIndexerCPUSeconds                     MetricConfig `mapstructure:"splunk.indexer.cpu.seconds"`
+	SplunkIndexerCPUTime                        MetricConfig `mapstructure:"splunk.indexer.cpu.time"`
 	SplunkIndexerQueueRatio                     MetricConfig `mapstructure:"splunk.indexer.queue.ratio"`
-	SplunkIndexerRawWriteSeconds                MetricConfig `mapstructure:"splunk.indexer.raw.write.seconds"`
+	SplunkIndexerRawWriteTime                   MetricConfig `mapstructure:"splunk.indexer.raw.write.time"`
 	SplunkIndexerThroughput                     MetricConfig `mapstructure:"splunk.indexer.throughput"`
 	SplunkIndexesAvgSize                        MetricConfig `mapstructure:"splunk.indexes.avg.size"`
 	SplunkIndexesAvgUsage                       MetricConfig `mapstructure:"splunk.indexes.avg.usage"`
@@ -88,13 +88,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		SplunkIndexerAvgRate: MetricConfig{
 			Enabled: true,
 		},
-		SplunkIndexerCPUSeconds: MetricConfig{
+		SplunkIndexerCPUTime: MetricConfig{
 			Enabled: true,
 		},
 		SplunkIndexerQueueRatio: MetricConfig{
 			Enabled: true,
 		},
-		SplunkIndexerRawWriteSeconds: MetricConfig{
+		SplunkIndexerRawWriteTime: MetricConfig{
 			Enabled: true,
 		},
 		SplunkIndexerThroughput: MetricConfig{

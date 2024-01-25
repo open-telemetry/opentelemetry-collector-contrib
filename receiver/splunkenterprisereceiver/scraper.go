@@ -710,7 +710,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRawWriteSeconds.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRawWriteTime.Enabled {
 		return
 	}
 
@@ -779,7 +779,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 				errs.Add(err)
 				continue
 			}
-			s.mb.RecordSplunkIndexerRawWriteSecondsDataPoint(now, v, host)
+			s.mb.RecordSplunkIndexerRawWriteTimeDataPoint(now, v, host)
 		}
 	}
 }
@@ -788,7 +788,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerCPUSeconds.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerCPUTime.Enabled {
 		return
 	}
 
@@ -857,7 +857,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 				errs.Add(err)
 				continue
 			}
-			s.mb.RecordSplunkIndexerCPUSecondsDataPoint(now, v, host)
+			s.mb.RecordSplunkIndexerCPUTimeDataPoint(now, v, host)
 		}
 	}
 }

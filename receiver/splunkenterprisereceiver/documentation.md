@@ -55,7 +55,7 @@ Gauge tracking the average rate of indexed data. **Note:** Search is best run ag
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
 
-### splunk.indexer.cpu.seconds
+### splunk.indexer.cpu.time
 
 Gauge tracking the number of indexing process cpu seconds per instance
 
@@ -83,7 +83,7 @@ Gauge tracking the average indexer index queue ration (%). *Note:** Search is be
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
 
-### splunk.indexer.raw.write.seconds
+### splunk.indexer.raw.write.time
 
 Gauge tracking the number of raw write seconds per instance
 

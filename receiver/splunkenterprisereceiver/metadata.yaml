@@ -99,14 +99,14 @@ metrics:
     gauge:
       value_type: double 
     attributes: [splunk.host]
-  splunk.indexer.raw.write.seconds:
+  splunk.indexer.raw.write.time:
     enabled: true
     description: Gauge tracking the number of raw write seconds per instance
     unit: '{s}'
     gauge:
       value_type: double 
     attributes: [splunk.host]
-  splunk.indexer.cpu.seconds:
+  splunk.indexer.cpu.time:
     enabled: true
     description: Gauge tracking the number of indexing process cpu seconds per instance
     unit: '{s}'

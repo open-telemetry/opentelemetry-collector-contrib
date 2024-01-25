@@ -90,7 +90,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSplunkIndexerCPUSecondsDataPoint(ts, 1, "splunk.host-val")
+			mb.RecordSplunkIndexerCPUTimeDataPoint(ts, 1, "splunk.host-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -98,7 +98,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSplunkIndexerRawWriteSecondsDataPoint(ts, 1, "splunk.host-val")
+			mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts, 1, "splunk.host-val")
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerThroughputDataPoint(ts, 1, "splunk.indexer.status-val")
@@ -345,9 +345,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
-				case "splunk.indexer.cpu.seconds":
-					assert.False(t, validatedMetrics["splunk.indexer.cpu.seconds"], "Found a duplicate in the metrics slice: splunk.indexer.cpu.seconds")
-					validatedMetrics["splunk.indexer.cpu.seconds"] = true
+				case "splunk.indexer.cpu.time":
+					assert.False(t, validatedMetrics["splunk.indexer.cpu.time"], "Found a duplicate in the metrics slice: splunk.indexer.cpu.time")
+					validatedMetrics["splunk.indexer.cpu.time"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Gauge tracking the number of indexing process cpu seconds per instance", ms.At(i).Description())
@@ -375,9 +375,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
-				case "splunk.indexer.raw.write.seconds":
-					assert.False(t, validatedMetrics["splunk.indexer.raw.write.seconds"], "Found a duplicate in the metrics slice: splunk.indexer.raw.write.seconds")
-					validatedMetrics["splunk.indexer.raw.write.seconds"] = true
+				case "splunk.indexer.raw.write.time":
+					assert.False(t, validatedMetrics["splunk.indexer.raw.write.time"], "Found a duplicate in the metrics slice: splunk.indexer.raw.write.time")
+					validatedMetrics["splunk.indexer.raw.write.time"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Gauge tracking the number of raw write seconds per instance", ms.At(i).Description())
