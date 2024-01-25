@@ -416,9 +416,10 @@ func (s *Supervisor) startOpAMP() error {
 func (s *Supervisor) stopOpAMP() error {
 	s.logger.Debug("Stopping OpAMP client...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	err := s.opampClient.Stop(ctx)
-	cancel()
-	if err != nil {
+	// TODO(srikanthccv): remove context.DeadlineExceeded after https://github.com/open-telemetry/opamp-go/pull/213
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		return err
 	}
 	s.logger.Debug("OpAMP client stopped.")

@@ -81,9 +81,9 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 	connectedChan := make(chan bool)
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnectedFunc
-	callbacks.OnConnectedFunc = func(conn types.Connection) {
+	callbacks.OnConnectedFunc = func(ctx context.Context, conn types.Connection) {
 		if onConnectedFunc != nil {
-			onConnectedFunc(conn)
+			onConnectedFunc(ctx, conn)
 		}
 		agentConn.Store(conn)
 		isAgentConnected.Store(true)
@@ -177,7 +177,7 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				if message.EffectiveConfig != nil {
 					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
 					if config != nil {
@@ -237,7 +237,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				if message.Health != nil {
 					healthReport.Store(message.Health)
 				}
@@ -321,7 +321,7 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				capabilities.Store(message.Capabilities)
 
 				return &protobufs.ServerToAgent{}
@@ -374,7 +374,7 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				if message.AgentDescription != nil {
 					agentDescription.Store(message.AgentDescription)
 				}
@@ -492,10 +492,10 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnConnectedFunc: func(_ types.Connection) {
+			OnConnectedFunc: func(_ context.Context, _ types.Connection) {
 				connectedToNewServer.Store(true)
 			},
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				return &protobufs.ServerToAgent{}
 			},
 		})
