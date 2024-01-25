@@ -50,6 +50,31 @@ func TestFixedNumberOfTraces(t *testing.T) {
 	assert.Len(t, syncer.spans, 2) // each trace has two spans
 }
 
+func TestNumberOfSpans(t *testing.T) {
+	// prepare
+	syncer := &mockSyncer{}
+
+	tracerProvider := sdktrace.NewTracerProvider()
+	sp := sdktrace.NewSimpleSpanProcessor(syncer)
+	tracerProvider.RegisterSpanProcessor(sp)
+	otel.SetTracerProvider(tracerProvider)
+
+	cfg := &Config{
+		Config: common.Config{
+			WorkerCount: 1,
+		},
+		NumTraces:     1,
+		NumChildSpans: 5,
+	}
+	expectedNumSpans := cfg.NumChildSpans + 1 // each trace has 1 + NumChildSpans spans
+
+	// test
+	require.NoError(t, Run(cfg, zap.NewNop()))
+
+	// verify
+	assert.Len(t, syncer.spans, expectedNumSpans)
+}
+
 func TestRateOfSpans(t *testing.T) {
 	// prepare
 	syncer := &mockSyncer{}
