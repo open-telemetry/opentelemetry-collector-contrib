@@ -10,243 +10,169 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// CollectorStatusDetails holds a snapshot of the current overall collector status, the overall
-// pipeline statuses, and the statuses of the individual components within the pipelines.
-type CollectorStatusDetails struct {
-	OverallStatus      *component.StatusEvent
-	PipelineStatusMap  map[component.ID]*component.StatusEvent
-	ComponentStatusMap map[component.ID]map[*component.InstanceID]*component.StatusEvent
-}
-
-// PipelineStatusDetails holds a snapshot of the current overall pipeline status, and the statuses
-// of the individual components in the pipeline.
-type PipelineStatusDetails struct {
-	OverallStatus      *component.StatusEvent
-	ComponentStatusMap map[*component.InstanceID]*component.StatusEvent
-}
-
-type componentIDCache struct {
-	mu             sync.RWMutex
-	componentIDMap map[string]component.ID
-}
-
-func (c *componentIDCache) lookup(name string) (component.ID, error) {
-	compID, ok := func() (component.ID, bool) {
-		c.mu.RLock()
-		defer c.mu.RUnlock()
-		id, ok := c.componentIDMap[name]
-		return id, ok
-	}()
-
-	if ok {
-		return compID, nil
-	}
-
-	err := compID.UnmarshalText([]byte(name))
-	if err == nil {
-		c.mu.Lock()
-		c.componentIDMap[name] = compID
-		c.mu.Unlock()
-	}
-
-	return compID, err
-}
-
 // Extensions are treated as a pseudo pipeline and extsID is used as a map key
-var extsID = component.NewID("extensions")
-var extsIDMap = map[component.ID]struct{}{extsID: {}}
+var (
+	extsID    = component.NewID("extensions")
+	extsIDMap = map[component.ID]struct{}{extsID: {}}
+)
 
-// The empty string is an alias for the overall collector health when subscribing to
-// status events.
-const emptyStream = ""
+const (
+	ScopeAll        = ""
+	ScopeExtensions = "extensions"
+	pipelinePrefix  = "pipeline:"
+)
 
-// CollectorID is used as a key in the subscriptions map
-var collectorID = component.NewID("__collector__")
+// AggregateStatus contains a map of child AggregateStatuses and an embedded component.StatusEvent.
+// It can be used to represent a single, top-level status when the ComponentStatusMap is empty,
+// or a nested structure when map is non-empty.
+type AggregateStatus struct {
+	*component.StatusEvent
+
+	ComponentStatusMap map[string]*AggregateStatus
+}
+
+func (a *AggregateStatus) clone(detailed bool) *AggregateStatus {
+	st := &AggregateStatus{
+		StatusEvent: a.StatusEvent,
+	}
+
+	if detailed && len(a.ComponentStatusMap) > 0 {
+		st.ComponentStatusMap = make(map[string]*AggregateStatus, len(a.ComponentStatusMap))
+		for k, cs := range a.ComponentStatusMap {
+			st.ComponentStatusMap[k] = cs.clone(detailed)
+		}
+	}
+
+	return st
+}
+
+type subscription struct {
+	statusCh chan *AggregateStatus
+	detailed bool
+}
 
 // Aggregator records individual status events for components and aggregates statuses for the
 // pipelines they belong to and the collector overall.
 type Aggregator struct {
-	mu                 sync.RWMutex
-	componentIDCache   *componentIDCache
-	overallStatus      *component.StatusEvent
-	pipelineStatusMap  map[component.ID]*component.StatusEvent
-	componentStatusMap map[component.ID]map[*component.InstanceID]*component.StatusEvent
-	subscriptions      map[component.ID][]chan *component.StatusEvent
+	mu              sync.RWMutex
+	aggregateStatus *AggregateStatus
+	subscriptions   map[string][]*subscription
 }
 
 // NewAggregator returns a *status.Aggregator.
 func NewAggregator() *Aggregator {
 	return &Aggregator{
-		overallStatus:      &component.StatusEvent{},
-		pipelineStatusMap:  make(map[component.ID]*component.StatusEvent),
-		componentStatusMap: make(map[component.ID]map[*component.InstanceID]*component.StatusEvent),
-		componentIDCache: &componentIDCache{
-			componentIDMap: make(map[string]component.ID),
+		aggregateStatus: &AggregateStatus{
+			StatusEvent:        &component.StatusEvent{},
+			ComponentStatusMap: make(map[string]*AggregateStatus),
 		},
-		subscriptions: make(map[component.ID][]chan *component.StatusEvent),
+		subscriptions: make(map[string][]*subscription),
 	}
 }
 
-// CollectorStatus returns the overall status for the collector.
-func (a *Aggregator) CollectorStatus() *component.StatusEvent {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
+// AggregateStatus returns an *AggregateStatus for the given scope. The scope can be the collector
+// overall (represented the empty string), extensions, or a pipeline by name. If detailed is true,
+// the *AggregateStatus will contain child component statuses for the given scope. If it's false,
+// only a top level status will be returned. The boolean return value indicates whether or not the
+// scope was found.
+func (a *Aggregator) AggregateStatus(scope string, detailed bool) (*AggregateStatus, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
-	return a.overallStatus
-}
-
-// CollectorStatusDetailed returns a snapshot of the current overall collector status, pipeline
-// statuses, and individual component statuses.
-func (a *Aggregator) CollectorStatusDetailed() *CollectorStatusDetails {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-
-	details := &CollectorStatusDetails{
-		OverallStatus:     a.overallStatus,
-		PipelineStatusMap: make(map[component.ID]*component.StatusEvent, len(a.pipelineStatusMap)),
-		ComponentStatusMap: make(
-			map[component.ID]map[*component.InstanceID]*component.StatusEvent,
-			len(a.componentStatusMap),
-		),
+	if scope == ScopeAll {
+		return a.aggregateStatus.clone(detailed), true
 	}
 
-	for compID, ev := range a.pipelineStatusMap {
-		details.PipelineStatusMap[compID] = ev
+	if scope != ScopeExtensions {
+		scope = pipelinePrefix + scope
 	}
 
-	for compID, eventMap := range a.componentStatusMap {
-		details.ComponentStatusMap[compID] = make(
-			map[*component.InstanceID]*component.StatusEvent,
-			len(eventMap),
-		)
-		for instID, ev := range eventMap {
-			details.ComponentStatusMap[compID][instID] = ev
-		}
-	}
-
-	return details
-}
-
-// PipelineStatus returns the current overall pipeline status. An error will be returned if the
-// pipeline is not found, or if there was an error marshaling the name to a component.ID.
-func (a *Aggregator) PipelineStatus(name string) (*component.StatusEvent, error) {
-	compID, err := a.componentIDCache.lookup(name)
-	if err != nil {
-		return nil, err
-	}
-
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-
-	ev, ok := a.pipelineStatusMap[compID]
+	st, ok := a.aggregateStatus.ComponentStatusMap[scope]
 	if !ok {
-		return nil, fmt.Errorf("pipeline not found: %s", name)
+		return nil, false
 	}
 
-	return ev, nil
-}
-
-// PipelineStatusDetailed returns the current overall pipeline status and the invidiual statuses of
-// the components within the pipeline. An error will be returned if the pipeline is not found, or if
-// there was an error marshaling the name to a component.ID.
-func (a *Aggregator) PipelineStatusDetailed(name string) (*PipelineStatusDetails, error) {
-	compID, err := a.componentIDCache.lookup(name)
-	if err != nil {
-		return nil, err
-	}
-
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-
-	ev, ok := a.pipelineStatusMap[compID]
-	if !ok {
-		return nil, fmt.Errorf("pipeline not found: %s", name)
-	}
-
-	details := &PipelineStatusDetails{
-		OverallStatus: ev,
-		ComponentStatusMap: make(
-			map[*component.InstanceID]*component.StatusEvent,
-			len(a.componentStatusMap),
-		),
-	}
-
-	for instanceID, ev := range a.componentStatusMap[compID] {
-		details.ComponentStatusMap[instanceID] = ev
-	}
-
-	return details, nil
+	return st.clone(detailed), true
 }
 
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
 func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component.StatusEvent) {
 	compIDs := source.PipelineIDs
+	prefix := pipelinePrefix
 	// extensions are treated as a pseudo-pipeline
 	if source.Kind == component.KindExtension {
 		compIDs = extsIDMap
+		prefix = ""
 	}
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	for compID := range compIDs {
-		var compStatuses map[*component.InstanceID]*component.StatusEvent
-		compStatuses, ok := a.componentStatusMap[compID]
+		var pipelineStatus *AggregateStatus
+		pipelineKey := prefix + compID.String()
+		pipelineStatus, ok := a.aggregateStatus.ComponentStatusMap[pipelineKey]
 		if !ok {
-			compStatuses = make(map[*component.InstanceID]*component.StatusEvent)
+			pipelineStatus = &AggregateStatus{
+				ComponentStatusMap: make(map[string]*AggregateStatus),
+			}
 		}
-		compStatuses[source] = event
-		a.componentStatusMap[compID] = compStatuses
 
-		pipelineStatus := component.AggregateStatusEvent(compStatuses)
-		a.pipelineStatusMap[compID] = pipelineStatus
-		a.notifySubscribers(compID, pipelineStatus)
+		componentKey := fmt.Sprintf("%s:%s", kindToString(source.Kind), source.ID.String())
+		pipelineStatus.ComponentStatusMap[componentKey] = &AggregateStatus{
+			StatusEvent: event,
+		}
+		a.aggregateStatus.ComponentStatusMap[pipelineKey] = pipelineStatus
+		pipelineStatus.StatusEvent = component.AggregateStatusEvent(
+			toStatusEventMap(pipelineStatus),
+		)
+		a.notifySubscribers(pipelineKey, pipelineStatus)
 	}
 
-	overallStatus := component.AggregateStatusEvent(a.pipelineStatusMap)
-	a.overallStatus = overallStatus
-	a.notifySubscribers(collectorID, overallStatus)
+	a.aggregateStatus.StatusEvent = component.AggregateStatusEvent(
+		toStatusEventMap(a.aggregateStatus),
+	)
+	a.notifySubscribers(ScopeAll, a.aggregateStatus)
 }
 
-// Subscribe allows you to subscribe to a stream of events for a pipline by passing in the
-// pipeline name. The empty string can be used as an alias to subscribe to the collector health
-// overall. It is possible to subscribe to a pipeline that has not yet reported. An initial nil
-// will be sent on the channel and events will start streaming if and when it starts reporting.
-func (a *Aggregator) Subscribe(name string) (<-chan *component.StatusEvent, error) {
+// Subscribe allows you to subscribe to a stream of events for the given scope. The scope can be
+// the collector overall (represented by the emptry string), extensions, or a pipeline name.
+// It is possible to subscribe to a pipeline that has not yet reported. An initial nil
+// will be sent on the channel and events will start streaming if and when it starts reporting. If
+// detailed is true, the *AggregateStatus will contain child statuses for the given scope. If it's
+// false it will contain only a top-level status.
+func (a *Aggregator) Subscribe(scope string, detailed bool) <-chan *AggregateStatus {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	var compID component.ID
-	var ev *component.StatusEvent
-
-	if name == emptyStream {
-		compID = collectorID
-		ev = a.overallStatus
-	} else {
-		var err error
-		compID, err = a.componentIDCache.lookup(name)
-		if err != nil {
-			return nil, err
+	st := a.aggregateStatus
+	if scope != ScopeAll {
+		if scope != ScopeExtensions {
+			scope = pipelinePrefix + scope
 		}
-		ev = a.pipelineStatusMap[compID]
+		st = st.ComponentStatusMap[scope]
 	}
 
-	eventCh := make(chan *component.StatusEvent, 1)
-	a.subscriptions[compID] = append(a.subscriptions[compID], eventCh)
-	eventCh <- ev
+	sub := &subscription{
+		statusCh: make(chan *AggregateStatus, 1),
+		detailed: detailed,
+	}
 
-	return eventCh, nil
+	a.subscriptions[scope] = append(a.subscriptions[scope], sub)
+	sub.statusCh <- st
+
+	return sub.statusCh
 }
 
 // Unbsubscribe removes a stream from further status updates.
-func (a *Aggregator) Unsubscribe(eventCh <-chan *component.StatusEvent) {
+func (a *Aggregator) Unsubscribe(statusCh <-chan *AggregateStatus) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	for compID, subs := range a.subscriptions {
+	for scope, subs := range a.subscriptions {
 		for i, sub := range subs {
-			if sub == eventCh {
-				a.subscriptions[compID] = append(subs[:i], subs[i+1:]...)
+			if sub.statusCh == statusCh {
+				a.subscriptions[scope] = append(subs[:i], subs[i+1:]...)
 				return
 			}
 		}
@@ -260,18 +186,42 @@ func (a *Aggregator) Close() {
 
 	for _, subs := range a.subscriptions {
 		for _, sub := range subs {
-			close(sub)
+			close(sub.statusCh)
 		}
 	}
 }
 
-func (a *Aggregator) notifySubscribers(compID component.ID, event *component.StatusEvent) {
-	for _, sub := range a.subscriptions[compID] {
+func (a *Aggregator) notifySubscribers(scope string, status *AggregateStatus) {
+	for _, sub := range a.subscriptions[scope] {
 		// clear unread events
 		select {
-		case <-sub:
+		case <-sub.statusCh:
 		default:
 		}
-		sub <- event
+		sub.statusCh <- status.clone(sub.detailed)
 	}
+}
+
+func toStatusEventMap(aggStatus *AggregateStatus) map[string]*component.StatusEvent {
+	result := make(map[string]*component.StatusEvent, len(aggStatus.ComponentStatusMap))
+	for k, v := range aggStatus.ComponentStatusMap {
+		result[k] = v.StatusEvent
+	}
+	return result
+}
+
+func kindToString(k component.Kind) string {
+	switch k {
+	case component.KindReceiver:
+		return "receiver"
+	case component.KindProcessor:
+		return "processor"
+	case component.KindExporter:
+		return "exporter"
+	case component.KindExtension:
+		return "extension"
+	case component.KindConnector:
+		return "connector"
+	}
+	return ""
 }

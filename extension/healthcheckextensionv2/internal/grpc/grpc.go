@@ -17,29 +17,18 @@ func (s *Server) Check(
 	_ context.Context,
 	req *healthpb.HealthCheckRequest,
 ) (*healthpb.HealthCheckResponse, error) {
-	var err error
-	var ev *component.StatusEvent
-
-	if req.Service == "" {
-		ev = s.aggregator.CollectorStatus()
-	} else {
-		ev, err = s.aggregator.PipelineStatus(req.Service)
-	}
-
-	if err != nil {
+	st, ok := s.aggregator.AggregateStatus(req.Service, false)
+	if !ok {
 		return nil, status.Error(codes.NotFound, "unknown service")
 	}
 
 	return &healthpb.HealthCheckResponse{
-		Status: s.toServingStatus(ev),
+		Status: s.toServingStatus(st.StatusEvent),
 	}, nil
 }
 
 func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
-	sub, err := s.aggregator.Subscribe(req.Service)
-	if err != nil {
-		return err
-	}
+	sub := s.aggregator.Subscribe(req.Service, false)
 	defer s.aggregator.Unsubscribe(sub)
 
 	var lastServingStatus healthpb.HealthCheckResponse_ServingStatus = -1
@@ -49,17 +38,16 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 
 	for {
 		select {
-		case ev, ok := <-sub:
+		case st, ok := <-sub:
 			if !ok {
 				return status.Error(codes.Canceled, "Server shutting down.")
 			}
-
 			var sst healthpb.HealthCheckResponse_ServingStatus
 
 			switch {
-			case ev == nil:
+			case st == nil:
 				sst = healthpb.HealthCheckResponse_SERVICE_UNKNOWN
-			case ev.Status() == component.StatusRecoverableError:
+			case st.StatusEvent.Status() == component.StatusRecoverableError:
 				failureTicker.Reset(s.recoveryDuration)
 				sst = lastServingStatus
 				if lastServingStatus == -1 {
@@ -67,7 +55,7 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 				}
 			default:
 				failureTicker.Stop()
-				sst = statusToServingStatusMap[ev.Status()]
+				sst = statusToServingStatusMap[st.StatusEvent.Status()]
 			}
 
 			if lastServingStatus == sst {
@@ -111,7 +99,9 @@ var statusToServingStatusMap = map[component.Status]healthpb.HealthCheckResponse
 	component.StatusStopped:          healthpb.HealthCheckResponse_NOT_SERVING,
 }
 
-func (s *Server) toServingStatus(ev *component.StatusEvent) healthpb.HealthCheckResponse_ServingStatus {
+func (s *Server) toServingStatus(
+	ev *component.StatusEvent,
+) healthpb.HealthCheckResponse_ServingStatus {
 	if ev.Status() == component.StatusRecoverableError &&
 		time.Now().Compare(ev.Timestamp().Add(s.recoveryDuration)) == 1 {
 		return healthpb.HealthCheckResponse_NOT_SERVING

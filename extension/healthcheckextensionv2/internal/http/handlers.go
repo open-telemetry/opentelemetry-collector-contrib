@@ -12,19 +12,15 @@ import (
 
 func (s *Server) statusHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		var sst *serializableStatus
 		pipeline := r.URL.Query().Get("pipeline")
 
-		if pipeline == "" {
-			sst = s.collectorSerializableStatus()
-		} else {
-			sst, err = s.pipelineSerializableStatus(pipeline)
-			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
+		st, ok := s.aggregator.AggregateStatus(pipeline, s.settings.Status.Detailed)
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
+
+		sst := toSerializableStatus(st, s.startTimestamp, s.recoveryDuration)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(s.toHTTPStatus(sst))
@@ -47,36 +43,6 @@ func (s *Server) configHandler() http.Handler {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(conf.([]byte))
 	})
-}
-
-func (s *Server) collectorSerializableStatus() *serializableStatus {
-	if s.settings.Status.Detailed {
-		details := s.aggregator.CollectorStatusDetailed()
-		return toCollectorSerializableStatus(details, s.startTimestamp, s.recoveryDuration)
-	}
-
-	return toSerializableStatus(
-		s.aggregator.CollectorStatus(),
-		s.startTimestamp,
-		s.recoveryDuration,
-	)
-}
-
-func (s *Server) pipelineSerializableStatus(pipeline string) (*serializableStatus, error) {
-	if s.settings.Status.Detailed {
-		details, err := s.aggregator.PipelineStatusDetailed(pipeline)
-		if err != nil {
-			return nil, err
-		}
-		return toPipelineSerializableStatus(details, s.startTimestamp, s.recoveryDuration), nil
-	}
-
-	ev, err := s.aggregator.PipelineStatus(pipeline)
-	if err != nil {
-		return nil, err
-	}
-
-	return toSerializableStatus(ev, s.startTimestamp, s.recoveryDuration), nil
 }
 
 var responseCodes = map[component.Status]int{

@@ -4,7 +4,6 @@
 package http // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/http"
 
 import (
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -60,69 +59,37 @@ func toSerializableEvent(
 	return se
 }
 
-var extsKey = "extensions"
-
 func toSerializableStatus(
-	ev *component.StatusEvent,
-	startTimestamp time.Time,
-	recoveryDuration time.Duration,
-) *serializableStatus {
-	return &serializableStatus{
-		StartTimestamp:    &startTimestamp,
-		SerializableEvent: toSerializableEvent(ev, time.Now(), recoveryDuration),
-	}
-}
-
-func toCollectorSerializableStatus(
-	details *status.CollectorStatusDetails,
+	st *status.AggregateStatus,
 	startTimestamp time.Time,
 	recoveryDuration time.Duration,
 ) *serializableStatus {
 	now := time.Now()
 	s := &serializableStatus{
 		StartTimestamp:    &startTimestamp,
-		SerializableEvent: toSerializableEvent(details.OverallStatus, now, recoveryDuration),
+		SerializableEvent: toSerializableEvent(st.StatusEvent, now, recoveryDuration),
 		ComponentStatuses: make(map[string]*serializableStatus),
 	}
 
-	for compID, ev := range details.PipelineStatusMap {
-		key := compID.String()
-		if key != extsKey {
-			key = "pipeline:" + key
-		}
-		cs := &serializableStatus{
-			SerializableEvent: toSerializableEvent(ev, now, recoveryDuration),
-			ComponentStatuses: make(map[string]*serializableStatus),
-		}
-		s.ComponentStatuses[key] = cs
-		for instance, ev := range details.ComponentStatusMap[compID] {
-			key := fmt.Sprintf("%s:%s", kindToString(instance.Kind), instance.ID)
-			cs.ComponentStatuses[key] = &serializableStatus{
-				SerializableEvent: toSerializableEvent(ev, now, recoveryDuration),
-			}
-		}
+	for k, cs := range st.ComponentStatusMap {
+		s.ComponentStatuses[k] = toComponentSerializableStatus(cs, now, recoveryDuration)
 	}
 
 	return s
 }
 
-func toPipelineSerializableStatus(
-	details *status.PipelineStatusDetails,
-	startTimestamp time.Time,
+func toComponentSerializableStatus(
+	st *status.AggregateStatus,
+	now time.Time,
 	recoveryDuration time.Duration,
 ) *serializableStatus {
-	now := time.Now()
 	s := &serializableStatus{
-		StartTimestamp:    &startTimestamp,
-		SerializableEvent: toSerializableEvent(details.OverallStatus, now, recoveryDuration),
+		SerializableEvent: toSerializableEvent(st.StatusEvent, now, recoveryDuration),
 		ComponentStatuses: make(map[string]*serializableStatus),
 	}
 
-	for instance, ev := range details.ComponentStatusMap {
-		key := fmt.Sprintf("%s:%s", kindToString(instance.Kind), instance.ID)
-		s.ComponentStatuses[key] = &serializableStatus{
-			SerializableEvent: toSerializableEvent(ev, now, recoveryDuration),
-		}
+	for k, cs := range st.ComponentStatusMap {
+		s.ComponentStatuses[k] = toComponentSerializableStatus(cs, now, recoveryDuration)
 	}
 
 	return s
@@ -135,21 +102,4 @@ func isHealthy(ev *component.StatusEvent, now time.Time, recoveryDuration time.D
 	}
 
 	return !component.StatusIsError(ev.Status())
-}
-
-// TODO: implemnent Stringer on Kind in core
-func kindToString(k component.Kind) string {
-	switch k {
-	case component.KindReceiver:
-		return "receiver"
-	case component.KindProcessor:
-		return "processor"
-	case component.KindExporter:
-		return "exporter"
-	case component.KindExtension:
-		return "extension"
-	case component.KindConnector:
-		return "connector"
-	}
-	return ""
 }
