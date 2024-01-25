@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -18,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
