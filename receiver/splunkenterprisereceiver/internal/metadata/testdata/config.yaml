@@ -39,7 +39,7 @@ all_set:
       enabled: true
     splunk.indexes.size:
       enabled: true
-    splunk.io.average.iops:
+    splunk.io.avg.iops:
       enabled: true
     splunk.license.index.usage:
       enabled: true
@@ -47,9 +47,9 @@ all_set:
       enabled: true
     splunk.pipeline.set.count:
       enabled: true
-    splunk.scheduler.average.run.time:
-      enabled: true
     splunk.scheduler.avg.execution.latency:
+      enabled: true
+    splunk.scheduler.avg.run.time:
       enabled: true
     splunk.scheduler.completion.ratio:
       enabled: true
@@ -99,7 +99,7 @@ none_set:
       enabled: false
     splunk.indexes.size:
       enabled: false
-    splunk.io.average.iops:
+    splunk.io.avg.iops:
       enabled: false
     splunk.license.index.usage:
       enabled: false
@@ -107,9 +107,9 @@ none_set:
       enabled: false
     splunk.pipeline.set.count:
       enabled: false
-    splunk.scheduler.average.run.time:
-      enabled: false
     splunk.scheduler.avg.execution.latency:
+      enabled: false
+    splunk.scheduler.avg.run.time:
       enabled: false
     splunk.scheduler.completion.ratio:
       enabled: false

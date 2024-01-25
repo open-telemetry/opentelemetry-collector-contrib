@@ -44,12 +44,12 @@ type MetricsConfig struct {
 	SplunkIndexesBucketCount                    MetricConfig `mapstructure:"splunk.indexes.bucket.count"`
 	SplunkIndexesMedianDataAge                  MetricConfig `mapstructure:"splunk.indexes.median.data.age"`
 	SplunkIndexesSize                           MetricConfig `mapstructure:"splunk.indexes.size"`
-	SplunkIoAverageIops                         MetricConfig `mapstructure:"splunk.io.average.iops"`
+	SplunkIoAvgIops                             MetricConfig `mapstructure:"splunk.io.avg.iops"`
 	SplunkLicenseIndexUsage                     MetricConfig `mapstructure:"splunk.license.index.usage"`
 	SplunkParseQueueRatio                       MetricConfig `mapstructure:"splunk.parse.queue.ratio"`
 	SplunkPipelineSetCount                      MetricConfig `mapstructure:"splunk.pipeline.set.count"`
-	SplunkSchedulerAverageRunTime               MetricConfig `mapstructure:"splunk.scheduler.average.run.time"`
 	SplunkSchedulerAvgExecutionLatency          MetricConfig `mapstructure:"splunk.scheduler.avg.execution.latency"`
+	SplunkSchedulerAvgRunTime                   MetricConfig `mapstructure:"splunk.scheduler.avg.run.time"`
 	SplunkSchedulerCompletionRatio              MetricConfig `mapstructure:"splunk.scheduler.completion.ratio"`
 	SplunkServerIntrospectionQueuesCurrent      MetricConfig `mapstructure:"splunk.server.introspection.queues.current"`
 	SplunkServerIntrospectionQueuesCurrentBytes MetricConfig `mapstructure:"splunk.server.introspection.queues.current.bytes"`
@@ -115,7 +115,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SplunkIndexesSize: MetricConfig{
 			Enabled: true,
 		},
-		SplunkIoAverageIops: MetricConfig{
+		SplunkIoAvgIops: MetricConfig{
 			Enabled: true,
 		},
 		SplunkLicenseIndexUsage: MetricConfig{
@@ -127,10 +127,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		SplunkPipelineSetCount: MetricConfig{
 			Enabled: true,
 		},
-		SplunkSchedulerAverageRunTime: MetricConfig{
+		SplunkSchedulerAvgExecutionLatency: MetricConfig{
 			Enabled: true,
 		},
-		SplunkSchedulerAvgExecutionLatency: MetricConfig{
+		SplunkSchedulerAvgRunTime: MetricConfig{
 			Enabled: true,
 		},
 		SplunkSchedulerCompletionRatio: MetricConfig{

@@ -167,7 +167,7 @@ Gauge tracking the indexes and their total size (gb). *Note:** Search is best ru
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 
-### splunk.io.average.iops
+### splunk.io.avg.iops
 
 Gauge tracking the average IOPs used per instance
 
@@ -223,9 +223,9 @@ Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
 
-### splunk.scheduler.average.run.time
+### splunk.scheduler.avg.execution.latency
 
-Gauge tracking the average runtime of scheduled searches
+Gauge tracking the average execution latency of scheduled searches
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -237,9 +237,9 @@ Gauge tracking the average runtime of scheduled searches
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
 
-### splunk.scheduler.avg.execution.latency
+### splunk.scheduler.avg.run.time
 
-Gauge tracking the average execution latency of scheduled searches
+Gauge tracking the average runtime of scheduled searches
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

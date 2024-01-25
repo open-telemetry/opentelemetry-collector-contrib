@@ -92,7 +92,7 @@ metrics:
     gauge:
       value_type: double 
     attributes: [splunk.host]
-  splunk.scheduler.average.run.time:
+  splunk.scheduler.avg.run.time:
     enabled: true
     description: Gauge tracking the average runtime of scheduled searches
     unit: '{ms}'
@@ -113,7 +113,7 @@ metrics:
     gauge:
       value_type: double 
     attributes: [splunk.host]
-  splunk.io.average.iops:
+  splunk.io.avg.iops:
     enabled: true
     description: Gauge tracking the average IOPs used per instance
     unit: '{iops}'

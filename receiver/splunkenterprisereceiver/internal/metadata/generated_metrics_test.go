@@ -125,7 +125,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSplunkIoAverageIopsDataPoint(ts, 1, "splunk.host-val")
+			mb.RecordSplunkIoAvgIopsDataPoint(ts, 1, "splunk.host-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -141,11 +141,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSplunkSchedulerAverageRunTimeDataPoint(ts, 1, "splunk.host-val")
+			mb.RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts, 1, "splunk.host-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts, 1, "splunk.host-val")
+			mb.RecordSplunkSchedulerAvgRunTimeDataPoint(ts, 1, "splunk.host-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -480,9 +480,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
-				case "splunk.io.average.iops":
-					assert.False(t, validatedMetrics["splunk.io.average.iops"], "Found a duplicate in the metrics slice: splunk.io.average.iops")
-					validatedMetrics["splunk.io.average.iops"] = true
+				case "splunk.io.avg.iops":
+					assert.False(t, validatedMetrics["splunk.io.avg.iops"], "Found a duplicate in the metrics slice: splunk.io.avg.iops")
+					validatedMetrics["splunk.io.avg.iops"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Gauge tracking the average IOPs used per instance", ms.At(i).Description())
@@ -540,12 +540,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
-				case "splunk.scheduler.average.run.time":
-					assert.False(t, validatedMetrics["splunk.scheduler.average.run.time"], "Found a duplicate in the metrics slice: splunk.scheduler.average.run.time")
-					validatedMetrics["splunk.scheduler.average.run.time"] = true
+				case "splunk.scheduler.avg.execution.latency":
+					assert.False(t, validatedMetrics["splunk.scheduler.avg.execution.latency"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.execution.latency")
+					validatedMetrics["splunk.scheduler.avg.execution.latency"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average runtime of scheduled searches", ms.At(i).Description())
+					assert.Equal(t, "Gauge tracking the average execution latency of scheduled searches", ms.At(i).Description())
 					assert.Equal(t, "{ms}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -555,12 +555,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
-				case "splunk.scheduler.avg.execution.latency":
-					assert.False(t, validatedMetrics["splunk.scheduler.avg.execution.latency"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.execution.latency")
-					validatedMetrics["splunk.scheduler.avg.execution.latency"] = true
+				case "splunk.scheduler.avg.run.time":
+					assert.False(t, validatedMetrics["splunk.scheduler.avg.run.time"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.run.time")
+					validatedMetrics["splunk.scheduler.avg.run.time"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking the average execution latency of scheduled searches", ms.At(i).Description())
+					assert.Equal(t, "Gauge tracking the average runtime of scheduled searches", ms.At(i).Description())
 					assert.Equal(t, "{ms}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

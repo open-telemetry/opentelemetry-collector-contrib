@@ -866,7 +866,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIoAverageIops.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIoAvgIops.Enabled {
 		return
 	}
 
@@ -935,7 +935,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 				errs.Add(err)
 				continue
 			}
-			s.mb.RecordSplunkIoAverageIopsDataPoint(now, v, host)
+			s.mb.RecordSplunkIoAvgIopsDataPoint(now, v, host)
 		}
 	}
 }
@@ -944,7 +944,7 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pc
 	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAverageRunTime.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgRunTime.Enabled {
 		return
 	}
 
@@ -1013,7 +1013,7 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pc
 				errs.Add(err)
 				continue
 			}
-			s.mb.RecordSplunkSchedulerAverageRunTimeDataPoint(now, v, host)
+			s.mb.RecordSplunkSchedulerAvgRunTimeDataPoint(now, v, host)
 		}
 	}
 }
