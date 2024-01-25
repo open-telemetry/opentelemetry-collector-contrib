@@ -104,6 +104,8 @@ jobs:
           key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
         run: make -j2 golint GROUP=${{ matrix.group }}
+      - name: Lint with GOOS=windows
+        run: GOOS=windows make -j2 golint GROUP=${{ matrix.group }}
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest

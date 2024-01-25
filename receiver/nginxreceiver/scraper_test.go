@@ -77,7 +77,7 @@ func TestScraperError(t *testing.T) {
 		err := sc.start(context.Background(), componenttest.NewNopHost())
 		require.NoError(t, err)
 		_, err = sc.scrape(context.Background())
-		require.Equal(t, errors.New("failed to parse response body \"Bad status page\": invalid input \"Bad status page\""), err)
+		require.ErrorContains(t, err, "Bad status page")
 	})
 }
 
