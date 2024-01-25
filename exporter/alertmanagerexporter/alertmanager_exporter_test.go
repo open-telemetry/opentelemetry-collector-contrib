@@ -308,6 +308,7 @@ func newMockServer(t *testing.T) *MockServer {
 
 func TestAlertManagerPostAlert(t *testing.T) {
 	mock := newMockServer(t)
+	defer func() { mock.mockserver.Close() }()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
