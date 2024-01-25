@@ -298,8 +298,10 @@ go.opentelemetry.io/collector/extension/auth v0.93.1-0.20240124123350-9047c0e373
 go.opentelemetry.io/collector/extension/auth v0.93.1-0.20240124123350-9047c0e373f9/go.mod h1:cc15RY21t3D+cJMubhs2dMIedHS782L/7wfhCdL+pgk=
 go.opentelemetry.io/collector/featuregate v1.0.2-0.20240124123350-9047c0e373f9 h1:pnOYsE3F6chXs4ZNsQqIx/ZtLvObN70JFRIFkjwbUXk=
 go.opentelemetry.io/collector/featuregate v1.0.2-0.20240124123350-9047c0e373f9/go.mod h1:QQXjP4etmJQhkQ20j4P/rapWuItYxoFozg/iIwuKnYg=
+go.opentelemetry.io/collector/featuregate v1.0.2-0.20240125183026-3cacd40b27e8/go.mod h1:QQXjP4etmJQhkQ20j4P/rapWuItYxoFozg/iIwuKnYg=
 go.opentelemetry.io/collector/pdata v1.0.2-0.20240124123350-9047c0e373f9 h1:CbqTDS/u4EyNlUpHIA2dshg3N/R0BY6jR2VZDIszyXU=
 go.opentelemetry.io/collector/pdata v1.0.2-0.20240124123350-9047c0e373f9/go.mod h1:jutXeu0QOXYY8wcZ/hege+YAnSBP3+jpTqYU1+JTI5Y=
+go.opentelemetry.io/collector/pdata v1.0.2-0.20240125183026-3cacd40b27e8/go.mod h1:jutXeu0QOXYY8wcZ/hege+YAnSBP3+jpTqYU1+JTI5Y=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 h1:sv9kVfal0MK0wBMCOGr+HeJm9v803BkJxGrk2au7j08=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0/go.mod h1:SK2UL73Zy1quvRPonmOmRDiWk1KBV3LyIeeIxcEApWw=
 go.opentelemetry.io/otel v1.22.0 h1:xS7Ku+7yTFvDfDraDIJVpw7XPyuHlB9MCiqqX5mcJ6Y=

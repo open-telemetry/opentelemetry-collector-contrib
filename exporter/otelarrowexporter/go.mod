@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.93.1-0.20240124123350-9047c0e373f9
 	go.opentelemetry.io/collector/consumer v0.93.1-0.20240124123350-9047c0e373f9
 	go.opentelemetry.io/collector/exporter v0.93.1-0.20240124123350-9047c0e373f9
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240124123350-9047c0e373f9
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240125183026-3cacd40b27e8
 	go.opentelemetry.io/otel/metric v1.22.0
 	go.opentelemetry.io/otel/trace v1.22.0
 	google.golang.org/grpc v1.60.1
@@ -69,7 +69,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.93.1-0.20240124123350-9047c0e373f9 // indirect
 	go.opentelemetry.io/collector/extension v0.93.1-0.20240124123350-9047c0e373f9 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.93.1-0.20240124123350-9047c0e373f9 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240124123350-9047c0e373f9 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/collector/receiver v0.93.1-0.20240124123350-9047c0e373f9 // indirect
 	go.opentelemetry.io/collector/service v0.93.1-0.20240124123350-9047c0e373f9 // indirect
 	go.opentelemetry.io/contrib/config v0.2.0 // indirect
