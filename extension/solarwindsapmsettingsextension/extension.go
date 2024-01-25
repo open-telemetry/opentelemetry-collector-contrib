@@ -16,13 +16,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	RawOutputFile   = "/tmp/solarwinds-apm-settings-raw"
-	JSONOutputFile  = "/tmp/solarwinds-apm-settings.json"
-	MinimumInterval = "5s"
-	MaximumInterval = "60s"
-)
-
 type solarwindsapmSettingsExtension struct {
 	logger *zap.Logger
 	config *Config

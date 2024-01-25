@@ -14,33 +14,33 @@ import (
 )
 
 func TestCreateExtension(t *testing.T) {
-	conf := &Config{
-		Endpoint: "apm-testcollector.click:443",
-		Key:      "valid:unittest",
-		Interval: time.Duration(10000000000),
-	}
-	ex := createAnExtension(conf, t)
-	require.NoError(t, ex.Shutdown(context.TODO()))
-}
+	t.Parallel()
 
-func TestCreateExtensionWrongEndpoint(t *testing.T) {
-	conf := &Config{
-		Endpoint: "apm-testcollector.nothing:443",
-		Key:      "valid:unittest",
-		Interval: time.Duration(10000000000),
+	tests := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "default",
+			cfg: &Config{
+				Interval: time.Duration(10000000000),
+			},
+		},
+		{
+			name: "anything",
+			cfg: &Config{
+				Endpoint: "0.0.0.0:1234",
+				Key:      "something",
+				Interval: time.Duration(10000000000),
+			},
+		},
 	}
-	ex := createAnExtension(conf, t)
-	require.NoError(t, ex.Shutdown(context.TODO()))
-}
-
-func TestCreateExtensionWrongKey(t *testing.T) {
-	conf := &Config{
-		Endpoint: "apm-testcollector.click:443",
-		Key:      "invalid",
-		Interval: time.Duration(10000000000),
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ex := createAnExtension(tt.cfg, t)
+			require.NoError(t, ex.Shutdown(context.TODO()))
+		})
 	}
-	ex := createAnExtension(conf, t)
-	require.NoError(t, ex.Shutdown(context.TODO()))
 }
 
 // create extension
