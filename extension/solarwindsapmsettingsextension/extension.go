@@ -6,14 +6,14 @@ package solarwindsapmsettingsextension // import "github.com/open-telemetry/open
 import (
 	"context"
 	"crypto/tls"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"time"
 
 	"github.com/solarwindscloud/apm-proto/go/collectorpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 type solarwindsapmSettingsExtension struct {

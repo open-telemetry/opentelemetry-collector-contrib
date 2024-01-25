@@ -35,6 +35,14 @@ func TestLoadConfig(t *testing.T) {
 				Interval: time.Duration(10000000000),
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "2"),
+			expected: &Config{
+				Endpoint: "0.0.0.0:1234",
+				Key:      "something",
+				Interval: time.Duration(10000000000),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
