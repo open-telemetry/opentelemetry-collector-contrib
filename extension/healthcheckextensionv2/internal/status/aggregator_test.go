@@ -5,6 +5,7 @@ package status_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -389,25 +390,8 @@ func assertErrorEventsRecvdMatch(t *testing.T,
 	}
 }
 
-// TODO: Implement stringer on Kind in core.
-func kindToString(k component.Kind) string {
-	switch k {
-	case component.KindReceiver:
-		return "receiver"
-	case component.KindProcessor:
-		return "processor"
-	case component.KindExporter:
-		return "exporter"
-	case component.KindExtension:
-		return "extension"
-	case component.KindConnector:
-		return "connector"
-	}
-	return ""
-}
-
 func toComponentKey(id *component.InstanceID) string {
-	return fmt.Sprintf("%s:%s", kindToString(id.Kind), id.ID.String())
+	return fmt.Sprintf("%s:%s", strings.ToLower(id.Kind.String()), id.ID)
 }
 
 func toPipelineKey(id component.ID) string {

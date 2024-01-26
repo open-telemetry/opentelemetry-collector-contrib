@@ -33,35 +33,33 @@ func TestConfig(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		config *Config
-		valid  bool
+		err    error
 	}{
 		{
 			name: "Valid GRPC Settings Only",
 			config: &Config{
 				GRPCSettings: grpcSettings,
 			},
-			valid: true,
 		},
 		{
 			name: "Invalid GRPC Settings Only",
 			config: &Config{
 				GRPCSettings: &grpc.Settings{},
 			},
-			valid: false,
+			err: errGRPCEndpointRequired,
 		},
 		{
 			name: "Valid HTTP Settings Only",
 			config: &Config{
 				HTTPSettings: httpSettings,
 			},
-			valid: true,
 		},
 		{
 			name: "Invalid HTTP Settings Only",
 			config: &Config{
 				HTTPSettings: &http.Settings{},
 			},
-			valid: false,
+			err: errHTTPEndpointRequired,
 		},
 		{
 			name: "GRPC and HTTP Settings",
@@ -69,7 +67,6 @@ func TestConfig(t *testing.T) {
 				GRPCSettings: grpcSettings,
 				HTTPSettings: httpSettings,
 			},
-			valid: true,
 		},
 		{
 			name: "GRPC and HTTP Settings both invalid",
@@ -77,15 +74,15 @@ func TestConfig(t *testing.T) {
 				GRPCSettings: &grpc.Settings{},
 				HTTPSettings: &http.Settings{},
 			},
-			valid: false,
+			err: errGRPCEndpointRequired,
 		},
 		{
 			name:   "Neither GRPC nor HTTP Settings",
 			config: &Config{},
-			valid:  false,
+			err:    errMissingProtocol,
 		},
 	} {
 		err := tc.config.Validate()
-		assert.Equal(t, tc.valid, err == nil)
+		assert.Equal(t, tc.err, err)
 	}
 }

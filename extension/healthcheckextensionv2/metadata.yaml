@@ -4,6 +4,6 @@ status:
   class: extension
   stability:
     development: [extension]
-  distributions: [contrib]
+  distributions: [core, contrib]
   codeowners:
     active: [mwear]
