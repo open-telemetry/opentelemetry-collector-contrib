@@ -9,10 +9,10 @@ import (
 )
 
 // ErrProbabilityRange is returned when a value should be in the range [1/MaxAdjustedCount, 1].
-var ErrProbabilityRange = errors.New("sampling probability out of range (0x1p-56 <= valid <= 1)")
+var ErrProbabilityRange = errors.New("sampling probability out of the range [1/MaxAdjustedCount, 1]")
 
 // ErrPrecisionUnderflow is returned when a precision is too great for the range.
-var ErrPrecisionUnderflow = errors.New("sampling precision underflow")
+var ErrPrecisionUnderflow = errors.New("sampling precision is too great for the range")
 
 // MinSamplingProbability is the smallest representable probability
 // and is the inverse of MaxAdjustedCount.
