@@ -97,7 +97,7 @@ func toComponentSerializableStatus(
 
 func isHealthy(ev *component.StatusEvent, now time.Time, recoveryDuration time.Duration) bool {
 	if ev.Status() == component.StatusRecoverableError &&
-		now.Compare(ev.Timestamp().Add(recoveryDuration)) == -1 {
+		now.Before(ev.Timestamp().Add(recoveryDuration)) {
 		return true
 	}
 

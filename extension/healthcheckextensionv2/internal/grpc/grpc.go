@@ -103,7 +103,7 @@ func (s *Server) toServingStatus(
 	ev *component.StatusEvent,
 ) healthpb.HealthCheckResponse_ServingStatus {
 	if ev.Status() == component.StatusRecoverableError &&
-		time.Now().Compare(ev.Timestamp().Add(s.recoveryDuration)) == 1 {
+		time.Now().After(ev.Timestamp().Add(s.recoveryDuration)) {
 		return healthpb.HealthCheckResponse_NOT_SERVING
 	}
 	return statusToServingStatusMap[ev.Status()]

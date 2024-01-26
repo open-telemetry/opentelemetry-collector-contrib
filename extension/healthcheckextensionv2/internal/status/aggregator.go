@@ -5,6 +5,7 @@ package status // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -118,7 +119,7 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 			}
 		}
 
-		componentKey := fmt.Sprintf("%s:%s", kindToString(source.Kind), source.ID.String())
+		componentKey := fmt.Sprintf("%s:%s", strings.ToLower(source.Kind.String()), source.ID)
 		pipelineStatus.ComponentStatusMap[componentKey] = &AggregateStatus{
 			StatusEvent: event,
 		}
@@ -208,20 +209,4 @@ func toStatusEventMap(aggStatus *AggregateStatus) map[string]*component.StatusEv
 		result[k] = v.StatusEvent
 	}
 	return result
-}
-
-func kindToString(k component.Kind) string {
-	switch k {
-	case component.KindReceiver:
-		return "receiver"
-	case component.KindProcessor:
-		return "processor"
-	case component.KindExporter:
-		return "exporter"
-	case component.KindExtension:
-		return "extension"
-	case component.KindConnector:
-		return "connector"
-	}
-	return ""
 }
