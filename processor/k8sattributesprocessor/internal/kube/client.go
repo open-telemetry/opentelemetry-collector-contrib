@@ -90,7 +90,6 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		cronJobRegex:    cronJobRegex,
 		stopCh:          make(chan struct{}),
 	}
-	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
 	c.Pods = map[PodIdentifier]*Pod{}
 	c.Namespaces = map[string]*Namespace{}
@@ -177,6 +176,8 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
+	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
+
 	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,

@@ -5,6 +5,7 @@ package k8sattributesprocessor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"testing"
@@ -217,10 +218,18 @@ func (m *multiTest) assertResource(batchNum int, resourceFunc func(res pcommon.R
 	}
 }
 
+func (m *multiTest) shutdown() error {
+	err := m.mp.Shutdown(context.Background())
+	err = errors.Join(err, m.tp.Shutdown(context.Background()))
+	return errors.Join(err, m.lp.Shutdown(context.Background()))
+}
+
 func TestNewProcessor(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
 
-	newMultiTest(t, cfg, nil)
+	m := newMultiTest(t, cfg, nil)
+	assert.NotNil(t, m)
+	assert.NoError(t, m.shutdown())
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
@@ -353,6 +362,7 @@ func TestIPDetectionFromContext(t *testing.T) {
 			require.Greater(t, r.Attributes().Len(), 0)
 			assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
 		})
+		assert.NoError(t, m.shutdown())
 	}
 
 }
@@ -369,6 +379,7 @@ func TestNilBatch(t *testing.T) {
 		})
 
 	m.assertBatchesLen(1)
+	assert.NoError(t, m.shutdown())
 }
 
 func TestProcessorNoAttrs(t *testing.T) {
@@ -451,6 +462,13 @@ func TestProcessorNoAttrs(t *testing.T) {
 	m.assertBatchesLen(3)
 	m.assertResourceObjectLen(2)
 	m.assertResourceAttributesLen(2, 1)
+
+	// For shutdown to properly stop running goroutines the passthroughMode member
+	// needs to be reset to false, its original value on start.
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.passthroughMode = false
+	})
+	assert.NoError(t, m.shutdown())
 }
 
 func TestNoIP(t *testing.T) {
@@ -467,6 +485,7 @@ func TestNoIP(t *testing.T) {
 	m.assertResource(0, func(res pcommon.Resource) {
 		assert.Equal(t, 0, res.Attributes().Len())
 	})
+	assert.NoError(t, m.shutdown())
 }
 
 func TestIPSourceWithoutPodAssociation(t *testing.T) {
@@ -539,6 +558,7 @@ func TestIPSourceWithoutPodAssociation(t *testing.T) {
 			})
 		})
 	}
+	assert.NoError(t, m.shutdown())
 }
 
 func TestIPSourceWithPodAssociation(t *testing.T) {
@@ -625,6 +645,7 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 			})
 		})
 	}
+	assert.NoError(t, m.shutdown())
 }
 
 func TestPodUID(t *testing.T) {
@@ -666,6 +687,7 @@ func TestPodUID(t *testing.T) {
 		require.Greater(t, r.Attributes().Len(), 0)
 		assertResourceHasStringAttribute(t, r, "k8s.pod.uid", "ef10d10b-2da5-4030-812e-5f45c1531227")
 	})
+	assert.NoError(t, m.shutdown())
 }
 
 func TestAddPodLabels(t *testing.T) {
@@ -734,6 +756,7 @@ func TestAddPodLabels(t *testing.T) {
 
 		i++
 	}
+	assert.NoError(t, m.shutdown())
 }
 
 func TestAddNamespaceLabels(t *testing.T) {
@@ -806,6 +829,7 @@ func TestAddNamespaceLabels(t *testing.T) {
 		assertResourceHasStringAttribute(t, res, "k8s.pod.ip", podIP)
 		assertResourceHasStringAttribute(t, res, "nslabel", "1")
 	})
+	assert.NoError(t, m.shutdown())
 }
 
 func TestAddNodeLabels(t *testing.T) {
@@ -878,6 +902,7 @@ func TestAddNodeLabels(t *testing.T) {
 		assertResourceHasStringAttribute(t, res, "k8s.pod.ip", podIP)
 		assertResourceHasStringAttribute(t, res, "nodelabel", "1")
 	})
+	assert.NoError(t, m.shutdown())
 }
 
 func TestProcessorAddContainerAttributes(t *testing.T) {
@@ -1132,6 +1157,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				assertResourceHasStringAttribute(t, r, k, v)
 			}
 		})
+		assert.NoError(t, m.shutdown())
 	}
 }
 
@@ -1181,6 +1207,7 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 		assertResourceHasStringAttribute(t, res, "k", "v")
 		assertResourceHasStringAttribute(t, res, "1", "2")
 	})
+	assert.NoError(t, m.shutdown())
 }
 
 func TestMetricsProcessorHostname(t *testing.T) {
@@ -1194,8 +1221,10 @@ func TestMetricsProcessorHostname(t *testing.T) {
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
+	assert.NotNil(t, p)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
+	defer func() { assert.NoError(t, p.Shutdown(context.Background())) }()
 	kc := kp.kc.(*fakeClient)
 
 	// invalid ip should not be used to lookup k8s pod
@@ -1267,8 +1296,10 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
+	assert.NotNil(t, p)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
+	defer func() { assert.NoError(t, p.Shutdown(context.Background())) }()
 	kc := kp.kc.(*fakeClient)
 	kp.podAssociations = []kube.Association{
 		{
@@ -1351,6 +1382,7 @@ func TestPassthroughStart(t *testing.T) {
 		opts...,
 	)
 	require.NoError(t, err)
+	assert.NotNil(t, p)
 
 	// Just make sure this doesn't fail when Passthrough is enabled
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -1358,7 +1390,7 @@ func TestPassthroughStart(t *testing.T) {
 }
 
 func TestRealClient(t *testing.T) {
-	newMultiTest(
+	m := newMultiTest(
 		t,
 		NewFactory().CreateDefaultConfig(),
 		func(err error) {
@@ -1368,6 +1400,8 @@ func TestRealClient(t *testing.T) {
 		withKubeClientProvider(kubeClientProvider),
 		withAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
 	)
+
+	assert.NoError(t, m.shutdown())
 }
 
 func TestCapabilities(t *testing.T) {
@@ -1377,6 +1411,7 @@ func TestCapabilities(t *testing.T) {
 		nil,
 	)
 	assert.NoError(t, err)
+	assert.NotNil(t, p)
 	caps := p.Capabilities()
 	assert.True(t, caps.MutatesData)
 }
@@ -1391,7 +1426,6 @@ func TestStartStop(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	assert.NotNil(t, kp)
