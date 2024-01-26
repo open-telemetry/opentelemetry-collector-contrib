@@ -154,12 +154,12 @@ func TestParseOpenTelemetryTraceState(t *testing.T) {
 	for _, test := range []testCase{
 		// t-value correct cases
 		{"th:2", ns, "2", nil, nil},
-		{"th:1", ns, "1", nil, nil},
-		{"th:1", ns, "1", nil, nil},
-		{"th:10", ns, "10", nil, nil},
-		{"th:33", ns, "33", nil, nil},
 		{"th:ab", ns, "ab", nil, nil},
-		{"th:61", ns, "61", nil, nil},
+		{"th:abcdefabcdefab", ns, "abcdefabcdefab", nil, nil},
+
+		// correct with trailing zeros. the parser does not re-format
+		// to remove trailing zeros.
+		{"th:1000", ns, "1000", nil, nil},
 
 		// syntax errors
 		{"", ns, ns, nil, strconv.ErrSyntax},
@@ -185,7 +185,6 @@ func TestParseOpenTelemetryTraceState(t *testing.T) {
 
 		// two fields
 		{"e1:1;e2:2", ns, ns, []string{"e1:1", "e2:2"}, nil},
-		{"e1:1;e2:2", ns, ns, []string{"e1:1", "e2:2"}, nil},
 
 		// one extra key, two ways
 		{"th:2;extra:stuff", ns, "2", []string{"extra:stuff"}, nil},
@@ -205,8 +204,6 @@ func TestParseOpenTelemetryTraceState(t *testing.T) {
 		{"rv:22222222222222;extra:stuff", "22222222222222", ns, []string{"extra:stuff"}, nil},
 		{"extra:stuff;rv:22222222222222", "22222222222222", ns, []string{"extra:stuff"}, nil},
 		{"rv:ffffffffffffff", "ffffffffffffff", ns, nil, nil},
-		{"rv:88888888888888", "88888888888888", ns, nil, nil},
-		{"rv:00000000000000", "00000000000000", ns, nil, nil},
 
 		// r-value range error (15 bytes of hex or more)
 		{"rv:100000000000000", ns, ns, nil, ErrRValueSize},
@@ -293,13 +290,13 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 		adjCountOut float64
 	}
 	for _, test := range []testCase{
-		// 8/16 in, sampled at (0x10-0xe)/0x10 = 2/16 => adjCount 8
+		// 8/16 in, sampled at 2/16 (smaller prob) => adjCount 8
 		{"th:8", 2, 0x2p-4, nil, "th:e", 8},
 
-		// 8/16 in, sampled at 14/16 => no update, adjCount 2
-		{"th:8", 2, 0xep-4, nil, "th:8", 2},
+		// 8/16 in, sampled at 14/16 (larger prob) => error, adjCount 2
+		{"th:8", 2, 0xep-4, ErrInconsistentSampling, "th:8", 2},
 
-		// 1/16 in, 50% update (error)
+		// 1/16 in, 50% update (larger prob) => (error)
 		{"th:f", 16, 0x8p-4, ErrInconsistentSampling, "th:f", 16},
 
 		// 1/1 sampling in, 1/16 update
@@ -340,6 +337,8 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 
 			if test.updateErr != nil {
 				require.Equal(t, test.updateErr, upErr)
+			} else {
+				require.NoError(t, upErr)
 			}
 
 			var outData strings.Builder
