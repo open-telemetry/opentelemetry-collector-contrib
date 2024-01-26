@@ -10,16 +10,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"google.golang.org/grpc/codes"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/status"
+	grpcstatus "google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 )
 
 func (s *Server) Check(
 	_ context.Context,
 	req *healthpb.HealthCheckRequest,
 ) (*healthpb.HealthCheckResponse, error) {
-	st, ok := s.aggregator.AggregateStatus(req.Service, false)
+	st, ok := s.aggregator.AggregateStatus(status.Scope(req.Service), status.ExcludeSubtrees)
 	if !ok {
-		return nil, status.Error(codes.NotFound, "unknown service")
+		return nil, grpcstatus.Error(codes.NotFound, "unknown service")
 	}
 
 	return &healthpb.HealthCheckResponse{
@@ -28,7 +30,7 @@ func (s *Server) Check(
 }
 
 func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
-	sub := s.aggregator.Subscribe(req.Service, false)
+	sub := s.aggregator.Subscribe(status.Scope(req.Service), status.ExcludeSubtrees)
 	defer s.aggregator.Unsubscribe(sub)
 
 	var lastServingStatus healthpb.HealthCheckResponse_ServingStatus = -1
@@ -40,7 +42,7 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 		select {
 		case st, ok := <-sub:
 			if !ok {
-				return status.Error(codes.Canceled, "Server shutting down.")
+				return grpcstatus.Error(codes.Canceled, "Server shutting down.")
 			}
 			var sst healthpb.HealthCheckResponse_ServingStatus
 
@@ -66,7 +68,7 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 
 			err := stream.Send(&healthpb.HealthCheckResponse{Status: sst})
 			if err != nil {
-				return status.Error(codes.Canceled, "Stream has ended.")
+				return grpcstatus.Error(codes.Canceled, "Stream has ended.")
 			}
 		case <-failureTicker.C:
 			failureTicker.Stop()
@@ -80,10 +82,10 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 				},
 			)
 			if err != nil {
-				return status.Error(codes.Canceled, "Stream has ended.")
+				return grpcstatus.Error(codes.Canceled, "Stream has ended.")
 			}
 		case <-stream.Context().Done():
-			return status.Error(codes.Canceled, "Stream has ended.")
+			return grpcstatus.Error(codes.Canceled, "Stream has ended.")
 		}
 	}
 }

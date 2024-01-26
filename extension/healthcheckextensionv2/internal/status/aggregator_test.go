@@ -21,7 +21,7 @@ func TestAggregateStatus(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 
 	t.Run("zero value", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, false)
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
 		require.True(t, ok)
 		assert.Equal(t, component.StatusNone, st.Status())
 	})
@@ -29,7 +29,7 @@ func TestAggregateStatus(t *testing.T) {
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline statuses all successful", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, false)
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
 		require.True(t, ok)
 		assert.Equal(t, component.StatusOK, st.Status())
 	})
@@ -40,7 +40,7 @@ func TestAggregateStatus(t *testing.T) {
 	)
 
 	t.Run("pipeline with recoverable error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, false)
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
 		require.True(t, ok)
 		assertErrorEventsMatch(t,
 			component.StatusRecoverableError,
@@ -55,7 +55,7 @@ func TestAggregateStatus(t *testing.T) {
 	)
 
 	t.Run("pipeline with permanent error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, false)
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
 		require.True(t, ok)
 		assertErrorEventsMatch(t,
 			component.StatusPermanentError,
@@ -71,7 +71,7 @@ func TestAggregateStatusDetailed(t *testing.T) {
 	tracesKey := toPipelineKey(traces.PipelineID)
 
 	t.Run("zero value", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, true)
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.IncludeSubtrees)
 		require.True(t, ok)
 		assertEventsMatch(t, component.StatusNone, st)
 		assert.Empty(t, st.ComponentStatusMap)
@@ -81,7 +81,7 @@ func TestAggregateStatusDetailed(t *testing.T) {
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline statuses all successful", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, true)
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.IncludeSubtrees)
 		require.True(t, ok)
 
 		// The top-level status and pipeline status match.
@@ -101,7 +101,7 @@ func TestAggregateStatusDetailed(t *testing.T) {
 	)
 
 	t.Run("pipeline with exporter error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, true)
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.IncludeSubtrees)
 		require.True(t, ok)
 		// The top-level status and pipeline status match.
 		assertErrorEventsMatch(
@@ -133,7 +133,7 @@ func TestPipelineAggregateStatus(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 
 	t.Run("non existent pipeline", func(t *testing.T) {
-		st, ok := agg.AggregateStatus("doesnotexist", false)
+		st, ok := agg.AggregateStatus("doesnotexist", status.ExcludeSubtrees)
 		require.Nil(t, st)
 		require.False(t, ok)
 	})
@@ -141,7 +141,10 @@ func TestPipelineAggregateStatus(t *testing.T) {
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline exists / status successful", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(traces.PipelineID.String(), false)
+		st, ok := agg.AggregateStatus(
+			status.Scope(traces.PipelineID.String()),
+			status.ExcludeSubtrees,
+		)
 		require.True(t, ok)
 		assertEventsMatch(t, component.StatusOK, st)
 	})
@@ -152,7 +155,10 @@ func TestPipelineAggregateStatus(t *testing.T) {
 	)
 
 	t.Run("pipeline exists / exporter error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(traces.PipelineID.String(), false)
+		st, ok := agg.AggregateStatus(
+			status.Scope(traces.PipelineID.String()),
+			status.ExcludeSubtrees,
+		)
 		require.True(t, ok)
 		assertErrorEventsMatch(t, component.StatusRecoverableError, assert.AnError, st)
 	})
@@ -163,7 +169,7 @@ func TestPipelineAggregateStatusDetailed(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 
 	t.Run("non existent pipeline", func(t *testing.T) {
-		st, ok := agg.AggregateStatus("doesnotexist", true)
+		st, ok := agg.AggregateStatus("doesnotexist", status.IncludeSubtrees)
 		require.Nil(t, st)
 		require.False(t, ok)
 	})
@@ -171,7 +177,10 @@ func TestPipelineAggregateStatusDetailed(t *testing.T) {
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline exists / status successful", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(traces.PipelineID.String(), true)
+		st, ok := agg.AggregateStatus(
+			status.Scope(traces.PipelineID.String()),
+			status.IncludeSubtrees,
+		)
 		require.True(t, ok)
 
 		// Top-level status matches
@@ -184,7 +193,10 @@ func TestPipelineAggregateStatusDetailed(t *testing.T) {
 	agg.RecordStatus(traces.ExporterID, component.NewRecoverableErrorEvent(assert.AnError))
 
 	t.Run("pipeline exists / exporter error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(traces.PipelineID.String(), true)
+		st, ok := agg.AggregateStatus(
+			status.Scope(traces.PipelineID.String()),
+			status.IncludeSubtrees,
+		)
 		require.True(t, ok)
 
 		// Top-level status matches
@@ -210,9 +222,9 @@ func TestStreaming(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 	metrics := testhelpers.NewPipelineMetadata("metrics")
 
-	traceEvents := agg.Subscribe(traces.PipelineID.String(), false)
-	metricEvents := agg.Subscribe(metrics.PipelineID.String(), false)
-	allEvents := agg.Subscribe(status.ScopeAll, false)
+	traceEvents := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.ExcludeSubtrees)
+	metricEvents := agg.Subscribe(status.Scope(metrics.PipelineID.String()), status.ExcludeSubtrees)
+	allEvents := agg.Subscribe(status.ScopeAll, status.ExcludeSubtrees)
 
 	assert.Nil(t, <-traceEvents)
 	assert.Nil(t, <-metricEvents)
@@ -266,7 +278,7 @@ func TestStreamingDetailed(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 	tracesKey := toPipelineKey(traces.PipelineID)
 
-	allEvents := agg.Subscribe(status.ScopeAll, true)
+	allEvents := agg.Subscribe(status.ScopeAll, status.IncludeSubtrees)
 
 	t.Run("zero value", func(t *testing.T) {
 		st := <-allEvents

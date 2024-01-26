@@ -17,10 +17,30 @@ var (
 	extsIDMap = map[component.ID]struct{}{extsID: {}}
 )
 
+// Scope refers to a part of an AggregateStatus. The zero-value, aka ScopeAll,
+// refers to the entire AggregateStatus. ScopeExtensions refers to the extensions
+// subtree, and any other value refers to a pipeline subtree.
+type Scope string
+
 const (
-	ScopeAll        = ""
-	ScopeExtensions = "extensions"
-	pipelinePrefix  = "pipeline:"
+	ScopeAll        Scope  = ""
+	ScopeExtensions Scope  = "extensions"
+	pipelinePrefix  string = "pipeline:"
+)
+
+func (s Scope) toKey() string {
+	if s == ScopeAll || s == ScopeExtensions {
+		return string(s)
+	}
+	return pipelinePrefix + string(s)
+}
+
+// Detail specifies whether or not to include subtrees with an AggregateStatus
+type Detail bool
+
+const (
+	IncludeSubtrees Detail = true
+	ExcludeSubtrees Detail = false
 )
 
 // AggregateStatus contains a map of child AggregateStatuses and an embedded component.StatusEvent.
@@ -32,15 +52,15 @@ type AggregateStatus struct {
 	ComponentStatusMap map[string]*AggregateStatus
 }
 
-func (a *AggregateStatus) clone(detailed bool) *AggregateStatus {
+func (a *AggregateStatus) clone(detail Detail) *AggregateStatus {
 	st := &AggregateStatus{
 		StatusEvent: a.StatusEvent,
 	}
 
-	if detailed && len(a.ComponentStatusMap) > 0 {
+	if detail == IncludeSubtrees && len(a.ComponentStatusMap) > 0 {
 		st.ComponentStatusMap = make(map[string]*AggregateStatus, len(a.ComponentStatusMap))
 		for k, cs := range a.ComponentStatusMap {
-			st.ComponentStatusMap[k] = cs.clone(detailed)
+			st.ComponentStatusMap[k] = cs.clone(detail)
 		}
 	}
 
@@ -49,7 +69,7 @@ func (a *AggregateStatus) clone(detailed bool) *AggregateStatus {
 
 type subscription struct {
 	statusCh chan *AggregateStatus
-	detailed bool
+	detail   Detail
 }
 
 // Aggregator records individual status events for components and aggregates statuses for the
@@ -72,38 +92,31 @@ func NewAggregator() *Aggregator {
 }
 
 // AggregateStatus returns an *AggregateStatus for the given scope. The scope can be the collector
-// overall (represented the empty string), extensions, or a pipeline by name. If detailed is true,
-// the *AggregateStatus will contain child component statuses for the given scope. If it's false,
-// only a top level status will be returned. The boolean return value indicates whether or not the
-// scope was found.
-func (a *Aggregator) AggregateStatus(scope string, detailed bool) (*AggregateStatus, bool) {
+// overall (ScopeAll), extensions (ScopeExtensions), or a pipeline by name. Detail specifies whether
+// or not subtrees should be returned with the *AggregateStatus. The boolean return value indicates
+// whether or not the scope was found.
+func (a *Aggregator) AggregateStatus(scope Scope, detail Detail) (*AggregateStatus, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	if scope == ScopeAll {
-		return a.aggregateStatus.clone(detailed), true
+		return a.aggregateStatus.clone(detail), true
 	}
 
-	if scope != ScopeExtensions {
-		scope = pipelinePrefix + scope
-	}
-
-	st, ok := a.aggregateStatus.ComponentStatusMap[scope]
+	st, ok := a.aggregateStatus.ComponentStatusMap[scope.toKey()]
 	if !ok {
 		return nil, false
 	}
 
-	return st.clone(detailed), true
+	return st.clone(detail), true
 }
 
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
 func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component.StatusEvent) {
 	compIDs := source.PipelineIDs
-	prefix := pipelinePrefix
 	// extensions are treated as a pseudo-pipeline
 	if source.Kind == component.KindExtension {
 		compIDs = extsIDMap
-		prefix = ""
 	}
 
 	a.mu.Lock()
@@ -111,7 +124,9 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 
 	for compID := range compIDs {
 		var pipelineStatus *AggregateStatus
-		pipelineKey := prefix + compID.String()
+		pipelineScope := Scope(compID.String())
+		pipelineKey := pipelineScope.toKey()
+
 		pipelineStatus, ok := a.aggregateStatus.ComponentStatusMap[pipelineKey]
 		if !ok {
 			pipelineStatus = &AggregateStatus{
@@ -127,7 +142,7 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 		pipelineStatus.StatusEvent = component.AggregateStatusEvent(
 			toStatusEventMap(pipelineStatus),
 		)
-		a.notifySubscribers(pipelineKey, pipelineStatus)
+		a.notifySubscribers(pipelineScope, pipelineStatus)
 	}
 
 	a.aggregateStatus.StatusEvent = component.AggregateStatusEvent(
@@ -137,29 +152,26 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 }
 
 // Subscribe allows you to subscribe to a stream of events for the given scope. The scope can be
-// the collector overall (represented by the emptry string), extensions, or a pipeline name.
+// the collector overall (ScopeAll), extensions (ScopeExtensions), or a pipeline name.
 // It is possible to subscribe to a pipeline that has not yet reported. An initial nil
-// will be sent on the channel and events will start streaming if and when it starts reporting. If
-// detailed is true, the *AggregateStatus will contain child statuses for the given scope. If it's
-// false it will contain only a top-level status.
-func (a *Aggregator) Subscribe(scope string, detailed bool) <-chan *AggregateStatus {
+// will be sent on the channel and events will start streaming if and when it starts reporting.
+// Detail specifies whether or not subtrees should be returned with the *AggregateStatus.
+func (a *Aggregator) Subscribe(scope Scope, detail Detail) <-chan *AggregateStatus {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	key := scope.toKey()
 	st := a.aggregateStatus
 	if scope != ScopeAll {
-		if scope != ScopeExtensions {
-			scope = pipelinePrefix + scope
-		}
-		st = st.ComponentStatusMap[scope]
+		st = st.ComponentStatusMap[key]
 	}
 
 	sub := &subscription{
 		statusCh: make(chan *AggregateStatus, 1),
-		detailed: detailed,
+		detail:   detail,
 	}
 
-	a.subscriptions[scope] = append(a.subscriptions[scope], sub)
+	a.subscriptions[key] = append(a.subscriptions[key], sub)
 	sub.statusCh <- st
 
 	return sub.statusCh
@@ -192,14 +204,14 @@ func (a *Aggregator) Close() {
 	}
 }
 
-func (a *Aggregator) notifySubscribers(scope string, status *AggregateStatus) {
-	for _, sub := range a.subscriptions[scope] {
+func (a *Aggregator) notifySubscribers(scope Scope, status *AggregateStatus) {
+	for _, sub := range a.subscriptions[scope.toKey()] {
 		// clear unread events
 		select {
 		case <-sub.statusCh:
 		default:
 		}
-		sub.statusCh <- status.clone(sub.detailed)
+		sub.statusCh <- status.clone(sub.detail)
 	}
 }
 
