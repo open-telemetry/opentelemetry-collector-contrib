@@ -43,7 +43,7 @@ const (
 	// value      = *(chr)
 	// list-member = key ":" value
 	// list        = list-member *( ";" list-member )
-	otelKeyRegexp             = lcAlphaRegexp + lcDigitRegexp + `*`
+	otelKeyRegexp             = lcAlphaRegexp + lcAlphanumRegexp + `*`
 	otelValueRegexp           = `[a-zA-Z0-9._\-]*`
 	otelMemberRegexp          = `(?:` + otelKeyRegexp + `:` + otelValueRegexp + `)`
 	otelSemicolonMemberRegexp = `(?:` + `;` + otelMemberRegexp + `)`

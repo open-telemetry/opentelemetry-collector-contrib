@@ -335,11 +335,7 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 
 			upErr := otts.UpdateTValueWithSampling(newTh, newTh.TValue())
 
-			if test.updateErr != nil {
-				require.Equal(t, test.updateErr, upErr)
-			} else {
-				require.NoError(t, upErr)
-			}
+			require.Equal(t, test.updateErr, upErr)
 
 			var outData strings.Builder
 			err = otts.Serialize(&outData)

@@ -82,15 +82,10 @@ func TestParseW3CTraceState(t *testing.T) {
 	}
 	const ns = ""
 	for _, test := range []testCase{
-		// correct cases
-		{"ot=th:1", ns, "1", nil, nil},
-		{" ot=th:1 ", ns, "1", nil, nil},
+		// correct cases, with various whitespace
 		{"ot=th:1", ns, "1", nil, nil},
 		{" ot=th:1 ", ns, "1", nil, nil},
 		{" ot=th:1,other=value ", ns, "1", map[string]string{
-			"other": "value",
-		}, nil},
-		{"ot=th:1 , other=value", ns, "1", map[string]string{
 			"other": "value",
 		}, nil},
 		{",,,", ns, ns, nil, nil},

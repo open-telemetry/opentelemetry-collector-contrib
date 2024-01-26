@@ -46,15 +46,15 @@ const (
 	// system-id        = lcalpha 0*13( lcalpha / DIGIT / "_" / "-"/ "*" / "/" )
 	// lcalpha          = %x61-7A ; a-z
 
-	lcAlphaRegexp        = `[a-z]`
-	lcDigitPunctRegexp   = `[a-z0-9\-\*/_]`
-	lcDigitRegexp        = `[a-z0-9]`
-	multiTenantSep       = `@`
-	tenantIDRegexp       = lcDigitRegexp + lcDigitPunctRegexp + `*`
-	systemIDRegexp       = lcAlphaRegexp + lcDigitPunctRegexp + `*`
-	multiTenantKeyRegexp = tenantIDRegexp + multiTenantSep + systemIDRegexp
-	simpleKeyRegexp      = lcAlphaRegexp + lcDigitPunctRegexp + `*`
-	keyRegexp            = `(?:(?:` + simpleKeyRegexp + `)|(?:` + multiTenantKeyRegexp + `))`
+	lcAlphaRegexp         = `[a-z]`
+	lcAlphanumPunctRegexp = `[a-z0-9\-\*/_]`
+	lcAlphanumRegexp      = `[a-z0-9]`
+	multiTenantSep        = `@`
+	tenantIDRegexp        = lcAlphanumRegexp + lcAlphanumPunctRegexp + `*`
+	systemIDRegexp        = lcAlphaRegexp + lcAlphanumPunctRegexp + `*`
+	multiTenantKeyRegexp  = tenantIDRegexp + multiTenantSep + systemIDRegexp
+	simpleKeyRegexp       = lcAlphaRegexp + lcAlphanumPunctRegexp + `*`
+	keyRegexp             = `(?:(?:` + simpleKeyRegexp + `)|(?:` + multiTenantKeyRegexp + `))`
 
 	// value    = 0*255(chr) nblk-chr
 	// nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
