@@ -53,6 +53,13 @@ func (c *Commander) Start(ctx context.Context) error {
 		return nil
 	}
 
+	if c.doneCh != nil {
+		close(c.doneCh)
+	}
+	if c.exitCh != nil {
+		close(c.exitCh)
+	}
+
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
 	logFilePath := "agent.log"
