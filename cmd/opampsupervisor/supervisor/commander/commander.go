@@ -68,8 +68,8 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.cmd.Stdout = logFile
 	c.cmd.Stderr = logFile
 
-	c.doneCh = make(chan struct{})
-	c.exitCh = make(chan struct{})
+	c.doneCh = make(chan struct{}, 1)
+	c.exitCh = make(chan struct{}, 1)
 
 	if err := c.cmd.Start(); err != nil {
 		return err
@@ -103,18 +103,13 @@ func (c *Commander) watch() {
 	}
 
 	c.running.Store(0)
-	close(c.doneCh)
+	c.doneCh <- struct{}{}
 	c.exitCh <- struct{}{}
 }
 
 // Exited returns a channel that will send a signal when the Agent process exits.
 func (c *Commander) Exited() <-chan struct{} {
 	return c.exitCh
-}
-
-// Done returns a channel that will send a signal when the Agent process is finished.
-func (c *Commander) Done() <-chan struct{} {
-	return c.doneCh
 }
 
 // Pid returns Agent process PID if it is started or 0 if it is not.
