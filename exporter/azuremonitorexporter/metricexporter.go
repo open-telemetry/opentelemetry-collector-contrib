@@ -5,6 +5,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -40,6 +41,21 @@ func (exporter *metricExporter) onMetricData(_ context.Context, metricData pmetr
 	return nil
 }
 
+func (exporter *metricExporter) Shutdown(_ context.Context) error {
+	shutdownTimeout := 1 * time.Second
+
+	select {
+	case <-exporter.transportChannel.Close():
+		return nil
+	case <-time.After(shutdownTimeout):
+		// Currently, due to a dependency's bug (https://github.com/microsoft/ApplicationInsights-Go/issues/70),
+		// the timeout will always be hit before Close is complete. This is not an error, but it will leak a goroutine.
+		// There's nothing that we can do about this for now, so there's no reason to log or return an error
+		// here.
+		return nil
+	}
+}
+
 // Returns a new instance of the metric exporter
 func newMetricsExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Metrics, error) {
 	exporter := &metricExporter{
@@ -54,5 +70,6 @@ func newMetricsExporter(config *Config, transportChannel transportChannel, set e
 		set,
 		config,
 		exporter.onMetricData,
-		exporterhelper.WithQueue(config.QueueSettings))
+		exporterhelper.WithQueue(config.QueueSettings),
+		exporterhelper.WithShutdown(exporter.Shutdown))
 }
