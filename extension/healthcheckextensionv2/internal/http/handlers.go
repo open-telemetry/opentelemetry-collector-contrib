@@ -8,13 +8,18 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 )
 
 func (s *Server) statusHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pipeline := r.URL.Query().Get("pipeline")
 
-		st, ok := s.aggregator.AggregateStatus(pipeline, s.settings.Status.Detailed)
+		st, ok := s.aggregator.AggregateStatus(
+			status.Scope(pipeline),
+			status.Detail(s.settings.Status.Detailed),
+		)
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return
