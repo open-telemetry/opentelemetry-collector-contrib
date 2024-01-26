@@ -146,6 +146,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
@@ -264,4 +265,3 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
-
