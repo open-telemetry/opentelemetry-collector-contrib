@@ -38,6 +38,7 @@ func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
 	assert.NotNil(t, exporter)
 	assert.NoError(t, err)
 	assert.NotNil(t, f.tChannel)
+	assert.NoError(t, exporter.Shutdown(ctx))
 }
 
 func TestCreateTracesExporterUsingBadConfig(t *testing.T) {

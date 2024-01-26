@@ -5,6 +5,9 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -62,6 +65,17 @@ func (exporter *traceExporter) onTraceData(_ context.Context, traceData ptrace.T
 	return visitor.err
 }
 
+func (exporter *traceExporter) Shutdown(ctx context.Context) error {
+	shutdownTimeout := 30 * time.Second
+
+	select {
+	case <-exporter.transportChannel.Close():
+		return nil
+	case <-time.After(shutdownTimeout):
+		return errors.New(fmt.Sprintf("Shutting down timed out after %v", shutdownTimeout))
+	}
+}
+
 // Returns a new instance of the trace exporter
 func newTracesExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Traces, error) {
 	exporter := &traceExporter{
@@ -75,5 +89,6 @@ func newTracesExporter(config *Config, transportChannel transportChannel, set ex
 		set,
 		config,
 		exporter.onTraceData,
-		exporterhelper.WithQueue(config.QueueSettings))
+		exporterhelper.WithQueue(config.QueueSettings),
+		exporterhelper.WithShutdown(exporter.Shutdown))
 }

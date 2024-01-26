@@ -3,8 +3,13 @@
 
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
-import "github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
+import (
+	"time"
+
+	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
+)
 
 type transportChannel interface {
 	Send(*contracts.Envelope)
+	Close(retryTimeout ...time.Duration) <-chan struct{}
 }
