@@ -6,6 +6,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -241,7 +242,7 @@ func (s *azureBatchScraper) getResources(ctx context.Context) {
 
 				if updatedTypes[*resource.Type] == nil {
 					updatedTypes[*resource.Type] = &azureType{
-						name:        resource.Name,
+						name:        resource.Type,
 						attributes:  map[string]*string{},
 						resourceIds: []*string{resource.ID},
 					}
@@ -260,7 +261,7 @@ func (s *azureBatchScraper) getResources(ctx context.Context) {
 	}
 
 	s.resourcesUpdated = time.Now()
-	s.resourceTypes = updatedTypes
+	maps.Copy(s.resourceTypes, updatedTypes)
 }
 
 func (s *azureBatchScraper) getResourcesFilter() string {
@@ -341,7 +342,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, resourceT
 
 		now := time.Now().UTC()
 		metricsByGrain.metricsValuesUpdated = now
-		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second)
+		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 2) // times 2 because for some resources, data are missing for the very latest timestamp
 		s.settings.Logger.Info("getBatchMetricsValues", zap.String("resourceType", resourceType), zap.Any("metricNames", metricsByGrain.metrics), zap.Any("startTime", startTime), zap.Any("now", now), zap.String("timeGrain", compositeKey.timeGrain))
 
 		start := 0
@@ -381,26 +382,28 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, resourceT
 			start = end
 			for _, metricValues := range response.Values {
 				for _, metric := range metricValues.Values {
-					for _, timeseriesElement := range metric.TimeSeries {
 
+					for _, timeseriesElement := range metric.TimeSeries {
 						if timeseriesElement.Data != nil {
-							res := s.resources[*metricValues.ResourceID]
-							attributes := map[string]*string{}
-							for name, value := range res.attributes {
-								attributes[name] = value
-							}
-							for _, value := range timeseriesElement.MetadataValues {
-								name := metadataPrefix + *value.Name.Value
-								attributes[name] = value.Value
-							}
-							if s.cfg.AppendTagsAsAttributes {
-								for tagName, value := range res.tags {
-									name := tagPrefix + tagName
+							if metricValues.ResourceID != nil {
+								res := s.resources[*metricValues.ResourceID]
+								attributes := map[string]*string{}
+								for name, value := range res.attributes {
 									attributes[name] = value
 								}
-							}
-							for _, metricValue := range timeseriesElement.Data {
-								s.processQueryTimeseriesData(*metricValues.ResourceID, metric, metricValue, attributes)
+								for _, value := range timeseriesElement.MetadataValues {
+									name := metadataPrefix + *value.Name.Value
+									attributes[name] = value.Value
+								}
+								if s.cfg.AppendTagsAsAttributes {
+									for tagName, value := range res.tags {
+										name := tagPrefix + tagName
+										attributes[name] = value
+									}
+								}
+								for _, metricValue := range timeseriesElement.Data {
+									s.processQueryTimeseriesData(*metricValues.ResourceID, metric, metricValue, attributes)
+								}
 							}
 						}
 					}
@@ -419,7 +422,7 @@ func (s *azureBatchScraper) processQueryTimeseriesData(
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	ts := pcommon.NewTimestampFromTime(time.Now())
+	ts := pcommon.NewTimestampFromTime(*metricValue.TimeStamp)
 
 	aggregationsData := []struct {
 		name  string
