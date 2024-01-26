@@ -13,7 +13,7 @@
 // syntax of the OpenTelemetry field is specified in [Tracestate handling].
 //
 // The probability sampling-specific fields used here are specified in
-// [OTEP 235].  The principle, named fields are:
+// [OTEP 235].  The principal named fields are:
 //
 //   - T-value: The sampling rejection threshold, expresses a 56-bit
 //     hexadecimal number of traces that will be rejected by sampling.

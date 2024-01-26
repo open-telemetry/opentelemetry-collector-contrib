@@ -64,7 +64,7 @@ func TValueToThreshold(s string) (Threshold, error) {
 	}
 
 	// Having checked length above, there are no range errors
-	// possible.  Parse the hex string to an unsigned valued.
+	// possible.  Parse the hex string to an unsigned value.
 	unsigned, err := strconv.ParseUint(s, hexBase, 64)
 	if err != nil {
 		return AlwaysSampleThreshold, err // e.g. parse error

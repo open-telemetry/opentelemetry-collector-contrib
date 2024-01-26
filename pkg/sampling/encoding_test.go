@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// must panics when the error is non-nil and returns the second
+// must panics when the error is non-nil and returns the
 // generic argument.  this does not call require.NoError() in order to
 // use a one-line test calling convention, meaning `must(functionCall())`
 // ensures there is no error and returns the first argument.
@@ -25,8 +25,6 @@ import (
 //
 //	value, err := functionCall()
 //	require.NoError(t, value)
-//
-// and that is why this function exists.
 func must[T any](t T, err error) T {
 	if err != nil {
 		panic(err)
@@ -44,8 +42,6 @@ func must[T any](t T, err error) T {
 //
 //	_, err := functionCall()
 //	require.Error(t, value)
-//
-// and that is why this function exists.
 func mustNot[T any](_ T, err error) error {
 	if err == nil {
 		return fmt.Errorf("expected an error, got nil")
@@ -202,6 +198,8 @@ func TestRValueSyntax(t *testing.T) {
 				require.NoError(t, err)
 
 				require.Equal(t, TraceIDToRandomness(
+					// This explicitly constructs a TraceID from 9 random
+					// bytes plus the 7 lowest bytes of the input value.
 					pcommon.TraceID{
 						byte(rand.Intn(256)),   // 0
 						byte(rand.Intn(256)),   // 1
