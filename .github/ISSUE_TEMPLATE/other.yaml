@@ -145,6 +145,7 @@ body:
       - processor/filter
       - processor/groupbyattrs
       - processor/groupbytrace
+      - processor/interval
       - processor/k8sattributes
       - processor/logstransform
       - processor/metricsgeneration
