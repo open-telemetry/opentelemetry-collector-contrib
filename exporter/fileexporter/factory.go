@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/simplelru"
@@ -36,6 +37,8 @@ const (
 
 	defaultMaxOpenFiles = 100
 
+	defaultSubPathResourceAttribute = "fileexporter.path_segment"
+
 	defaultSubPath = "MISSING"
 )
 
@@ -60,10 +63,11 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		FormatType: formatTypeJSON,
 		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
-		GroupByAttribute: &GroupByAttribute{
-			MaxOpenFiles:          defaultMaxOpenFiles,
-			DefaultSubPath:        defaultSubPath,
-			AutoCreateDirectories: true,
+		GroupBy: &GroupBy{
+			SubPathResourceAttribute: defaultSubPathResourceAttribute,
+			MaxOpenFiles:             defaultMaxOpenFiles,
+			DefaultSubPath:           defaultSubPath,
+			AutoCreateDirectories:    true,
 		},
 	}
 }
@@ -162,7 +166,7 @@ func newFileExporter(conf *Config) (FileExporter, error) {
 	}
 	export := buildExportFunc(conf)
 
-	if conf.GroupByAttribute == nil || conf.GroupByAttribute.SubPathResourceAttribute == "" {
+	if conf.GroupBy == nil || !conf.GroupBy.Enabled {
 		writer, err := newFileWriter(conf.Path, conf.Rotation, conf.FlushInterval, export)
 		if err != nil {
 			return nil, err
@@ -174,21 +178,23 @@ func newFileExporter(conf *Config) (FileExporter, error) {
 		}, nil
 	}
 
+	pathParts := strings.Split(conf.Path, "*")
 	e := &groupingFileExporter{
 		marshaller:                 marshaller,
-		basePath:                   conf.Path,
-		attribute:                  conf.GroupByAttribute.SubPathResourceAttribute,
-		deleteAtribute:             conf.GroupByAttribute.DeleteSubPathResourceAttribute,
-		discardIfAttributeNotFound: conf.GroupByAttribute.DiscardIfAttributeNotFound,
-		defaultSubPath:             conf.GroupByAttribute.DefaultSubPath,
-		maxOpenFiles:               conf.GroupByAttribute.MaxOpenFiles,
-		createDirs:                 conf.GroupByAttribute.AutoCreateDirectories,
+		pathPrefix:                 cleanPathPrefix(pathParts[0]),
+		pathSuffix:                 pathParts[1],
+		attribute:                  conf.GroupBy.SubPathResourceAttribute,
+		deleteAtribute:             conf.GroupBy.DeleteSubPathResourceAttribute,
+		discardIfAttributeNotFound: conf.GroupBy.DiscardIfAttributeNotFound,
+		defaultPathSegment:         conf.GroupBy.DefaultSubPath,
+		maxOpenFiles:               conf.GroupBy.MaxOpenFiles,
+		createDirs:                 conf.GroupBy.AutoCreateDirectories,
 		newFileWriter: func(path string) (*fileWriter, error) {
 			return newFileWriter(path, nil, conf.FlushInterval, export)
 		},
 	}
 
-	writers, err := simplelru.NewLRU[string, *fileWriter](conf.GroupByAttribute.MaxOpenFiles, e.onEnvict)
+	writers, err := simplelru.NewLRU[string, *fileWriter](conf.GroupBy.MaxOpenFiles, e.onEnvict)
 	if err != nil {
 		return nil, err
 	}

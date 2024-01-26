@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"path"
+	"strings"
 	"sync"
 
 	"github.com/hashicorp/golang-lru/v2/simplelru"
@@ -20,11 +21,12 @@ import (
 
 type groupingFileExporter struct {
 	marshaller                 *marshaller
-	basePath                   string
+	pathPrefix                 string
+	pathSuffix                 string
 	attribute                  string
 	deleteAtribute             bool
 	discardIfAttributeNotFound bool
-	defaultSubPath             string
+	defaultPathSegment         string
 	maxOpenFiles               int
 	createDirs                 bool
 	newFileWriter              func(path string) (*fileWriter, error)
@@ -46,7 +48,7 @@ func (e *groupingFileExporter) consumeTraces(ctx context.Context, td ptrace.Trac
 	}
 
 	var errs error
-	for subPath, rSpansSlice := range groups {
+	for pathSegment, rSpansSlice := range groups {
 		traces := ptrace.NewTraces()
 		for _, rSpans := range rSpansSlice {
 			rSpans.MoveTo(traces.ResourceSpans().AppendEmpty())
@@ -58,7 +60,7 @@ func (e *groupingFileExporter) consumeTraces(ctx context.Context, td ptrace.Trac
 			continue
 		}
 
-		err = e.write(ctx, subPath, buf)
+		err = e.write(ctx, pathSegment, buf)
 		if err != nil {
 			errs = errors.Join(errs, err)
 		}
@@ -80,7 +82,7 @@ func (e *groupingFileExporter) consumeMetrics(ctx context.Context, md pmetric.Me
 	}
 
 	var errs error
-	for subPath, rMetricsSlice := range groups {
+	for pathSegment, rMetricsSlice := range groups {
 		metrics := pmetric.NewMetrics()
 		for _, rMetrics := range rMetricsSlice {
 			rMetrics.MoveTo(metrics.ResourceMetrics().AppendEmpty())
@@ -92,7 +94,7 @@ func (e *groupingFileExporter) consumeMetrics(ctx context.Context, md pmetric.Me
 			continue
 		}
 
-		err = e.write(ctx, subPath, buf)
+		err = e.write(ctx, pathSegment, buf)
 		if err != nil {
 			errs = errors.Join(errs, err)
 		}
@@ -114,7 +116,7 @@ func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) er
 	}
 
 	var errs error
-	for subPath, rLogsSlice := range groups {
+	for pathSegment, rLogsSlice := range groups {
 		logs := plog.NewLogs()
 		for _, rlogs := range rLogsSlice {
 			rlogs.MoveTo(logs.ResourceLogs().AppendEmpty())
@@ -126,7 +128,7 @@ func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) er
 			continue
 		}
 
-		err = e.write(ctx, subPath, buf)
+		err = e.write(ctx, pathSegment, buf)
 		if err != nil {
 			errs = errors.Join(errs, err)
 		}
@@ -135,8 +137,8 @@ func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) er
 	return errs
 }
 
-func (e *groupingFileExporter) write(ctx context.Context, subPath string, buf []byte) error {
-	writer, err := e.getWriter(ctx, subPath)
+func (e *groupingFileExporter) write(ctx context.Context, pathSegment string, buf []byte) error {
+	writer, err := e.getWriter(ctx, pathSegment)
 
 	if err != nil {
 		return err
@@ -150,11 +152,8 @@ func (e *groupingFileExporter) write(ctx context.Context, subPath string, buf []
 	return nil
 }
 
-func (e *groupingFileExporter) getWriter(ctx context.Context, subPath string) (*fileWriter, error) {
-	// avoid path traversal vulnerability
-	subPath = path.Join("/", subPath)
-
-	fullPath := path.Join(e.basePath, subPath)
+func (e *groupingFileExporter) getWriter(ctx context.Context, pathSegment string) (*fileWriter, error) {
+	fullPath := e.fullPath(pathSegment)
 
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -187,16 +186,41 @@ func (e *groupingFileExporter) getWriter(ctx context.Context, subPath string) (*
 	return writer, nil
 }
 
+func cleanPathPrefix(pathPrefix string) string {
+	cleaned := path.Clean(pathPrefix)
+	if strings.HasSuffix(pathPrefix, "/") && !strings.HasSuffix(cleaned, "/") {
+		return cleaned + "/"
+	}
+
+	return cleaned
+}
+
+func (e *groupingFileExporter) fullPath(pathSegment string) string {
+	if strings.HasPrefix(pathSegment, "./") {
+		pathSegment = pathSegment[1:]
+	} else if strings.HasPrefix(pathSegment, "../") {
+		pathSegment = pathSegment[2:]
+	}
+
+	fullPath := path.Clean(e.pathPrefix + pathSegment + e.pathSuffix)
+	if strings.HasPrefix(fullPath, e.pathPrefix) {
+		return fullPath
+	}
+
+	// avoid path traversal vulnerability
+	return path.Join(e.pathPrefix, path.Join("/", pathSegment+e.pathSuffix))
+}
+
 func (e *groupingFileExporter) onEnvict(_ string, writer *fileWriter) {
 	_ = writer.shutdown() // TODO: should we log this error?
 }
 
 func group[T any](e *groupingFileExporter, groups map[string][]T, resource pcommon.Resource, resourceEntries T) {
-	var subPath string
+	var pathSegment string
 	v, ok := resource.Attributes().Get(e.attribute)
 	if ok {
 		if v.Type() == pcommon.ValueTypeStr {
-			subPath = v.Str()
+			pathSegment = v.Str()
 		} else {
 			ok = false
 		}
@@ -211,10 +235,10 @@ func group[T any](e *groupingFileExporter, groups map[string][]T, resource pcomm
 			return
 		}
 
-		subPath = e.defaultSubPath
+		pathSegment = e.defaultPathSegment
 	}
 
-	groups[subPath] = append(groups[subPath], resourceEntries)
+	groups[pathSegment] = append(groups[pathSegment], resourceEntries)
 }
 
 // Start is a noop.

@@ -5,6 +5,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -40,8 +41,8 @@ type Config struct {
 	// See time.ParseDuration for valid values.
 	FlushInterval time.Duration `mapstructure:"flush_interval"`
 
-	// GroupByAttribute enables writing to separate files based on a resource attribute.
-	GroupByAttribute *GroupByAttribute `mapstructure:"group_by_attribute"`
+	// GroupBy enables writing to separate files based on a resource attribute.
+	GroupBy *GroupBy `mapstructure:"group_by"`
 }
 
 // Rotation an option to rolling log files
@@ -67,11 +68,15 @@ type Rotation struct {
 	LocalTime bool `mapstructure:"localtime"`
 }
 
-type GroupByAttribute struct {
+type GroupBy struct {
+	// Enabled should be set to true to enable writing to separate files based on a resource attribute.
+	// Default is false.
+	Enabled bool `mapstructure:"enabled"`
+
 	// SubPathResourceAttribute specifies the name of the resource attribute that
 	// contains the subpath of the file to write to. The final path will be
 	// prefixed with the Path config value. When this value is set, Rotation setting
-	// is ignored.
+	// is ignored. Default is "fileexporter.path_segment".
 	SubPathResourceAttribute string `mapstructure:"sub_path_resource_attribute"`
 
 	// DeleteSubPathResourceAttribute if set to true, the resource attribute
@@ -116,6 +121,22 @@ func (cfg *Config) Validate() error {
 	if cfg.FlushInterval < 0 {
 		return errors.New("flush_interval must be larger than zero")
 	}
+
+	if cfg.GroupBy != nil && cfg.GroupBy.Enabled {
+		pathParts := strings.Split(cfg.Path, "*")
+		if len(pathParts) != 2 {
+			return errors.New("path must contain exatcly one * when group_by is enabled")
+		}
+
+		if len(pathParts[0]) == 0 {
+			return errors.New("path must not start with * when group_by is enabled")
+		}
+
+		if cfg.GroupBy.SubPathResourceAttribute == "" {
+			return errors.New("sub_path_resource_attribute must not be empty when group_by is enabled")
+		}
+	}
+
 	return nil
 }
 
