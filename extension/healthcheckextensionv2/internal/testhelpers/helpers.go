@@ -23,7 +23,7 @@ func (p *PipelineMetadata) InstanceIDs() []*component.InstanceID {
 	return []*component.InstanceID{p.ReceiverID, p.ProcessorID, p.ExporterID}
 }
 
-// Returns a metadata for a hypothetical pipeline.
+// NewPipelineMetadata returns a metadata for a hypothetical pipeline.
 func NewPipelineMetadata(typeVal component.Type) *PipelineMetadata {
 	pipelineID := component.NewID(typeVal)
 	return &PipelineMetadata{
@@ -52,7 +52,7 @@ func NewPipelineMetadata(typeVal component.Type) *PipelineMetadata {
 	}
 }
 
-// Returns a map of hypothetical pipelines identified by their stringified typeVal.
+// NewPipelines returns a map of hypothetical pipelines identified by their stringified typeVal.
 func NewPipelines(typeVals ...component.Type) map[string]*PipelineMetadata {
 	result := make(map[string]*PipelineMetadata, len(typeVals))
 	for _, val := range typeVals {

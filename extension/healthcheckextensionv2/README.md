@@ -194,7 +194,7 @@ Note the following based on this response:
 If the same request is made to a collector with `http.status.detailed` to `false`, you will only get
 the overall status. The pipeline and component level statuses will be omitted.
 
-```
+```json
 {
     "start_time": "2024-01-18T17:39:15.87324-08:00",
     "healthy": true,
