@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 
@@ -211,8 +210,6 @@ func TestGroupingFileTracesExporter(t *testing.T) {
 				}
 				return rSpans
 			}
-
-			log.Printf("--------- %s %s %s \n", gfe.pathPrefix, gfe.pathSuffix, gfe.fullPath("one"))
 
 			// the exporter may modify the test data, make sure we compare the results
 			// to the original input
