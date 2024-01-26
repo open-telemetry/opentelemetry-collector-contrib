@@ -5,12 +5,29 @@ package sampling
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+// ExampleOpenTelemetryTraceState_AdjustedCount shows how to access
+// the adjusted count for a sampled context when it has non-zero
+// probability.
+func ExampleOpenTelemetryTraceState_AdjustedCount() {
+	w3c, err := NewW3CTraceState("ot=th:c")
+	if err != nil {
+		panic(err)
+	}
+	ot := w3c.OTelValue()
+
+	fmt.Printf("Adjusted count for T-value %q: %f", ot.TValue(), ot.AdjustedCount())
+
+	// Output:
+	// Adjusted count for T-value "c": 4.000000
+}
 
 func testName(in string) string {
 	if len(in) > 32 {

@@ -18,7 +18,12 @@ import (
 // access the OpenTelemetry-defined fields using
 // [W3CTraceState.OTelValue].
 type W3CTraceState struct {
+	// commonTraceState holds "extra" values (e.g.,
+	// vendor-specific tracestate fields) which are propagated but
+	// not used by Sampling logic.
 	commonTraceState
+
+	// otts stores OpenTelemetry-specified tracestate fields.
 	otts OpenTelemetryTraceState
 }
 
@@ -45,10 +50,10 @@ const (
 	lcDigitPunctRegexp   = `[a-z0-9\-\*/_]`
 	lcDigitRegexp        = `[a-z0-9]`
 	multiTenantSep       = `@`
-	tenantIDRegexp       = lcDigitRegexp + lcDigitPunctRegexp + `*` // could be {0,hardMaxTenantLength-1}
-	systemIDRegexp       = lcAlphaRegexp + lcDigitPunctRegexp + `*` // could be {0,hardMaxSystemLength-1}
+	tenantIDRegexp       = lcDigitRegexp + lcDigitPunctRegexp + `*`
+	systemIDRegexp       = lcAlphaRegexp + lcDigitPunctRegexp + `*`
 	multiTenantKeyRegexp = tenantIDRegexp + multiTenantSep + systemIDRegexp
-	simpleKeyRegexp      = lcAlphaRegexp + lcDigitPunctRegexp + `*` // could be {0,hardMaxKeyLength-1}
+	simpleKeyRegexp      = lcAlphaRegexp + lcDigitPunctRegexp + `*`
 	keyRegexp            = `(?:(?:` + simpleKeyRegexp + `)|(?:` + multiTenantKeyRegexp + `))`
 
 	// value    = 0*255(chr) nblk-chr
@@ -70,13 +75,19 @@ const (
 	owsRegexp       = `(?:[` + owsCharSet + `]*)`
 	w3cMemberRegexp = `(?:` + keyRegexp + `=` + valueRegexp + `)?`
 
-	// This regexp is large enough that regexp impl refuses to
-	// make 31 copies of it (i.e., `{0,31}`) so we use `*` below.
 	w3cOwsMemberOwsRegexp      = `(?:` + owsRegexp + w3cMemberRegexp + owsRegexp + `)`
 	w3cCommaOwsMemberOwsRegexp = `(?:` + `,` + w3cOwsMemberOwsRegexp + `)`
 
-	// The limit to 31 of owsCommaMemberRegexp is applied in code.
 	w3cTracestateRegexp = `^` + w3cOwsMemberOwsRegexp + w3cCommaOwsMemberOwsRegexp + `*$`
+
+	// Note that fixed limits on tracestate size are captured above
+	// as '*' regular expressions, which allows the parser to exceed
+	// fixed limits, which are checked in code.  This keeps the size
+	// of the compiled regexp reasonable.  Some of the regexps above
+	// are too complex to expand e.g., 31 times.  In the case of
+	// w3cTracestateRegexp, 32 elements are allowed, which means we
+	// want the w3cCommaOwsMemberOwsRegexp element to match at most
+	// 31 times, but this is checked in code.
 )
 
 var (

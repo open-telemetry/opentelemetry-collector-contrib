@@ -87,35 +87,39 @@ func ExampleProbabilityToThreshold_limitedprecision() {
 	const eighth = 2.0 / 16
 	const small = 1.0 / 16
 	for _, prob := range []float64{
-		// First 5: last T-value digit always "8" or "0"
+		// Values from 1/2 to 15/16: last T-value digit always "8".
 		next(large, 0),
 		next(large, -1),
 		next(large, -2),
 		next(large, -3),
 		0,
+		// Values from 1/4 to 1/2: last T-value digit always
+		// "4", "8", or "c".
 		next(half, 0),
 		next(half, -1),
 		next(half, -2),
 		next(half, -3),
 		0,
-		// In this range, we have one bit less precision
+		// Values from 1/8 to 1/4, last T-value digit can be any
+		// even hex digit.
 		next(quarter, 0),
 		next(quarter, -1),
 		next(quarter, -2),
 		next(quarter, -3),
 		0,
-		// In this range, we have full precision.  Every
-		// adjacent probability value maps to an exact
-		// Threshold.
+		// Values from 1/16 to 1/8: Every adjacent probability
+		// value maps to an exact Threshold.
 		next(eighth, 0),
 		next(eighth, -1),
 		next(eighth, -2),
 		next(eighth, -3),
 		0,
-		// Values less than 1/16 demonstrate a collision.
+		// Values less than 1/16 demonstrate lossy behavior.
 		// Here probability values can express more values
 		// than Thresholds can, so multiple probability values
-		// map to the same Threshold.
+		// map to the same Threshold.  Here, 1/16 and the next
+		// descending floating point value both map to T-value
+		// "f".
 		next(small, 0),
 		next(small, -1),
 		next(small, -2),
@@ -156,6 +160,8 @@ func ExampleProbabilityToThreshold_limitedprecision() {
 	// f0000000000001
 }
 
+// ExampleProbabilityToThreshold_verysmall shows the smallest
+// expressible sampling probability values.
 func ExampleProbabilityToThreshold_verysmall() {
 	for _, prob := range []float64{
 		MinSamplingProbability, // Skip 1 out of 2**56
@@ -163,7 +169,7 @@ func ExampleProbabilityToThreshold_verysmall() {
 		0x3p-56,                // Skip 3 out of 2**56
 		0x4p-56,                // Skip 4 out of 2**56
 		0x8p-56,                // Skip 8 out of 2**56
-		0x10p-56,               // Skip 16 out of 2**56
+		0x10p-56,               // Skip 0x10 out of 2**56
 	} {
 		tval, _ := ProbabilityToThreshold(prob)
 		fmt.Println(tval.TValue())

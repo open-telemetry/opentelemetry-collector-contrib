@@ -5,12 +5,72 @@ package sampling
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+// ExampleW3CTraceState_Serialize shows how to parse and print a W3C
+// tracestate.
+func ExampleW3CTraceState() {
+	// This tracestate value encodes two sections, "ot" from
+	// OpenTelemetry and "zz" from a vendor.
+	w3c, err := NewW3CTraceState("ot=th:c;rv:d29d6a7215ced0;pn:abc,zz=vendorcontent")
+	if err != nil {
+		panic(err)
+	}
+	ot := w3c.OTelValue()
+
+	fmt.Println("T-Value:", ot.TValue())
+	fmt.Println("R-Value:", ot.RValue())
+	fmt.Println("OTel Extra:", ot.ExtraValues())
+	fmt.Println("Other Extra:", w3c.ExtraValues())
+
+	// Output:
+	// T-Value: c
+	// R-Value: d29d6a7215ced0
+	// OTel Extra: [{pn abc}]
+	// Other Extra: [{zz vendorcontent}]
+}
+
+// ExampleW3CTraceState_Serialize shows how to modify and serialize a
+// new W3C tracestate.
+func ExampleW3CTraceState_Serialize() {
+	w3c, err := NewW3CTraceState("")
+	if err != nil {
+		panic(err)
+	}
+	// Suppose a parent context was unsampled, the child span has
+	// been sampled at 25%.  The child's context should carry the
+	// T-value of "c", serialize as "ot=th:c".
+	th, err := ProbabilityToThreshold(0.25)
+	if err != nil {
+		panic(err)
+	}
+
+	// The update uses both the Threshold and its encoded string
+	// value, since in some code paths the Threshold will have
+	// just been parsed from a T-value, and in other code paths
+	// the T-value will be precalculated.
+	err = w3c.OTelValue().UpdateTValueWithSampling(th, th.TValue())
+	if err != nil {
+		panic(err)
+	}
+
+	var buf strings.Builder
+	err = w3c.Serialize(&buf)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(buf.String())
+
+	// Output:
+	// ot=th:c
+}
 
 func TestParseW3CTraceState(t *testing.T) {
 	type testCase struct {

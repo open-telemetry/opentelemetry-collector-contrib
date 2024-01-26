@@ -41,10 +41,14 @@ type commonTraceState struct {
 	kvs []KV
 }
 
+// HasExtraValues returns whether unrecognized values are carried in this
+// tracestate object (W3C or OpenTelemetry).
 func (cts commonTraceState) HasExtraValues() bool {
 	return len(cts.kvs) != 0
 }
 
+// HasExtraValues returns additional values are carried in this
+// tracestate object (W3C or OpenTelemetry).
 func (cts commonTraceState) ExtraValues() []KV {
 	return cts.kvs
 }
