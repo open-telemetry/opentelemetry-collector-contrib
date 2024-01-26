@@ -63,7 +63,7 @@ func newConnector(set component.TelemetrySettings, cfg component.Config, metrics
 	ctx := context.Background()
 	return &connectorImp{
 		logger:          set.Logger,
-		agent:           newTraceAgent(ctx, cfg.(*Config), in),
+		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config)), in),
 		translator:      trans,
 		in:              in,
 		metricsConsumer: metricsConsumer,
@@ -72,7 +72,7 @@ func newConnector(set component.TelemetrySettings, cfg component.Config, metrics
 	}, nil
 }
 
-func newTraceAgent(ctx context.Context, cfg *Config, in chan *pb.StatsPayload) *datadog.TraceAgent {
+func getTraceAgentCfg(cfg *Config) *traceconfig.AgentConfig {
 	acfg := traceconfig.New()
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.SpanNameAsResourceName
@@ -82,7 +82,7 @@ func newTraceAgent(ctx context.Context, cfg *Config, in chan *pb.StatsPayload) *
 	if v := cfg.TraceBuffer; v > 0 {
 		acfg.TraceBuffer = v
 	}
-	return datadog.NewAgentWithConfig(ctx, acfg, in)
+	return acfg
 }
 
 // Start implements the component.Component interface.
