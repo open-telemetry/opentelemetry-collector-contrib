@@ -11,6 +11,7 @@ components:
         - zipkin
     extension:
         - health_check
+        - healthcheckv2
         - pprof
     processor:
         - attributes
