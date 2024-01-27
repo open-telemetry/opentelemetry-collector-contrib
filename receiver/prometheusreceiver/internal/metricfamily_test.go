@@ -40,6 +40,12 @@ var mc = testMetadataStore{
 		Help:   "This is some help for a counter",
 		Unit:   "By",
 	},
+	"counter_created": scrape.MetricMetadata{
+		Metric: "counter",
+		Type:   textparse.MetricTypeCounter,
+		Help:   "This is some help for a counter",
+		Unit:   "By",
+	},
 	"gauge": scrape.MetricMetadata{
 		Metric: "ge",
 		Type:   textparse.MetricTypeGauge,
@@ -597,6 +603,29 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			scrapes: []*scrape{
 				{at: 13, value: 33.7, metric: "value"},
 				{at: 13, value: 150, metric: "value_created"},
+			},
+			want: func() pmetric.NumberDataPoint {
+				point := pmetric.NewNumberDataPoint()
+				point.SetDoubleValue(150)
+
+				// the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))
+				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond))
+
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			metricKind:               "counter_created",
+			name:                     "counter:: startTimestampMs from _created",
+			intervalStartTimestampMs: 11,
+			labels:                   labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{at: 13, value: 33.7, metric: "counter"},
+				{at: 13, value: 150, metric: "counter_created"},
 			},
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()

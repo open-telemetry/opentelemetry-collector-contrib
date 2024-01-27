@@ -297,7 +297,7 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.complexValue = append(mg.complexValue, &dataPoint{value: v, boundary: boundary})
 		}
 	case pmetric.MetricTypeSum:
-		if strings.HasSuffix(metricName, metricSuffixCreated) {
+		if metricName == mf.metadata.Metric+metricSuffixCreated {
 			mg.created = v
 		} else {
 			mg.value = v
