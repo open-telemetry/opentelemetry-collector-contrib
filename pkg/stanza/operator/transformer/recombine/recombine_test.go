@@ -128,6 +128,25 @@ func TestTransformer(t *testing.T) {
 				entryWithBody(t2, "test1"),
 			},
 			[]*entry.Entry{
+				entryWithBody(t1, "test1\ntest2"),
+			},
+		},
+		{
+			"ThreeEntriesFirstOldest",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.OverwriteWith = "oldest"
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test1"),
+				entryWithBody(t2, "test2"),
+				entryWithBody(t2, "test1"),
+			},
+			[]*entry.Entry{
 				entryWithBody(t2, "test1\ntest2"),
 			},
 		},
@@ -159,7 +178,7 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'file1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
+				cfg.OverwriteWith = "oldest"
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -267,7 +286,7 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField("message")
 				cfg.CombineWith = ""
 				cfg.IsLastEntry = "body.logtag == 'F'"
-				cfg.OverwriteWith = "newest"
+				cfg.OverwriteWith = "oldest"
 				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
