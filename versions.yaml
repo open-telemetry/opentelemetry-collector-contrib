@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.92.0
+    version: v0.93.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -56,6 +56,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
@@ -94,6 +95,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs
@@ -144,6 +146,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
@@ -217,6 +220,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
@@ -261,4 +265,3 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
-

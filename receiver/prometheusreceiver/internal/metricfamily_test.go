@@ -40,6 +40,12 @@ var mc = testMetadataStore{
 		Help:   "This is some help for a counter",
 		Unit:   "By",
 	},
+	"counter_created": scrape.MetricMetadata{
+		Metric: "counter_created",
+		Type:   textparse.MetricTypeCounter,
+		Help:   "This is some help for a counter",
+		Unit:   "By",
+	},
 	"gauge": scrape.MetricMetadata{
 		Metric: "ge",
 		Type:   textparse.MetricTypeGauge,
@@ -600,11 +606,11 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			},
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()
-				point.SetDoubleValue(33.7)
+				point.SetDoubleValue(150)
 
 				// the time in milliseconds -> nanoseconds.
 				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))
-				point.SetStartTimestamp(timestampFromFloat64(150))
+				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond))
 
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
@@ -638,6 +644,25 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			labels:                   labels.FromMap(map[string]string{"a": "A", "b": "B"}),
 			scrapes: []*scrape{
 				{at: 28, value: 99.9, metric: "value"},
+			},
+			want: func() pmetric.NumberDataPoint {
+				point := pmetric.NewNumberDataPoint()
+				point.SetDoubleValue(99.9)
+				point.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pcommon.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			name:                     "counter_created:: startTimestampMs of 0",
+			metricKind:               "counter_created",
+			intervalStartTimestampMs: 0,
+			labels:                   labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{at: 28, value: 99.9, metric: "counter_created"},
 			},
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()
