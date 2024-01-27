@@ -119,7 +119,7 @@ func Test_GetMapValue_MissingKey(t *testing.T) {
 		},
 	}
 	result, err := GetMapValue[any](context.Background(), nil, m, keys)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
 
@@ -235,7 +235,7 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 		},
 	}
 	err := SetMapValue[any](context.Background(), nil, m, keys, "bar")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expected := pcommon.NewMap()
 	sub := expected.PutEmptyMap("map1")
@@ -259,7 +259,7 @@ func Test_SetMapValue_EmptyMap(t *testing.T) {
 		},
 	}
 	err := SetMapValue[any](context.Background(), nil, m, keys, "bar")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expected := pcommon.NewMap()
 	expected.PutEmptyMap("map1").PutEmptyMap("map2").PutStr("foo", "bar")

@@ -89,7 +89,7 @@ func TestClusterStats(t *testing.T) {
 				tc := createTestClient(t, testURL)
 
 				clusterStats, err := tc.ClusterStats()
-				require.NotNil(t, err)
+				require.Error(t, err)
 				require.Nil(t, clusterStats)
 			},
 		},
@@ -113,7 +113,7 @@ func TestClusterStats(t *testing.T) {
 
 				clusterStats, err := tc.ClusterStats()
 				require.Nil(t, clusterStats)
-				require.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 		{
@@ -172,7 +172,7 @@ func TestApplications(t *testing.T) {
 				tc := createTestClient(t, testURL)
 
 				apps, err := tc.Applications()
-				require.NotNil(t, err)
+				require.Error(t, err)
 				require.Nil(t, apps)
 			},
 		},
@@ -196,7 +196,7 @@ func TestApplications(t *testing.T) {
 
 				apps, err := tc.Applications()
 				require.Nil(t, apps)
-				require.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 		{
@@ -255,7 +255,7 @@ func TestStageStats(t *testing.T) {
 				tc := createTestClient(t, testURL)
 
 				stageStats, err := tc.StageStats("some_app_id")
-				require.NotNil(t, err)
+				require.Error(t, err)
 				require.Nil(t, stageStats)
 			},
 		},
@@ -279,7 +279,7 @@ func TestStageStats(t *testing.T) {
 
 				stageStats, err := tc.StageStats("some_app_id")
 				require.Nil(t, stageStats)
-				require.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 		{
@@ -338,7 +338,7 @@ func TestExecutorStats(t *testing.T) {
 				tc := createTestClient(t, testURL)
 
 				executorStats, err := tc.ExecutorStats("some_app_id")
-				require.NotNil(t, err)
+				require.Error(t, err)
 				require.Nil(t, executorStats)
 			},
 		},
@@ -362,7 +362,7 @@ func TestExecutorStats(t *testing.T) {
 
 				executorStats, err := tc.ExecutorStats("some_app_id")
 				require.Nil(t, executorStats)
-				require.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 		{
@@ -421,7 +421,7 @@ func TestJobStats(t *testing.T) {
 				tc := createTestClient(t, testURL)
 
 				jobStats, err := tc.JobStats("some_app_id")
-				require.NotNil(t, err)
+				require.Error(t, err)
 				require.Nil(t, jobStats)
 			},
 		},
@@ -445,7 +445,7 @@ func TestJobStats(t *testing.T) {
 
 				jobStats, err := tc.JobStats("some_app_id")
 				require.Nil(t, jobStats)
-				require.NotNil(t, err)
+				require.Error(t, err)
 			},
 		},
 		{

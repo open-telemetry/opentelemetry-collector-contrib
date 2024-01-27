@@ -18,13 +18,13 @@ func TestTimeEventExp(t *testing.T) {
 	var b [8]byte
 
 	err := e.MarshalBinaryTo(b[:])
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, []byte{0x00, 0x00, 0x01, 0xf4, 0x00, 0x00, 0x00, 0xfa}, b[:])
 
 	err = e.UnmarshalBinary(b[:])
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, tim, time.Time(e))
 
 	err = e.UnmarshalBinary(b[:5])
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
