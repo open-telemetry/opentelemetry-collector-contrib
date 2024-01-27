@@ -50,9 +50,9 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 		case "container.memory.percent":
 			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{doubleVal: podmanStats.MemPerc}})
 		case "container.network.io.usage.tx_bytes":
-			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.NetOutput}})
-		case "container.network.io.usage.rx_bytes":
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.NetInput}})
+		case "container.network.io.usage.rx_bytes":
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.NetOutput}})
 
 		case "container.blockio.io_service_bytes_recursive.write":
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.BlockOutput}})
