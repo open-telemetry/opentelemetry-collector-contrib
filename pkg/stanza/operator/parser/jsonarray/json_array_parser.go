@@ -63,12 +63,12 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 			ParserOperator: parserOperator,
 			parse:          generateParseToMapFunc(new(fastjson.ParserPool), strings.Split(c.Header, headerDelimiter)),
 		}, nil
-	} else {
-		return &Parser{
-			ParserOperator: parserOperator,
-			parse:          generateParseToArrayFunc(new(fastjson.ParserPool)),
-		}, nil
 	}
+
+	return &Parser{
+		ParserOperator: parserOperator,
+		parse:          generateParseToArrayFunc(new(fastjson.ParserPool)),
+	}, nil
 }
 
 // Parser is an operator that parses json array in an entry.
