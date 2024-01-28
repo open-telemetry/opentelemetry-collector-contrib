@@ -9,10 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-
-	"go.opentelemetry.io/collector/extension/extensiontest"
-
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
