@@ -4,6 +4,8 @@ maintainers: []
 components:
     exporter:
         - file
+        - kafka
+        - opencensus
         - prometheus
         - prometheusremotewrite
         - zipkin
@@ -19,6 +21,7 @@ components:
     receiver:
         - hostmetrics
         - jaeger
+        - kafka
         - opencensus
         - prometheus
         - zipkin
