@@ -889,7 +889,6 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 		require.NoError(t, err)
 		expectedTokens = append(expectedTokens, []byte(message))
 	}
-	fmt.Println(len(expectedTokens))
 
 	// Poll again and expect one line from each file.
 	operator.poll(context.Background())

@@ -55,7 +55,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 		if len(offsets) > 0 {
 			m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
 			m.readerFactory.FromBeginning = true
-			m.knownFiles[1].Add(offsets...)
+			m.knownFiles[len(m.knownFiles)-1].Add(offsets...)
 		}
 	}
 
@@ -66,23 +66,23 @@ func (m *Manager) Start(persister operator.Persister) error {
 }
 
 func (m *Manager) closePreviousFiles() {
-	// rotate the filesets at end of every consume() call
-
-	// m.knownFiles[0] wil be removed
-	// m.knownFiles[1] -> m.knownFiles[0]
-	// m.previousPollFiles -> m.knownFiles[1]
+	// m.previousPollFiles -> m.knownFiles[-1]
 
 	for _, r := range m.previousPollFiles.Reset() {
-		m.knownFiles[1].Add(r.Close())
+		m.knownFiles[len(m.knownFiles)-1].Add(r.Close())
 	}
 }
 
 func (m *Manager) rotateFilesets() {
-	for i := 1; i < len(m.knownFiles); i++ {
-		m.knownFiles[i-1].Clear()
-		m.knownFiles[i-1] = m.knownFiles[i].Copy()
-		m.knownFiles[i].Clear()
+	// rotate the filesets at end of every consume() call
+
+	// m.knownFiles[0] wil be removed
+	// m.knownFiles[1] -> m.knownFiles[0]
+	// m.knownFiles[2] -> m.knownFiles[1]
+	for i := 0; i < len(m.knownFiles)-1; i++ {
+		m.knownFiles[i] = m.knownFiles[i+1]
 	}
+	m.knownFiles[len(m.knownFiles)-1] = fileset.New[*reader.Metadata](m.maxBatchFiles / 2)
 }
 
 // Stop will stop the file monitoring process
