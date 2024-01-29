@@ -7,8 +7,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.1
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240118172122-8131d31601b8
+	go.opentelemetry.io/collector/featuregate v1.0.1
+	go.opentelemetry.io/collector/pdata v1.0.1
 )
 
 require (
@@ -64,10 +64,10 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/collector/component v0.92.1-0.20240118172122-8131d31601b8 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240118172122-8131d31601b8 // indirect
-	go.opentelemetry.io/collector/confmap v0.92.1-0.20240118172122-8131d31601b8 // indirect
-	go.opentelemetry.io/collector/semconv v0.92.1-0.20240118172122-8131d31601b8 // indirect
+	go.opentelemetry.io/collector/component v0.93.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.93.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.93.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.93.0 // indirect
 	go.opentelemetry.io/otel v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
 	go.opentelemetry.io/otel/trace v1.22.0 // indirect
