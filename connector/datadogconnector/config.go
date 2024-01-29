@@ -49,7 +49,7 @@ type Config struct {
 	PeerTagsAggregation bool `mapstructure:"peer_tags_aggregation"`
 
 	// TraceBuffer specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
-	// The default value is 0, meaning the Datadog Agent TracerPayloads are unbuffered.
+	// The default value is 1000.
 	TraceBuffer int `mapstructure:"trace_buffer"`
 }
 
