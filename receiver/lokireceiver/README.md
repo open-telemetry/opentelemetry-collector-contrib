@@ -22,7 +22,7 @@ This receiver runs HTTP and GRPC servers to ingest log entries in Loki format.
 
 The settings are:
 
-- `endpoint` (required, default = 0.0.0.0:3500 for HTTP protocol, 0.0.0.0:3600 gRPC protocol): host:port to which the receiver is going to receive data.
+- `endpoint` (required, default = 0.0.0.0:3500 for HTTP protocol, 0.0.0.0:3600 gRPC protocol): host:port to which the receiver is going to receive data. The `component.UseLocalHostAsDefaultHost` feature gate changes these to localhost:3500 and localhost:3600. These will become the default in a future release.
 - `use_incoming_timestamp` (optional, default = false) if set `true` the timestamp from Loki log entry is used
 
 Example:
