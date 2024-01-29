@@ -4,7 +4,7 @@ status:
   class: processor
   stability:
     development: [metrics]
-  distributions: [contrib]
+  distributions: []
   warnings: [Statefulness]
   codeowners:
     active: [sh0rez]
