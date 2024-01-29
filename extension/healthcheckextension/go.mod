@@ -105,7 +105,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/collector/consumer v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/collector/exporter v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
+	go.opentelemetry.io/collector/exporter/debugexporter v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
