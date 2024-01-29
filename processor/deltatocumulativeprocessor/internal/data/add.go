@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package data
 
 import "go.opentelemetry.io/collector/pdata/pmetric"
@@ -15,10 +18,12 @@ func (dp Number) Add(in Number) Number {
 	return dp
 }
 
+// nolint
 func (dp Histogram) Add(in Histogram) Histogram {
 	panic("todo")
 }
 
+// nolint
 func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	panic("todo")
 }

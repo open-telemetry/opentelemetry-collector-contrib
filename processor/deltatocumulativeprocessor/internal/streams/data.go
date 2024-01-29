@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package streams
 
 import (
@@ -22,12 +25,12 @@ func Update[D data.Point[D]](m metrics.Data[D], aggr Aggregator[D]) error {
 	var errs error
 
 	Samples(m, func(id Ident, dp D) {
-		new, err := aggr.Aggregate(id, dp)
+		next, err := aggr.Aggregate(id, dp)
 		if err != nil {
 			errs = errors.Join(errs, Error(id, err))
 			return
 		}
-		new.CopyTo(dp)
+		next.CopyTo(dp)
 	})
 
 	return errs

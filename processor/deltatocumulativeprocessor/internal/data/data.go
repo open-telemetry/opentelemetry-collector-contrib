@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package data
 
 import (
@@ -21,11 +24,11 @@ type Number struct {
 }
 
 func (dp Number) Clone() Number {
-	copy := Number{NumberDataPoint: pmetric.NewNumberDataPoint()}
+	clone := Number{NumberDataPoint: pmetric.NewNumberDataPoint()}
 	if dp.NumberDataPoint != (pmetric.NumberDataPoint{}) {
-		dp.CopyTo(copy)
+		dp.CopyTo(clone)
 	}
-	return copy
+	return clone
 }
 
 func (dp Number) CopyTo(dst Number) {
@@ -37,11 +40,11 @@ type Histogram struct {
 }
 
 func (dp Histogram) Clone() Histogram {
-	copy := Histogram{HistogramDataPoint: pmetric.NewHistogramDataPoint()}
+	clone := Histogram{HistogramDataPoint: pmetric.NewHistogramDataPoint()}
 	if dp.HistogramDataPoint != (pmetric.HistogramDataPoint{}) {
-		dp.CopyTo(copy)
+		dp.CopyTo(clone)
 	}
-	return copy
+	return clone
 }
 
 func (dp Histogram) CopyTo(dst Histogram) {
@@ -53,18 +56,18 @@ type ExpHistogram struct {
 }
 
 func (dp ExpHistogram) Clone() ExpHistogram {
-	copy := ExpHistogram{ExponentialHistogramDataPoint: pmetric.NewExponentialHistogramDataPoint()}
+	clone := ExpHistogram{ExponentialHistogramDataPoint: pmetric.NewExponentialHistogramDataPoint()}
 	if dp.ExponentialHistogramDataPoint != (pmetric.ExponentialHistogramDataPoint{}) {
-		dp.CopyTo(copy)
+		dp.CopyTo(clone)
 	}
-	return copy
+	return clone
 }
 
 func (dp ExpHistogram) CopyTo(dst ExpHistogram) {
 	dp.ExponentialHistogramDataPoint.CopyTo(dst.ExponentialHistogramDataPoint)
 }
 
-type mustPoint[D Point[D]] struct{ dp D }
+type mustPoint[D Point[D]] struct{ _ D }
 
 var (
 	_ = mustPoint[Number]{}
