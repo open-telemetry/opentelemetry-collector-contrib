@@ -81,6 +81,7 @@ components:
         - attributes
         - cumulativetodelta
         - datadog
+        - deltatocumulative
         - deltatorate
         - experimental_metricsgeneration
         - filter
