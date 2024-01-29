@@ -29,7 +29,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: "invalid://endpoint  12efg",
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),

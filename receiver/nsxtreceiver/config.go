@@ -19,7 +19,7 @@ import (
 // Config is the configuration for the NSX receiver
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confighttp.HTTPClientSettings           `mapstructure:",squash"`
+	confighttp.HTTPClientConfig             `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 	Username                                string              `mapstructure:"username"`
 	Password                                configopaque.String `mapstructure:"password"`

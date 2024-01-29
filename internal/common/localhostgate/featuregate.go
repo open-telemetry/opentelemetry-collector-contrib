@@ -12,9 +12,8 @@ import (
 	"errors"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
 )
 
 const UseLocalHostAsDefaultHostID = "component.UseLocalHostAsDefaultHost"

@@ -31,7 +31,7 @@ func NewFactory() receiver.Factory {
 }
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: defaultBindEndpoint,
 		},
 		Timeout:  30 * time.Second,

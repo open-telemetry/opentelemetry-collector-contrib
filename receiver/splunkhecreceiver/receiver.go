@@ -189,7 +189,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 
 	var ln net.Listener
 	// set up the listener
-	ln, err := r.config.HTTPServerSettings.ToListener()
+	ln, err := r.config.HTTPServerConfig.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
@@ -202,7 +202,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
 
-	r.server, err = r.config.HTTPServerSettings.ToServer(host, r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.HTTPServerConfig.ToServer(host, r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}

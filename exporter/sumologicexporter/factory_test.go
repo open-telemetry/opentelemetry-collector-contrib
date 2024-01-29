@@ -38,7 +38,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Client:             "otelcol",
 		GraphiteTemplate:   "%{_metric_}",
 
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Timeout: 5 * time.Second,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),

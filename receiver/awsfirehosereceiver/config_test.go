@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	require.Equal(t, &Config{
 		RecordType: "cwmetrics",
 		AccessKey:  "some_access_key",
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "0.0.0.0:4433",
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
