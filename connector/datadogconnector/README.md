@@ -156,11 +156,11 @@ connectors:
       # peer_tags_aggregation: false
 
       ## @param trace_buffer - specifies the number of outgoing trace payloads to buffer before dropping - optional
-      ## If unset, the default value is 0, meaning the outgoing trace payloads are unbuffered.
+      ## If unset, the default value is 1000.
       ## If you start seeing log messages like `Payload in channel full. Dropped 1 payload.` in the datadog exporter, consider
       ## setting a higher `trace_buffer` to avoid traces being dropped.
       #
-      # trace_buffer: 10
+      # trace_buffer: 1000
 ```
 
 **NOTE**: `compute_stats_by_span_kind` and `peer_tags_aggregation` only work when the feature gate `connector.datadogconnector.performance` is enabled. See below for details on this feature gate.
