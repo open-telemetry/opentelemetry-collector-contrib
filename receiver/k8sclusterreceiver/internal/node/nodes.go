@@ -37,9 +37,9 @@ func Transform(node *corev1.Node) *corev1.Node {
 			NodeInfo: corev1.NodeSystemInfo{
 				KubeletVersion:          node.Status.NodeInfo.KubeletVersion,
 				KubeProxyVersion:        node.Status.NodeInfo.KubeProxyVersion,
-				KernelVersion:           node.Status.NodeInfo.KernelVersion,
 				ContainerRuntimeVersion: node.Status.NodeInfo.ContainerRuntimeVersion,
 				OSImage:                 node.Status.NodeInfo.OSImage,
+				OperatingSystem:         node.Status.NodeInfo.OperatingSystem,
 			},
 		},
 	}
@@ -115,7 +115,7 @@ func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, no
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 	rb.SetK8sKubeproxyVersion(node.Status.NodeInfo.KubeProxyVersion)
-	rb.SetOsVersion(node.Status.NodeInfo.KernelVersion)
+	rb.SetOsType(node.Status.NodeInfo.OperatingSystem)
 
 	runtime, version := getContainerRuntimeInfo(node.Status.NodeInfo.ContainerRuntimeVersion)
 	if runtime != "" {

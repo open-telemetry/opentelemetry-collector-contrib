@@ -226,7 +226,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	s.writeEffectiveConfigToFile(cfg.String(), s.effectiveConfigFilePath)
 
-	srv := server.New(s.logger.Sugar())
+	srv := server.New(newLoggerFromZap(s.logger))
 
 	done := make(chan error, 1)
 	var connected atomic.Bool
@@ -339,7 +339,7 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 }
 
 func (s *Supervisor) startOpAMP() error {
-	s.opampClient = client.NewWebSocket(s.logger.Sugar())
+	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
 	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig()
 	if err != nil {

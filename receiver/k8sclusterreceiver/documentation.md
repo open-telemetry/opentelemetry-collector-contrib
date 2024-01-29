@@ -458,4 +458,4 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |
 | os.description | The os description used by Kubernetes Node. | Any Str | false |
-| os.version | The version of operating system used by Kubernetes Node. | Any Str | false |
+| os.type | The os type used by Kubernetes Node. | Any Str | false |

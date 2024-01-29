@@ -1,15 +1,17 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package deltatocumulativeprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
 
 import (
 	"context"
 	"errors"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
@@ -29,7 +31,7 @@ type Processor struct {
 	nums streams.Aggregator[data.Number]
 }
 
-func newProcessor(cfg *Config, log *zap.Logger, next consumer.Metrics) *Processor {
+func newProcessor(_ *Config, log *zap.Logger, next consumer.Metrics) *Processor {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	proc := Processor{
@@ -44,11 +46,11 @@ func newProcessor(cfg *Config, log *zap.Logger, next consumer.Metrics) *Processo
 	return &proc
 }
 
-func (p *Processor) Start(ctx context.Context, host component.Host) error {
+func (p *Processor) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (p *Processor) Shutdown(ctx context.Context) error {
+func (p *Processor) Shutdown(_ context.Context) error {
 	p.cancel()
 	return nil
 }

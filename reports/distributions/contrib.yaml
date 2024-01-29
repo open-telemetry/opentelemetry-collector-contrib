@@ -44,6 +44,7 @@ components:
         - mezmo
         - opencensus
         - opensearch
+        - otelarrow
         - prometheus
         - prometheusremotewrite
         - pulsar
@@ -80,11 +81,13 @@ components:
         - attributes
         - cumulativetodelta
         - datadog
+        - deltatocumulative
         - deltatorate
         - experimental_metricsgeneration
         - filter
         - groupbyattrs
         - groupbytrace
+        - interval
         - k8sattributes
         - metricstransform
         - probabilistic_sampler
