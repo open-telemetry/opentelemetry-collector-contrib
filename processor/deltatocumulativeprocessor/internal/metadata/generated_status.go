@@ -9,15 +9,14 @@ import (
 )
 
 const (
-	Type             = "skywalking"
-	MetricsStability = component.StabilityLevelUnmaintained
-	LogsStability    = component.StabilityLevelUnmaintained
+	Type             = "deltatocumulative"
+	MetricsStability = component.StabilityLevelDevelopment
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/skywalking")
+	return settings.MeterProvider.Meter("otelcol/deltatocumulative")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/skywalking")
+	return settings.TracerProvider.Tracer("otelcol/deltatocumulative")
 }
