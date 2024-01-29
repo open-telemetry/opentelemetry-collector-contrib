@@ -355,3 +355,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prome
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => ../../processor/tailsamplingprocessor

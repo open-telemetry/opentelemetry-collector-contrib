@@ -28,7 +28,7 @@ func NewFactory() connector.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		IgnoreResources: []string{},
-		TraceBuffer: 1000,
+		TraceBuffer:     1000,
 	}
 }
 
