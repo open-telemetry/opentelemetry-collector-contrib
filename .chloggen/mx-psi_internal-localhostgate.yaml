@@ -17,7 +17,7 @@ issues: [30702]
 # Use pipe (|) for multiline entries.
 subtext: | 
   This change affects the following components:
-    - TBF
+    - receiver/loki
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
