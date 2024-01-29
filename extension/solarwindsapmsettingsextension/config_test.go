@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Endpoint: "0.0.0.0:1234",
 				Key:      "something",
-				Interval: time.Duration(10000000000),
+				Interval: time.Duration(10 * time.Second),
 			},
 		},
 		{
@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Endpoint: "0.0.0.0:1234",
 				Key:      "something",
-				Interval: time.Duration(10000000000),
+				Interval: time.Duration(10 * time.Second),
 			},
 		},
 	}

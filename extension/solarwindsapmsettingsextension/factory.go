@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultInterval = time.Duration(10000000000)
+	DefaultInterval = time.Duration(10 * time.Second)
 )
 
 func createDefaultConfig() component.Config {
