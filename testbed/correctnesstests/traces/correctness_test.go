@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -113,8 +114,8 @@ func TestSporadicGoldenDataset(t *testing.T) {
 			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
 			"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
 			"")
-		sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-		receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+		sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+		receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 		receiver.WithRetry(`
     retry_on_failure:
       enabled: false
