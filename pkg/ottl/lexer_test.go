@@ -92,6 +92,14 @@ func Test_lexer(t *testing.T) {
 			{"Bytes", "0x0102030405060708"},
 			{"RParen", ")"},
 		}},
+		{"string escape with trailing backslash", `a("\\", "b")`, false, []result{
+			{"Lowercase", "a"},
+			{"LParen", "("},
+			{"String", `"\\"`},
+			{"Punct", ","},
+			{"String", `"b"`},
+			{"RParen", ")"},
+		}},
 		{"Mixing case numbers and underscores", `aBCd_123E_4`, false, []result{
 			{"Lowercase", "a"},
 			{"Uppercase", "BC"},
