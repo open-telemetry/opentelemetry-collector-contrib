@@ -68,6 +68,8 @@ type WatchClient struct {
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
 	ReplicaSets map[string]*ReplicaSet
+
+	passthroughMode bool
 }
 
 // Extract replicaset name from the pod name. Pod name is created using
@@ -79,7 +81,7 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet, passthroughMode bool) (Client, error) {
 	c := &WatchClient{
 		logger:          logger,
 		Rules:           rules,
@@ -89,6 +91,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		replicasetRegex: rRegex,
 		cronJobRegex:    cronJobRegex,
 		stopCh:          make(chan struct{}),
+		passthroughMode: passthroughMode,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
@@ -177,6 +180,10 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
+
+	if c.passthroughMode {
+		return
+	}
 
 	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,

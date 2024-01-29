@@ -27,6 +27,7 @@ type fakeClient struct {
 	Namespaces         map[string]*kube.Namespace
 	Nodes              map[string]*kube.Node
 	StopCh             chan struct{}
+	passthroughMode    bool
 }
 
 func selectors() (labels.Selector, fields.Selector) {
@@ -35,7 +36,7 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ *zap.Logger, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
+func newFakeClient(_ *zap.Logger, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet, passthroughMode bool) (kube.Client, error) {
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()
@@ -49,6 +50,7 @@ func newFakeClient(_ *zap.Logger, _ k8sconfig.APIConfig, rules kube.ExtractionRu
 		NodeInformer:       kube.NewFakeInformer(cs, "", ls, fs),
 		ReplicaSetInformer: kube.NewFakeInformer(cs, "", ls, fs),
 		StopCh:             make(chan struct{}),
+		passthroughMode:    passthroughMode,
 	}, nil
 }
 
