@@ -62,7 +62,7 @@ func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.Metri
 func createDefaultConfig() component.Config {
 	return &Config{
 		RecordType: defaultRecordType,
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: defaultEndpoint,
 		},
 	}

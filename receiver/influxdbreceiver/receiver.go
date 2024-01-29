@@ -26,7 +26,7 @@ import (
 
 type metricsReceiver struct {
 	nextConsumer       consumer.Metrics
-	httpServerSettings *confighttp.HTTPServerSettings
+	httpServerSettings *confighttp.HTTPServerConfig
 	converter          *influx2otel.LineProtocolToOtelMetrics
 
 	server *http.Server
@@ -56,7 +56,7 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 
 	return &metricsReceiver{
 		nextConsumer:       nextConsumer,
-		httpServerSettings: &config.HTTPServerSettings,
+		httpServerSettings: &config.HTTPServerConfig,
 		converter:          converter,
 		logger:             influxLogger,
 		obsrecv:            obsrecv,
