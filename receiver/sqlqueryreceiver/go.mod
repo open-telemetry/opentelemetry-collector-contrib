@@ -4,16 +4,11 @@ go 1.20
 
 require (
 	github.com/docker/go-connections v0.5.0
-	github.com/go-sql-driver/mysql v1.7.1
-	github.com/lib/pq v1.10.9
-	github.com/microsoft/go-mssqldb v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.93.0
-	github.com/sijms/go-ora/v2 v2.8.6
-	github.com/snowflakedb/gosnowflake v1.7.2
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.27.0
 	go.opentelemetry.io/collector/component v0.93.1-0.20240130182548-89388addcc7f
@@ -72,6 +67,7 @@ require (
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -98,8 +94,10 @@ require (
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20181214104525-299bdde78165 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/microsoft/go-mssqldb v1.6.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -126,7 +124,9 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
+	github.com/sijms/go-ora/v2 v2.8.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/snowflakedb/gosnowflake v1.7.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
