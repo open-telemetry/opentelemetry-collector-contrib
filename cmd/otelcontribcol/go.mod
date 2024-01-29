@@ -203,10 +203,10 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v0.93.1-0.20240126182205-8b95295f0c7d
 	go.opentelemetry.io/collector/confmap v0.93.1-0.20240126182205-8b95295f0c7d
 	go.opentelemetry.io/collector/connector v0.93.1-0.20240126182205-8b95295f0c7d
-	go.opentelemetry.io/collector/connector/forwardconnector v0.93.1-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/connector/forwardconnector v0.93.1-0.20240125183026-8b95295f0c7d
 	go.opentelemetry.io/collector/consumer v0.93.1-0.20240126182205-8b95295f0c7d
 	go.opentelemetry.io/collector/exporter v0.93.1-0.20240126182205-8b95295f0c7d
-	go.opentelemetry.io/collector/exporter/debugexporter v0.93.1-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/exporter/debugexporter v0.93.1-0.20240126182205-8b95295f0c7d
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.93.1-0.20240126182205-8b95295f0c7d
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.93.1-0.20240126182205-8b95295f0c7d
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.93.1-0.20240126182205-8b95295f0c7d
