@@ -72,5 +72,9 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		}
 	})
 
+	if errs != nil {
+		return errs
+	}
+
 	return p.next.ConsumeMetrics(ctx, md)
 }

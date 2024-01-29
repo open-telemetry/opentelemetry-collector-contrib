@@ -10,8 +10,7 @@ import (
 
 func construct[D data.Point[D]]() streams.Aggregator[D] {
 	acc := &Accumulator[D]{dps: make(map[streams.Ident]D)}
-	lock := &Lock[D]{next: acc}
-	return lock
+	return &Lock[D]{next: acc}
 }
 
 func Numbers() streams.Aggregator[data.Number] {
@@ -28,21 +27,26 @@ type Accumulator[D data.Point[D]] struct {
 	dps map[streams.Ident]D
 }
 
+// Aggregate implements delta-to-cumulative aggregation as per spec:
+// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#sums-delta-to-cumulative
 func (a *Accumulator[D]) Aggregate(id streams.Ident, dp D) (D, error) {
-	reset := func() {
+	// make the accumulator to start with the current sample, discarding any
+	// earlier data. return after use
+	reset := func() (D, error) {
 		a.dps[id] = dp.Clone()
+		return a.dps[id], nil
 	}
 
 	aggr, ok := a.dps[id]
 	if !ok {
-		fmt.Printf("d2c: new stream %s", id)
-		reset()
-		return dp, nil
+		return reset()
 	}
 
+	// different start time violates single-writer principle, reset counter
 	if dp.StartTimestamp() != aggr.StartTimestamp() {
-		reset()
+		return reset()
 	}
+
 	if dp.Timestamp() <= aggr.Timestamp() {
 		return dp, ErrOutOfOrder{Last: aggr.Timestamp(), Sample: aggr.Timestamp()}
 	}

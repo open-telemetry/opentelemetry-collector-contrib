@@ -21,11 +21,11 @@ type Number struct {
 }
 
 func (dp Number) Clone() Number {
-	new := Number{NumberDataPoint: pmetric.NewNumberDataPoint()}
+	copy := Number{NumberDataPoint: pmetric.NewNumberDataPoint()}
 	if dp.NumberDataPoint != (pmetric.NumberDataPoint{}) {
-		dp.CopyTo(new)
+		dp.CopyTo(copy)
 	}
-	return new
+	return copy
 }
 
 func (dp Number) CopyTo(dst Number) {
@@ -37,11 +37,11 @@ type Histogram struct {
 }
 
 func (dp Histogram) Clone() Histogram {
-	new := Histogram{HistogramDataPoint: pmetric.NewHistogramDataPoint()}
+	copy := Histogram{HistogramDataPoint: pmetric.NewHistogramDataPoint()}
 	if dp.HistogramDataPoint != (pmetric.HistogramDataPoint{}) {
-		dp.CopyTo(new)
+		dp.CopyTo(copy)
 	}
-	return new
+	return copy
 }
 
 func (dp Histogram) CopyTo(dst Histogram) {
@@ -53,17 +53,16 @@ type ExpHistogram struct {
 }
 
 func (dp ExpHistogram) Clone() ExpHistogram {
-	new := ExpHistogram{ExponentialHistogramDataPoint: pmetric.NewExponentialHistogramDataPoint()}
+	copy := ExpHistogram{ExponentialHistogramDataPoint: pmetric.NewExponentialHistogramDataPoint()}
 	if dp.ExponentialHistogramDataPoint != (pmetric.ExponentialHistogramDataPoint{}) {
-		dp.CopyTo(new)
+		dp.CopyTo(copy)
 	}
-	return new
+	return copy
 }
 
 func (dp ExpHistogram) CopyTo(dst ExpHistogram) {
 	dp.ExponentialHistogramDataPoint.CopyTo(dst.ExponentialHistogramDataPoint)
 }
-
 
 type mustPoint[D Point[D]] struct{ dp D }
 

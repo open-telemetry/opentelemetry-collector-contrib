@@ -22,7 +22,7 @@ func (s Sum) Len() int {
 }
 
 func (s Sum) Ident() Ident {
-	return (*Metric)(&s).Identity()
+	return (*Metric)(&s).Ident()
 }
 
 type Histogram Metric
@@ -37,7 +37,7 @@ func (s Histogram) Len() int {
 }
 
 func (s Histogram) Ident() Ident {
-	return (*Metric)(&s).Identity()
+	return (*Metric)(&s).Ident()
 }
 
 type ExpHistogram Metric
@@ -52,5 +52,5 @@ func (s ExpHistogram) Len() int {
 }
 
 func (s ExpHistogram) Ident() Ident {
-	return (*Metric)(&s).Identity()
+	return (*Metric)(&s).Ident()
 }

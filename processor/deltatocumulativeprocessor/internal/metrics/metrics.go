@@ -12,7 +12,7 @@ type Metric struct {
 	pmetric.Metric
 }
 
-func (m *Metric) Identity() Ident {
+func (m *Metric) Ident() Ident {
 	id := Ident{
 		ScopeIdent: ScopeIdent{
 			ResourceIdent: ResourceIdent{
