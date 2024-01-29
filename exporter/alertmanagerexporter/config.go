@@ -19,9 +19,9 @@ type Config struct {
 	BackoffConfig                  configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	confighttp.HTTPClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	GeneratorURL                string `mapstructure:"generator_url"`
-	DefaultSeverity             string `mapstructure:"severity"`
-	SeverityAttribute           string `mapstructure:"severity_attribute"`
+	GeneratorURL                string                   `mapstructure:"generator_url"`
+	DefaultSeverity             string                   `mapstructure:"severity"`
+	SeverityAttribute           string                   `mapstructure:"severity_attribute"`
 }
 
 var _ component.Config = (*Config)(nil)
