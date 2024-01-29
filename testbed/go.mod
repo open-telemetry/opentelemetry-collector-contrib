@@ -50,7 +50,7 @@ require (
 	go.opentelemetry.io/collector/extension/ballastextension v0.93.1-0.20240125183026-3cacd40b27e8
 	go.opentelemetry.io/collector/extension/zpagesextension v0.93.1-0.20240125183026-3cacd40b27e8
 	go.opentelemetry.io/collector/otelcol v0.93.1-0.20240125183026-3cacd40b27e8
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240129215828-1ed45ec12569
 	go.opentelemetry.io/collector/processor v0.93.1-0.20240125183026-3cacd40b27e8
 	go.opentelemetry.io/collector/processor/batchprocessor v0.93.1-0.20240125183026-3cacd40b27e8
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.93.1-0.20240125183026-3cacd40b27e8
@@ -221,7 +221,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/collector/connector v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240125183026-3cacd40b27e8 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240129215828-1ed45ec12569 // indirect
 	go.opentelemetry.io/collector/service v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/contrib/config v0.2.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
