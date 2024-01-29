@@ -39,8 +39,7 @@ func newProcessor(_ *Config, log *zap.Logger, next consumer.Metrics) *Processor 
 		ctx:    ctx,
 		cancel: cancel,
 		next:   next,
-
-		nums: delta.Numbers(),
+		nums:   delta.Numbers(),
 	}
 
 	return &proc
