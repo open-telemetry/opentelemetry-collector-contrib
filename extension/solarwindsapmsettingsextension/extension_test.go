@@ -23,7 +23,7 @@ func TestCreateExtension(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				Interval: time.Duration(10 * time.Second),
+				Interval: time.Duration(10) * time.Second,
 			},
 		},
 		{
@@ -31,7 +31,7 @@ func TestCreateExtension(t *testing.T) {
 			cfg: &Config{
 				Endpoint: "0.0.0.0:1234",
 				Key:      "something",
-				Interval: time.Duration(10 * time.Second),
+				Interval: time.Duration(10) * time.Second,
 			},
 		},
 	}
