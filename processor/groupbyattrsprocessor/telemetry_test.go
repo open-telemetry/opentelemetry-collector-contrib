@@ -38,12 +38,6 @@ type expectedMetrics struct {
 	mDistMetricGroups     int64
 }
 
-func telemetryTest(t *testing.T, name string, testFunc func(t *testing.T, tel testTelemetry)) {
-	t.Run(name, func(t *testing.T) {
-		testFunc(t, setupTelemetry())
-	})
-}
-
 func setupTelemetry() testTelemetry {
 	reader := metric.NewManualReader()
 	return testTelemetry{
@@ -74,6 +68,44 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		}
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
+	if expected.mNumGroupedMetrics > 0 {
+		name := "processor/groupbyattrs/num_grouped_metrics"
+		got := tt.getMetric(name, md)
+		want := metricdata.Metrics{
+			Name:        name,
+			Description: "Number of metrics that had attributes grouped",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: expected.mNumGroupedMetrics,
+					},
+				},
+			},
+		}
+		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+	}
+	if expected.mNumGroupedSpans > 0 {
+		name := "processor/groupbyattrs/num_grouped_spans"
+		got := tt.getMetric(name, md)
+		want := metricdata.Metrics{
+			Name:        name,
+			Description: "Number of spans that had attributes grouped",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: expected.mNumGroupedSpans,
+					},
+				},
+			},
+		}
+		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+	}
 	if expected.mNumNonGroupedLogs > 0 {
 		name := "processor/groupbyattrs/num_non_grouped_logs"
 		got := tt.getMetric(name, md)
@@ -93,6 +125,44 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		}
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
+	if expected.mNumNonGroupedMetrics > 0 {
+		name := "processor/groupbyattrs/num_non_grouped_metrics"
+		got := tt.getMetric(name, md)
+		want := metricdata.Metrics{
+			Name:        name,
+			Description: "Number of metrics that did not have attributes grouped",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: expected.mNumNonGroupedMetrics,
+					},
+				},
+			},
+		}
+		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+	}
+	if expected.mNumNonGroupedSpans > 0 {
+		name := "processor/groupbyattrs/num_non_grouped_spans"
+		got := tt.getMetric(name, md)
+		want := metricdata.Metrics{
+			Name:        name,
+			Description: "Number of spans that did not have attributes grouped",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: expected.mNumNonGroupedSpans,
+					},
+				},
+			},
+		}
+		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+	}
 	if expected.mDistLogGroups > 0 {
 		name := "processor/groupbyattrs/log_groups"
 		got := tt.getMetric(name, md)
@@ -106,11 +176,59 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 					{
 						Attributes:   *attribute.EmptySet(),
 						Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-						BucketCounts: []uint64{0, uint64(expected.mDistLogGroups), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 						Count:        1,
-						Min:          metricdata.NewExtrema(int64(0)),
+						Min:          metricdata.NewExtrema(expected.mDistLogGroups),
 						Max:          metricdata.NewExtrema(expected.mDistLogGroups),
 						Sum:          expected.mDistLogGroups,
+					},
+				},
+			},
+		}
+		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	}
+	if expected.mDistMetricGroups > 0 {
+		name := "processor/groupbyattrs/metric_groups"
+		got := tt.getMetric(name, md)
+		want := metricdata.Metrics{
+			Name:        name,
+			Description: "Distribution of groups extracted for metrics",
+			Unit:        "1",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   *attribute.EmptySet(),
+						Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						BucketCounts: []uint64{0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Count:        2,
+						Min:          metricdata.NewExtrema(expected.mDistMetricGroups),
+						Max:          metricdata.NewExtrema(expected.mDistMetricGroups),
+						Sum:          2 * expected.mDistMetricGroups,
+					},
+				},
+			},
+		}
+		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	}
+	if expected.mDistSpanGroups > 0 {
+		name := "processor/groupbyattrs/span_groups"
+		got := tt.getMetric(name, md)
+		want := metricdata.Metrics{
+			Name:        name,
+			Description: "Distribution of groups extracted for spans",
+			Unit:        "1",
+			Data: metricdata.Histogram[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.HistogramDataPoint[int64]{
+					{
+						Attributes:   *attribute.EmptySet(),
+						Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Count:        1,
+						Min:          metricdata.NewExtrema(expected.mDistSpanGroups),
+						Max:          metricdata.NewExtrema(expected.mDistSpanGroups),
+						Sum:          expected.mDistSpanGroups,
 					},
 				},
 			},

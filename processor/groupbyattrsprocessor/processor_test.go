@@ -374,10 +374,18 @@ func TestComplexAttributeGrouping(t *testing.T) {
 
 			expected := expectedMetrics{}
 			if tt.shouldMoveCommonGroupedAttr {
-				expected.mDistLogGroups = int64(tt.outputInstrumentationLibraryCount)
+				expected.mDistLogGroups = int64(tt.outputResourceCount)
 				expected.mNumGroupedLogs = int64(tt.outputTotalRecordsCount)
+
+				expected.mDistMetricGroups = int64(tt.outputResourceCount)
+				expected.mNumGroupedMetrics = 4 * int64(tt.outputTotalRecordsCount)
+
+				expected.mDistSpanGroups = int64(tt.outputResourceCount)
+				expected.mNumGroupedSpans = int64(tt.outputTotalRecordsCount)
 			} else {
 				expected.mNumNonGroupedLogs = int64(tt.outputTotalRecordsCount)
+				expected.mNumNonGroupedMetrics = 4 * int64(tt.outputTotalRecordsCount)
+				expected.mNumNonGroupedSpans = int64(tt.outputTotalRecordsCount)
 			}
 			tel.assertMetrics(t, expected)
 		})
