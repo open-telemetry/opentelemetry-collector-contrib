@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/config/configretry v0.93.1-0.20240125183026-3cacd40b27e8
 	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240125183026-3cacd40b27e8
 	go.opentelemetry.io/collector/exporter v0.93.1-0.20240125183026-3cacd40b27e8
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240126182205-8b95295f0c7d
 	go.uber.org/zap v1.26.0
 )
 
