@@ -86,6 +86,7 @@ components:
         - filter
         - groupbyattrs
         - groupbytrace
+        - interval
         - k8sattributes
         - metricstransform
         - probabilistic_sampler

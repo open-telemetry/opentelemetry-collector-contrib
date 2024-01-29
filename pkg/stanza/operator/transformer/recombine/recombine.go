@@ -40,7 +40,7 @@ func NewConfigWithID(operatorID string) *Config {
 		MaxBatchSize:      1000,
 		MaxSources:        1000,
 		CombineWith:       defaultCombineWith,
-		OverwriteWith:     "oldest",
+		OverwriteWith:     "newest",
 		ForceFlushTimeout: 5 * time.Second,
 		SourceIdentifier:  entry.NewAttributeField("file.path"),
 	}
@@ -344,9 +344,9 @@ func (r *Transformer) flushSource(source string, deleteSource bool) error {
 	entries := batch.entries
 
 	if r.overwriteWithOldest {
-		base = entries[0]
-	} else {
 		base = entries[len(entries)-1]
+	} else {
+		base = entries[0]
 	}
 
 	// Set the recombined field on the entry
