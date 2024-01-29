@@ -11,12 +11,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver/internal/metadata"
 )
 
 // This file implements factory for Zipkin receiver.
 
 const (
+	defaultHTTPPort     = 9411
 	defaultBindEndpoint = "0.0.0.0:9411"
 )
 
@@ -33,7 +35,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultBindEndpoint,
+			Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 		},
 		ParseStringTags: false,
 	}
