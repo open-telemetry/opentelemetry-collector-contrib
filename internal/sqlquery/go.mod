@@ -10,9 +10,9 @@ require (
 	github.com/sijms/go-ora/v2 v2.8.6
 	github.com/snowflakedb/gosnowflake v1.7.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.92.1-0.20240118172122-8131d31601b8
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240118172122-8131d31601b8
-	go.opentelemetry.io/collector/receiver v0.92.1-0.20240118172122-8131d31601b8
+	go.opentelemetry.io/collector/component v0.93.1-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240125183026-3cacd40b27e8
+	go.opentelemetry.io/collector/receiver v0.93.1-0.20240125183026-3cacd40b27e8
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 )
@@ -60,7 +60,6 @@ require (
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
-	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -91,13 +90,12 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.92.1-0.20240118172122-8131d31601b8 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.92.1-0.20240118172122-8131d31601b8 // indirect
-	go.opentelemetry.io/collector/confmap v0.92.1-0.20240118172122-8131d31601b8 // indirect
-	go.opentelemetry.io/collector/consumer v0.92.1-0.20240118172122-8131d31601b8 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240118172122-8131d31601b8 // indirect
+	go.opentelemetry.io/collector v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
+	go.opentelemetry.io/collector/confmap v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
+	go.opentelemetry.io/collector/consumer v0.93.1-0.20240125183026-3cacd40b27e8 // indirect
 	go.opentelemetry.io/otel v1.22.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.44.1-0.20231201153405-6027c1ae76f2 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.45.0 // indirect
 	go.opentelemetry.io/otel/metric v1.22.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.22.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.22.0 // indirect
