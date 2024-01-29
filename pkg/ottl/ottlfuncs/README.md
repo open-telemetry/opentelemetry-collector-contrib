@@ -261,15 +261,8 @@ Examples:
 
 ### replace_all_patterns
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 `replace_all_patterns(target, mode, regex, replacement, Optional[function])`
-=======
-`replace_all_patterns(target, mode, regex, replacement, replacementPrefix, function)`
->>>>>>> 336226dd65 (feat(pkg/ottl) Adding an optional replacement prefix argument to the replace_pattern editors)
-=======
-`replace_all_patterns(target, mode, regex, replacement, replacementFormat, function)`
->>>>>>> ee00bae6fe (Change the replacement prefix string to be a format string, this allows for suffixes)
+`replace_all_patterns(target, mode, regex, replacement, function, replacementFormat)`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
@@ -288,8 +281,8 @@ Examples:
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", "k8s.%s")`
-- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", "k8s.%s", SHA256)`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.")`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -314,15 +307,9 @@ Examples:
 
 ### replace_pattern
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 `replace_pattern(target, regex, replacement, Optional[function])`
-=======
-`replace_pattern(target, regex, replacement, replacementPrefix, function)`
->>>>>>> 336226dd65 (feat(pkg/ottl) Adding an optional replacement prefix argument to the replace_pattern editors)
-=======
-`replace_pattern(target, regex, replacement, replacementFormat, function)`
->>>>>>> ee00bae6fe (Change the replacement prefix string to be a format string, this allows for suffixes)
+`replace_pattern(target, regex, replacement, function)`
+`replace_pattern(target, regex, replacement, function, replacementFormat)`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
@@ -338,7 +325,7 @@ Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
 - `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "$$1.", "k8s.%s", SHA256)`
+- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
