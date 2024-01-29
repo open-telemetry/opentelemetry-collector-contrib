@@ -65,7 +65,7 @@ var mc = testMetadataStore{
 		Unit:   "ms",
 	},
 	"histogram_with_created": scrape.MetricMetadata{
-		Metric: "hg",
+		Metric: "histogram_with_created",
 		Type:   textparse.MetricTypeHistogram,
 		Help:   "This is some help for a histogram",
 		Unit:   "ms",
@@ -83,7 +83,7 @@ var mc = testMetadataStore{
 		Unit:   "ms",
 	},
 	"summary_with_created": scrape.MetricMetadata{
-		Metric: "s",
+		Metric: "summary_with_created",
 		Type:   textparse.MetricTypeSummary,
 		Help:   "This is some help for a summary",
 		Unit:   "ms",

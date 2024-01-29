@@ -287,7 +287,7 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.ts = t
 			mg.count = v
 			mg.hasCount = true
-		case strings.HasSuffix(metricName, metricSuffixCreated):
+		case metricName == mf.metadata.Metric+metricSuffixCreated:
 			mg.created = v
 		default:
 			boundary, err := getBoundary(mf.mtype, ls)
