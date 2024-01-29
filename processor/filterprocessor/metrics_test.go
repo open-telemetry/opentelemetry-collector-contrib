@@ -378,7 +378,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		factory := NewFactory()
 		fmp, err := factory.CreateMetricsProcessor(
 			context.Background(),
-			processortest.NewNopCreateSettings(),
+			tel.NewProcessorCreateSettings(),
 			cfg,
 			next,
 		)
@@ -401,7 +401,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		assert.NoError(t, err)
 
 		tel.assertMetrics(t, expectedMetrics{
-			metricDataPointsFiltered: float64(0),
+			metricDataPointsFiltered: 0,
 		})
 
 		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
@@ -415,7 +415,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		assert.NoError(t, err)
 
 		tel.assertMetrics(t, expectedMetrics{
-			metricDataPointsFiltered: float64(1),
+			metricDataPointsFiltered: 1,
 		})
 
 		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
@@ -429,7 +429,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		assert.NoError(t, err)
 
 		tel.assertMetrics(t, expectedMetrics{
-			metricDataPointsFiltered: float64(2),
+			metricDataPointsFiltered: 2,
 		})
 
 		assert.NoError(t, fmp.Shutdown(ctx))

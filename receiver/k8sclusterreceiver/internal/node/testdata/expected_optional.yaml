@@ -22,9 +22,9 @@ resourceMetrics:
         - key: os.description
           value:
             stringValue: Ubuntu 22.04.1 LTS
-        - key: os.version
+        - key: os.type
           value:
-            stringValue: "6.4.12-arch1-1"
+            stringValue: "linux"
 
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:

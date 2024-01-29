@@ -162,7 +162,7 @@ all_set:
       enabled: true
     os.description:
       enabled: true
-    os.version:
+    os.type:
       enabled: true
 none_set:
   metrics:
@@ -327,5 +327,5 @@ none_set:
       enabled: false
     os.description:
       enabled: false
-    os.version:
+    os.type:
       enabled: false
