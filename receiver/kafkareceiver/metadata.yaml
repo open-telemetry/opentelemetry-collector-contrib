@@ -6,6 +6,7 @@ status:
     beta: [metrics, logs, traces]
   distributions:
   - contrib
+  - core
   - aws
   - grafana
   - observiq
