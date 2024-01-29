@@ -31,7 +31,7 @@ connector/exceptionsconnector/                           @open-telemetry/collect
 connector/failoverconnector/                             @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
-connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @albertteoh @portertech
+connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @portertech
 
 examples/demo/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
