@@ -270,7 +270,8 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputMetrics := someComplexMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2)
 			inputHistogramMetrics := someComplexHistogramMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2, 2)
 
-			gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), tt.groupByKeys)
+			tel := setupTelemetry()
+			gap, err := createGroupByAttrsProcessor(tel.NewProcessorCreateSettings(), tt.groupByKeys)
 			require.NoError(t, err)
 
 			processedLogs, err := gap.processLogs(context.Background(), inputLogs)
@@ -371,6 +372,14 @@ func TestComplexAttributeGrouping(t *testing.T) {
 				}
 			}
 
+			expected := expectedMetrics{}
+			if tt.shouldMoveCommonGroupedAttr {
+				expected.mDistLogGroups = int64(tt.outputInstrumentationLibraryCount)
+				expected.mNumGroupedLogs = int64(tt.outputTotalRecordsCount)
+			} else {
+				expected.mNumNonGroupedLogs = int64(tt.outputTotalRecordsCount)
+			}
+			tel.assertMetrics(t, expected)
 		})
 	}
 }
