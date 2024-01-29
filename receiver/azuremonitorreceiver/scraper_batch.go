@@ -62,7 +62,7 @@ type azureBatchScraper struct {
 	cfg                              *Config
 	settings                         component.TelemetrySettings
 	discoveredSubscriptions          map[string]*armsubscriptions.Subscription
-	regionsFromSubscriptions         map[string][]string
+	regionsFromSubscriptions         map[string]map[string]struct{}
 	resources                        map[string]map[string]*azureResource
 	resourceTypes                    map[string]map[string]*azureType
 	resourcesUpdated                 time.Time
@@ -140,7 +140,7 @@ func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) MetricBat
 	return client
 }
 
-func (s *azureBatchScraper) start(_ context.Context, _ component.Host) (err error) {
+func (s *azureBatchScraper) start(ctx context.Context, _ component.Host) (err error) {
 	if err = s.loadCredentials(); err != nil {
 		return err
 	}
@@ -151,7 +151,18 @@ func (s *azureBatchScraper) start(_ context.Context, _ component.Host) (err erro
 	s.resources = map[string]map[string]*azureResource{}
 	s.resourceTypes = map[string]map[string]*azureType{}
 	s.discoveredSubscriptions = map[string]*armsubscriptions.Subscription{}
-	s.regionsFromSubscriptions = map[string][]string{}
+	s.regionsFromSubscriptions = map[string]map[string]struct{}{}
+
+	if !s.cfg.DiscoverSubscription {
+		s.resources[s.cfg.SubscriptionID] = make(map[string]*azureResource)
+		s.resourceTypes[s.cfg.SubscriptionID] = make(map[string]*azureType)
+		s.discoveredSubscriptions[s.cfg.SubscriptionID] = &armsubscriptions.Subscription{
+			ID:          &s.cfg.SubscriptionID,
+			DisplayName: &s.cfg.SubscriptionID,
+		}
+	} else {
+		s.getSubscriptions(ctx)
+	}
 
 	return
 }
@@ -173,45 +184,44 @@ func (s *azureBatchScraper) loadCredentials() (err error) {
 }
 
 func (s *azureBatchScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	if !s.cfg.DiscoverSubscription {
-		s.resources[s.cfg.SubscriptionID] = make(map[string]*azureResource)
-		s.resourceTypes[s.cfg.SubscriptionID] = make(map[string]*azureType)
-		s.discoveredSubscriptions[s.cfg.SubscriptionID] = &armsubscriptions.Subscription{
-			ID:          &s.cfg.SubscriptionID,
-			DisplayName: &s.cfg.SubscriptionID,
-		}
-	} else {
-		s.getSubscriptionsAndRegions(ctx)
+	if !(time.Since(s.resourcesUpdated).Seconds() < s.cfg.CacheResources) {
+		s.getSubscriptions(ctx)
 	}
+	var wg sync.WaitGroup
+	for _, subscription := range s.discoveredSubscriptions {
+		wg.Add(1)
+		go func(subscription *armsubscriptions.Subscription) {
+			defer wg.Done()
 
-	for subscriptionid, subscription := range s.discoveredSubscriptions {
+			s.getResources(ctx, *subscription.SubscriptionID)
+			resourceTypesWithDefinitions := make(chan string)
+			go func() {
+				defer close(resourceTypesWithDefinitions)
+				for resourceType := range s.resourceTypes[*subscription.SubscriptionID] {
+					s.getResourceMetricsDefinitionsByType(ctx, subscription, resourceType)
+					resourceTypesWithDefinitions <- resourceType
+				}
+			}()
 
-		s.getResources(ctx, subscriptionid)
-
-		resourceTypesWithDefinitions := make(chan string)
-		go func() {
-			defer close(resourceTypesWithDefinitions)
-			for resourceType := range s.resourceTypes[subscriptionid] {
-				s.getResourceMetricsDefinitionsByType(ctx, subscription, resourceType)
-				resourceTypesWithDefinitions <- resourceType
+			var wg2 sync.WaitGroup
+			for resourceType := range resourceTypesWithDefinitions {
+				wg2.Add(1)
+				go func(subscription *armsubscriptions.Subscription, resourceType string) {
+					defer wg2.Done()
+					s.getBatchMetricsValues(ctx, subscription, resourceType)
+				}(subscription, resourceType)
 			}
-		}()
 
-		var wg sync.WaitGroup
-		for resourceType := range resourceTypesWithDefinitions {
-			wg.Add(1)
-			go func(resourceType string) {
-				defer wg.Done()
-				s.getBatchMetricsValues(ctx, subscription, resourceType)
-			}(resourceType)
-		}
-		wg.Wait()
+			wg2.Wait()
+		}(subscription)
 
 	}
+
+	wg.Wait()
 	return s.mb.Emit(), nil
 }
 
-func (s *azureBatchScraper) getSubscriptionsAndRegions(ctx context.Context) {
+func (s *azureBatchScraper) getSubscriptions(ctx context.Context) {
 	opts := &armsubscriptions.ClientListOptions{}
 	pager := s.armSubscriptionclient.NewListPager(opts)
 
@@ -226,21 +236,7 @@ func (s *azureBatchScraper) getSubscriptionsAndRegions(ctx context.Context) {
 			s.resources[*subscription.SubscriptionID] = make(map[string]*azureResource)
 			s.resourceTypes[*subscription.SubscriptionID] = make(map[string]*azureType)
 			s.discoveredSubscriptions[*subscription.SubscriptionID] = subscription
-
-			locationopts := &armsubscriptions.ClientListLocationsOptions{}
-			locationpager := s.armSubscriptionclient.NewListLocationsPager(*subscription.SubscriptionID, locationopts)
-
-			for locationpager.More() {
-
-				nextLocationResult, err := locationpager.NextPage(ctx)
-				if err != nil {
-					s.settings.Logger.Error("failed to get Azure locations", zap.Error(err))
-					return
-				}
-				for _, location := range nextLocationResult.Value {
-					s.regionsFromSubscriptions[*subscription.SubscriptionID] = append(s.regionsFromSubscriptions[*subscription.SubscriptionID], *location.Name)
-				}
-			}
+			s.regionsFromSubscriptions[*subscription.SubscriptionID] = make(map[string]struct{})
 		}
 	}
 }
@@ -272,6 +268,7 @@ func (s *azureBatchScraper) getResources(ctx context.Context, subscriptionId str
 		}
 
 		for _, resource := range nextResult.Value {
+
 			if _, ok := s.resources[subscriptionId][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -281,6 +278,7 @@ func (s *azureBatchScraper) getResources(ctx context.Context, subscriptionId str
 				}
 
 				if resource.Location != nil {
+					s.regionsFromSubscriptions[subscriptionId][*resource.Location] = struct{}{}
 					attributes[attributeLocation] = resource.Location
 				}
 
@@ -401,9 +399,9 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 			if end > len(metricsByGrain.metrics) {
 				end = len(metricsByGrain.metrics)
 			}
-			for _, region := range s.regionsFromSubscriptions[*subscription.SubscriptionID] {
+			for region := range s.regionsFromSubscriptions[*subscription.SubscriptionID] {
 				clientMetrics := s.GetMetricsBatchValuesClient(region)
-				s.settings.Logger.Info("scrape", zap.String("subscription", *subscription.DisplayName), zap.String("resourceType", resourceType))
+				s.settings.Logger.Info("scrape", zap.String("subscription", *subscription.DisplayName), zap.String("resourceType", resourceType), zap.String("region", region))
 				response, err := clientMetrics.QueryBatch(
 					ctx,
 					*subscription.SubscriptionID,
