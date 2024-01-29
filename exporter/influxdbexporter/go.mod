@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.93.1-0.20240125183026-3cacd40b27e8
 	go.opentelemetry.io/otel/metric v1.22.0
 	go.opentelemetry.io/otel/trace v1.22.0
+	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
 )
