@@ -18,6 +18,7 @@ issues: [30702]
 subtext: | 
   This change affects the following components:
     - receiver/loki
+    - receiver/opencensus
     - receiver/zipkin
 
 # If your change doesn't affect end users or the exported elements of any package,
